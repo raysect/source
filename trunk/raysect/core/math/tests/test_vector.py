@@ -33,19 +33,9 @@ Unit tests for the Vector object.
 
 from ..vector import Vector
 import unittest
+from math import sqrt
 
-#things a vector needs to do
-# initialised
-# coords set/get - including iterate
-# add
-# subtract
-# multiply with scalar (change length)
-# dot product
-# cross product
-# normalise
-
-# transform - apply an affine matrix transform to self (return new object)
-
+# TODO: Port to Cython to allow testing of the Cython API
 
 class TestVector(unittest.TestCase):
     
@@ -70,7 +60,7 @@ class TestVector(unittest.TestCase):
         with self.assertRaises(TypeError, msg="Initialised with a list containing too few items."):
             Vector([1.0, 2.0])
         
-        # TODO: add special test for initialisation with a point and a normal
+        # TODO: add special test for initialisation with a Point and a Normal
 
     def test_x(self):
         
@@ -110,8 +100,8 @@ class TestVector(unittest.TestCase):
         v = Vector([2.5, 6.7, -4.6])
         
         # check valid indexes
-        self.assertEqual(v[0], 2.5, "Indexing failed [X].")
-        self.assertEqual(v[1], 6.7, "Indexing failed [Y].")
+        self.assertEqual(v[0], 2.50, "Indexing failed [X].")
+        self.assertEqual(v[1], 6.70, "Indexing failed [Y].")
         self.assertEqual(v[2], -4.6, "Indexing failed [Z].")
         
         # check invalid indexes
@@ -125,42 +115,220 @@ class TestVector(unittest.TestCase):
 
     def test_length(self):
         
-        self.assertTrue(False)
+        v = Vector([1.2, -3, 9.8])
         
-    def test_add(self):
+        # get length
+        r = sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8)
+        self.assertAlmostEqual(v.length, r, places = 14, msg="Vector returned incorrect length.")
         
-        self.assertTrue(False)
+        # set length
+        v.length = 10.0
+        rx = 1.2 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
+        ry = -3 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
+        rz = 9.8 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
+        self.assertAlmostEqual(v.x, rx, places = 14, msg="Vector length was not set correctly [X].")
+        self.assertAlmostEqual(v.y, ry, places = 14, msg="Vector length was not set correctly [Y].")
+        self.assertAlmostEqual(v.z, rz, places = 14, msg="Vector length was not set correctly [Z].")
         
-    def test_subtract(self):
+        # trying to rescale a zero length vector should raise a ZeroDivisionError
+        v = Vector([0,0,0])
+        with self.assertRaises(ZeroDivisionError, msg="Adjusting length of zero length vector did not raise a ZeroDivisionError."):
+            
+            v.length = 10.0
         
-        self.assertTrue(False)
-    
-    def test_multiply(self):
-        
-        self.assertTrue(False)
-    
-    def test_divide(self):
-        
-        self.assertTrue(False)
-    
     def test_negate(self):
         
         r = -Vector([2.5, 6.7, -4.6])
         self.assertEqual(r.x, -2.5, "Negation failed [X].")
         self.assertEqual(r.y, -6.7, "Negation failed [Y].")
-        self.assertEqual(r.z, 4.6, "Negation failed [Z].")
-    
-    def test_normalise(self):
+        self.assertEqual(r.z, 4.60, "Negation failed [Z].")
+
+    def test_add(self):
         
-        self.assertTrue(False)
+        # Vector + Vector, returns Vector
+        a = Vector([-1.4, 0.2, 99.1])
+        b = Vector([0.7, -64.0, -0.1])
+        r = a + b
+        self.assertTrue(isinstance(r, Vector), "Vector + Vector did not return a Vector.")
+        self.assertEqual(r.x, -1.4 + 0.7, "Vector + Vector failed [X].")
+        self.assertEqual(r.y, 0.2 - 64.0, "Vector + Vector failed [Y].")
+        self.assertEqual(r.z, 99.1 - 0.1, "Vector + Vector failed [Z].")
+        
+        # Point + Vector, returns Point
+        # TODO: add test
+        
+        # Normal + Vector, returns Vector
+        # TODO: add test
+        
+        # Vector + Normal, returns Vector
+        # TODO: add test
+        
+    def test_subtract(self):
+        
+        # Vector - Vector, returns Vector
+        a = Vector([-1.4, 0.2, 99.1])
+        b = Vector([0.7, -64.0, -0.1])
+        r = a - b
+        self.assertTrue(isinstance(r, Vector), "Vector - Vector did not return a Vector.")
+        self.assertEqual(r.x, -1.4 - 0.7, "Vector - Vector failed [X].")
+        self.assertEqual(r.y, 0.2 + 64.0, "Vector - Vector failed [Y].")
+        self.assertEqual(r.z, 99.1 + 0.1, "Vector - Vector failed [Z].")
+
+        # Point - Vector, returns Point
+        # TODO: add test
+        
+        # Normal - Vector, returns Vector
+        # TODO: add test
+        
+        # Vector - Normal, returns Vector
+        # TODO: add test
+    
+    def test_multiply(self):
+        
+        v = Vector([-1.4, 0.2, 99.1])
+        
+        # c * Vector, returns Vector
+        r = 0.23 * v
+        self.assertTrue(isinstance(r, Vector), "c * Vector did not return a Vector.")
+        self.assertEqual(r.x, 0.23 * -1.4, "c * Vector failed [X].")
+        self.assertEqual(r.y, 0.23 * 0.20, "c * Vector failed [Y].")
+        self.assertEqual(r.z, 0.23 * 99.1, "c * Vector failed [Z].")
+    
+        # Vector * c, returns Vector
+        r = v * -2.6
+        self.assertTrue(isinstance(r, Vector), "Vector * c did not return a Vector.")
+        self.assertEqual(r.x, -2.6 * -1.4, "Vector * c failed [X].")
+        self.assertEqual(r.y, -2.6 * 0.20, "Vector * c failed [Y].")
+        self.assertEqual(r.z, -2.6 * 99.1, "Vector * c failed [Z].")        
+    
+    def test_divide(self):
+        
+        v = Vector([-1.4, 0.2, 99.1])
+        
+        # Vector / c, returns Vector
+        r = v / 5.3
+        self.assertTrue(isinstance(r, Vector), "Vector * c did not return a Vector.")
+        self.assertEqual(r.x, -1.4 / 5.3, "Vector * c failed [X].")
+        self.assertEqual(r.y, 0.20 / 5.3, "Vector * c failed [Y].")
+        self.assertEqual(r.z, 99.1 / 5.3, "Vector * c failed [Z].")        
+        
+        # dividing by zero should raise a ZeroDivisionError
+        with self.assertRaises(ZeroDivisionError, msg="Dividing by zero did not raise a ZeroDivisionError."):
+            
+            r = v / 0.0
+        
+        # any other division operations should raise TypeError
+        with self.assertRaises(TypeError, msg="Undefined division did not raised a TypeError."):
+            
+            r = 54.2 / v
+            
+        with self.assertRaises(TypeError, msg="Undefined division did not raised a TypeError."):
+            
+            r = v / v
+   
+    #def test_normalise(self):
+
+        ## normalise
+        #v = Vector([23.2, 0.12, -5.0])
+        #r = v.normalise()
+        #l = v.length
+        #self.assertTrue(isinstance(r, Vector), "Normalise did not return a Vector.")
+        #self.assertEqual(r.x, 23.2 / l, "Normalise failed [X].")
+        #self.assertEqual(r.y, 0.12 / l, "Normalise failed [Y].")
+        #self.assertEqual(r.z, -5.0 / l, "Normalise failed [Z].")
+        
+        ## attempting to normalise a zero length vector should raise a ZeroDivisionError
+        #v = Vector([0.0, 0.0, 0.0])
+        #with self.assertRaises(ZeroDivisionError, msg="Normalising a zero length vector did not raise a ZeroDivisionError."):
+            
+            #r = v.normalise()
 
     def test_dot_product(self):
         
-        self.assertTrue(False)
+        x = Vector([1,0,0])
+        y = Vector([0,1,0])
+        z = Vector([0,0,1])
+        
+        # orthogonal
+        self.assertEqual(x.dot(y), 0.0, "Dot product of orthogonal vectors does not equal 0.0.")
+        self.assertEqual(x.dot(z), 0.0, "Dot product of orthogonal vectors does not equal 0.0.")
+        self.assertEqual(y.dot(z), 0.0, "Dot product of orthogonal vectors does not equal 0.0.")
+    
+        # orthonormal
+        self.assertEqual(x.dot(x), 1.0, "Dot product of orthonormal vectors does not equal 1.0.")
+        self.assertEqual(y.dot(y), 1.0, "Dot product of orthonormal vectors does not equal 1.0.")
+        self.assertEqual(z.dot(z), 1.0, "Dot product of orthonormal vectors does not equal 1.0.")        
+        
+        # arbitrary
+        a = Vector([4, 2, 3])
+        b = Vector([-1, 2, 6])
+        self.assertEqual(a.dot(b), 4*-1 + 2*2 + 3*6, "Dot product of two arbitrary vectors gives the wrong value.")
+        self.assertEqual(a.dot(b), b.dot(a), "a.b does not equal b.a.")
     
     def test_cross_product(self):
+
+        # raysect uses a right handed coordinate system
+
+        x = Vector([1,0,0])
+        y = Vector([0,1,0])
+        z = Vector([0,0,1])
         
-        self.assertTrue(False)
+        # orthogonal
+        r = x.cross(y)
+        self.assertEqual(r.x, 0.0, "Cross product failed [X].")
+        self.assertEqual(r.y, 0.0, "Cross product failed [Y].")
+        self.assertEqual(r.z, 1.0, "Cross product failed [Z].")
+        
+        r = x.cross(z)
+        self.assertEqual(r.x, 0.0, "Cross product failed [X].")
+        self.assertEqual(r.y, -1.0, "Cross product failed [Y].")
+        self.assertEqual(r.z, 0.0, "Cross product failed [Z].")
+        
+        r = y.cross(z)
+        self.assertEqual(r.x, 1.0, "Cross product failed [X].")
+        self.assertEqual(r.y, 0.0, "Cross product failed [Y].")
+        self.assertEqual(r.z, 0.0, "Cross product failed [Z].")
+        
+        # orthonormal
+        r = x.cross(x)
+        self.assertEqual(r.x, 0.0, "Cross product failed [X].")
+        self.assertEqual(r.y, 0.0, "Cross product failed [Y].")
+        self.assertEqual(r.z, 0.0, "Cross product failed [Z].")
+        
+        r = y.cross(y)
+        self.assertEqual(r.x, 0.0, "Cross product failed [X].")
+        self.assertEqual(r.y, 0.0, "Cross product failed [Y].")
+        self.assertEqual(r.z, 0.0, "Cross product failed [Z].")
+        
+        r = z.cross(z)
+        self.assertEqual(r.x, 0.0, "Cross product failed [X].")
+        self.assertEqual(r.y, 0.0, "Cross product failed [Y].")
+        self.assertEqual(r.z, 0.0, "Cross product failed [Z].")     
+        
+        # arbitrary Vector x Vector
+        a = Vector([4, 2, 3])
+        b = Vector([-1, 2, 6])
+    
+        r1 = a.cross(b)
+        r2 = b.cross(a)         
+        
+        self.assertTrue(isinstance(r, Vector), "Cross did not return a Vector.")
+        
+        self.assertEqual(r1.x, a.y * b.z - b.y * a.z, "Cross product failed [X].")
+        self.assertEqual(r1.y, b.x * a.z - a.x * b.z, "Cross product failed [Y].")
+        self.assertEqual(r1.z, a.x * b.y - b.x * a.y, "Cross product failed [Z].")     
+    
+        self.assertEqual(r2.x, b.y * a.z - a.y * b.z, "Cross product failed [X].")
+        self.assertEqual(r2.y, a.x * b.z - b.x * a.z, "Cross product failed [Y].")
+        self.assertEqual(r2.z, b.x * a.y - a.x * b.y, "Cross product failed [Z].")             
+        
+        # arbitrary Vector x Normal, Normal x Vector
+        # TODO: add test
+        
+    def test_transform(self):
+        
+        # TODO: add test
+        pass
 
     
 if __name__ == "__main__":
