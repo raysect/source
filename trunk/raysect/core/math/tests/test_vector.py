@@ -126,9 +126,9 @@ class TestVector(unittest.TestCase):
         rx = 1.2 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
         ry = -3 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
         rz = 9.8 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
-        self.assertAlmostEqual(v.x, rx, places = 14, msg="Vector length was not set correctly [X].")
-        self.assertAlmostEqual(v.y, ry, places = 14, msg="Vector length was not set correctly [Y].")
-        self.assertAlmostEqual(v.z, rz, places = 14, msg="Vector length was not set correctly [Z].")
+        self.assertAlmostEqual(v.x, rx, 14, "Vector length was not set correctly [X].")
+        self.assertAlmostEqual(v.y, ry, 14, "Vector length was not set correctly [Y].")
+        self.assertAlmostEqual(v.z, rz, 14, "Vector length was not set correctly [Z].")
         
         # trying to rescale a zero length vector should raise a ZeroDivisionError
         v = Vector([0,0,0])
@@ -226,22 +226,22 @@ class TestVector(unittest.TestCase):
             
             r = v / v
    
-    #def test_normalise(self):
+    def test_normalise(self):
 
-        ## normalise
-        #v = Vector([23.2, 0.12, -5.0])
-        #r = v.normalise()
-        #l = v.length
-        #self.assertTrue(isinstance(r, Vector), "Normalise did not return a Vector.")
-        #self.assertEqual(r.x, 23.2 / l, "Normalise failed [X].")
-        #self.assertEqual(r.y, 0.12 / l, "Normalise failed [Y].")
-        #self.assertEqual(r.z, -5.0 / l, "Normalise failed [Z].")
+        # normalise
+        v = Vector([23.2, 0.12, -5.0])
+        r = v.normalise()
+        l = v.length
+        self.assertTrue(isinstance(r, Vector), "Normalise did not return a Vector.")
+        self.assertAlmostEqual(r.x, 23.2 / l, 14, "Normalise failed [X].")
+        self.assertAlmostEqual(r.y, 0.12 / l, 14, "Normalise failed [Y].")
+        self.assertAlmostEqual(r.z, -5.0 / l, 14, "Normalise failed [Z].")
         
-        ## attempting to normalise a zero length vector should raise a ZeroDivisionError
-        #v = Vector([0.0, 0.0, 0.0])
-        #with self.assertRaises(ZeroDivisionError, msg="Normalising a zero length vector did not raise a ZeroDivisionError."):
+        # attempting to normalise a zero length vector should raise a ZeroDivisionError
+        v = Vector([0.0, 0.0, 0.0])
+        with self.assertRaises(ZeroDivisionError, msg="Normalising a zero length vector did not raise a ZeroDivisionError."):
             
-            #r = v.normalise()
+            r = v.normalise()
 
     def test_dot_product(self):
         
