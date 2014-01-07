@@ -5,7 +5,7 @@ from Cython.Build import cythonize
 extensions = [
 #    Extension("raysect.core.math.point", ["raysect/core/math/point.pyx"]),
     Extension("raysect.core.math.vector", ["raysect/core/math/vector.pyx"]),
-#    Extension("raysect.core.math.normal", ["raysect/core/math/normal.pyx"]),
+    Extension("raysect.core.math.normal", ["raysect/core/math/normal.pyx"]),
 #    Extension("raysect.core.math.affinematrix", ["raysect/core/math/affinematrix.pyx"])
     ]
 

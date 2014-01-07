@@ -32,24 +32,25 @@
 import numbers
 cimport cython
 from libc.math cimport sqrt
+from .vector cimport Vector
 
-cdef class Vector:
+cdef class Normal:
     """
-    Represents a mathematical vector in 3D affine space.
+    Represents a mathematical normal vector in 3D affine space.
     """
     
     def __init__(self, v = (1.0, 0.0, 0.0)):
         """
-        Vector constructor.
+        Normal vector constructor.
         
-        If no initial values are passed, Vector defaults to a unit vector
+        If no initial values are passed, Normal defaults to a unit vector
         aligned with the x-axis: [1.0, 0.0, 0.0]
         
         Any three (or more) item indexable object can be used to initialise the
-        vector. The x, y and z coordinates will be assigned the values of 
+        normal. The x, y and z coordinates will be assigned the values of 
         the items at indexes [0, 1, 2].
         
-        e.g. Vector([4.0, 5.0, 6.0]) sets the x, y and z coordinates as 4.0,
+        e.g. Normal([4.0, 5.0, 6.0]) sets the x, y and z coordinates as 4.0,
         5.0 and 6.0 respectively.
         """
         
@@ -61,12 +62,12 @@ cdef class Vector:
             
         except:
             
-            raise TypeError("Vector can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
+            raise TypeError("Normal can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
 
     def __repr__(self):
-        """Returns a string representation of the Vector object."""
+        """Returns a string representation of the Normal object."""
 
-        return "Vector([" + str(self.d[0]) + ", " + str(self.d[1]) + ", " + str(self.d[2]) + "])"
+        return "Normal([" + str(self.d[0]) + ", " + str(self.d[1]) + ", " + str(self.d[2]) + "])"
 
     property x:
         """The x coordinate."""
@@ -103,10 +104,10 @@ cdef class Vector:
 
     property length:
         """
-        The vector's length.
+        The normal vector's length.
         
         Raises a ZeroDivisionError if an attempt is made to change the length of
-        a zero length vector. The direction of a zero length vector is
+        a zero length normal. The direction of a zero length normal is
         undefined hence it can not be lengthened.
         """
         
@@ -127,11 +128,11 @@ cdef class Vector:
         return self.d[i]
 
     def __neg__(self):
-        """Reverses the vector's direction."""
+        """Reverses the normal's direction."""
                 
-        cdef Vector v
+        cdef Normal v
         
-        v = Vector.__new__(Vector)
+        v = Normal.__new__(Normal)
         v.d[0] = -self.d[0]
         v.d[1] = -self.d[1]
         v.d[2] = -self.d[2]
@@ -139,23 +140,24 @@ cdef class Vector:
         return v
 
     def __add__(object x, object y):
-        """Vector addition."""
+        """Normal vector addition."""
         
         # TODO: add normal + vector and vector + normal
-        
+
+        cdef Normal nx, ny
         cdef Vector vx, vy, vr
         #cdef Point p
         
-        if isinstance(x, Vector) and isinstance(y, Vector):
+        if isinstance(x, Normal) and isinstance(y, Normal):
             
-            vx = <Vector>x
-            vy = <Vector>y
+            nx = <Normal>x
+            ny = <Normal>y
             
             # TODO: make new_vector(x,y,z) inline utility function and replace this
             vr = Vector.__new__(Vector)
-            vr.d[0] = vx.d[0] + vy.d[0]
-            vr.d[1] = vx.d[1] + vy.d[1]
-            vr.d[2] = vx.d[2] + vy.d[2]
+            vr.d[0] = nx.d[0] + ny.d[0]
+            vr.d[1] = nx.d[1] + ny.d[1]
+            vr.d[2] = nx.d[2] + ny.d[2]
         
             return vr
             
@@ -170,23 +172,24 @@ cdef class Vector:
             raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
               
     def __sub__(object x, object y):
-        """Vector subtraction."""
+        """Normal vector subtraction."""
         
         # TODO: add normal - vector and vector - normal
-        
+
+        cdef Normal nx, ny        
         cdef Vector vx, vy, vr
         #cdef Point p
         
-        if isinstance(x, Vector) and isinstance(y, Vector):
+        if isinstance(x, Normal) and isinstance(y, Normal):
             
-            vx = <Vector>x
-            vy = <Vector>y
+            nx = <Normal>x
+            ny = <Normal>y
             
             # TODO: make new_vector(x,y,z) inline utility function and replace this
             vr = Vector.__new__(Vector)
-            vr.d[0] = vx.d[0] - vy.d[0]
-            vr.d[1] = vx.d[1] - vy.d[1]
-            vr.d[2] = vx.d[2] - vy.d[2]
+            vr.d[0] = nx.d[0] - ny.d[0]
+            vr.d[1] = nx.d[1] - ny.d[1]
+            vr.d[2] = nx.d[2] - ny.d[2]
         
             return vr
             
@@ -194,27 +197,28 @@ cdef class Vector:
             
             #p = <Point>x
         
-            #TODO: handle point + vector
+            #TODO: handle point + normal
         
         else:
 
             raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
             
     def __mul__(object x, object y):
-        """Multiply vector by a scalar."""
+        """Multiply normal vector by a scalar."""
 
         cdef double m
-        cdef Vector v, r
+        cdef Normal v
+        cdef Vector r
         
-        if isinstance(x, numbers.Real) and isinstance(y, Vector):
+        if isinstance(x, numbers.Real) and isinstance(y, Normal):
         
             m = <double>x
-            v = <Vector>y
+            v = <Normal>y
         
-        elif isinstance(x, Vector) and isinstance(y, numbers.Real):
+        elif isinstance(x, Normal) and isinstance(y, numbers.Real):
         
             m = <double>y
-            v = <Vector>x
+            v = <Normal>x
         
         else:
         
@@ -231,9 +235,10 @@ cdef class Vector:
         """Division of a vector by a scalar."""
 
         cdef double d
-        cdef Vector v, r
+        cdef Normal v
+        cdef Vector r
         
-        if isinstance(x, Vector) and isinstance(y, numbers.Real):
+        if isinstance(x, Normal) and isinstance(y, numbers.Real):
         
             d = <double>y
 
@@ -241,7 +246,7 @@ cdef class Vector:
             if d == 0.0:
                 raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
-            v = <Vector>x
+            v = <Normal>x
             
             with cython.cdivision(True):
                 d = 1.0 / d 
@@ -257,7 +262,7 @@ cdef class Vector:
         
             raise TypeError("Unsupported operand type. Expects a real number.")
 
-    def dot(self, Vector v):
+    def dot(self, Normal v):
         """
         Calculates the dot product between this vector and the supplied vector.
         
@@ -267,7 +272,7 @@ cdef class Vector:
         # TODO: replace with cdef utility function
         return self.d[0] * v.d[0] + self.d[1] * v.d[1] + self.d[2] * v.d[2]
     
-    def cross(self, Vector v):
+    def cross(self, Normal v):
         """
         Calculates the cross product between this vector and the supplied
         vector: 
@@ -288,15 +293,15 @@ cdef class Vector:
  
     def normalise(self):
         """
-        Returns a normalised copy of the vector.
+        Returns a normalised copy of the normal vector.
         
-        The returned vector is normalised to length 1.0 - a unit vector.
+        The returned normal is normalised to length 1.0 - a unit vector.
         """
 
         # TODO: replace with cdef utility function
     
         cdef double t
-        cdef Vector r
+        cdef Normal r
     
         # if current length is zero, problem is ill defined
         t = self.d[0] * self.d[0] + self.d[1] * self.d[1] + self.d[2] * self.d[2]
@@ -309,7 +314,7 @@ cdef class Vector:
             
             t = 1.0 / sqrt(t)
 
-        r = Vector.__new__(Vector)
+        r = Normal.__new__(Normal)
         r.d[0] = self.d[0] * t
         r.d[1] = self.d[1] * t
         r.d[2] = self.d[2] * t
