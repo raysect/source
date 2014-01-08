@@ -35,3 +35,12 @@ from raysect.core.math.vector cimport Vector
 cdef class Normal(_Vec3):
 
     pass
+
+cdef inline Normal new_normal(double x, double y, double z):
+    
+    cdef Normal v
+    v = Normal.__new__(Normal)
+    v.d[0] = x
+    v.d[1] = y
+    v.d[2] = z
+    return v

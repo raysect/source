@@ -29,8 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from _vec3 cimport _Vec3
-from vector cimport Vector
+from raysect.core.math._vec3 cimport _Vec3
+from raysect.core.math.vector cimport Vector
 
 cdef class Point:
     
@@ -51,3 +51,12 @@ cdef class Point:
     cpdef Vector vector_to(self, Point p)
     
     cpdef double distance_to(self, Point p)
+
+cdef inline Point new_point(double x, double y, double z):
+    
+    cdef Point v
+    v = Point.__new__(Point)
+    v.d[0] = x
+    v.d[1] = y
+    v.d[2] = z
+    return v

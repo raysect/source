@@ -31,6 +31,7 @@
 
 cimport cython
 from libc.math cimport sqrt
+from raysect.core.math.vector cimport new_vector
 
 cdef class Point:
     
@@ -108,7 +109,7 @@ cdef class Point:
     def __add__(object x, object y):
         """Point addition."""
        
-        cdef Point p, r
+        cdef Point p
         cdef _Vec3 v
         
         if isinstance(x, Point) and isinstance(y, _Vec3):
@@ -119,33 +120,26 @@ cdef class Point:
         else:
 
             raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
-        
-        # TODO: make new_point(x,y,z) inline utility function and replace this
-        r = Point.__new__(Point)
-        r.d[0] = p.d[0] + v.d[0]
-        r.d[1] = p.d[1] + v.d[1]
-        r.d[2] = p.d[2] + v.d[2]
-    
-        return r
+
+        return new_point(p.d[0] + v.d[0],
+                         p.d[1] + v.d[1],
+                         p.d[2] + v.d[2])
 
     def __sub__(object x, object y):
         """Point subtraction."""
         
-        cdef Point p, r
+        cdef Point p
         cdef _Vec3 v
         
         if isinstance(x, Point) and isinstance(y, _Vec3):
             
             p = <Point>x
             v = <_Vec3>y
-            
-            # TODO: make new_point(x,y,z) inline utility function and replace this
-            r = Point.__new__(Point)
-            r.d[0] = p.d[0] - v.d[0]
-            r.d[1] = p.d[1] - v.d[1]
-            r.d[2] = p.d[2] - v.d[2]
+
+            return new_point(p.d[0] - v.d[0],
+                             p.d[1] - v.d[1],
+                             p.d[2] - v.d[2])
         
-            return r
         
         else:
 
@@ -155,15 +149,10 @@ cdef class Point:
         """
         Returns a vector from this point to the passed point.
         """
-        
-        cdef Vector v
-        
-        # TODO: make new_vector(x,y,z) inline utility function and replace this
-        v = Vector.__new__(Vector)
-        v.d[0] = p.d[0] - self.d[0] 
-        v.d[1] = p.d[1] - self.d[1] 
-        v.d[2] = p.d[2] - self.d[2] 
-        return v
+
+        return new_vector(p.d[0] - self.d[0],
+                          p.d[1] - self.d[1],
+                          p.d[2] - self.d[2])
     
     cpdef double distance_to(self, Point p):
         """
