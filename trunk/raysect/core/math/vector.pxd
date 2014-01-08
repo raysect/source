@@ -29,22 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class Vector:
-    
-    cdef double d[3]
+from raysect.core.math._vec3 cimport _Vec3
 
-    cdef inline double get_x(self)
+cdef class Vector(_Vec3):
     
-    cdef inline void set_x(self, double v)
+    pass    
 
-    cdef inline double get_y(self)
-    
-    cdef inline void set_y(self, double v)
-    
-    cdef inline double get_z(self)
-    
-    cdef inline void set_z(self, double v)
-
-    cdef inline double get_length(self)
-    
-    cdef inline void set_length(self, double v) except *    

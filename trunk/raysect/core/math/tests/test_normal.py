@@ -31,9 +31,9 @@
 Unit tests for the Normal object.
 """
 
+import unittest
 from ..normal import Normal
 from ..vector import Vector
-import unittest
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -48,11 +48,11 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(v.y, 0.0, "Default initialisation is not (1,0,0) [Y].")
         self.assertEqual(v.z, 0.0, "Default initialisation is not (1,0,0) [Z].")
 
-        # initialisation with an iterable
+        # initialisation with an indexable
         v = Normal([1.0, 2.0, 3.0])
-        self.assertEqual(v.x, 1.0, "Initialisation with iterable failed [X].")
-        self.assertEqual(v.y, 2.0, "Initialisation with iterable failed [Y].")
-        self.assertEqual(v.z, 3.0, "Initialisation with iterable failed [Z].")
+        self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
+        self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
+        self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
         
         # invalid initialisation
         with self.assertRaises(TypeError, msg="Initialised with a string."):
@@ -60,8 +60,6 @@ class TestNormal(unittest.TestCase):
         
         with self.assertRaises(TypeError, msg="Initialised with a list containing too few items."):
             Normal([1.0, 2.0])
-        
-        # TODO: add special test for initialisation with a Point and a Normal
 
     def test_x(self):
         
@@ -155,15 +153,6 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(r.y, 0.2 - 64.0, "Normal + Normal failed [Y].")
         self.assertEqual(r.z, 99.1 - 0.1, "Normal + Normal failed [Z].")
         
-        # Point + Normal, returns Point
-        # TODO: add test
-        
-        # Normal + Vector, returns Vector
-        # TODO: add test
-        
-        # Vector + Normal, returns Vector
-        # TODO: add test
-        
     def test_subtract(self):
         
         # Normal - Normal, returns Vector
@@ -174,15 +163,6 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(r.x, -1.4 - 0.7, "Normal - Normal failed [X].")
         self.assertEqual(r.y, 0.2 + 64.0, "Normal - Normal failed [Y].")
         self.assertEqual(r.z, 99.1 + 0.1, "Normal - Normal failed [Z].")
-
-        # Point - Normal, returns Point
-        # TODO: add test
-        
-        # Normal - Vector, returns Vector
-        # TODO: add test
-        
-        # Vector - Normal, returns Vector
-        # TODO: add test
     
     def test_multiply(self):
         
@@ -322,14 +302,11 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(r2.x, b.y * a.z - a.y * b.z, "Cross product failed [X].")
         self.assertEqual(r2.y, a.x * b.z - b.x * a.z, "Cross product failed [Y].")
         self.assertEqual(r2.z, b.x * a.y - a.x * b.y, "Cross product failed [Z].")             
+       
+    #def test_transform(self):
         
-        # arbitrary Vector x Normal, Normal x Vector
-        # TODO: add test
-        
-    def test_transform(self):
-        
-        # TODO: add test
-        pass
+        ## TODO: add test
+        #pass
 
     
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ import numbers
 cimport cython
 from libc.math cimport sqrt
 
-cdef class Vector:
+cdef class Vector(_Vec3):
     """
     Represents a mathematical vector in 3D affine space.
     """
@@ -67,65 +67,7 @@ cdef class Vector:
         """Returns a string representation of the Vector object."""
 
         return "Vector([" + str(self.d[0]) + ", " + str(self.d[1]) + ", " + str(self.d[2]) + "])"
-
-    property x:
-        """The x coordinate."""
-        
-        def __get__(self):
-
-            return self.d[0]
-
-        def __set__(self, double v):
-
-            self.d[0] = v
-
-    property y:
-        """The y coordinate."""
-
-        def __get__(self):
-
-            return self.d[1]
-
-        def __set__(self, double v):
-
-            self.d[1] = v
-
-    property z:
-        """The z coordinate."""
     
-        def __get__(self):
-
-            return self.d[2]
-
-        def __set__(self, double v):
-
-            self.d[2] = v
-
-    property length:
-        """
-        The vector's length.
-        
-        Raises a ZeroDivisionError if an attempt is made to change the length of
-        a zero length vector. The direction of a zero length vector is
-        undefined hence it can not be lengthened.
-        """
-        
-        def __get__(self):
-            
-            return self.get_length()
-        
-        def __set__(self, double v):
-            
-            self.set_length(v)
-            
-    def __getitem__(self, int i):
-        """Returns the vector coordinates by index ([0,1,2] -> [x,y,z])."""
-
-        if i < 0 or i > 2:
-            raise IndexError("Index out of range [0, 2].")
-            
-        return self.d[i]
-
     def __neg__(self):
         """Reverses the vector's direction."""
                 
@@ -140,16 +82,14 @@ cdef class Vector:
 
     def __add__(object x, object y):
         """Vector addition."""
+
+        cdef _Vec3 vx, vy
+        cdef Vector vr
         
-        # TODO: add normal + vector and vector + normal
-        
-        cdef Vector vx, vy, vr
-        #cdef Point p
-        
-        if isinstance(x, Vector) and isinstance(y, Vector):
+        if isinstance(x, _Vec3) and isinstance(y, _Vec3):
             
-            vx = <Vector>x
-            vy = <Vector>y
+            vx = <_Vec3>x
+            vy = <_Vec3>y
             
             # TODO: make new_vector(x,y,z) inline utility function and replace this
             vr = Vector.__new__(Vector)
@@ -158,29 +98,21 @@ cdef class Vector:
             vr.d[2] = vx.d[2] + vy.d[2]
         
             return vr
-            
-        #else isinstance(x, Point):
-            
-            #p = <Point>x
-        
-            #TODO: handle point + vector
         
         else:
 
             raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
-              
+
     def __sub__(object x, object y):
         """Vector subtraction."""
         
-        # TODO: add normal - vector and vector - normal
+        cdef _Vec3 vx, vy
+        cdef Vector vr
         
-        cdef Vector vx, vy, vr
-        #cdef Point p
-        
-        if isinstance(x, Vector) and isinstance(y, Vector):
+        if isinstance(x, _Vec3) and isinstance(y, _Vec3):
             
-            vx = <Vector>x
-            vy = <Vector>y
+            vx = <_Vec3>x
+            vy = <_Vec3>y
             
             # TODO: make new_vector(x,y,z) inline utility function and replace this
             vr = Vector.__new__(Vector)
@@ -189,12 +121,6 @@ cdef class Vector:
             vr.d[2] = vx.d[2] - vy.d[2]
         
             return vr
-            
-        #else isinstance(x, Point):
-            
-            #p = <Point>x
-        
-            #TODO: handle point + vector
         
         else:
 
@@ -256,18 +182,8 @@ cdef class Vector:
         else:
         
             raise TypeError("Unsupported operand type. Expects a real number.")
-
-    def dot(self, Vector v):
-        """
-        Calculates the dot product between this vector and the supplied vector.
-        
-        Returns a scalar.
-        """
-        
-        # TODO: replace with cdef utility function
-        return self.d[0] * v.d[0] + self.d[1] * v.d[1] + self.d[2] * v.d[2]
     
-    def cross(self, Vector v):
+    def cross(self, _Vec3 v):
         """
         Calculates the cross product between this vector and the supplied
         vector: 
@@ -315,58 +231,4 @@ cdef class Vector:
         r.d[2] = self.d[2] * t
     
         return r
-  
-    # cython api ---------------------------------------------------------------
 
-    # x coordinate getters/setters
-    cdef inline double get_x(self):
-        
-        return self.d[0]
-    
-    cdef inline void set_x(self, double v):
-        
-        self.d[0] = v
-
-    # y coordinate getters/setters
-    cdef inline double get_y(self):
-        
-        return self.d[1]
-    
-    cdef inline void set_y(self, double v):
-        
-        self.d[1] = v        
-        
-    # z coordinate getters/setters
-    cdef inline double get_z(self):
-        
-        return self.d[2]
-    
-    cdef inline void set_z(self, double v):
-        
-        self.d[2] = v
-        
-    # length getters/setters    
-    cdef inline double get_length(self):
-        
-        return sqrt(self.d[0] * self.d[0] + self.d[1] * self.d[1] + self.d[2] * self.d[2])
-        
-    cdef inline void set_length(self, double v) except *:
-        
-        cdef double t
-            
-        # if current length is zero, problem is ill defined
-        t = self.d[0] * self.d[0] + self.d[1] * self.d[1] + self.d[2] * self.d[2]
-        if t == 0.0:
-            
-            raise ZeroDivisionError("A zero length vector can not be rescaled as the direction of a zero length vector is undefined.")
-        
-        # normalise and rescale vector
-        with cython.cdivision(True):
-            
-            t = v / sqrt(t)
-
-        self.d[0] = self.d[0] * t
-        self.d[1] = self.d[1] * t
-        self.d[2] = self.d[2] * t
-
-   

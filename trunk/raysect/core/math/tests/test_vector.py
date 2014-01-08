@@ -31,8 +31,8 @@
 Unit tests for the Vector object.
 """
 
-from ..vector import Vector
 import unittest
+from ..vector import Vector
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -47,11 +47,11 @@ class TestVector(unittest.TestCase):
         self.assertEqual(v.y, 0.0, "Default initialisation is not (1,0,0) [Y].")
         self.assertEqual(v.z, 0.0, "Default initialisation is not (1,0,0) [Z].")
 
-        # initialisation with an iterable
+        # initialisation with an indexable
         v = Vector([1.0, 2.0, 3.0])
-        self.assertEqual(v.x, 1.0, "Initialisation with iterable failed [X].")
-        self.assertEqual(v.y, 2.0, "Initialisation with iterable failed [Y].")
-        self.assertEqual(v.z, 3.0, "Initialisation with iterable failed [Z].")
+        self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
+        self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
+        self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
         
         # invalid initialisation
         with self.assertRaises(TypeError, msg="Initialised with a string."):
@@ -154,15 +154,6 @@ class TestVector(unittest.TestCase):
         self.assertEqual(r.y, 0.2 - 64.0, "Vector + Vector failed [Y].")
         self.assertEqual(r.z, 99.1 - 0.1, "Vector + Vector failed [Z].")
         
-        # Point + Vector, returns Point
-        # TODO: add test
-        
-        # Normal + Vector, returns Vector
-        # TODO: add test
-        
-        # Vector + Normal, returns Vector
-        # TODO: add test
-        
     def test_subtract(self):
         
         # Vector - Vector, returns Vector
@@ -173,15 +164,6 @@ class TestVector(unittest.TestCase):
         self.assertEqual(r.x, -1.4 - 0.7, "Vector - Vector failed [X].")
         self.assertEqual(r.y, 0.2 + 64.0, "Vector - Vector failed [Y].")
         self.assertEqual(r.z, 99.1 + 0.1, "Vector - Vector failed [Z].")
-
-        # Point - Vector, returns Point
-        # TODO: add test
-        
-        # Normal - Vector, returns Vector
-        # TODO: add test
-        
-        # Vector - Normal, returns Vector
-        # TODO: add test
     
     def test_multiply(self):
         
@@ -322,13 +304,10 @@ class TestVector(unittest.TestCase):
         self.assertEqual(r2.y, a.x * b.z - b.x * a.z, "Cross product failed [Y].")
         self.assertEqual(r2.z, b.x * a.y - a.x * b.y, "Cross product failed [Z].")             
         
-        # arbitrary Vector x Normal, Normal x Vector
-        # TODO: add test
+    #def test_transform(self):
         
-    def test_transform(self):
-        
-        # TODO: add test
-        pass
+        ## TODO: add test
+        #pass
 
     
 if __name__ == "__main__":
