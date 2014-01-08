@@ -69,35 +69,25 @@ cdef class Vector(_Vec3):
         return "Vector([" + str(self.d[0]) + ", " + str(self.d[1]) + ", " + str(self.d[2]) + "])"
     
     def __neg__(self):
-        """Reverses the vector's direction."""
-                
-        cdef Vector v
-        
-        v = Vector.__new__(Vector)
-        v.d[0] = -self.d[0]
-        v.d[1] = -self.d[1]
-        v.d[2] = -self.d[2]
-    
-        return v
+        """Returns a vector with the reverse orientation."""
+
+        return new_vector(-self.d[0],
+                          -self.d[1],
+                          -self.d[2])
 
     def __add__(object x, object y):
         """Vector addition."""
 
         cdef _Vec3 vx, vy
-        cdef Vector vr
         
         if isinstance(x, _Vec3) and isinstance(y, _Vec3):
             
             vx = <_Vec3>x
             vy = <_Vec3>y
-            
-            # TODO: make new_vector(x,y,z) inline utility function and replace this
-            vr = Vector.__new__(Vector)
-            vr.d[0] = vx.d[0] + vy.d[0]
-            vr.d[1] = vx.d[1] + vy.d[1]
-            vr.d[2] = vx.d[2] + vy.d[2]
-        
-            return vr
+
+            return new_vector(vx.d[0] + vy.d[0],
+                              vx.d[1] + vy.d[1],
+                              vx.d[2] + vy.d[2])
         
         else:
 
@@ -107,20 +97,15 @@ cdef class Vector(_Vec3):
         """Vector subtraction."""
         
         cdef _Vec3 vx, vy
-        cdef Vector vr
         
         if isinstance(x, _Vec3) and isinstance(y, _Vec3):
             
             vx = <_Vec3>x
             vy = <_Vec3>y
-            
-            # TODO: make new_vector(x,y,z) inline utility function and replace this
-            vr = Vector.__new__(Vector)
-            vr.d[0] = vx.d[0] - vy.d[0]
-            vr.d[1] = vx.d[1] - vy.d[1]
-            vr.d[2] = vx.d[2] - vy.d[2]
-        
-            return vr
+
+            return new_vector(vx.d[0] - vy.d[0],
+                              vx.d[1] - vy.d[1],
+                              vx.d[2] - vy.d[2])
         
         else:
 
@@ -130,7 +115,7 @@ cdef class Vector(_Vec3):
         """Multiply vector by a scalar."""
 
         cdef double m
-        cdef Vector v, r
+        cdef Vector v
         
         if isinstance(x, numbers.Real) and isinstance(y, Vector):
         
@@ -146,18 +131,15 @@ cdef class Vector(_Vec3):
         
             raise TypeError("Unsupported operand type. Expects a real number.")
         
-        r = Vector.__new__(Vector)
-        r.d[0] = m * v.d[0]
-        r.d[1] = m * v.d[1]
-        r.d[2] = m * v.d[2]
-        
-        return r
+        return new_vector(m * v.d[0],
+                          m * v.d[1],
+                          m * v.d[2])
 
     def __truediv__(object x, object y):
         """Division of a vector by a scalar."""
 
         cdef double d
-        cdef Vector v, r
+        cdef Vector v
         
         if isinstance(x, Vector) and isinstance(y, numbers.Real):
         
@@ -165,20 +147,19 @@ cdef class Vector(_Vec3):
 
             # prevent divide my zero
             if d == 0.0:
+                
                 raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
             v = <Vector>x
             
             with cython.cdivision(True):
+                
                 d = 1.0 / d 
+
+            return new_vector(d * v.d[0],
+                              d * v.d[1],
+                              d * v.d[2])            
             
-            r = Vector.__new__(Vector)
-            r.d[0] = d * v.d[0]
-            r.d[1] = d * v.d[1]
-            r.d[2] = d * v.d[2]            
-            
-            return r
-        
         else:
         
             raise TypeError("Unsupported operand type. Expects a real number.")
@@ -192,15 +173,11 @@ cdef class Vector(_Vec3):
             
         Returns a Vector.
         """
-
-        # TODO: replace with cdef utility function
-        cdef Vector r
-        r = Vector.__new__(Vector)
-        r.d[0] = self.d[1] * v.d[2] - v.d[1] * self.d[2]
-        r.d[1] = self.d[2] * v.d[0] - v.d[2] * self.d[0]
-        r.d[2] = self.d[0] * v.d[1] - v.d[0] * self.d[1]
     
-        return r
+        return new_vector(self.d[1] * v.d[2] - v.d[1] * self.d[2],
+                          self.d[2] * v.d[0] - v.d[2] * self.d[0],
+                          self.d[0] * v.d[1] - v.d[0] * self.d[1])
+ 
  
     def normalise(self):
         """
@@ -208,11 +185,8 @@ cdef class Vector(_Vec3):
         
         The returned vector is normalised to length 1.0 - a unit vector.
         """
-
-        # TODO: replace with cdef utility function
     
         cdef double t
-        cdef Vector r
     
         # if current length is zero, problem is ill defined
         t = self.d[0] * self.d[0] + self.d[1] * self.d[1] + self.d[2] * self.d[2]
@@ -225,10 +199,7 @@ cdef class Vector(_Vec3):
             
             t = 1.0 / sqrt(t)
 
-        r = Vector.__new__(Vector)
-        r.d[0] = self.d[0] * t
-        r.d[1] = self.d[1] * t
-        r.d[2] = self.d[2] * t
-    
-        return r
+        return new_vector(self.d[0] * t,
+                          self.d[1] * t,
+                          self.d[2] * t)
 

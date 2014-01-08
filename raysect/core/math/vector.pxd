@@ -35,3 +35,12 @@ cdef class Vector(_Vec3):
     
     pass    
 
+cdef inline Vector new_vector(double x, double y, double z):
+    
+    cdef Vector v
+    v = Vector.__new__(Vector)
+    v.d[0] = x
+    v.d[1] = y
+    v.d[2] = z
+    return v
+

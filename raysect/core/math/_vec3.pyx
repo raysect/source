@@ -123,8 +123,7 @@ cdef class _Vec3:
         
         Returns a scalar.
         """
-        
-        # TODO: replace with cdef utility function
+
         return self.d[0] * v.d[0] + self.d[1] * v.d[1] + self.d[2] * v.d[2]
 
     # cython api ---------------------------------------------------------------
