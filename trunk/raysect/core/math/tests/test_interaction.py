@@ -96,7 +96,7 @@ class TestInteraction(unittest.TestCase):
         self.assertEqual(r.z, 5 - 9, "Vector + Normal failed [X].")
         
         r = n + v
-        self.assertTrue(isinstance(r, Vector), "Vector addition did not return a Vector.")
+        self.assertTrue(isinstance(r, Normal), "Vector addition did not return a Normal.")
         self.assertEqual(r.x, 3 + 6, "Normal + Vector failed [X].")
         self.assertEqual(r.y, -4 + 3, "Normal + Vector failed [X].")
         self.assertEqual(r.z, 5 - 9, "Normal + Vector failed [X].")
@@ -137,7 +137,7 @@ class TestInteraction(unittest.TestCase):
         self.assertEqual(r.z, 5 + 9, "Vector - Normal failed [X].")
         
         r = n - v
-        self.assertTrue(isinstance(r, Vector), "Vector addition did not return a Vector.")
+        self.assertTrue(isinstance(r, Normal), "Vector addition did not return a Normal.")
         self.assertEqual(r.x, -3 + 6, "Normal - Vector failed [X].")
         self.assertEqual(r.y, 4 + 3, "Normal - Vector failed [X].")
         self.assertEqual(r.z, -5 - 9, "Normal - Vector failed [X].")

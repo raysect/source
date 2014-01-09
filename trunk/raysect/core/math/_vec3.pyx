@@ -117,7 +117,7 @@ cdef class _Vec3:
             
             self.set_length(v)
 
-    def dot(self, _Vec3 v):
+    cpdef double dot(self, _Vec3 v):
         """
         Calculates the dot product between this vector and the supplied vector.
         
@@ -125,8 +125,6 @@ cdef class _Vec3:
         """
 
         return self.d[0] * v.d[0] + self.d[1] * v.d[1] + self.d[2] * v.d[2]
-
-    # cython api ---------------------------------------------------------------
 
     # x coordinate getters/setters
     cdef inline double get_x(self):

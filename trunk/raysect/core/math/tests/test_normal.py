@@ -138,28 +138,29 @@ class TestNormal(unittest.TestCase):
     def test_negate(self):
         
         r = -Normal([2.5, 6.7, -4.6])
+        self.assertTrue(isinstance(r, Normal), "Normal negation did not return a Normal.")
         self.assertEqual(r.x, -2.5, "Negation failed [X].")
         self.assertEqual(r.y, -6.7, "Negation failed [Y].")
         self.assertEqual(r.z, 4.60, "Negation failed [Z].")
 
     def test_add(self):
         
-        # Normal + Normal, returns Vector
+        # Normal + Normal, returns Normal
         a = Normal([-1.4, 0.2, 99.1])
         b = Normal([0.7, -64.0, -0.1])
         r = a + b
-        self.assertTrue(isinstance(r, Vector), "Normal + Normal did not return a Vector.")
+        self.assertTrue(isinstance(r, Normal), "Normal + Normal did not return a Normal.")
         self.assertEqual(r.x, -1.4 + 0.7, "Normal + Normal failed [X].")
         self.assertEqual(r.y, 0.2 - 64.0, "Normal + Normal failed [Y].")
         self.assertEqual(r.z, 99.1 - 0.1, "Normal + Normal failed [Z].")
         
     def test_subtract(self):
         
-        # Normal - Normal, returns Vector
+        # Normal - Normal, returns Normal
         a = Normal([-1.4, 0.2, 99.1])
         b = Normal([0.7, -64.0, -0.1])
         r = a - b
-        self.assertTrue(isinstance(r, Vector), "Normal - Normal did not return a Vector.")
+        self.assertTrue(isinstance(r, Normal), "Normal - Normal did not return a Normal.")
         self.assertEqual(r.x, -1.4 - 0.7, "Normal - Normal failed [X].")
         self.assertEqual(r.y, 0.2 + 64.0, "Normal - Normal failed [Y].")
         self.assertEqual(r.z, 99.1 + 0.1, "Normal - Normal failed [Z].")
@@ -168,16 +169,16 @@ class TestNormal(unittest.TestCase):
         
         v = Normal([-1.4, 0.2, 99.1])
         
-        # c * Normal, returns Vector
+        # c * Normal, returns Normal
         r = 0.23 * v
-        self.assertTrue(isinstance(r, Vector), "c * Normal did not return a Vector.")
+        self.assertTrue(isinstance(r, Normal), "c * Normal did not return a Normal.")
         self.assertEqual(r.x, 0.23 * -1.4, "c * Normal failed [X].")
         self.assertEqual(r.y, 0.23 * 0.20, "c * Normal failed [Y].")
         self.assertEqual(r.z, 0.23 * 99.1, "c * Normal failed [Z].")
     
-        # Normal * c, returns Vector
+        # Normal * c, returns Normal
         r = v * -2.6
-        self.assertTrue(isinstance(r, Vector), "Normal * c did not return a Vector.")
+        self.assertTrue(isinstance(r, Normal), "Normal * c did not return a Normal.")
         self.assertEqual(r.x, -2.6 * -1.4, "Normal * c failed [X].")
         self.assertEqual(r.y, -2.6 * 0.20, "Normal * c failed [Y].")
         self.assertEqual(r.z, -2.6 * 99.1, "Normal * c failed [Z].")        
@@ -186,9 +187,9 @@ class TestNormal(unittest.TestCase):
         
         v = Normal([-1.4, 0.2, 99.1])
         
-        # Normal / c, returns Vector
+        # Normal / c, returns Normal
         r = v / 5.3
-        self.assertTrue(isinstance(r, Vector), "Normal * c did not return a Vector.")
+        self.assertTrue(isinstance(r, Normal), "Normal * c did not return a Normal.")
         self.assertEqual(r.x, -1.4 / 5.3, "Normal * c failed [X].")
         self.assertEqual(r.y, 0.20 / 5.3, "Normal * c failed [Y].")
         self.assertEqual(r.z, 99.1 / 5.3, "Normal * c failed [Z].")        

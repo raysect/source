@@ -32,8 +32,21 @@
 from raysect.core.math._vec3 cimport _Vec3
 
 cdef class Vector(_Vec3):
+
+    cpdef Vector cross(self, _Vec3 v)
+        
+    cpdef Vector normalise(self)
+
+    cdef inline Vector neg(self)
     
-    pass    
+    cdef inline Vector add(self, _Vec3 v)
+    
+    cdef inline Vector sub(self, _Vec3 v)
+    
+    cdef inline Vector mul(self, double m)
+    
+    cdef inline Vector div(self, double m)
+
 
 cdef inline Vector new_vector(double x, double y, double z):
     

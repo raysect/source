@@ -52,6 +52,10 @@ cdef class Point:
     
     cpdef double distance_to(self, Point p)
 
+    cdef inline Point add(self, _Vec3 v)  
+    
+    cdef inline Point sub(self, _Vec3 v)
+
 cdef inline Point new_point(double x, double y, double z):
     
     cdef Point v
