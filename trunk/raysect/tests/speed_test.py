@@ -121,8 +121,8 @@ def test5(n, C):
 
 # the tests
 
-print("Mathmatical function speed tests")
-print("--------------------------------\n")
+print("Mathematical function speed tests")
+print("---------------------------------\n")
 
 n = 1000000
 
