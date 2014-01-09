@@ -33,8 +33,21 @@ from raysect.core.math._vec3 cimport _Vec3
 from raysect.core.math.vector cimport Vector
 
 cdef class Normal(_Vec3):
+    
+    cpdef Vector cross(self, _Vec3 v)
+        
+    cpdef Normal normalise(self)
 
-    pass
+    cdef inline Normal neg(self)
+    
+    cdef inline Normal add(self, _Vec3 v)
+    
+    cdef inline Normal sub(self, _Vec3 v)
+    
+    cdef inline Normal mul(self, double m)
+    
+    cdef inline Normal div(self, double m)
+    
 
 cdef inline Normal new_normal(double x, double y, double z):
     

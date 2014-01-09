@@ -33,6 +33,8 @@ cdef class _Vec3:
     
     cdef double d[3]
     
+    cpdef double dot(self, _Vec3 v)
+    
     cdef inline double get_x(self)
     
     cdef inline void set_x(self, double v)

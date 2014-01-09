@@ -87,7 +87,7 @@ cdef class Normal(_Vec3):
             vx = <_Vec3>x
             vy = <_Vec3>y
 
-            return new_vector(vx.d[0] + vy.d[0],
+            return new_normal(vx.d[0] + vy.d[0],
                               vx.d[1] + vy.d[1],
                               vx.d[2] + vy.d[2])
         
@@ -105,7 +105,7 @@ cdef class Normal(_Vec3):
             vx = <_Vec3>x
             vy = <_Vec3>y
             
-            return new_vector(vx.d[0] - vy.d[0],
+            return new_normal(vx.d[0] - vy.d[0],
                               vx.d[1] - vy.d[1],
                               vx.d[2] - vy.d[2])
         
@@ -133,7 +133,7 @@ cdef class Normal(_Vec3):
         
             raise TypeError("Unsupported operand type. Expects a real number.")
 
-        return new_vector(m * v.d[0],
+        return new_normal(m * v.d[0],
                           m * v.d[1],
                           m * v.d[2])
 
@@ -159,7 +159,7 @@ cdef class Normal(_Vec3):
 
                 d = 1.0 / d 
 
-            return new_vector(d * v.d[0],
+            return new_normal(d * v.d[0],
                               d * v.d[1],
                               d * v.d[2])
         
@@ -167,7 +167,7 @@ cdef class Normal(_Vec3):
         
             raise TypeError("Unsupported operand type. Expects a real number.")
 
-    def cross(self, _Vec3 v):
+    cpdef Vector cross(self, _Vec3 v):
         """
         Calculates the cross product between this vector and the supplied
         vector: 
@@ -181,7 +181,7 @@ cdef class Normal(_Vec3):
                           self.d[2] * v.d[0] - v.d[2] * self.d[0],
                           self.d[0] * v.d[1] - v.d[0] * self.d[1])
  
-    def normalise(self):
+    cpdef Normal normalise(self):
         """
         Returns a normalised copy of the normal vector.
         
@@ -205,4 +205,50 @@ cdef class Normal(_Vec3):
                           self.d[1] * t,
                           self.d[2] * t)
 
-   
+    #cpdef Normal transform(AffineMatrix t):
+        ## warn users that this method is slow and that they should use transform_with_inverse if an inverse is already available
+        
+        #pass
+    
+    #cpdef Normal transform_with_inverse(AffineMatrix t):
+        
+        ## avoids the need to invert the matrix = faster!
+        #pass
+
+    cdef inline Normal neg(self):
+
+        return new_normal(-self.d[0],
+                          -self.d[1],
+                          -self.d[2])
+    
+    cdef inline Normal add(self, _Vec3 v):
+
+        return new_normal(self.d[0] + v.d[0],
+                          self.d[1] + v.d[1],
+                          self.d[2] + v.d[2])    
+    
+    cdef inline Normal sub(self, _Vec3 v):
+    
+        return new_normal(self.d[0] - v.d[0],
+                          self.d[1] - v.d[1],
+                          self.d[2] - v.d[2])        
+    
+    cdef inline Normal mul(self, double m):
+
+        return new_normal(self.d[0] * m,
+                          self.d[1] * m,
+                          self.d[2] * m)
+    
+    cdef inline Normal div(self, double d):
+            
+        if d == 0.0:
+            
+            raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
+
+        with cython.cdivision:
+            
+            d = 1.0 / d
+            
+        return new_normal(self.d[0] * d,
+                          self.d[1] * d,
+                          self.d[2] * d)

@@ -165,7 +165,9 @@ cdef class Point:
         z = p.d[2] - self.d[2]
         return sqrt(x*x + y*y + z*z)
 
-    # cython api ---------------------------------------------------------------
+    #def transform(AffineMatrix t):
+        
+        #pass
 
     # x coordinate getters/setters
     cdef inline double get_x(self):
@@ -193,4 +195,15 @@ cdef class Point:
     cdef inline void set_z(self, double v):
         
         self.d[2] = v
-       
+     
+    cdef inline Point add(self, _Vec3 v):
+
+        return new_point(self.d[0] + v.d[0],
+                          self.d[1] + v.d[1],
+                          self.d[2] + v.d[2])    
+    
+    cdef inline Point sub(self, _Vec3 v):
+    
+        return new_point(self.d[0] - v.d[0],
+                          self.d[1] - v.d[1],
+                          self.d[2] - v.d[2])  

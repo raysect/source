@@ -163,8 +163,8 @@ cdef class Vector(_Vec3):
         else:
         
             raise TypeError("Unsupported operand type. Expects a real number.")
-    
-    def cross(self, _Vec3 v):
+
+    cpdef Vector cross(self, _Vec3 v):
         """
         Calculates the cross product between this vector and the supplied
         vector: 
@@ -179,7 +179,7 @@ cdef class Vector(_Vec3):
                           self.d[0] * v.d[1] - v.d[0] * self.d[1])
  
  
-    def normalise(self):
+    cpdef Vector normalise(self):
         """
         Returns a normalised copy of the vector.
         
@@ -203,3 +203,47 @@ cdef class Vector(_Vec3):
                           self.d[1] * t,
                           self.d[2] * t)
 
+    #cpdef transform(AffineMatrix t):
+        
+        #pass
+        
+    cdef inline Vector neg(self):
+
+        return new_vector(-self.d[0],
+                          -self.d[1],
+                          -self.d[2])
+    
+    cdef inline Vector add(self, _Vec3 v):
+
+        return new_vector(self.d[0] + v.d[0],
+                          self.d[1] + v.d[1],
+                          self.d[2] + v.d[2])    
+    
+    cdef inline Vector sub(self, _Vec3 v):
+    
+        return new_vector(self.d[0] - v.d[0],
+                          self.d[1] - v.d[1],
+                          self.d[2] - v.d[2])        
+    
+    cdef inline Vector mul(self, double m):
+
+        return new_vector(self.d[0] * m,
+                          self.d[1] * m,
+                          self.d[2] * m)
+    
+    cdef inline Vector div(self, double d):
+            
+        if d == 0.0:
+            
+            raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
+
+        with cython.cdivision:
+            
+            d = 1.0 / d
+            
+        return new_vector(self.d[0] * d,
+                          self.d[1] * d,
+                          self.d[2] * d)
+
+    
+        
