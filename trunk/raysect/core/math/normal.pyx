@@ -205,15 +205,44 @@ cdef class Normal(_Vec3):
                           self.d[1] * t,
                           self.d[2] * t)
 
-    #cpdef Normal transform(AffineMatrix t):
-        ## warn users that this method is slow and that they should use transform_with_inverse if an inverse is already available
+    cpdef Normal transform(self, AffineMatrix m):
+        """
+        Transforms the normal with the supplied Affine Matrix.
         
-        #pass
+        The normal is multiplied by the inverse transpose of the transform
+        matrix. This resulting normal remains perpendicular to its surface post
+        transform.
+        
+        Warning: this method performs a costly inversion of the supplied matrix.
+        If an inverse matrix is already available in scope, use the 
+        transform_with_inverse() method as it is considerably faster.
+        
+        For cython code this method is substantially faster than using the
+        multiplication operator of the affine matrix.
+        """
+
+        cdef AffineMatrix minv
+        minv = m.inverse()
+        return new_normal(minv.m[0][0] * self.d[0] + minv.m[1][0] * self.d[1] + minv.m[2][0] * self.d[2],
+                          minv.m[0][1] * self.d[0] + minv.m[1][1] * self.d[1] + minv.m[2][1] * self.d[2],
+                          minv.m[0][2] * self.d[0] + minv.m[1][2] * self.d[1] + minv.m[2][2] * self.d[2])
     
-    #cpdef Normal transform_with_inverse(AffineMatrix t):
+    cpdef Normal transform_with_inverse(self, AffineMatrix m):
+        """
+        Transforms the normal with the supplied inverse Affine Matrix.
         
-        ## avoids the need to invert the matrix = faster!
-        #pass
+        If an inverse matrix is already available in scope, this method is
+        considerably faster than the transform() method - it skips a matrix
+        inversion required to calculate the transformed normal (see the 
+        transform() documentation).
+        
+        For cython code this method is substantially faster than using the
+        multiplication operator of the affine matrix.
+        """
+
+        return new_normal(m.m[0][0] * self.d[0] + m.m[1][0] * self.d[1] + m.m[2][0] * self.d[2],
+                          m.m[0][1] * self.d[0] + m.m[1][1] * self.d[1] + m.m[2][1] * self.d[2],
+                          m.m[0][2] * self.d[0] + m.m[1][2] * self.d[1] + m.m[2][2] * self.d[2])
 
     cdef inline Normal neg(self):
 

@@ -34,7 +34,10 @@ from libc.math cimport sqrt
 from raysect.core.math.vector cimport new_vector
 
 cdef class Point:
-    
+    """
+    Represents a point in 3D affine space.
+    """
+
     def __init__(self, v = (0.0, 0.0, 0.0)):
         """
         Point constructor.
@@ -165,9 +168,36 @@ cdef class Point:
         z = p.d[2] - self.d[2]
         return sqrt(x*x + y*y + z*z)
 
-    #def transform(AffineMatrix t):
+    cpdef Point transform(self, AffineMatrix m):
+        """
+        Transforms the point with the supplied Affine Matrix.
         
-        #pass
+        The point is transformed by premultiplying the point by the affine
+        matrix.
+        
+        For cython code this method is substantially faster than using the
+        multiplication operator of the affine matrix.
+        
+        This method expects a valid affine transform. For speed reasons, minimal
+        checks are performed on the matrix.
+        """
+
+        cdef double w
+        
+        # 4th element of homogeneous coordinate 
+        w = m.m[3][0] * self.d[0] + m.m[3][1] * self.d[1] + m.m[3][2] * self.d[2] + m.m[3][3]
+        if w == 0.0:
+            
+            raise ZeroDivisionError("Bad matrix transform, 4th element of homogeneous coordinate is zero.")
+        
+        # pre divide for speed (dividing is much slower than multiplying)
+        with cython.cdivision(True):
+            
+            w = 1.0 / w
+
+        return new_point((m.m[0][0] * self.d[0] + m.m[0][1] * self.d[1] + m.m[0][2] * self.d[2] + m.m[0][3]) * w,
+                         (m.m[1][0] * self.d[0] + m.m[1][1] * self.d[1] + m.m[1][2] * self.d[2] + m.m[1][3]) * w,
+                         (m.m[2][0] * self.d[0] + m.m[2][1] * self.d[1] + m.m[2][2] * self.d[2] + m.m[2][3]) * w)
 
     # x coordinate getters/setters
     cdef inline double get_x(self):

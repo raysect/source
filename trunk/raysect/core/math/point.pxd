@@ -31,6 +31,7 @@
 
 from raysect.core.math._vec3 cimport _Vec3
 from raysect.core.math.vector cimport Vector
+from raysect.core.math.affinematrix cimport AffineMatrix
 
 cdef class Point:
     
@@ -51,6 +52,8 @@ cdef class Point:
     cpdef Vector vector_to(self, Point p)
     
     cpdef double distance_to(self, Point p)
+
+    cpdef Point transform(self, AffineMatrix m)
 
     cdef inline Point add(self, _Vec3 v)  
     
