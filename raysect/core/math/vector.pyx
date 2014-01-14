@@ -203,9 +203,21 @@ cdef class Vector(_Vec3):
                           self.d[1] * t,
                           self.d[2] * t)
 
-    #cpdef transform(AffineMatrix t):
+    cpdef Vector transform(self, AffineMatrix m):
+        """
+        Transforms the vector with the supplied Affine Matrix.
         
-        #pass
+        The vector is transformed by premultiplying the vector by the affine
+        matrix.
+        
+        For cython code this method is substantially faster than using the
+        multiplication operator of the affine matrix.
+        """
+
+        return new_vector(m.m[0][0] * self.d[0] + m.m[0][1] * self.d[1] + m.m[0][2] * self.d[2],
+                          m.m[1][0] * self.d[0] + m.m[1][1] * self.d[1] + m.m[1][2] * self.d[2],
+                          m.m[2][0] * self.d[0] + m.m[2][1] * self.d[1] + m.m[2][2] * self.d[2])
+            
         
     cdef inline Vector neg(self):
 
