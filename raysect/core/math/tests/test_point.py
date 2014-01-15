@@ -34,13 +34,14 @@ Unit tests for the Point object.
 import unittest
 from ..point import Point
 from ..vector import Vector
+from ..affinematrix import AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
 
 class TestPoint(unittest.TestCase):
     
-    def test_initialise(self):
+    def test_initialise_default(self):
         
         # default initialisation, point at local origin
         v = Point()
@@ -48,11 +49,15 @@ class TestPoint(unittest.TestCase):
         self.assertEqual(v.y, 0.0, "Default initialisation is not (0,0,0) [Y].")
         self.assertEqual(v.z, 0.0, "Default initialisation is not (0,0,0) [Z].")
 
+    def test_initialise_indexable(self):
+
         # initialisation with an indexable
         v = Point([1.0, 2.0, 3.0])
         self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
         self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
         self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
+        
+    def test_initialise_invalid(self):
         
         # invalid initialisation
         with self.assertRaises(TypeError, msg="Initialised with a string."):
@@ -144,7 +149,20 @@ class TestPoint(unittest.TestCase):
         self.assertEqual(v.y, 4 - 5, "Vector_to failed [Y].")
         self.assertEqual(v.z, -1 - 26, "Vector_to failed [Z].")
         
-    #def test_transform(self):
+    def test_transform(self):
+
+        m = AffineMatrix([[1,2,3,4],
+                          [5,6,2,8],
+                          [9,10,4,9],
+                          [4,14,15,16]])
         
-        ## TODO: add test
-        #pass        
+        v = Point([-1, 2, 6])
+        
+        r = v.transform(m)
+
+        self.assertTrue(isinstance(r, Point), "Transform did not return a Point.")
+        
+        w = (4 * -1 + 14 * 2 + 15 * 6 + 16)
+        self.assertEqual(r.x, (1 * -1 +  2 * 2 + 3 * 6 + 4) / w, "Transform failed [X].")
+        self.assertEqual(r.y, (5 * -1 +  6 * 2 + 2 * 6 + 8) / w, "Transform failed [Y].")
+        self.assertEqual(r.z, (9 * -1 + 10 * 2 + 4 * 6 + 9) / w, "Transform failed [Z].") 

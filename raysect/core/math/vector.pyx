@@ -35,7 +35,7 @@ from libc.math cimport sqrt
 
 cdef class Vector(_Vec3):
     """
-    Represents a mathematical vector in 3D affine space.
+    Represents a vector in 3D affine space.
     """
     
     def __init__(self, v = (1.0, 0.0, 0.0)):
@@ -76,7 +76,7 @@ cdef class Vector(_Vec3):
                           -self.d[2])
 
     def __add__(object x, object y):
-        """Vector addition."""
+        """Vector addition operator."""
 
         cdef _Vec3 vx, vy
         
@@ -94,7 +94,7 @@ cdef class Vector(_Vec3):
             raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
 
     def __sub__(object x, object y):
-        """Vector subtraction."""
+        """Vector subtraction operator."""
         
         cdef _Vec3 vx, vy
         
@@ -112,7 +112,7 @@ cdef class Vector(_Vec3):
             raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
             
     def __mul__(object x, object y):
-        """Multiply vector by a scalar."""
+        """Vector multiplication operator."""
 
         cdef double m
         cdef Vector v
@@ -136,7 +136,7 @@ cdef class Vector(_Vec3):
                           m * v.d[2])
 
     def __truediv__(object x, object y):
-        """Division of a vector by a scalar."""
+        """Vector division operator."""
 
         cdef double d
         cdef Vector v

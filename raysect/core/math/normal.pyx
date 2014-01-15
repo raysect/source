@@ -36,7 +36,7 @@ from raysect.core.math.vector cimport new_vector
 
 cdef class Normal(_Vec3):
     """
-    Represents a mathematical normal vector in 3D affine space.
+    Represents a normal vector in 3D affine space.
     """
     
     def __init__(self, v = (1.0, 0.0, 0.0)):
@@ -75,7 +75,6 @@ cdef class Normal(_Vec3):
         return new_normal(-self.d[0],
                           -self.d[1],
                           -self.d[2])
-
 
     def __add__(object x, object y):
         """Vector addition."""

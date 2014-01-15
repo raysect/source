@@ -33,6 +33,7 @@ cimport cython
 from libc.math cimport sqrt
 
 cdef class _Vec3:
+    """3D Vector base class."""
     
     def __init__(self, v = (1.0, 0.0, 0.0)):
         """

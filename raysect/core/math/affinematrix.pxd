@@ -33,6 +33,34 @@ from raysect.core.math._mat4 cimport _Mat4
 
 cdef class AffineMatrix(_Mat4):
     
-    pass
+    cpdef AffineMatrix inverse(self)
+    
+    cdef AffineMatrix mul(self, AffineMatrix m)
+    
+
+cdef inline AffineMatrix new_affinematrix(double m00, double m01, double m02, double m03,
+                                          double m10, double m11, double m12, double m13,
+                                          double m20, double m21, double m22, double m23,
+                                          double m30, double m31, double m32, double m33):
+    
+    cdef AffineMatrix v
+    v = AffineMatrix.__new__(AffineMatrix)
+    v.m[0][0] = m00
+    v.m[0][1] = m01
+    v.m[0][2] = m02
+    v.m[0][3] = m03
+    v.m[1][0] = m10
+    v.m[1][1] = m11
+    v.m[1][2] = m12
+    v.m[1][3] = m13
+    v.m[2][0] = m20
+    v.m[2][1] = m21
+    v.m[2][2] = m22
+    v.m[2][3] = m23
+    v.m[3][0] = m30
+    v.m[3][1] = m31
+    v.m[3][2] = m32
+    v.m[3][3] = m33
+    return v
     
     
