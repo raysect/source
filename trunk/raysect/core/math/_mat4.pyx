@@ -30,5 +30,147 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class _Mat4:
+    """4x4 matrix base class."""
     
-    pass
+    def __init__(self, v = ((1.0, 0.0, 0.0, 0.0),
+                            (0.0, 1.0, 0.0, 0.0),
+                            (0.0, 0.0, 1.0, 0.0),
+                            (0.0, 0.0, 0.0, 1.0))):
+        """
+        4x4 Matrix constructor.
+        
+        If no initial values are passed, _Mat4 defaults to an identity matrix.
+        
+        Any 4 x 4 indexable or 16 element object can be used to initialise the
+        matrix. 16 element objects must be specified in row-major format.
+        """    
+    
+        cdef int i, j
+        cdef _Mat4 m
+    
+        # special handling for _Mat4
+        if isinstance(v, _Mat4):
+            
+            m = <_Mat4>v
+            
+            for i in range(0, 4):
+                
+                for j in range(0, 4):
+                    
+                    self.m[i][j] = m.m[i][j]
+
+            return
+
+        # try reading object as 4x4 array of elements with seperate indexing
+        try:
+            
+            for i in range(0, 4):
+                
+                for j in range(0, 4):
+                    
+                    self.m[i][j] = v[i][j]
+                    
+            return
+
+        except(IndexError, TypeError):
+            
+            pass
+
+        # try reading object as 4x4 array of elements with tuple indexing 
+        try:
+            
+            for i in range(0, 4):
+                
+                for j in range(0, 4):
+                    
+                    self.m[i][j] = v[i,j]
+                    
+            return
+
+        except(IndexError, TypeError):
+            
+            pass
+        
+        # try reading object as row-major 16 element array
+        try:
+
+            for i in range(0, 4):
+                
+                for j in range(0, 4):
+                    
+                    self.m[i][j] = v[4*i + j]        
+                    
+            return
+
+        except(IndexError, TypeError):
+            
+            raise TypeError("Matrix can only be initialised with an indexable object of 4 by 4 or 16 numerical values in row-major order.")
+        
+    def __getitem__(self, object i):
+        """
+        Indexing get operator.
+        
+        Expects a tuple (row, column) as the index.
+        
+        e.g. v = matrix[1, 2]
+        
+        """
+        
+        cdef int row, column
+        
+        try:
+            
+            row = i[0]
+            column = i[1]
+            
+        except:
+        
+            raise IndexError("Index must be a tuple containing (at least) the row and column indicies e.g. matrix[1,3].")
+        
+        if row < 0 or row > 3:
+            
+            raise IndexError("Row index out of range [0, 3].")
+            
+        if column < 0 or column > 3:
+            
+            raise IndexError("Column index out of range [0, 3].")
+        
+        return self.m[row][column]
+            
+    def __setitem__(self, object i, double v):
+        """
+        Indexing set operator.
+        
+        Expects a tuple (row, column) as the index.
+        
+        e.g. matrix[1, 2] = 7.0
+        """
+        
+        cdef int row, column
+        
+        try:
+            
+            row = i[0]
+            column = i[1]
+            
+        except:
+        
+            raise IndexError("Index must be a tuple containing (at least) the row and column indicies e.g. matrix[1,3].")
+        
+        if row < 0 or row > 3:
+            
+            raise IndexError("Row index out of range [0, 3].")
+            
+        if column < 0 or column > 3:
+            
+            raise IndexError("Column index out of range [0, 3].")
+        
+        self.m[row][column] = v
+            
+    cdef inline double get_e(self, int row, int column):
+        
+        return self.m[row][column]
+    
+    cdef inline void set_e(self, int row, int column, double v):
+        
+        self.m[row][column] = v

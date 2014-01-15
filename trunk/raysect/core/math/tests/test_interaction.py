@@ -40,6 +40,7 @@ from ..point import Point
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
+# TODO: add test for AffineMatrix * [Vector, Normal, Point]
 
 class TestInteraction(unittest.TestCase):
     
@@ -182,3 +183,9 @@ class TestInteraction(unittest.TestCase):
         self.assertEqual(r.x, b.y * a.z - a.y * b.z, "Cross product failed [X].")
         self.assertEqual(r.y, a.x * b.z - b.x * a.z, "Cross product failed [Y].")
         self.assertEqual(r.z, b.x * a.y - a.x * b.y, "Cross product failed [Z].")
+        
+    def test_affine_vector_multiply(self):
+        
+        self.assertTrue(False, "Test Not Defined.")
+        
+

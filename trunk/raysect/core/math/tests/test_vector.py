@@ -33,13 +33,14 @@ Unit tests for the Vector object.
 
 import unittest
 from ..vector import Vector
+from ..affinematrix import AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
 
 class TestVector(unittest.TestCase):
     
-    def test_initialise(self):
+    def test_initialise_default(self):
 
         # default initialisation, unit vector pointing along x-axis
         v = Vector()
@@ -47,11 +48,15 @@ class TestVector(unittest.TestCase):
         self.assertEqual(v.y, 0.0, "Default initialisation is not (1,0,0) [Y].")
         self.assertEqual(v.z, 0.0, "Default initialisation is not (1,0,0) [Z].")
 
+    def test_initialise_indexable(self):
+
         # initialisation with an indexable
         v = Vector([1.0, 2.0, 3.0])
         self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
         self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
         self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
+
+    def test_initialise_invalid(self):
         
         # invalid initialisation
         with self.assertRaises(TypeError, msg="Initialised with a string."):
@@ -59,8 +64,6 @@ class TestVector(unittest.TestCase):
         
         with self.assertRaises(TypeError, msg="Initialised with a list containing too few items."):
             Vector([1.0, 2.0])
-        
-        # TODO: add special test for initialisation with a Point and a Normal
 
     def test_x(self):
         
@@ -304,11 +307,21 @@ class TestVector(unittest.TestCase):
         self.assertEqual(r2.y, a.x * b.z - b.x * a.z, "Cross product failed [Y].")
         self.assertEqual(r2.z, b.x * a.y - a.x * b.y, "Cross product failed [Z].")             
         
-    #def test_transform(self):
-        
-        ## TODO: add test
-        #pass
+    def test_transform(self):
 
+        m = AffineMatrix([[1,2,3,4],
+                          [5,6,2,8],
+                          [9,10,4,9],
+                          [4,14,15,16]])
+        
+        v = Vector([-1, 2, 6])
+        
+        r = v.transform(m)
+
+        self.assertTrue(isinstance(r, Vector), "Transform did not return a Vector.")
+        self.assertEqual(r.x, 1 * -1 +  2 * 2 + 3 * 6, "Transform failed [X].")
+        self.assertEqual(r.y, 5 * -1 +  6 * 2 + 2 * 6, "Transform failed [Y].")
+        self.assertEqual(r.z, 9 * -1 + 10 * 2 + 4 * 6, "Transform failed [Z].")
     
 if __name__ == "__main__":
     unittest.main()

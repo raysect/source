@@ -34,13 +34,14 @@ Unit tests for the Normal object.
 import unittest
 from ..normal import Normal
 from ..vector import Vector
+from ..affinematrix import AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
 
 class TestNormal(unittest.TestCase):
     
-    def test_initialise(self):
+    def test_initialise_default(self):
 
         # default initialisation, unit normal pointing along x-axis
         v = Normal()
@@ -48,12 +49,16 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(v.y, 0.0, "Default initialisation is not (1,0,0) [Y].")
         self.assertEqual(v.z, 0.0, "Default initialisation is not (1,0,0) [Z].")
 
+    def test_initialise_indexable(self):
+
         # initialisation with an indexable
         v = Normal([1.0, 2.0, 3.0])
         self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
         self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
         self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
-        
+    
+    def test_initialise_invalid(self):    
+    
         # invalid initialisation
         with self.assertRaises(TypeError, msg="Initialised with a string."):
             Normal("spoon")
@@ -118,7 +123,7 @@ class TestNormal(unittest.TestCase):
         
         # get length
         r = sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8)
-        self.assertAlmostEqual(v.length, r, places = 14, msg="Normal returned incorrect length.")
+        self.assertAlmostEqual(v.length, r, places = 14, msg = "Normal returned incorrect length.")
         
         # set length
         v.length = 10.0
@@ -304,10 +309,35 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(r2.y, a.x * b.z - b.x * a.z, "Cross product failed [Y].")
         self.assertEqual(r2.z, b.x * a.y - a.x * b.y, "Cross product failed [Z].")             
        
-    #def test_transform(self):
+    def test_transform(self):
         
-        ## TODO: add test
-        #pass
+        m = AffineMatrix([[1,2,3,4],
+                          [5,6,2,8],
+                          [9,10,4,9],
+                          [4,14,15,16]])
+        
+        v = Normal([-1, 2, 6])
+        
+        r = v.transform(m)
+        self.assertTrue(isinstance(r, Normal), "Transform did not return a Normal.")
+        self.assertAlmostEqual(r.x,  258/414 * -1 +  -381/414 * 2 +  210/414 * 6, places = 14, msg = "Transform failed [X].")
+        self.assertAlmostEqual(r.y, -132/414 * -1 +    81/414 * 2 + -162/414 * 6, places = 14, msg = "Transform failed [Y].")
+        self.assertAlmostEqual(r.z,  120/414 * -1 +   -36/414 * 2 +   72/414 * 6, places = 14, msg = "Transform failed [Z].")
+        
+    def test_transform_with_inverse(self):
+
+        minv = AffineMatrix([[258/414, -132/414, 120/414, -66/414],
+                             [-381/414, 81/414, -36/414, 75/414],
+                             [210/414, -162/414, 72/414, -12/414],
+                             [72/414, 114/414, -66/414, -12/414]])
+
+        v = Normal([-1, 2, 6])
+        
+        r = v.transform_with_inverse(minv)
+        self.assertTrue(isinstance(r, Normal), "Transform did not return a Normal.")
+        self.assertAlmostEqual(r.x,  258/414 * -1 +  -381/414 * 2 +  210/414 * 6, places = 14, msg = "Transform failed [X].")
+        self.assertAlmostEqual(r.y, -132/414 * -1 +    81/414 * 2 + -162/414 * 6, places = 14, msg = "Transform failed [Y].")
+        self.assertAlmostEqual(r.z,  120/414 * -1 +   -36/414 * 2 +   72/414 * 6, places = 14, msg = "Transform failed [Z].")
 
     
 if __name__ == "__main__":
