@@ -110,7 +110,7 @@ cdef class Point:
         return self.d[i]
 
     def __add__(object x, object y):
-        """Point addition."""
+        """Addition operator."""
        
         cdef Point p
         cdef _Vec3 v
@@ -122,14 +122,14 @@ cdef class Point:
        
         else:
 
-            raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
+            return NotImplemented
 
         return new_point(p.d[0] + v.d[0],
                          p.d[1] + v.d[1],
                          p.d[2] + v.d[2])
 
     def __sub__(object x, object y):
-        """Point subtraction."""
+        """Subtraction operator."""
         
         cdef Point p
         cdef _Vec3 v
@@ -146,7 +146,36 @@ cdef class Point:
         
         else:
 
-            raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
+            return NotImplemented
+        
+    def __mul__(object x, object y):
+        """Multiply operator."""
+        
+        cdef AffineMatrix m
+        cdef Point v
+        cdef double w
+        
+        if isinstance(x, AffineMatrix) and isinstance(y, Point):
+        
+            m = <AffineMatrix>x
+            v = <Point>y
+        
+            # 4th element of homogeneous coordinate 
+            w = m.m[3][0] * v.d[0] + m.m[3][1] * v.d[1] + m.m[3][2] * v.d[2] + m.m[3][3]
+            if w == 0.0:
+                
+                raise ZeroDivisionError("Bad matrix transform, 4th element of homogeneous coordinate is zero.")
+            
+            # pre divide for speed (dividing is much slower than multiplying)
+            with cython.cdivision(True):
+                
+                w = 1.0 / w
+
+            return new_point((m.m[0][0] * v.d[0] + m.m[0][1] * v.d[1] + m.m[0][2] * v.d[2] + m.m[0][3]) * w,
+                             (m.m[1][0] * v.d[0] + m.m[1][1] * v.d[1] + m.m[1][2] * v.d[2] + m.m[1][3]) * w,
+                             (m.m[2][0] * v.d[0] + m.m[2][1] * v.d[1] + m.m[2][2] * v.d[2] + m.m[2][3]) * w)        
+            
+        return NotImplemented
 
     cpdef Vector vector_to(self, Point p):
         """

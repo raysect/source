@@ -58,25 +58,34 @@ cdef class AffineMatrix(_Mat4):
         
         return s + "])"
    
-    def __mul__(AffineMatrix x, AffineMatrix y):
+    def __mul__(object x, object y):
         """Matrix multiplication operator."""
         
-        return new_affinematrix(x.m[0][0] * y.m[0][0] + x.m[0][1] * y.m[1][0] + x.m[0][2] * y.m[2][0] + x.m[0][3] * y.m[3][0],
-                                x.m[0][0] * y.m[0][1] + x.m[0][1] * y.m[1][1] + x.m[0][2] * y.m[2][1] + x.m[0][3] * y.m[3][1],
-                                x.m[0][0] * y.m[0][2] + x.m[0][1] * y.m[1][2] + x.m[0][2] * y.m[2][2] + x.m[0][3] * y.m[3][2],
-                                x.m[0][0] * y.m[0][3] + x.m[0][1] * y.m[1][3] + x.m[0][2] * y.m[2][3] + x.m[0][3] * y.m[3][3],
-                                x.m[1][0] * y.m[0][0] + x.m[1][1] * y.m[1][0] + x.m[1][2] * y.m[2][0] + x.m[1][3] * y.m[3][0],
-                                x.m[1][0] * y.m[0][1] + x.m[1][1] * y.m[1][1] + x.m[1][2] * y.m[2][1] + x.m[1][3] * y.m[3][1],
-                                x.m[1][0] * y.m[0][2] + x.m[1][1] * y.m[1][2] + x.m[1][2] * y.m[2][2] + x.m[1][3] * y.m[3][2],
-                                x.m[1][0] * y.m[0][3] + x.m[1][1] * y.m[1][3] + x.m[1][2] * y.m[2][3] + x.m[1][3] * y.m[3][3],
-                                x.m[2][0] * y.m[0][0] + x.m[2][1] * y.m[1][0] + x.m[2][2] * y.m[2][0] + x.m[2][3] * y.m[3][0],
-                                x.m[2][0] * y.m[0][1] + x.m[2][1] * y.m[1][1] + x.m[2][2] * y.m[2][1] + x.m[2][3] * y.m[3][1],
-                                x.m[2][0] * y.m[0][2] + x.m[2][1] * y.m[1][2] + x.m[2][2] * y.m[2][2] + x.m[2][3] * y.m[3][2],
-                                x.m[2][0] * y.m[0][3] + x.m[2][1] * y.m[1][3] + x.m[2][2] * y.m[2][3] + x.m[2][3] * y.m[3][3],
-                                x.m[3][0] * y.m[0][0] + x.m[3][1] * y.m[1][0] + x.m[3][2] * y.m[2][0] + x.m[3][3] * y.m[3][0],
-                                x.m[3][0] * y.m[0][1] + x.m[3][1] * y.m[1][1] + x.m[3][2] * y.m[2][1] + x.m[3][3] * y.m[3][1],
-                                x.m[3][0] * y.m[0][2] + x.m[3][1] * y.m[1][2] + x.m[3][2] * y.m[2][2] + x.m[3][3] * y.m[3][2],
-                                x.m[3][0] * y.m[0][3] + x.m[3][1] * y.m[1][3] + x.m[3][2] * y.m[2][3] + x.m[3][3] * y.m[3][3])
+        cdef AffineMatrix mx, my
+        
+        if isinstance(x, AffineMatrix) and isinstance(y, AffineMatrix):
+
+            mx = <AffineMatrix>x
+            my = <AffineMatrix>y
+        
+            return new_affinematrix(mx.m[0][0] * my.m[0][0] + mx.m[0][1] * my.m[1][0] + mx.m[0][2] * my.m[2][0] + mx.m[0][3] * my.m[3][0],
+                                    mx.m[0][0] * my.m[0][1] + mx.m[0][1] * my.m[1][1] + mx.m[0][2] * my.m[2][1] + mx.m[0][3] * my.m[3][1],
+                                    mx.m[0][0] * my.m[0][2] + mx.m[0][1] * my.m[1][2] + mx.m[0][2] * my.m[2][2] + mx.m[0][3] * my.m[3][2],
+                                    mx.m[0][0] * my.m[0][3] + mx.m[0][1] * my.m[1][3] + mx.m[0][2] * my.m[2][3] + mx.m[0][3] * my.m[3][3],
+                                    mx.m[1][0] * my.m[0][0] + mx.m[1][1] * my.m[1][0] + mx.m[1][2] * my.m[2][0] + mx.m[1][3] * my.m[3][0],
+                                    mx.m[1][0] * my.m[0][1] + mx.m[1][1] * my.m[1][1] + mx.m[1][2] * my.m[2][1] + mx.m[1][3] * my.m[3][1],
+                                    mx.m[1][0] * my.m[0][2] + mx.m[1][1] * my.m[1][2] + mx.m[1][2] * my.m[2][2] + mx.m[1][3] * my.m[3][2],
+                                    mx.m[1][0] * my.m[0][3] + mx.m[1][1] * my.m[1][3] + mx.m[1][2] * my.m[2][3] + mx.m[1][3] * my.m[3][3],
+                                    mx.m[2][0] * my.m[0][0] + mx.m[2][1] * my.m[1][0] + mx.m[2][2] * my.m[2][0] + mx.m[2][3] * my.m[3][0],
+                                    mx.m[2][0] * my.m[0][1] + mx.m[2][1] * my.m[1][1] + mx.m[2][2] * my.m[2][1] + mx.m[2][3] * my.m[3][1],
+                                    mx.m[2][0] * my.m[0][2] + mx.m[2][1] * my.m[1][2] + mx.m[2][2] * my.m[2][2] + mx.m[2][3] * my.m[3][2],
+                                    mx.m[2][0] * my.m[0][3] + mx.m[2][1] * my.m[1][3] + mx.m[2][2] * my.m[2][3] + mx.m[2][3] * my.m[3][3],
+                                    mx.m[3][0] * my.m[0][0] + mx.m[3][1] * my.m[1][0] + mx.m[3][2] * my.m[2][0] + mx.m[3][3] * my.m[3][0],
+                                    mx.m[3][0] * my.m[0][1] + mx.m[3][1] * my.m[1][1] + mx.m[3][2] * my.m[2][1] + mx.m[3][3] * my.m[3][1],
+                                    mx.m[3][0] * my.m[0][2] + mx.m[3][1] * my.m[1][2] + mx.m[3][2] * my.m[2][2] + mx.m[3][3] * my.m[3][2],
+                                    mx.m[3][0] * my.m[0][3] + mx.m[3][1] * my.m[1][3] + mx.m[3][2] * my.m[2][3] + mx.m[3][3] * my.m[3][3])
+
+        return NotImplemented
 
     cpdef AffineMatrix inverse(self):
         """

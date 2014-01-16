@@ -174,3 +174,4 @@ cdef class _Mat4:
     cdef inline void set_e(self, int row, int column, double v):
         
         self.m[row][column] = v
+        

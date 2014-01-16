@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: Add affine matrix generation utility functions 
+
 from raysect.core.math._mat4 cimport _Mat4
 
 cdef class AffineMatrix(_Mat4):
@@ -62,5 +64,4 @@ cdef inline AffineMatrix new_affinematrix(double m00, double m01, double m02, do
     v.m[3][2] = m32
     v.m[3][3] = m33
     return v
-    
-    
+   
