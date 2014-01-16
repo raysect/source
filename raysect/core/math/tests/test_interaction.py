@@ -37,10 +37,10 @@ import unittest
 from ..vector import Vector
 from ..normal import Normal
 from ..point import Point
+from ..affinematrix import AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
-# TODO: add test for AffineMatrix * [Vector, Normal, Point]
 
 class TestInteraction(unittest.TestCase):
     
@@ -185,7 +185,49 @@ class TestInteraction(unittest.TestCase):
         self.assertEqual(r.z, b.x * a.y - a.x * b.y, "Cross product failed [Z].")
         
     def test_affine_vector_multiply(self):
-        
-        self.assertTrue(False, "Test Not Defined.")
-        
 
+        m = AffineMatrix([[1,2,3,4],
+                          [5,6,2,8],
+                          [9,10,4,9],
+                          [4,14,15,16]])
+
+        v = Vector([-1, 2, 6])
+        n = Normal([-1, 2, 6])
+        p = Point([-1, 2, 6])
+
+        # AffineMatrix * Vector
+        r = m * v
+        self.assertTrue(isinstance(r, Vector), "AffineMatrix * Vector did not return a Vector.")
+        self.assertEqual(r.x, 1 * -1 +  2 * 2 + 3 * 6, "AffineMatrix * Vector failed [X].")
+        self.assertEqual(r.y, 5 * -1 +  6 * 2 + 2 * 6, "AffineMatrix * Vector failed [Y].")
+        self.assertEqual(r.z, 9 * -1 + 10 * 2 + 4 * 6, "AffineMatrix * Vector failed [Z].")        
+
+        # Vector * AffineMatrix
+        with self.assertRaises(TypeError, msg = "Vector * AffineMatrix should have raise a TypeError."):
+            
+            r = v * m    
+
+        # AffineMatrix * Normal
+        r = m * n
+        self.assertTrue(isinstance(r, Normal), "AffineMatrix * Normal did not return a Normal.")
+        self.assertAlmostEqual(r.x,  258/414 * -1 +  -381/414 * 2 +  210/414 * 6, places = 14, msg = "AffineMatrix * Normal failed [X].")
+        self.assertAlmostEqual(r.y, -132/414 * -1 +    81/414 * 2 + -162/414 * 6, places = 14, msg = "AffineMatrix * Normal failed [Y].")
+        self.assertAlmostEqual(r.z,  120/414 * -1 +   -36/414 * 2 +   72/414 * 6, places = 14, msg = "AffineMatrix * Normal failed [Z].")
+
+        # Normal * AffineMatrix
+        with self.assertRaises(TypeError, msg = "Normal * AffineMatrix should have raise a TypeError."):
+            
+            r = n * m
+
+        # AffineMatrix * Point
+        r = m * p
+        self.assertTrue(isinstance(r, Point), "AffineMatrix * Point did not return a Point.")
+        w = (4 * -1 + 14 * 2 + 15 * 6 + 16)
+        self.assertEqual(r.x, (1 * -1 +  2 * 2 + 3 * 6 + 4) / w, "AffineMatrix * Point failed [X].")
+        self.assertEqual(r.y, (5 * -1 +  6 * 2 + 2 * 6 + 8) / w, "AffineMatrix * Point failed [Y].")
+        self.assertEqual(r.z, (9 * -1 + 10 * 2 + 4 * 6 + 9) / w, "AffineMatrix * Point failed [Z].") 
+        
+        # Point * AffineMatrix
+        with self.assertRaises(TypeError, msg = "Point * AffineMatrix should have raise a TypeError."):
+            
+            p = p * m 

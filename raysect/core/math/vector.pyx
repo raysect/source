@@ -91,7 +91,7 @@ cdef class Vector(_Vec3):
         
         else:
 
-            raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
+            return NotImplemented
 
     def __sub__(object x, object y):
         """Vector subtraction operator."""
@@ -109,31 +109,47 @@ cdef class Vector(_Vec3):
         
         else:
 
-            raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
+            return NotImplemented
             
     def __mul__(object x, object y):
         """Vector multiplication operator."""
 
-        cdef double m
+        cdef double s
         cdef Vector v
+        cdef AffineMatrix m
         
         if isinstance(x, numbers.Real) and isinstance(y, Vector):
         
-            m = <double>x
+            s = <double>x
             v = <Vector>y
+        
+            return new_vector(s * v.d[0],
+                              s * v.d[1],
+                              s * v.d[2])
         
         elif isinstance(x, Vector) and isinstance(y, numbers.Real):
         
-            m = <double>y
+            s = <double>y
             v = <Vector>x
-        
+
+            return new_vector(s * v.d[0],
+                              s * v.d[1],
+                              s * v.d[2])
+
+        elif isinstance(x, AffineMatrix) and isinstance(y, Vector):
+
+            m = <AffineMatrix>x
+            v = <Vector>y
+
+            return new_vector(m.m[0][0] * v.d[0] + m.m[0][1] * v.d[1] + m.m[0][2] * v.d[2],
+                              m.m[1][0] * v.d[0] + m.m[1][1] * v.d[1] + m.m[1][2] * v.d[2],
+                              m.m[2][0] * v.d[0] + m.m[2][1] * v.d[1] + m.m[2][2] * v.d[2])
+            
         else:
         
-            raise TypeError("Unsupported operand type. Expects a real number.")
-        
-        return new_vector(m * v.d[0],
-                          m * v.d[1],
-                          m * v.d[2])
+            return NotImplemented
+      
+
 
     def __truediv__(object x, object y):
         """Vector division operator."""

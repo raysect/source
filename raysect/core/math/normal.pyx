@@ -77,7 +77,7 @@ cdef class Normal(_Vec3):
                           -self.d[2])
 
     def __add__(object x, object y):
-        """Vector addition."""
+        """Addition operator."""
 
         cdef _Vec3 vx, vy
         
@@ -92,10 +92,10 @@ cdef class Normal(_Vec3):
         
         else:
 
-            raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
+            return NotImplemented
 
     def __sub__(object x, object y):
-        """Vector subtraction."""
+        """Subtract operator."""
         
         cdef _Vec3 vx, vy
         
@@ -110,35 +110,49 @@ cdef class Normal(_Vec3):
         
         else:
 
-            raise TypeError("Unsupported operand type. Expects a Vector, Normal or Point.")
+            return NotImplemented
             
     def __mul__(object x, object y):
-        """Multiply normal vector by a scalar."""
+        """Multiply operator."""
 
-        cdef double m
+        cdef double s
         cdef Normal v
+        cdef AffineMatrix m, minv
         
         if isinstance(x, numbers.Real) and isinstance(y, Normal):
         
-            m = <double>x
+            s = <double>x
             v = <Normal>y
+
+            return new_normal(s * v.d[0],
+                              s * v.d[1],
+                              s * v.d[2])
         
         elif isinstance(x, Normal) and isinstance(y, numbers.Real):
         
-            m = <double>y
+            s = <double>y
             v = <Normal>x
+
+            return new_normal(s * v.d[0],
+                              s * v.d[1],
+                              s * v.d[2])
+            
+        elif isinstance(x, AffineMatrix) and isinstance(y, Normal):
+
+            m = <AffineMatrix>x
+            v = <Normal>y
+
+            minv = m.inverse()
+            return new_normal(minv.m[0][0] * v.d[0] + minv.m[1][0] * v.d[1] + minv.m[2][0] * v.d[2],
+                              minv.m[0][1] * v.d[0] + minv.m[1][1] * v.d[1] + minv.m[2][1] * v.d[2],
+                              minv.m[0][2] * v.d[0] + minv.m[1][2] * v.d[1] + minv.m[2][2] * v.d[2])
         
         else:
         
-            raise TypeError("Unsupported operand type. Expects a real number.")
-
-        return new_normal(m * v.d[0],
-                          m * v.d[1],
-                          m * v.d[2])
-
+            return NotImplemented
 
     def __truediv__(object x, object y):
-        """Division of a vector by a scalar."""
+        """Division operator."""
 
         cdef double d
         cdef Normal v
@@ -164,7 +178,7 @@ cdef class Normal(_Vec3):
         
         else:
         
-            raise TypeError("Unsupported operand type. Expects a real number.")
+            return NotImplemented
 
     cpdef Vector cross(self, _Vec3 v):
         """
