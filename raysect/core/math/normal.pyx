@@ -39,12 +39,12 @@ cdef class Normal(_Vec3):
     Represents a normal vector in 3D affine space.
     """
     
-    def __init__(self, v = (1.0, 0.0, 0.0)):
+    def __init__(self, v = (0.0, 0.0, 1.0)):
         """
         Normal vector constructor.
         
         If no initial values are passed, Normal defaults to a unit vector
-        aligned with the x-axis: [1.0, 0.0, 0.0]
+        aligned with the z-axis: [1.0, 0.0, 0.0]
         
         Any three (or more) item indexable object can be used to initialise the
         normal. The x, y and z coordinates will be assigned the values of 

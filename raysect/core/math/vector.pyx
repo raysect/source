@@ -38,12 +38,12 @@ cdef class Vector(_Vec3):
     Represents a vector in 3D affine space.
     """
     
-    def __init__(self, v = (1.0, 0.0, 0.0)):
+    def __init__(self, v = (0.0, 0.0, 1.0)):
         """
         Vector constructor.
         
         If no initial values are passed, Vector defaults to a unit vector
-        aligned with the x-axis: [1.0, 0.0, 0.0]
+        aligned with the z-axis: [0.0, 0.0, 1.0]
         
         Any three (or more) item indexable object can be used to initialise the
         vector. The x, y and z coordinates will be assigned the values of 
@@ -76,7 +76,7 @@ cdef class Vector(_Vec3):
                           -self.d[2])
 
     def __add__(object x, object y):
-        """Vector addition operator."""
+        """Addition operator."""
 
         cdef _Vec3 vx, vy
         
@@ -94,7 +94,7 @@ cdef class Vector(_Vec3):
             return NotImplemented
 
     def __sub__(object x, object y):
-        """Vector subtraction operator."""
+        """Subtraction operator."""
         
         cdef _Vec3 vx, vy
         
@@ -112,7 +112,7 @@ cdef class Vector(_Vec3):
             return NotImplemented
             
     def __mul__(object x, object y):
-        """Vector multiplication operator."""
+        """Multiplication operator."""
 
         cdef double s
         cdef Vector v
@@ -148,11 +148,9 @@ cdef class Vector(_Vec3):
         else:
         
             return NotImplemented
-      
-
 
     def __truediv__(object x, object y):
-        """Vector division operator."""
+        """Division operator."""
 
         cdef double d
         cdef Vector v

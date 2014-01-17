@@ -32,13 +32,28 @@
 # TODO: Add affine matrix generation utility functions 
 
 from raysect.core.math._mat4 cimport _Mat4
+from raysect.core.math.vector cimport Vector
 
 cdef class AffineMatrix(_Mat4):
     
     cpdef AffineMatrix inverse(self)
     
-    cdef AffineMatrix mul(self, AffineMatrix m)
+    cdef inline AffineMatrix mul(self, AffineMatrix m)
     
+
+cpdef AffineMatrix translate(double x, double y, double z)
+
+cpdef AffineMatrix rotate_x(double angle)
+
+cpdef AffineMatrix rotate_y(double angle)
+
+cpdef AffineMatrix rotate_z(double angle)
+
+cpdef AffineMatrix rotate_vector(double angle, Vector v)
+
+cpdef AffineMatrix rotate(double yaw, double pitch, double roll)
+
+cpdef AffineMatrix scale(double x, double y, double z)
 
 cdef inline AffineMatrix new_affinematrix(double m00, double m01, double m02, double m03,
                                           double m10, double m11, double m12, double m13,
@@ -64,4 +79,3 @@ cdef inline AffineMatrix new_affinematrix(double m00, double m01, double m02, do
     v.m[3][2] = m32
     v.m[3][3] = m33
     return v
-   

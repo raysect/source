@@ -30,7 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from libc.math cimport fabs
+from raysect.core.math.vector cimport Vector
+from libc.math cimport fabs, sin, cos, M_PI as pi
+
+# TODO: add doc strings to factory functions
 
 cdef class AffineMatrix(_Mat4):
     """Represents a 4x4 affine matrix."""
@@ -59,7 +62,7 @@ cdef class AffineMatrix(_Mat4):
         return s + "])"
    
     def __mul__(object x, object y):
-        """Matrix multiplication operator."""
+        """Multiplication operator."""
         
         cdef AffineMatrix mx, my
         
@@ -155,7 +158,7 @@ cdef class AffineMatrix(_Mat4):
                                 (self.m[3][1] * t[ 1] - self.m[3][0] * t[ 3] - self.m[3][2] * t[ 0]) * idet,
                                 t[18] * idet)
 
-    cdef AffineMatrix mul(self, AffineMatrix m):
+    cdef inline AffineMatrix mul(self, AffineMatrix m):
 
         return new_affinematrix(self.m[0][0] * m.m[0][0] + self.m[0][1] * m.m[1][0] + self.m[0][2] * m.m[2][0] + self.m[0][3] * m.m[3][0],
                                 self.m[0][0] * m.m[0][1] + self.m[0][1] * m.m[1][1] + self.m[0][2] * m.m[2][1] + self.m[0][3] * m.m[3][1],
@@ -172,4 +175,172 @@ cdef class AffineMatrix(_Mat4):
                                 self.m[3][0] * m.m[0][0] + self.m[3][1] * m.m[1][0] + self.m[3][2] * m.m[2][0] + self.m[3][3] * m.m[3][0],
                                 self.m[3][0] * m.m[0][1] + self.m[3][1] * m.m[1][1] + self.m[3][2] * m.m[2][1] + self.m[3][3] * m.m[3][1],
                                 self.m[3][0] * m.m[0][2] + self.m[3][1] * m.m[1][2] + self.m[3][2] * m.m[2][2] + self.m[3][3] * m.m[3][2],
-                                self.m[3][0] * m.m[0][3] + self.m[3][1] * m.m[1][3] + self.m[3][2] * m.m[2][3] + self.m[3][3] * m.m[3][3])                                            
+                                self.m[3][0] * m.m[0][3] + self.m[3][1] * m.m[1][3] + self.m[3][2] * m.m[2][3] + self.m[3][3] * m.m[3][3])
+    
+    
+cpdef AffineMatrix translate(double x, double y, double z):
+    
+    return new_affinematrix(1, 0, 0, x,
+                            0, 1, 0, y,
+                            0, 0, 1, z,
+                            0, 0, 0, 1)
+
+
+cpdef AffineMatrix rotate_x(double angle):
+    """
+    Returns an affine matrix representing the rotation of the coordinate space
+    about the X axis by the supplied angle.
+    
+    The angle is specified in degrees.
+    """    
+    
+    cdef double r
+    
+    with cython.cdivision(True):
+        
+        r = pi * angle / 180.0
+    
+    return new_affinematrix(1, 0, 0, 0,
+                            0, cos(r), -sin(r), 0,
+                            0, sin(r), cos(r), 0,
+                            0, 0, 0, 1)
+
+
+cpdef AffineMatrix rotate_y(double angle):
+    """
+    Returns an affine matrix representing the rotation of the coordinate space
+    about the Y axis by the supplied angle.
+    
+    The angle is specified in degrees.
+    """
+    
+    cdef double r
+    
+    with cython.cdivision(True):
+        
+        r = pi * angle / 180.0
+    
+    return new_affinematrix(cos(r), 0, sin(r), 0,
+                            0, 1, 0, 0,
+                            -sin(r), 0, cos(r), 0,
+                            0, 0, 0, 1)
+
+
+cpdef AffineMatrix rotate_z(double angle):
+    """
+    Returns an affine matrix representing the rotation of the coordinate space
+    about the Z axis by the supplied angle.
+    
+    The angle is specified in degrees.
+    """    
+    
+    cdef double r
+    
+    with cython.cdivision(True):
+        
+        r = pi * angle / 180.0
+    
+    return new_affinematrix(cos(r), -sin(r), 0, 0,
+                            sin(r), cos(r), 0, 0,
+                            0, 0, 1, 0,
+                            0, 0, 0, 1)
+
+
+cpdef AffineMatrix rotate_vector(double angle, Vector v):
+    """
+    Returns an affine matrix representing the rotation of the coordinate space
+    about the supplied vector by the specified angle.
+    
+    The angle is specified in degrees.
+    """
+    
+    cdef Vector vn
+    cdef double r, s, c, ci
+
+    vn = v.normalise()
+
+    with cython.cdivision(True):
+        
+        r = pi * angle / 180.0
+    
+    s = sin(r)
+    c = cos(r)
+    ci = 1.0 - c
+    
+    return new_affinematrix(vn.d[0] * vn.d[0] + (1.0 - vn.d[0] * vn.d[0]) * c,
+                            vn.d[0] * vn.d[1] * ci - vn.d[2] * s,
+                            vn.d[0] * vn.d[2] * ci + vn.d[1] * s,
+                            0,
+                            vn.d[0] * vn.d[1] * ci + vn.d[2] * s,
+                            vn.d[1] * vn.d[1] + (1.0 - vn.d[1] * vn.d[1]) * c,
+                            vn.d[1] * vn.d[2] * ci - vn.d[0] * s,
+                            0,
+                            vn.d[0] * vn.d[2] * ci - vn.d[1] * s,
+                            vn.d[1] * vn.d[2] * ci + vn.d[0] * s,
+                            vn.d[2] * vn.d[2] + (1.0 - vn.d[2] * vn.d[2]) * c,
+                            0,
+                            0,
+                            0,
+                            0,
+                            1)
+
+
+cpdef AffineMatrix rotate(double yaw, double pitch, double roll):
+
+    cdef double xr, yr, zr, sx, sy, sz, cx, cy, cz
+    
+    # optimised version of rotate_z(roll) * rotate_x(-pitch) * rotate_y(-yaw)
+    xr = pi * -pitch / 180.0
+    yr = pi * -yaw / 180.0
+    zr = pi * roll / 180.0
+    
+    sx = sin(xr)
+    sy = sin(yr)
+    sz = sin(zr)
+    
+    cx = cos(xr)
+    cy = cos(yr)
+    cz = cos(zr)
+    
+    return new_affinematrix(cy*cz - sx*sy*sz,
+                            -sz*cx,
+                            sy*cz + sx*sz*cy,
+                            0,
+                            sz*cy + sx*sy*cz,
+                            cx*cz,
+                            sy*sz - sx*cy*cz,
+                            0,
+                            -sy*cx,
+                            sx,
+                            cx*cy,
+                            0,
+                            0,
+                            0,
+                            0,
+                            1)
+
+
+cpdef AffineMatrix scale(double x, double y, double z):
+    
+    return new_affinematrix(x, 0, 0, 0,
+                            0, y, 0, 0,
+                            0, 0, z, 0,
+                            0, 0, 0, 1)
+
+
+
+                      
+
+#cpdef AffineMatrix rotate(double alpha, double beta, double gamma):
+    #"""
+    #Returns an affine transform matrix representing an intrinsic rotation with
+    #an axis order ZY'X''.
+    
+    #If an object is aligned such that up is the Z-axis, forward is the X-axis
+    #and left is the Y-axis then alpha, beta and gamma correspond to the yaw,
+    #pitch and roll of the object.
+    
+    #All angles are specified in degrees.
+    #"""
+    
+    #return rotate_x(gamma) * rotate_y(-beta) * rotate_z(-alpha)
