@@ -31,6 +31,7 @@ import unittest
 from ..affinematrix import AffineMatrix
 
 # TODO: Port to Cython to allow testing of the Cython API
+# TODO: Write tests for affine matrix generation utility functions
 
 class TestAffineMatrix(unittest.TestCase):
     
@@ -195,3 +196,32 @@ class TestAffineMatrix(unittest.TestCase):
             for j, v in enumerate(row):
                 
                 self.assertAlmostEqual(minv[i,j], v, places = 14, msg = "Inverse calculation failed (R"+str(i)+", C"+str(j)+").")
+
+    def test_factory_translate(self):
+        
+        self.assertTrue(False, "Test not defined.")
+        
+    def test_factory_rotate_x(self):
+        
+        self.assertTrue(False, "Test not defined.")        
+        
+    def test_factory_rotate_y(self):
+        
+        self.assertTrue(False, "Test not defined.")        
+        
+    def test_factory_rotate_z(self):
+        
+        self.assertTrue(False, "Test not defined.")        
+        
+    def test_factory_rotate_vector(self):
+        
+        self.assertTrue(False, "Test not defined.")                
+        
+    def test_factory_rotate(self):
+        
+        self.assertTrue(False, "Test not defined.")
+        
+    def test_factory_scale(self):
+        
+        self.assertTrue(False, "Test not defined.")        
+        

@@ -35,12 +35,12 @@ from libc.math cimport sqrt
 cdef class _Vec3:
     """3D Vector base class."""
     
-    def __init__(self, v = (1.0, 0.0, 0.0)):
+    def __init__(self, v = (0.0, 0.0, 1.0)):
         """
         Constructor.
         
         If no initial values are passed, _Vec3 defaults to a unit vector
-        aligned with the x-axis: [1.0, 0.0, 0.0]
+        aligned with the z-axis: [0.0, 0.0, 1.0]
         
         Any three (or more) item indexable object can be used to initialise the
         vector. The x, y and z coordinates will be assigned the values of 

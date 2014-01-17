@@ -45,9 +45,9 @@ class TestNormal(unittest.TestCase):
 
         # default initialisation, unit normal pointing along x-axis
         v = Normal()
-        self.assertEqual(v.x, 1.0, "Default initialisation is not (1,0,0) [X].")
-        self.assertEqual(v.y, 0.0, "Default initialisation is not (1,0,0) [Y].")
-        self.assertEqual(v.z, 0.0, "Default initialisation is not (1,0,0) [Z].")
+        self.assertEqual(v.x, 0.0, "Default initialisation is not (0,0,1) [X].")
+        self.assertEqual(v.y, 0.0, "Default initialisation is not (0,0,1) [Y].")
+        self.assertEqual(v.z, 1.0, "Default initialisation is not (0,0,1) [Z].")
 
     def test_initialise_indexable(self):
 
