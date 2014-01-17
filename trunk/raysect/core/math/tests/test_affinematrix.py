@@ -28,10 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from ..affinematrix import AffineMatrix
+from ..affinematrix import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, scale
+from ..vector import Vector
+from math import sin, cos, pi, sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
-# TODO: Write tests for affine matrix generation utility functions
 
 class TestAffineMatrix(unittest.TestCase):
     
@@ -199,29 +200,141 @@ class TestAffineMatrix(unittest.TestCase):
 
     def test_factory_translate(self):
         
-        self.assertTrue(False, "Test not defined.")
+        m = translate(1.3, 4.5, 2.2)
+        
+        r = [[1, 0, 0, 1.3],
+             [0, 1, 0, 4.5],
+             [0, 0, 1, 2.2],
+             [0, 0, 0, 1]]
+
+        for i, row in enumerate(r):
+            for j, v in enumerate(row):
+                
+                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Transform matrix generation failed (R"+str(i)+", C"+str(j)+").")        
         
     def test_factory_rotate_x(self):
         
-        self.assertTrue(False, "Test not defined.")        
+        m = rotate_x(67)
+        
+        a = pi * 67 / 180
+        
+        r = [[1, 0, 0, 0],
+             [0, cos(a), -sin(a), 0],
+             [0, sin(a), cos(a), 0],
+             [0, 0, 0, 1]]
+
+        for i, row in enumerate(r):
+            for j, v in enumerate(row):
+                
+                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Rotate_x matrix generation failed (R"+str(i)+", C"+str(j)+").")     
         
     def test_factory_rotate_y(self):
         
-        self.assertTrue(False, "Test not defined.")        
+        m = rotate_y(-7.3)
+        
+        a = pi * -7.3 / 180
+        
+        r = [[cos(a), 0, sin(a), 0],
+             [0, 1, 0, 0],
+             [-sin(a), 0, cos(a), 0],
+             [0, 0, 0, 1]]
+
+        for i, row in enumerate(r):
+            for j, v in enumerate(row):
+                
+                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Rotate_y matrix generation failed (R"+str(i)+", C"+str(j)+").")     
         
     def test_factory_rotate_z(self):
         
-        self.assertTrue(False, "Test not defined.")        
+        m = rotate_z(23)
+        
+        a = pi * 23 / 180
+        
+        r = [[cos(a), -sin(a), 0, 0],
+             [sin(a), cos(a), 0, 0],
+             [0, 0, 1, 0],
+             [0, 0, 0, 1]]
+
+        for i, row in enumerate(r):
+            for j, v in enumerate(row):
+                
+                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Rotate_z matrix generation failed (R"+str(i)+", C"+str(j)+").")     
         
     def test_factory_rotate_vector(self):
         
-        self.assertTrue(False, "Test not defined.")                
+        m = rotate_vector(54, Vector([1.0, 0.22, 0.34]))
+        
+        s = sin(pi*54/180)
+        c = cos(pi*54/180)
+
+        x = 1.0
+        y = 0.22
+        z = 0.34
+        
+        # normalise
+        l = sqrt(x * x + y * y + z * z)
+        x = x / l
+        y = y / l
+        z = z / l
+        
+        r = [[x*x+(1-x*x)*c, x*y*(1-c)-z*s, x*z*(1-c)+y*s, 0],
+             [x*y*(1-c)+z*s, y*y+(1-y*y)*c, y*z*(1-c)-x*s, 0],
+             [x*z*(1-c)-y*s, y*z*(1-c)+x*s, z*z+(1-z*z)*c, 0],
+             [0, 0, 0, 1]]
+
+        for i, row in enumerate(r):
+            for j, v in enumerate(row):
+                
+                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Rotate_vector matrix generation failed (R"+str(i)+", C"+str(j)+").")        
         
     def test_factory_rotate(self):
+
+        m = rotate(63, -40, 12)
+        r = rotate_z(12) * rotate_x(40) * rotate_y(-63)
         
-        self.assertTrue(False, "Test not defined.")
+        for i in range(0, 4):
+            for j in range(0, 4):
+                
+                self.assertAlmostEqual(m[i,j], r[i,j], places = 14, msg = "Rotate matrix generation failed (R"+str(i)+", C"+str(j)+").") 
         
     def test_factory_scale(self):
         
-        self.assertTrue(False, "Test not defined.")        
+        # test matrix generation
+        m = scale(1.3, 4.5, 2.2)
+        
+        r = [[1.3, 0, 0, 0],
+             [0, 4.5, 0, 0],
+             [0, 0, 2.2, 0],
+             [0, 0, 0, 1]]
+
+        for i, row in enumerate(r):
+            for j, v in enumerate(row):
+                
+                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Scale matrix generation failed (R"+str(i)+", C"+str(j)+").")
+                
+        # scales can not be <= 0.0, should raise a ValueError
+        with self.assertRaises(ValueError, msg = "X scale = 0 did not raise a value error."):
+            
+            scale(0, 1, 1)
+            
+        with self.assertRaises(ValueError, msg = "X scale < 0 did not raise a value error."):
+            
+            scale(-1, 1, 1)            
+            
+        with self.assertRaises(ValueError, msg = "Y scale = 0 did not raise a value error."):
+            
+            scale(1, 0, 1)
+            
+        with self.assertRaises(ValueError, msg = "Y scale < 0 did not raise a value error."):
+            
+            scale(1, -1, 1)
+            
+        with self.assertRaises(ValueError, msg = "Z scale = 0 did not raise a value error."):
+            
+            scale(1, 1, 0)
+            
+        with self.assertRaises(ValueError, msg = "Z scale < 0 did not raise a value error."):
+            
+            scale(1, 1, -1)            
+
         

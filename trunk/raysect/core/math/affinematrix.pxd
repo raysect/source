@@ -29,8 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: Add affine matrix generation utility functions 
-
 from raysect.core.math._mat4 cimport _Mat4
 from raysect.core.math.vector cimport Vector
 
