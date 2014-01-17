@@ -33,8 +33,6 @@ cimport cython
 from raysect.core.math.vector cimport Vector
 from libc.math cimport fabs, sin, cos, M_PI as pi
 
-# TODO: add doc strings to factory functions
-
 cdef class AffineMatrix(_Mat4):
     """Represents a 4x4 affine matrix."""
     
@@ -179,6 +177,9 @@ cdef class AffineMatrix(_Mat4):
     
     
 cpdef AffineMatrix translate(double x, double y, double z):
+    """
+    Returns an affine matrix representing a translation of the coordinate space.
+    """ 
     
     return new_affinematrix(1, 0, 0, x,
                             0, 1, 0, y,
@@ -285,14 +286,24 @@ cpdef AffineMatrix rotate_vector(double angle, Vector v):
                             1)
 
 
-cpdef AffineMatrix rotate(double yaw, double pitch, double roll):
+cpdef AffineMatrix rotate(double alpha, double beta, double gamma):
+    """
+    Returns an affine transform matrix representing an intrinsic rotation with
+    an axis order (-Y)(-X)'Z''.
+    
+    If an object is aligned such that forward/back is the Z-axis, left/right is
+    the X-axis and up/down is the Y-axis then alpha, beta and gamma correspond
+    to the yaw, pitch and roll of the object.
+    
+    All angles are specified in degrees.
+    """
 
     cdef double xr, yr, zr, sx, sy, sz, cx, cy, cz
     
-    # optimised version of rotate_z(roll) * rotate_x(-pitch) * rotate_y(-yaw)
-    xr = pi * -pitch / 180.0
-    yr = pi * -yaw / 180.0
-    zr = pi * roll / 180.0
+    # optimised version of rotate_z(gamma) * rotate_x(-beta) * rotate_y(-alpha)
+    xr = pi * -beta / 180.0
+    yr = pi * -alpha / 180.0
+    zr = pi * gamma / 180.0
     
     sx = sin(xr)
     sy = sin(yr)
@@ -321,26 +332,16 @@ cpdef AffineMatrix rotate(double yaw, double pitch, double roll):
 
 
 cpdef AffineMatrix scale(double x, double y, double z):
+    """
+    Returns an affine matrix representing a rescaling of the coordinate space.
+    """ 
+    
+    if x <=0 or y <= 0 or z<= 0:
+        
+        raise ValueError("Scale must not be less than or equal to 0.")
     
     return new_affinematrix(x, 0, 0, 0,
                             0, y, 0, 0,
                             0, 0, z, 0,
                             0, 0, 0, 1)
 
-
-
-                      
-
-#cpdef AffineMatrix rotate(double alpha, double beta, double gamma):
-    #"""
-    #Returns an affine transform matrix representing an intrinsic rotation with
-    #an axis order ZY'X''.
-    
-    #If an object is aligned such that up is the Z-axis, forward is the X-axis
-    #and left is the Y-axis then alpha, beta and gamma correspond to the yaw,
-    #pitch and roll of the object.
-    
-    #All angles are specified in degrees.
-    #"""
-    
-    #return rotate_x(gamma) * rotate_y(-beta) * rotate_z(-alpha)
