@@ -32,6 +32,7 @@
 cimport cython
 from libc.math cimport sqrt
 from raysect.core.math.vector cimport new_vector
+from raysect.core.math._vec3 cimport _Vec3
 
 cdef class Point:
     """
@@ -52,62 +53,87 @@ cdef class Point:
         e.g. Point([4.0, 5.0, 6.0]) sets the x, y and z coordinates as 4.0,
         5.0 and 6.0 respectively.
         """
+
+        cdef Point p
+        cdef _Vec3 t
+
+        if isinstance(v, _Vec3):
+            
+            t = <_Vec3>v
+            
+            self.x = t.x
+            self.y = t.y
+            self.z = t.z 
         
-        try:
+        elif isinstance(v, Point):
             
-            self.d[0] = v[0]
-            self.d[1] = v[1]
-            self.d[2] = v[2]
+            p = <Point>v
+
+            self.x = p.x
+            self.y = p.y
+            self.z = p.z
             
-        except:
-            
-            raise TypeError("Vector can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
+        else:
+        
+            try:
+                
+                self.x = v[0]
+                self.y = v[1]
+                self.z = v[2]
+                
+            except:
+                
+                raise TypeError("Point can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
     
     def __repr__(self):
         """Returns a string representation of the Point object."""
 
-        return "Point([" + str(self.d[0]) + ", " + str(self.d[1]) + ", " + str(self.d[2]) + "])"
+        return "Point([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
     
     property x:
         """The x coordinate."""
         
         def __get__(self):
 
-            return self.d[0]
+            return self.x
 
         def __set__(self, double v):
 
-            self.d[0] = v
+            self.x = v
 
     property y:
         """The y coordinate."""
 
         def __get__(self):
 
-            return self.d[1]
+            return self.y
 
         def __set__(self, double v):
 
-            self.d[1] = v
+            self.y = v
 
     property z:
         """The z coordinate."""
     
         def __get__(self):
 
-            return self.d[2]
+            return self.z
 
         def __set__(self, double v):
 
-            self.d[2] = v
+            self.z = v
             
     def __getitem__(self, int i):
         """Returns the point coordinates by index ([0,1,2] -> [x,y,z])."""
 
         if i < 0 or i > 2:
             raise IndexError("Index out of range [0, 2].")
-            
-        return self.d[i]
+        elif i == 0:
+            return self.x
+        elif i == 1:
+            return self.y
+        else:
+            return self.z
 
     def __add__(object x, object y):
         """Addition operator."""
@@ -124,9 +150,9 @@ cdef class Point:
 
             return NotImplemented
 
-        return new_point(p.d[0] + v.d[0],
-                         p.d[1] + v.d[1],
-                         p.d[2] + v.d[2])
+        return new_point(p.x + v.x,
+                         p.y + v.y,
+                         p.z + v.z)
 
     def __sub__(object x, object y):
         """Subtraction operator."""
@@ -139,9 +165,9 @@ cdef class Point:
             p = <Point>x
             v = <_Vec3>y
 
-            return new_point(p.d[0] - v.d[0],
-                             p.d[1] - v.d[1],
-                             p.d[2] - v.d[2])
+            return new_point(p.x - v.x,
+                             p.y - v.y,
+                             p.z - v.z)
         
         
         else:
@@ -161,7 +187,7 @@ cdef class Point:
             v = <Point>y
         
             # 4th element of homogeneous coordinate 
-            w = m.m[3][0] * v.d[0] + m.m[3][1] * v.d[1] + m.m[3][2] * v.d[2] + m.m[3][3]
+            w = m.m[3][0] * v.x + m.m[3][1] * v.y + m.m[3][2] * v.z + m.m[3][3]
             if w == 0.0:
                 
                 raise ZeroDivisionError("Bad matrix transform, 4th element of homogeneous coordinate is zero.")
@@ -171,9 +197,9 @@ cdef class Point:
                 
                 w = 1.0 / w
 
-            return new_point((m.m[0][0] * v.d[0] + m.m[0][1] * v.d[1] + m.m[0][2] * v.d[2] + m.m[0][3]) * w,
-                             (m.m[1][0] * v.d[0] + m.m[1][1] * v.d[1] + m.m[1][2] * v.d[2] + m.m[1][3]) * w,
-                             (m.m[2][0] * v.d[0] + m.m[2][1] * v.d[1] + m.m[2][2] * v.d[2] + m.m[2][3]) * w)        
+            return new_point((m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3]) * w,
+                             (m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z + m.m[1][3]) * w,
+                             (m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z + m.m[2][3]) * w)        
             
         return NotImplemented
 
@@ -182,9 +208,9 @@ cdef class Point:
         Returns a vector from this point to the passed point.
         """
 
-        return new_vector(p.d[0] - self.d[0],
-                          p.d[1] - self.d[1],
-                          p.d[2] - self.d[2])
+        return new_vector(p.x - self.x,
+                          p.y - self.y,
+                          p.z - self.z)
     
     cpdef double distance_to(self, Point p):
         """
@@ -192,9 +218,9 @@ cdef class Point:
         """
     
         cdef double x, y, z
-        x = p.d[0] - self.d[0]
-        y = p.d[1] - self.d[1]
-        z = p.d[2] - self.d[2]
+        x = p.x - self.x
+        y = p.y - self.y
+        z = p.z - self.z
         return sqrt(x*x + y*y + z*z)
 
     cpdef Point transform(self, AffineMatrix m):
@@ -214,7 +240,7 @@ cdef class Point:
         cdef double w
         
         # 4th element of homogeneous coordinate 
-        w = m.m[3][0] * self.d[0] + m.m[3][1] * self.d[1] + m.m[3][2] * self.d[2] + m.m[3][3]
+        w = m.m[3][0] * self.x + m.m[3][1] * self.y + m.m[3][2] * self.z + m.m[3][3]
         if w == 0.0:
             
             raise ZeroDivisionError("Bad matrix transform, 4th element of homogeneous coordinate is zero.")
@@ -224,45 +250,18 @@ cdef class Point:
             
             w = 1.0 / w
 
-        return new_point((m.m[0][0] * self.d[0] + m.m[0][1] * self.d[1] + m.m[0][2] * self.d[2] + m.m[0][3]) * w,
-                         (m.m[1][0] * self.d[0] + m.m[1][1] * self.d[1] + m.m[1][2] * self.d[2] + m.m[1][3]) * w,
-                         (m.m[2][0] * self.d[0] + m.m[2][1] * self.d[1] + m.m[2][2] * self.d[2] + m.m[2][3]) * w)
+        return new_point((m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z + m.m[0][3]) * w,
+                         (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
+                         (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
 
-    # x coordinate getters/setters
-    cdef inline double get_x(self):
-        
-        return self.d[0]
-    
-    cdef inline void set_x(self, double v):
-        
-        self.d[0] = v
-
-    # y coordinate getters/setters
-    cdef inline double get_y(self):
-        
-        return self.d[1]
-    
-    cdef inline void set_y(self, double v):
-        
-        self.d[1] = v        
-        
-    # z coordinate getters/setters
-    cdef inline double get_z(self):
-        
-        return self.d[2]
-    
-    cdef inline void set_z(self, double v):
-        
-        self.d[2] = v
-     
     cdef inline Point add(self, _Vec3 v):
 
-        return new_point(self.d[0] + v.d[0],
-                          self.d[1] + v.d[1],
-                          self.d[2] + v.d[2])    
+        return new_point(self.x + v.x,
+                          self.y + v.y,
+                          self.z + v.z)    
     
     cdef inline Point sub(self, _Vec3 v):
     
-        return new_point(self.d[0] - v.d[0],
-                          self.d[1] - v.d[1],
-                          self.d[2] - v.d[2])  
+        return new_point(self.x - v.x,
+                          self.y - v.y,
+                          self.z - v.z)  

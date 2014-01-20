@@ -31,6 +31,7 @@
 
 cimport cython
 from libc.math cimport sqrt
+from raysect.core.math.point cimport Point
 
 cdef class _Vec3:
     """3D Vector base class."""
@@ -50,56 +51,81 @@ cdef class _Vec3:
         5.0 and 6.0 respectively.
         """
         
-        try:
+        cdef Point p
+        cdef _Vec3 t
+
+        if isinstance(v, _Vec3):
             
-            self.d[0] = v[0]
-            self.d[1] = v[1]
-            self.d[2] = v[2]
+            t = <_Vec3>v
             
-        except:
+            self.x = t.x
+            self.y = t.y
+            self.z = t.z  
+        
+        elif isinstance(v, Point):
             
-            raise TypeError("Vector can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
+            p = <Point>v
+
+            self.x = p.x
+            self.y = p.y
+            self.z = p.z
+            
+        else:
+        
+            try:
+                
+                self.x = v[0]
+                self.y = v[1]
+                self.z = v[2]
+                
+            except:
+                
+                raise TypeError("Vector can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
     
     property x:
         """The x coordinate."""
         
         def __get__(self):
 
-            return self.d[0]
+            return self.x
 
         def __set__(self, double v):
 
-            self.d[0] = v
+            self.x = v
 
     property y:
         """The y coordinate."""
 
         def __get__(self):
 
-            return self.d[1]
+            return self.y
 
         def __set__(self, double v):
 
-            self.d[1] = v
+            self.y = v
 
     property z:
         """The z coordinate."""
     
         def __get__(self):
 
-            return self.d[2]
+            return self.z
 
         def __set__(self, double v):
 
-            self.d[2] = v
+            self.z = v
             
     def __getitem__(self, int i):
         """Returns the vector coordinates by index ([0,1,2] -> [x,y,z])."""
 
         if i < 0 or i > 2:
             raise IndexError("Index out of range [0, 2].")
-            
-        return self.d[i]
+        elif i == 0:
+            return self.x
+        elif i == 1:
+            return self.y
+        else:
+            return self.z
 
     property length:
         """
@@ -125,46 +151,19 @@ cdef class _Vec3:
         Returns a scalar.
         """
 
-        return self.d[0] * v.d[0] + self.d[1] * v.d[1] + self.d[2] * v.d[2]
-
-    # x coordinate getters/setters
-    cdef inline double get_x(self):
-        
-        return self.d[0]
-    
-    cdef inline void set_x(self, double v):
-        
-        self.d[0] = v
-
-    # y coordinate getters/setters
-    cdef inline double get_y(self):
-        
-        return self.d[1]
-    
-    cdef inline void set_y(self, double v):
-        
-        self.d[1] = v        
-        
-    # z coordinate getters/setters
-    cdef inline double get_z(self):
-        
-        return self.d[2]
-    
-    cdef inline void set_z(self, double v):
-        
-        self.d[2] = v
+        return self.x * v.x + self.y * v.y + self.z * v.z
   
     # length getters/setters    
     cdef inline double get_length(self):
         
-        return sqrt(self.d[0] * self.d[0] + self.d[1] * self.d[1] + self.d[2] * self.d[2])
+        return sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
         
     cdef inline void set_length(self, double v) except *:
         
         cdef double t
             
         # if current length is zero, problem is ill defined
-        t = self.d[0] * self.d[0] + self.d[1] * self.d[1] + self.d[2] * self.d[2]
+        t = self.x * self.x + self.y * self.y + self.z * self.z
         if t == 0.0:
             
             raise ZeroDivisionError("A zero length vector can not be rescaled as the direction of a zero length vector is undefined.")
@@ -174,9 +173,9 @@ cdef class _Vec3:
             
             t = v / sqrt(t)
 
-        self.d[0] = self.d[0] * t
-        self.d[1] = self.d[1] * t
-        self.d[2] = self.d[2] * t
+        self.x = self.x * t
+        self.y = self.y * t
+        self.z = self.z * t
   
 
    

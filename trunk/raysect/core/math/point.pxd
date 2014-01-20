@@ -35,19 +35,7 @@ from raysect.core.math.affinematrix cimport AffineMatrix
 
 cdef class Point:
     
-    cdef double d[3]
-    
-    cdef inline double get_x(self)
-    
-    cdef inline void set_x(self, double v)
-
-    cdef inline double get_y(self)
-    
-    cdef inline void set_y(self, double v)
-    
-    cdef inline double get_z(self)
-    
-    cdef inline void set_z(self, double v)
+    cdef double x, y, z
     
     cpdef Vector vector_to(self, Point p)
     
@@ -63,7 +51,7 @@ cdef inline Point new_point(double x, double y, double z):
     
     cdef Point v
     v = Point.__new__(Point)
-    v.d[0] = x
-    v.d[1] = y
-    v.d[2] = z
+    v.x = x
+    v.y = y
+    v.z = z
     return v
