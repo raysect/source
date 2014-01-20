@@ -68,7 +68,7 @@ def ctest5(int n):
 
     for i in range(0, n):
 
-        reflected = incident - 2.0 * normal * (normal.dot(incident))
+        reflected = incident - 2.0 * normal * normal.dot(incident)
 
     return reflected
 
@@ -144,8 +144,8 @@ def cotest5(int n):
 
         # r = i - 2*n*(n.i)
         d = normal.dot(incident)
-        reflected = new_vector(incident.get_x() - 2.0 * normal.get_x() * d,
-                               incident.get_y() - 2.0 * normal.get_y() * d,
-                               incident.get_z() - 2.0 * normal.get_z() * d)
+        reflected = new_vector(incident.x - 2.0 * normal.x * d,
+                               incident.y - 2.0 * normal.y * d,
+                               incident.z - 2.0 * normal.z * d)
 
     return reflected

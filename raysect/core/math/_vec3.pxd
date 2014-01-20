@@ -31,22 +31,10 @@
 
 cdef class _Vec3:
     
-    cdef double d[3]
+    cdef double x, y, z
     
     cpdef double dot(self, _Vec3 v)
-    
-    cdef inline double get_x(self)
-    
-    cdef inline void set_x(self, double v)
-
-    cdef inline double get_y(self)
-    
-    cdef inline void set_y(self, double v)
-    
-    cdef inline double get_z(self)
-    
-    cdef inline void set_z(self, double v)
-    
+   
     cdef inline double get_length(self)
     
     cdef inline void set_length(self, double v) except *        

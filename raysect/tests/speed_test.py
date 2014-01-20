@@ -124,7 +124,7 @@ def test5(n, C):
 print("Mathematical function speed tests")
 print("---------------------------------\n")
 
-n = 1000000
+n = 10000000
 
 print("Loop of {:,} operations:".format(n))
 
@@ -158,7 +158,7 @@ print("")
 
 # ---------------------
 
-n = 1000000
+n = 10000000
 
 print("Loop of {:,} operations:".format(n))
 
@@ -192,7 +192,7 @@ print("")
 
 # ---------------------
 
-n = 2500000
+n = 10000000
 
 print("Test 3: dot\n")
 
@@ -226,7 +226,7 @@ print("")
 
 # ---------------------
 
-n = 1000000
+n = 5000000
 
 print("Test 4: cross\n")
 
@@ -260,7 +260,7 @@ print("")
 
 #---------------------
 
-n = 200000
+n = 2500000
 
 print("Test 5: compound maths (reflection vector)\n")
 

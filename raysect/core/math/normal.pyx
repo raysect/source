@@ -33,6 +33,7 @@ import numbers
 cimport cython
 from libc.math cimport sqrt
 from raysect.core.math.vector cimport new_vector
+from raysect.core.math.point cimport Point
 
 cdef class Normal(_Vec3):
     """
@@ -54,27 +55,49 @@ cdef class Normal(_Vec3):
         5.0 and 6.0 respectively.
         """
         
-        try:
+        cdef Point p
+        cdef _Vec3 t
+
+        if isinstance(v, _Vec3):
             
-            self.d[0] = v[0]
-            self.d[1] = v[1]
-            self.d[2] = v[2]
+            t = <_Vec3>v
             
-        except:
+            self.x = t.x
+            self.y = t.y
+            self.z = t.z  
+        
+        elif isinstance(v, Point):
             
-            raise TypeError("Normal can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
+            p = <Point>v
+
+            self.x = p.x
+            self.y = p.y
+            self.z = p.z
+            
+        else:
+        
+            try:
+                
+                self.x = v[0]
+                self.y = v[1]
+                self.z = v[2]
+                
+            except:
+                
+                raise TypeError("Normal can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
+
 
     def __repr__(self):
         """Returns a string representation of the Normal object."""
 
-        return "Normal([" + str(self.d[0]) + ", " + str(self.d[1]) + ", " + str(self.d[2]) + "])"
+        return "Normal([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
 
     def __neg__(self):
         """Returns a normal with the reverse orientation."""
 
-        return new_normal(-self.d[0],
-                          -self.d[1],
-                          -self.d[2])
+        return new_normal(-self.x,
+                          -self.y,
+                          -self.z)
 
     def __add__(object x, object y):
         """Addition operator."""
@@ -86,9 +109,9 @@ cdef class Normal(_Vec3):
             vx = <_Vec3>x
             vy = <_Vec3>y
 
-            return new_normal(vx.d[0] + vy.d[0],
-                              vx.d[1] + vy.d[1],
-                              vx.d[2] + vy.d[2])
+            return new_normal(vx.x + vy.x,
+                              vx.y + vy.y,
+                              vx.z + vy.z)
         
         else:
 
@@ -104,9 +127,9 @@ cdef class Normal(_Vec3):
             vx = <_Vec3>x
             vy = <_Vec3>y
             
-            return new_normal(vx.d[0] - vy.d[0],
-                              vx.d[1] - vy.d[1],
-                              vx.d[2] - vy.d[2])
+            return new_normal(vx.x - vy.x,
+                              vx.y - vy.y,
+                              vx.z - vy.z)
         
         else:
 
@@ -124,18 +147,18 @@ cdef class Normal(_Vec3):
             s = <double>x
             v = <Normal>y
 
-            return new_normal(s * v.d[0],
-                              s * v.d[1],
-                              s * v.d[2])
+            return new_normal(s * v.x,
+                              s * v.y,
+                              s * v.z)
         
         elif isinstance(x, Normal) and isinstance(y, numbers.Real):
         
             s = <double>y
             v = <Normal>x
 
-            return new_normal(s * v.d[0],
-                              s * v.d[1],
-                              s * v.d[2])
+            return new_normal(s * v.x,
+                              s * v.y,
+                              s * v.z)
             
         elif isinstance(x, AffineMatrix) and isinstance(y, Normal):
 
@@ -143,9 +166,9 @@ cdef class Normal(_Vec3):
             v = <Normal>y
 
             minv = m.inverse()
-            return new_normal(minv.m[0][0] * v.d[0] + minv.m[1][0] * v.d[1] + minv.m[2][0] * v.d[2],
-                              minv.m[0][1] * v.d[0] + minv.m[1][1] * v.d[1] + minv.m[2][1] * v.d[2],
-                              minv.m[0][2] * v.d[0] + minv.m[1][2] * v.d[1] + minv.m[2][2] * v.d[2])
+            return new_normal(minv.m[0][0] * v.x + minv.m[1][0] * v.y + minv.m[2][0] * v.z,
+                              minv.m[0][1] * v.x + minv.m[1][1] * v.y + minv.m[2][1] * v.z,
+                              minv.m[0][2] * v.x + minv.m[1][2] * v.y + minv.m[2][2] * v.z)
         
         else:
         
@@ -172,9 +195,9 @@ cdef class Normal(_Vec3):
 
                 d = 1.0 / d 
 
-            return new_normal(d * v.d[0],
-                              d * v.d[1],
-                              d * v.d[2])
+            return new_normal(d * v.x,
+                              d * v.y,
+                              d * v.z)
         
         else:
         
@@ -190,9 +213,9 @@ cdef class Normal(_Vec3):
         Returns a Vector.
         """
     
-        return new_vector(self.d[1] * v.d[2] - v.d[1] * self.d[2],
-                          self.d[2] * v.d[0] - v.d[2] * self.d[0],
-                          self.d[0] * v.d[1] - v.d[0] * self.d[1])
+        return new_vector(self.y * v.z - v.y * self.z,
+                          self.z * v.x - v.z * self.x,
+                          self.x * v.y - v.x * self.y)
  
     cpdef Normal normalise(self):
         """
@@ -204,7 +227,7 @@ cdef class Normal(_Vec3):
         cdef double t
     
         # if current length is zero, problem is ill defined
-        t = self.d[0] * self.d[0] + self.d[1] * self.d[1] + self.d[2] * self.d[2]
+        t = self.x * self.x + self.y * self.y + self.z * self.z
         if t == 0.0:
             
             raise ZeroDivisionError("A zero length vector can not be normalised as the direction of a zero length vector is undefined.")
@@ -214,9 +237,9 @@ cdef class Normal(_Vec3):
             
             t = 1.0 / sqrt(t)
 
-        return new_normal(self.d[0] * t,
-                          self.d[1] * t,
-                          self.d[2] * t)
+        return new_normal(self.x * t,
+                          self.y * t,
+                          self.z * t)
 
     cpdef Normal transform(self, AffineMatrix m):
         """
@@ -236,9 +259,9 @@ cdef class Normal(_Vec3):
 
         cdef AffineMatrix minv
         minv = m.inverse()
-        return new_normal(minv.m[0][0] * self.d[0] + minv.m[1][0] * self.d[1] + minv.m[2][0] * self.d[2],
-                          minv.m[0][1] * self.d[0] + minv.m[1][1] * self.d[1] + minv.m[2][1] * self.d[2],
-                          minv.m[0][2] * self.d[0] + minv.m[1][2] * self.d[1] + minv.m[2][2] * self.d[2])
+        return new_normal(minv.m[0][0] * self.x + minv.m[1][0] * self.y + minv.m[2][0] * self.z,
+                          minv.m[0][1] * self.x + minv.m[1][1] * self.y + minv.m[2][1] * self.z,
+                          minv.m[0][2] * self.x + minv.m[1][2] * self.y + minv.m[2][2] * self.z)
     
     cpdef Normal transform_with_inverse(self, AffineMatrix m):
         """
@@ -253,33 +276,33 @@ cdef class Normal(_Vec3):
         multiplication operator of the affine matrix.
         """
 
-        return new_normal(m.m[0][0] * self.d[0] + m.m[1][0] * self.d[1] + m.m[2][0] * self.d[2],
-                          m.m[0][1] * self.d[0] + m.m[1][1] * self.d[1] + m.m[2][1] * self.d[2],
-                          m.m[0][2] * self.d[0] + m.m[1][2] * self.d[1] + m.m[2][2] * self.d[2])
+        return new_normal(m.m[0][0] * self.x + m.m[1][0] * self.y + m.m[2][0] * self.z,
+                          m.m[0][1] * self.x + m.m[1][1] * self.y + m.m[2][1] * self.z,
+                          m.m[0][2] * self.x + m.m[1][2] * self.y + m.m[2][2] * self.z)
 
     cdef inline Normal neg(self):
 
-        return new_normal(-self.d[0],
-                          -self.d[1],
-                          -self.d[2])
+        return new_normal(-self.x,
+                          -self.y,
+                          -self.z)
     
     cdef inline Normal add(self, _Vec3 v):
 
-        return new_normal(self.d[0] + v.d[0],
-                          self.d[1] + v.d[1],
-                          self.d[2] + v.d[2])    
+        return new_normal(self.x + v.x,
+                          self.y + v.y,
+                          self.z + v.z)    
     
     cdef inline Normal sub(self, _Vec3 v):
     
-        return new_normal(self.d[0] - v.d[0],
-                          self.d[1] - v.d[1],
-                          self.d[2] - v.d[2])        
+        return new_normal(self.x - v.x,
+                          self.y - v.y,
+                          self.z - v.z)        
     
     cdef inline Normal mul(self, double m):
 
-        return new_normal(self.d[0] * m,
-                          self.d[1] * m,
-                          self.d[2] * m)
+        return new_normal(self.x * m,
+                          self.y * m,
+                          self.z * m)
     
     cdef inline Normal div(self, double d):
             
@@ -291,6 +314,6 @@ cdef class Normal(_Vec3):
             
             d = 1.0 / d
             
-        return new_normal(self.d[0] * d,
-                          self.d[1] * d,
-                          self.d[2] * d)
+        return new_normal(self.x * d,
+                          self.y * d,
+                          self.z * d)
