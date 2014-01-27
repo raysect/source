@@ -90,39 +90,6 @@ cdef class Point:
 
         return "Point([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
     
-    property x:
-        """The x coordinate."""
-        
-        def __get__(self):
-
-            return self.x
-
-        def __set__(self, double v):
-
-            self.x = v
-
-    property y:
-        """The y coordinate."""
-
-        def __get__(self):
-
-            return self.y
-
-        def __set__(self, double v):
-
-            self.y = v
-
-    property z:
-        """The z coordinate."""
-    
-        def __get__(self):
-
-            return self.z
-
-        def __set__(self, double v):
-
-            self.z = v
-            
     def __getitem__(self, int i):
         """Returns the point coordinates by index ([0,1,2] -> [x,y,z])."""
 

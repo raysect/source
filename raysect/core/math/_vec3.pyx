@@ -81,40 +81,7 @@ cdef class _Vec3:
             except:
                 
                 raise TypeError("Vector can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
-    
-    property x:
-        """The x coordinate."""
-        
-        def __get__(self):
-
-            return self.x
-
-        def __set__(self, double v):
-
-            self.x = v
-
-    property y:
-        """The y coordinate."""
-
-        def __get__(self):
-
-            return self.y
-
-        def __set__(self, double v):
-
-            self.y = v
-
-    property z:
-        """The z coordinate."""
-    
-        def __get__(self):
-
-            return self.z
-
-        def __set__(self, double v):
-
-            self.z = v
-            
+               
     def __getitem__(self, int i):
         """Returns the vector coordinates by index ([0,1,2] -> [x,y,z])."""
 

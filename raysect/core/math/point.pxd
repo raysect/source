@@ -35,7 +35,7 @@ from raysect.core.math.affinematrix cimport AffineMatrix
 
 cdef class Point:
     
-    cdef double x, y, z
+    cdef public double x, y, z
     
     cpdef Vector vector_to(self, Point p)
     
