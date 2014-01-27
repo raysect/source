@@ -282,12 +282,19 @@ ct = time() - t
 print(" - raysect via cython: {:.1f} ms".format(ct*1000))
 
 t = time()
-cotest5(n)
-ot = time() - t
-print(" - raysect via optimised cython: {:.1f} ms".format(ot*1000))
+cotest5a(n)
+ota = time() - t
+print(" - raysect via optimised cython (high-level): {:.1f} ms".format(ota*1000))
+
+t = time()
+cotest5b(n)
+otb = time() - t
+print(" - raysect via optimised cython (low-level): {:.1f} ms".format(otb*1000))
 
 print("")
 print("raysect (python scope) vs python: {:.3F} times faster".format(pt/rt))
 print("raysect (cython scope) vs python: {:.3F} times faster".format(pt/ct))
-print("raysect (optimised cython) vs python: {:.3F} times faster".format(pt/ot))
+print("raysect (optimised cython, high-level) vs python: {:.3F} times faster".format(pt/ota))
+print("raysect (optimised cython, low-level) vs python: {:.3F} times faster".format(pt/otb))
 print("")
+
