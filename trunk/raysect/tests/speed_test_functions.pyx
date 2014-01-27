@@ -132,7 +132,23 @@ def cotest4(int n):
     return v3
 
 
-def cotest5(int n):
+def cotest5a(int n):
+
+    cdef Vector incident, normal, reflected
+    cdef double d
+
+    incident = new_vector(1, -1, 0).normalise()
+    normal = new_vector(0, 1, 0).normalise()
+
+    for i in range(0, n):
+
+        # r = i - 2*n*(n.i)
+        reflected = incident.sub(normal.mul(2.0*normal.dot(incident)))
+        
+    return reflected
+
+
+def cotest5b(int n):
 
     cdef Vector incident, normal, reflected
     cdef double d
