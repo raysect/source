@@ -31,7 +31,7 @@
 
 cdef class _Vec3:
     
-    cdef double x, y, z
+    cdef public double x, y, z
     
     cpdef double dot(self, _Vec3 v)
    
