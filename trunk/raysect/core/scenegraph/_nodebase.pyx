@@ -40,7 +40,7 @@ cdef class _NodeBase:
         self._root_transform = AffineMatrix()
         self._root_transform_inverse = AffineMatrix()
         
-    cpdef AffineMatrix to(self, _NodeBase node not None):
+    cpdef AffineMatrix to(self, _NodeBase node):
         
         if self.root == node.root:
 
@@ -64,9 +64,11 @@ cdef class _NodeBase:
         
         if self._parent is None:
             
-            # node has need disconnected from a scenegraph, de-register from old root node                
-            self.root._deregister(self)
-            self.root = self
+            if self.root is not self:
+            
+                # node has need disconnected from a scenegraph, de-register from old root node                
+                self.root._deregister(self)
+                self.root = self
 
             # this node is now a root node
             self._root_transform = AffineMatrix()
