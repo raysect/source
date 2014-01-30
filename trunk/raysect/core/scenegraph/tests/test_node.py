@@ -55,10 +55,10 @@ class TestNode(unittest.TestCase):
         n = Node()
         self.assertEqual(n.parent, None, "Parent should be None.")
         self.assertEqual(n.root, n, "Node should be it's own root as it is not attached to a parent.")
-        self.asseerEqual(len(n.children), 0, "Child list should be empty.")
-        self.assertTransformAlmostEqual(n.transform, AffineMatrix(), "Transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), "Root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), "Inverse root transform should be an identity matrix.")
+        self.assertEqual(len(n.children), 0, "Child list should be empty.")
+        self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
 
     def test_initialise_with_parent(self):
         """Test Node initialisation with a parent."""
@@ -69,18 +69,18 @@ class TestNode(unittest.TestCase):
         # node a
         self.assertEqual(a.parent, None, "Node a's parent should be None.")
         self.assertEqual(a.root, a, "Node a's root should be Node a.")
-        self.asseerEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
-        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), "Node a's transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), "Node a's root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), "Node a's inverse root transform should be an identity matrix.")
+        self.assertEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
+        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
 
         # node b
         self.assertEqual(b.parent, a, "Node b's parent should be Node a.")
         self.assertEqual(b.root, a, "Node b's root should be Node a.")
-        self.asseerEqual(len(b.children), 0, "Node b's child list should be empty.")
-        self.assertTransformAlmostEqual(b.transform, AffineMatrix(), "Node b's transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(b._root_transform, AffineMatrix(), "Node b's root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(b._root_transform_inverse, AffineMatrix(), "Node b's inverse root transform should be an identity matrix.")
+        self.assertEqual(len(b.children), 0, "Node b's child list should be empty.")
+        self.assertTransformAlmostEqual(b.transform, AffineMatrix(), delta = 1e-14, msg = "Node b's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(b._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node b's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(b._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node b's inverse root transform should be an identity matrix.")
 
     def test_initialise_with_transform(self):
         """Test Node initialisation with a transform."""
@@ -89,10 +89,10 @@ class TestNode(unittest.TestCase):
 
         self.assertEqual(n.parent, None, "Parent should be None.")
         self.assertEqual(n.root, n, "Node should be it's own root as it is not attached to a parent.")
-        self.asseerEqual(len(n.children), 0, "Child list should be empty.")
-        self.assertTransformAlmostEqual(n.transform, translate(1,2,3), "Transform was not set correctly.")
-        self.assertTransformAlmostEqual(n._root_transform, translate(1,2,3), "Root transform is incorrect.")
-        self.assertTransformAlmostEqual(n._root_transform_inverse, translate(1,2,3).inverse(), "Inverse root is incorrect.")
+        self.assertEqual(len(n.children), 0, "Child list should be empty.")
+        self.assertTransformAlmostEqual(n.transform, translate(1,2,3), delta = 1e-14, msg = "Transform was not set correctly.")
+        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform is incorrect.")
+        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root is incorrect.")
 
     def test_initialise_with_parent_and_transform(self):        
         """Test Node initialisation with a parent and a transform."""
@@ -103,18 +103,18 @@ class TestNode(unittest.TestCase):
         # node a
         self.assertEqual(a.parent, None, "Node a's parent should be None.")
         self.assertEqual(a.root, a, "Node a's root should be Node a.")
-        self.asseerEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
-        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), "Node a's transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), "Node a's root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), "Node a's inverse root transform should be an identity matrix.")
+        self.assertEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
+        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
 
         # node b
         self.assertEqual(b.parent, a, "Node b's parent should be Node a.")
         self.assertEqual(b.root, a, "Node b's root should be Node a.")
-        self.asseerEqual(len(b.children), 0, "Node b's child list should be empty.")
-        self.assertTransformAlmostEqual(b.transform, AffineMatrix(), "Node b's transform was not set correctly.")
-        self.assertTransformAlmostEqual(b._root_transform, AffineMatrix(), "Node b's root transform is incorrect.")
-        self.assertTransformAlmostEqual(b._root_transform_inverse, AffineMatrix(), "Node b's inverse root transform is incorrect.")
+        self.assertEqual(len(b.children), 0, "Node b's child list should be empty.")
+        self.assertTransformAlmostEqual(b.transform, translate(1,2,3), delta = 1e-14, msg = "Node b's transform was not set correctly.")
+        self.assertTransformAlmostEqual(b._root_transform, translate(1,2,3), delta = 1e-14, msg = "Node b's root transform is incorrect.")
+        self.assertTransformAlmostEqual(b._root_transform_inverse, translate(1,2,3).inverse(), delta = 1e-14, msg = "Node b's inverse root transform is incorrect.")
 
     def test_parent_set_invalid(self):
         """Test setting parent with an invalid value."""
@@ -176,7 +176,7 @@ class TestNode(unittest.TestCase):
         # build initial tree
         a = Node()
         b1 = Node(a, translate(1,2,3))
-        b1 = Node(a, translate(2,4,6))
+        b2 = Node(a, translate(2,4,6))
         c = Node(b1, translate(10,20,30))
         d1 = Node(c, translate(100,200,300))
         d2 = Node(c, translate(200,400,600))
@@ -267,6 +267,32 @@ class TestNode(unittest.TestCase):
         self.assertTransformAlmostEqual(e._root_transform, translate(1100,2200,3300), delta = 1e-14, msg = "Root transform has not correctly propagated to re-parented node's distant children.")
         self.assertTransformAlmostEqual(e._root_transform_inverse, translate(1100,2200,3300).inverse(), delta = 1e-14, msg = "Inverse root transform has not correctly propagated to re-parented node's distant children.")
 
+    def test_parent_enforce_tree(self):
+        """Test the prevention of cyclic parenting."""
+
+        # build test tree
+        a = Node()
+        b = Node(a)
+        c1 = Node(b)
+        c2 = Node(b)
+        
+        # test tree at different depths to confirm resursive check succeeds
+        with self.assertRaises(ValueError, msg = "Illegal cyclic parenting (a -> a) did not raise an exception."):
+            
+            a.parent = a
+
+        with self.assertRaises(ValueError, msg = "Illegal cyclic parenting (a -> b) did not raise an exception."):
+            
+            a.parent = b
+
+        with self.assertRaises(ValueError, msg = "Illegal cyclic parenting (a -> c2) did not raise an exception."):
+            
+            a.parent = c2
+            
+        with self.assertRaises(ValueError, msg = "Illegal cyclic parenting (b -> c1) did not raise an exception."):
+            
+            b.parent = c1
+
     def test_transform(self):
         """Test setting the Node transform."""
         
@@ -316,9 +342,11 @@ class TestNode(unittest.TestCase):
 
     def test_to(self):
         """
-        Test the to method returns an affine transform that will transform a
-        vector from the coordinate space defined by the current node to the
-        coordinate space defined by the specified node in the tree.
+        Test the to method returns a matrix transform between nodes.
+        
+        The returned affine matrix should transform a point in the coordinate
+        space defined by the calling node to the coordinate space defined by the 
+        specified node in the tree.
         """
         
         # build test tree
@@ -326,7 +354,7 @@ class TestNode(unittest.TestCase):
         a1 = Node(root, translate(1,0,0))
         a2 = Node(a1, translate(10,0,0))
         b1 = Node(root, translate(0,1,0))
-        b2 = Node(b2,translate(0,10,0))
+        b2 = Node(b1, translate(0,10,0))
         c = Node(root, translate(0,0,1))
         
         # test a2 to root
