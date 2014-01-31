@@ -31,12 +31,23 @@
 
 cdef class Node(_NodeBase):
     
-    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix()):
+    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), unicode name = ""):
 
         super().__init__()
 
+        self.name = name
         self._transform = transform
         self.parent = parent
+
+    def __str__(self):
+    
+        if self.name == "":
+            
+            return "<Node at " + str(hex(id(self))) + ">"
+        
+        else:
+            
+            return self.name + " <Node at " + str(hex(id(self))) + ">"
         
     property parent:
         

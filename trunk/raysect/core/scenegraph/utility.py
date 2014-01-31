@@ -65,9 +65,9 @@ def _print_node(node, indent, link, highlight):
     print(indent + " |  ")
     
     if node is highlight:
-        print(indent + " |__" + str(node) + " [referring node]")
+        print(indent + " |_ " + str(node) + " [referring node]")
     else:
-        print(indent + " |__" + str(node))
+        print(indent + " |_ " + str(node))
     
     # print children
     n = len(node.children)
