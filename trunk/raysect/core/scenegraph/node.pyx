@@ -51,13 +51,13 @@ cdef class Node(_NodeBase):
         The node constructor can take any of three optional arguements:
         
           parent
-            - assigns the Node's parent to the specified scenegraph object
+            - assigns the Node's parent to the specified scenegraph object.
           
           transform
-            - sets the affine transform associated with the Node
+            - sets the affine transform associated with the Node.
           
           name
-            - a string defining the node name
+            - a string defining the node name.
         """        
 
         super().__init__()
