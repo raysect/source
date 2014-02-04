@@ -48,6 +48,16 @@ cdef class _NodeBase:
         self._root_transform_inverse = AffineMatrix()
         
     cpdef AffineMatrix to(self, _NodeBase node):
+        """
+        Returns an affine transform that, when applied to a vector or point, 
+        transforms the vector or point from the co-ordinate space of the calling
+        node to the co-ordinate space of the target node.
+        
+        For example, if space B is translated +100 in x compared to space A and
+        A.to(B) is called then the matrix returned would represent a translation
+        of -100 in x. Applied to point (0,0,0) in A, this would produce the
+        point (-100,0,0) in B as B is translated +100 in x compared to A.
+        """
         
         if self.root == node.root:
 
@@ -59,7 +69,7 @@ cdef class _NodeBase:
 
     def _check_parent(self, _NodeBase parent):
         """
-        Raises an exception if the this node or a decendents are passed.
+        Raises an exception if the this node or its decendents are passed.
         
         The purpose of this function is to enforce the structure of the scene-
         graph. A scene-graph is logically a tree and so cannot contain cyclic
@@ -77,11 +87,13 @@ cdef class _NodeBase:
     def _update(self):
         """
         Instructs the node to recalculate the root transforms for its section of
-        the scene graph. Registers the node with the root node if that node
-        implements a node registry. Propagates root.
+        the scene graph. Automatically calls registers/deregisters the node with
+        the root node (if the methods are implemented). Propagates a reference
+        to the root node through the tree.
         
-        This method is called automatically when any node's transform or  
-        parent are modified and should never be called manually.
+        This method is called automatically when the scenegraph below this node
+        changes or if the node transform or parent are modified. This method
+        should never be called manually.
         """
         
         if self._parent is None:
