@@ -56,6 +56,7 @@ def print_scenegraph(node):
         else:
             _print_node(root.children[i], "", "    ", node)
 
+
 def _print_node(node, indent, link, highlight):
     """
     Internal function called recursively to print a scenegraph.

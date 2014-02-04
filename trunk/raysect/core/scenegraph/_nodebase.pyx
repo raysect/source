@@ -30,8 +30,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class _NodeBase:
+    """
+    The base class from which all scene-graph objects are derived.
+    
+    Defines the core attributes and common functionality of the scene-graph
+    node objects.
+    """
     
     def __init__(self):
+        """Base class constructor."""
 
         self._parent = None
         self.children = []
@@ -51,6 +58,13 @@ cdef class _NodeBase:
             raise ValueError("The target node must be in the same scenegraph.")
 
     def _check_parent(self, _NodeBase parent):
+        """
+        Raises an exception if the this node or a decendents are passed.
+        
+        The purpose of this function is to enforce the structure of the scene-
+        graph. A scene-graph is logically a tree and so cannot contain cyclic
+        references.
+        """
     
         if parent is self:
             
@@ -61,6 +75,14 @@ cdef class _NodeBase:
             child._check_parent(parent)
         
     def _update(self):
+        """
+        Instructs the node to recalculate the root transforms for its section of
+        the scene graph. Registers the node with the root node if that node
+        implements a node registry. Propagates root.
+        
+        This method is called automatically when any node's transform or  
+        parent are modified and should never be called manually.
+        """
         
         if self._parent is None:
             
@@ -94,10 +116,26 @@ cdef class _NodeBase:
             child._update()
         
     def _register(self, _NodeBase node):
+        """
+        When implemented by root nodes this method allows nodes in the
+        scene-graph to register themselves for special handling.
+        
+        Virtual method call.
+        
+        For use in conjunction with _deregister()
+        """        
     
         pass
     
     def _deregister(self, _NodeBase node):
+        """
+        When implemented by root nodes this method allows nodes in the
+        scene-graph to deregister themselves.
+        
+        Virtual method call.
+        
+        For use in conjunction with _register()
+        """        
     
         pass        
 
