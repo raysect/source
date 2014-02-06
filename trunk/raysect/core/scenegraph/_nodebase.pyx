@@ -87,9 +87,9 @@ cdef class _NodeBase:
     def _update(self):
         """
         Instructs the node to recalculate the root transforms for its section of
-        the scene graph. Automatically calls registers/deregisters the node with
-        the root node (if the methods are implemented). Propagates a reference
-        to the root node through the tree.
+        the scene graph. Automatically registers/deregisters the node with the
+        root node (if the methods are implemented). Propagates a reference to
+        the root node through the tree.
         
         This method is called automatically when the scenegraph below this node
         changes or if the node transform or parent are modified. This method

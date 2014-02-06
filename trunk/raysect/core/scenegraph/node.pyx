@@ -35,13 +35,13 @@ cdef class Node(_NodeBase):
     
     The basic constituent of a scene-graph tree. Nodes can be linked together
     by parenting one Node to another to form a tree structure. Each node in a 
-    scene-graph represents a distinct co-ordinate systems. An affine transform
+    scene-graph represents a distinct co-ordinate system. An affine transform
     associated with each node describes the relationship between a node and its
     parent's coordinate system. By combining the transforms (and inverse
     transforms) along the path between two nodes in the tree, the direct
     transform between any two arbitrary nodes, and thus their co-ordinate
     systems, can be calculated. Using this transform it is then possible to 
-    transform Vectors and Points between the two co-ordinate systems.
+    transform vectors and points between the two co-ordinate systems.
     """
     
     def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), unicode name = ""):
