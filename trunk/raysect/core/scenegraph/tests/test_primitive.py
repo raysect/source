@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -29,26 +27,27 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class Observer(Node):
-    
-    def __str__(self):
-        """String representation."""
-    
-        if self.name == "":
-            
-            return "<Observer at " + str(hex(id(self))) + ">"
-        
-        else:
-            
-            return self.name + " <Observer at " + str(hex(id(self))) + ">"
+import unittest
+from ..primitive import Primitive
+from ...math import AffineMatrix, translate
 
-    cpdef observe(self):
-        """
-        Virtual method - to be implemented by derived classes.
-        
-        Triggers the exploration of the scene by emitting rays according to
-        the model defined by the derived class implementing the method.
-        """
+# TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures
+
+class TestPrimitive(unittest.TestCase):
+    """
+    Tests the functionality of the scenegraph Primitive class.
+    """
     
-        raise NotImplementedError("Virtual method observe() has not been implemented.")
+    def assertTransformAlmostEqual(self, first, second, places=None, msg=None, delta=None):
+        """
+        Checks 4x4 matrices are equal to a given tolerance.
         
+        This function takes the same arguments as unittest.assertAlmostEqual().
+        """
+        
+        for i in range(0, 4):
+            
+            for j in range(0, 4):
+                
+                self.assertAlmostEqual(first[i,j], second[i,j], places, msg, delta) 
+    

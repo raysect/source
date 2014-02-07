@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-#Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,3 +34,7 @@ from raysect.core.scenegraph._nodebase cimport _NodeBase
 cdef class World(_NodeBase):
     
     pass
+
+    # to - multiplies two matrices
+    # to_world - only needs to return a root_transform, avoiding a multiply
+    # to_object - only needs to return a root_transform, avoiding a multiply
