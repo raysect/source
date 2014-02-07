@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-#Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -47,14 +47,13 @@ cdef class Ray:
     
 
 cdef class Intersection:
-    
+
+    cdef public bint hit
     cdef public Ray ray
-    cdef public Primitive primitive
+    cdef public Primitive primitive    
     cdef public Point hit_point
     cdef public Normal surface_normal
     cdef public double ray_distance    
-    cdef public AffineMatrix to_world
-    cdef public AffineMatrix to_object
 
 
 cdef class Material:

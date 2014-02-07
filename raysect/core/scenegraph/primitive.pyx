@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-#Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,12 +43,29 @@ cdef class Primitive(Node):
             return self.name + " <Primitive at " + str(hex(id(self))) + ">"
     
     cpdef Intersection hit(self, Ray ray):
+        """
+        Virtual method - to be implemented by derived classes.
+        
+        Calculates the closest intersection of the Ray with the Primitive 
+        surface, if such an intersection exists.
+        
+        Must return an Intersection object. If no intersection occurs the
+        Intersection attribute hit is set to False. If hit is True then the 
+        other attributes of the Intersection object will be filled with the 
+        calculated values related to the intersection.
+        """
     
-        return NotImplemented
+        raise NotImplementedError("Virtual method hit() has not been implemented.")
     
     cpdef bint inside(self, Point p):
+        """
+        Virtual method - to be implemented by derived classes.
+        
+        Returns True if the Point lies within the boundary of the surface
+        defined by the Primitive. False is returned otherwise.
+        """        
     
-        return NotImplemented
+        raise NotImplementedError("Virtual method inside() has not been implemented.")
     
     #cpdef BoundingBox bounding_box(self):
     

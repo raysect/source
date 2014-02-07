@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-#Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,10 +36,11 @@ from raysect.core.scenegraph.node cimport Node
 
 cdef class Primitive(Node):
 
-    cdef Material material
+    cdef public Material material
     
     cpdef Intersection hit(self, Ray ray)
     
     cpdef bint inside(self, Point p)
     
     #cpdef BoundingBox bounding_box(self)
+    
