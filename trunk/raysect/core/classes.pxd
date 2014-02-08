@@ -58,6 +58,26 @@ cdef class Intersection:
 
 cdef class Material:
 
-    cpdef evaluate_surface(self, Ray ray, Point point, Normal normal, AffineMatrix to_world, AffineMatrix to_object)
+    cdef public SurfaceMaterial surface
+    cdef public VolumeMaterial volume
+
+
+cdef class SurfaceMaterial:
+
+    cpdef SurfaceResponce evaluate(self, Ray ray, Point point, Normal normal, AffineMatrix to_world, AffineMatrix to_object)
+
+
+cdef class SurfaceResponce:
     
-    cpdef evaluate_volume(self, Ray ray, Point entry, Point exit, AffineMatrix to_world, AffineMatrix to_object)
+    pass
+
+
+cdef class VolumeMaterial:
+    
+    cpdef VolumeResponce evaluate(self, Ray ray, Point entry, Point exit, AffineMatrix to_world, AffineMatrix to_object)
+    
+
+cdef class VolumeResponce:
+    
+    pass
+    
