@@ -31,6 +31,11 @@
 
 cdef class Primitive(Node):
 
+    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+        
+        super().__init__(parent, transform, name)
+        self._material = material
+
     def __str__(self):
         """String representation."""
     
@@ -49,25 +54,35 @@ cdef class Primitive(Node):
         Calculates the closest intersection of the Ray with the Primitive 
         surface, if such an intersection exists.
         
-        Must return an Intersection object. If no intersection occurs the
+        Must return an Intersection object. If no intersection occurs, the
         Intersection attribute hit is set to False. If hit is True then the 
         other attributes of the Intersection object will be filled with the 
         calculated values related to the intersection.
         """
     
-        raise NotImplementedError("Virtual method hit() has not been implemented.")
+        raise NotImplementedError("Primitive surface has not been defined. Virtual method hit() has not been implemented.")
     
-    cpdef bint inside(self, Point p):
+    cpdef bint inside(self, Point p) except -1:
         """
         Virtual method - to be implemented by derived classes.
         
-        Returns True if the Point lies within the boundary of the surface
+        Must returns True if the Point lies within the boundary of the surface
         defined by the Primitive. False is returned otherwise.
         """        
     
-        raise NotImplementedError("Virtual method inside() has not been implemented.")
+        raise NotImplementedError("Primitive surface has not been defined. Virtual method inside() has not been implemented.")
     
     #cpdef BoundingBox bounding_box(self):
     
         #pass
+        
+    property material:
+        
+        def __get__(self):
+            
+            return self._material
+        
+        def __set__(self, Material value not None):
+        
+            self._material = value
 
