@@ -34,4 +34,4 @@ from raysect.core.math.affinematrix cimport AffineMatrix
 
 cdef class Node(_NodeBase):
     
-    cdef public unicode name
+    cdef unicode _name

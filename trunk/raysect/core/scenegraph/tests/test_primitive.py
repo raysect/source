@@ -29,9 +29,12 @@
 
 import unittest
 from ..primitive import Primitive
-from ...math import AffineMatrix, translate
+from ..node import Node
+from ...math import Point, AffineMatrix, translate
+from ...classes import Material, Ray
 
 # TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures
+# TODO: Add tests for functionality inherited from Node?
 
 class TestPrimitive(unittest.TestCase):
     """
@@ -49,5 +52,89 @@ class TestPrimitive(unittest.TestCase):
             
             for j in range(0, 4):
                 
-                self.assertAlmostEqual(first[i,j], second[i,j], places, msg, delta) 
+                self.assertAlmostEqual(first[i,j], second[i,j], places, msg, delta)
+    
+    def test_initialise_default(self):
+        """Test Primitive default initialisation."""
+        
+        n = Primitive()
+        
+        self.assertEqual(n.parent, None, "Parent should be None.")
+        self.assertEqual(n.root, n, "Primitive should be it's own root as it is not attached to a parent.")
+        self.assertEqual(len(n.children), 0, "Child list should be empty.")
+        self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
+        self.assertEqual(n.name, "", "Primitive name should be an empty string")
+        self.assertTrue(isinstance(n.material, Material), "Primitive material is not a Material object.")
+
+    def test_initialise_with_material(self):
+        """Test Primitive initialisation with a material."""
+        
+        m = Material()
+        n = Primitive(material = m)
+        
+        self.assertEqual(n.parent, None, "Parent should be None.")
+        self.assertEqual(n.root, n, "Primitive should be it's own root as it is not attached to a parent.")
+        self.assertEqual(len(n.children), 0, "Child list should be empty.")
+        self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
+        self.assertEqual(n.name, "", "Primitive name should be an empty string")
+        self.assertTrue(n.material is m, "Primitive material was not correctly initialised.")
+
+    def test_initialise_with_all_arguments(self):        
+        """Test Node initialisation with a parent, transform and name."""
+        
+        m = Material()
+        a = Node()
+        b = Primitive(a, translate(1,2,3), m, "My New Primitive")
+
+        # node a
+        self.assertEqual(a.parent, None, "Node a's parent should be None.")
+        self.assertEqual(a.root, a, "Node a's root should be Node a.")
+        self.assertEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
+        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
+        self.assertEqual(a.name, "", "Node a's name should be an empty string")
+
+        # node b
+        self.assertEqual(b.parent, a, "Primitive b's parent should be Node a.")
+        self.assertEqual(b.root, a, "Primitive b's root should be Node a.")
+        self.assertEqual(len(b.children), 0, "Primitive b's child list should be empty.")
+        self.assertTransformAlmostEqual(b.transform, translate(1,2,3), delta = 1e-14, msg = "Primitive b's transform was not set correctly.")
+        self.assertTransformAlmostEqual(b._root_transform, translate(1,2,3), delta = 1e-14, msg = "Primitive b's root transform is incorrect.")
+        self.assertTransformAlmostEqual(b._root_transform_inverse, translate(1,2,3).inverse(), delta = 1e-14, msg = "Primitive b's inverse root transform is incorrect.")
+        self.assertEqual(b.name, "My New Primitive", "Primitive b's name is incorrect.")
+        self.assertTrue(b.material is m, "Primitive b's material was not correctly initialised.")
+    
+    def test_hit(self):
+        """Test hit is virtual and raises an exception if called."""
+ 
+        n = Primitive()
+ 
+        with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
+            n.hit(Ray())
+ 
+    def test_inside(self):
+        """Test inside is virtual and raises an exception if called."""
+
+        n = Primitive()
+
+        with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
+            n.inside(Point())
+
+    @unittest.skip("Not yet implemented.")
+    def test_bounding_box(self):
+        """Test bounding_box is virtual and raises an exception if called."""
+        
+        pass
+    
+    @unittest.skip("Not yet implemented.")
+    def test_material(self):
+        """Test Setting and getting material."""
+        
+        pass
+        
     

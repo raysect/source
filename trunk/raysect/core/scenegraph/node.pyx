@@ -44,7 +44,7 @@ cdef class Node(_NodeBase):
     transform vectors and points between the two co-ordinate systems.
     """
     
-    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), unicode name = ""):
+    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), unicode name not None = ""):
         """
         Node constructor.
         
@@ -62,20 +62,20 @@ cdef class Node(_NodeBase):
 
         super().__init__()
 
-        self.name = name
+        self._name = name
         self._transform = transform
         self.parent = parent
 
     def __str__(self):
         """String representation."""
     
-        if self.name == "":
+        if self._name == "":
             
             return "<Node at " + str(hex(id(self))) + ">"
         
         else:
             
-            return self.name + " <Node at " + str(hex(id(self))) + ">"
+            return self._name + " <Node at " + str(hex(id(self))) + ">"
         
     property parent:
         
@@ -137,3 +137,13 @@ cdef class Node(_NodeBase):
             
             self._transform = value
             self._update()
+
+    property name:
+        
+        def __get__(self):
+            
+            return self._name
+
+        def __set__(self, unicode value not None):
+            
+            self._name = value

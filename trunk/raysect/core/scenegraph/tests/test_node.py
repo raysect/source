@@ -59,6 +59,7 @@ class TestNode(unittest.TestCase):
         self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
         self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
         self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
+        self.assertEqual(n.name, "", "Node name should be an empty string")
 
     def test_initialise_with_parent(self):
         """Test Node initialisation with a parent."""
@@ -73,6 +74,7 @@ class TestNode(unittest.TestCase):
         self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
         self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
         self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
+        self.assertEqual(a.name, "", "Node name should be an empty string")
 
         # node b
         self.assertEqual(b.parent, a, "Node b's parent should be Node a.")
@@ -81,6 +83,7 @@ class TestNode(unittest.TestCase):
         self.assertTransformAlmostEqual(b.transform, AffineMatrix(), delta = 1e-14, msg = "Node b's transform should be an identity matrix.")
         self.assertTransformAlmostEqual(b._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node b's root transform should be an identity matrix.")
         self.assertTransformAlmostEqual(b._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node b's inverse root transform should be an identity matrix.")
+        self.assertEqual(b.name, "", "Node name should be an empty string")
 
     def test_initialise_with_transform(self):
         """Test Node initialisation with a transform."""
@@ -93,12 +96,43 @@ class TestNode(unittest.TestCase):
         self.assertTransformAlmostEqual(n.transform, translate(1,2,3), delta = 1e-14, msg = "Transform was not set correctly.")
         self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform is incorrect.")
         self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root is incorrect.")
+        self.assertEqual(n.name, "", "Node name should be an empty string")
 
     def test_initialise_with_parent_and_transform(self):        
         """Test Node initialisation with a parent and a transform."""
         
         a = Node()
         b = Node(a, translate(1,2,3))
+
+        # node a
+        self.assertEqual(a.parent, None, "Node a's parent should be None.")
+        self.assertEqual(a.root, a, "Node a's root should be Node a.")
+        self.assertEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
+        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
+        self.assertEqual(a.name, "", "Node name should be an empty string")
+
+        # node b
+        self.assertEqual(b.parent, a, "Node b's parent should be Node a.")
+        self.assertEqual(b.root, a, "Node b's root should be Node a.")
+        self.assertEqual(len(b.children), 0, "Node b's child list should be empty.")
+        self.assertTransformAlmostEqual(b.transform, translate(1,2,3), delta = 1e-14, msg = "Node b's transform was not set correctly.")
+        self.assertTransformAlmostEqual(b._root_transform, translate(1,2,3), delta = 1e-14, msg = "Node b's root transform is incorrect.")
+        self.assertTransformAlmostEqual(b._root_transform_inverse, translate(1,2,3).inverse(), delta = 1e-14, msg = "Node b's inverse root transform is incorrect.")
+        self.assertEqual(b.name, "", "Node name should be an empty string")
+
+    def test_initialise_with_name(self):
+        """Test Node initialisation with a name."""
+        
+        r = Node(name = "Test Node")
+        self.assertEqual(r.name, "Test Node", "Node's name is incorrect.")
+
+    def test_initialise_with_all_arguments(self):        
+        """Test Node initialisation with a parent, transform and name."""
+        
+        a = Node()
+        b = Node(a, translate(1,2,3), "My New Node")
 
         # node a
         self.assertEqual(a.parent, None, "Node a's parent should be None.")
@@ -115,6 +149,7 @@ class TestNode(unittest.TestCase):
         self.assertTransformAlmostEqual(b.transform, translate(1,2,3), delta = 1e-14, msg = "Node b's transform was not set correctly.")
         self.assertTransformAlmostEqual(b._root_transform, translate(1,2,3), delta = 1e-14, msg = "Node b's root transform is incorrect.")
         self.assertTransformAlmostEqual(b._root_transform_inverse, translate(1,2,3).inverse(), delta = 1e-14, msg = "Node b's inverse root transform is incorrect.")
+        self.assertEqual(b.name, "My New Node", "Node's name is incorrect.")
 
     def test_parent_set_invalid(self):
         """Test setting parent with an invalid value."""
@@ -333,12 +368,34 @@ class TestNode(unittest.TestCase):
         self.assertTransformAlmostEqual(e._root_transform_inverse, translate(1121,2242,3363).inverse(), delta = 1e-14, msg = "Inverse root transform has not correctly propagated to node's distant children.")
 
     def test_transform_set_invalid(self):
-        """Test setting parent with an invalid value."""
+        """Test setting Node transform with an invalid value."""
         
         n = Node()
         
-        with self.assertRaises(TypeError, msg="Initialising with an invalid value (a string) did not raise a TypeError."):
+        with self.assertRaises(TypeError, msg="Setting transform with an invalid value (a string) did not raise a TypeError."):
             n.transform = "spoon"
+
+        with self.assertRaises(TypeError, msg="Setting transform with an invalid value (None) did not raise a TypeError."):
+            n.transform = None    
+
+    def test_name(self):
+        """Test setting and getting Node name."""
+        
+        n = Node()
+        n.name = "Spongle"
+        
+        self.assertEqual(n.name, "Spongle", "Node name was not set correctly.")
+        
+    def test_name_set_invalid(self):
+        """Test setting Node name to an invalid value."""
+        
+        n = Node()
+        
+        with self.assertRaises(TypeError, msg="Setting Node name with an invalid value (None) did not raise a TypeError."):
+            n.name = None
+        
+        with self.assertRaises(TypeError, msg="Setting transform with an invalid value (a float) did not raise a TypeError."):
+            n.name = 57.1
 
     def test_to(self):
         """
