@@ -30,25 +30,25 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class Observer(Node):
-    
+
     def __str__(self):
         """String representation."""
-    
+
         if self.name == "":
-            
+
             return "<Observer at " + str(hex(id(self))) + ">"
-        
+
         else:
-            
+
             return self.name + " <Observer at " + str(hex(id(self))) + ">"
 
     cpdef observe(self):
         """
         Virtual method - to be implemented by derived classes.
-        
+
         Triggers the exploration of the scene by emitting rays according to
         the model defined by the derived class implementing the method.
         """
-    
+
         raise NotImplementedError("Virtual method observe() has not been implemented.")
-        
+

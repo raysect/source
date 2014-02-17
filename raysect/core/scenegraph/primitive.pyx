@@ -27,62 +27,76 @@
 # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE. 
+# POSSIBILITY OF SUCH DAMAGE.
 
 cdef class Primitive(Node):
 
     def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
-        
+
         super().__init__(parent, transform, name)
+
         self._material = material
 
     def __str__(self):
         """String representation."""
-    
+
         if self.name == "":
-            
+
             return "<Primitive at " + str(hex(id(self))) + ">"
-        
+
         else:
-            
+
             return self.name + " <Primitive at " + str(hex(id(self))) + ">"
-    
+
     cpdef Intersection hit(self, Ray ray):
         """
         Virtual method - to be implemented by derived classes.
-        
-        Calculates the closest intersection of the Ray with the Primitive 
+
+        Calculates the closest intersection of the Ray with the Primitive
         surface, if such an intersection exists.
-        
+
         Must return an Intersection object. If no intersection occurs, the
-        Intersection attribute hit is set to False. If hit is True then the 
-        other attributes of the Intersection object will be filled with the 
+        Intersection attribute hit is set to False. If hit is True then the
+        other attributes of the Intersection object will be filled with the
         calculated values related to the intersection.
         """
-    
+
         raise NotImplementedError("Primitive surface has not been defined. Virtual method hit() has not been implemented.")
-    
+
     cpdef bint inside(self, Point p) except -1:
         """
         Virtual method - to be implemented by derived classes.
-        
+
         Must returns True if the Point lies within the boundary of the surface
         defined by the Primitive. False is returned otherwise.
-        """        
-    
+        """
+
         raise NotImplementedError("Primitive surface has not been defined. Virtual method inside() has not been implemented.")
-    
-    #cpdef BoundingBox bounding_box(self):
-    
-        #pass
-        
+
+    cpdef BoundingBox bounding_box(self):
+        """
+        Virtual method - to be implemented by derived classes.
+
+        When the primitive is connected to a scenegrpah containing a World
+        object at its root, this method should return a bounding box that
+        fully encloses the primitive's surface (plus a small margin to
+        avoid numerical accuracy problems). The bounding box must be defined in
+        the world's coordinate space.
+
+        If this method is called when the primitive is not connected to a
+        scenegraph with a World object at its root, it must throw a TypeError
+        exception.
+        """
+
+        raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
+
     property material:
-        
+
         def __get__(self):
-            
+
             return self._material
-        
+
         def __set__(self, Material value not None):
-        
+
             self._material = value
 

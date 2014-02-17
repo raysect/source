@@ -33,15 +33,16 @@ from raysect.core.classes cimport Ray, Material, Intersection
 from raysect.core.math.point cimport Point
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.scenegraph.node cimport Node
-#from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.scenegraph._nodebase cimport _NodeBase
+from raysect.core.acceleration.boundingbox cimport BoundingBox
 
 cdef class Primitive(Node):
 
     cdef Material _material
-    
+
     cpdef Intersection hit(self, Ray ray)
-    
+
     cpdef bint inside(self, Point p) except -1
-    
-    #cpdef BoundingBox bounding_box(self)
-    
+
+    cpdef BoundingBox bounding_box(self)
+

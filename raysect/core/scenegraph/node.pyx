@@ -32,33 +32,33 @@
 cdef class Node(_NodeBase):
     """
     The scene-graph node class.
-    
+
     The basic constituent of a scene-graph tree. Nodes can be linked together
-    by parenting one Node to another to form a tree structure. Each node in a 
+    by parenting one Node to another to form a tree structure. Each node in a
     scene-graph represents a distinct co-ordinate system. An affine transform
     associated with each node describes the relationship between a node and its
     parent's coordinate system. By combining the transforms (and inverse
     transforms) along the path between two nodes in the tree, the direct
     transform between any two arbitrary nodes, and thus their co-ordinate
-    systems, can be calculated. Using this transform it is then possible to 
+    systems, can be calculated. Using this transform it is then possible to
     transform vectors and points between the two co-ordinate systems.
     """
     
     def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), unicode name not None = ""):
         """
         Node constructor.
-        
+
         The node constructor can take any of three optional arguements:
-        
+
           parent
             - assigns the Node's parent to the specified scenegraph object.
-          
+
           transform
             - sets the affine transform associated with the Node.
-          
+
           name
             - a string defining the node name.
-        """        
+        """
 
         super().__init__()
 
@@ -68,82 +68,82 @@ cdef class Node(_NodeBase):
 
     def __str__(self):
         """String representation."""
-    
+
         if self._name == "":
-            
+
             return "<Node at " + str(hex(id(self))) + ">"
-        
+
         else:
-            
+
             return self._name + " <Node at " + str(hex(id(self))) + ">"
-        
+
     property parent:
-        
+
         def __get__(self):
-            
+
             return self._parent
-        
+
         def __set__(self, object value):
-            
+
             if self._parent is value:
-            
+
                 # the parent is unchanged, do nothing
-                return            
-                
+                return
+
             if value is None:
-                    
+
                 # _parent cannot be None (see above) so it must be a node, disconnect from current parent
                 self._parent.children.remove(self)
                 self._parent = None
                 self._update()
-                    
+
             else:
-                
+
                 if isinstance(value, _NodeBase) == False:
-                
+
                     raise TypeError("The specified parent is not a scenegraph node or None (unparented).")
 
                 # prevent cyclic connections
                 self._check_parent(value)
-                
+
                 if self._parent is None:
-                    
+
                     # connect to parent
                     self._parent = value
                     self._parent.children.append(self)
 
                     # propagate new state
                     self._update()
-                    
+
                 else:
-                    
+
                     # disconnect from current parent
                     self._parent.children.remove(self)
 
                     # connect to parent
                     self._parent = value
                     self._parent.children.append(self)
-                    
+
                     # propagate new state
-                    self._update()            
+                    self._update()
 
     property transform:
-        
+
         def __get__(self):
-            
+
             return self._transform
 
         def __set__(self, AffineMatrix value not None):
-            
+
             self._transform = value
             self._update()
 
     property name:
-        
+
         def __get__(self):
-            
+
             return self._name
 
         def __set__(self, unicode value not None):
-            
+
             self._name = value

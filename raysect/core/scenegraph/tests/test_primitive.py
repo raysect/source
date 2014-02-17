@@ -31,34 +31,35 @@ import unittest
 from ..primitive import Primitive
 from ..node import Node
 from ...math import Point, AffineMatrix, translate
+from ...acceleration import BoundingBox
 from ...classes import Material, Ray
 
 # TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures
-# TODO: Add tests for functionality inherited from Node?
+# TODO: Add tests for functionality inherited from Node.
 
 class TestPrimitive(unittest.TestCase):
     """
     Tests the functionality of the scenegraph Primitive class.
     """
-    
+
     def assertTransformAlmostEqual(self, first, second, places=None, msg=None, delta=None):
         """
         Checks 4x4 matrices are equal to a given tolerance.
-        
+
         This function takes the same arguments as unittest.assertAlmostEqual().
         """
-        
+
         for i in range(0, 4):
-            
+
             for j in range(0, 4):
-                
+
                 self.assertAlmostEqual(first[i,j], second[i,j], places, msg, delta)
-    
+
     def test_initialise_default(self):
-        """Test Primitive default initialisation."""
-        
+        """Default initialisation."""
+
         n = Primitive()
-        
+
         self.assertEqual(n.parent, None, "Parent should be None.")
         self.assertEqual(n.root, n, "Primitive should be it's own root as it is not attached to a parent.")
         self.assertEqual(len(n.children), 0, "Child list should be empty.")
@@ -69,11 +70,11 @@ class TestPrimitive(unittest.TestCase):
         self.assertTrue(isinstance(n.material, Material), "Primitive material is not a Material object.")
 
     def test_initialise_with_material(self):
-        """Test Primitive initialisation with a material."""
-        
+        """Initialisation with a material."""
+
         m = Material()
         n = Primitive(material = m)
-        
+
         self.assertEqual(n.parent, None, "Parent should be None.")
         self.assertEqual(n.root, n, "Primitive should be it's own root as it is not attached to a parent.")
         self.assertEqual(len(n.children), 0, "Child list should be empty.")
@@ -83,9 +84,9 @@ class TestPrimitive(unittest.TestCase):
         self.assertEqual(n.name, "", "Primitive name should be an empty string")
         self.assertTrue(n.material is m, "Primitive material was not correctly initialised.")
 
-    def test_initialise_with_all_arguments(self):        
-        """Test Node initialisation with a parent, transform and name."""
-        
+    def test_initialise_with_all_arguments(self):
+        """Initialisation with all arguments."""
+
         m = Material()
         a = Node()
         b = Primitive(a, translate(1,2,3), m, "My New Primitive")
@@ -108,33 +109,51 @@ class TestPrimitive(unittest.TestCase):
         self.assertTransformAlmostEqual(b._root_transform_inverse, translate(1,2,3).inverse(), delta = 1e-14, msg = "Primitive b's inverse root transform is incorrect.")
         self.assertEqual(b.name, "My New Primitive", "Primitive b's name is incorrect.")
         self.assertTrue(b.material is m, "Primitive b's material was not correctly initialised.")
-    
+
     def test_hit(self):
-        """Test hit is virtual and raises an exception if called."""
- 
+        """Method hit() is virtual and should raise an exception if called."""
+
         n = Primitive()
- 
+
         with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
             n.hit(Ray())
- 
+
     def test_inside(self):
-        """Test inside is virtual and raises an exception if called."""
+        """Method inside() is virtual and should raise an exception if called."""
 
         n = Primitive()
 
         with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
             n.inside(Point())
 
-    @unittest.skip("Not yet implemented.")
     def test_bounding_box(self):
-        """Test bounding_box is virtual and raises an exception if called."""
-        
-        pass
-    
-    @unittest.skip("Not yet implemented.")
+        """Method bounding_box() is virtual and should raise an exception if called."""
+
+        n = Primitive()
+
+        with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
+            n.bounding_box()
+
     def test_material(self):
-        """Test Setting and getting material."""
-        
-        pass
-        
-    
+        """Setting and getting material."""
+
+        m = Material()
+        n = Primitive()
+
+        n.material = m
+        self.assertTrue(n.material is m, "Primitive's material was not correctly set/returned.")
+
+    def test_material_set_invalid(self):
+        """Setting an invalid material should raise an exception."""
+
+        n = Primitive()
+
+        with self.assertRaises(TypeError, msg="Attempting to set material with an invalid type (a string) did not raise an exception."):
+            n.material = "This should fail!"
+
+        with self.assertRaises(TypeError, msg="Attempting to set material with an invalid type (None) did not raise an exception."):
+            n.material = None
+
+
+if __name__ == "__main__":
+    unittest.main()

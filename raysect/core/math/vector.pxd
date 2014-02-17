@@ -35,24 +35,24 @@ from raysect.core.math.affinematrix cimport AffineMatrix
 cdef class Vector(_Vec3):
 
     cpdef Vector cross(self, _Vec3 v)
-        
+
     cpdef Vector normalise(self)
 
     cpdef Vector transform(self, AffineMatrix m)
 
     cdef inline Vector neg(self)
-    
+
     cdef inline Vector add(self, _Vec3 v)
-    
+
     cdef inline Vector sub(self, _Vec3 v)
-    
+
     cdef inline Vector mul(self, double m)
-    
+
     cdef inline Vector div(self, double m)
 
 
 cdef inline Vector new_vector(double x, double y, double z):
-    
+
     cdef Vector v
     v = Vector.__new__(Vector)
     v.x = x

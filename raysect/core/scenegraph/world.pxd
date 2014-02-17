@@ -32,7 +32,7 @@
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 
 cdef class World(_NodeBase):
-    
+
     pass
 
     # to - multiplies two matrices
