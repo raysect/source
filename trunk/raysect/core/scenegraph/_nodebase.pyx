@@ -69,7 +69,7 @@ cdef class _NodeBase:
 
     def _check_parent(self, _NodeBase parent):
         """
-        Raises an exception if the this node or its decendents are passed.
+        Raises an exception if this node or its decendents are passed.
 
         The purpose of this function is to enforce the structure of the scene-
         graph. A scene-graph is logically a tree and so cannot contain cyclic
@@ -91,7 +91,7 @@ cdef class _NodeBase:
         root node (if the methods are implemented). Propagates a reference to
         the root node through the tree.
 
-        This method is called automatically when the scenegraph below this node
+        This method is called automatically when the scenegraph above this node
         changes or if the node transform or parent are modified. This method
         should never be called manually.
         """
