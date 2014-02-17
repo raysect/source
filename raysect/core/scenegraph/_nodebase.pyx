@@ -59,7 +59,7 @@ cdef class _NodeBase:
         point (-100,0,0) in B as B is translated +100 in x compared to A.
         """
 
-        if self.root == node.root:
+        if self.root is node.root:
 
             return node._root_transform_inverse.mul(self._root_transform)
 
