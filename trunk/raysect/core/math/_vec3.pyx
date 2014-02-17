@@ -35,53 +35,53 @@ from raysect.core.math.point cimport Point
 
 cdef class _Vec3:
     """3D Vector base class."""
-    
+
     def __init__(self, v = (0.0, 0.0, 1.0)):
         """
         Constructor.
-        
+
         If no initial values are passed, _Vec3 defaults to a unit vector
         aligned with the z-axis: [0.0, 0.0, 1.0]
-        
+
         Any three (or more) item indexable object can be used to initialise the
-        vector. The x, y and z coordinates will be assigned the values of 
+        vector. The x, y and z coordinates will be assigned the values of
         the items at indexes [0, 1, 2].
-        
+
         e.g. _Vec3([4.0, 5.0, 6.0]) sets the x, y and z coordinates as 4.0,
         5.0 and 6.0 respectively.
         """
-        
+
         cdef Point p
         cdef _Vec3 t
 
         if isinstance(v, _Vec3):
-            
+
             t = <_Vec3>v
-            
+
             self.x = t.x
             self.y = t.y
-            self.z = t.z  
-        
+            self.z = t.z
+
         elif isinstance(v, Point):
-            
+
             p = <Point>v
 
             self.x = p.x
             self.y = p.y
             self.z = p.z
-            
+
         else:
-        
+
             try:
-                
+
                 self.x = v[0]
                 self.y = v[1]
                 self.z = v[2]
-                
+
             except:
-                
+
                 raise TypeError("Vector can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
-               
+
     def __getitem__(self, int i):
         """Returns the vector coordinates by index ([0,1,2] -> [x,y,z])."""
 
@@ -97,52 +97,52 @@ cdef class _Vec3:
     property length:
         """
         The vector's length.
-        
+
         Raises a ZeroDivisionError if an attempt is made to change the length of
         a zero length vector. The direction of a zero length vector is
         undefined hence it can not be lengthened.
         """
-        
+
         def __get__(self):
-            
+
             return self.get_length()
-        
+
         def __set__(self, double v):
-            
+
             self.set_length(v)
 
     cpdef double dot(self, _Vec3 v):
         """
         Calculates the dot product between this vector and the supplied vector.
-        
+
         Returns a scalar.
         """
 
         return self.x * v.x + self.y * v.y + self.z * v.z
-  
-    # length getters/setters    
+
+    # length getters/setters
     cdef inline double get_length(self):
-        
+
         return sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
-        
+
     cdef inline void set_length(self, double v) except *:
-        
+
         cdef double t
-            
+
         # if current length is zero, problem is ill defined
         t = self.x * self.x + self.y * self.y + self.z * self.z
         if t == 0.0:
-            
+
             raise ZeroDivisionError("A zero length vector can not be rescaled as the direction of a zero length vector is undefined.")
-        
+
         # normalise and rescale vector
         with cython.cdivision(True):
-            
+
             t = v / sqrt(t)
 
         self.x = self.x * t
         self.y = self.y * t
         self.z = self.z * t
-  
 
-   
+
+

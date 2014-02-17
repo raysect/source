@@ -37,23 +37,23 @@ from raysect.core.scenegraph.world cimport World
 from raysect.core.scenegraph.primitive cimport Primitive
 
 cdef class Ray:
-    
+
     cdef public Point origin
     cdef public Vector direction
     cdef public double min_distance
     cdef public double max_distance
 
     cpdef trace(self, World world)
-    
+
 
 cdef class Intersection:
 
     cdef public bint hit
     cdef public Ray ray
-    cdef public Primitive primitive    
+    cdef public Primitive primitive
     cdef public Point hit_point
     cdef public Normal surface_normal
-    cdef public double ray_distance    
+    cdef public double ray_distance
 
 
 cdef class Material:
@@ -64,12 +64,11 @@ cdef class Material:
 
 
 cdef class SurfaceResponce:
-    
+
     pass
 
 
 cdef class VolumeResponce:
-    
+
     pass
- 
-    
+

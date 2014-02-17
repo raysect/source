@@ -33,5 +33,5 @@ from raysect.core.scenegraph._nodebase cimport _NodeBase
 from raysect.core.math.affinematrix cimport AffineMatrix
 
 cdef class Node(_NodeBase):
-    
+
     cdef unicode _name

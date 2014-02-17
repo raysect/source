@@ -34,32 +34,31 @@ from raysect.core.math.vector cimport Vector
 from raysect.core.math.affinematrix cimport AffineMatrix
 
 cdef class Normal(_Vec3):
-    
+
     cpdef Vector cross(self, _Vec3 v)
-        
+
     cpdef Normal normalise(self)
 
     cpdef Normal transform(self, AffineMatrix m)
-    
+
     cpdef Normal transform_with_inverse(self, AffineMatrix m)
 
     cdef inline Normal neg(self)
-    
+
     cdef inline Normal add(self, _Vec3 v)
-    
+
     cdef inline Normal sub(self, _Vec3 v)
-    
+
     cdef inline Normal mul(self, double m)
-    
+
     cdef inline Normal div(self, double m)
-    
+
 
 cdef inline Normal new_normal(double x, double y, double z):
-    
+
     cdef Normal v
     v = Normal.__new__(Normal)
     v.x = x
     v.y = y
     v.z = z
     return v
-   

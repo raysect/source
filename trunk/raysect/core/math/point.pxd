@@ -34,21 +34,21 @@ from raysect.core.math.vector cimport Vector
 from raysect.core.math.affinematrix cimport AffineMatrix
 
 cdef class Point:
-    
+
     cdef public double x, y, z
-    
+
     cpdef Vector vector_to(self, Point p)
-    
+
     cpdef double distance_to(self, Point p)
 
     cpdef Point transform(self, AffineMatrix m)
 
-    cdef inline Point add(self, _Vec3 v)  
-    
+    cdef inline Point add(self, _Vec3 v)
+
     cdef inline Point sub(self, _Vec3 v)
 
 cdef inline Point new_point(double x, double y, double z):
-    
+
     cdef Point v
     v = Point.__new__(Point)
     v.x = x

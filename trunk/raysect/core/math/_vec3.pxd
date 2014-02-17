@@ -30,11 +30,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class _Vec3:
-    
+
     cdef public double x, y, z
-    
+
     cpdef double dot(self, _Vec3 v)
-   
+
     cdef inline double get_length(self)
-    
-    cdef inline void set_length(self, double v) except *        
+
+    cdef inline void set_length(self, double v) except *

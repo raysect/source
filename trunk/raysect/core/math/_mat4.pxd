@@ -30,11 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class _Mat4:
-    
+
     cdef double m[4][4]
-    
+
     cdef inline double get_e(self, int row, int column)
-    
+
     cdef inline void set_e(self, int row, int column, double v)
-    
-    
+

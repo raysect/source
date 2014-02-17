@@ -4,6 +4,7 @@ from Cython.Build import cythonize
 
 extensions = [
     Extension("raysect.core.classes", ["raysect/core/classes.pyx"]),    
+    Extension("raysect.core.acceleration.boundingbox", ["raysect/core/acceleration/boundingbox.pyx"]),
     Extension("raysect.core.math._vec3", ["raysect/core/math/_vec3.pyx"]),
     Extension("raysect.core.math._mat4", ["raysect/core/math/_mat4.pyx"]),
     Extension("raysect.core.math.vector", ["raysect/core/math/vector.pyx"]),

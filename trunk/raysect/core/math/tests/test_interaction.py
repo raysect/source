@@ -43,65 +43,67 @@ from math import sqrt
 # TODO: Port to Cython to allow testing of the Cython API
 
 class TestInteraction(unittest.TestCase):
-    
+
     def test_vector_initialise(self):
-        
+        """Initialisation."""
+
         v = Vector([3, -4, 5])
         n = Normal([6, 3, -9])
         p = Point([-5, -2, 10])
-        
+
         # check Vector can be initialise by other vector objects
         r = Vector(n)
         self.assertEqual(r.x, 6, "Vector initialisation failed [X].")
         self.assertEqual(r.y, 3, "Vector initialisation failed [Y].")
         self.assertEqual(r.z, -9, "Vector initialisation failed [Z].")
-        
+
         r = Vector(p)
         self.assertEqual(r.x, -5, "Vector initialisation failed [X].")
         self.assertEqual(r.y, -2, "Vector initialisation failed [Y].")
         self.assertEqual(r.z, 10, "Vector initialisation failed [Z].")
-        
+
         # check Normal can be initialise by other vector objects
         r = Normal(v)
         self.assertEqual(r.x, 3, "Normal initialisation failed [X].")
         self.assertEqual(r.y, -4, "Normal initialisation failed [Y].")
         self.assertEqual(r.z, 5, "Normal initialisation failed [Z].")
-        
+
         r = Normal(p)
         self.assertEqual(r.x, -5, "Normal initialisation failed [X].")
         self.assertEqual(r.y, -2, "Normal initialisation failed [Y].")
         self.assertEqual(r.z, 10, "Normal initialisation failed [Z].")
-        
+
         # check Point can be initialise by other vector objects
         r = Point(v)
         self.assertEqual(r.x, 3, "Point initialisation failed [X].")
         self.assertEqual(r.y, -4, "Point initialisation failed [Y].")
         self.assertEqual(r.z, 5, "Point initialisation failed [Z].")
-        
+
         r = Point(n)
         self.assertEqual(r.x, 6, "Point initialisation failed [X].")
         self.assertEqual(r.y, 3, "Point initialisation failed [Y].")
         self.assertEqual(r.z, -9, "Point initialisation failed [Z].")
-        
+
     def test_vector_add(self):
-        
+        """Add operator."""
+
         v = Vector([3, -4, 5])
         n = Normal([6, 3, -9])
         p = Point([-5, -2, 10])
-        
+
         # Vector and Normal
         r = v + n
         self.assertTrue(isinstance(r, Vector), "Vector addition did not return a Vector.")
         self.assertEqual(r.x, 3 + 6, "Vector + Normal failed [X].")
         self.assertEqual(r.y, -4 + 3, "Vector + Normal failed [X].")
         self.assertEqual(r.z, 5 - 9, "Vector + Normal failed [X].")
-        
+
         r = n + v
         self.assertTrue(isinstance(r, Normal), "Vector addition did not return a Normal.")
         self.assertEqual(r.x, 3 + 6, "Normal + Vector failed [X].")
         self.assertEqual(r.y, -4 + 3, "Normal + Vector failed [X].")
         self.assertEqual(r.z, 5 - 9, "Normal + Vector failed [X].")
-        
+
         # Point and Vector
         r = p + v
         self.assertTrue(isinstance(r, Point), "Vector addition did not return a Point.")
@@ -110,9 +112,9 @@ class TestInteraction(unittest.TestCase):
         self.assertEqual(r.z, 10 + 5, "Point + Vector failed [X].")
 
         with self.assertRaises(TypeError, msg = "Vector + Point should have raise a TypeError."):
-            
+
             r = v + p
-        
+
         # Point and Normal
         r = p + n
         self.assertTrue(isinstance(r, Point), "Vector addition did not return a Point.")
@@ -121,28 +123,29 @@ class TestInteraction(unittest.TestCase):
         self.assertEqual(r.z, 10 - 9, "Point + Normal failed [X].")
 
         with self.assertRaises(TypeError, msg = "Normal + Point should have raise a TypeError."):
-            
+
             r = n + p
-    
+
     def test_vector_subtract(self):
+        """Subtract operator."""
 
         v = Vector([3, -4, 5])
         n = Normal([6, 3, -9])
         p = Point([-5, -2, 10])
-        
+
         # Vector and Normal
         r = v - n
         self.assertTrue(isinstance(r, Vector), "Vector addition did not return a Vector.")
         self.assertEqual(r.x, 3 - 6, "Vector - Normal failed [X].")
         self.assertEqual(r.y, -4 - 3, "Vector - Normal failed [X].")
         self.assertEqual(r.z, 5 + 9, "Vector - Normal failed [X].")
-        
+
         r = n - v
         self.assertTrue(isinstance(r, Normal), "Vector addition did not return a Normal.")
         self.assertEqual(r.x, -3 + 6, "Normal - Vector failed [X].")
         self.assertEqual(r.y, 4 + 3, "Normal - Vector failed [X].")
         self.assertEqual(r.z, -5 - 9, "Normal - Vector failed [X].")
-        
+
         # Point and Vector
         r = p - v
         self.assertTrue(isinstance(r, Point), "Vector addition did not return a Point.")
@@ -151,9 +154,9 @@ class TestInteraction(unittest.TestCase):
         self.assertEqual(r.z, 10 - 5, "Point - Vector failed [X].")
 
         with self.assertRaises(TypeError, msg = "Vector - Point should have raise a TypeError."):
-            
+
             r = v - p
-        
+
         # Point and Normal
         r = p - n
         self.assertTrue(isinstance(r, Point), "Vector addition did not return a Point.")
@@ -162,29 +165,31 @@ class TestInteraction(unittest.TestCase):
         self.assertEqual(r.z, 10 + 9, "Point - Normal failed [X].")
 
         with self.assertRaises(TypeError, msg = "Normal - Point should have raise a TypeError."):
-            
+
             r = n - p
-    
+
     def test_vector_cross(self):
+        """Cross product."""
 
         a = Vector([3, -4, 5])
         b = Normal([6, 3, -9])
-        
+
         # Vector x Normal
         r = a.cross(b)
         self.assertTrue(isinstance(r, Vector), "Cross did not return a Vector.")
         self.assertEqual(r.x, a.y * b.z - b.y * a.z, "Cross product failed [X].")
         self.assertEqual(r.y, b.x * a.z - a.x * b.z, "Cross product failed [Y].")
-        self.assertEqual(r.z, a.x * b.y - b.x * a.y, "Cross product failed [Z].")     
-    
+        self.assertEqual(r.z, a.x * b.y - b.x * a.y, "Cross product failed [Z].")
+
         # Normal x Vector
-        r = b.cross(a)   
+        r = b.cross(a)
         self.assertTrue(isinstance(r, Vector), "Cross did not return a Vector.")
         self.assertEqual(r.x, b.y * a.z - a.y * b.z, "Cross product failed [X].")
         self.assertEqual(r.y, a.x * b.z - b.x * a.z, "Cross product failed [Y].")
         self.assertEqual(r.z, b.x * a.y - a.x * b.y, "Cross product failed [Z].")
-        
+
     def test_affine_vector_multiply(self):
+        """Matrix-Vector multiply."""
 
         m = AffineMatrix([[1,2,3,4],
                           [5,6,2,8],
@@ -200,12 +205,12 @@ class TestInteraction(unittest.TestCase):
         self.assertTrue(isinstance(r, Vector), "AffineMatrix * Vector did not return a Vector.")
         self.assertEqual(r.x, 1 * -1 +  2 * 2 + 3 * 6, "AffineMatrix * Vector failed [X].")
         self.assertEqual(r.y, 5 * -1 +  6 * 2 + 2 * 6, "AffineMatrix * Vector failed [Y].")
-        self.assertEqual(r.z, 9 * -1 + 10 * 2 + 4 * 6, "AffineMatrix * Vector failed [Z].")        
+        self.assertEqual(r.z, 9 * -1 + 10 * 2 + 4 * 6, "AffineMatrix * Vector failed [Z].")
 
         # Vector * AffineMatrix
         with self.assertRaises(TypeError, msg = "Vector * AffineMatrix should have raise a TypeError."):
-            
-            r = v * m    
+
+            r = v * m
 
         # AffineMatrix * Normal
         r = m * n
@@ -216,7 +221,7 @@ class TestInteraction(unittest.TestCase):
 
         # Normal * AffineMatrix
         with self.assertRaises(TypeError, msg = "Normal * AffineMatrix should have raise a TypeError."):
-            
+
             r = n * m
 
         # AffineMatrix * Point
@@ -225,9 +230,13 @@ class TestInteraction(unittest.TestCase):
         w = (4 * -1 + 14 * 2 + 15 * 6 + 16)
         self.assertEqual(r.x, (1 * -1 +  2 * 2 + 3 * 6 + 4) / w, "AffineMatrix * Point failed [X].")
         self.assertEqual(r.y, (5 * -1 +  6 * 2 + 2 * 6 + 8) / w, "AffineMatrix * Point failed [Y].")
-        self.assertEqual(r.z, (9 * -1 + 10 * 2 + 4 * 6 + 9) / w, "AffineMatrix * Point failed [Z].") 
-        
+        self.assertEqual(r.z, (9 * -1 + 10 * 2 + 4 * 6 + 9) / w, "AffineMatrix * Point failed [Z].")
+
         # Point * AffineMatrix
         with self.assertRaises(TypeError, msg = "Point * AffineMatrix should have raise a TypeError."):
-            
-            p = p * m 
+
+            p = p * m
+
+
+if __name__ == "__main__":
+    unittest.main()

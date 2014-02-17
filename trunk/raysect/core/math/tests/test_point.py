@@ -40,107 +40,115 @@ from math import sqrt
 # TODO: Port to Cython to allow testing of the Cython API
 
 class TestPoint(unittest.TestCase):
-    
+
     def test_initialise_default(self):
-        
-        # default initialisation, point at local origin
+        """Default initialisation, point at local origin."""
+
         v = Point()
         self.assertEqual(v.x, 0.0, "Default initialisation is not (0,0,0) [X].")
         self.assertEqual(v.y, 0.0, "Default initialisation is not (0,0,0) [Y].")
         self.assertEqual(v.z, 0.0, "Default initialisation is not (0,0,0) [Z].")
 
     def test_initialise_indexable(self):
+        """Initialisation with an indexable object."""
 
-        # initialisation with an indexable
         v = Point([1.0, 2.0, 3.0])
         self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
         self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
         self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
-        
+
     def test_initialise_invalid(self):
-        
-        # invalid initialisation
+        """Initialisation with invalid types should raise a TypeError."""
+
         with self.assertRaises(TypeError, msg="Initialised with a string."):
             Point("spoon")
-        
+
         with self.assertRaises(TypeError, msg="Initialised with a list containing too few items."):
             Point([1.0, 2.0])
-            
+
     def test_x(self):
-        
+        """Get/set x co-ordinate."""
+
         v = Point([2.5, 6.7, -4.6])
-        
+
         # get x attribute
         self.assertEqual(v.x, 2.5, "Getting x attribute failed.")
-        
+
         # set x attribute
         v.x = 10.0
         self.assertEqual(v.x, 10.0, "Setting x attribute failed.")
-    
+
     def test_y(self):
-        
+        """Get/set y co-ordinate."""
+
         v = Point([2.5, 6.7, -4.6])
-        
+
         # get y attribute
         self.assertEqual(v.y, 6.7, "Getting y attribute failed.")
-        
+
         # set y attribute
         v.y = -7.1
         self.assertEqual(v.y, -7.1, "Setting y attribute failed.")
 
     def test_z(self):
-        
+        """Get/set z co-ordinate."""
+
         v = Point([2.5, 6.7, -4.6])
-        
+
         # get z attribute
         self.assertEqual(v.z, -4.6, "Getting z attribute failed.")
-        
+
         # set z attribute
         v.z = 157.3
         self.assertEqual(v.z, 157.3, "Setting z attribute failed.")
 
     def test_indexing(self):
-        
+        """Getting/setting components by indexing."""
+
         v = Point([2.5, 6.7, -4.6])
-        
+
         # check valid indexes
         self.assertEqual(v[0], 2.50, "Indexing failed [X].")
         self.assertEqual(v[1], 6.70, "Indexing failed [Y].")
         self.assertEqual(v[2], -4.6, "Indexing failed [Z].")
-        
+
         # check invalid indexes
         with self.assertRaises(IndexError, msg="Invalid positive index did not raise IndexError."):
-            
+
             r = v[4]
 
         with self.assertRaises(IndexError, msg="Invalid negative index did not raise IndexError."):
-            
-            r = v[-1]            
-            
+
+            r = v[-1]
+
     def test_add(self):
-        
+        """Addition operator."""
+
         # adding points is undefined
         with self.assertRaises(TypeError, msg="Point addition did not raise a TypeError."):
 
             Point() + Point()
 
     def test_subtract(self):
-        
+        """Subtraction operator."""
+
         # subtracting points is undefined
         with self.assertRaises(TypeError, msg="Point subtraction did not raise a TypeError."):
 
             Point() - Point()
 
     def test_distance_to(self):
-        
+        """Testing method distance_to()."""
+
         a = Point([-1, 5, 26])
         b = Point([9, 4, -1])
         v = a.distance_to(b)
         r = sqrt((9 + 1)**2 + (4 - 5)**2 + (-1 - 26)**2)
         self.assertEqual(v, r, "Point to Point distance is incorrect.")
-    
+
     def test_vector_to(self):
-        
+        """Testing method vector_to()."""
+
         a = Point([-1, 5, 26])
         b = Point([9, 4, -1])
         v = a.vector_to(b)
@@ -148,21 +156,26 @@ class TestPoint(unittest.TestCase):
         self.assertEqual(v.x, 9 + 1, "Vector_to failed [X].")
         self.assertEqual(v.y, 4 - 5, "Vector_to failed [Y].")
         self.assertEqual(v.z, -1 - 26, "Vector_to failed [Z].")
-        
+
     def test_transform(self):
+        """Testing method transform()."""
 
         m = AffineMatrix([[1,2,3,4],
                           [5,6,2,8],
                           [9,10,4,9],
                           [4,14,15,16]])
-        
+
         v = Point([-1, 2, 6])
-        
+
         r = v.transform(m)
 
         self.assertTrue(isinstance(r, Point), "Transform did not return a Point.")
-        
+
         w = (4 * -1 + 14 * 2 + 15 * 6 + 16)
         self.assertEqual(r.x, (1 * -1 +  2 * 2 + 3 * 6 + 4) / w, "Transform failed [X].")
         self.assertEqual(r.y, (5 * -1 +  6 * 2 + 2 * 6 + 8) / w, "Transform failed [Y].")
-        self.assertEqual(r.z, (9 * -1 + 10 * 2 + 4 * 6 + 9) / w, "Transform failed [Z].") 
+        self.assertEqual(r.z, (9 * -1 + 10 * 2 + 4 * 6 + 9) / w, "Transform failed [Z].")
+
+
+if __name__ == "__main__":
+    unittest.main()

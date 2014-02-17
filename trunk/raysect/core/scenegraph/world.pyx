@@ -27,19 +27,19 @@
 # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE. 
+# POSSIBILITY OF SUCH DAMAGE.
 
 cdef class World(_NodeBase):
-    
+
     def __str__(self):
         """String representation."""
-    
+
         #if self.name == "":
-            
+
             #return "<World at " + str(hex(id(self))) + ">"
-        
+
         #else:
-            
-            #return self.name + " <World at " + str(hex(id(self))) + ">"    
-            
-        return "<World at " + str(hex(id(self))) + ">"            
+
+            #return self.name + " <World at " + str(hex(id(self))) + ">"
+
+        return "<World at " + str(hex(id(self))) + ">"
