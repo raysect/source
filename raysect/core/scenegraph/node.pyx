@@ -43,7 +43,7 @@ cdef class Node(_NodeBase):
     systems, can be calculated. Using this transform it is then possible to
     transform vectors and points between the two co-ordinate systems.
     """
-    
+
     def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), unicode name not None = ""):
         """
         Node constructor.
@@ -137,6 +137,18 @@ cdef class Node(_NodeBase):
 
             self._transform = value
             self._update()
+
+    property to_local:
+
+        def __get__(self):
+
+            return self._root_transform_inverse
+
+    property to_root:
+
+        def __get__(self):
+
+            return self._root_transform
 
     property name:
 

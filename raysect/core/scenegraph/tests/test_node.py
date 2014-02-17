@@ -443,6 +443,40 @@ class TestNode(unittest.TestCase):
         with self.assertRaises(TypeError, msg="Passing an invalid arguement (a string) did not raise a TypeError."):
             a.to("bad input")
 
+    def test_to_local(self):
+        """to_local should return a matrix transform from root to local space."""
+
+        # build test tree
+        root = Node()
+        a1 = Node(root, translate(1,0,0))
+        a2 = Node(a1, translate(10,0,0))
+        b1 = Node(root, translate(0,1,0))
+        b2 = Node(b1, translate(0,10,0))
+        c = Node(root, translate(0,0,1))
+
+        # test a2 from root to local
+        self.assertTransformAlmostEqual(a2.to_local, translate(-11,0,0), delta = 1e-14, msg="The a2.to_local transform is incorrect.")
+
+        # test b2 from root to local
+        self.assertTransformAlmostEqual(b2.to_local, translate(0,-11,0), delta = 1e-14, msg="The b2.to_local transform is incorrect.")
+
+    def test_to_root(self):
+        """to_root should return a matrix transform from local to root space."""
+
+        # build test tree
+        root = Node()
+        a1 = Node(root, translate(1,0,0))
+        a2 = Node(a1, translate(10,0,0))
+        b1 = Node(root, translate(0,1,0))
+        b2 = Node(b1, translate(0,10,0))
+        c = Node(root, translate(0,0,1))
+
+        # test a2 from local to root
+        self.assertTransformAlmostEqual(a2.to_root, translate(11,0,0), delta = 1e-14, msg="The a2.to_root transform is incorrect.")
+
+        # test b2 from local to root
+        self.assertTransformAlmostEqual(b2.to_root, translate(0,11,0), delta = 1e-14, msg="The b2.to_root transform is incorrect.")
+
 
 if __name__ == "__main__":
     unittest.main()
