@@ -159,3 +159,23 @@ cdef class Node(_NodeBase):
         def __set__(self, unicode value not None):
 
             self._name = value
+
+    cpdef AffineMatrix to(self, _NodeBase node):
+        """
+        Returns an affine transform that, when applied to a vector or point,
+        transforms the vector or point from the co-ordinate space of the calling
+        node to the co-ordinate space of the target node.
+
+        For example, if space B is translated +100 in x compared to space A and
+        A.to(B) is called then the matrix returned would represent a translation
+        of -100 in x. Applied to point (0,0,0) in A, this would produce the
+        point (-100,0,0) in B as B is translated +100 in x compared to A.
+        """
+
+        if self.root is node.root:
+
+            return node._root_transform_inverse.mul(self._root_transform)
+
+        else:
+
+            raise ValueError("The target node must be in the same scenegraph.")

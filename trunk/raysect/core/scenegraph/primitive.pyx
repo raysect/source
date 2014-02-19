@@ -48,17 +48,17 @@ cdef class Primitive(Node):
 
             return self.name + " <Primitive at " + str(hex(id(self))) + ">"
 
-    cpdef Intersection hit(self, Ray ray):
+    cpdef object hit(self, Ray ray):
         """
         Virtual method - to be implemented by derived classes.
 
         Calculates the closest intersection of the Ray with the Primitive
         surface, if such an intersection exists.
 
-        Must return an Intersection object. If no intersection occurs, the
-        Intersection attribute hit is set to False. If hit is True then the
-        other attributes of the Intersection object will be filled with the
-        calculated values related to the intersection.
+        If a hit occurs an Intersection object must be returned, otherwise None
+        is returned. The intersection object holds the details of the
+        intersection including the point of intersection, surface normal and
+        the objects involved in the intersection.
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method hit() has not been implemented.")

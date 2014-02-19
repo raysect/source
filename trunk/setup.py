@@ -3,7 +3,9 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 
 extensions = [
-    Extension("raysect.core.classes", ["raysect/core/classes.pyx"]),    
+    Extension("raysect.core.classes", ["raysect/core/classes.pyx"]),
+    Extension("raysect.core.acceleration.accelerator", ["raysect/core/acceleration/accelerator.pyx"]),
+    Extension("raysect.core.acceleration.unaccelerated", ["raysect/core/acceleration/unaccelerated.pyx"]),
     Extension("raysect.core.acceleration.boundingbox", ["raysect/core/acceleration/boundingbox.pyx"]),
     Extension("raysect.core.math._vec3", ["raysect/core/math/_vec3.pyx"]),
     Extension("raysect.core.math._mat4", ["raysect/core/math/_mat4.pyx"]),
