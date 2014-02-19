@@ -40,32 +40,13 @@ cdef class _NodeBase:
     def __init__(self):
         """Base class constructor."""
 
+        self._name = ""
         self._parent = None
         self.children = []
         self.root = self
         self._transform = AffineMatrix()
         self._root_transform = AffineMatrix()
         self._root_transform_inverse = AffineMatrix()
-
-    cpdef AffineMatrix to(self, _NodeBase node):
-        """
-        Returns an affine transform that, when applied to a vector or point,
-        transforms the vector or point from the co-ordinate space of the calling
-        node to the co-ordinate space of the target node.
-
-        For example, if space B is translated +100 in x compared to space A and
-        A.to(B) is called then the matrix returned would represent a translation
-        of -100 in x. Applied to point (0,0,0) in A, this would produce the
-        point (-100,0,0) in B as B is translated +100 in x compared to A.
-        """
-
-        if self.root is node.root:
-
-            return node._root_transform_inverse.mul(self._root_transform)
-
-        else:
-
-            raise ValueError("The target node must be in the same scenegraph.")
 
     def _check_parent(self, _NodeBase parent):
         """
@@ -122,6 +103,9 @@ cdef class _NodeBase:
             self._root_transform = (<_NodeBase> self._parent)._root_transform.mul(self._transform)
             self._root_transform_inverse = self._root_transform.inverse()
 
+        # inform root node of change to scenegraph
+        self.root._change(self)
+
         # propagate changes to children
         for child in self.children:
 
@@ -151,3 +135,13 @@ cdef class _NodeBase:
 
         pass
 
+    def _change(self, _NodeBase node):
+        """
+        When implemented by root nodes this method allows nodes in the
+        scene-graph to inform the root node of any change to scenegraph
+        structure or to the nodes themselves.
+
+        Virtual method call.
+        """
+
+        pass

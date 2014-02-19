@@ -29,12 +29,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.classes cimport Ray
+from raysect.core.acceleration.accelerator cimport Accelerator
+from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.point cimport Point
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 
 cdef class World(_NodeBase):
 
-    pass
+    cdef bint _rebuild_accelerator
+    cdef Accelerator _accelerator
+    cdef object _primitives
 
-    # to - multiplies two matrices
-    # to_world - only needs to return a root_transform, avoiding a multiply
-    # to_object - only needs to return a root_transform, avoiding a multiply
+    cpdef AffineMatrix to(self, _NodeBase node)
+
+    cpdef object hit(self, Ray ray)
+
+    cpdef object inside(self, Point point)
+
+    cpdef build_accelerator(self)
+

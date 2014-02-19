@@ -48,7 +48,6 @@ cdef class Ray:
 
 cdef class Intersection:
 
-    cdef public bint hit
     cdef public Ray ray
     cdef public Primitive primitive
     cdef public Point hit_point

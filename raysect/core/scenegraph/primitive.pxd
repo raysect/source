@@ -40,7 +40,7 @@ cdef class Primitive(Node):
 
     cdef Material _material
 
-    cpdef Intersection hit(self, Ray ray)
+    cpdef object hit(self, Ray ray)
 
     cpdef bint inside(self, Point p) except -1
 

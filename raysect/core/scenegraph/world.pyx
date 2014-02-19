@@ -29,17 +29,158 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.acceleration.unaccelerated cimport Unaccelerated
+from raysect.core.scenegraph.primitive cimport Primitive
+
 cdef class World(_NodeBase):
 
+    def __init__(self, unicode name not None = ""):
+        """
+        World constructor.
+        """
+
+        super().__init__()
+
+        self._name = name
+        self. _primitives = list()
+        self. _rebuild_accelerator = True
+        self._accelerator = Unaccelerated() # KDTree()
+
     def __str__(self):
-        """String representation."""
+        "String representation."
 
-        #if self.name == "":
+        if self._name == "":
 
-            #return "<World at " + str(hex(id(self))) + ">"
+            return "<World at " + str(hex(id(self))) + ">"
 
-        #else:
+        else:
 
-            #return self.name + " <World at " + str(hex(id(self))) + ">"
+            return self._name + " <World at " + str(hex(id(self))) + ">"
 
-        return "<World at " + str(hex(id(self))) + ">"
+    cpdef AffineMatrix to(self, _NodeBase node):
+        """
+        Returns an affine transform that, when applied to a vector or point,
+        transforms the vector or point from the co-ordinate space of the calling
+        node to the co-ordinate space of the target node.
+
+        For example, if space B is translated +100 in x compared to space A and
+        A.to(B) is called then the matrix returned would represent a translation
+        of -100 in x. Applied to point (0,0,0) in A, this would produce the
+        point (-100,0,0) in B as B is translated +100 in x compared to A.
+        """
+
+        if self.root is node.root:
+
+            return node._root_transform_inverse
+
+        else:
+
+            raise ValueError("The target node must be in the same scenegraph.")
+
+    cpdef object hit(self, Ray ray):
+        """
+        Calculates the closest intersection of the Ray with the Primitives in
+        the scenegraph, if such an intersection exists.
+
+        If a hit occurs an Intersection object is returned which contains the
+        mathematical details of the intersection. None is returned if the ray
+        does not intersect any primitive.
+
+        This method automatically rebuilds the Acceleration object that is used
+        to optimise hit calculations - if a Primitive's geometry or a transform
+        affecting a primitive has changed since the last call to hit() or
+        inside(), the Acceleration structure used to optimise hit calculations
+        is rebuilt to represent the new scenegraph state.
+        """
+
+        self.build_accelerator()
+        return self._accelerator.hit(ray)
+
+    cpdef object inside(self, Point point):
+        """
+        Returns a list of Primitives that contain the specified point within
+        their surface.
+
+        An empty list is returned if no Primitives contain the Point.
+
+        This method automatically rebuilds the Acceleration object that is used
+        to optimise the inside calculation - if a Primitive's geometry or a
+        transform affecting a primitive has changed since the last call to hit()
+        or inside(), the Acceleration structure used to optimise the inside
+        calculation is rebuilt to represent the new scenegraph state.
+        """
+
+        self.build_accelerator()
+        return self._accelerator.inside(point)
+
+    cpdef build_accelerator(self):
+        """
+        This method manually triggers a rebuild of the Acceleration object.
+
+        If the Acceleration object is already in a consistent state this method
+        will do nothing.
+
+        The Acceleration object is used to accelerate hit() and inside()
+        calculations, typically using a spatial subdivion method. If changes are
+        made to the scenegraph structure, transforms or to a primitive's
+        geometry the acceleration structures may no longer represent the
+        geometry of the scene and hence must be rebuilt. This process is
+        usually performed automatically as part of the first call to hit() or
+        inside() following a change in the scenegraph. As calculating these
+        structures can take some time, this method provides the option of
+        triggering a rebuild outside of hit() and inside() incase the user wants
+        to be able to benchmark without including the overhead of the
+        Acceleration object rebuild.
+        """
+
+        if self._rebuild_accelerator:
+
+            self._accelerator.build(self._primitives)
+            self._rebuild_accelerator = False
+
+    def _register(self, _NodeBase node):
+        "Adds primitives to the World's primitive list."
+
+        if isinstance(node, Primitive):
+
+            self._primitives.append(node)
+            self._rebuild_accelerator = True
+
+    def _deregister(self, _NodeBase node):
+        "Removes primitives from the World's primitive list."
+
+        if isinstance(node, Primitive):
+
+            self._primitives.remove(node)
+            self._rebuild_accelerator = True
+
+    def _change(self, _NodeBase node):
+        """
+        Alerts the world that a change to the scenegraph has occurred that could
+        have made the acceleration structure no longer a valid representation
+        of the scenegaph geometry.
+        """
+
+        self._rebuild_accelerator = True
+
+    property accelerator:
+
+        def __get__(self):
+
+            return self._accelerator
+
+        def __set__(self, Accelerator accelerator not None):
+
+            self._accelerator = accelerator
+            self._rebuild_accelerator = True
+
+    property name:
+
+        def __get__(self):
+
+            return self._name
+
+        def __set__(self, unicode value not None):
+
+            self._name = value
+
