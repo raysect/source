@@ -331,17 +331,3 @@ cpdef AffineMatrix rotate(double alpha, double beta, double gamma):
                             1)
 
 
-cpdef AffineMatrix scale(double x, double y, double z):
-    """
-    Returns an affine matrix representing a rescaling of the coordinate space.
-    """
-
-    if x <=0 or y <= 0 or z<= 0:
-
-        raise ValueError("Scale must not be less than or equal to 0.")
-
-    return new_affinematrix(x, 0, 0, 0,
-                            0, y, 0, 0,
-                            0, 0, z, 0,
-                            0, 0, 0, 1)
-

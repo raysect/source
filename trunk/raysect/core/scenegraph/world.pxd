@@ -40,7 +40,7 @@ cdef class World(_NodeBase):
 
     cdef bint _rebuild_accelerator
     cdef Accelerator _accelerator
-    cdef object _primitives
+    cdef list _primitives
 
     cpdef AffineMatrix to(self, _NodeBase node)
 

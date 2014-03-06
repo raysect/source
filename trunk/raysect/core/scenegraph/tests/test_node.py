@@ -455,10 +455,10 @@ class TestNode(unittest.TestCase):
         c = Node(root, translate(0,0,1))
 
         # test a2 from root to local
-        self.assertTransformAlmostEqual(a2.to_local, translate(-11,0,0), delta = 1e-14, msg="The a2.to_local transform is incorrect.")
+        self.assertTransformAlmostEqual(a2.to_local(), translate(-11,0,0), delta = 1e-14, msg="The a2.to_local transform is incorrect.")
 
         # test b2 from root to local
-        self.assertTransformAlmostEqual(b2.to_local, translate(0,-11,0), delta = 1e-14, msg="The b2.to_local transform is incorrect.")
+        self.assertTransformAlmostEqual(b2.to_local(), translate(0,-11,0), delta = 1e-14, msg="The b2.to_local transform is incorrect.")
 
     def test_to_root(self):
         """to_root should return a matrix transform from local to root space."""
@@ -472,10 +472,10 @@ class TestNode(unittest.TestCase):
         c = Node(root, translate(0,0,1))
 
         # test a2 from local to root
-        self.assertTransformAlmostEqual(a2.to_root, translate(11,0,0), delta = 1e-14, msg="The a2.to_root transform is incorrect.")
+        self.assertTransformAlmostEqual(a2.to_root(), translate(11,0,0), delta = 1e-14, msg="The a2.to_root transform is incorrect.")
 
         # test b2 from local to root
-        self.assertTransformAlmostEqual(b2.to_root, translate(0,11,0), delta = 1e-14, msg="The b2.to_root transform is incorrect.")
+        self.assertTransformAlmostEqual(b2.to_root(), translate(0,11,0), delta = 1e-14, msg="The b2.to_root transform is incorrect.")
 
 
 if __name__ == "__main__":

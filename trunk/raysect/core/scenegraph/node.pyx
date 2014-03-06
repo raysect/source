@@ -138,18 +138,6 @@ cdef class Node(_NodeBase):
             self._transform = value
             self._update()
 
-    property to_local:
-
-        def __get__(self):
-
-            return self._root_transform_inverse
-
-    property to_root:
-
-        def __get__(self):
-
-            return self._root_transform
-
     property name:
 
         def __get__(self):
@@ -179,3 +167,11 @@ cdef class Node(_NodeBase):
         else:
 
             raise ValueError("The target node must be in the same scenegraph.")
+
+    cpdef AffineMatrix to_local(self):
+
+        return self._root_transform_inverse
+
+    cpdef AffineMatrix to_root(self):
+
+        return self._root_transform
