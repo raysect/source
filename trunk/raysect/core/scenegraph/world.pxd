@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.classes cimport Ray
+from raysect.core.classes cimport Intersection
 from raysect.core.acceleration.accelerator cimport Accelerator
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.point cimport Point
@@ -43,9 +44,9 @@ cdef class World(_NodeBase):
 
     cpdef AffineMatrix to(self, _NodeBase node)
 
-    cpdef object hit(self, Ray ray)
+    cpdef Intersection hit(self, Ray ray)
 
-    cpdef object inside(self, Point point)
+    cpdef list inside(self, Point point)
 
     cpdef build_accelerator(self)
 

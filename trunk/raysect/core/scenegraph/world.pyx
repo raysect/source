@@ -47,7 +47,7 @@ cdef class World(_NodeBase):
         self._accelerator = Unaccelerated() # KDTree()
 
     def __str__(self):
-        "String representation."
+        """String representation."""
 
         if self._name == "":
 
@@ -77,7 +77,7 @@ cdef class World(_NodeBase):
 
             raise ValueError("The target node must be in the same scenegraph.")
 
-    cpdef object hit(self, Ray ray):
+    cpdef Intersection hit(self, Ray ray):
         """
         Calculates the closest intersection of the Ray with the Primitives in
         the scenegraph, if such an intersection exists.
@@ -96,7 +96,7 @@ cdef class World(_NodeBase):
         self.build_accelerator()
         return self._accelerator.hit(ray)
 
-    cpdef object inside(self, Point point):
+    cpdef list inside(self, Point point):
         """
         Returns a list of Primitives that contain the specified point within
         their surface.
@@ -139,7 +139,7 @@ cdef class World(_NodeBase):
             self._rebuild_accelerator = False
 
     def _register(self, _NodeBase node):
-        "Adds primitives to the World's primitive list."
+        """Adds primitives to the World's primitive list."""
 
         if isinstance(node, Primitive):
 
@@ -147,7 +147,7 @@ cdef class World(_NodeBase):
             self._rebuild_accelerator = True
 
     def _deregister(self, _NodeBase node):
-        "Removes primitives from the World's primitive list."
+        """Removes primitives from the World's primitive list."""
 
         if isinstance(node, Primitive):
 

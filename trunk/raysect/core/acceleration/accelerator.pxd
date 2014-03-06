@@ -29,14 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
 from raysect.core.classes cimport Ray
 from raysect.core.math.point cimport Point
+from raysect.core.classes cimport Intersection
 
 cdef class Accelerator:
 
-    cpdef build(self, object primitives)
+    cpdef build(self, list primitives)
 
-    cpdef object hit(self, Ray ray)
+    cpdef Intersection hit(self, Ray ray)
 
-    cpdef object inside(self, Point point)
+    cpdef list inside(self, Point point)

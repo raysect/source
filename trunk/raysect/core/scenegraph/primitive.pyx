@@ -35,7 +35,7 @@ cdef class Primitive(Node):
 
         super().__init__(parent, transform, name)
 
-        self._material = material
+        self.material = material
 
     def __str__(self):
         """String representation."""
@@ -48,7 +48,17 @@ cdef class Primitive(Node):
 
             return self.name + " <Primitive at " + str(hex(id(self))) + ">"
 
-    cpdef object hit(self, Ray ray):
+    property material:
+
+        def __get__(self):
+
+            return self.material
+
+        def __set__(self, Material value not None):
+
+            self.material = value
+
+    cpdef Intersection hit(self, Ray ray):
         """
         Virtual method - to be implemented by derived classes.
 
@@ -90,13 +100,5 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
 
-    property material:
 
-        def __get__(self):
-
-            return self._material
-
-        def __set__(self, Material value not None):
-
-            self._material = value
 

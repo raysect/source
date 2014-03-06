@@ -30,8 +30,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.acceleration.accelerator cimport Accelerator
+from raysect.core.classes cimport Ray
+from raysect.core.math.point cimport Point
+from raysect.core.classes cimport Intersection
 
 cdef class Unaccelerated(Accelerator):
 
-    pass
+    cdef list bounding_boxes
+
+    cpdef build(self, list primitives)
+
+    cpdef Intersection hit(self, Ray ray)
+
+    cpdef list inside(self, Point point)
 
