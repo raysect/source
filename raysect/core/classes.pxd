@@ -53,7 +53,8 @@ cdef class Intersection:
     cdef public double ray_distance
     cdef public Point hit_point
     cdef public Normal surface_normal
-    
+    cdef public double ray_epsilon
+
 
 cdef class Material:
 

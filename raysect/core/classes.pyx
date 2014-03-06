@@ -29,12 +29,24 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# cython doesn't have a built-in infinity constant, this compiles to +infinity
+DEF INFINITY = 1e999
+
 cdef class Ray:
 
-    # add an init!
+    def __init__(self,
+                 Point origin not None = Point([0,0,0]),
+                 Vector direction not None = Vector([0,0,1]),
+                 double min_distance = 0.0,
+                 double max_distance = INFINITY):
+
+        self.origin = origin
+        self.direction = direction
+        self.min_distance = min_distance
+        self.max_distance = max_distance
 
     cpdef trace(self, World world):
-        
+
         return NotImplemented
 
 

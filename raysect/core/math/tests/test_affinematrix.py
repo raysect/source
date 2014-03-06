@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from ..affinematrix import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, scale
+from ..affinematrix import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate
 from ..vector import Vector
 from math import sin, cos, pi, sqrt
 
@@ -304,47 +304,6 @@ class TestAffineMatrix(unittest.TestCase):
             for j in range(0, 4):
 
                 self.assertAlmostEqual(m[i,j], r[i,j], places = 14, msg = "Rotate matrix generation failed (R"+str(i)+", C"+str(j)+").")
-
-    def test_factory_scale(self):
-        """Scale transform matrix factory function."""
-
-        # test matrix generation
-        m = scale(1.3, 4.5, 2.2)
-
-        r = [[1.3, 0, 0, 0],
-             [0, 4.5, 0, 0],
-             [0, 0, 2.2, 0],
-             [0, 0, 0, 1]]
-
-        for i, row in enumerate(r):
-            for j, v in enumerate(row):
-
-                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Scale matrix generation failed (R"+str(i)+", C"+str(j)+").")
-
-        # scales can not be <= 0.0, should raise a ValueError
-        with self.assertRaises(ValueError, msg = "X scale = 0 did not raise a value error."):
-
-            scale(0, 1, 1)
-
-        with self.assertRaises(ValueError, msg = "X scale < 0 did not raise a value error."):
-
-            scale(-1, 1, 1)
-
-        with self.assertRaises(ValueError, msg = "Y scale = 0 did not raise a value error."):
-
-            scale(1, 0, 1)
-
-        with self.assertRaises(ValueError, msg = "Y scale < 0 did not raise a value error."):
-
-            scale(1, -1, 1)
-
-        with self.assertRaises(ValueError, msg = "Z scale = 0 did not raise a value error."):
-
-            scale(1, 1, 0)
-
-        with self.assertRaises(ValueError, msg = "Z scale < 0 did not raise a value error."):
-
-            scale(1, 1, -1)
 
 
 if __name__ == "__main__":

@@ -29,13 +29,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.scenegraph._nodebase cimport _NodeBase
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.classes cimport Ray, Material, Intersection
+from raysect.core.math.point cimport Point
 from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.acceleration.boundingbox cimport BoundingBox
 
-cdef class Node(_NodeBase):
+cdef class Sphere(Primitive):
 
-    cpdef AffineMatrix to(self, _NodeBase node)
+    cdef double _radius
 
-    cpdef AffineMatrix to_local(self)
-
-    cpdef AffineMatrix to_root(self)

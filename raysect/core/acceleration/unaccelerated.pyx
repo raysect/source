@@ -43,55 +43,54 @@ cdef class Unaccelerated(Accelerator):
 
     cpdef build(self, list primitives):
 
-        cdef Primitive p
+        cdef Primitive primitive
 
         self.bounding_boxes = []
-        for p in primitives:
+        for primitive in primitives:
 
-            self.bounding_boxes.append(p.bounding_box())
+            self.bounding_boxes.append(primitive.bounding_box())
 
     cpdef Intersection hit(self, Ray ray):
 
-        cdef BoundingBox b
-        cdef Intersection i, closest_intersection
+        cdef BoundingBox box
+        cdef distance
+        cdef Intersection intersection, closest_intersection
 
         # find the closest primitive-ray intersection
         closest_intersection = None
 
         # intial search distance is maximum possible ray extent
-        d = ray.max_distance
+        distance = ray.max_distance
 
         # check each box for a hit
-        for b in self.bounding_boxes:
+        for box in self.bounding_boxes:
 
-            # obtain intersection
-            if b.hit(ray):
+            if box.hit(ray):
 
-                # box hit so test primitive
-                i = b.primitive.hit(ray)
-                if i is not None:
+                # box is hit so test primitive
+                intersection = box.primitive.hit(ray)
+                if intersection is not None:
 
-                    # check if new intersection is closer and outside the ray's minimum range
-                    if (i.ray_distance > ray.min_distance) and (i.ray_distance < d):
+                    if (intersection.ray_distance > ray.min_distance) and (intersection.ray_distance < distance):
 
-                        d = i.ray_distance
-                        closest_intersection = i
+                        distance = intersection.ray_distance
+                        closest_intersection = intersection
 
         return closest_intersection
 
     cpdef list inside(self, Point point):
 
-        cdef BoundingBox b
+        cdef BoundingBox box
         cdef list primitives
 
         primitives = []
 
-        for b in self.bounding_boxes:
+        for box in self.bounding_boxes:
 
-            if b.inside(point):
+            if box.inside(point):
 
-                if b.primitive.inside(point):
+                if box.primitive.inside(point):
 
-                    primitives.append(b.primitive)
+                    primitives.append(box.primitive)
 
         return primitives
