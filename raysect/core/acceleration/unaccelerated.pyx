@@ -29,5 +29,69 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class Unaccelerated(Accelerator)
+# TODO: clean up this code
+# TODO: add docstrings
 
+from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.scenegraph.primitive cimport Primitive
+
+cdef class Unaccelerated(Accelerator):
+
+    def __init__(self):
+
+        self.bounding_boxes = []
+
+    cpdef build(self, list primitives):
+
+        cdef Primitive p
+
+        self.bounding_boxes = []
+        for p in primitives:
+
+            self.bounding_boxes.append(p.bounding_box())
+
+    cpdef Intersection hit(self, Ray ray):
+
+        cdef BoundingBox b
+        cdef Intersection i, closest_intersection
+
+        # find the closest primitive-ray intersection
+        closest_intersection = None
+
+        # intial search distance is maximum possible ray extent
+        d = ray.max_distance
+
+        # check each box for a hit
+        for b in self.bounding_boxes:
+
+            # obtain intersection
+            if b.hit(ray):
+
+                # box hit so test primitive
+                i = b.primitive.hit(ray)
+                if i is not None:
+
+                    # check if new intersection is closer and outside the ray's minimum range
+                    if (i.ray_distance > ray.min_distance) and (i.ray_distance < d):
+
+                        d = i.ray_distance
+                        closest_intersection = i
+
+        return closest_intersection
+
+    cpdef list inside(self, Point point):
+
+        cdef BoundingBox b
+        cdef list primitives
+
+        primitives = []
+
+        for b in self.bounding_boxes:
+
+            if b.inside(point):
+
+                if b.primitive.inside(point):
+
+                    primitives.append(b.primitive)
+
+        return primitives

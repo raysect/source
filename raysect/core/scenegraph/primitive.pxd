@@ -38,9 +38,9 @@ from raysect.core.acceleration.boundingbox cimport BoundingBox
 
 cdef class Primitive(Node):
 
-    cdef Material _material
+    cdef Material material
 
-    cpdef object hit(self, Ray ray)
+    cpdef Intersection hit(self, Ray ray)
 
     cpdef bint inside(self, Point p) except -1
 

@@ -50,10 +50,10 @@ cdef class Intersection:
 
     cdef public Ray ray
     cdef public Primitive primitive
+    cdef public double ray_distance
     cdef public Point hit_point
     cdef public Normal surface_normal
-    cdef public double ray_distance
-
+    
 
 cdef class Material:
 

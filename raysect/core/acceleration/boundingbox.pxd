@@ -29,8 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: Replace this stub!
+from raysect.core.math.point cimport Point
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.classes cimport Ray
 
 cdef class BoundingBox:
 
-    pass
+    cdef Point lower
+    cdef Point upper
+    cdef Primitive primitive
+
+    cpdef bint hit(self, Ray ray)
+
+    cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection)
+
+    cpdef bint inside(self, Point point)
+

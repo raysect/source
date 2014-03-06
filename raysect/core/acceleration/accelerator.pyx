@@ -29,18 +29,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: Write this code!
-
 cdef class Accelerator:
 
-    cpdef build(self, object primitives):
+    cpdef build(self, list primitives):
 
         pass
 
-    cpdef object hit(self, Ray ray):
+    cpdef Intersection hit(self, Ray ray):
 
-        pass
+        raise NotImplementedError("Accelerator virtual method hit() has not been implemented.")
 
-    cpdef object inside(self, Point point):
+    cpdef list inside(self, Point point):
 
-        pass
+        raise NotImplementedError("Accelerator virtual method inside() has not been implemented.")
