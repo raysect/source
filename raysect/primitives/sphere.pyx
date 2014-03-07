@@ -54,6 +54,17 @@ cdef class Sphere(Primitive):
 
         self._radius = radius
 
+    def __str__(self):
+        """String representation."""
+
+        if self.name == "":
+
+            return "<Sphere at " + str(hex(id(self))) + ">"
+
+        else:
+
+            return self.name + " <Sphere at " + str(hex(id(self))) + ">"
+
     property radius:
 
         def __get__(self):
