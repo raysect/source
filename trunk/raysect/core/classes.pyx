@@ -58,11 +58,14 @@ cdef class Intersection:
 
 cdef class Material:
 
-    cpdef SurfaceResponce evaluate_surface(self, Ray ray, Point point, Normal normal, AffineMatrix to_world, AffineMatrix to_object):
+    cpdef SurfaceResponce evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                            bint exiting, Point inside_point, Point outside_point,
+                                            Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         raise NotImplementedError("Material surface has not been defined. Virtual method evaluate_surface() has not been implemented.")
 
-    cpdef VolumeResponce evaluate_volume(self, Ray ray, Point entry, Point exit, AffineMatrix to_world, AffineMatrix to_object):
+    cpdef VolumeResponce evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
+                                         AffineMatrix to_world, AffineMatrix to_object):
 
         raise NotImplementedError("Material volume has not been defined. Virtual method evaluate_volume() has not been implemented.")
 
