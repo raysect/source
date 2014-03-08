@@ -29,17 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
 cimport cython
-from raysect.core.math.point cimport new_point
+from raysect.core.classes cimport Ray, Material, Intersection, new_intersection
+from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.math.point cimport Point, new_point
 from raysect.core.math.normal cimport new_normal, Normal
 from raysect.core.math.vector cimport Vector
+from raysect.core.math.affinematrix cimport AffineMatrix
 from libc.math cimport sqrt
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9
 
-# suggested ray distance to avoid rehitting the same surface point
+# additional ray distance to avoid rehitting the same surface point
 DEF EPSILON = 1e-9
 
 cdef class Sphere(Primitive):
@@ -88,11 +90,13 @@ cdef class Sphere(Primitive):
 
     cpdef Intersection hit(self, Ray ray):
 
-        cdef Point origin, hit_point
+        cdef Point origin, hit_point, inside_point, outside_point
         cdef Normal normal
         cdef Vector direction
         cdef double a, b, c, d, q, t0, t1, temp, t_closest
+        cdef double delta_x, delta_y, delta_z
         cdef Intersection intersection
+        cdef bint exiting
 
         # convert ray parameters to local space
         origin = ray.origin.transform(self.to_local())
@@ -169,13 +173,41 @@ cdef class Sphere(Primitive):
         normal = new_normal(hit_point.x, hit_point.y, hit_point.z)
         normal = normal.normalise()
 
-        intersection = Intersection()
+        # calculate points inside and outside of surface for daughter rays to
+        # spawn from - these points are displaced from the surface to avoid
+        # re-hitting the same surface
+        delta_x = EPSILON * normal.x
+        delta_y = EPSILON * normal.y
+        delta_z = EPSILON * normal.z
+
+        inside_point = new_point(hit_point.x - delta_x,
+                                 hit_point.y - delta_y,
+                                 hit_point.z - delta_z)
+
+        outside_point = new_point(hit_point.x + delta_x,
+                                  hit_point.y + delta_y,
+                                  hit_point.z + delta_z)
+
+        # is ray exiting surface
+        if direction.dot(normal) >= 0.0:
+
+            exiting = True
+
+        else:
+
+            exiting = False
+
+        intersection = new_intersection()
         intersection.primitive = self
         intersection.hit_point = hit_point
-        intersection.surface_normal = normal
+        intersection.inside_point = inside_point
+        intersection.outside_point = outside_point
+        intersection.normal = normal
         intersection.ray = ray
         intersection.ray_distance = t_closest
-        intersection.ray_epsilon = EPSILON
+        intersection.exiting = exiting
+        intersection.to_local = self.to_local()
+        intersection.to_world = self.to_root()
 
         return intersection
 

@@ -30,10 +30,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.classes cimport Ray, Material, Intersection
-from raysect.core.math.point cimport Point
-from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.acceleration.boundingbox cimport BoundingBox
 
 cdef class Sphere(Primitive):
 

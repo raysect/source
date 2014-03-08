@@ -49,18 +49,30 @@ cdef class Ray:
 cdef class Intersection:
 
     cdef public Ray ray
-    cdef public Primitive primitive
     cdef public double ray_distance
+    cdef public bint exiting
+    cdef public Primitive primitive
     cdef public Point hit_point
-    cdef public Normal surface_normal
-    cdef public double ray_epsilon
+    cdef public Point inside_point
+    cdef public Point outside_point
+    cdef public Normal normal
+    cdef public AffineMatrix to_local
+    cdef public AffineMatrix to_world
+
+
+cdef inline Intersection new_intersection():
+
+    return Intersection.__new__(Intersection)
 
 
 cdef class Material:
 
-    cpdef SurfaceResponce evaluate_surface(self, Ray ray, Point point, Normal normal, AffineMatrix to_world, AffineMatrix to_object)
+    cpdef SurfaceResponce evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                            bint exiting, Point inside_point, Point outside_point,
+                                            Normal normal, AffineMatrix to_local, AffineMatrix to_world)
 
-    cpdef VolumeResponce evaluate_volume(self, Ray ray, Point entry, Point exit, AffineMatrix to_world, AffineMatrix to_object)
+    cpdef VolumeResponce evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
+                                         AffineMatrix to_world, AffineMatrix to_object)
 
 
 cdef class SurfaceResponce:
