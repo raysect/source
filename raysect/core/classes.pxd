@@ -43,7 +43,9 @@ cdef class Ray:
     cdef public double min_distance
     cdef public double max_distance
 
-    cpdef trace(self, World world)
+    cpdef object trace(self, World world)
+
+    cpdef Ray spawn_daughter(self, Point origin, Vector direction)
 
 
 cdef class Intersection:
@@ -72,7 +74,7 @@ cdef class Material:
                                             Normal normal, AffineMatrix to_local, AffineMatrix to_world)
 
     cpdef VolumeResponce evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
-                                         AffineMatrix to_world, AffineMatrix to_object)
+                                         AffineMatrix to_local, AffineMatrix to_world)
 
 
 cdef class SurfaceResponce:
