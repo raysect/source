@@ -53,7 +53,7 @@ cdef class Unaccelerated(Accelerator):
     cpdef Intersection hit(self, Ray ray):
 
         cdef BoundingBox box
-        cdef distance
+        cdef double distance
         cdef Intersection intersection, closest_intersection
 
         # find the closest primitive-ray intersection

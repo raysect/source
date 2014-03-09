@@ -20,6 +20,7 @@ extensions = [
     Extension("raysect.core.scenegraph.world",  ["raysect/core/scenegraph/world.pyx"]),
     Extension("raysect.primitives.sphere",  ["raysect/primitives/sphere.pyx"]),
     Extension("raysect.tests.speed_test_functions", ["raysect/tests/speed_test_functions.pyx"]),
+    Extension("raysect.demo.cython", ["raysect/demo/cython.pyx"])
     ]
 
 setup(

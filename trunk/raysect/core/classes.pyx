@@ -49,6 +49,9 @@ cdef class Ray:
 
         return NotImplemented
 
+    cpdef Ray spawn_daughter(self, Point origin, Vector direction):
+
+        return NotImplemented
 
 cdef class Intersection:
 
@@ -65,7 +68,7 @@ cdef class Material:
         raise NotImplementedError("Material surface has not been defined. Virtual method evaluate_surface() has not been implemented.")
 
     cpdef VolumeResponce evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
-                                         AffineMatrix to_world, AffineMatrix to_object):
+                                         AffineMatrix to_local, AffineMatrix to_world):
 
         raise NotImplementedError("Material volume has not been defined. Virtual method evaluate_volume() has not been implemented.")
 
