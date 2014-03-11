@@ -37,15 +37,13 @@ cdef class Ray:
     def __init__(self,
                  Point origin not None = Point([0,0,0]),
                  Vector direction not None = Vector([0,0,1]),
-                 double min_distance = 0.0,
                  double max_distance = INFINITY):
 
         self.origin = origin
         self.direction = direction
-        self.min_distance = min_distance
         self.max_distance = max_distance
 
-    cpdef trace(self, World world):
+    cpdef object trace(self, World world):
 
         return NotImplemented
 
@@ -59,22 +57,6 @@ cdef class Intersection:
     pass
 
 
-cdef class Material:
+cdef class Material
 
-    cpdef SurfaceResponce evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                            bint exiting, Point inside_point, Point outside_point,
-                                            Normal normal, AffineMatrix to_local, AffineMatrix to_world):
-
-        raise NotImplementedError("Material surface has not been defined. Virtual method evaluate_surface() has not been implemented.")
-
-    cpdef VolumeResponce evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
-                                         AffineMatrix to_local, AffineMatrix to_world):
-
-        raise NotImplementedError("Material volume has not been defined. Virtual method evaluate_volume() has not been implemented.")
-
-
-cdef class SurfaceResponce
-
-
-cdef class VolumeResponce
 

@@ -147,12 +147,12 @@ cdef class Sphere(Primitive):
             t0 = t1
             t1 = temp
 
-        # test the intersection points inside the ray search range
-        if (t0 > ray.max_distance) or (t1 < ray.min_distance):
+        # test the intersection points inside the ray search range [0, max_distance]
+        if (t0 > ray.max_distance) or (t1 < 0.0):
 
             return None
 
-        if t0 >= ray.min_distance:
+        if t0 >= 0.0:
 
             t_closest = t0
 
