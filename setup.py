@@ -18,9 +18,11 @@ extensions = [
     Extension("raysect.core.scenegraph.primitive",  ["raysect/core/scenegraph/primitive.pyx"]),
     Extension("raysect.core.scenegraph.observer",  ["raysect/core/scenegraph/observer.pyx"]),
     Extension("raysect.core.scenegraph.world",  ["raysect/core/scenegraph/world.pyx"]),
-    Extension("raysect.primitives.sphere",  ["raysect/primitives/sphere.pyx"]),
+    Extension("raysect.primitive.sphere",  ["raysect/primitive/sphere.pyx"]),
     Extension("raysect.tests.speed_test_functions", ["raysect/tests/speed_test_functions.pyx"]),
-    Extension("raysect.demo.cython", ["raysect/demo/cython.pyx"])
+    Extension("raysect.demo.material", ["raysect/demo/material.pyx"]),
+    Extension("raysect.demo.ray", ["raysect/demo/ray.pyx"]),
+    Extension("raysect.demo.support", ["raysect/demo/support.pyx"])
     ]
 
 setup(
