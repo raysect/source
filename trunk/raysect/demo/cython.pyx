@@ -1,11 +1,9 @@
 # cython: language_level=3
 
-
 from time import time
 from numpy import array, zeros
 from matplotlib.pyplot import imshow, imsave, show, ion, ioff, clf, figure, draw
 
-#from math import sin, cos, tan, atan, pi, exp
 from libc.math cimport sin, cos, tan, atan, M_PI as pi, exp
 from raysect.core.math.point cimport Point, new_point
 from raysect.core.math.vector cimport Vector
@@ -187,7 +185,7 @@ cdef class GlowGaussian(MaterialRGB):
         # numerical integration
         glow_previous = self.glow_magnitude(entry)
         t = self.step
-        while(t < length):
+        while(t <= length):
 
             glow = self.glow_magnitude(new_point(entry.x + t * direction.x,
                                                  entry.y + t * direction.y,
@@ -204,6 +202,7 @@ cdef class GlowGaussian(MaterialRGB):
         glow = self.glow_magnitude(exit)
 
         # trapizium rule integration of remainder
+        t -= self.step
         intensity.r += 0.5 * (length - t) * (glow.r + glow_previous.r)
         intensity.g += 0.5 * (length - t) * (glow.g + glow_previous.g)
         intensity.b += 0.5 * (length - t) * (glow.b + glow_previous.b)
@@ -351,10 +350,6 @@ cdef class RayRGB(Ray):
                 spectrum.r = (1 - vresponce.attenuation.r) * spectrum.r + vresponce.intensity.r
                 spectrum.g = (1 - vresponce.attenuation.g) * spectrum.g + vresponce.intensity.g
                 spectrum.b = (1 - vresponce.attenuation.b) * spectrum.b + vresponce.intensity.b
-
-                #spectrum.r = spectrum.r + vresponce.intensity.r
-                #spectrum.g = spectrum.g + vresponce.intensity.g
-                #spectrum.b = spectrum.b + vresponce.intensity.b
 
         return spectrum
 
@@ -520,23 +515,31 @@ def demo():
     print("Raysect test script")
 
     world = World()
-    sphere_r = Sphere(2.0, world, translate(0, 1, 5), GlowGaussian(RGB(1.0, 0, 0), 0.4, 0.01))
-    sphere_g = Sphere(2.0, world, translate(0.707, -0.707, 5), GlowGaussian(RGB(0, 1.0, 0), 0.4, 0.01))
-    sphere_b = Sphere(2.0, world, translate(-0.707, -0.707, 5), GlowGaussian(RGB(0, 0, 1.0), 0.4, 0.01))
-    sphere_world = Sphere(100.0, world, rotate(0, 0, 0), Checkerboard())
-    sphere_world.material.scale = 10
+
+    #sphere_r = Sphere(2.0, world, translate(0, 1, 5), Glow(0.25, 0, 0))
+    #sphere_g = Sphere(2.0, world, translate(0.707, -0.707, 5), Glow(0, 0.25, 0))
+    #sphere_b = Sphere(2.0, world, translate(-0.707, -0.707, 5), Glow(0, 0, 0.25))
+
+    sphere_r = Sphere(2.0, world, translate(0, 1, 5), GlowGaussian(RGB(1, 0, 0), 0.4, 0.1))
+    sphere_g = Sphere(2.0, world, translate(0.707, -0.707, 5), GlowGaussian(RGB(0, 1, 0), 0.4, 0.1))
+    sphere_b = Sphere(2.0, world, translate(-0.707, -0.707, 5), GlowGaussian(RGB(0, 0, 1), 0.4, 0.1))
+
+    #sphere_world = Sphere(100.0, world, rotate(0, 0, 0), Checkerboard())
+    #sphere_world.material.scale = 10
 
     observer = PinholeCamera((640, 480), 45, world, translate(0, 0, -5) * rotate(0, 0, 0))
 
     ion()
     figure(1)
 
+    #observer.display_progress = False
+
     t = time()
     observer.observe()
     t = time() - t
     print("Render time was " + str(t) + " seconds")
 
-    ioff()
+    #ioff()
     observer.display()
     show()
 
