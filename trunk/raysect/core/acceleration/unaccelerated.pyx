@@ -71,7 +71,7 @@ cdef class Unaccelerated(Accelerator):
                 intersection = box.primitive.hit(ray)
                 if intersection is not None:
 
-                    if (intersection.ray_distance > ray.min_distance) and (intersection.ray_distance < distance):
+                    if intersection.ray_distance < distance:
 
                         distance = intersection.ray_distance
                         closest_intersection = intersection

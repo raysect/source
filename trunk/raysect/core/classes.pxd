@@ -40,7 +40,6 @@ cdef class Ray:
 
     cdef public Point origin
     cdef public Vector direction
-    cdef public double min_distance
     cdef public double max_distance
 
     cpdef object trace(self, World world)
@@ -69,20 +68,6 @@ cdef inline Intersection new_intersection():
 
 cdef class Material:
 
-    cpdef SurfaceResponce evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                            bint exiting, Point inside_point, Point outside_point,
-                                            Normal normal, AffineMatrix to_local, AffineMatrix to_world)
-
-    cpdef VolumeResponce evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
-                                         AffineMatrix to_local, AffineMatrix to_world)
-
-
-cdef class SurfaceResponce:
-
     pass
 
-
-cdef class VolumeResponce:
-
-    pass
 
