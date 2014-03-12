@@ -33,7 +33,7 @@ from time import time
 from matplotlib.pyplot import imshow, imsave, show, ion, ioff, clf, figure
 from raysect.core import World, translate, rotate
 from raysect.primitive import Sphere
-from raysect.demo.material import GlowGaussianBeam
+from raysect.demo.material import GlowGaussianBeam, Checkerboard, Glass, Glow, GlowBeams
 from raysect.demo.camera import PinholeCamera
 from raysect.demo.support import RGB
 
@@ -43,14 +43,24 @@ def run_demo(pixels = (500, 500), display_progress = True):
 
     world = World("The World")
 
-    sphere_r = Sphere(world, translate(0, 1, 5), GlowGaussianBeam(RGB(0.25, 0, 0), 0.2, 0.05), 2.0, "Red Object")
-    sphere_g = Sphere(world, translate(0.707, -0.707, 5), GlowGaussianBeam(RGB(0, 0.25, 0), 0.2, 0.05), 2.0, "Green Object")
-    sphere_b = Sphere(world, translate(-0.707, -0.707, 5), GlowGaussianBeam(RGB(0, 0, 0.25), 0.2, 0.05), 2.0, "Blue Object")
+    sphere_r = Sphere(world, translate(0, 1, 5), GlowGaussianBeam(RGB(0.5, 0, 0), 0.4, 0.05), 2.0, "Red Object")
+    sphere_g = Sphere(world, translate(0.707, -0.707, 5), GlowGaussianBeam(RGB(0, 0.5, 0), 0.4, 0.05), 2.0, "Green Object")
+    sphere_b = Sphere(world, translate(-0.707, -0.707, 5), GlowGaussianBeam(RGB(0, 0, 0.5), 0.4, 0.05), 2.0, "Blue Object")
 
-    #sphere_world = Sphere(100.0, world, rotate(0, 0, 0), Checkerboard())
-    #sphere_world.material.scale = 10
+    #sphere_r = Sphere(world, translate(0, 1, 5), GlowBeams(RGB(0.15, 0, 0), 0.5, 0.1), 2.0, "Red Object")
+    #sphere_g = Sphere(world, translate(0.707, -0.707, 5), GlowBeams(RGB(0, 0.15, 0), 0.5, 0.1), 2.0, "Green Object")
+    #sphere_b = Sphere(world, translate(-0.707, -0.707, 5), GlowBeams(RGB(0, 0, 0.15), 0.5, 0.1), 2.0, "Blue Object")
 
-    camera = PinholeCamera(world, translate(0, 0, 0) * rotate(0, 0, 0), pixels, 45, "Camera")
+    #sphere_r = Sphere(world, translate(0, 1, 5), Glow(RGB(0.25, 0, 0)), 2.0, "Red Object")
+    #sphere_g = Sphere(world, translate(0.707, -0.707, 5), Glow(RGB(0, 0.25, 0)), 2.0, "Green Object")
+    #sphere_b = Sphere(world, translate(-0.707, -0.707, 5), Glow(RGB(0, 0, 0.25)), 2.0, "Blue Object")
+
+    sphere_world = Sphere(world, rotate(0, 0, 0), Checkerboard(), 100)
+    sphere_world.material.scale = 10
+
+    sphere_glass = Sphere(world, translate(0, 0, 0), Glass(cutoff = 1e-6), 1.5, "Glass Object")
+
+    camera = PinholeCamera(world, translate(0, 0, -5) * rotate(0, 0, 0), pixels, 45, "Camera")
 
     ion()
 

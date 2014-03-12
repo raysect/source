@@ -158,6 +158,10 @@ class PinholeCamera(Observer):
         imshow(image, aspect = "equal", origin = "upper")
         draw()
 
+    def save(self, filename, whitepoint = 1.0, gamma = 2.2):
+
+        imsave(filename, self._adjust(self.frame, whitepoint, gamma))
+
     def _adjust(self, image, whitepoint, gamma):
 
         # adjust whitepoint and clamp image to [0, 1.0]

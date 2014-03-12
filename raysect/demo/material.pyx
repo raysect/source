@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cimport cython
+
 cdef class MaterialRGB(Material):
 
     cpdef SurfaceRGB evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
@@ -311,95 +313,157 @@ cdef class Checkerboard(MaterialRGB):
         return v
 
 
-#class Glass(Material):
+cdef class Glass(MaterialRGB):
 
-    #def __init__(self, index = 1.52):
+    def __init__(self, double index = 1.52, RGB transmission = RGB(0.994, 0.996, 0.993), double transmission_depth = 0.025, cutoff = 1e-6):
 
-        #self.index = index
-        #self.transmission = array([0.994, 0.996, 0.993])
-        #self.transmission_depth = 0.025
-        #self.cutoff = 1e-6
+        self.index = index
+        self.transmission = transmission
+        self.transmission_depth = transmission_depth
+        self.cutoff = cutoff
 
-    #def evaluate_surface(self, world, ray, primitive, point, normal):
+    cpdef SurfaceRGB evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                            bint exiting, Point inside_point, Point outside_point,
+                                            Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
-        ## convert hit point to world space
-        #w_point = point.transform(primitive.to_world())
+        cdef Vector incident, reflected, transmitted
+        cdef double c1, c2s, n1, n2, gamma, reflectivity, transmission
+        cdef RGB surface_responce, ray_value
 
-        ## convert ray direction normal to local coordinates
-        #incident = ray.direction.transform(primitive.to_local())
+        # convert ray direction normal to local coordinates
+        incident = ray.direction.transform(to_local)
 
-        ## calculate cosine of angle between incident and normal
-        #c1 = -normal.dot(incident)
+        # vectors must be normalised for reflection calculation
+        incident = incident.normalise()
+        normal = normal.normalise()
 
-        ## are we entering or leaving material - calculate refractive change
-        #if c1 > 0:
+        # calculate cosine of angle between incident and normal
+        c1 = -normal.dot(incident)
 
-            ## entering material
-            #n1 = 1.0
-            #n2 = self.index
+        # are we entering or leaving material - calculate refractive change
+        if exiting:
 
-        #else:
+            # leaving material
+            n1 = self.index
+            n2 = 1.0
 
-            ## leaving material
-            #n1 = self.index
-            #n2 = 1.0
+        else:
 
-        #gamma = n1 / n2
+            # entering material
+            n1 = 1.0
+            n2 = self.index
 
-        ## calculate square of cosone of angle between transmitted ray and normal
-        #c2s = 1 - (gamma*gamma) * (1 - c1*c1)
+        with cython.cdivision:
 
-        ## check for total internal reflection
-        #if c2s <= 0:
+            gamma = n1 / n2
 
-            ## total internal reflection
-            #reflected = Normal(incident + 2 * c1 * normal)
+        # calculate square of cosone of angle between transmitted ray and normal
+        c2s = 1 - (gamma * gamma) * (1 - c1 * c1)
 
-            ## convert reflected ray to world space
-            #w_reflected = reflected.transform(primitive.to_world())
+        # check for total internal reflection
+        if c2s <= 0:
 
-            ## spawn reflected ray and trace
-            #r_reflected = ray.spawn_daughter(w_point, w_reflected)
-            #return r_reflected.trace(world)
+            # total internal reflection
+            reflected = new_vector(incident.x + 2 * c1 * normal.x,
+                                   incident.y + 2 * c1 * normal.y,
+                                   incident.z + 2 * c1 * normal.z)
 
-        #else:
+            # convert reflected ray direction to world space
+            reflected = reflected.transform(to_world)
 
-            ## calculate reflected and transmitted ray normals
-            #reflected = Normal(incident + 2 * c1 * normal)
-            #if c1 >=0:
-                #transmitted = Normal(gamma * incident + (gamma * c1 - sqrt(c2s)) * normal)
-            #else:
-                #transmitted = Normal(gamma * incident + (gamma * c1 + sqrt(c2s)) * normal)
+            # spawn reflected ray and trace
+            if exiting:
 
-            ## convert reflected and transmitted rays to world space
-            #w_reflected = reflected.transform(primitive.to_world())
-            #w_transmitted = transmitted.transform(primitive.to_world())
+                # incident ray is pointing out of surface, reflection is therefore inside
+                reflected_ray = ray.spawn_daughter(inside_point.transform(to_world), reflected)
 
-            ## spawn reflected and transmitted rays
-            #r_reflected = ray.spawn_daughter(w_point, w_reflected)
-            #r_transmitted = ray.spawn_daughter(w_point, w_transmitted)
+            else:
 
-            ## calculate fresnel reflection and transmission
-            #(reflectivity, transmission) = self._fresnel(c1, -normal.dot(transmitted), n1, n2)
+                # incident ray is pointing in to surface, reflection is therefore outside
+                reflected_ray = ray.spawn_daughter(outside_point.transform(to_world), reflected)
 
-            ## trace rays and return results
-            #v = 0.0
-            #if reflectivity > self.cutoff:
-                #v = reflectivity * r_reflected.trace(world)
+            return SurfaceRGB(reflected_ray.trace(world))
 
-            #if transmission > self.cutoff:
-                #v = v + transmission * r_transmitted.trace(world)
+        else:
 
-            #return v
+            # calculate reflected and transmitted ray normals
+            reflected = new_vector(incident.x + 2 * c1 * normal.x,
+                                   incident.y + 2 * c1 * normal.y,
+                                   incident.z + 2 * c1 * normal.z)
 
-    #def _fresnel(self, ci, ct, n1, n2):
+            if exiting:
 
-        #r = 0.5 * (((n1*ci - n2*ct) / (n1*ci + n2*ct))**2 + ((n1*ct - n2*ci) / (n1*ct + n2*ci))**2)
-        #t = 1 - r
-        #return (r,t)
+                transmitted = new_vector(gamma * incident.x + (gamma * c1 + sqrt(c2s)) * normal.x,
+                                         gamma * incident.y + (gamma * c1 + sqrt(c2s)) * normal.y,
+                                         gamma * incident.z + (gamma * c1 + sqrt(c2s)) * normal.z)
 
-    #def evaluate_volume(self, world, ray, primitive, point1, point2):
+            else:
 
-        #d = point1.vector_to(point2).length
-        #t = self.transmission**(d / float(self.transmission_depth))
-        #return (array([0.0, 0.0, 0.0]), t)
+                transmitted = new_vector(gamma * incident.x + (gamma * c1 - sqrt(c2s)) * normal.x,
+                                         gamma * incident.y + (gamma * c1 - sqrt(c2s)) * normal.y,
+                                         gamma * incident.z + (gamma * c1 - sqrt(c2s)) * normal.z)
+
+            # calculate fresnel reflection and transmission coefficients
+            self._fresnel(c1, -normal.dot(transmitted), n1, n2, &reflectivity, &transmission)
+
+            # convert reflected and transmitted rays to world space
+            reflected = reflected.transform(to_world)
+            transmitted = transmitted.transform(to_world)
+
+            # spawn reflected and transmitted rays
+            if exiting:
+
+                # incident ray is pointing out of surface
+                reflected_ray = ray.spawn_daughter(inside_point.transform(to_world), reflected)
+                transmitted_ray = ray.spawn_daughter(outside_point.transform(to_world), transmitted)
+
+            else:
+
+                # incident ray is pointing in to surface
+                reflected_ray = ray.spawn_daughter(outside_point.transform(to_world), reflected)
+                transmitted_ray = ray.spawn_daughter(inside_point.transform(to_world), transmitted)
+
+            # trace rays and return results
+            responce = new_rgb(0, 0, 0)
+            if reflectivity > self.cutoff:
+
+                ray_value = reflected_ray.trace(world)
+
+                responce.r = reflectivity * ray_value.r
+                responce.g = reflectivity * ray_value.g
+                responce.b = reflectivity * ray_value.b
+
+            if transmission > self.cutoff:
+
+                ray_value = transmitted_ray.trace(world)
+
+                responce.r += transmission * ray_value.r
+                responce.g += transmission * ray_value.g
+                responce.b += transmission * ray_value.b
+
+            return SurfaceRGB(responce)
+
+    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission):
+
+        with cython.cdivision:
+
+            reflectivity[0] = 0.5 * (((n1*ci - n2*ct) / (n1*ci + n2*ct))**2 + ((n1*ct - n2*ci) / (n1*ct + n2*ci))**2)
+            transmission[0] = 1 - reflectivity[0]
+
+    cpdef VolumeRGB evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
+                                         AffineMatrix to_local, AffineMatrix to_world):
+
+        cdef double length, power
+        cdef RGB attenuation
+
+        length = entry_point.vector_to(exit_point).length
+
+        with cython.cdivision:
+
+            power = length / self.transmission_depth
+
+        attenuation = new_rgb(1 - cpow(self.transmission.r, power),
+                              1 - cpow(self.transmission.g, power),
+                              1 - cpow(self.transmission.b, power))
+
+        return VolumeRGB(new_rgb(0, 0, 0), attenuation)

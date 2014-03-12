@@ -29,15 +29,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport sin, cos, tan, atan, M_PI as pi, exp
+from libc.math cimport sin, cos, tan, atan, M_PI as pi, exp, pow as cpow, sqrt
 from raysect.core.classes cimport Ray, Material
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.point cimport Point, new_point
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector, new_vector
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
-from raysect.demo.support cimport RGB, SurfaceRGB, VolumeRGB
+from raysect.demo.support cimport RGB, new_rgb, SurfaceRGB, VolumeRGB
 from raysect.demo.ray cimport RayRGB
 
 cdef class MaterialRGB(Material):
@@ -54,26 +54,12 @@ cdef class VolumeEmissionIntegrator(MaterialRGB):
 
     cdef public double step
 
-    cpdef SurfaceRGB evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                            bint exiting, Point inside_point, Point outside_point,
-                                            Normal normal, AffineMatrix to_local, AffineMatrix to_world)
-
-    cpdef VolumeRGB evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
-                                         AffineMatrix to_local, AffineMatrix to_world)
-
     cpdef RGB emission_function(self, Point point)
 
 
 cdef class Glow(MaterialRGB):
 
     cdef public RGB colour
-
-    cpdef SurfaceRGB evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                            bint exiting, Point inside_point, Point outside_point,
-                                            Normal normal, AffineMatrix to_local, AffineMatrix to_world)
-
-    cpdef VolumeRGB evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
-                                         AffineMatrix to_local, AffineMatrix to_world)
 
 
 cdef class GlowGaussian(VolumeEmissionIntegrator):
@@ -110,12 +96,13 @@ cdef class Checkerboard(MaterialRGB):
     cdef RGB colourA
     cdef RGB colourB
 
-    cpdef SurfaceRGB evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                            bint exiting, Point inside_point, Point outside_point,
-                                            Normal normal, AffineMatrix to_local, AffineMatrix to_world)
-
-    cpdef VolumeRGB evaluate_volume(self, World world, Ray ray, Point entry_point, Point exit_point,
-                                         AffineMatrix to_local, AffineMatrix to_world)
-
     cdef inline bint _flip(self, bint v, double p)
 
+cdef class Glass(MaterialRGB):
+
+    cdef public double index
+    cdef public RGB transmission
+    cdef public double transmission_depth
+    cdef public double cutoff
+
+    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission)
