@@ -22,7 +22,8 @@ extensions = [
     Extension("raysect.tests.speed_test_functions", ["raysect/tests/speed_test_functions.pyx"]),
     Extension("raysect.demo.material", ["raysect/demo/material.pyx"]),
     Extension("raysect.demo.ray", ["raysect/demo/ray.pyx"]),
-    Extension("raysect.demo.support", ["raysect/demo/support.pyx"])
+    Extension("raysect.demo.support", ["raysect/demo/support.pyx"]),
+    Extension("raysect.optical.ray", ["raysect/optical/ray.pyx"])
     ]
 
 setup(
