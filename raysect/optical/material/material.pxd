@@ -29,30 +29,24 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math._vec3 cimport _Vec3
-from raysect.core.math.vector cimport Vector
+from raysect.core.classes cimport Material as CoreMaterial
 from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.point cimport Point
+from raysect.core.math.normal cimport Normal
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph.world cimport World
+from raysect.optical.ray cimport Ray
+from numpy cimport ndarray
 
-cdef class Point:
+cdef class Material(CoreMaterial):
 
-    cdef public double x, y, z
+    cpdef ndarray evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                   bint exiting, Point inside_point, Point outside_point,
+                                   Normal normal, AffineMatrix to_local, AffineMatrix to_world)
 
-    cpdef Vector vector_to(self, Point p)
-
-    cpdef double distance_to(self, Point p)
-
-    cpdef Point transform(self, AffineMatrix m)
-
-    cdef inline Point add(self, _Vec3 v)
-
-    cdef inline Point sub(self, _Vec3 v)
+    cpdef ndarray evaluate_volume(self, ndarray spectrum, World world, Ray ray,
+                                  Point start_point, Point end_point,
+                                  AffineMatrix to_local, AffineMatrix to_world)
 
 
-cdef inline Point new_point(double x, double y, double z):
 
-    cdef Point v
-    v = Point.__new__(Point)
-    v.x = x
-    v.y = y
-    v.z = z
-    return v

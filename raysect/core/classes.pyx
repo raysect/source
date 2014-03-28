@@ -43,13 +43,6 @@ cdef class Ray:
         self.direction = direction
         self.max_distance = max_distance
 
-    cpdef object trace(self, World world):
-
-        return NotImplemented
-
-    cpdef Ray spawn_daughter(self, Point origin, Vector direction):
-
-        return NotImplemented
 
 cdef class Intersection:
 

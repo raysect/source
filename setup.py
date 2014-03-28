@@ -1,6 +1,7 @@
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
+import numpy
 
 extensions = [
     Extension("raysect.core.classes", ["raysect/core/classes.pyx"]),
@@ -13,6 +14,7 @@ extensions = [
     Extension("raysect.core.math.normal", ["raysect/core/math/normal.pyx"]),
     Extension("raysect.core.math.point", ["raysect/core/math/point.pyx"]),
     Extension("raysect.core.math.affinematrix", ["raysect/core/math/affinematrix.pyx"]),
+    Extension("raysect.core.math.function", ["raysect/core/math/function.pyx"]),
     Extension("raysect.core.scenegraph._nodebase",  ["raysect/core/scenegraph/_nodebase.pyx"]),
     Extension("raysect.core.scenegraph.node",  ["raysect/core/scenegraph/node.pyx"]),
     Extension("raysect.core.scenegraph.primitive",  ["raysect/core/scenegraph/primitive.pyx"]),
@@ -23,7 +25,9 @@ extensions = [
     Extension("raysect.demo.material", ["raysect/demo/material.pyx"]),
     Extension("raysect.demo.ray", ["raysect/demo/ray.pyx"]),
     Extension("raysect.demo.support", ["raysect/demo/support.pyx"]),
-    Extension("raysect.optical.ray", ["raysect/optical/ray.pyx"])
+    Extension("raysect.optical.ray", ["raysect/optical/ray.pyx"]),
+    Extension("raysect.optical.spectrum", ["raysect/optical/spectrum.pyx"], include_dirs=[".", numpy.get_include()]),
+    Extension("raysect.optical.material.material", ["raysect/optical/material/material.pyx"])
     ]
 
 setup(

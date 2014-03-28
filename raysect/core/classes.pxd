@@ -42,10 +42,6 @@ cdef class Ray:
     cdef public Vector direction
     cdef public double max_distance
 
-    cpdef object trace(self, World world)
-
-    cpdef Ray spawn_daughter(self, Point origin, Vector direction)
-
 
 cdef class Intersection:
 

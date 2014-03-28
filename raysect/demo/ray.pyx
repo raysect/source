@@ -97,7 +97,7 @@ cdef class RayRGB(Ray):
 
         return spectrum
 
-    cpdef Ray spawn_daughter(self, Point origin, Vector direction):
+    cpdef RayRGB spawn_daughter(self, Point origin, Vector direction):
 
         cdef RayRGB ray
 
