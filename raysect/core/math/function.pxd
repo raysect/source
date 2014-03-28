@@ -41,7 +41,7 @@ cdef class PythonFunction1D(Function1D):
     cdef public object function
 
 
-cdef inline Function1D autowrap_function1D(object function)
+cdef inline Function1D autowrap_function1d(object function)
 
 
 # 2D functions -----------------------------------------------------------------
@@ -56,7 +56,7 @@ cdef class PythonFunction2D(Function2D):
     cdef public object function
 
 
-cdef inline Function2D autowrap_function2D(object function)
+cdef inline Function2D autowrap_function2d(object function)
 
 
 # 3D functions -----------------------------------------------------------------
@@ -71,4 +71,4 @@ cdef class PythonFunction3D(Function3D):
     cdef public object function
 
 
-cdef inline Function3D autowrap_function3D(object function)
+cdef inline Function3D autowrap_function3d(object function)

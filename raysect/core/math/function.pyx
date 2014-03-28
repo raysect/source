@@ -71,7 +71,7 @@ cdef class PythonFunction1D(Function1D):
     determine if it is an instance of Function1D. If the object is not a
     Function1D object it should be wrapped using this class for internal use.
 
-    See also: autowrap_function1D()
+    See also: autowrap_function1d()
     """
 
     def __init__(self, object function):
@@ -83,7 +83,7 @@ cdef class PythonFunction1D(Function1D):
         return self.function(x)
 
 
-cdef inline Function1D autowrap_function1D(object function):
+cdef inline Function1D autowrap_function1d(object function):
     """
     Automatically wraps the supplied python object in a PythonFunction1D object.
 
@@ -145,7 +145,7 @@ cdef class PythonFunction2D(Function2D):
     determine if it is an instance of Function2D. If the object is not a
     Function2D object it should be wrapped using this class for internal use.
 
-    See also: autowrap_function2D()
+    See also: autowrap_function2d()
     """
 
     def __init__(self, object function):
@@ -157,7 +157,7 @@ cdef class PythonFunction2D(Function2D):
         return self.function(x, y)
 
 
-cdef inline Function2D autowrap_function2D(object function):
+cdef inline Function2D autowrap_function2d(object function):
     """
     Automatically wraps the supplied python object in a PythonFunction2D object.
 
@@ -219,7 +219,7 @@ cdef class PythonFunction3D(Function3D):
     determine if it is an instance of Function3D. If the object is not a
     Function3D object it should be wrapped using this class for internal use.
 
-    See also: autowrap_function3D()
+    See also: autowrap_function3d()
     """
 
     def __init__(self, object function):
@@ -231,7 +231,7 @@ cdef class PythonFunction3D(Function3D):
         return self.function(x, y, z)
 
 
-cdef inline Function3D autowrap_function3D(object function):
+cdef inline Function3D autowrap_function3d(object function):
     """
     Automatically wraps the supplied python object in a PythonFunction3D object.
 
