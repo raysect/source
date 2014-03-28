@@ -41,3 +41,7 @@ cdef class RayRGB(Ray):
 
     cdef public double max_depth
     cdef public double depth
+
+    cpdef RGB trace(self, World world)
+
+    cpdef RayRGB spawn_daughter(self, Point origin, Vector direction)

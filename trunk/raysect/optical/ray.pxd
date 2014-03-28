@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-#Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,49 +29,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray
+from raysect.core.classes cimport Ray as CoreRay, Intersection
 from raysect.core.math.point cimport Point
 from raysect.core.math.vector cimport Vector
 from raysect.core.scenegraph.world cimport World
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.optical.spectrum cimport Waveband
+from raysect.optical.material.material import Material
+from numpy cimport ndarray
 
-cdef class Waveband:
+cdef class Ray(CoreRay):
 
-    cdef double _min_wavelength
-    cdef double _max_wavelength
-
-    cpdef Waveband copy(self)
-
-    cdef inline double get_min_wavelength(self)
-
-    cdef inline double get_max_wavelength(self)
-
-
-cdef inline Waveband new_waveband(double min_wavelength, double max_wavelength):
-
-    cdef Waveband w
-
-    w = Waveband.__new__(Waveband)
-    w._min_wavelength = min_wavelength
-    w._max_wavelength = max_wavelength
-
-    return w
-
-
-cdef class RayResponce:
-
-    pass
-
-
-cdef class OpticalRay(Ray):
-
-    cdef readonly OpticalRay primary_ray
     cdef double _refraction_wavelength
     cdef list _wavebands
-    cdef readonly bint cache_valid
+    cdef public double max_depth
+    cdef readonly double depth
 
-    cpdef append_waveband(self, Waveband waveband)
-
-    cpdef object trace(self, World world)
+    cpdef ndarray trace(self, World world)
 
     cpdef Ray spawn_daughter(self, Point origin, Vector direction)
 
@@ -80,4 +54,3 @@ cdef class OpticalRay(Ray):
     cdef inline int get_waveband_count(self)
 
     cdef inline Waveband get_waveband(self, int index)
-

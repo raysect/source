@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-#Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,98 +29,27 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
+from raysect.optical.spectrum cimport new_spectrum_array
+
 DEF INFINITY = 1e999
 
-cdef class Waveband:
-    """
-    waveband: [min_wavelength, max_wavelength)
-    """
-
-    def __init__(self, double min_wavelength, double max_wavelength):
-
-        if min_wavelength <= 0.0 or max_wavelength <= 0.0:
-
-            raise ValueError("Wavelength can not be less than or equal to zero.")
-
-        if min_wavelength >= max_wavelength:
-
-            raise ValueError("Minimum wavelength can not be greater or eaual to the maximum wavelength.")
-
-        self._min_wavelength = min_wavelength
-        self._max_wavelength = max_wavelength
-
-    property min_wavelength:
-
-        def __get__(self):
-
-            return self._min_wavelength
-
-        def __set__(self, double wavelength):
-
-            if wavelength <= 0.0:
-
-                raise ValueError("Wavelength can not be less than or equal to zero.")
-
-            if wavelength >= self._max_wavelength:
-
-                raise ValueError("Minimum wavelength can not be greater than or equal to the maximum wavelength.")
-
-            self._min_wavelength = wavelength
-
-    property max_wavelength:
-
-        def __get__(self):
-
-            return self._max_wavelength
-
-        def __set__(self, double wavelength):
-
-            if wavelength <= 0.0:
-
-                raise ValueError("Wavelength can not be less than or equal to zero.")
-
-            if self._min_wavelength >= wavelength:
-
-                raise ValueError("Maximum wavelength can not be less than or equal to the minimum wavelength.")
-
-            self._max_wavelength = wavelength
-
-    cpdef Waveband copy(self):
-
-        return new_waveband(self._min_wavelength, self._max_wavelength)
-
-    cdef inline double get_min_wavelength(self):
-
-        return self._min_wavelength
-
-    cdef inline double get_max_wavelength(self):
-
-        return self._max_wavelength
-
-
-cdef class RayResponce:
-
-    #TODO: WRITE ME
-
-    pass
-
-
-cdef class OpticalRay(Ray):
+cdef class Ray(CoreRay):
 
     def __init__(self,
                  Point origin = Point([0,0,0]),
                  Vector direction = Vector([0,0,1]),
                  list wavebands = list(),
                  double refraction_wavelength = 550,
-                 double max_distance = INFINITY):
+                 double max_distance = INFINITY,
+                 double max_depth = 15):
 
         super().__init__(origin, direction, max_distance)
 
-        self.primary_ray = self
         self.refraction_wavelength = refraction_wavelength
         self.wavebands = wavebands
-        self.cache_valid = False
+
+        self.max_depth = max_depth
+        self.depth = 0
 
     property refraction_wavelength:
 
@@ -140,81 +69,98 @@ cdef class OpticalRay(Ray):
 
         def __get__(self):
 
-            # return a copy to ensure the users cannot change state of waveband
-            # objects via externally held references - the ray must be able to
-            # track changes to the wavebands and inform the materials when their
-            # caches are invalidated
-
-            cdef list waveband_list
-            cdef Waveband waveband
-
-            waveband_list = list()
-            for waveband in self._wavebands:
-
-                waveband_list.append(waveband.copy())
-
-            return waveband_list
+            return self._wavebands
 
         def __set__(self, list wavebands not None):
 
-            # copy list to ensure the users cannot change state of waveband
-            # objects via externally held references - the ray must be able to
-            # track changes to the wavebands and inform the materials when their
-            # caches are invalidated
-
-            self._wavebands = list()
+            # objects must be Waveband objects as cython implemented materials
+            # require Waveband's cython interface
             for waveband in wavebands:
 
-                self._wavebands.append((<Waveband?> waveband).copy())
+                if not isinstance(waveband, Waveband):
 
-            self.cache_valid = False
+                    raise TypeError("The Ray spectral waveband definition must be a list of Waveband objects.")
+
+            self._wavebands = wavebands
 
     def __getitem__(self, int index):
 
-        # return a copy to ensure the users cannot change state of waveband
-        # objects via externally held references - the ray must be able to
-        # track changes to the wavebands and inform the materials when their
-        # caches are invalidated
-
-        return (<Waveband> self._wavebands[index]).copy()
+        return self._wavebands[index]
 
     def __setitem__(self, int index, Waveband waveband not None):
 
-        # copy waveband to ensure the users cannot change state of waveband
-        # objects via externally held references - the ray must be able to
-        # track changes to the wavebands and inform the materials when their
-        # caches are invalidated
+        self._wavebands[index] = waveband
 
-        self._wavebands[index] = waveband.copy()
-        self.cache_valid = False
+    cpdef ndarray trace(self, World world):
 
-    cpdef append_waveband(self, Waveband waveband):
+        cdef ndarray spectrum
+        cdef Intersection intersection
+        cdef list primitives
+        cdef Primitive primitive
+        cdef Point entry_point, exit_point
 
-        if waveband is None:
+        spectrum = new_spectrum_array(self)
 
-            raise TypeError("A Waveband object is required, arguement cannot be None.")
+        # limit ray recursion depth
+        if self.depth >= self.max_depth:
 
-        # copy waveband to ensure the users cannot change state of waveband
-        # objects via externally held references - the ray must be able to
-        # track changes to the wavebands and inform the materials when their
-        # caches are invalidated
+            return spectrum
 
-        self._wavebands.append(waveband.copy())
-        self.cache_valid = False
+        # does the ray intersect with any of the primitives in the world?
+        intersection = world.hit(self)
+        if intersection is not None:
 
-    cpdef object trace(self, World world):
+            # request surface contribution to spectrum from primitive material
+            spectrum = intersection.primitive.material.evaluate_surface(
+                           world, self,
+                           intersection.primitive,
+                           intersection.hit_point,
+                           intersection.exiting,
+                           intersection.inside_point,  # TODO: rename interior/exterior?
+                           intersection.outside_point, # TODO: rename interior/exterior?
+                           intersection.normal,
+                           intersection.to_local,
+                           intersection.to_world)
 
-        #TODO: WRITE ME
+            # identify any primitive volumes the ray is propagating through
+            primitives = world.inside(self.origin)
+            if len(primitives) > 0:
 
-        self.cache_valid = True
+                # the start and end points for volume contribution calculations
+                # defined such that start to end is in the direction of light
+                # propagation - from source to observer
+                start_point = intersection.hit_point.transform(intersection.to_world)
+                end_point = self.origin
 
-        return RayResponce()
+                # accumulate volume contributions to the spectum
+                for primitive in primitives:
+
+                    spectrum = primitive.material.evaluate_volume(
+                                   spectrum,
+                                   world,
+                                   self,
+                                   start_point,
+                                   end_point,
+                                   primitive.to_local(),
+                                   primitive.to_root())
+
+        return spectrum
 
     cpdef Ray spawn_daughter(self, Point origin, Vector direction):
 
-        #TODO: WRITE ME
+        cdef Ray ray
 
-        return NotImplemented
+        ray = Ray.__new__(Ray)
+
+        ray.origin = origin
+        ray.direction = direction
+        ray.max_distance = self.max_distance
+        ray._refraction_wavelength = self._refraction_wavelength
+        ray._wavebands = self._wavebands
+        ray.max_depth = self.max_depth
+        ray.depth = self.depth + 1
+
+        return ray
 
     cdef inline double get_refraction_wavelength(self):
 
@@ -231,11 +177,11 @@ cdef class OpticalRay(Ray):
 
 def monocromatic_ray(origin, direction, min_wavelength, max_wavelength, max_distance = INFINITY):
 
-    return OpticalRay(origin,
-                      direction,
-                      [Waveband(min_wavelength, max_wavelength)],
-                      0.5 * (min_wavelength + max_wavelength),
-                      max_distance)
+    return Ray(origin,
+               direction,
+               [Waveband(min_wavelength, max_wavelength)],
+               0.5 * (min_wavelength + max_wavelength),
+               max_distance)
 
 
 def polycromatic_ray(origin, direction, min_wavelength, max_wavelength, steps, max_distance = INFINITY):
@@ -249,8 +195,8 @@ def polycromatic_ray(origin, direction, min_wavelength, max_wavelength, steps, m
         wavebands.append(Waveband(min_wavelength + delta_wavelength * index,
                                   min_wavelength + delta_wavelength * (index + 1)))
 
-    return OpticalRay(origin,
-                      direction,
-                      wavebands,
-                      0.5 * (min_wavelength + max_wavelength),
-                      max_distance)
+    return Ray(origin,
+               direction,
+               wavebands,
+               0.5 * (min_wavelength + max_wavelength),
+               max_distance)

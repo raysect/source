@@ -29,30 +29,30 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math._vec3 cimport _Vec3
-from raysect.core.math.vector cimport Vector
-from raysect.core.math.affinematrix cimport AffineMatrix
+from numpy cimport ndarray
+from raysect.optical.ray cimport Ray
 
-cdef class Point:
+cdef class Waveband:
 
-    cdef public double x, y, z
+    cdef double _min_wavelength
+    cdef double _max_wavelength
 
-    cpdef Vector vector_to(self, Point p)
+    cpdef Waveband copy(self)
 
-    cpdef double distance_to(self, Point p)
+    cdef inline double get_min_wavelength(self)
 
-    cpdef Point transform(self, AffineMatrix m)
-
-    cdef inline Point add(self, _Vec3 v)
-
-    cdef inline Point sub(self, _Vec3 v)
+    cdef inline double get_max_wavelength(self)
 
 
-cdef inline Point new_point(double x, double y, double z):
+cdef inline Waveband new_waveband(double min_wavelength, double max_wavelength):
 
-    cdef Point v
-    v = Point.__new__(Point)
-    v.x = x
-    v.y = y
-    v.z = z
-    return v
+    cdef Waveband w
+
+    w = Waveband.__new__(Waveband)
+    w._min_wavelength = min_wavelength
+    w._max_wavelength = max_wavelength
+
+    return w
+
+
+cpdef ndarray new_spectrum_array(Ray ray)
