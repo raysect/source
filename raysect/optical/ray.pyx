@@ -31,6 +31,7 @@
 
 from raysect.optical.spectrum cimport new_spectrum_array
 
+# cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
 
 cdef class Ray(CoreRay):
