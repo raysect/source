@@ -98,7 +98,8 @@ cdef class Ray(CoreRay):
         cdef Intersection intersection
         cdef list primitives
         cdef Primitive primitive
-        cdef Point entry_point, exit_point
+        cdef Point start_point, end_point
+        cdef Material material
 
         spectrum = new_spectrum_array(self)
 
@@ -112,13 +113,14 @@ cdef class Ray(CoreRay):
         if intersection is not None:
 
             # request surface contribution to spectrum from primitive material
-            spectrum = intersection.primitive.material.evaluate_surface(
+            material = intersection.primitive.material
+            spectrum = material.evaluate_surface(
                            world, self,
                            intersection.primitive,
                            intersection.hit_point,
                            intersection.exiting,
-                           intersection.inside_point,  # TODO: rename interior/exterior?
-                           intersection.outside_point, # TODO: rename interior/exterior?
+                           intersection.inside_point,
+                           intersection.outside_point,
                            intersection.normal,
                            intersection.to_local,
                            intersection.to_world)
@@ -136,7 +138,8 @@ cdef class Ray(CoreRay):
                 # accumulate volume contributions to the spectum
                 for primitive in primitives:
 
-                    spectrum = primitive.material.evaluate_volume(
+                    material = primitive.material
+                    spectrum = material.evaluate_volume(
                                    spectrum,
                                    world,
                                    self,

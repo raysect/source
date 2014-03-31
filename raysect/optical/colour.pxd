@@ -29,28 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray as CoreRay, Intersection
-from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector
-from raysect.core.scenegraph.world cimport World
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.optical.spectrum cimport Waveband
-from raysect.optical.material.material cimport Material
-from numpy cimport ndarray
 
-cdef class Ray(CoreRay):
 
-    cdef double _refraction_wavelength
-    cdef list _wavebands
-    cdef public double max_depth
-    cdef readonly double depth
 
-    cpdef ndarray trace(self, World world)
-
-    cpdef Ray spawn_daughter(self, Point origin, Vector direction)
-
-    cdef inline double get_refraction_wavelength(self)
-
-    cdef inline int get_waveband_count(self)
-
-    cdef inline Waveband get_waveband(self, int index)
