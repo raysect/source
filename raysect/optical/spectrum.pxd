@@ -29,30 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy cimport ndarray
+from numpy cimport ndarray, import_array, PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp
 from raysect.optical.ray cimport Ray
 
 cdef class Waveband:
 
-    cdef double _min_wavelength
-    cdef double _max_wavelength
-
-    cpdef Waveband copy(self)
-
-    cdef inline double get_min_wavelength(self)
-
-    cdef inline double get_max_wavelength(self)
+    cdef readonly double min_wavelength
+    cdef readonly double max_wavelength
 
 
-cdef inline Waveband new_waveband(double min_wavelength, double max_wavelength):
+cdef class Spectrum:
 
-    cdef Waveband w
-
-    w = Waveband.__new__(Waveband)
-    w._min_wavelength = min_wavelength
-    w._max_wavelength = max_wavelength
-
-    return w
+    cdef readonly tuple wavebands
+    cdef readonly ndarray bins
 
 
-cpdef ndarray new_spectrum_array(Ray ray)
+cdef Spectrum new_spectrum(tuple wavebands)
