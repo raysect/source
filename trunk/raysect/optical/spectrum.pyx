@@ -29,9 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy cimport import_array, PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp
-cimport cython
-
 # required by numpy c-api
 import_array()
 
@@ -48,67 +45,51 @@ cdef class Waveband:
 
         if min_wavelength >= max_wavelength:
 
-            raise ValueError("Minimum wavelength can not be greater or eaual to the maximum wavelength.")
+            raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
-        self._min_wavelength = min_wavelength
-        self._max_wavelength = max_wavelength
-
-    property min_wavelength:
-
-        def __get__(self):
-
-            return self._min_wavelength
-
-        def __set__(self, double wavelength):
-
-            if wavelength <= 0.0:
-
-                raise ValueError("Wavelength can not be less than or equal to zero.")
-
-            if wavelength >= self._max_wavelength:
-
-                raise ValueError("Minimum wavelength can not be greater than or equal to the maximum wavelength.")
-
-            self._min_wavelength = wavelength
-
-    property max_wavelength:
-
-        def __get__(self):
-
-            return self._max_wavelength
-
-        def __set__(self, double wavelength):
-
-            if wavelength <= 0.0:
-
-                raise ValueError("Wavelength can not be less than or equal to zero.")
-
-            if self._min_wavelength >= wavelength:
-
-                raise ValueError("Maximum wavelength can not be less than or equal to the minimum wavelength.")
-
-            self._max_wavelength = wavelength
-
-    cpdef Waveband copy(self):
-
-        return new_waveband(self._min_wavelength, self._max_wavelength)
-
-    cdef inline double get_min_wavelength(self):
-
-        return self._min_wavelength
-
-    cdef inline double get_max_wavelength(self):
-
-        return self._max_wavelength
+        self.min_wavelength = min_wavelength
+        self.max_wavelength = max_wavelength
 
 
-cpdef ndarray new_spectrum_array(Ray ray):
+cdef class Spectrum:
 
-    cdef ndarray array
-    cdef npy_intp size
+    def __init__(self, object wavebands not None):
 
-    size = ray.get_waveband_count()
-    array = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-    PyArray_FILLWBYTE(array, 0)
+        try:
 
-    return array
+            if len(wavebands) < 1:
+
+                raise ValueError("Number of Wavebands can not be less than 1.")
+
+        except TypeError:
+
+                raise ValueError("An iterable list of Wavebands is required.")
+
+        for item in wavebands:
+
+            if not isinstance(item, Waveband):
+
+                raise ValueError("Waveband list must only contain Waveband objects.")
+
+        # store as tuple to ensure wavebands are immutable
+        self.wavebands = tuple(wavebands)
+
+        # create spectral sample bins
+        cdef npy_intp size = len(wavebands)
+        self.bins = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
+        PyArray_FILLWBYTE(self.bins, 0)
+
+
+cdef Spectrum new_spectrum(tuple wavebands):
+
+    cdef Spectrum v
+
+    v = Spectrum.__new__(Spectrum)
+    v.wavebands = wavebands
+
+    # create spectral sample bins
+    cdef npy_intp size = len(wavebands)
+    v.bins = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
+    PyArray_FILLWBYTE(v.bins, 0)
+
+    return v

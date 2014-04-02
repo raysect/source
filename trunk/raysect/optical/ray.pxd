@@ -34,23 +34,22 @@ from raysect.core.math.point cimport Point
 from raysect.core.math.vector cimport Vector
 from raysect.core.scenegraph.world cimport World
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.optical.spectrum cimport Waveband
+from raysect.optical.spectrum cimport Spectrum, Waveband
 from raysect.optical.material.material cimport Material
-from numpy cimport ndarray
+
 
 cdef class Ray(CoreRay):
 
-    cdef double _refraction_wavelength
-    cdef list _wavebands
-    cdef public double max_depth
-    cdef readonly double depth
+    cdef readonly double refraction_wavelength
+    cdef int _samples
+    cdef double _min_wavelength
+    cdef double _max_wavelength
+    cdef readonly tuple wavebands
+    cdef public int max_depth
+    cdef public int depth
 
-    cpdef ndarray trace(self, World world)
+    cpdef Spectrum trace(self, World world)
 
     cpdef Ray spawn_daughter(self, Point origin, Vector direction)
 
-    cdef inline double get_refraction_wavelength(self)
-
-    cdef inline int get_waveband_count(self)
-
-    cdef inline Waveband get_waveband(self, int index)
+    cdef inline void _update(self)

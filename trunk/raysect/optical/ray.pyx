@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.spectrum cimport new_spectrum_array
+from raysect.optical.spectrum cimport new_spectrum
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
@@ -39,69 +39,98 @@ cdef class Ray(CoreRay):
     def __init__(self,
                  Point origin = Point([0,0,0]),
                  Vector direction = Vector([0,0,1]),
-                 list wavebands = list(),
-                 double refraction_wavelength = 550,
+                 double min_wavelength = 380,
+                 double max_wavelength = 780,
+                 int samples = 40,
                  double max_distance = INFINITY,
-                 double max_depth = 15):
+                 int max_depth = 15):
+
+        if samples < 1:
+
+                raise("Number of samples can not be less than 1.")
+
+        if min_wavelength <= 0.0 or max_wavelength <= 0.0:
+
+            raise ValueError("Wavelength can not be less than or equal to zero.")
+
+        if min_wavelength >= max_wavelength:
+
+            raise ValueError("Minimum wavelength can not be greater or eaual to the maximum wavelength.")
 
         super().__init__(origin, direction, max_distance)
 
-        self.refraction_wavelength = refraction_wavelength
-        self.wavebands = wavebands
+        self._samples = samples
+        self._min_wavelength = min_wavelength
+        self._max_wavelength = max_wavelength
 
         self.max_depth = max_depth
         self.depth = 0
 
-    property refraction_wavelength:
+        self._update()
+
+    property samples:
 
         def __get__(self):
 
-            return self._refraction_wavelength
+            return self._samples
 
-        def __set__(self, double wavelength):
+        def __set__(self, int samples):
 
-            if wavelength <= 0:
+            if samples < 1:
+
+                raise ValueError("Number of samples can not be less than 1.")
+
+            self._samples = samples
+            self._update()
+
+    property min_wavelength:
+
+        def __get__(self):
+
+            return self._min_wavelength
+
+        def __set__(self, double min_wavelength):
+
+            if min_wavelength <= 0.0:
 
                 raise ValueError("Wavelength can not be less than or equal to zero.")
 
-            self._refraction_wavelength = wavelength
+            if min_wavelength >= self._max_wavelength:
 
-    property wavebands:
+                raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
+
+            self._min_wavelength = min_wavelength
+            self._update()
+
+    property max_wavelength:
 
         def __get__(self):
 
-            return self._wavebands
+            return self._max_wavelength
 
-        def __set__(self, list wavebands not None):
+        def __set__(self, double max_wavelength):
 
-            # objects must be Waveband objects as cython implemented materials
-            # require Waveband's cython interface
-            for waveband in wavebands:
+            if max_wavelength <= 0.0:
 
-                if not isinstance(waveband, Waveband):
+                raise ValueError("Wavelength can not be less than or equal to zero.")
 
-                    raise TypeError("The Ray spectral waveband definition must be a list of Waveband objects.")
+            if self.min_wavelength >= max_wavelength:
 
-            self._wavebands = wavebands
+                raise ValueError("Maximum wavelength can not be less than or equal to the minimum wavelength.")
 
-    def __getitem__(self, int index):
+            self._max_wavelength = max_wavelength
+            self._update()
 
-        return self._wavebands[index]
+    cpdef Spectrum trace(self, World world):
 
-    def __setitem__(self, int index, Waveband waveband not None):
-
-        self._wavebands[index] = waveband
-
-    cpdef ndarray trace(self, World world):
-
-        cdef ndarray spectrum
+        cdef Spectrum spectrum
         cdef Intersection intersection
         cdef list primitives
         cdef Primitive primitive
         cdef Point start_point, end_point
         cdef Material material
 
-        spectrum = new_spectrum_array(self)
+        spectrum = new_spectrum(self.wavebands)
 
         # limit ray recursion depth
         if self.depth >= self.max_depth:
@@ -158,49 +187,34 @@ cdef class Ray(CoreRay):
 
         ray.origin = origin
         ray.direction = direction
+        ray._samples = self._samples
+        ray._min_wavelength = self._min_wavelength
+        ray._max_wavelength = self._max_wavelength
+        ray.refraction_wavelength = self.refraction_wavelength
+        ray.wavebands = self.wavebands
         ray.max_distance = self.max_distance
-        ray._refraction_wavelength = self._refraction_wavelength
-        ray._wavebands = self._wavebands
         ray.max_depth = self.max_depth
         ray.depth = self.depth + 1
 
         return ray
 
-    cdef inline double get_refraction_wavelength(self):
+    cdef inline void _update(self):
 
-        return self._refraction_wavelength
+        cdef list wavebands
+        cdef double delta_wavelength
+        cdef int index
 
-    cdef inline int get_waveband_count(self):
+        # set refraction wavelength to central wavelength of ray's spectral range
+        self.refraction_wavelength = 0.5 * (self._min_wavelength + self._max_wavelength)
 
-        return len(self._wavebands)
+        # evenly space wavebands over ray's spectral range
+        delta_wavelength = (self._max_wavelength - self._min_wavelength) / self._samples
+        wavebands = list()
+        for index in range(self._samples):
 
-    cdef inline Waveband get_waveband(self, int index):
+            wavebands.append(Waveband(self._min_wavelength + delta_wavelength * index,
+                                      self._min_wavelength + delta_wavelength * (index + 1)))
 
-        return self._wavebands[index]
-
-
-def monocromatic_ray(origin, direction, min_wavelength, max_wavelength, max_distance = INFINITY):
-
-    return Ray(origin,
-               direction,
-               [Waveband(min_wavelength, max_wavelength)],
-               0.5 * (min_wavelength + max_wavelength),
-               max_distance)
+        self.wavebands = tuple(wavebands)
 
 
-def polycromatic_ray(origin, direction, min_wavelength, max_wavelength, steps, max_distance = INFINITY):
-
-    wavebands = list()
-
-    delta_wavelength = (max_wavelength - min_wavelength) / steps
-
-    for index in range(0, steps):
-
-        wavebands.append(Waveband(min_wavelength + delta_wavelength * index,
-                                  min_wavelength + delta_wavelength * (index + 1)))
-
-    return Ray(origin,
-               direction,
-               wavebands,
-               0.5 * (min_wavelength + max_wavelength),
-               max_distance)
