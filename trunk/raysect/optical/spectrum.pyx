@@ -29,6 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cimport cython
+
+# Plank's constant * speed of light in a vacuum
+DEF CONSTANT_HC = 1.9864456832693028e-25
+
 # required by numpy c-api
 import_array()
 
@@ -93,3 +98,20 @@ cdef Spectrum new_spectrum(tuple wavebands):
     PyArray_FILLWBYTE(v.bins, 0)
 
     return v
+
+
+cpdef double photon_energy(double wavelength):
+    """
+    Returns the energy of a photon with the specified wavelength.
+
+    Arguements:
+        wavelength: photon wavelength in nanometers
+
+    Returns:
+        photon energy in Joules
+    """
+
+    with cython.cdivision:
+
+        # h * c / lambda
+        return CONSTANT_HC / (wavelength * 1e-9)

@@ -45,3 +45,6 @@ cdef class Spectrum:
 
 
 cdef Spectrum new_spectrum(tuple wavebands)
+
+
+cpdef double photon_energy(double wavelength)

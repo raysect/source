@@ -31,14 +31,14 @@
 
 cdef class Material(CoreMaterial):
 
-    cpdef ndarray evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                   bint exiting, Point inside_point, Point outside_point,
-                                   Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                    bint exiting, Point inside_point, Point outside_point,
+                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
 
-    cpdef ndarray evaluate_volume(self, ndarray spectrum, World world, Ray ray,
-                                  Point start_point, Point end_point,
-                                  AffineMatrix to_local, AffineMatrix to_world):
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray,
+                                   Point start_point, Point end_point,
+                                   AffineMatrix to_local, AffineMatrix to_world):
 
         raise NotImplementedError("Material virtual method evaluate_volume() has not been implemented.")
