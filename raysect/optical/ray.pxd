@@ -37,7 +37,6 @@ from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.spectrum cimport Spectrum, Waveband
 from raysect.optical.material.material cimport Material
 
-
 cdef class Ray(CoreRay):
 
     cdef readonly double refraction_wavelength

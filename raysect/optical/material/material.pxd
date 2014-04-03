@@ -36,17 +36,17 @@ from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
-from numpy cimport ndarray
+from raysect.optical.spectrum cimport Spectrum
 
 cdef class Material(CoreMaterial):
 
-    cpdef ndarray evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                   bint exiting, Point inside_point, Point outside_point,
-                                   Normal normal, AffineMatrix to_local, AffineMatrix to_world)
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                    bint exiting, Point inside_point, Point outside_point,
+                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world)
 
-    cpdef ndarray evaluate_volume(self, ndarray spectrum, World world, Ray ray,
-                                  Point start_point, Point end_point,
-                                  AffineMatrix to_local, AffineMatrix to_world)
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray,
+                                   Point start_point, Point end_point,
+                                   AffineMatrix to_local, AffineMatrix to_world)
 
 
 
