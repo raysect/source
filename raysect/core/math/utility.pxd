@@ -29,25 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy cimport ndarray, import_array, PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp
-from raysect.optical.ray cimport Ray
+from numpy cimport ndarray
 
-cdef class Waveband:
+cdef inline double clamp(double v, double minimum, double maximum)
 
-    cdef readonly double min_wavelength
-    cdef readonly double max_wavelength
+cdef inline double lerp(double x0, double x1, double y0, double y1, double x)
 
+cdef inline int find_index(ndarray x, double v)
 
-cdef class Spectrum:
-
-    cdef readonly tuple wavebands
-    cdef readonly ndarray bins
-    cdef readonly ndarray wavelengths
-
-    cdef void _construct(self)
-
-
-cdef Spectrum new_spectrum(tuple wavebands)
-
-
-cpdef double photon_energy(double wavelength)
+cdef double integrate(ndarray x, ndarray y, double x0, double x1)

@@ -79,10 +79,31 @@ cdef class Spectrum:
         # store as tuple to ensure wavebands are immutable
         self.wavebands = tuple(wavebands)
 
-        # create spectral sample bins
-        cdef npy_intp size = len(wavebands)
+        # setup wavelength and sample bin arrays
+        self._construct()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef void _construct(self):
+
+        cdef:
+            npy_intp size
+            int index
+            Waveband waveband
+            double[::1] wavelengths_view
+
+        size = len(self.wavebands)
+
+        # create spectral sample bins, initialise with zero
         self.bins = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
         PyArray_FILLWBYTE(self.bins, 0)
+
+        # create and populate central wavelength array
+        self.wavelengths = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
+        wavelengths_view = self.wavelengths
+        for index, waveband in enumerate(self.wavebands):
+
+            wavelengths_view[index] = 0.5 * (waveband.min_wavelength + waveband.max_wavelength)
 
 
 cdef Spectrum new_spectrum(tuple wavebands):
@@ -92,10 +113,8 @@ cdef Spectrum new_spectrum(tuple wavebands):
     v = Spectrum.__new__(Spectrum)
     v.wavebands = wavebands
 
-    # create spectral sample bins
-    cdef npy_intp size = len(wavebands)
-    v.bins = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-    PyArray_FILLWBYTE(v.bins, 0)
+    # create wavelength and spectral sample bins
+    v._construct()
 
     return v
 

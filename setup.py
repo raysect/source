@@ -15,6 +15,7 @@ extensions = [
     Extension("raysect.core.math.point", ["raysect/core/math/point.pyx"]),
     Extension("raysect.core.math.affinematrix", ["raysect/core/math/affinematrix.pyx"]),
     Extension("raysect.core.math.function", ["raysect/core/math/function.pyx"]),
+    Extension("raysect.core.math.utility", ["raysect/core/math/utility.pyx"]),
     Extension("raysect.core.scenegraph._nodebase",  ["raysect/core/scenegraph/_nodebase.pyx"]),
     Extension("raysect.core.scenegraph.node",  ["raysect/core/scenegraph/node.pyx"]),
     Extension("raysect.core.scenegraph.primitive",  ["raysect/core/scenegraph/primitive.pyx"]),
