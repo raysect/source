@@ -29,6 +29,20 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.math.utility cimport integrate, clamp
+from raysect.optical.spectrum cimport Spectrum, Waveband
 
+cpdef tuple spectrum_to_ciexyz(Spectrum spectrum)
 
+cpdef inline tuple ciexyy_to_ciexyz(double chromaticity_x, double chromaticity_y, brightness_y)
+
+cpdef inline tuple ciexyz_to_ciexyy(double x, double y, double z)
+
+cdef inline double srgb_transfer_function(double v)
+
+cpdef inline tuple ciexyz_to_srgb(double x, double y, double z)
+
+cdef inline double srgb_transfer_function_inverse(double v)
+
+cpdef inline tuple srgb_to_ciexyz(double r, double g, double b)
 
