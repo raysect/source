@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy import array, float64
+from numpy import array, float64, zeros
 cimport cython
 
 # CIE 1931 Standard Colorimetric Observer (normalised)
@@ -85,19 +85,47 @@ ciexyz_z = array([
     0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000]) / 106.8566
 
 
-cpdef tuple spectrum_to_ciexyz(Spectrum spectrum):
+cpdef ndarray resample_ciexyz(tuple wavebands):
 
     cdef:
+        ndarray xyz
         Waveband waveband
+        int index
+
+    xyz = zeros((len(wavebands), 3))
+
+    for index, waveband in enumerate(wavebands):
+
+        xyz[index, 0] = integrate(ciexyz_wavelength, ciexyz_x, waveband.min_wavelength, waveband.max_wavelength)
+        xyz[index, 1] = integrate(ciexyz_wavelength, ciexyz_y, waveband.min_wavelength, waveband.max_wavelength)
+        xyz[index, 2] = integrate(ciexyz_wavelength, ciexyz_z, waveband.min_wavelength, waveband.max_wavelength)
+
+    return xyz
+
+
+cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
+
+    cdef:
+        #Waveband waveband
         double x = 0
         double y = 0
         double z = 0
+        #int index
 
-    for index, waveband in enumerate(spectrum.wavebands):
+    if resampled_xyz is None:
 
-        x += spectrum.bins[index] * integrate(ciexyz_wavelength, ciexyz_x, waveband.min_wavelength, waveband.max_wavelength)
-        y += spectrum.bins[index] * integrate(ciexyz_wavelength, ciexyz_y, waveband.min_wavelength, waveband.max_wavelength)
-        z += spectrum.bins[index] * integrate(ciexyz_wavelength, ciexyz_z, waveband.min_wavelength, waveband.max_wavelength)
+        resampled_xyz = resample_ciexyz(spectrum.wavebands)
+
+    x = (spectrum.bins[:] * resampled_xyz[:, 0]).sum()
+    y = (spectrum.bins[:] * resampled_xyz[:, 1]).sum()
+    z = (spectrum.bins[:] * resampled_xyz[:, 2]).sum()
+
+    # TODO: optimise and replace numpy operations above
+    #for index in range(len(spectrum.wavebands)):
+
+        #x += spectrum.bins[index] * resampled_xyz[index, 0]
+        #y += spectrum.bins[index] * resampled_xyz[index, 1]
+        #z += spectrum.bins[index] * resampled_xyz[index, 2]
 
     return (x, y, z)
 

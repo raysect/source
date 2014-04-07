@@ -31,8 +31,11 @@
 
 from raysect.core.math.utility cimport integrate, clamp
 from raysect.optical.spectrum cimport Spectrum, Waveband
+from numpy cimport ndarray
 
-cpdef tuple spectrum_to_ciexyz(Spectrum spectrum)
+cpdef ndarray resample_ciexyz(tuple wavebands)
+
+cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = *)
 
 cpdef inline tuple ciexyy_to_ciexyz(double chromaticity_x, double chromaticity_y, brightness_y)
 
