@@ -44,9 +44,11 @@ cdef class Material(CoreMaterial):
                                     bint exiting, Point inside_point, Point outside_point,
                                     Normal normal, AffineMatrix to_local, AffineMatrix to_world)
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray,
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
+                                   Ray ray, Primitive primitive,
                                    Point start_point, Point end_point,
                                    AffineMatrix to_local, AffineMatrix to_world)
+    
 
 
 

@@ -172,6 +172,7 @@ cdef class Ray(CoreRay):
                                    spectrum,
                                    world,
                                    self,
+                                   primitive,
                                    start_point,
                                    end_point,
                                    primitive.to_local(),
@@ -216,5 +217,6 @@ cdef class Ray(CoreRay):
                                       self._min_wavelength + delta_wavelength * (index + 1)))
 
         self.wavebands = tuple(wavebands)
+        
 
 

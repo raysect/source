@@ -37,7 +37,8 @@ cdef class Material(CoreMaterial):
 
         raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray,
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
+                                   Ray ray, Primitive primitive,
                                    Point start_point, Point end_point,
                                    AffineMatrix to_local, AffineMatrix to_world):
 
