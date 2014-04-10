@@ -29,31 +29,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy cimport ndarray, import_array, PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp
-from raysect.optical.ray cimport Ray
+from raysect.optical.material.emitter cimport VolumeEmitterHomogeneous, VolumeEmitterInhomogeneous
+from raysect.optical.spectrum cimport Spectrum, new_spectrum
 
-cdef class Waveband:
+cdef class Glow(VolumeEmitterHomogeneous):
 
-    cdef readonly double min_wavelength
-    cdef readonly double max_wavelength
-
-
-cdef class Spectrum:
-
-    cdef readonly tuple wavebands
-    cdef readonly ndarray bins
-    cdef ndarray _wavelengths
-
-    cdef Spectrum add(self, Spectrum spectrum)
-
-    cdef Spectrum mul(self, double value)
-
-    cdef Spectrum div(self, double value)
-
-    cdef void _construct(self)
+    pass
 
 
-cdef Spectrum new_spectrum(tuple wavebands)
+cdef class GaussianBeam(VolumeEmitterInhomogeneous):
 
-
-cpdef double photon_energy(double wavelength)
+    cdef double power
+    cdef double _sigma
+    cdef double _denominator

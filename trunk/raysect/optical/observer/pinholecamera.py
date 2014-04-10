@@ -39,13 +39,15 @@ from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_t
 
 class PinholeCamera(Observer):
 
-    def __init__(self, parent = None, transform = AffineMatrix(), pixels = (640, 480), fov = 40, name = ""):
+    def __init__(self, parent = None, transform = AffineMatrix(), pixels = (640, 480), fov = 40, spectral_samples = 20, name = ""):
 
         super().__init__(parent, transform, name)
 
         self.pixels = pixels
         self.fov = fov
         self.frame = None
+
+        self.spectral_samples = spectral_samples
 
         self.display_progress = True
         self.display_update_time = 5.0
@@ -109,7 +111,7 @@ class PinholeCamera(Observer):
             image_start_x = 0
             image_start_y = 0
 
-        ray = Ray(samples = 20)
+        ray = Ray(samples = self.spectral_samples)
         resampled_xyz = resample_ciexyz(ray.wavebands)
 
         if self.display_progress:
