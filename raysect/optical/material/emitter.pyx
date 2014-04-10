@@ -35,6 +35,7 @@ from numpy cimport ndarray
 cdef class SurfaceEmitter(NullVolume):
 
     #TODO: implement
+    pass
 
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
