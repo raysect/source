@@ -82,6 +82,30 @@ cdef class Spectrum:
         # setup wavelength and sample bin arrays
         self._construct()
 
+    property wavelengths:
+
+        @cython.boundscheck(False)
+        @cython.wraparound(False)
+        def __get__(self):
+
+            cdef:
+                npy_intp size
+                int index
+                Waveband waveband
+                double[::1] wavelengths_view
+
+            if self._wavelengths is None:
+
+                # create and populate central wavelength array
+                size = len(self.wavebands)
+                self._wavelengths = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
+                wavelengths_view = self._wavelengths
+                for index, waveband in enumerate(self.wavebands):
+
+                    wavelengths_view[index] = 0.5 * (waveband.min_wavelength + waveband.max_wavelength)
+
+            return self._wavelengths
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef void _construct(self):
@@ -98,12 +122,8 @@ cdef class Spectrum:
         self.bins = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
         PyArray_FILLWBYTE(self.bins, 0)
 
-        # create and populate central wavelength array
-        self.wavelengths = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-        wavelengths_view = self.wavelengths
-        for index, waveband in enumerate(self.wavebands):
-
-            wavelengths_view[index] = 0.5 * (waveband.min_wavelength + waveband.max_wavelength)
+        # wavelengths is populated on demand
+        self._wavelengths = None
 
 
 cdef Spectrum new_spectrum(tuple wavebands):

@@ -29,31 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import cython
-
-cdef inline double clamp(double v, double minimum, double maximum):
-
-    if v < minimum:
-
-        return minimum
-
-    if v > maximum:
-
-        return maximum
-
-    return v
-
-
-@cython.cdivision(True)
-cdef inline double lerp(double x0, double x1, double y0, double y1, double x):
-
-    return ((y1 - y0) / (x1 - x0)) * (x - x0) + y0
-
+cimport cython
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline int find_index(ndarray x, double v):
+cdef int find_index(ndarray x, double v):
     """
     Locates the lower array index of the array indicies that enclose the supplied value.
 

@@ -29,57 +29,73 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class Material(CoreMaterial):
+cimport cython
+from numpy cimport ndarray
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                    bint exiting, Point inside_point, Point outside_point,
-                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+cdef class SurfaceEmitter(NullVolume):
 
-        raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
+    #TODO: implement
 
+
+cdef class VolumeEmitterHomogeneous(NullSurface):
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point start_point, Point end_point,
                                    AffineMatrix to_local, AffineMatrix to_world):
-
-        raise NotImplementedError("Material virtual method evaluate_volume() has not been implemented.")
-
-
-cdef class NullSurface(Material):
-
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                bint exiting, Point inside_point, Point outside_point,
-                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
-            Point origin
-            Ray daughter_ray
+            Point start, end
+            Vector direction
+            double length
+            Spectrum emission_density
+            double[::1] spectrum_view, emission_view
 
-        # are we entering or leaving surface?
-        if exiting:
+        # convert entry and exit to local space
+        start = start_point.transform(to_local)
+        end = end_point.transform(to_local)
 
-            # ray leaving surface, use exterior point for ray origin
-            origin = outside_point.transform(to_world)
+        # obtain local space ray direction and integration length
+        direction = start.vector_to(end)
+        length = direction.get_length()
 
-        else:
+        if length == 0:
 
-            # ray entering surface, use interior point for ray origin
-            origin = inside_point.transform(to_world)
+            # nothing to contribute
+            return spectrum
 
-        daughter_ray = ray.spawn_daughter(origin, ray.direction)
+        direction = direction.normalise()
 
-        # do not count null surfaces in ray depth
-        daughter_ray.depth -= 1
+        # obtain emission density from emission function (W/m^3/str)
+        emission_density = self.emission_function(direction, ray.wavebands)
 
-        return daughter_ray.trace(world)
+        # sanity check as bound checking has been disabled
+        if (spectrum.bins.ndim != 1 or emission_density.bins.ndim != 1
+           or emission_density.bins.shape[0] != spectrum.bins.shape[0]):
 
+            raise ValueError("The spectrum returned by evaluate_volume has the wrong number of bins.")
 
-cdef class NullVolume(Material):
+        # integrate emission density along ray path
+        spectrum_view = spectrum.bins
+        emission_view = emission_density.bins
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+        for index in range(spectrum.bins.shape[0]):
 
-        # do nothing!
+            spectrum_view[index] += emission_view[index] * length
+
         return spectrum
+
+    cpdef Spectrum emission_function(self, Vector direction, tuple wavebands):
+
+        raise NotImplementedError("Virtual method emission_function() has not been implemented.")
+
+
+cdef class VolumeEmitterInhomogeneous(NullSurface):
+
+    # TODO: Implement
+    pass
+
+
+
