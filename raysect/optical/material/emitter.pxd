@@ -42,4 +42,10 @@ from raysect.optical.spectrum cimport Spectrum
 cdef class VolumeEmitterHomogeneous(NullSurface):
 
     cpdef Spectrum emission_function(self, Vector direction, tuple wavebands)
-    
+
+
+cdef class VolumeEmitterInhomogeneous(NullSurface):
+
+    cdef double _step
+
+    cpdef Spectrum emission_function(self, Point point, Vector direction, tuple wavebands)

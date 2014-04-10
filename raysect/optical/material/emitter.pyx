@@ -31,17 +31,10 @@
 
 cimport cython
 from numpy cimport ndarray
-
-cdef class SurfaceEmitter(NullVolume):
-
-    #TODO: implement
-    pass
-
+from raysect.core.math.point cimport new_point
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point start_point, Point end_point,
@@ -51,10 +44,9 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
             Point start, end
             Vector direction
             double length
-            Spectrum emission_density
-            double[::1] spectrum_view, emission_view
+            Spectrum emission
 
-        # convert entry and exit to local space
+        # convert start and end points to local space
         start = start_point.transform(to_local)
         end = end_point.transform(to_local)
 
@@ -70,23 +62,12 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         direction = direction.normalise()
 
         # obtain emission density from emission function (W/m^3/str)
-        emission_density = self.emission_function(direction, ray.wavebands)
-
-        # sanity check as bound checking has been disabled
-        if (spectrum.bins.ndim != 1 or emission_density.bins.ndim != 1
-           or emission_density.bins.shape[0] != spectrum.bins.shape[0]):
-
-            raise ValueError("The spectrum returned by evaluate_volume has the wrong number of bins.")
+        emission = self.emission_function(direction, ray.wavebands)
 
         # integrate emission density along ray path
-        spectrum_view = spectrum.bins
-        emission_view = emission_density.bins
+        emission = emission.mul(length)
 
-        for index in range(spectrum.bins.shape[0]):
-
-            spectrum_view[index] += emission_view[index] * length
-
-        return spectrum
+        return spectrum.add(emission)
 
     cpdef Spectrum emission_function(self, Vector direction, tuple wavebands):
 
@@ -95,8 +76,77 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
 cdef class VolumeEmitterInhomogeneous(NullSurface):
 
-    # TODO: Implement
-    pass
+    def __init__(self, double step = 0.01):
 
+        self.step = step
+
+    property step:
+
+        def __get__(self):
+
+            return self._step
+
+        def __set__(self, double step):
+
+            if step <= 0:
+
+                raise ValueError("Numerical integration step size can not be less than or equal to zero")
+
+            self._step = step
+
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
+                                   Ray ray, Primitive primitive,
+                                   Point start_point, Point end_point,
+                                   AffineMatrix to_local, AffineMatrix to_world):
+
+        cdef:
+            Point start, end
+            Vector direction
+            double length, t, c
+            Spectrum emission, emission_previous
+
+        # convert start and end points to local space
+        start = start_point.transform(to_local)
+        end = end_point.transform(to_local)
+
+        # obtain local space ray direction and integration length
+        direction = start.vector_to(end)
+        length = direction.get_length()
+
+        if length == 0:
+
+            # nothing to contribute
+            return spectrum
+
+        direction = direction.normalise()
+
+        # numerical integration
+        emission_previous = self.emission_function(start, direction, spectrum.wavebands)
+        t = self._step
+        c = 0.5 * self._step
+        while(t <= length):
+
+            sample_point = new_point(start.x + t * direction.x,
+                                     start.y + t * direction.y,
+                                     start.z + t * direction.z)
+
+            emission = self.emission_function(sample_point, direction, spectrum.wavebands)
+
+            # trapizium rule integration
+            spectrum = spectrum.add(emission.add(emission_previous).mul(c))
+
+            emission_previous = emission
+            t += self._step
+
+        # trapizium rule integration of remainder
+        t -= self._step
+        emission = self.emission_function(end, direction, spectrum.wavebands)
+        spectrum = spectrum.add(emission.add(emission_previous).mul(0.5 * (length - t)))
+
+        return spectrum
+
+    cpdef Spectrum emission_function(self, Point point, Vector direction, tuple wavebands):
+
+        raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
 

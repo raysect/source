@@ -30,7 +30,8 @@ extensions = [
     Extension("raysect.optical.colour", ["raysect/optical/colour.pyx"]),
     Extension("raysect.optical.spectrum", ["raysect/optical/spectrum.pyx"], include_dirs=[".", numpy.get_include()]),
     Extension("raysect.optical.material.material", ["raysect/optical/material/material.pyx"]),
-    Extension("raysect.optical.material.emitter", ["raysect/optical/material/emitter.pyx"])
+    Extension("raysect.optical.material.emitter", ["raysect/optical/material/emitter.pyx"]),
+    Extension("raysect.optical.material.demo", ["raysect/optical/material/demo.pyx"])
     ]
 
 setup(
