@@ -39,8 +39,8 @@ cdef class Ray(CoreRay):
     def __init__(self,
                  Point origin = Point([0,0,0]),
                  Vector direction = Vector([0,0,1]),
-                 double min_wavelength = 350,
-                 double max_wavelength = 750,
+                 double min_wavelength = 375,
+                 double max_wavelength = 785,
                  int samples = 40,
                  double max_distance = INFINITY,
                  int max_depth = 15):
@@ -217,6 +217,6 @@ cdef class Ray(CoreRay):
                                       self._min_wavelength + delta_wavelength * (index + 1)))
 
         self.wavebands = tuple(wavebands)
-        
+
 
 

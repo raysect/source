@@ -85,47 +85,61 @@ ciexyz_z = array([
     0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000]) / 106.8566
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef ndarray resample_ciexyz(tuple wavebands):
 
     cdef:
         ndarray xyz
+        double[:,::1] xyz_view
         Waveband waveband
         int index
 
     xyz = zeros((len(wavebands), 3))
+    xyz_view = xyz
 
     for index, waveband in enumerate(wavebands):
 
-        xyz[index, 0] = integrate(ciexyz_wavelength, ciexyz_x, waveband.min_wavelength, waveband.max_wavelength)
-        xyz[index, 1] = integrate(ciexyz_wavelength, ciexyz_y, waveband.min_wavelength, waveband.max_wavelength)
-        xyz[index, 2] = integrate(ciexyz_wavelength, ciexyz_z, waveband.min_wavelength, waveband.max_wavelength)
+        xyz_view[index, 0] = integrate(ciexyz_wavelength, ciexyz_x, waveband.min_wavelength, waveband.max_wavelength)
+        xyz_view[index, 1] = integrate(ciexyz_wavelength, ciexyz_y, waveband.min_wavelength, waveband.max_wavelength)
+        xyz_view[index, 2] = integrate(ciexyz_wavelength, ciexyz_z, waveband.min_wavelength, waveband.max_wavelength)
 
     return xyz
 
 
+@cython.wraparound(False)
+@cython.boundscheck(False)
 cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
 
     cdef:
-        #Waveband waveband
-        double x = 0
-        double y = 0
-        double z = 0
-        #int index
+        double x, y, z
+        Waveband waveband
+        int index
+        double[::1] bins_view
+        double[:, ::1] xyz_view
 
-    if resampled_xyz is None:
+    if resampled_xyz is not None:
+
+        if resampled_xyz.ndim != 2 or resampled_xyz.shape[0] != len(spectrum.wavebands) or resampled_xyz.shape[1] != 3:
+
+            raise ValueError("The supplied resampled_xyz array size is inconsistent with the number of spectral bins or channel count.")
+
+    else:
 
         resampled_xyz = resample_ciexyz(spectrum.wavebands)
 
-    x = (spectrum.bins[:] * resampled_xyz[:, 0]).sum()
-    y = (spectrum.bins[:] * resampled_xyz[:, 1]).sum()
-    z = (spectrum.bins[:] * resampled_xyz[:, 2]).sum()
+    bins_view = spectrum.bins
+    xyz_view = resampled_xyz
 
-    # TODO: optimise and replace numpy operations above
-    #for index in range(len(spectrum.wavebands)):
+    x = 0
+    y = 0
+    z = 0
 
-        #x += spectrum.bins[index] * resampled_xyz[index, 0]
-        #y += spectrum.bins[index] * resampled_xyz[index, 1]
-        #z += spectrum.bins[index] * resampled_xyz[index, 2]
+    for index in range(len(spectrum.wavebands)):
+
+        x += bins_view[index] * xyz_view[index, 0]
+        y += bins_view[index] * xyz_view[index, 1]
+        z += bins_view[index] * xyz_view[index, 2]
 
     return (x, y, z)
 
@@ -184,6 +198,7 @@ cpdef inline tuple ciexyz_to_srgb(double x, double y, double z):
     return (r, g, b)
 
 
+@cython.cdivision(True)
 cdef inline double srgb_transfer_function_inverse(double v):
 
     if v <= 0.04045:

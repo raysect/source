@@ -29,8 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Material as CoreMaterial
+from raysect.optical.material.material cimport NullSurface, NullVolume
 from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.vector cimport Vector
 from raysect.core.math.point cimport Point
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
@@ -38,26 +39,7 @@ from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
 
-cdef class Material(CoreMaterial):
+cdef class VolumeEmitterHomogeneous(NullSurface):
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                    bint exiting, Point inside_point, Point outside_point,
-                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world)
-
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world)
-
-
-cdef class NullSurface(Material):
-
-    pass
-
-
-cdef class NullVolume(Material):
-
-    pass
-
-
-
+    cpdef Spectrum emission_function(self, Vector direction, tuple wavebands)
+    

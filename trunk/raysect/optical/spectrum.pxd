@@ -42,7 +42,14 @@ cdef class Spectrum:
 
     cdef readonly tuple wavebands
     cdef readonly ndarray bins
-    cdef readonly ndarray wavelengths
+    cdef ndarray _wavelengths
+
+    # TODO: add mathematical functions for common spectrum operations in python and cython
+    #cdef Spectrum add(self, Spectrum spectrum)
+    #cdef Spectrum sub(self, Spectrum spectrum)
+    #cdef Spectrum mul(self, double value)
+    #cdef Spectrum div(self, double value)
+    #cdef Spectrum sum()
 
     cdef void _construct(self)
 

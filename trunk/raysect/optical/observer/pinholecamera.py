@@ -48,7 +48,7 @@ class PinholeCamera(Observer):
         self.frame = None
 
         self.display_progress = True
-        self.display_update_time = 2.0
+        self.display_update_time = 5.0
 
     @property
     def pixels(self):

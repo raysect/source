@@ -30,11 +30,29 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from numpy cimport ndarray
+cimport cython
 
-cdef inline double clamp(double v, double minimum, double maximum)
+cdef int find_index(ndarray x, double v)
 
-cdef inline double lerp(double x0, double x1, double y0, double y1, double x)
-
-cdef inline int find_index(ndarray x, double v)
 
 cdef double integrate(ndarray x, ndarray y, double x0, double x1)
+
+
+cdef inline double clamp(double v, double minimum, double maximum):
+
+    if v < minimum:
+
+        return minimum
+
+    if v > maximum:
+
+        return maximum
+
+    return v
+
+
+@cython.cdivision(True)
+cdef inline double lerp(double x0, double x1, double y0, double y1, double x):
+
+    return ((y1 - y0) / (x1 - x0)) * (x - x0) + y0
+
