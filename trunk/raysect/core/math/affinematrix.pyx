@@ -98,7 +98,9 @@ cdef class AffineMatrix(_Mat4):
         calculated. All valid affine transforms should be invertable.
         """
 
-        cdef double t[22], det, idet
+        cdef:
+            double t[22]
+            double det, idet
 
         # calculate 4x4 determinant
         t[0] = self.m[0][0] * self.m[1][1] - self.m[0][1] * self.m[1][0]
