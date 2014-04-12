@@ -36,4 +36,7 @@ extensions = [
 
 setup(
     ext_modules = cythonize(extensions)
+    #ext_modules = cythonize(extensions, force = True)
+    #ext_modules = cythonize(extensions, force = True, compiler_directives = {"profile": True})
+    #ext_modules = cythonize(extensions, compiler_directives = {"profile": True})
 )

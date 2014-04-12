@@ -35,6 +35,8 @@ from raysect.core.math.point cimport new_point
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point start_point, Point end_point,
@@ -45,6 +47,8 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
             Vector direction
             double length
             Spectrum emission
+            double[::1] e_view, s_view
+            int index
 
         # convert start and end points to local space
         start = start_point.transform(to_local)
@@ -64,10 +68,22 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         # obtain emission density from emission function (W/m^3/str)
         emission = self.emission_function(direction, ray.wavebands)
 
-        # integrate emission density along ray path
-        emission = emission.mul(length)
+        # sanity check as bounds checking is disabled
+        if (emission.bins.ndim != 1 or spectrum.bins.ndim != 1
+            or emission.bins.shape[0] != spectrum.bins.shape[0]):
 
-        return spectrum.add(emission)
+            raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
+
+        # memoryviews used for fast element access
+        e_view = emission.bins
+        s_view = spectrum.bins
+
+        # integrate emission density along ray path
+        for index in range(spectrum.bins.shape[0]):
+
+            s_view[index] += e_view[index] * length
+
+        return spectrum
 
     cpdef Spectrum emission_function(self, Vector direction, tuple wavebands):
 
@@ -94,6 +110,8 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
             self._step = step
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point start_point, Point end_point,
@@ -104,6 +122,8 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
             Vector direction
             double length, t, c
             Spectrum emission, emission_previous
+            double[::1] e1_view, e2_view, s_view
+            int index
 
         # convert start and end points to local space
         start = start_point.transform(to_local)
@@ -120,8 +140,18 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         direction = direction.normalise()
 
-        # numerical integration
         emission_previous = self.emission_function(start, direction, spectrum.wavebands)
+
+        # sanity check as bounds checking is disabled
+        if (emission_previous.bins.ndim != 1 or spectrum.bins.ndim != 1
+            or emission_previous.bins.shape[0] != spectrum.bins.shape[0]):
+
+            raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
+
+        # assign memoryview for fast element access to outptu spectrum
+        s_view = spectrum.bins
+
+        # numerical integration
         t = self._step
         c = 0.5 * self._step
         while(t <= length):
@@ -132,21 +162,48 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
             emission = self.emission_function(sample_point, direction, spectrum.wavebands)
 
+            # sanity check as bounds checking is disabled
+            if (emission.bins.ndim != 1 or spectrum.bins.ndim != 1
+                or emission.bins.shape[0] != spectrum.bins.shape[0]):
+
+                raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
+
+            # memoryviews used for fast element access
+            e1_view = emission.bins
+            e2_view = emission_previous.bins
+
             # trapizium rule integration
-            spectrum = spectrum.add(emission.add(emission_previous).mul(c))
+            for index in range(spectrum.bins.shape[0]):
+
+                s_view[index] += c * (e1_view[index] + e2_view[index])
 
             emission_previous = emission
             t += self._step
 
-        # trapizium rule integration of remainder
+        # step back to process any length that remains
         t -= self._step
+
         emission = self.emission_function(end, direction, spectrum.wavebands)
-        spectrum = spectrum.add(emission.add(emission_previous).mul(0.5 * (length - t)))
+
+        # sanity check as bounds checking is disabled
+        if (emission.bins.ndim != 1 or spectrum.bins.ndim != 1
+            or emission.bins.shape[0] != spectrum.bins.shape[0]):
+
+            raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
+
+        # memoryviews used for fast element access
+        e1_view = emission.bins
+        e2_view = emission_previous.bins
+
+        # trapizium rule integration of remainder
+        c = 0.5 * (length - t)
+        for index in range(spectrum.bins.shape[0]):
+
+            s_view[index] += c * (e1_view[index] + e2_view[index])
 
         return spectrum
 
     cpdef Spectrum emission_function(self, Point point, Vector direction, tuple wavebands):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
-
 

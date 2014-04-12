@@ -44,12 +44,6 @@ cdef class Spectrum:
     cdef readonly ndarray bins
     cdef ndarray _wavelengths
 
-    cdef Spectrum add(self, Spectrum spectrum)
-
-    cdef Spectrum mul(self, double value)
-
-    cdef Spectrum div(self, double value)
-
     cdef void _construct(self)
 
 
