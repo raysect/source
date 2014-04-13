@@ -32,6 +32,7 @@
 cimport cython
 from numpy cimport ndarray
 from raysect.core.math.point cimport new_point
+from raysect.optical.spectrum cimport new_spectrum
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
 
@@ -66,7 +67,11 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         direction = direction.normalise()
 
         # obtain emission density from emission function (W/m^3/str)
-        emission = self.emission_function(direction, ray.wavebands)
+        emission = new_spectrum(spectrum.min_wavelength,
+                                spectrum.max_wavelength,
+                                spectrum.samples)
+
+        emission = self.emission_function(direction, emission)
 
         # sanity check as bounds checking is disabled
         if (emission.bins.ndim != 1 or spectrum.bins.ndim != 1
@@ -85,7 +90,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Vector direction, tuple wavebands):
+    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
@@ -140,7 +145,11 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         direction = direction.normalise()
 
-        emission_previous = self.emission_function(start, direction, spectrum.wavebands)
+        emission_previous = new_spectrum(spectrum.min_wavelength,
+                                        spectrum.max_wavelength,
+                                        spectrum.samples)
+
+        emission_previous = self.emission_function(start, direction, emission_previous)
 
         # sanity check as bounds checking is disabled
         if (emission_previous.bins.ndim != 1 or spectrum.bins.ndim != 1
@@ -148,7 +157,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
             raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
 
-        # assign memoryview for fast element access to outptu spectrum
+        # assign memoryview for fast element access to output spectrum
         s_view = spectrum.bins
 
         # numerical integration
@@ -160,7 +169,11 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
                                      start.y + t * direction.y,
                                      start.z + t * direction.z)
 
-            emission = self.emission_function(sample_point, direction, spectrum.wavebands)
+            emission = new_spectrum(spectrum.min_wavelength,
+                                    spectrum.max_wavelength,
+                                    spectrum.samples)
+
+            emission = self.emission_function(sample_point, direction, emission)
 
             # sanity check as bounds checking is disabled
             if (emission.bins.ndim != 1 or spectrum.bins.ndim != 1
@@ -183,7 +196,11 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         # step back to process any length that remains
         t -= self._step
 
-        emission = self.emission_function(end, direction, spectrum.wavebands)
+        emission = new_spectrum(spectrum.min_wavelength,
+                                spectrum.max_wavelength,
+                                spectrum.samples)
+
+        emission = self.emission_function(end, direction, emission)
 
         # sanity check as bounds checking is disabled
         if (emission.bins.ndim != 1 or spectrum.bins.ndim != 1
@@ -203,7 +220,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Point point, Vector direction, tuple wavebands):
+    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 

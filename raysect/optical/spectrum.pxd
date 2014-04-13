@@ -32,22 +32,19 @@
 from numpy cimport ndarray, import_array, PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp
 from raysect.optical.ray cimport Ray
 
-cdef class Waveband:
+cdef class Spectrum:
 
     cdef readonly double min_wavelength
     cdef readonly double max_wavelength
-
-
-cdef class Spectrum:
-
-    cdef readonly tuple wavebands
+    cdef readonly double delta_wavelength
+    cdef readonly int samples
     cdef readonly ndarray bins
     cdef ndarray _wavelengths
 
-    cdef void _construct(self)
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int samples)
 
 
-cdef Spectrum new_spectrum(tuple wavebands)
+cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int samples)
 
 
 cpdef double photon_energy(double wavelength)

@@ -30,10 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.utility cimport integrate, clamp
-from raysect.optical.spectrum cimport Spectrum, Waveband
+from raysect.optical.spectrum cimport Spectrum
 from numpy cimport ndarray
 
-cpdef ndarray resample_ciexyz(tuple wavebands)
+cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int samples)
 
 cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = *)
 

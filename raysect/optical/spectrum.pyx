@@ -37,12 +37,13 @@ DEF CONSTANT_HC = 1.9864456832693028e-25
 # required by numpy c-api
 import_array()
 
-cdef class Waveband:
-    """
-    waveband: [min_wavelength, max_wavelength)
-    """
+cdef class Spectrum:
 
-    def __init__(self, double min_wavelength, double max_wavelength):
+    def __init__(self, double min_wavelength, double max_wavelength, int samples):
+
+        if samples < 1:
+
+                raise("Number of samples can not be less than 1.")
 
         if min_wavelength <= 0.0 or max_wavelength <= 0.0:
 
@@ -52,35 +53,7 @@ cdef class Waveband:
 
             raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
-        self.min_wavelength = min_wavelength
-        self.max_wavelength = max_wavelength
-
-
-cdef class Spectrum:
-
-    def __init__(self, object wavebands not None):
-
-        try:
-
-            if len(wavebands) < 1:
-
-                raise ValueError("Number of Wavebands can not be less than 1.")
-
-        except TypeError:
-
-                raise ValueError("An iterable list of Wavebands is required.")
-
-        for item in wavebands:
-
-            if not isinstance(item, Waveband):
-
-                raise ValueError("Waveband list must only contain Waveband objects.")
-
-        # store as tuple to ensure wavebands are immutable
-        self.wavebands = tuple(wavebands)
-
-        # setup wavelength and sample bin arrays
-        self._construct()
+        self._construct(min_wavelength, max_wavelength, samples)
 
     property wavelengths:
 
@@ -91,34 +64,38 @@ cdef class Spectrum:
             cdef:
                 npy_intp size
                 int index
-                Waveband waveband
-                double[::1] wavelengths_view
+                double[::1] w_view
 
             if self._wavelengths is None:
 
                 # create and populate central wavelength array
-                size = len(self.wavebands)
+                size = self.samples
                 self._wavelengths = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-                wavelengths_view = self._wavelengths
-                for index, waveband in enumerate(self.wavebands):
+                w_view = self._wavelengths
 
-                    wavelengths_view[index] = 0.5 * (waveband.min_wavelength + waveband.max_wavelength)
+                for index in range(self.samples):
+
+                    w_view[index] = self.min_wavelength + index * self.delta_wavelength
 
             return self._wavelengths
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _construct(self):
+    @cython.cdivision(True)
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int samples):
 
         cdef:
             npy_intp size
             int index
-            Waveband waveband
             double[::1] wavelengths_view
 
-        size = len(self.wavebands)
+        self.min_wavelength = min_wavelength
+        self.max_wavelength = max_wavelength
+        self.delta_wavelength = (max_wavelength - min_wavelength) / samples
+        self.samples = samples
 
         # create spectral sample bins, initialise with zero
+        size = self.samples
         self.bins = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
         PyArray_FILLWBYTE(self.bins, 0)
 
@@ -126,15 +103,12 @@ cdef class Spectrum:
         self._wavelengths = None
 
 
-cdef Spectrum new_spectrum(tuple wavebands):
+cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int samples):
 
     cdef Spectrum v
 
     v = Spectrum.__new__(Spectrum)
-    v.wavebands = wavebands
-
-    # create wavelength and spectral sample bins
-    v._construct()
+    v._construct(min_wavelength, max_wavelength, samples)
 
     return v
 

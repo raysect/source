@@ -87,22 +87,41 @@ ciexyz_z = array([
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef ndarray resample_ciexyz(tuple wavebands):
+@cython.cdivision(True)
+cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int samples):
 
     cdef:
         ndarray xyz
         double[:,::1] xyz_view
-        Waveband waveband
         int index
+        double delta_wavelength, lower_wavelength, upper_wavelength
 
-    xyz = zeros((len(wavebands), 3))
+    if samples < 1:
+
+            raise("Number of samples can not be less than 1.")
+
+    if min_wavelength <= 0.0 or max_wavelength <= 0.0:
+
+        raise ValueError("Wavelength can not be less than or equal to zero.")
+
+    if min_wavelength >= max_wavelength:
+
+        raise ValueError("Minimum wavelength can not be greater or eaual to the maximum wavelength.")
+
+    xyz = zeros((samples, 3))
     xyz_view = xyz
 
-    for index, waveband in enumerate(wavebands):
+    delta_wavelength = (max_wavelength - min_wavelength) / samples
+    lower_wavelength = min_wavelength
+    for index in range(samples):
 
-        xyz_view[index, 0] = integrate(ciexyz_wavelength, ciexyz_x, waveband.min_wavelength, waveband.max_wavelength)
-        xyz_view[index, 1] = integrate(ciexyz_wavelength, ciexyz_y, waveband.min_wavelength, waveband.max_wavelength)
-        xyz_view[index, 2] = integrate(ciexyz_wavelength, ciexyz_z, waveband.min_wavelength, waveband.max_wavelength)
+        upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
+
+        xyz_view[index, 0] = integrate(ciexyz_wavelength, ciexyz_x, lower_wavelength, upper_wavelength)
+        xyz_view[index, 1] = integrate(ciexyz_wavelength, ciexyz_y, lower_wavelength, upper_wavelength)
+        xyz_view[index, 2] = integrate(ciexyz_wavelength, ciexyz_z, lower_wavelength, upper_wavelength)
+
+        lower_wavelength = upper_wavelength
 
     return xyz
 
@@ -113,20 +132,21 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
 
     cdef:
         double x, y, z
-        Waveband waveband
         int index
         double[::1] bins_view
         double[:, ::1] xyz_view
 
     if resampled_xyz is not None:
 
-        if resampled_xyz.ndim != 2 or resampled_xyz.shape[0] != len(spectrum.wavebands) or resampled_xyz.shape[1] != 3:
+        if resampled_xyz.ndim != 2 or resampled_xyz.shape[0] != spectrum.samples or resampled_xyz.shape[1] != 3:
 
             raise ValueError("The supplied resampled_xyz array size is inconsistent with the number of spectral bins or channel count.")
 
     else:
 
-        resampled_xyz = resample_ciexyz(spectrum.wavebands)
+        resampled_xyz = resample_ciexyz(spectrum.min_wavelength,
+                                        spectrum.max_wavelength,
+                                        spectrum.samples)
 
     bins_view = spectrum.bins
     xyz_view = resampled_xyz
@@ -135,7 +155,7 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
     y = 0
     z = 0
 
-    for index in range(len(spectrum.wavebands)):
+    for index in range(spectrum.samples):
 
         x += bins_view[index] * xyz_view[index, 0]
         y += bins_view[index] * xyz_view[index, 1]
