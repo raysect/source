@@ -31,20 +31,28 @@
 
 cimport cython
 from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector
-from raysect.optical.spectrum cimport new_spectrum
+from raysect.core.math.vector cimport Vector, new_vector
+from raysect.optical.spectrum cimport Spectrum
 from libc.math cimport exp, floor, fabs
+
 
 cdef class Glow(VolumeEmitterHomogeneous):
 
-    cpdef Spectrum emission_function(self, Vector direction, tuple wavebands):
+    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum):
 
-        s = new_spectrum(wavebands)
+        cdef:
+            Vector v
+            double[::1] bins_view
+            int index
 
-        s.bins[2 * len(wavebands) // 5] = 0.05 * len(wavebands) * abs(direction.dot(Vector([0,0,1])))
-        s.bins[3 * len(wavebands) // 5] = 0.05 * len(wavebands) * (1 - abs(direction.dot(Vector([0,0,1]))))
+        v = new_vector(0, 0, 1)
+        bins_view = spectrum.bins
+        index = spectrum.samples / 5
 
-        return s
+        bins_view[2 * index] = 0.05 * spectrum.samples * fabs(direction.dot(v))
+        bins_view[3 * index] = 0.05 * spectrum.samples * (1 - fabs(direction.dot(v)))
+
+        return spectrum
 
 
 cdef class GaussianBeam(VolumeEmitterInhomogeneous):
@@ -71,33 +79,30 @@ cdef class GaussianBeam(VolumeEmitterInhomogeneous):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef Spectrum emission_function(self, Point point, Vector direction, tuple wavebands):
+    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum):
 
         cdef:
-            Spectrum spectrum
             int index, count
             double scale
             double[::1] bins_view
 
-        spectrum = new_spectrum(wavebands)
-        count = spectrum.bins.shape[0]
         bins_view = spectrum.bins
 
         # gaussian beam uniform spectal power density
-        scale = exp(-self._denominator * (point.x * point.x + point.y * point.y))
+        scale = exp(-self._denominator * (point.x * point.x + point.y * point.y)) ** 4
 
-        for index in range(count):
+        for index in range(spectrum.samples):
 
-            bins_view[index] = self.power * scale / count
+            bins_view[index] = self.power * scale / spectrum.samples
 
-        index = int(floor(fabs(point.z * count)))
+        index = int(floor(fabs(point.z * spectrum.samples)))
         if index < 0:
 
             index = 0
 
-        if index >= count:
+        if index >= spectrum.samples:
 
-            index = count - 1
+            index = spectrum.samples - 1
 
         bins_view[index] += self.power * scale
 

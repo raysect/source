@@ -112,7 +112,9 @@ class PinholeCamera(Observer):
             image_start_y = 0
 
         ray = Ray(samples = self.spectral_samples)
-        resampled_xyz = resample_ciexyz(ray.wavebands)
+        resampled_xyz = resample_ciexyz(ray.min_wavelength,
+                                        ray.max_wavelength,
+                                        ray.samples)
 
         if self.display_progress:
 

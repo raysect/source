@@ -30,7 +30,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.material.emitter cimport VolumeEmitterHomogeneous, VolumeEmitterInhomogeneous
-from raysect.optical.spectrum cimport Spectrum, new_spectrum
 
 cdef class Glow(VolumeEmitterHomogeneous):
 

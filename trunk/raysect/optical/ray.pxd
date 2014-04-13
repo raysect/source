@@ -34,16 +34,15 @@ from raysect.core.math.point cimport Point
 from raysect.core.math.vector cimport Vector
 from raysect.core.scenegraph.world cimport World
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.optical.spectrum cimport Spectrum, Waveband
+from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.material.material cimport Material
 
 cdef class Ray(CoreRay):
 
-    cdef readonly double refraction_wavelength
     cdef int _samples
     cdef double _min_wavelength
     cdef double _max_wavelength
-    cdef readonly tuple wavebands
+    cdef readonly double refraction_wavelength
     cdef public int max_depth
     cdef public int depth
 

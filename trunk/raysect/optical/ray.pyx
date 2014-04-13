@@ -130,7 +130,7 @@ cdef class Ray(CoreRay):
         cdef Point start_point, end_point
         cdef Material material
 
-        spectrum = new_spectrum(self.wavebands)
+        spectrum = new_spectrum(self.min_wavelength, self.max_wavelength, self.samples)
 
         # limit ray recursion depth
         if self.depth >= self.max_depth:
@@ -192,7 +192,6 @@ cdef class Ray(CoreRay):
         ray._min_wavelength = self._min_wavelength
         ray._max_wavelength = self._max_wavelength
         ray.refraction_wavelength = self.refraction_wavelength
-        ray.wavebands = self.wavebands
         ray.max_distance = self.max_distance
         ray.max_depth = self.max_depth
         ray.depth = self.depth + 1
@@ -201,22 +200,6 @@ cdef class Ray(CoreRay):
 
     cdef inline void _update(self):
 
-        cdef list wavebands
-        cdef double delta_wavelength
-        cdef int index
-
         # set refraction wavelength to central wavelength of ray's spectral range
         self.refraction_wavelength = 0.5 * (self._min_wavelength + self._max_wavelength)
-
-        # evenly space wavebands over ray's spectral range
-        delta_wavelength = (self._max_wavelength - self._min_wavelength) / self._samples
-        wavebands = list()
-        for index in range(self._samples):
-
-            wavebands.append(Waveband(self._min_wavelength + delta_wavelength * index,
-                                      self._min_wavelength + delta_wavelength * (index + 1)))
-
-        self.wavebands = tuple(wavebands)
-
-
 
