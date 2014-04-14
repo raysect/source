@@ -36,10 +36,11 @@ from matplotlib.pyplot import imshow, imsave, show, ion, ioff, clf, figure, draw
 from raysect.core import World, Observer, AffineMatrix, Point, Vector
 from raysect.optical.ray import Ray
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
+from raysect.optical import Spectrum
 
 class PinholeCamera(Observer):
 
-    def __init__(self, parent = None, transform = AffineMatrix(), pixels = (640, 480), fov = 40, spectral_samples = 20, name = ""):
+    def __init__(self, parent = None, transform = AffineMatrix(), pixels = (640, 480), fov = 40, spectral_samples = 20, dispersion = False, name = ""):
 
         super().__init__(parent, transform, name)
 
@@ -48,6 +49,7 @@ class PinholeCamera(Observer):
         self.frame = None
 
         self.spectral_samples = spectral_samples
+        self.dispersion = dispersion
 
         self.display_progress = True
         self.display_update_time = 5.0
@@ -111,10 +113,37 @@ class PinholeCamera(Observer):
             image_start_x = 0
             image_start_y = 0
 
-        ray = Ray(samples = self.spectral_samples)
-        resampled_xyz = resample_ciexyz(ray.min_wavelength,
-                                        ray.max_wavelength,
-                                        ray.samples)
+        min_wavelength = 375
+        max_wavelength = 785
+
+        resampled_xyz = resample_ciexyz(min_wavelength,
+                                        max_wavelength,
+                                        self.spectral_samples)
+
+        if self.dispersion:
+
+            # seperate wavelength for each ray
+            rays = list()
+            delta_wavelength = (max_wavelength - min_wavelength) / self.spectral_samples
+            lower_wavelength = min_wavelength
+            for index in range(self.spectral_samples):
+
+                upper_wavelength = min_wavelength + delta_wavelength * (index + 1)
+
+                rays.append(Ray(min_wavelength = lower_wavelength,
+                                max_wavelength = upper_wavelength,
+                                samples = 1))
+
+                print(lower_wavelength, upper_wavelength)
+
+                lower_wavelength = upper_wavelength
+
+        else:
+
+            # single ray for all wavelengths
+            ray = Ray(min_wavelength = min_wavelength,
+                      max_wavelength = max_wavelength,
+                      samples = self.spectral_samples)
 
         if self.display_progress:
 
@@ -138,16 +167,39 @@ class PinholeCamera(Observer):
                                     cos(theta) * cos(phi)])
 
                 # convert to world space
-                ray.origin = origin.transform(self.to_root())
-                ray.direction = direction.transform(self.to_root())
+                origin = origin.transform(self.to_root())
+                direction = direction.transform(self.to_root())
 
-                # trace and accumulate
-                spectrum = ray.trace(world)
-                xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-                rgb = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
-                self.frame[y, x, 0] = rgb[0]
-                self.frame[y, x, 1] = rgb[1]
-                self.frame[y, x, 2] = rgb[2]
+                if self.dispersion:
+
+                    spectrum = Spectrum(min_wavelength, max_wavelength, self.spectral_samples)
+
+                    for index, ray in enumerate(rays):
+
+                        ray.origin = origin
+                        ray.direction = direction
+
+                        sample = ray.trace(world)
+                        spectrum.bins[index] = sample.bins[0]
+
+                    xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+                    rgb = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
+                    self.frame[y, x, 0] = rgb[0]
+                    self.frame[y, x, 1] = rgb[1]
+                    self.frame[y, x, 2] = rgb[2]
+
+                else:
+
+                    ray.origin = origin
+                    ray.direction = direction
+
+                    # trace and accumulate
+                    spectrum = ray.trace(world)
+                    xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+                    rgb = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
+                    self.frame[y, x, 0] = rgb[0]
+                    self.frame[y, x, 1] = rgb[1]
+                    self.frame[y, x, 2] = rgb[2]
 
                 if self.display_progress and (time() - display_timer) > self.display_update_time:
 
