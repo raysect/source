@@ -73,7 +73,7 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method hit() has not been implemented.")
 
-    cpdef bint inside(self, Point p) except -1:
+    cpdef bint contains(self, Point p) except -1:
         """
         Virtual method - to be implemented by derived classes.
 

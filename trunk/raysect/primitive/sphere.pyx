@@ -211,7 +211,7 @@ cdef class Sphere(Primitive):
 
         return intersection
 
-    cpdef bint inside(self, Point p) except -1:
+    cpdef bint contains(self, Point p) except -1:
 
         cdef Point local_point
         cdef double distance_sqr
@@ -245,4 +245,4 @@ cdef class Sphere(Primitive):
         lower = new_point(origin.x - extent, origin.y - extent, origin.z - extent)
         upper = new_point(origin.x + extent, origin.y + extent, origin.z + extent)
 
-        return BoundingBox(self, lower, upper)
+        return BoundingBox(lower, upper)

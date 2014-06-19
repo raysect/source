@@ -77,7 +77,7 @@ cdef class RayRGB(Ray):
             spectrum.b = sresponce.intensity.b
 
             # volume contribution - TODO: deal max_distance if no intersection occurs.
-            primitives = world.inside(self.origin)
+            primitives = world.contains(self.origin)
 
             entry_point = self.origin
             exit_point = intersection.hit_point.transform(intersection.to_world)

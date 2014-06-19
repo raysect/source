@@ -118,13 +118,13 @@ class TestPrimitive(unittest.TestCase):
         with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
             n.hit(Ray())
 
-    def test_inside(self):
-        """Method inside() is virtual and should raise an exception if called."""
+    def test_contains(self):
+        """Method contains() is virtual and should raise an exception if called."""
 
         n = Primitive()
 
         with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
-            n.inside(Point())
+            n.contains(Point())
 
     def test_bounding_box(self):
         """Method bounding_box() is virtual and should raise an exception if called."""

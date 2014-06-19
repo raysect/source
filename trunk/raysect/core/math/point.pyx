@@ -102,6 +102,18 @@ cdef class Point:
         else:
             return self.z
 
+    def __setitem__(self, int i, double value):
+        """Sets the point coordinates by index ([0,1,2] -> [x,y,z])."""
+
+        if i < 0 or i > 2:
+            raise IndexError("Index out of range [0, 2].")
+        elif i == 0:
+            self.x = value
+        elif i == 1:
+            self.y = value
+        else:
+            self.z = value
+
     def __add__(object x, object y):
         """Addition operator."""
 
@@ -224,11 +236,20 @@ cdef class Point:
     cdef inline Point add(self, _Vec3 v):
 
         return new_point(self.x + v.x,
-                          self.y + v.y,
-                          self.z + v.z)
+                         self.y + v.y,
+                         self.z + v.z)
 
     cdef inline Point sub(self, _Vec3 v):
 
         return new_point(self.x - v.x,
-                          self.y - v.y,
-                          self.z - v.z)
+                         self.y - v.y,
+                         self.z - v.z)
+
+    cpdef Point copy(self):
+        """
+        Returns a copy of the point.
+        """
+
+        return new_point(self.x,
+                         self.y,
+                         self.z)

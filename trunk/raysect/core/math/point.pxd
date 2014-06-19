@@ -47,6 +47,8 @@ cdef class Point:
 
     cdef inline Point sub(self, _Vec3 v)
 
+    cpdef Point copy(self)
+
 
 cdef inline Point new_point(double x, double y, double z):
 

@@ -155,7 +155,7 @@ cdef class Ray(CoreRay):
                            intersection.to_world)
 
             # identify any primitive volumes the ray is propagating through
-            primitives = world.inside(self.origin)
+            primitives = world.contains(self.origin)
             if len(primitives) > 0:
 
                 # the start and end points for volume contribution calculations
@@ -164,7 +164,7 @@ cdef class Ray(CoreRay):
                 start_point = intersection.hit_point.transform(intersection.to_world)
                 end_point = self.origin
 
-                # accumulate volume contributions to the spectum
+                # accumulate volume contributions to the spectrum
                 for primitive in primitives:
 
                     material = primitive.material
