@@ -89,14 +89,14 @@ cdef class World(_NodeBase):
         This method automatically rebuilds the Acceleration object that is used
         to optimise hit calculations - if a Primitive's geometry or a transform
         affecting a primitive has changed since the last call to hit() or
-        inside(), the Acceleration structure used to optimise hit calculations
+        contains(), the Acceleration structure used to optimise hit calculations
         is rebuilt to represent the new scenegraph state.
         """
 
         self.build_accelerator()
         return self._accelerator.hit(ray)
 
-    cpdef list inside(self, Point point):
+    cpdef list contains(self, Point point):
         """
         Returns a list of Primitives that contain the specified point within
         their surface.
@@ -104,14 +104,14 @@ cdef class World(_NodeBase):
         An empty list is returned if no Primitives contain the Point.
 
         This method automatically rebuilds the Acceleration object that is used
-        to optimise the inside calculation - if a Primitive's geometry or a
+        to optimise the contains calculation - if a Primitive's geometry or a
         transform affecting a primitive has changed since the last call to hit()
-        or inside(), the Acceleration structure used to optimise the inside
+        or contains(), the Acceleration structure used to optimise the contains
         calculation is rebuilt to represent the new scenegraph state.
         """
 
         self.build_accelerator()
-        return self._accelerator.inside(point)
+        return self._accelerator.contains(point)
 
     cpdef build_accelerator(self):
         """
@@ -120,15 +120,15 @@ cdef class World(_NodeBase):
         If the Acceleration object is already in a consistent state this method
         will do nothing.
 
-        The Acceleration object is used to accelerate hit() and inside()
+        The Acceleration object is used to accelerate hit() and contains()
         calculations, typically using a spatial subdivion method. If changes are
         made to the scenegraph structure, transforms or to a primitive's
         geometry the acceleration structures may no longer represent the
         geometry of the scene and hence must be rebuilt. This process is
         usually performed automatically as part of the first call to hit() or
-        inside() following a change in the scenegraph. As calculating these
+        contains() following a change in the scenegraph. As calculating these
         structures can take some time, this method provides the option of
-        triggering a rebuild outside of hit() and inside() incase the user wants
+        triggering a rebuild outside of hit() and contains() incase the user wants
         to be able to benchmark without including the overhead of the
         Acceleration object rebuild.
         """

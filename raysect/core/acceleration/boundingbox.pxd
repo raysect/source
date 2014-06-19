@@ -30,18 +30,22 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.point cimport Point
-from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.classes cimport Ray
 
 cdef class BoundingBox:
 
     cdef Point lower
     cdef Point upper
-    cdef Primitive primitive
 
     cpdef bint hit(self, Ray ray)
 
     cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection)
 
-    cpdef bint inside(self, Point point)
+    cpdef bint contains(self, Point point)
+
+    cpdef object union(self, BoundingBox box)
+
+    cpdef double surface_area(self)
+
+    cpdef double volume(self)
 

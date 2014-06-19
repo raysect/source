@@ -33,6 +33,7 @@
 
 from libc.math cimport fabs
 cimport cython
+from raysect.core.math.point cimport new_point
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
@@ -57,15 +58,22 @@ cdef class BoundingBox:
     rays are propagated in world space, co-ordinate transforms can be avoided.
     """
 
-    def __init__(self, Primitive primitive not None, Point lower not None, Point upper not None):
+    def __init__(self, Point lower=None, Point upper=None):
 
-        if lower.x > upper.x or lower.y > upper.y or lower.z > upper.z:
+        # initialise to a null box if called without both initial points
+        if lower is None or upper is None:
 
-            raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
+            self.lower = new_point(INFINITY, INFINITY, INFINITY)
+            self.upper = new_point(-INFINITY, -INFINITY, -INFINITY)
 
-        self.lower = lower
-        self.upper = upper
-        self.primitive = primitive
+        else:
+
+            if lower.x > upper.x or lower.y > upper.y or lower.z > upper.z:
+
+                raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
+
+            self.lower = lower
+            self.upper = upper
 
     property lower:
 
@@ -86,16 +94,6 @@ cdef class BoundingBox:
         def __set__(self, Point value not None):
 
             self.upper = value
-
-    property primitive:
-
-        def __get__(self):
-
-            return self.primitive
-
-        def __set__(self, Primitive value not None):
-
-            self.primitive = value
 
     cpdef bint hit(self, Ray ray):
 
@@ -167,7 +165,7 @@ cdef class BoundingBox:
         if tmax < back_intersection[0]:
             back_intersection[0] = tmax
 
-    cpdef bint inside(self, Point point):
+    cpdef bint contains(self, Point point):
 
         # point is inside box if it is inside all slabs
         if (point.x < self.lower.x) or (point.x > self.upper.x):
@@ -183,3 +181,27 @@ cdef class BoundingBox:
             return False
 
         return True
+
+    cpdef object union(self, BoundingBox box):
+
+        self.lower.x = min(self.lower.x, box.lower.x)
+        self.lower.y = min(self.lower.y, box.lower.y)
+        self.lower.z = min(self.lower.z, box.lower.z)
+
+        self.upper.x = max(self.upper.x, box.upper.x)
+        self.upper.y = max(self.upper.y, box.upper.y)
+        self.upper.z = max(self.upper.z, box.upper.z)
+
+    cpdef double surface_area(self):
+
+        cdef double dx, dy, dz
+
+        dx = self.upper.x - self.lower.x
+        dy = self.upper.y - self.lower.y
+        dz = self.upper.z - self.lower.z
+
+        return 2 * (dx * dy + dx * dz + dy * dz)
+
+    cpdef double volume(self):
+
+        return (self.upper.x - self.lower.x) * (self.upper.y - self.lower.y) * (self.upper.z - self.lower.z)

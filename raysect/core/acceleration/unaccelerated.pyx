@@ -29,32 +29,46 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: clean up this code
 # TODO: add docstrings
 
-from raysect.core.acceleration.boundingbox cimport BoundingBox
-from raysect.core.scenegraph.primitive cimport Primitive
+cimport cython
+from raysect.core.acceleration.acceleratedprimitive cimport AcceleratedPrimitive
 
 cdef class Unaccelerated(Accelerator):
 
     def __init__(self):
 
-        self.bounding_boxes = []
+        self.primitives = []
+        self.world_box = BoundingBox()
 
     cpdef build(self, list primitives):
 
-        cdef Primitive primitive
+        cdef:
+            Primitive primitive
+            AcceleratedPrimitive accel_primitive
 
-        self.bounding_boxes = []
+        self.primitives = []
+        self.world_box = BoundingBox()
+
         for primitive in primitives:
 
-            self.bounding_boxes.append(primitive.bounding_box())
+            accel_primitive = AcceleratedPrimitive(primitive)
+            self.primitives.append(accel_primitive)
+            self.world_box.union(accel_primitive.box)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Intersection hit(self, Ray ray):
 
-        cdef BoundingBox box
-        cdef double distance
-        cdef Intersection intersection, closest_intersection
+        cdef:
+            double distance
+            Intersection intersection, closest_intersection
+            AcceleratedPrimitive primitive
+
+        # does the ray intersect the space containing the primitives
+        if not self.world_box.hit(ray):
+
+            return None
 
         # find the closest primitive-ray intersection
         closest_intersection = None
@@ -62,35 +76,37 @@ cdef class Unaccelerated(Accelerator):
         # intial search distance is maximum possible ray extent
         distance = ray.max_distance
 
-        # check each box for a hit
-        for box in self.bounding_boxes:
+        for primitive in self.primitives:
 
-            if box.hit(ray):
+            intersection = primitive.hit(ray)
 
-                # box is hit so test primitive
-                intersection = box.primitive.hit(ray)
-                if intersection is not None:
+            if intersection is not None:
 
-                    if intersection.ray_distance < distance:
+                if intersection.ray_distance < distance:
 
-                        distance = intersection.ray_distance
-                        closest_intersection = intersection
+                    distance = intersection.ray_distance
+                    closest_intersection = intersection
 
         return closest_intersection
 
-    cpdef list inside(self, Point point):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef list contains(self, Point point):
 
-        cdef BoundingBox box
-        cdef list primitives
+        cdef:
+            list enclosing_primitives
+            AcceleratedPrimitive primitive
 
-        primitives = []
+        if not self.world_box.contains(point):
 
-        for box in self.bounding_boxes:
+            return []
 
-            if box.inside(point):
+        enclosing_primitives = []
 
-                if box.primitive.inside(point):
+        for primitive in self.primitives:
 
-                    primitives.append(box.primitive)
+            if primitive.contains(point):
 
-        return primitives
+                enclosing_primitives.append(primitive.primitive)
+
+        return enclosing_primitives

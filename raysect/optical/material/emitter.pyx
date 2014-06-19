@@ -185,7 +185,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
             e1_view = emission.bins
             e2_view = emission_previous.bins
 
-            # trapizium rule integration
+            # trapezium rule integration
             for index in range(spectrum.bins.shape[0]):
 
                 s_view[index] += c * (e1_view[index] + e2_view[index])
@@ -212,7 +212,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         e1_view = emission.bins
         e2_view = emission_previous.bins
 
-        # trapizium rule integration of remainder
+        # trapezium rule integration of remainder
         c = 0.5 * (length - t)
         for index in range(spectrum.bins.shape[0]):
 

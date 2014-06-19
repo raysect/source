@@ -46,7 +46,7 @@ cdef class World(_NodeBase):
 
     cpdef Intersection hit(self, Ray ray)
 
-    cpdef list inside(self, Point point)
+    cpdef list contains(self, Point point)
 
     cpdef build_accelerator(self)
 
