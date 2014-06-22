@@ -152,7 +152,9 @@ class PinholeCamera(Observer):
 
         for y in range(0, self._pixels[1]):
 
-            print(y)
+            if self.display_progress:
+
+                print("line " + str(y) + "/" + str(self._pixels[1]))
 
             for x in range(0, self._pixels[0]):
 

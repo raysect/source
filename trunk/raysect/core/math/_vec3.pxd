@@ -38,3 +38,8 @@ cdef class _Vec3:
     cdef inline double get_length(self)
 
     cdef inline void set_length(self, double v) except *
+
+    cdef inline double get_index(self, int index)
+
+    cdef inline void set_index(self, int index, double value)
+

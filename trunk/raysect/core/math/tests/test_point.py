@@ -107,19 +107,14 @@ class TestPoint(unittest.TestCase):
 
         v = Point([2.5, 6.7, -4.6])
 
-        # check getting via valid indexes
-        self.assertEqual(v[0], 2.50, "Getting components by indexing failed [X].")
-        self.assertEqual(v[1], 6.70, "Getting components by indexing failed [Y].")
-        self.assertEqual(v[2], -4.6, "Getting components by indexing failed [Z].")
-
         v[0] = 1.0
         v[1] = 2.0
         v[2] = 7.0
 
-        # check setting via valid indexes
-        self.assertEqual(v[0], 1.0, "Getting components by indexing failed [X].")
-        self.assertEqual(v[1], 2.0, "Getting components by indexing failed [Y].")
-        self.assertEqual(v[2], 7.0, "Getting components by indexing failed [Z].")
+        # check getting/setting via valid indexes
+        self.assertEqual(v[0], 1.0, "Indexing failed [X].")
+        self.assertEqual(v[1], 2.0, "Indexing failed [Y].")
+        self.assertEqual(v[2], 7.0, "Indexing failed [Z].")
 
         # check invalid indexes
         with self.assertRaises(IndexError, msg="Invalid positive index did not raise IndexError."):

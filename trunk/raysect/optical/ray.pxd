@@ -46,6 +46,8 @@ cdef class Ray(CoreRay):
     cdef public int max_depth
     cdef public int depth
 
+    cpdef Spectrum new_spectrum(self)
+
     cpdef Spectrum trace(self, World world)
 
     cpdef Ray spawn_daughter(self, Point origin, Vector direction)

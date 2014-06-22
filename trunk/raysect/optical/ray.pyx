@@ -121,6 +121,13 @@ cdef class Ray(CoreRay):
             self._max_wavelength = max_wavelength
             self._update()
 
+    cpdef Spectrum new_spectrum(self):
+        """
+        Returns a new Spectrum compatible with the ray spectral settings.
+        """
+
+        return new_spectrum(self.min_wavelength, self.max_wavelength, self.samples)
+
     cpdef Spectrum trace(self, World world):
 
         cdef Spectrum spectrum
@@ -130,7 +137,8 @@ cdef class Ray(CoreRay):
         cdef Point start_point, end_point
         cdef Material material
 
-        spectrum = new_spectrum(self.min_wavelength, self.max_wavelength, self.samples)
+        # create a new spectrum object compatible with the ray
+        spectrum = self.new_spectrum()
 
         # limit ray recursion depth
         if self.depth >= self.max_depth:

@@ -49,6 +49,10 @@ cdef class Point:
 
     cpdef Point copy(self)
 
+    cdef inline double get_index(self, int index)
+
+    cdef inline void set_index(self, int index, double value)
+
 
 cdef inline Point new_point(double x, double y, double z):
 

@@ -110,13 +110,43 @@ cdef class BoundingBox:
 
         # does ray intersect box?
         if front_intersection > back_intersection:
+
             return False
 
         # are both intersections behind ray origin?
         if (front_intersection < 0.0) and (back_intersection < 0.0):
+
             return False
 
         return True
+
+    cpdef tuple full_intersection(self, Ray ray):
+
+        cdef double front_intersection, back_intersection
+        cdef bint hit
+
+        # set initial ray-slab intersection search range
+        front_intersection = -INFINITY
+        back_intersection = INFINITY
+
+        # evaluate ray-slab intersection for x, y and z dimensions and update the intersection positions
+        self._slab(ray.origin.x, ray.direction.x, self.lower.x, self.upper.x, &front_intersection, &back_intersection)
+        self._slab(ray.origin.y, ray.direction.y, self.lower.y, self.upper.y, &front_intersection, &back_intersection)
+        self._slab(ray.origin.z, ray.direction.z, self.lower.z, self.upper.z, &front_intersection, &back_intersection)
+
+        hit = True
+
+        # does ray intersect box?
+        if front_intersection > back_intersection:
+
+            hit = False
+
+        # are both intersections behind ray origin?
+        if (front_intersection < 0.0) and (back_intersection < 0.0):
+
+            hit = False
+
+        return (hit, front_intersection, back_intersection)
 
     cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection):
 
