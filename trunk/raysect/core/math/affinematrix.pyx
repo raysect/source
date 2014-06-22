@@ -300,36 +300,4 @@ cpdef AffineMatrix rotate(double alpha, double beta, double gamma):
     All angles are specified in degrees.
     """
 
-    cdef double xr, yr, zr, sx, sy, sz, cx, cy, cz
-
-    # optimised version of rotate_z(gamma) * rotate_x(-beta) * rotate_y(-alpha)
-    xr = pi * -beta / 180.0
-    yr = pi * -alpha / 180.0
-    zr = pi * gamma / 180.0
-
-    sx = sin(xr)
-    sy = sin(yr)
-    sz = sin(zr)
-
-    cx = cos(xr)
-    cy = cos(yr)
-    cz = cos(zr)
-
-    return new_affinematrix(cy*cz - sx*sy*sz,
-                            -sz*cx,
-                            sy*cz + sx*sz*cy,
-                            0,
-                            sz*cy + sx*sy*cz,
-                            cx*cz,
-                            sy*sz - sx*cy*cz,
-                            0,
-                            -sy*cx,
-                            sx,
-                            cx*cy,
-                            0,
-                            0,
-                            0,
-                            0,
-                            1)
-
-
+    return rotate_y(-alpha) * rotate_x(-beta) * rotate_z(gamma)
