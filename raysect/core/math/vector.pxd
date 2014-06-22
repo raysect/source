@@ -50,6 +50,8 @@ cdef class Vector(_Vec3):
 
     cdef inline Vector div(self, double m)
 
+    cpdef Vector copy(self)
+
 
 cdef inline Vector new_vector(double x, double y, double z):
 

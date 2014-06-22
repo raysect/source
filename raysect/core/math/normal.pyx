@@ -317,3 +317,12 @@ cdef class Normal(_Vec3):
         return new_normal(self.x * d,
                           self.y * d,
                           self.z * d)
+
+    cpdef Normal copy(self):
+        """
+        Returns a copy of the normal.
+        """
+
+        return new_normal(self.x,
+                          self.y,
+                          self.z)

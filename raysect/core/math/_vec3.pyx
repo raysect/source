@@ -94,6 +94,18 @@ cdef class _Vec3:
         else:
             return self.z
 
+    def __setitem__(self, int i, double value):
+        """Sets the vector coordinates by index ([0,1,2] -> [x,y,z])."""
+
+        if i < 0 or i > 2:
+            raise IndexError("Index out of range [0, 2].")
+        elif i == 0:
+            self.x = value
+        elif i == 1:
+            self.y = value
+        else:
+            self.z = value
+
     property length:
         """
         The vector's length.
@@ -144,5 +156,25 @@ cdef class _Vec3:
         self.y = self.y * t
         self.z = self.z * t
 
+    cdef inline double get_index(self, int index):
+        """
+        Fast getting of coordinates via indexing.
 
+        Cython equivalent to __getitem__, without the checks and call overhead.
+        """
 
+        if index == 0: return self.x
+        elif index == 1: return self.y
+        elif index == 2: return self.z
+        else: return float("NaN")
+
+    cdef inline void set_index(self, int index, double value):
+        """
+        Fast setting of coordinates via indexing.
+
+        Cython equivalent to __setitem__, without the checks and call overhead.
+        """
+
+        if index == 0: self.x = value
+        elif index == 1: self.y = value
+        elif index == 2: self.z = value

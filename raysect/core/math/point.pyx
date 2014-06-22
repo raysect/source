@@ -253,3 +253,26 @@ cdef class Point:
         return new_point(self.x,
                          self.y,
                          self.z)
+
+    cdef inline double get_index(self, int index):
+        """
+        Fast getting of coordinates via indexing.
+
+        Cython equivalent to __getitem__, without the checks and call overhead.
+        """
+
+        if index == 0: return self.x
+        elif index == 1: return self.y
+        elif index == 2: return self.z
+        else: return float("NaN")
+
+    cdef inline void set_index(self, int index, double value):
+        """
+        Fast setting of coordinates via indexing.
+
+        Cython equivalent to __setitem__, without the checks and call overhead.
+        """
+
+        if index == 0: self.x = value
+        elif index == 1: self.y = value
+        elif index == 2: self.z = value

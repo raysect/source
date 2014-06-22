@@ -293,4 +293,11 @@ cdef class Vector(_Vec3):
                           self.y * d,
                           self.z * d)
 
+    cpdef Vector copy(self):
+        """
+        Returns a copy of the vector.
+        """
 
+        return new_vector(self.x,
+                          self.y,
+                          self.z)

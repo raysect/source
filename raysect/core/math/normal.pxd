@@ -53,6 +53,8 @@ cdef class Normal(_Vec3):
 
     cdef inline Normal div(self, double m)
 
+    cpdef Normal copy(self)
+
 
 cdef inline Normal new_normal(double x, double y, double z):
 

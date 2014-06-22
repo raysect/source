@@ -106,10 +106,14 @@ class TestVector(unittest.TestCase):
 
         v = Vector([2.5, 6.7, -4.6])
 
-        # check valid indexes
-        self.assertEqual(v[0], 2.50, "Indexing failed [X].")
-        self.assertEqual(v[1], 6.70, "Indexing failed [Y].")
-        self.assertEqual(v[2], -4.6, "Indexing failed [Z].")
+        v[0] = 1.0
+        v[1] = 2.0
+        v[2] = 7.0
+
+        # check getting/setting via valid indexes
+        self.assertEqual(v[0], 1.0, "Indexing failed [X].")
+        self.assertEqual(v[1], 2.0, "Indexing failed [Y].")
+        self.assertEqual(v[2], 7.0, "Indexing failed [Z].")
 
         # check invalid indexes
         with self.assertRaises(IndexError, msg="Invalid positive index did not raise IndexError."):
@@ -336,6 +340,20 @@ class TestVector(unittest.TestCase):
         self.assertEqual(r.y, 5 * -1 +  6 * 2 + 2 * 6, "Transform failed [Y].")
         self.assertEqual(r.z, 9 * -1 + 10 * 2 + 4 * 6, "Transform failed [Z].")
 
+    def test_copy(self):
+        """Testing method copy()."""
+
+        v = Vector([1.0, 2.0, 3.0])
+        r = v.copy()
+
+        # check a new instance has been created by modifying the original
+        v.x = 5.0
+        v.y = 6.0
+        v.z = 7.0
+
+        self.assertEqual(r.x, 1.0, "Copy failed [X].")
+        self.assertEqual(r.y, 2.0, "Copy failed [Y].")
+        self.assertEqual(r.z, 3.0, "Copy failed [Z].")
 
 if __name__ == "__main__":
     unittest.main()

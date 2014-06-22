@@ -52,7 +52,7 @@ cdef class Node:
     cdef readonly double split
     cdef readonly bint is_leaf
 
-    cpdef object build(self, BoundingBox node_bounds, list primitives, int depth, int min_primitives, double hit_cost)
+    cdef object build(self, BoundingBox node_bounds, list primitives, int depth, int min_primitives, double hit_cost)
 
     cdef void _become_leaf(self, list primitives)
 
@@ -62,9 +62,11 @@ cdef class Node:
 
     cdef BoundingBox _calc_upper_bounds(self, BoundingBox node_bounds, double split_value, int axis)
 
-    cpdef Intersection hit(self, Ray ray)
+    cdef Intersection hit(self, Ray ray, double min_range, double max_range)
 
-    cpdef list contains(self, Point point)
+    cdef inline Intersection _hit_leaf(self, Ray ray, double max_range)
+
+    cdef list contains(self, Point point)
 
 
 cdef class KDTree(Accelerator):

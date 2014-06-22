@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.acceleration.unaccelerated cimport Unaccelerated
+from raysect.core.acceleration.kdtree cimport KDTree
 from raysect.core.scenegraph.primitive cimport Primitive
 
 cdef class World(_NodeBase):
@@ -44,7 +44,7 @@ cdef class World(_NodeBase):
         self._name = name
         self. _primitives = list()
         self. _rebuild_accelerator = True
-        self._accelerator = Unaccelerated() # KDTree()
+        self._accelerator = KDTree()
 
     def __str__(self):
         """String representation."""

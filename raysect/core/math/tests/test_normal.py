@@ -107,10 +107,14 @@ class TestNormal(unittest.TestCase):
 
         v = Normal([2.5, 6.7, -4.6])
 
-        # check valid indexes
-        self.assertEqual(v[0], 2.50, "Indexing failed [X].")
-        self.assertEqual(v[1], 6.70, "Indexing failed [Y].")
-        self.assertEqual(v[2], -4.6, "Indexing failed [Z].")
+        v[0] = 1.0
+        v[1] = 2.0
+        v[2] = 7.0
+
+        # check getting/setting via valid indexes
+        self.assertEqual(v[0], 1.0, "Indexing failed [X].")
+        self.assertEqual(v[1], 2.0, "Indexing failed [Y].")
+        self.assertEqual(v[2], 7.0, "Indexing failed [Z].")
 
         # check invalid indexes
         with self.assertRaises(IndexError, msg="Invalid positive index did not raise IndexError."):
@@ -352,6 +356,21 @@ class TestNormal(unittest.TestCase):
         self.assertAlmostEqual(r.x,  258/414 * -1 +  -381/414 * 2 +  210/414 * 6, places = 14, msg = "Transform failed [X].")
         self.assertAlmostEqual(r.y, -132/414 * -1 +    81/414 * 2 + -162/414 * 6, places = 14, msg = "Transform failed [Y].")
         self.assertAlmostEqual(r.z,  120/414 * -1 +   -36/414 * 2 +   72/414 * 6, places = 14, msg = "Transform failed [Z].")
+
+    def test_copy(self):
+        """Testing method copy()."""
+
+        v = Normal([1.0, 2.0, 3.0])
+        r = v.copy()
+
+        # check a new instance has been created by modifying the original
+        v.x = 5.0
+        v.y = 6.0
+        v.z = 7.0
+
+        self.assertEqual(r.x, 1.0, "Copy failed [X].")
+        self.assertEqual(r.y, 2.0, "Copy failed [Y].")
+        self.assertEqual(r.z, 3.0, "Copy failed [Z].")
 
 
 if __name__ == "__main__":
