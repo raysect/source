@@ -42,6 +42,8 @@ cdef class Primitive(Node):
 
     cpdef Intersection hit(self, Ray ray)
 
+    cpdef Intersection next_intersection(self)
+
     cpdef bint contains(self, Point p) except -1
 
     cpdef BoundingBox bounding_box(self)
