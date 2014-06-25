@@ -41,6 +41,8 @@ cdef class BoundingBox:
 
     cpdef tuple full_intersection(self, Ray ray)
 
+    cdef inline bint intersect(self, Ray ray, double *front_intersection, double *back_intersection)
+
     cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection)
 
     cpdef bint contains(self, Point point)
