@@ -30,11 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from raysect.core.classes cimport Ray, Material, Intersection, new_intersection
+from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
-from raysect.core.math.point cimport Point, new_point
+from raysect.core.math.point cimport new_point
 from raysect.core.math.normal cimport new_normal, Normal
-from raysect.core.math.vector cimport Vector
 from raysect.core.math.affinematrix cimport AffineMatrix
 from libc.math cimport sqrt
 
@@ -55,6 +54,13 @@ cdef class Sphere(Primitive):
             raise ValueError("Sphere radius cannot be less than zero.")
 
         self._radius = radius
+
+        # initialise next intersection caching and control attributes
+        self._further_intersection = False
+        self._next_t = 0.0
+        self._cached_origin = None
+        self._cached_direction = None
+        self._cached_ray = None
 
     def __str__(self):
         """String representation."""
@@ -85,18 +91,20 @@ cdef class Sphere(Primitive):
 
             self._radius = radius
 
+            # the next intersection cache has been invalidated by the radius change
+            self._further_intersection = False
+
             # any geometry caching in the root node is now invalid, inform root
             self.root._change(self)
 
     cpdef Intersection hit(self, Ray ray):
 
-        cdef Point origin, hit_point, inside_point, outside_point
-        cdef Normal normal
+        cdef Point origin
         cdef Vector direction
         cdef double a, b, c, d, q, t0, t1, temp, t_closest
-        cdef double delta_x, delta_y, delta_z
-        cdef Intersection intersection
-        cdef bint exiting
+
+        # reset further intersection state
+        self._further_intersection = False
 
         # convert ray parameters to local space
         origin = ray.origin.transform(self.to_local())
@@ -155,6 +163,13 @@ cdef class Sphere(Primitive):
         if t0 >= 0.0:
 
             t_closest = t0
+            if t1 <= ray.max_distance:
+
+                self._further_intersection = True
+                self._cached_ray = ray
+                self._cached_origin = origin
+                self._cached_direction = direction
+                self._next_t = t1
 
         elif t1 <= ray.max_distance:
 
@@ -164,10 +179,31 @@ cdef class Sphere(Primitive):
 
             return None
 
+        return self._generate_intersection(ray, origin, direction, t_closest)
+
+    cpdef Intersection next_intersection(self):
+
+        if not self._further_intersection:
+
+            return None
+
+        # this is the 2nd and therefore last intersection
+        self._further_intersection = False
+
+        return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t)
+
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance):
+
+        cdef Point hit_point, inside_point, outside_point
+        cdef Normal normal
+        cdef double delta_x, delta_y, delta_z
+        cdef Intersection intersection
+        cdef bint exiting
+
         # point of surface intersection in local space
-        hit_point = new_point(origin.x + t_closest * direction.x,
-                              origin.y + t_closest * direction.y,
-                              origin.z + t_closest * direction.z)
+        hit_point = new_point(origin.x + ray_distance * direction.x,
+                              origin.y + ray_distance * direction.y,
+                              origin.z + ray_distance * direction.z)
 
         # normal is normalised vector from sphere origin to hit_point
         normal = new_normal(hit_point.x, hit_point.y, hit_point.z)
@@ -204,7 +240,7 @@ cdef class Sphere(Primitive):
         intersection.outside_point = outside_point
         intersection.normal = normal
         intersection.ray = ray
-        intersection.ray_distance = t_closest
+        intersection.ray_distance = ray_distance
         intersection.exiting = exiting
         intersection.to_local = self.to_local()
         intersection.to_world = self.to_root()
