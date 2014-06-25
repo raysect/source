@@ -73,6 +73,31 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method hit() has not been implemented.")
 
+    cpdef Intersection next_intersection(self):
+        """
+        Virtual method - to be implemented by derived classes.
+
+        Returns the next intersection of the ray with the primitive along the
+        ray path.
+
+        This method may only be called following a call to hit(). If the ray
+        has further intersections with the primitive, these may be obtained by
+        repeatedly calling the next_intersection() method. Each call to
+        next_intersection() will return the next ray-primitive intersection
+        along the ray's path. If no further intersections are found or
+        intersections lie outside the ray parameters then next_intersection()
+        will return None.
+
+        If any geometric elements of the primitive, ray and/or scenegraph are
+        altered between a call to hit() and calls to next_intersection() the
+        data returned by next_intersection() may be invalid. Primitives may
+        cache data to accelerate next_intersection() calls which will be
+        invalidated by geometric alterations to the scene. If the scene is
+        altered the data returned by next_intersection() is undefined.
+        """
+
+        raise NotImplementedError("Primitive surface has not been defined. Virtual method next_intersection() has not been implemented.")
+
     cpdef bint contains(self, Point p) except -1:
         """
         Virtual method - to be implemented by derived classes.
