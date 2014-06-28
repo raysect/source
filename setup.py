@@ -3,6 +3,8 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 import sys
 import numpy
+import os
+import os.path as path
 
 force = False
 profile = False
@@ -17,38 +19,22 @@ if "--profile" in sys.argv:
     profile = True
     del sys.argv[sys.argv.index("--profile")]
 
-extensions = [
-    Extension("raysect.core.classes", ["raysect/core/classes.pyx"]),
-    Extension("raysect.core.acceleration.accelerator", ["raysect/core/acceleration/accelerator.pyx"]),
-    Extension("raysect.core.acceleration.unaccelerated", ["raysect/core/acceleration/unaccelerated.pyx"]),
-    Extension("raysect.core.acceleration.kdtree", ["raysect/core/acceleration/kdtree.pyx"]),
-    Extension("raysect.core.acceleration.boundingbox", ["raysect/core/acceleration/boundingbox.pyx"]),
-    Extension("raysect.core.acceleration.acceleratedprimitive", ["raysect/core/acceleration/acceleratedprimitive.pyx"]),
-    Extension("raysect.core.math._vec3", ["raysect/core/math/_vec3.pyx"]),
-    Extension("raysect.core.math._mat4", ["raysect/core/math/_mat4.pyx"]),
-    Extension("raysect.core.math.vector", ["raysect/core/math/vector.pyx"]),
-    Extension("raysect.core.math.normal", ["raysect/core/math/normal.pyx"]),
-    Extension("raysect.core.math.point", ["raysect/core/math/point.pyx"]),
-    Extension("raysect.core.math.affinematrix", ["raysect/core/math/affinematrix.pyx"]),
-    Extension("raysect.core.math.function", ["raysect/core/math/function.pyx"]),
-    Extension("raysect.core.math.utility", ["raysect/core/math/utility.pyx"]),
-    Extension("raysect.core.scenegraph._nodebase",  ["raysect/core/scenegraph/_nodebase.pyx"]),
-    Extension("raysect.core.scenegraph.node",  ["raysect/core/scenegraph/node.pyx"]),
-    Extension("raysect.core.scenegraph.primitive",  ["raysect/core/scenegraph/primitive.pyx"]),
-    Extension("raysect.core.scenegraph.observer",  ["raysect/core/scenegraph/observer.pyx"]),
-    Extension("raysect.core.scenegraph.world",  ["raysect/core/scenegraph/world.pyx"]),
-    Extension("raysect.primitive.sphere",  ["raysect/primitive/sphere.pyx"]),
-    Extension("raysect.tests.speed_test_functions", ["raysect/tests/speed_test_functions.pyx"]),
-    Extension("raysect.demo.material", ["raysect/demo/material.pyx"]),
-    Extension("raysect.demo.ray", ["raysect/demo/ray.pyx"]),
-    Extension("raysect.demo.support", ["raysect/demo/support.pyx"]),
-    Extension("raysect.optical.ray", ["raysect/optical/ray.pyx"]),
-    Extension("raysect.optical.colour", ["raysect/optical/colour.pyx"]),
-    Extension("raysect.optical.spectrum", ["raysect/optical/spectrum.pyx"], include_dirs=[".", numpy.get_include()]),
-    Extension("raysect.optical.material.material", ["raysect/optical/material/material.pyx"]),
-    Extension("raysect.optical.material.emitter", ["raysect/optical/material/emitter.pyx"]),
-    Extension("raysect.optical.material.demo", ["raysect/optical/material/demo.pyx"])
-    ]
+compilation_includes = [".", numpy.get_include()]
+
+setup_path = path.dirname(path.abspath(__file__))
+
+# build extension list
+extensions = []
+for root, dirs, files in os.walk(setup_path):
+
+    for file in files:
+
+        if path.splitext(file)[1] == ".pyx":
+
+            pyx_file = path.relpath(path.join(root, file), setup_path)
+            module = path.splitext(pyx_file)[0].replace("/", ".")
+
+            extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes),)
 
 if profile:
 
@@ -58,7 +44,5 @@ else:
 
     directives = {}
 
-setup(
-    ext_modules = cythonize(extensions, force = force, compiler_directives = directives)
-)
+setup(ext_modules=cythonize(extensions, force=force, compiler_directives=directives))
 
