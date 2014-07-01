@@ -106,6 +106,12 @@ cdef class Box(Primitive):
 
             self._lower = value
 
+            # the next intersection cache has been invalidated by the geometry change
+            self._further_intersection = False
+
+            # any geometry caching in the root node is now invalid, inform root
+            self.root._change(self)
+
     property upper:
 
         def __get__(self):
@@ -119,6 +125,12 @@ cdef class Box(Primitive):
                 raise ValueError("The upper point coordinates must be greater than or equal to the lower point coordinates.")
 
             self._upper = value
+
+            # the next intersection cache has been invalidated by the geometry change
+            self._further_intersection = False
+
+            # any geometry caching in the root node is now invalid, inform root
+            self.root._change(self)
 
     cpdef Intersection hit(self, Ray ray):
 
