@@ -394,7 +394,7 @@ cdef class Node:
                     near = self.upper_branch
                     far = self.lower_branch
 
-                if plane_distance > max_range or plane_distance < 0:
+                if plane_distance > max_range or plane_distance <= 0:
 
                     # only intersects the near node
                     return near.hit(ray, min_range, max_range)
