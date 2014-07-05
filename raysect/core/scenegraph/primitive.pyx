@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.math.affinematrix cimport AffineMatrix
+
 cdef class Primitive(Node):
 
     def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
@@ -124,6 +126,18 @@ cdef class Primitive(Node):
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
+
+    cpdef object notify_root(self):
+        """
+        Notifies the scenegraph root that a change to the primitives geometry has occurred.
+
+        This method must be called by primitives when their geometry changes. This method
+        informs the root node that any caching structures used to accelerate raytracing
+        calculations are now potentially invalid and must be recalculated, taking the new
+        geometry into account.
+        """
+
+        self.root._change(self)
 
 
 

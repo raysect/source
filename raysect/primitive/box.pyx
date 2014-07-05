@@ -110,7 +110,7 @@ cdef class Box(Primitive):
             self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
-            self.root._change(self)
+            self.notify_root()
 
     property upper:
 
