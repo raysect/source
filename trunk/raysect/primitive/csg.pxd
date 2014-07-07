@@ -29,31 +29,42 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: add docstrings
+from raysect.core.classes cimport Intersection
+from raysect.core.scenegraph.node cimport Node
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.acceleration.acceleratedprimitive cimport AcceleratedPrimitive
 
-cdef class AcceleratedPrimitive:
+cdef class CSGPrimitive(Primitive):
 
-    def __init__(self, Primitive primitive not None):
+    cdef CSGRoot _root
+    cdef AcceleratedPrimitive _primitive_a
+    cdef AcceleratedPrimitive _primitive_b
 
-        self.primitive = primitive
-        self.box = primitive.bounding_box()
+    cdef void rebuild(self)
 
-    cdef inline Intersection hit(self, Ray ray):
 
-        if self.box.hit(ray):
+cdef class CSGRoot(Node):
 
-            return self.primitive.hit(ray)
+    cdef CSGPrimitive csg_primitive
 
-        return None
 
-    cdef inline Intersection next_intersection(self):
+cdef class Union(CSGPrimitive):
 
-        return self.primitive.next_intersection()
+    cdef inline Intersection _closest_intersection(self, Intersection a, Intersection b)
 
-    cdef inline bint contains(self, Point point):
+    cdef inline bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest)
 
-        if self.box.contains(point):
+    cdef inline Intersection _update_intersection(self, Intersection intersection)
 
-            return self.primitive.contains(point)
 
-        return False
+cdef class Intersect(CSGPrimitive):
+
+    pass
+
+
+cdef class Subtract(CSGPrimitive):
+
+    pass
+
+
+
