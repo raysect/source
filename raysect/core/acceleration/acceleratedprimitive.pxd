@@ -42,4 +42,6 @@ cdef class AcceleratedPrimitive:
 
     cdef inline Intersection hit(self, Ray ray)
 
+    cdef inline Intersection next_intersection(self)
+
     cdef inline bint contains(self, Point point)
