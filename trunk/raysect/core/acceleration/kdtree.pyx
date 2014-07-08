@@ -94,9 +94,7 @@ cdef class KDTree(Accelerator):
             double min_range, max_range
             bint hit
 
-        # unpacking manually is marginally faster... but a pointless None check
-        # is still performed which I will need to talk to the cython developers
-        # about... we need a cython.nocheck(True) option
+        # unpacking manually is marginally faster...
         intersection = self.world_box.full_intersection(ray)
         hit = intersection[0]
         min_range = intersection[1]
@@ -436,7 +434,7 @@ cdef class Node:
 
             if intersection is not None:
 
-                if intersection.ray_distance < distance:
+                if intersection.ray_distance <= distance:
 
                     distance = intersection.ray_distance
                     closest_intersection = intersection

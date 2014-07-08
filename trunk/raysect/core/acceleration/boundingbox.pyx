@@ -75,6 +75,10 @@ cdef class BoundingBox:
             self.lower = lower
             self.upper = upper
 
+    def __repr__(self):
+
+        return "BoundingBox({}, {})".format(self.lower, self.upper)
+
     property lower:
 
         def __get__(self):
@@ -99,7 +103,6 @@ cdef class BoundingBox:
 
         cdef:
             double front_intersection, back_intersection
-            bint hit
 
         return self.intersect(ray, &front_intersection, &back_intersection)
 
