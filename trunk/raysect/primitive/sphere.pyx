@@ -197,7 +197,6 @@ cdef class Sphere(Primitive):
         cdef Point hit_point, inside_point, outside_point
         cdef Normal normal
         cdef double delta_x, delta_y, delta_z
-        cdef Intersection intersection
         cdef bint exiting
 
         # point of surface intersection in local space
@@ -233,19 +232,8 @@ cdef class Sphere(Primitive):
 
             exiting = False
 
-        intersection = new_intersection()
-        intersection.primitive = self
-        intersection.hit_point = hit_point
-        intersection.inside_point = inside_point
-        intersection.outside_point = outside_point
-        intersection.normal = normal
-        intersection.ray = ray
-        intersection.ray_distance = ray_distance
-        intersection.exiting = exiting
-        intersection.to_local = self.to_local()
-        intersection.to_world = self.to_root()
-
-        return intersection
+        return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
+                                normal, exiting, self.to_local(), self.to_root())
 
     cpdef bint contains(self, Point p) except -1:
 

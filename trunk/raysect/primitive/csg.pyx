@@ -29,7 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Material
+# TODO: add more advanced material handling
+
+from raysect.core.classes cimport Material, new_ray
 from raysect.core.math.point cimport Point, new_point
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.acceleration.boundingbox cimport BoundingBox
@@ -42,8 +44,16 @@ DEF BOX_PADDING = 1e-9
 DEF INFINITY = 1e999
 
 cdef class CSGPrimitive(Primitive):
+    """
+    Constructive Solid Geometry (CSG) Primitive base class.
+
+    This is an abstract base class and can not be used directly.
+    """
 
     def __init__(self, Primitive primitive_a not None = NullPrimitive(), Primitive primitive_b not None = NullPrimitive(), object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+        """
+        Initialisation method.
+        """
 
         super().__init__(parent, transform, material, name)
 
@@ -111,9 +121,9 @@ cdef class CSGPrimitive(Primitive):
         self._cache_invalid = True
 
         # convert ray to local space
-        local_ray = Ray(ray.origin.transform(self.to_local()),
-                        ray.direction.transform(self.to_local()),
-                        INFINITY)
+        local_ray = new_ray(ray.origin.transform(self.to_local()),
+                            ray.direction.transform(self.to_local()),
+                            INFINITY)
 
         # obtain initial intersections
         intersection_a = self._primitive_a.hit(local_ray)
@@ -148,7 +158,7 @@ cdef class CSGPrimitive(Primitive):
         # identify first valid intersection
         return self._identify_intersection(self._cache_ray, intersection_a, intersection_b, closest_intersection)
 
-    cdef Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection):
+    cdef inline Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection):
 
         # identify first intersection that satisfies csg operator
         while closest_intersection is not None:
@@ -198,7 +208,7 @@ cdef class CSGPrimitive(Primitive):
         # no valid intersections
         return None
 
-    cdef Intersection _closest_intersection(self, Intersection a, Intersection b):
+    cdef inline Intersection _closest_intersection(self, Intersection a, Intersection b):
 
         if a is None:
 
@@ -316,6 +326,21 @@ cdef class CSGRoot(Node):
 
 cdef class Union(CSGPrimitive):
 
+    def __repr__(self):
+
+        return "<Union at " + str(hex(id(self))) + ">"
+
+    def __str__(self):
+        """String representation."""
+
+        if self.name == "":
+
+            return "<Union at " + str(hex(id(self))) + ">"
+
+        else:
+
+            return self.name + " <Union at " + str(hex(id(self))) + ">"
+
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
         cdef bint inside_a, inside_b
@@ -352,6 +377,21 @@ cdef class Union(CSGPrimitive):
 
 cdef class Intersect(CSGPrimitive):
 
+    def __repr__(self):
+
+        return "<Intersect at " + str(hex(id(self))) + ">"
+
+    def __str__(self):
+        """String representation."""
+
+        if self.name == "":
+
+            return "<Intersect at " + str(hex(id(self))) + ">"
+
+        else:
+
+            return self.name + " <Intersect at " + str(hex(id(self))) + ">"
+
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
         cdef bint inside_a, inside_b
@@ -387,6 +427,21 @@ cdef class Intersect(CSGPrimitive):
 
 
 cdef class Subtract(CSGPrimitive):
+
+    def __repr__(self):
+
+        return "<Subtract at " + str(hex(id(self))) + ">"
+
+    def __str__(self):
+        """String representation."""
+
+        if self.name == "":
+
+            return "<Subtract at " + str(hex(id(self))) + ">"
+
+        else:
+
+            return self.name + " <Subtract at " + str(hex(id(self))) + ">"
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 

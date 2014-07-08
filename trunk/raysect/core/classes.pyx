@@ -43,11 +43,34 @@ cdef class Ray:
         self.direction = direction
         self.max_distance = max_distance
 
+    def __repr__(self):
+
+        return "Ray({}, {}, {})".format(self.origin, self.direction, self.max_distance)
+
 
 cdef class Intersection:
 
-    # add an init?
-    pass
+    def __init__(self, Ray ray, double ray_distance, Primitive primitive,
+                 Point hit_point, Point inside_point, Point outside_point,
+                 Normal normal, bint exiting, AffineMatrix to_local, AffineMatrix to_world):
+
+        self.ray = ray
+        self.ray_distance = ray_distance
+        self.exiting = exiting
+        self.primitive = primitive
+        self.hit_point = hit_point
+        self.inside_point = inside_point
+        self.outside_point = outside_point
+        self.normal = normal
+        self.to_local = to_local
+        self.to_world = to_world
+
+    def __repr__(self):
+
+        return "Intersection({}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(
+            self.ray, self.ray_distance, self.primitive,
+            self.hit_point, self.inside_point, self.outside_point,
+            self.normal, self.exiting, self.to_local, self.to_world)
 
 
 cdef class Material

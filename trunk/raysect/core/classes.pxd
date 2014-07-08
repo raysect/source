@@ -33,7 +33,6 @@ from raysect.core.math.point cimport Point
 from raysect.core.math.vector cimport Vector
 from raysect.core.math.normal cimport Normal
 from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.scenegraph.world cimport World
 from raysect.core.scenegraph.primitive cimport Primitive
 
 cdef class Ray:
@@ -41,6 +40,17 @@ cdef class Ray:
     cdef public Point origin
     cdef public Vector direction
     cdef public double max_distance
+
+
+cdef inline new_ray(Point origin, Vector direction, double max_distance):
+
+    cdef Ray ray
+
+    ray = Ray.__new__(Ray)
+    ray.origin = origin
+    ray.direction = direction
+    ray.max_distance = max_distance
+    return ray
 
 
 cdef class Intersection:
@@ -57,9 +67,24 @@ cdef class Intersection:
     cdef public AffineMatrix to_world
 
 
-cdef inline Intersection new_intersection():
+cdef inline Intersection new_intersection(Ray ray, double ray_distance, Primitive primitive,
+                                          Point hit_point, Point inside_point, Point outside_point,
+                                          Normal normal, bint exiting, AffineMatrix to_local, AffineMatrix to_world):
 
-    return Intersection.__new__(Intersection)
+    cdef Intersection intersection
+
+    intersection = Intersection.__new__(Intersection)
+    intersection.ray = ray
+    intersection.ray_distance = ray_distance
+    intersection.exiting = exiting
+    intersection.primitive = primitive
+    intersection.hit_point = hit_point
+    intersection.inside_point = inside_point
+    intersection.outside_point = outside_point
+    intersection.normal = normal
+    intersection.to_local = to_local
+    intersection.to_world = to_world
+    return intersection
 
 
 cdef class Material:
