@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray, Intersection, Material
+from raysect.core.classes cimport Material
 from raysect.core.math.point cimport Point, new_point
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.acceleration.boundingbox cimport BoundingBox
@@ -58,6 +58,13 @@ cdef class CSGPrimitive(Primitive):
         primitive_a.parent = self._root
         primitive_b.parent = self._root
 
+        # initialise next_intersection cache
+        self._cache_ray = None
+        self._cache_intersection_a = None
+        self._cache_intersection_b = None
+        self._cache_last_intersection = None
+        self._cache_invalid = False
+
     property primitive_a:
 
         def __get__(self):
@@ -72,6 +79,9 @@ cdef class CSGPrimitive(Primitive):
             # insert new primitive into scenegraph
             self._primitive_a = AcceleratedPrimitive(primitive)
             primitive.parent = self._root
+
+            # invalidate next_intersection cache
+            self._cache_invalid = True
 
     property primitive_b:
 
@@ -88,32 +98,71 @@ cdef class CSGPrimitive(Primitive):
             self._primitive_b = AcceleratedPrimitive(primitive)
             primitive.parent = self._root
 
+            # invalidate next_intersection cache
+            self._cache_invalid = True
+
     cpdef Intersection hit(self, Ray ray):
 
         cdef:
             Ray local_ray
             Intersection intersection_a, intersection_b, closest_intersection
 
-        # TODO: invalidate next_intersection cache
+        # invalidate next_intersection cache
+        self._cache_invalid = True
 
         # convert ray to local space
         local_ray = Ray(ray.origin.transform(self.to_local()),
                         ray.direction.transform(self.to_local()),
                         INFINITY)
 
-        # obtain intersections
+        # obtain initial intersections
         intersection_a = self._primitive_a.hit(local_ray)
         intersection_b = self._primitive_b.hit(local_ray)
         closest_intersection = self._closest_intersection(intersection_a, intersection_b)
 
-        # identify first intersection that satisfies union operator
+        # identify first valid intersection
+        return self._identify_intersection(ray, intersection_a, intersection_b, closest_intersection)
+
+    cpdef Intersection next_intersection(self):
+
+        cdef Intersection intersection_a, intersection_b, closest_intersection
+
+        if self._cache_invalid:
+
+            return None
+
+        intersection_a = self._cache_intersection_a
+        intersection_b = self._cache_intersection_b
+
+        # replace intersection that was returned during the last call to hit() or next_intersection()
+        if self._cache_last_intersection is intersection_a:
+
+            intersection_a = self._primitive_a.next_intersection()
+
+        else:
+
+            intersection_b = self._primitive_b.next_intersection()
+
+        closest_intersection = self._closest_intersection(intersection_a, intersection_b)
+
+        # identify first valid intersection
+        return self._identify_intersection(self._cache_ray, intersection_a, intersection_b, closest_intersection)
+
+    cdef Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection):
+
+        # identify first intersection that satisfies csg operator
         while closest_intersection is not None:
 
             if self._valid_intersection(intersection_a, intersection_b, closest_intersection):
 
                 if closest_intersection.ray_distance <= ray.max_distance:
 
-                    # TODO: cache data for next_intersection()
+                    # cache data for next_intersection
+                    self._cache_ray = ray
+                    self._cache_intersection_a = intersection_a
+                    self._cache_intersection_b = intersection_b
+                    self._cache_last_intersection = closest_intersection
+                    self._cache_invalid = False
 
                     # allow derived classes to modify intersection if required
                     self._modify_intersection(closest_intersection, intersection_a, intersection_b)
@@ -167,18 +216,12 @@ cdef class CSGPrimitive(Primitive):
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
-        print("Warning: CSG operator not implemented")
-        return False
+        raise NotImplementedError("Warning: CSG operator not implemented")
 
     cdef void _modify_intersection(self, Intersection intersection, Intersection a, Intersection b):
 
         # by default, do nothing
         pass
-
-    cpdef Intersection next_intersection(self):
-
-        # TODO: implement me!
-        return None
 
     cpdef BoundingBox bounding_box(self):
 
