@@ -318,19 +318,9 @@ cdef class Box(Primitive):
 
             exiting = False
 
-        intersection = new_intersection()
-        intersection.primitive = self
-        intersection.hit_point = hit_point
-        intersection.inside_point = inside_point
-        intersection.outside_point = outside_point
-        intersection.normal = normal
-        intersection.ray = ray
-        intersection.ray_distance = ray_distance
-        intersection.exiting = exiting
-        intersection.to_local = self.to_local()
-        intersection.to_world = self.to_root()
+        return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
+                                normal, exiting, self.to_local(), self.to_root())
 
-        return intersection
 
     cdef inline double _interior_offset(self, double hit_point, double lower, double upper):
         """
