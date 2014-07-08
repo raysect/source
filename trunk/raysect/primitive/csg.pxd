@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Intersection
+from raysect.core.classes cimport Ray, Intersection
 from raysect.core.scenegraph.node cimport Node
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.acceleration.acceleratedprimitive cimport AcceleratedPrimitive
@@ -39,6 +39,13 @@ cdef class CSGPrimitive(Primitive):
     cdef CSGRoot _root
     cdef AcceleratedPrimitive _primitive_a
     cdef AcceleratedPrimitive _primitive_b
+    cdef Ray _cache_ray
+    cdef Intersection _cache_intersection_a
+    cdef Intersection _cache_intersection_b
+    cdef Intersection _cache_last_intersection
+    cdef bint _cache_invalid
+
+    cdef Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection)
 
     cdef Intersection _closest_intersection(self, Intersection a, Intersection b)
 
