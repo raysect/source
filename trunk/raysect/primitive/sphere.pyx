@@ -45,7 +45,7 @@ DEF EPSILON = 1e-9
 
 cdef class Sphere(Primitive):
 
-    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), double radius = 1.0, unicode name not None= ""):
+    def __init__(self, double radius = 1.0, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
 
         super().__init__(parent, transform, material, name)
 

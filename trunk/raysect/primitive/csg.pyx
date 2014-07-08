@@ -43,7 +43,7 @@ DEF INFINITY = 1e999
 
 cdef class CSGPrimitive(Primitive):
 
-    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), Primitive primitive_a not None = NullPrimitive(), Primitive primitive_b not None = NullPrimitive(), unicode name not None= ""):
+    def __init__(self, Primitive primitive_a not None = NullPrimitive(), Primitive primitive_b not None = NullPrimitive(), object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
 
         super().__init__(parent, transform, material, name)
 

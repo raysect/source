@@ -60,7 +60,7 @@ DEF Z_AXIS = 2
 
 cdef class Box(Primitive):
 
-    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), Point lower=None, Point upper=None, unicode name not None= ""):
+    def __init__(self, Point lower=None, Point upper=None, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
 
         super().__init__(parent, transform, material, name)
 

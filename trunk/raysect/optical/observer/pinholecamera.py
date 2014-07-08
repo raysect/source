@@ -40,7 +40,7 @@ from raysect.optical import Spectrum
 
 class PinholeCamera(Observer):
 
-    def __init__(self, parent = None, transform = AffineMatrix(), pixels = (640, 480), fov = 40, spectral_samples = 20, dispersion = False, name = ""):
+    def __init__(self, pixels = (640, 480), fov = 40, spectral_samples = 20, dispersion = False, parent = None, transform = AffineMatrix(), name = ""):
 
         super().__init__(parent, transform, name)
 
