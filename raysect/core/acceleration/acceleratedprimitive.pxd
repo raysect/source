@@ -39,6 +39,7 @@ cdef class AcceleratedPrimitive:
 
     cdef readonly Primitive primitive
     cdef readonly BoundingBox box
+    cdef bint _primitive_tested
 
     cdef inline Intersection hit(self, Ray ray)
 

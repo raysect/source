@@ -40,6 +40,12 @@ cdef class CSGPrimitive(Primitive):
     cdef AcceleratedPrimitive _primitive_a
     cdef AcceleratedPrimitive _primitive_b
 
+    cdef Intersection _closest_intersection(self, Intersection a, Intersection b)
+
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest)
+
+    cdef Intersection _update_intersection(self, Intersection intersection)
+
     cdef void rebuild(self)
 
 
@@ -50,11 +56,7 @@ cdef class CSGRoot(Node):
 
 cdef class Union(CSGPrimitive):
 
-    cdef inline Intersection _closest_intersection(self, Intersection a, Intersection b)
-
-    cdef inline bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest)
-
-    cdef inline Intersection _update_intersection(self, Intersection intersection)
+    pass
 
 
 cdef class Intersect(CSGPrimitive):

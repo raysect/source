@@ -141,6 +141,9 @@ cdef class Box(Primitive):
             int near_face, far_face, closest_face
             int near_axis, far_axis, closest_axis
 
+        # invalidate next intersection cache
+        self._further_intersection = False
+
         # convert ray origin and direction to local space
         origin = ray.origin.transform(self.to_local())
         direction = ray.direction.transform(self.to_local())
