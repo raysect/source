@@ -162,20 +162,20 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
         y += bins_view[index] * xyz_view[index, 1]
         z += bins_view[index] * xyz_view[index, 2]
 
-    return (x, y, z)
+    return x, y, z
 
 
+@cython.cdivision(True)
 cpdef inline tuple ciexyy_to_ciexyz(tuple xyy):
 
-    cdef double chromaticity_x, chromaticity_y, brightness_y
+    cdef double cx, cy, y
 
-    (chromaticity_x, chromaticity_y, brightness_y) = xyy
+    cx, cy, y = xyy
 
-    return (brightness_y / chromaticity_y * chromaticity_x,
-            brightness_y,
-            brightness_y / chromaticity_y * (1 - chromaticity_x - chromaticity_y))
+    return y / cy * cx, y, y / cy * (1 - cx - cy)
 
 
+@cython.cdivision(True)
 cpdef inline tuple ciexyz_to_ciexyy(tuple xyz):
 
     cdef double x, y, z, n
@@ -183,9 +183,8 @@ cpdef inline tuple ciexyz_to_ciexyy(tuple xyz):
     (x, y, z) = xyz
 
     n = x + y + z
-    return (x / n,
-            y / n,
-            y)
+
+    return x / n, y / n, y
 
 
 cdef inline double srgb_transfer_function(double v):
@@ -212,7 +211,7 @@ cpdef inline tuple ciexyz_to_srgb(tuple xyz):
         double r, g, b
 
     # unpack tuple
-    (x, y, z) = xyz
+    x, y, z = xyz
 
     # convert from CIE XYZ (D65) to sRGB (linear)
     r =  3.2404542 * x - 1.5371385 * y - 0.4985314 * z
@@ -229,7 +228,7 @@ cpdef inline tuple ciexyz_to_srgb(tuple xyz):
     g = clamp(g, 0, 1)
     b = clamp(b, 0, 1)
 
-    return (r, g, b)
+    return r, g, b
 
 
 @cython.cdivision(True)
@@ -257,7 +256,7 @@ cpdef inline tuple srgb_to_ciexyz(tuple rgb):
         double x, y, z
 
     # unpack tuple
-    (r, g, b) = rgb
+    r, g, b = rgb
 
     # apply inverse sRGB transfer function
     r = srgb_transfer_function_inverse(r)
@@ -269,7 +268,7 @@ cpdef inline tuple srgb_to_ciexyz(tuple rgb):
     y = 0.2126729 * r + 0.7151522 * g + 0.0721750 * b
     z = 0.0193339 * r + 0.1191920 * g + 0.9503041 * b
 
-    return (x, y, z)
+    return x, y, z
 
 
 
