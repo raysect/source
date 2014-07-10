@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.utility cimport integrate, clamp
 from raysect.optical.spectrum cimport Spectrum
 from numpy cimport ndarray
 
@@ -37,15 +36,15 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
 
 cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = *)
 
-cpdef inline tuple ciexyy_to_ciexyz(double chromaticity_x, double chromaticity_y, brightness_y)
+cpdef inline tuple ciexyy_to_ciexyz(tuple xyy)
 
-cpdef inline tuple ciexyz_to_ciexyy(double x, double y, double z)
+cpdef inline tuple ciexyz_to_ciexyy(tuple xyz)
 
 cdef inline double srgb_transfer_function(double v)
 
-cpdef inline tuple ciexyz_to_srgb(double x, double y, double z)
+cpdef inline tuple ciexyz_to_srgb(tuple xyz)
 
 cdef inline double srgb_transfer_function_inverse(double v)
 
-cpdef inline tuple srgb_to_ciexyz(double r, double g, double b)
+cpdef inline tuple srgb_to_ciexyz(tuple rgb)
 

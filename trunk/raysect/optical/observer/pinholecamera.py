@@ -113,8 +113,8 @@ class PinholeCamera(Observer):
             image_start_x = 0
             image_start_y = 0
 
-        min_wavelength = 375
-        max_wavelength = 785
+        min_wavelength = 375.0
+        max_wavelength = 785.0
 
         resampled_xyz = resample_ciexyz(min_wavelength,
                                         max_wavelength,
@@ -185,7 +185,7 @@ class PinholeCamera(Observer):
                         spectrum.bins[index] = sample.bins[0]
 
                     xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-                    rgb = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
+                    rgb = ciexyz_to_srgb(xyz)
                     self.frame[y, x, 0] = rgb[0]
                     self.frame[y, x, 1] = rgb[1]
                     self.frame[y, x, 2] = rgb[2]
@@ -198,7 +198,7 @@ class PinholeCamera(Observer):
                     # trace and accumulate
                     spectrum = ray.trace(world)
                     xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-                    rgb = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
+                    rgb = ciexyz_to_srgb(xyz)
                     self.frame[y, x, 0] = rgb[0]
                     self.frame[y, x, 1] = rgb[1]
                     self.frame[y, x, 2] = rgb[2]
