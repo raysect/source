@@ -217,6 +217,7 @@ class PinholeCamera(Observer):
         clf()
         imshow(self.frame, aspect = "equal", origin = "upper")
         draw()
+        show()
 
     def save(self, filename):
 
