@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.math.utility cimport integrate, clamp
 from numpy import array, float64, zeros
 cimport cython
 
@@ -164,16 +165,24 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
     return (x, y, z)
 
 
-cpdef inline tuple ciexyy_to_ciexyz(double chromaticity_x, double chromaticity_y, brightness_y):
+cpdef inline tuple ciexyy_to_ciexyz(tuple xyy):
+
+    cdef double chromaticity_x, chromaticity_y, brightness_y
+
+    (chromaticity_x, chromaticity_y, brightness_y) = xyy
 
     return (brightness_y / chromaticity_y * chromaticity_x,
             brightness_y,
             brightness_y / chromaticity_y * (1 - chromaticity_x - chromaticity_y))
 
 
-cpdef inline tuple ciexyz_to_ciexyy(double x, double y, double z):
+cpdef inline tuple ciexyz_to_ciexyy(tuple xyz):
 
-    cdef double n = x + y + z
+    cdef double x, y, z, n
+
+    (x, y, z) = xyz
+
+    n = x + y + z
     return (x / n,
             y / n,
             y)
@@ -190,7 +199,7 @@ cdef inline double srgb_transfer_function(double v):
         return 1.055 * v**(1 / 2.4) - 0.055
 
 
-cpdef inline tuple ciexyz_to_srgb(double x, double y, double z):
+cpdef inline tuple ciexyz_to_srgb(tuple xyz):
     """
     sRGB specified as per IEC 61966-2-1:1999.
 
@@ -198,7 +207,12 @@ cpdef inline tuple ciexyz_to_srgb(double x, double y, double z):
     (r, g, b) in range [0, 1]
     """
 
-    cdef double r, g, b
+    cdef:
+        double x, y, z
+        double r, g, b
+
+    # unpack tuple
+    (x, y, z) = xyz
 
     # convert from CIE XYZ (D65) to sRGB (linear)
     r =  3.2404542 * x - 1.5371385 * y - 0.4985314 * z
@@ -230,7 +244,7 @@ cdef inline double srgb_transfer_function_inverse(double v):
         return ((v + 0.055) / 1.055)**2.4
 
 
-cpdef inline tuple srgb_to_ciexyz(double r, double g, double b):
+cpdef inline tuple srgb_to_ciexyz(tuple rgb):
     """
     sRGB specified as per IEC 61966-2-1:1999.
 
@@ -238,7 +252,12 @@ cpdef inline tuple srgb_to_ciexyz(double r, double g, double b):
     (x, y, z) in range [0, 1]
     """
 
-    cdef double x, y, z
+    cdef:
+        double r, g, b
+        double x, y, z
+
+    # unpack tuple
+    (r, g, b) = rgb
 
     # apply inverse sRGB transfer function
     r = srgb_transfer_function_inverse(r)
