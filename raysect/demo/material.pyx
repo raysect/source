@@ -357,7 +357,7 @@ cdef class Glass(MaterialRGB):
 
             gamma = n1 / n2
 
-        # calculate square of cosone of angle between transmitted ray and normal
+        # calculate square of cosine of angle between transmitted ray and normal
         c2s = 1 - (gamma * gamma) * (1 - c1 * c1)
 
         # check for total internal reflection
