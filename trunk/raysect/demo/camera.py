@@ -49,6 +49,8 @@ class PinholeCamera(Observer):
         self.display_progress = True
         self.display_update_time = 2.0
 
+        self.max_depth = 15
+
     @property
     def pixels(self):
 
@@ -109,6 +111,7 @@ class PinholeCamera(Observer):
             image_start_y = 0
 
         ray = RayRGB()
+        ray.max_depth = self.max_depth
 
         if self.display_progress:
 
