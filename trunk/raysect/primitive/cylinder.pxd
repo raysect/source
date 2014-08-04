@@ -53,7 +53,7 @@ cdef class Cylinder(Primitive):
 
     cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int face, int type)
 
-    cdef Vector _interior_offset(self, Point hit_point, Normal normal, int type)
+    cdef inline Vector _interior_offset(self, Point hit_point, Normal normal, int type)
 
     cdef inline bint _inside_cylinder(self, Point point)
 

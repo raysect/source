@@ -365,7 +365,7 @@ cdef class Cylinder(Primitive):
                                 normal, exiting, self.to_local(), self.to_root())
 
     @cython.cdivision(True)
-    cdef Vector _interior_offset(self, Point hit_point, Normal normal, int type):
+    cdef inline Vector _interior_offset(self, Point hit_point, Normal normal, int type):
 
         cdef double x, y, z, length
 
@@ -386,8 +386,9 @@ cdef class Cylinder(Primitive):
 
                 if (length - self._radius) < EPSILON:
 
-                    x = -EPSILON * (hit_point.x / length)
-                    y = -EPSILON * (hit_point.y / length)
+                    length = 1.0 / length
+                    x = -EPSILON * length * hit_point.x
+                    y = -EPSILON * length * hit_point.y
 
         # shift away from slab surface
         if fabs(hit_point.z) < EPSILON:
