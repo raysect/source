@@ -357,7 +357,7 @@ cdef class Node:
 
                     if lower_intersection is None:
 
-                            return upper_intersection
+                        return upper_intersection
 
                     else:
 
