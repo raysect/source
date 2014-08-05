@@ -132,6 +132,17 @@ cdef class Box(Primitive):
             # any geometry caching in the root node is now invalid, inform root
             self.root._change(self)
 
+    def __str__(self):
+        """String representation."""
+
+        if self.name == "":
+
+            return "<Box at " + str(hex(id(self))) + ">"
+
+        else:
+
+            return self.name + " <Box at " + str(hex(id(self))) + ">"
+
     cpdef Intersection hit(self, Ray ray):
 
         cdef:

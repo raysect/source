@@ -124,12 +124,26 @@ cdef class Cylinder(Primitive):
             # any geometry caching in the root node is now invalid, inform root
             self.notify_root()
 
+    def __str__(self):
+        """String representation."""
+
+        if self.name == "":
+
+            return "<Cylinder at " + str(hex(id(self))) + ">"
+
+        else:
+
+            return self.name + " <Cylinder at " + str(hex(id(self))) + ">"
+
+    @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):
 
         cdef:
             double near_intersection, far_intersection, closest_intersection
             int near_face, far_face, closest_face
             int near_type, far_type, closest_type
+            double a, b, c, d, t0, t1, temp
+            int f0, f1
 
         # reset the next intersection cache
         self._further_intersection = False
@@ -138,23 +152,99 @@ cdef class Cylinder(Primitive):
         origin = ray.origin.transform(self.to_local())
         direction = ray.direction.transform(self.to_local())
 
-        # set initial ray-slab intersection search range and parameters
-        near_intersection = -INFINITY
-        near_face = NO_FACE
-        near_type = NO_TYPE
-
-        far_intersection = INFINITY
-        far_face = NO_FACE
-        far_type = NO_TYPE
-
         # check ray intersects infinite cylinder and obtain intersections
-        if not self._cylinder(origin, direction, &near_intersection, &far_intersection, &near_face, &far_face, &near_type, &far_type):
+        # is ray parallel to cylinder surface?
+        if direction.x == 0 and direction.y == 0:
 
-            # ray misses the cylinder
-            return None
+            if self._inside_cylinder(origin):
+
+                near_intersection = -INFINITY
+                near_type = NO_TYPE
+                near_face = NO_FACE
+
+                far_intersection = INFINITY
+                far_type = NO_TYPE
+                far_face = NO_FACE
+
+            else:
+
+                # no ray cylinder intersection
+                return None
+
+        else:
+
+            # coefficients of quadratic equation and discriminant
+            a = direction.x * direction.x + direction.y * direction.y
+            b = 2.0 * (direction.x * origin.x + direction.y * origin.y)
+            c = origin.x * origin.x + origin.y * origin.y - self._radius * self._radius
+            d = b * b - 4 * a * c
+
+            # ray misses cylinder if there are no real roots of the quadratic
+            if d < 0:
+
+                return None
+
+            d = sqrt(d)
+
+            # calculate intersections
+            temp = 1 / (2.0 * a)
+            t0 = -(d + b) * temp
+            t1 = (d - b) * temp
+
+            # ensure t0 is always smaller than t1
+            if t0 > t1:
+
+                # swap
+                temp = t0
+                t0 = t1
+                t1 = temp
+
+            # set intersection parameters
+            near_intersection = t0
+            near_type = CYLINDER
+            near_face = NO_FACE
+
+            far_intersection = t1
+            far_type = CYLINDER
+            far_face = NO_FACE
 
         # union slab with the cylinder
-        self._slab(origin.z, direction.z, &near_intersection, &far_intersection, &near_face, &far_face, &near_type, &far_type)
+        # slab contributes no intersections if the ray is parallel to the slab surfaces
+        if direction.z != 0.0:
+
+            # calculate intersections with slab planes
+            temp = 1.0 / direction.z
+
+            if direction.z > 0:
+
+                # calculate length along ray path of intersections
+                t0 = -origin.z * temp
+                t1 = (self._height - origin.z) * temp
+
+                f0 = LOWER_FACE
+                f1 = UPPER_FACE
+
+            else:
+
+                # calculate length along ray path of intersections
+                t0 = (self._height - origin.z) * temp
+                t1 = -origin.z * temp
+
+                f0 = UPPER_FACE
+                f1 = LOWER_FACE
+
+            # calculate intersection overlap
+            if t0 > near_intersection:
+
+                near_intersection = t0
+                near_face = f0
+                near_type = SLAB
+
+            if t1 < far_intersection:
+
+                far_intersection = t1
+                far_face = f1
+                far_type = SLAB
 
         # does ray intersect cylinder?
         if near_intersection > far_intersection:
@@ -194,112 +284,6 @@ cdef class Cylinder(Primitive):
             return None
 
         return self._generate_intersection(ray, origin, direction, closest_intersection, closest_face, closest_type)
-
-    cdef inline bint _cylinder(self, Point origin, Vector direction, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_type, int *far_type):
-
-        cdef double a, b, c, d, temp, t0, t1
-
-        # is ray parallel to cylinder surface?
-        if direction.x == 0 and direction.y == 0:
-
-            if self._inside_cylinder(origin):
-
-                t0 = -INFINITY
-                t1 = INFINITY
-
-            else:
-
-                # no ray cylinder intersection
-                return False
-
-        else:
-
-            # coefficients of quadratic equation and discriminant
-            a = direction.x * direction.x + direction.y * direction.y
-            b = 2.0 * (direction.x * origin.x + direction.y * origin.y)
-            c = origin.x * origin.x + origin.y * origin.y - self._radius * self._radius
-            d = b * b - 4 * a * c
-
-            # ray misses cylinder if there are no real roots of the quadratic
-            if d < 0:
-
-                return False
-
-            d = sqrt(d)
-
-            # calculate intersections
-            with cython.cdivision(True):
-
-                temp = 1 / (2.0 * a)
-
-            t0 = -(d + b) * temp
-            t1 = (d - b) * temp
-
-            # ensure t0 is always smaller than t1
-            if t0 > t1:
-
-                # swap
-                temp = t0
-                t0 = t1
-                t1 = temp
-
-        # calculate intersection overlap
-        if t0 > near_intersection[0]:
-
-            near_intersection[0] = t0
-            near_type[0] = CYLINDER
-
-        if t1 < far_intersection[0]:
-
-            far_intersection[0] = t1
-            far_type[0] = CYLINDER
-
-        return True
-
-    cdef inline void _slab(self, double origin, double direction, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_type, int *far_type):
-
-        cdef:
-            double reciprocal, tmin, tmax
-            int fmin, fmax
-
-        # slab contributes no intersections if the ray is parallel to the slab surfaces
-        if direction != 0.0:
-
-            # calculate intersections with slab planes
-            with cython.cdivision(True):
-
-                reciprocal = 1.0 / direction
-
-            if direction > 0:
-
-                # calculate length along ray path of intersections
-                tmin = -origin * reciprocal
-                tmax = (self._height - origin) * reciprocal
-
-                fmin = LOWER_FACE
-                fmax = UPPER_FACE
-
-            else:
-
-                # calculate length along ray path of intersections
-                tmin = (self._height - origin) * reciprocal
-                tmax = -origin * reciprocal
-
-                fmin = UPPER_FACE
-                fmax = LOWER_FACE
-
-            # calculate intersection overlap
-            if tmin > near_intersection[0]:
-
-                near_intersection[0] = tmin
-                near_face[0] = fmin
-                near_type[0] = SLAB
-
-            if tmax < far_intersection[0]:
-
-                far_intersection[0] = tmax
-                far_face[0] = fmax
-                far_type[0] = SLAB
 
     cpdef Intersection next_intersection(self):
 

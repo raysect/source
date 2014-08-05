@@ -47,10 +47,6 @@ cdef class Cylinder(Primitive):
     cdef int _cached_face
     cdef int _cached_type
 
-    cdef inline bint _cylinder(self, Point origin, Vector direction, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_type, int *far_type)
-
-    cdef inline void _slab(self, double origin, double direction, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_type, int *far_type)
-
     cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int face, int type)
 
     cdef inline Vector _interior_offset(self, Point hit_point, Normal normal, int type)
