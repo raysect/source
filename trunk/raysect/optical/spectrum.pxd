@@ -43,6 +43,16 @@ cdef class Spectrum:
 
     cdef inline void _construct(self, double min_wavelength, double max_wavelength, int samples)
 
+    cdef inline void add_scalar(self, double value)
+    cdef inline void sub_scalar(self, double value)
+    cdef inline void mul_scalar(self, double value)
+    cdef inline void div_scalar(self, double value)
+
+    cdef inline void add_array(self, double[::1] array)
+    cdef inline void sub_array(self, double[::1] array)
+    cdef inline void mul_array(self, double[::1] array)
+    cdef inline void div_array(self, double[::1] array)
+
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int samples)
 

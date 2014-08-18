@@ -85,8 +85,7 @@ cdef class Spectrum:
     cdef inline void _construct(self, double min_wavelength, double max_wavelength, int samples):
 
         cdef:
-            npy_intp size
-            int index
+            npy_intp size, index
             double[::1] wavelengths_view
 
         self.min_wavelength = min_wavelength
@@ -101,6 +100,116 @@ cdef class Spectrum:
 
         # wavelengths is populated on demand
         self._wavelengths = None
+
+    # low level scalar maths functions
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline void add_scalar(self, double value):
+
+        cdef:
+            double[::1] bins_view
+            npy_intp index
+
+        bins_view = self.bins
+        for index in range(bins_view.shape[0]):
+
+            bins_view[index] += value
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline void sub_scalar(self, double value):
+
+        cdef:
+            double[::1] bins_view
+            npy_intp index
+
+        bins_view = self.bins
+        for index in range(bins_view.shape[0]):
+
+            bins_view[index] -= value
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline void mul_scalar(self, double value):
+
+        cdef:
+            double[::1] bins_view
+            npy_intp index
+
+        bins_view = self.bins
+        for index in range(bins_view.shape[0]):
+
+            bins_view[index] *= value
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef inline void div_scalar(self, double value):
+
+        cdef:
+            double[::1] bins_view
+            double reciprocal
+            npy_intp index
+
+        bins_view = self.bins
+        reciprocal = 1.0 / value
+        for index in range(bins_view.shape[0]):
+
+            bins_view[index] *= reciprocal
+
+    # low level array maths functions
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline void add_array(self, double[::1] array):
+
+        cdef:
+            double[::1] bins_view
+            npy_intp index
+
+        bins_view = self.bins
+        for index in range(bins_view.shape[0]):
+
+            bins_view[index] += array[index]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline void sub_array(self, double[::1] array):
+
+        cdef:
+            double[::1] bins_view
+            npy_intp index
+
+        bins_view = self.bins
+        for index in range(bins_view.shape[0]):
+
+            bins_view[index] -= array[index]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline void mul_array(self, double[::1] array):
+
+        cdef:
+            double[::1] bins_view
+            npy_intp index
+
+        bins_view = self.bins
+        for index in range(bins_view.shape[0]):
+
+            bins_view[index] *= array[index]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef inline void div_array(self, double[::1] array):
+
+        cdef:
+            double[::1] bins_view
+            npy_intp index
+
+        bins_view = self.bins
+        for index in range(bins_view.shape[0]):
+
+            bins_view[index] /= array[index]
 
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int samples):
