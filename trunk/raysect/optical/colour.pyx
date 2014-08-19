@@ -95,7 +95,7 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
         ndarray xyz
         double[:,::1] xyz_view
         int index
-        double delta_wavelength, lower_wavelength, upper_wavelength
+        double delta_wavelength, lower_wavelength, upper_wavelength, reciprocal
 
     if samples < 1:
 
@@ -107,20 +107,24 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
 
     if min_wavelength >= max_wavelength:
 
-        raise ValueError("Minimum wavelength can not be greater or eaual to the maximum wavelength.")
+        raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
     xyz = zeros((samples, 3))
     xyz_view = xyz
 
     delta_wavelength = (max_wavelength - min_wavelength) / samples
     lower_wavelength = min_wavelength
+    reciprocal = 1.0 / delta_wavelength
     for index in range(samples):
 
         upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
 
-        xyz_view[index, 0] = integrate(ciexyz_wavelength, ciexyz_x, lower_wavelength, upper_wavelength)
-        xyz_view[index, 1] = integrate(ciexyz_wavelength, ciexyz_y, lower_wavelength, upper_wavelength)
-        xyz_view[index, 2] = integrate(ciexyz_wavelength, ciexyz_z, lower_wavelength, upper_wavelength)
+        # TODO: replace integral by a direct average calculation
+
+        # integrate curves and calculate average sensitivity for each spectral bin
+        xyz_view[index, 0] = reciprocal * integrate(ciexyz_wavelength, ciexyz_x, lower_wavelength, upper_wavelength)
+        xyz_view[index, 1] = reciprocal * integrate(ciexyz_wavelength, ciexyz_y, lower_wavelength, upper_wavelength)
+        xyz_view[index, 2] = reciprocal * integrate(ciexyz_wavelength, ciexyz_z, lower_wavelength, upper_wavelength)
 
         lower_wavelength = upper_wavelength
 
