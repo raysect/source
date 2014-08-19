@@ -61,7 +61,7 @@ cdef class PythonFunction1D(Function1D):
 
     This class allows a python object to interact with cython code that requires
     a Function1D object. The python object must implement __call__() expecting
-    one arguement.
+    one argument.
 
     This class is intended to be used to transparently wrap python objects that
     are passed via constructors or methods into cython optimised code. It is not
@@ -135,7 +135,7 @@ cdef class PythonFunction2D(Function2D):
 
     This class allows a python object to interact with cython code that requires
     a Function2D object. The python object must implement __call__() expecting
-    two arguements.
+    two arguments.
 
     This class is intended to be used to transparently wrap python objects that
     are passed via constructors or methods into cython optimised code. It is not
@@ -209,7 +209,7 @@ cdef class PythonFunction3D(Function3D):
 
     This class allows a python object to interact with cython code that requires
     a Function3D object. The python object must implement __call__() expecting
-    three arguements.
+    three arguments.
 
     This class is intended to be used to transparently wrap python objects that
     are passed via constructors or methods into cython optimised code. It is not
