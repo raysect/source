@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -40,19 +38,26 @@ from raysect.optical import Spectrum
 
 class PinholeCamera(Observer):
 
-    def __init__(self, pixels = (640, 480), fov = 40, spectral_samples = 20, dispersion = False, parent = None, transform = AffineMatrix(), name = ""):
+    def __init__(self, pixels = (640, 480), fov = 40, spectral_samples = 20, rays = 1, parent = None, transform = AffineMatrix(), name = ""):
 
         super().__init__(parent, transform, name)
 
         self.pixels = pixels
         self.fov = fov
         self.frame = None
+        # self.subsampling = 1
 
+        self.rays = rays
         self.spectral_samples = spectral_samples
-        self.dispersion = dispersion
+
+        self.min_wavelength = 375.0
+        self.max_wavelength = 785.0
+
+        self.ray_max_depth = 15
 
         self.display_progress = True
-        self.display_update_time = 5.0
+        self.display_update_time = 10.0
+
 
     @property
     def pixels(self):
@@ -88,13 +93,13 @@ class PinholeCamera(Observer):
 
         if isinstance(self.root, World) == False:
 
-            raise TypeError("Observer is not conected to a scenegraph containing a World object.")
+            raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
         world = self.root
 
         max_pixels = max(self._pixels)
 
-        if max_pixels > 0:
+        if max_pixels > 1:
 
             # max width of image plane at 1 meter
             image_max_width = 2 * tan(pi / 180 * 0.5 * self._fov)
@@ -113,38 +118,31 @@ class PinholeCamera(Observer):
             image_start_x = 0
             image_start_y = 0
 
-        min_wavelength = 375.0
-        max_wavelength = 785.0
+        total_samples = self.rays * self.spectral_samples
 
-        resampled_xyz = resample_ciexyz(min_wavelength,
-                                        max_wavelength,
-                                        self.spectral_samples)
+        resampled_xyz = resample_ciexyz(self.min_wavelength,
+                                        self.max_wavelength,
+                                        total_samples)
 
-        if self.dispersion:
+        # generate rays
+        rays = list()
+        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.rays
+        lower_wavelength = self.min_wavelength
+        for index in range(self.rays):
 
-            # seperate wavelength for each ray
-            rays = list()
-            delta_wavelength = (max_wavelength - min_wavelength) / self.spectral_samples
-            lower_wavelength = min_wavelength
-            for index in range(self.spectral_samples):
+            upper_wavelength = self.min_wavelength + delta_wavelength * (index + 1)
 
-                upper_wavelength = min_wavelength + delta_wavelength * (index + 1)
+            rays.append(Ray(min_wavelength=lower_wavelength,
+                            max_wavelength=upper_wavelength,
+                            samples=self.spectral_samples,
+                            max_depth=self.ray_max_depth))
 
-                rays.append(Ray(min_wavelength = lower_wavelength,
-                                max_wavelength = upper_wavelength,
-                                samples = 1))
+            lower_wavelength = upper_wavelength
 
-                print(lower_wavelength, upper_wavelength)
+        total_pixels = self._pixels[0] * self._pixels[1]
+        progress_timer = time()
 
-                lower_wavelength = upper_wavelength
-
-        else:
-
-            # single ray for all wavelengths
-            ray = Ray(min_wavelength = min_wavelength,
-                      max_wavelength = max_wavelength,
-                      samples = self.spectral_samples)
-
+        display_timer = 0
         if self.display_progress:
 
             self.display()
@@ -152,11 +150,14 @@ class PinholeCamera(Observer):
 
         for y in range(0, self._pixels[1]):
 
-            if self.display_progress:
-
-                print("line " + str(y) + "/" + str(self._pixels[1]))
-
             for x in range(0, self._pixels[0]):
+
+                if (time() - progress_timer) > 1.0:
+
+                    current_pixel = y * self._pixels[0] + x
+                    completion = 100 * current_pixel / total_pixels
+                    print("{}% complete (line {}/{}, pixel {}/{})".format(completion, y, self._pixels[1], current_pixel, total_pixels))
+                    progress_timer = time()
 
                 # ray angles
                 theta = atan(image_start_x - image_delta * x)
@@ -172,41 +173,35 @@ class PinholeCamera(Observer):
                 origin = origin.transform(self.to_root())
                 direction = direction.transform(self.to_root())
 
-                if self.dispersion:
+                # sample world
+                spectrum = Spectrum(self.min_wavelength, self.max_wavelength, total_samples)
+                lower_index = 0
+                for index, ray in enumerate(rays):
 
-                    spectrum = Spectrum(min_wavelength, max_wavelength, self.spectral_samples)
-
-                    for index, ray in enumerate(rays):
-
-                        ray.origin = origin
-                        ray.direction = direction
-
-                        sample = ray.trace(world)
-                        spectrum.bins[index] = sample.bins[0]
-
-                    xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-                    rgb = ciexyz_to_srgb(xyz)
-                    self.frame[y, x, 0] = rgb[0]
-                    self.frame[y, x, 1] = rgb[1]
-                    self.frame[y, x, 2] = rgb[2]
-
-                else:
+                    upper_index = self.spectral_samples * (index + 1)
 
                     ray.origin = origin
                     ray.direction = direction
 
-                    # trace and accumulate
-                    spectrum = ray.trace(world)
-                    xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-                    rgb = ciexyz_to_srgb(xyz)
-                    self.frame[y, x, 0] = rgb[0]
-                    self.frame[y, x, 1] = rgb[1]
-                    self.frame[y, x, 2] = rgb[2]
+                    sample = ray.trace(world)
+                    spectrum.bins[lower_index:upper_index] = sample.bins
+
+                    lower_index = upper_index
+
+                # convert spectrum to sRGB
+                xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+                rgb = ciexyz_to_srgb(xyz)
+                self.frame[y, x, 0] = rgb[0]
+                self.frame[y, x, 1] = rgb[1]
+                self.frame[y, x, 2] = rgb[2]
 
                 if self.display_progress and (time() - display_timer) > self.display_update_time:
 
+                    print("Refreshing display...")
                     self.display()
                     display_timer = time()
+
+        print("100% complete (line {}/{}, pixel {}/{})".format(self._pixels[1], self._pixels[1], total_pixels, total_pixels))
 
         if self.display_progress:
 
