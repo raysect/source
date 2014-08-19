@@ -62,7 +62,7 @@ cdef class KDTree(Accelerator):
 
         cdef int max_depth
 
-        # wrap primitves with their bounding boxes
+        # wrap primitives with their bounding boxes
         primitives = self._accelerate_primitives(primitives)
 
         # construct a bounding box that contains all the primitive in the world
@@ -192,6 +192,7 @@ cdef class Node:
         for axis in [X_AXIS, Y_AXIS, Z_AXIS]:
 
             # obtain sorted list of candidate edges along chosen axis
+            # TODO: calculate and store edges for each axis only once per primitive, tcache and pass on to child nodes. The current recalculation is wasteful
             edges = self._build_edges(primitives, axis)
 
             # cache primitive counts in lower and upper volumes for speed
