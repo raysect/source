@@ -190,7 +190,7 @@ class PinholeCamera(Observer):
 
                 # convert spectrum to sRGB
                 xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-                rgb = ciexyz_to_srgb(xyz)
+                rgb = ciexyz_to_srgb(*xyz)
                 self.frame[y, x, 0] = rgb[0]
                 self.frame[y, x, 1] = rgb[1]
                 self.frame[y, x, 2] = rgb[2]
