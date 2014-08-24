@@ -29,12 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.emitter cimport VolumeEmitterHomogeneous, VolumeEmitterInhomogeneous
-
-cdef class Glow(VolumeEmitterHomogeneous):
-
-    pass
-
+from raysect.optical.material.emitter cimport VolumeEmitterInhomogeneous
 
 cdef class GaussianBeam(VolumeEmitterInhomogeneous):
 
