@@ -29,62 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport cython
-from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector, new_vector
-from raysect.optical.spectrum cimport Spectrum
-from libc.math cimport exp, floor, fabs
+from raysect.core.math.function cimport Function1D, Function2D
+from raysect.optical.material.material cimport Material
 
-cdef class GaussianBeam(VolumeEmitterInhomogeneous):
+cdef class Sellmeier(Function1D):
 
-    def __init__(self, double power = 1, double sigma = 0.2, double step = 0.05):
+    cdef double b1, b2, b3
+    cdef double c1, c2, c3
 
-        super().__init__(step)
 
-        self.power = power
-        self.sigma = sigma
+cdef class Glass(Material):
 
-    property sigma:
+    cdef Function1D index
+    cdef Function2D transmission
+    cdef double cutoff
 
-        def __get__(self):
-
-            return self._sigma
-
-        @cython.cdivision(True)
-        def __set__(self, double sigma):
-
-            self._sigma = sigma
-            self._denominator = 0.5 / (sigma * sigma)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum):
-
-        cdef:
-            int index, count
-            double scale
-            double[::1] bins_view
-
-        bins_view = spectrum.bins
-
-        # gaussian beam uniform spectal power density
-        scale = exp(-self._denominator * (point.x * point.x + point.y * point.y)) ** 4
-
-        for index in range(spectrum.samples):
-
-            bins_view[index] = self.power * scale / spectrum.samples
-
-        index = int(floor(fabs(point.z * spectrum.samples)))
-        if index < 0:
-
-            index = 0
-
-        if index >= spectrum.samples:
-
-            index = spectrum.samples - 1
-
-        bins_view[index] += self.power * scale
-
-        return spectrum
-
+    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission)

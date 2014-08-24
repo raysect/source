@@ -31,6 +31,12 @@
 
 cimport cython
 from numpy cimport ndarray
+from libc.math cimport round
+from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph.world cimport World
+from raysect.optical.ray cimport Ray
+from raysect.core.math.normal cimport Normal
 from raysect.core.math.point cimport new_point
 from raysect.optical.spectrum cimport new_spectrum
 
@@ -99,7 +105,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
     def __init__(self, double step = 0.01):
 
-        self.step = step
+        self._step = step
 
     property step:
 
@@ -163,7 +169,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         # numerical integration
         t = self._step
         c = 0.5 * self._step
-        while(t <= length):
+        while t <= length:
 
             sample_point = new_point(start.x + t * direction.x,
                                      start.y + t * direction.y,
@@ -224,3 +230,114 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
+
+cdef class UniformSurfaceEmitter(NullVolume):
+
+    def __init__(self, double emission = 0.01):
+        """
+        Uniform and isotropic surface emitter
+
+        emission is spectral radiance: W/m2/str/nm"""
+
+        self.emission = emission
+
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                bint exiting, Point inside_point, Point outside_point,
+                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+
+        cdef Spectrum spectrum
+
+        spectrum = ray.new_spectrum()
+        spectrum.add_scalar(spectrum.delta_wavelength * self.emission)
+
+        return spectrum
+
+
+cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
+
+    def __init__(self, double emission = 1.0):
+        """
+        Uniform, homogeneous and isotropic volume emitter
+
+        emission is spectral volume radiance: W/m3/str/nm ie spectral radiance per meter"""
+
+        self.emission = emission
+
+    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum):
+
+        spectrum.add_scalar(spectrum.delta_wavelength * self.emission)
+
+        return spectrum
+
+
+cdef class Checkerboard(NullVolume):
+
+    def __init__(self, double scale=0.1, double emission1=0.15, double emission2=0.3):
+        """
+        Isotropic checkerboard surface emitter
+
+        emission1 and emission2 is spectral radiance: W/m2/str/nm
+        scale in meters
+        """
+
+        self._scale = scale
+        self._rscale = 1.0 / scale
+        self.emission1 = emission1
+        self.emission2 = emission2
+
+    property scale:
+
+        def __get__(self):
+
+            return self._scale
+
+        @cython.cdivision(True)
+        def __set__(self, double v):
+
+            self._scale = v
+            self._rscale = 1.0 / v
+
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                bint exiting, Point inside_point, Point outside_point,
+                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+
+        cdef:
+            Spectrum spectrum
+            bint v
+
+        v = False
+
+        # generate check pattern
+        v = self._flip(v, hit_point.x)
+        v = self._flip(v, hit_point.y)
+        v = self._flip(v, hit_point.z)
+
+        # select emission
+        spectrum = ray.new_spectrum()
+        if v:
+
+            spectrum.add_scalar(spectrum.delta_wavelength * self.emission1)
+
+        else:
+
+            spectrum.add_scalar(spectrum.delta_wavelength * self.emission2)
+
+        return spectrum
+
+    @cython.cdivision(True)
+    cdef inline bint _flip(self, bint v, double p):
+
+        # round to avoid numerical precision issues (rounds to nearest nanometer)
+        p = round(p * 1e9) / 1e9
+
+        # generates check pattern from [0, inf]
+        if abs(self._rscale * p) % 2 >= 1.0:
+
+            v = not v
+
+        # invert pattern for negative
+        if p < 0:
+
+            v = not v
+
+        return v
