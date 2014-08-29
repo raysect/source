@@ -159,15 +159,9 @@ class PinholeCamera(Observer):
                     print("{}% complete (line {}/{}, pixel {}/{})".format(completion, y, self._pixels[1], current_pixel, total_pixels))
                     progress_timer = time()
 
-                # ray angles
-                theta = atan(image_start_x - image_delta * x)
-                phi = atan(image_start_y - image_delta * y)
-
                 # calculate ray parameters
                 origin = Point([0, 0, 0])
-                direction = Vector([sin(theta),
-                                    cos(theta) * sin(phi),
-                                    cos(theta) * cos(phi)])
+                direction = Vector([image_start_x - image_delta * x, image_start_y - image_delta * y, 1.0]).normalise()
 
                 # convert to world space
                 origin = origin.transform(self.to_root())
