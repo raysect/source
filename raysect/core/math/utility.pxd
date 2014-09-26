@@ -32,11 +32,11 @@
 from numpy cimport ndarray
 cimport cython
 
-cdef int find_index(ndarray x, double v)
+cdef inline int find_index(ndarray x, double v)
 
+cdef inline double integrate(ndarray x, ndarray y, double x0, double x1)
 
-cdef double integrate(ndarray x, ndarray y, double x0, double x1)
-
+cdef inline double average(ndarray x, ndarray y, double x0, double x1)
 
 cdef inline double clamp(double v, double minimum, double maximum):
 
