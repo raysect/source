@@ -119,9 +119,7 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
 
         upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
 
-        # TODO: replace integral by a direct average calculation
-
-        # integrate curves and calculate average sensitivity for each spectral bin
+        # calculate average sensitivity for each spectral bin
         xyz_view[index, 0] = reciprocal * integrate(ciexyz_wavelength, ciexyz_x, lower_wavelength, upper_wavelength)
         xyz_view[index, 1] = reciprocal * integrate(ciexyz_wavelength, ciexyz_y, lower_wavelength, upper_wavelength)
         xyz_view[index, 2] = reciprocal * integrate(ciexyz_wavelength, ciexyz_z, lower_wavelength, upper_wavelength)

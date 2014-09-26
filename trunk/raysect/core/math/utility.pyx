@@ -34,15 +34,30 @@ cimport cython
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef int find_index(ndarray x, double v):
+cdef inline int find_index(ndarray x, double v):
     """
-    Locates the lower array index of the array indicies that enclose the supplied value.
+    Locates the lower index or the range that contains the specified value.
 
-    bisection search
+    This function performs a fast bisection search to identify the index range
+    (bin) that encloses the specified value. The lower index of the range is
+    returned. This function expects a monotonically increasing ndarray for x.
+    The array type must be double and may not be empty.
 
-    expects a monotonically increasing ndarray as x, must be doubles, cannot be empty
+    Each array bin has the defined range [x[i], x[i+1]) where i is the index of
+    the bin.
 
-    each array bin is defined [x[i], x[i+1]) is the bin corresponding to index i
+    If the value lies below the range of the array this function will return an
+    index of -1. If the value lies above the range of the array then the last
+    index of the array will be returned.
+
+    .. WARNING:: For speed, this function does not perform any type or bounds
+       checking. Supplying malformed data may result in data corruption or a
+       segmentation fault.
+
+    :param ndarray x: An array containing monotonically increasing values.
+    :param double v: The value to search for.
+    :return: The lower index f the bin containing the search value.
+    :rtype: int
     """
 
     cdef:
@@ -86,7 +101,28 @@ cdef int find_index(ndarray x, double v):
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double integrate(ndarray x, ndarray y, double x0, double x1):
+cdef inline double integrate(ndarray x, ndarray y, double x0, double x1):
+    """
+    Integrates a linearly interpolated function between two points.
+
+    This function performs a trapezium rule integration of the sampled function
+    between point x0 and point x1. Outside the bounds of the array the function
+    value is taken to be the end value of the array closest to the requested
+    point (nearest-neighbour extrapolation).
+
+    If x1 < x0 the integral range is treated as null and zero is returned.
+
+    .. WARNING:: For speed, this function does not perform any type or bounds
+       checking. Supplying malformed data may result in data corruption or a
+       segmentation fault.
+
+    :param ndarray x: An array containing monotonically increasing values.
+    :param ndarray y: An array of sample values corresponding to the x array points.
+    :param double x0: Start point of integration.
+    :param double x1: End point of integration.
+    :return: Integral between x0 and x1
+    :rtype: double
+    """
 
     cdef:
         double[::1] x_view, y_view
@@ -102,20 +138,28 @@ cdef double integrate(ndarray x, ndarray y, double x0, double x1):
 
         return 0.0
 
+    # identify array indices that lie between requested values
+    lower_index = find_index(x, x0) + 1
+    upper_index = find_index(x, x1)
+
+    # are both points below the bottom of the array?
+    if upper_index == 0:
+
+        # extrapolate from first array value (nearest-neighbour)
+        return y[0] * (x1 - x0)
+
+    # are both points beyond the top of the array?
+    top_index = len(x) - 1
+    if lower_index > top_index:
+
+        # extrapolate from last array value (nearest-neighbour)
+        return y[top_index] * (x1 - x0)
+
     # fast memoryview access to numpy arrays
     x_view = x
     y_view = y
 
-    # identify array indicies that lie between requested values
-    lower_index = find_index(x, x0) + 1
-    upper_index = find_index(x, x1)
-
-    # range is outside array limits
-    top_index = len(x) - 1
-    if lower_index > top_index or upper_index < 0:
-
-        return 0.0
-
+    # numerically integrate array
     if lower_index > upper_index:
 
         # both values lie inside the same array segment
@@ -129,20 +173,22 @@ cdef double integrate(ndarray x, ndarray y, double x0, double x1):
 
     else:
 
-        # add lower range partial cell contribution, if required
-        if lower_index > 0:
+        integral_sum = 0.0
 
-            # linearly interpolate array cell at specified lower bound
+        if lower_index == 0:
+
+            # add contribution from point below array
+            integral_sum += y_view[0] * (x_view[0] - x0)
+
+        else:
+
+            # add lower range partial cell contribution
             y0 = lerp(x_view[lower_index - 1], x_view[lower_index],
                       y_view[lower_index - 1], y_view[lower_index],
                       x0)
 
             # trapezium rule integration
-            integral_sum = 0.5 * (y0 + y_view[lower_index]) * (x_view[lower_index] - x0)
-
-        else:
-
-            integral_sum = 0.0
+            integral_sum += 0.5 * (y0 + y_view[lower_index]) * (x_view[lower_index] - x0)
 
         # sum up whole cell contributions
         for index in range(lower_index, upper_index):
@@ -150,10 +196,14 @@ cdef double integrate(ndarray x, ndarray y, double x0, double x1):
             # trapezium rule integration
             integral_sum += 0.5 * (y_view[index] + y_view[index + 1]) * (x_view[index + 1] - x_view[index])
 
-        # add upper range partial cell contribution, if required
-        if upper_index < top_index:
+        if upper_index == top_index:
 
-            # linearly interpolate array cell at specified lower bound
+            # add contribution from point above array
+            integral_sum += y_view[top_index] * (x1 - x_view[top_index])
+
+        else:
+
+            # add upper range partial cell contribution
             y1 = lerp(x_view[upper_index], x_view[upper_index + 1],
                       y_view[upper_index], y_view[upper_index + 1],
                       x1)
@@ -162,3 +212,71 @@ cdef double integrate(ndarray x, ndarray y, double x0, double x1):
             integral_sum += 0.5 * (y_view[upper_index] + y1) * (x1 - x_view[upper_index])
 
         return integral_sum
+
+
+@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline double average(ndarray x, ndarray y, double x0, double x1):
+    """
+    Returns the average value of a linearly interpolated function between two
+    points.
+
+    Outside the bounds of the array the function value is taken to be the end
+    value of the array closest to the requested point (nearest-neighbour
+    extrapolation).
+
+    .. WARNING:: For speed, this function does not perform any type or bounds
+       checking. Supplying malformed data may result in data corruption or a
+       segmentation fault.
+
+    :param ndarray x: An array containing monotonically increasing values.
+    :param ndarray y: An array of sample values corresponding to the x array points.
+    :param double x0: First point.
+    :param double x1: Second point.
+    :return: Mean value between x0 and x1
+    :rtype: double
+    """
+
+    cdef:
+        double[::1] x_view, y_view
+        int index, top_index
+        double temp
+
+    if x0 == x1:
+
+        # single point, just sample function
+
+        # fast memoryview access to numpy arrays
+        x_view = x
+        y_view = y
+
+        index = find_index(x, x0)
+
+        # is point below array?
+        if index == -1:
+
+            return y_view[0]
+
+        top_index = len(x) - 1
+
+        # is point above array?
+        if index == top_index:
+
+            return y_view[top_index]
+
+        # point is within array
+        return lerp(x_view[index], x_view[index + 1],
+                    y_view[index], y_view[index + 1],
+                    x0)
+
+    else:
+
+        # ensure x0 is always lower than x1
+        if x1 < x0:
+
+            temp = x0
+            x0 = x1
+            x1 = temp
+
+        return integrate(x, y, x0, x1) / (x1 - x0)
