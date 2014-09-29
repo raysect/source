@@ -143,7 +143,7 @@ cdef inline double integrate(ndarray x, ndarray y, double x0, double x1):
     upper_index = find_index(x, x1)
 
     # are both points below the bottom of the array?
-    if upper_index == 0:
+    if upper_index == -1:
 
         # extrapolate from first array value (nearest-neighbour)
         return y[0] * (x1 - x0)
