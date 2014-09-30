@@ -34,6 +34,8 @@ cimport cython
 
 cdef inline int find_index(ndarray x, double v)
 
+cdef inline double interpolate(ndarray x, ndarray y, double p)
+
 cdef inline double integrate(ndarray x, ndarray y, double x0, double x1)
 
 cdef inline double average(ndarray x, ndarray y, double x0, double x1)
