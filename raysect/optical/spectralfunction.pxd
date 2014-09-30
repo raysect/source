@@ -29,62 +29,52 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport cython
-from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector, new_vector
-from raysect.optical.spectrum cimport Spectrum
-from libc.math cimport exp, floor, fabs
+from numpy cimport ndarray
 
-cdef class GaussianBeam(VolumeEmitterInhomogeneous):
+cdef class SpectralFunction:
 
-    def __init__(self, double power = 1, double sigma = 0.2, double step = 0.05):
+    cpdef SampledSF generate_samples(self, double min_wavelength, double max_wavelength, int num_samples)
 
-        super().__init__(step)
 
-        self.power = power
-        self.sigma = sigma
+cdef class SampledSF(SpectralFunction):
 
-    property sigma:
+    cdef:
+        readonly double min_wavelength
+        readonly double max_wavelength
+        readonly int num_samples
+        readonly double delta_wavelength
+        public ndarray samples
+        ndarray _wavelengths
 
-        def __get__(self):
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples)
 
-            return self._sigma
+    cdef inline void _populate_wavelengths(self)
 
-        @cython.cdivision(True)
-        def __set__(self, double sigma):
+    cpdef bint is_shaped(self, double min_wavelength, double max_wavelength, int num_samples)
 
-            self._sigma = sigma
-            self._denominator = 0.5 / (sigma * sigma)
+    cdef inline void add_scalar(self, double value)
+    cdef inline void sub_scalar(self, double value)
+    cdef inline void mul_scalar(self, double value)
+    cdef inline void div_scalar(self, double value)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum):
+    cdef inline void add_array(self, double[::1] array)
+    cdef inline void sub_array(self, double[::1] array)
+    cdef inline void mul_array(self, double[::1] array)
+    cdef inline void div_array(self, double[::1] array)
 
-        cdef:
-            int index, count
-            double scale
-            double[::1] samples_view
 
-        samples_view = spectrum.samples
+cdef SampledSF new_sampledsf(double min_wavelength, double max_wavelength, int num_samples)
 
-        # gaussian beam uniform spectal power density
-        scale = exp(-self._denominator * (point.x * point.x + point.y * point.y)) ** 4
 
-        for index in range(spectrum.samples):
+cdef class InterpolatedSF(SpectralFunction):
 
-            samples_view[index] = self.power * scale / spectrum.samples
+    cdef:
+        public ndarray wavelengths
+        public ndarray samples
 
-        index = int(floor(fabs(point.z * spectrum.samples)))
-        if index < 0:
 
-            index = 0
+cdef class ConstantSF(SpectralFunction):
 
-        if index >= spectrum.samples:
-
-            index = spectrum.samples - 1
-
-        samples_view[index] += self.power * scale
-
-        return spectrum
-
+    cdef:
+        readonly double value
+        SampledSF cached_samples

@@ -36,6 +36,7 @@ from raysect.optical.ray import Ray
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.optical import Spectrum
 
+
 class PinholeCamera(Observer):
 
     def __init__(self, pixels = (640, 480), fov = 40, spectral_samples = 20, rays = 1, parent = None, transform = AffineMatrix(), name = ""):
@@ -91,7 +92,7 @@ class PinholeCamera(Observer):
 
         self.frame = zeros((self._pixels[1], self._pixels[0], 3))
 
-        if isinstance(self.root, World) == False:
+        if not isinstance(self.root, World):
 
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
@@ -178,7 +179,7 @@ class PinholeCamera(Observer):
                     ray.direction = direction
 
                     sample = ray.trace(world)
-                    spectrum.bins[lower_index:upper_index] = sample.bins
+                    spectrum.samples[lower_index:upper_index] = sample.samples
 
                     lower_index = upper_index
 

@@ -31,27 +31,13 @@
 
 from numpy cimport ndarray, import_array, PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp
 from raysect.optical.ray cimport Ray
+from raysect.optical.spectralfunction cimport SampledSF
 
-cdef class Spectrum:
+cdef class Spectrum(SampledSF):
 
-    cdef readonly double min_wavelength
-    cdef readonly double max_wavelength
-    cdef readonly double delta_wavelength
-    cdef readonly int samples
-    cdef readonly ndarray bins
-    cdef ndarray _wavelengths
+    cpdef bint is_black(self)
 
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int samples)
-
-    cdef inline void add_scalar(self, double value)
-    cdef inline void sub_scalar(self, double value)
-    cdef inline void mul_scalar(self, double value)
-    cdef inline void div_scalar(self, double value)
-
-    cdef inline void add_array(self, double[::1] array)
-    cdef inline void sub_array(self, double[::1] array)
-    cdef inline void mul_array(self, double[::1] array)
-    cdef inline void div_array(self, double[::1] array)
+    cpdef double total(self)
 
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int samples)

@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
+from raysect.core.math.utility cimport integrate
 
 # Plank's constant * speed of light in a vacuum
 DEF CONSTANT_HC = 1.9864456832693028e-25
@@ -37,179 +38,51 @@ DEF CONSTANT_HC = 1.9864456832693028e-25
 # required by numpy c-api
 import_array()
 
-cdef class Spectrum:
+cdef class Spectrum(SampledSF):
+    """
+    radiance units: W/m^2/str/nm
 
-    def __init__(self, double min_wavelength, double max_wavelength, int samples):
+    """
 
-        if samples < 1:
-
-                raise("Number of samples can not be less than 1.")
-
-        if min_wavelength <= 0.0 or max_wavelength <= 0.0:
-
-            raise ValueError("Wavelength can not be less than or equal to zero.")
-
-        if min_wavelength >= max_wavelength:
-
-            raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
-
-        self._construct(min_wavelength, max_wavelength, samples)
-
-    property wavelengths:
-
-        @cython.boundscheck(False)
-        @cython.wraparound(False)
-        def __get__(self):
-
-            cdef:
-                npy_intp size
-                int index
-                double[::1] w_view
-
-            if self._wavelengths is None:
-
-                # create and populate central wavelength array
-                size = self.samples
-                self._wavelengths = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-                w_view = self._wavelengths
-
-                for index in range(self.samples):
-
-                    w_view[index] = self.min_wavelength + index * self.delta_wavelength
-
-            return self._wavelengths
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int samples):
+    cpdef bint is_black(self):
 
         cdef:
-            npy_intp size, index
-            double[::1] wavelengths_view
+            int index
+            double[::1] s_view
 
-        self.min_wavelength = min_wavelength
-        self.max_wavelength = max_wavelength
-        self.delta_wavelength = (max_wavelength - min_wavelength) / samples
-        self.samples = samples
+        # sanity check as users can modify the sample array
+        if self.samples is None:
 
-        # create spectral sample bins, initialise with zero
-        size = self.samples
-        self.bins = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-        PyArray_FILLWBYTE(self.bins, 0)
+            raise ValueError("Cannot generate samples as the sample array is None.")
 
-        # wavelengths is populated on demand
-        self._wavelengths = None
+        if self.samples.shape[0] != self.num_samples:
 
-    # low level scalar maths functions
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef inline void add_scalar(self, double value):
+            raise ValueError("Sample array length is inconsistent with num_samples.")
 
-        cdef:
-            double[::1] bins_view
-            npy_intp index
+        s_view = self.samples
+        for index in range(self.num_samples):
 
-        bins_view = self.bins
-        for index in range(bins_view.shape[0]):
+            if s_view[index] != 0.0:
 
-            bins_view[index] += value
+                return False
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef inline void sub_scalar(self, double value):
+        return True
 
-        cdef:
-            double[::1] bins_view
-            npy_intp index
+    cpdef double total(self):
 
-        bins_view = self.bins
-        for index in range(bins_view.shape[0]):
+        # sanity check as users can modify the sample array
+        if self.samples is None:
 
-            bins_view[index] -= value
+            raise ValueError("Cannot generate samples as the sample array is None.")
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef inline void mul_scalar(self, double value):
+        if self.samples.shape[0] != self.num_samples:
 
-        cdef:
-            double[::1] bins_view
-            npy_intp index
+            raise ValueError("Sample array length is inconsistent with num_samples.")
 
-        bins_view = self.bins
-        for index in range(bins_view.shape[0]):
+        # this calculation requires the wavelength array
+        self._populate_wavelengths()
 
-            bins_view[index] *= value
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cdef inline void div_scalar(self, double value):
-
-        cdef:
-            double[::1] bins_view
-            double reciprocal
-            npy_intp index
-
-        bins_view = self.bins
-        reciprocal = 1.0 / value
-        for index in range(bins_view.shape[0]):
-
-            bins_view[index] *= reciprocal
-
-    # low level array maths functions
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef inline void add_array(self, double[::1] array):
-
-        cdef:
-            double[::1] bins_view
-            npy_intp index
-
-        bins_view = self.bins
-        for index in range(bins_view.shape[0]):
-
-            bins_view[index] += array[index]
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef inline void sub_array(self, double[::1] array):
-
-        cdef:
-            double[::1] bins_view
-            npy_intp index
-
-        bins_view = self.bins
-        for index in range(bins_view.shape[0]):
-
-            bins_view[index] -= array[index]
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef inline void mul_array(self, double[::1] array):
-
-        cdef:
-            double[::1] bins_view
-            npy_intp index
-
-        bins_view = self.bins
-        for index in range(bins_view.shape[0]):
-
-            bins_view[index] *= array[index]
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cdef inline void div_array(self, double[::1] array):
-
-        cdef:
-            double[::1] bins_view
-            npy_intp index
-
-        bins_view = self.bins
-        for index in range(bins_view.shape[0]):
-
-            bins_view[index] /= array[index]
+        return integrate(self._wavelengths, self.samples, self.min_wavelength, self.max_wavelength)
 
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int samples):

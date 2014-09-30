@@ -199,7 +199,7 @@ cdef class Glass(Material):
 
                 ray_sample = transmitted_ray.trace(world)
                 ray_sample.mul_scalar(transmission)
-                spectrum.add_array(ray_sample.bins)
+                spectrum.add_array(ray_sample.samples)
 
             return spectrum
 
