@@ -90,7 +90,7 @@ cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int sam
     cdef Spectrum v
 
     v = Spectrum.__new__(Spectrum)
-    v._construct(min_wavelength, max_wavelength, samples)
+    v._construct(min_wavelength, max_wavelength, samples, False)
 
     return v
 

@@ -66,8 +66,6 @@ cdef class Ray(CoreRay):
         self.max_depth = max_depth
         self.depth = 0
 
-        self._update()
-
     property samples:
 
         def __get__(self):
@@ -81,7 +79,10 @@ cdef class Ray(CoreRay):
                 raise ValueError("Number of samples can not be less than 1.")
 
             self._samples = samples
-            self._update()
+
+    cdef inline int get_samples(self):
+
+        return self._samples
 
     property min_wavelength:
 
@@ -100,7 +101,10 @@ cdef class Ray(CoreRay):
                 raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
             self._min_wavelength = min_wavelength
-            self._update()
+
+    cdef inline double get_min_wavelength(self):
+
+        return self._min_wavelength
 
     property max_wavelength:
 
@@ -119,7 +123,10 @@ cdef class Ray(CoreRay):
                 raise ValueError("Maximum wavelength can not be less than or equal to the minimum wavelength.")
 
             self._max_wavelength = max_wavelength
-            self._update()
+
+    cdef inline double get_max_wavelength(self):
+
+        return self._max_wavelength
 
     cpdef Spectrum new_spectrum(self):
         """
@@ -199,15 +206,9 @@ cdef class Ray(CoreRay):
         ray._samples = self._samples
         ray._min_wavelength = self._min_wavelength
         ray._max_wavelength = self._max_wavelength
-        ray.refraction_wavelength = self.refraction_wavelength
         ray.max_distance = self.max_distance
         ray.max_depth = self.max_depth
         ray.depth = self.depth + 1
 
         return ray
-
-    cdef inline void _update(self):
-
-        # set refraction wavelength to central wavelength of ray's spectral range
-        self.refraction_wavelength = 0.5 * (self._min_wavelength + self._max_wavelength)
 

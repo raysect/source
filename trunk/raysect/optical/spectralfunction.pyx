@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from raysect.core.math.utility cimport integrate, find_index, lerp
+from raysect.core.math.utility cimport interpolate,  integrate, find_index, lerp
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 from numpy import array
 
@@ -42,7 +42,12 @@ cdef class SpectralFunction:
     Spectral function base class.
     """
 
-    cpdef SampledSF generate_samples(self, double min_wavelength, double max_wavelength, int num_samples):
+    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+
+        return NotImplemented
+
+
+    cpdef SampledSF sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples):
 
         return NotImplemented
 
@@ -56,7 +61,7 @@ cdef class SampledSF(SpectralFunction):
     samples lie in centre of wavelength bins.
     """
 
-    def __init__(self, double min_wavelength, double max_wavelength, int num_samples):
+    def __init__(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample=False):
 
         if num_samples < 1:
 
@@ -70,7 +75,7 @@ cdef class SampledSF(SpectralFunction):
 
             raise ValueError("Minimum wavelength cannot be greater or equal to the maximum wavelength.")
 
-        self._construct(min_wavelength, max_wavelength, num_samples)
+        self._construct(min_wavelength, max_wavelength, num_samples, fast_sample)
 
     property wavelengths:
 
@@ -102,13 +107,40 @@ cdef class SampledSF(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef SampledSF generate_samples(self, double min_wavelength, double max_wavelength, int num_samples):
+    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+
+        # sanity check
+        if self.samples is None:
+
+            raise ValueError("Cannot generate sample as the sample array is None.")
+
+        if self.samples.shape[0] != self.num_samples:
+
+            raise ValueError("Sample array length is inconsistent with num_samples.")
+
+        # require wavelength information for this calculation
+        self._populate_wavelengths()
+
+        if self.fast_sample:
+
+            # sample data at bin centre by linearly interpolating
+            return interpolate(self._wavelengths, self.samples, 0.5 * (min_wavelength + max_wavelength))
+
+        else:
+
+            # average value obtained by integrating linearly interpolated data and normalising
+            return integrate(self._wavelengths, self.samples, min_wavelength, max_wavelength) / (max_wavelength - min_wavelength)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef SampledSF sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples):
 
         cdef:
             SampledSF s
             double[::1] s_view
             int index
-            double lower_wavelength, upper_wavelength, reciprocal
+            double lower_wavelength, upper_wavelength, centre_wavelength, reciprocal
 
         # sanity check
         if self.samples is None:
@@ -131,24 +163,34 @@ cdef class SampledSF(SpectralFunction):
         # require wavelength information for this calculation
         self._populate_wavelengths()
 
-        # re-sample by averaging data across each bin
-        lower_wavelength = min_wavelength
-        reciprocal = 1.0 / s.delta_wavelength
-        for index in range(num_samples):
+        if self.fast_sample:
 
-            upper_wavelength = min_wavelength + (index + 1) * s.delta_wavelength
+            # sample data at bin centre by linearly interpolating
+            for index in range(num_samples):
 
-            # average value obtained by integrating linearly interpolated data and normalising
-            s_view[index] = reciprocal * integrate(self._wavelengths, self.samples, lower_wavelength, upper_wavelength)
+                centre_wavelength = min_wavelength + (0.5 + index) * s.delta_wavelength
+                s_view[index] = interpolate(self._wavelengths, self.samples, centre_wavelength)
 
-            lower_wavelength = upper_wavelength
+        else:
+
+            # re-sample by averaging data across each bin
+            lower_wavelength = min_wavelength
+            reciprocal = 1.0 / s.delta_wavelength
+            for index in range(num_samples):
+
+                upper_wavelength = min_wavelength + (index + 1) * s.delta_wavelength
+
+                # average value obtained by integrating linearly interpolated data and normalising
+                s_view[index] = reciprocal * integrate(self._wavelengths, self.samples, lower_wavelength, upper_wavelength)
+
+                lower_wavelength = upper_wavelength
 
         return s
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples):
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample):
 
         cdef:
             npy_intp size, index
@@ -158,6 +200,7 @@ cdef class SampledSF(SpectralFunction):
         self.max_wavelength = max_wavelength
         self.num_samples = num_samples
         self.delta_wavelength = (max_wavelength - min_wavelength) / num_samples
+        self.fast_sample = fast_sample
 
         # create spectral sample bins, initialise with zero
         size = num_samples
@@ -298,12 +341,12 @@ cdef class SampledSF(SpectralFunction):
             samples_view[index] /= array[index]
 
 
-cdef SampledSF new_sampledsf(double min_wavelength, double max_wavelength, int samples):
+cdef SampledSF new_sampledsf(double min_wavelength, double max_wavelength, int num_samples):
 
     cdef SampledSF v
 
     v = SampledSF.__new__(SampledSF)
-    v._construct(min_wavelength, max_wavelength, samples)
+    v._construct(min_wavelength, max_wavelength, num_samples, False)
 
     return v
 
@@ -317,7 +360,7 @@ cdef class InterpolatedSF(SpectralFunction):
     ends are extrapolated. must set ends to zero if you want function to end!
     """
 
-    def __init__(self, object wavelengths, object samples):
+    def __init__(self, object wavelengths, object samples, fast_sample=False):
         """
 
         :param wavelengths: 1D array of wavelengths in nanometers.
@@ -326,6 +369,7 @@ cdef class InterpolatedSF(SpectralFunction):
 
         self.wavelengths = array(wavelengths)
         self.samples = array(samples)
+        self.fast_sample = fast_sample
 
         if self.wavelengths.ndim != 1:
 
@@ -349,30 +393,40 @@ cdef class InterpolatedSF(SpectralFunction):
 
             raise ValueError("Wavelength and sample arrays must be the same length.")
 
-        index = find_index(self.wavelengths, wavelength)
-
-        # wavelength is below array limits
-        if index == -1:
-
-            return self.samples[0]
-
-        # wavelength is above array limits
-        top_index = self.wavelengths.shape[0] - 1
-        if index == top_index:
-
-            return self.samples[top_index]
-
-        # interpolate inside array
-        return lerp(self.wavelengths[index],
-                    self.wavelengths[index + 1],
-                    self.samples[index],
-                    self.samples[index + 1],
-                    wavelength)
+        return interpolate(self.wavelengths, self.samples, wavelength)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef SampledSF generate_samples(self, double min_wavelength, double max_wavelength, int num_samples):
+    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+
+        # sanity checks, as the user can modify the arrays
+        if self.samples is None:
+
+            raise ValueError("Cannot generate samples as the sample array is None.")
+
+        if self.wavelengths is None:
+
+            raise ValueError("Cannot generate wavelengths as the sample array is None.")
+
+        if self.samples.shape[0] != self.wavelengths.shape[0]:
+
+            raise ValueError("Wavelength and sample arrays must be the same length.")
+
+        if self.fast_sample:
+
+            # sample data at bin centre by linearly interpolating
+            return interpolate(self.wavelengths, self.samples, 0.5 * (min_wavelength + max_wavelength))
+
+        else:
+
+            # average value obtained by integrating linearly interpolated data and normalising
+            return integrate(self.wavelengths, self.samples, min_wavelength, max_wavelength) / (max_wavelength - min_wavelength)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef SampledSF sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples):
 
         cdef:
             SampledSF s
@@ -397,17 +451,27 @@ cdef class InterpolatedSF(SpectralFunction):
         s = new_sampledsf(min_wavelength, max_wavelength, num_samples)
         s_view = s.samples
 
-        # re-sample by averaging data across each bin
-        lower_wavelength = min_wavelength
-        reciprocal = 1.0 / s.delta_wavelength
-        for index in range(num_samples):
+        if self.fast_sample:
 
-            upper_wavelength = min_wavelength + (index + 1) * s.delta_wavelength
+            # sample data at bin centre by linearly interpolating
+            for index in range(num_samples):
 
-            # average value obtained by integrating linearly interpolated data and normalising
-            s_view[index] = reciprocal * integrate(self.wavelengths, self.samples, lower_wavelength, upper_wavelength)
+                centre_wavelength = min_wavelength + (0.5 + index) * s.delta_wavelength
+                s_view[index] = interpolate(self.wavelengths, self.samples, centre_wavelength)
 
-            lower_wavelength = upper_wavelength
+        else:
+
+            # re-sample by averaging data across each bin
+            lower_wavelength = min_wavelength
+            reciprocal = 1.0 / s.delta_wavelength
+            for index in range(num_samples):
+
+                upper_wavelength = min_wavelength + (index + 1) * s.delta_wavelength
+
+                # average value obtained by integrating linearly interpolated data and normalising
+                s_view[index] = reciprocal * integrate(self.wavelengths, self.samples, lower_wavelength, upper_wavelength)
+
+                lower_wavelength = upper_wavelength
 
         return s
 
@@ -424,7 +488,11 @@ cdef class ConstantSF(SpectralFunction):
         # initialise cache
         self.cached_samples = None
 
-    cpdef SampledSF generate_samples(self, double min_wavelength, double max_wavelength, int num_samples):
+    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+
+        return self.value
+
+    cpdef SampledSF sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples):
 
         cdef:
             SampledSF s

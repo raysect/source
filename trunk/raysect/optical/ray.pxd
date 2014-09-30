@@ -42,7 +42,6 @@ cdef class Ray(CoreRay):
     cdef int _samples
     cdef double _min_wavelength
     cdef double _max_wavelength
-    cdef readonly double refraction_wavelength
     cdef public int max_depth
     cdef public int depth
 
@@ -52,4 +51,8 @@ cdef class Ray(CoreRay):
 
     cpdef Ray spawn_daughter(self, Point origin, Vector direction)
 
-    cdef inline void _update(self)
+    cdef inline int get_samples(self)
+
+    cdef inline double get_min_wavelength(self)
+
+    cdef inline double get_max_wavelength(self)
