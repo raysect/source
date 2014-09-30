@@ -29,19 +29,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function cimport Function1D, Function2D
+from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.material.material cimport Material
 
-cdef class Sellmeier(Function1D):
+cdef class Sellmeier(SpectralFunction):
 
-    cdef double b1, b2, b3
-    cdef double c1, c2, c3
+    cdef:
+        double b1, b2, b3
+        double c1, c2, c3
 
 
 cdef class Glass(Material):
 
-    cdef Function1D index
-    cdef Function2D transmission
-    cdef double cutoff
+    cdef:
+        SpectralFunction index
+        SpectralFunction transmission
+        double cutoff
 
     cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission)

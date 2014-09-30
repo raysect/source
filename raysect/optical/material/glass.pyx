@@ -30,18 +30,20 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from libc.math cimport sqrt
+from numpy import array, float64
+from libc.math cimport sqrt, pow as cpow
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.point cimport Point
 from raysect.core.math.vector cimport Vector, new_vector
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
+from raysect.optical.spectralfunction cimport InterpolatedSF, SampledSF, new_sampledsf
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.ray cimport Ray
-from raysect.core.math.function cimport autowrap_function1d, autowrap_function2d
 
-cdef class Sellmeier(Function1D):
+
+cdef class Sellmeier(SpectralFunction):
 
     def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3):
 
@@ -53,12 +55,18 @@ cdef class Sellmeier(Function1D):
         self.c2 = c2
         self.c3 = c3
 
-    @cython.cdivision(True)
-    cdef double evaluate(self, double wavelength) except *:
+    # TODO: add caching
 
-        cdef double w2 = wavelength * wavelength * 1e-6
+    @cython.cdivision(True)
+    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+
+        cdef double centre_wavelength, w2
+
+        centre_wavelength = 0.5 * (min_wavelength + max_wavelength)
+        w2 = centre_wavelength * centre_wavelength * 1e-6
 
         # TODO: prevent div by zero
+        # TODO: integrate over range, rather than centrally sample
 
         return sqrt(1 + (self.b1 * w2) / (w2 - self.c1)
                       + (self.b2 * w2) / (w2 - self.c2)
@@ -69,10 +77,10 @@ cdef class Sellmeier(Function1D):
 
 cdef class Glass(Material):
 
-    def __init__(self, object index, object transmission, cutoff = 1e-6):
+    def __init__(self, SpectralFunction index, SpectralFunction transmission, cutoff = 1e-6):
 
-        self.index = autowrap_function1d(index)
-        self.transmission = autowrap_function2d(transmission)
+        self.index = index
+        self.transmission = transmission
         self.cutoff = cutoff
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
@@ -81,8 +89,9 @@ cdef class Glass(Material):
 
         cdef:
             Vector incident, reflected, transmitted
-            double c1, c2s, n1, n2, gamma, reflectivity, transmission, temp
+            double c1, c2s, n1, n2, gamma, reflectivity, transmission, temp, index
             Spectrum spectrum, ray_sample
+            SampledSF index_sample
 
         # convert ray direction normal to local coordinates
         incident = ray.direction.transform(to_local)
@@ -94,18 +103,21 @@ cdef class Glass(Material):
         # calculate cosine of angle between incident and normal
         c1 = -normal.dot(incident)
 
+        # sample refractive index
+        index = self.index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
+
         # are we entering or leaving material - calculate refractive change
         if exiting:
 
             # leaving material
-            n1 = self.index.evaluate(ray.refraction_wavelength)
+            n1 = index
             n2 = 1.0
 
         else:
 
             # entering material
             n1 = 1.0
-            n2 = self.index.evaluate(ray.refraction_wavelength)
+            n2 = index
 
         with cython.cdivision:
 
@@ -215,24 +227,42 @@ cdef class Glass(Material):
                                    Point start_point, Point end_point,
                                    AffineMatrix to_local, AffineMatrix to_world):
 
-        # TODO: write me!
+        cdef:
+            double length
+            SampledSF transmission
+            double[::1] t_view
+            int index
 
-        #length = start_point.vector_to(end_point).length
+        length = start_point.vector_to(end_point).get_length()
 
-        # with cython.cdivision:
-        #
-        #     power = length / self.transmission_depth
-        #
-        # attenuation = new_rgb(1 - cpow(self.transmission.r, power),
-        #                       1 - cpow(self.transmission.g, power),
-        #                       1 - cpow(self.transmission.b, power))
+        transmission = self.transmission.sample_multiple(ray.get_min_wavelength(),
+                                                         ray.get_max_wavelength(),
+                                                         ray.get_samples())
 
-        # return VolumeRGB(new_rgb(0, 0, 0), attenuation)
+
+        t_view = transmission.samples
+        for index in range(transmission.num_samples):
+
+            spectrum.samples[index] *= cpow(t_view[index], length)
 
         return spectrum
 
 
 def BK7():
 
+    wavelengths = array([
+        300, 310, 320, 334, 350, 365, 370, 380, 390, 400, 405, 420, 436,
+        460, 500, 546, 580, 620, 660, 700, 1060, 1530, 1970, 2325, 2500],
+        dtype = float64)
+
+    transmission = array([
+        9.0949470177293E-053, 8.27180612553028E-025, 4.36650282421093E-012,
+        4.82818728076233E-005, 0.0356051725, 0.308154984, 0.3942598467,
+        0.5036637716, 0.6424682406, 0.7252151802, 0.7550399649, 0.7550399649,
+        0.7252151802, 0.7550399649, 0.7860594188, 0.8518704175, 0.818320121,
+        0.7860594188, 0.7860594188, 0.8518704175, 0.8867604855, 0.445700404,
+        0.000935775, 8.462936461125E-011, 1.78689910246017E-018])
+
     return Glass(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                 transmission=lambda: 1.0)
+                 transmission=InterpolatedSF(wavelengths, transmission, fast_sample=True))
+

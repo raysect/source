@@ -33,7 +33,9 @@ from numpy cimport ndarray
 
 cdef class SpectralFunction:
 
-    cpdef SampledSF generate_samples(self, double min_wavelength, double max_wavelength, int num_samples)
+    cpdef double sample_single(self, double min_wavelength, double max_wavelength)
+
+    cpdef SampledSF sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples)
 
 
 cdef class SampledSF(SpectralFunction):
@@ -45,8 +47,9 @@ cdef class SampledSF(SpectralFunction):
         readonly double delta_wavelength
         public ndarray samples
         ndarray _wavelengths
+        public bint fast_sample
 
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples)
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample)
 
     cdef inline void _populate_wavelengths(self)
 
@@ -71,6 +74,7 @@ cdef class InterpolatedSF(SpectralFunction):
     cdef:
         public ndarray wavelengths
         public ndarray samples
+        public bint fast_sample
 
 
 cdef class ConstantSF(SpectralFunction):
