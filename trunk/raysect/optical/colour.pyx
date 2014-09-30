@@ -29,12 +29,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.utility cimport integrate, clamp
+from raysect.core.math.utility cimport clamp
+from raysect.optical.spectralfunction cimport InterpolatedSF, SampledSF
 from numpy import array, float64, zeros
 cimport cython
 
 # CIE 1931 Standard Colorimetric Observer (normalised)
-ciexyz_wavelength = array([
+ciexyz_wavelength_samples = array([
     375, 380, 385, 390, 395, 400, 405, 410, 415, 420, 425, 430, 435, 440,
     445, 450, 455, 460, 465, 470, 475, 480, 485, 490, 495, 500, 505, 510,
     515, 520, 525, 530, 535, 540, 545, 550, 555, 560, 565, 570, 575, 580,
@@ -43,7 +44,7 @@ ciexyz_wavelength = array([
     725, 730, 735, 740, 745, 750, 755, 760, 765, 770, 775, 780, 785],
     dtype = float64)
 
-ciexyz_x = array([
+ciexyz_x_samples = array([
     0.000000, 0.001368, 0.002236, 0.004243, 0.007650, 0.014310, 0.023190,
     0.043510, 0.077630, 0.134380, 0.214770, 0.283900, 0.328500, 0.348280,
     0.348060, 0.336200, 0.318700, 0.290800, 0.251100, 0.195360, 0.142100,
@@ -57,7 +58,7 @@ ciexyz_x = array([
     0.002049, 0.001440, 0.001000, 0.000690, 0.000476, 0.000332, 0.000235,
     0.000166, 0.000117, 0.000083, 0.000059, 0.000042, 0.000000]) / 106.8566
 
-ciexyz_y = array([
+ciexyz_y_samples = array([
     0.000000, 0.000039, 0.000064, 0.000120, 0.000217, 0.000396, 0.000640,
     0.001210, 0.002180, 0.004000, 0.007300, 0.011600, 0.016840, 0.023000,
     0.029800, 0.038000, 0.048000, 0.060000, 0.073900, 0.090980, 0.112600,
@@ -71,7 +72,7 @@ ciexyz_y = array([
     0.000740, 0.000520, 0.000361, 0.000249, 0.000172, 0.000120, 0.000085,
     0.000060, 0.000042, 0.000030, 0.000021, 0.000015, 0.000000]) / 106.8566
 
-ciexyz_z = array([
+ciexyz_z_samples = array([
     0.000000, 0.006450, 0.010550, 0.020050, 0.036210, 0.067850, 0.110200,
     0.207400, 0.371300, 0.645600, 1.039050, 1.385600, 1.622960, 1.747060,
     1.782600, 1.772110, 1.744100, 1.669200, 1.528100, 1.287640, 1.041900,
@@ -85,21 +86,20 @@ ciexyz_z = array([
     0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
     0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000]) / 106.8566
 
+ciexyz_x = InterpolatedSF(ciexyz_wavelength_samples, ciexyz_x_samples)
+ciexyz_y = InterpolatedSF(ciexyz_wavelength_samples, ciexyz_y_samples)
+ciexyz_z = InterpolatedSF(ciexyz_wavelength_samples, ciexyz_z_samples)
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-@cython.cdivision(True)
-cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int samples):
+cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int num_samples):
 
-    cdef:
-        ndarray xyz
-        double[:,::1] xyz_view
-        int index
-        double delta_wavelength, lower_wavelength, upper_wavelength, reciprocal
+    cdef ndarray xyz
 
-    if samples < 1:
+    if num_samples < 1:
 
-            raise("Number of samples can not be less than 1.")
+        raise("Number of samples can not be less than 1.")
 
     if min_wavelength <= 0.0 or max_wavelength <= 0.0:
 
@@ -109,22 +109,10 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
 
         raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
-    xyz = zeros((samples, 3))
-    xyz_view = xyz
-
-    delta_wavelength = (max_wavelength - min_wavelength) / samples
-    lower_wavelength = min_wavelength
-    reciprocal = 1.0 / delta_wavelength
-    for index in range(samples):
-
-        upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
-
-        # calculate average sensitivity for each spectral bin
-        xyz_view[index, 0] = reciprocal * integrate(ciexyz_wavelength, ciexyz_x, lower_wavelength, upper_wavelength)
-        xyz_view[index, 1] = reciprocal * integrate(ciexyz_wavelength, ciexyz_y, lower_wavelength, upper_wavelength)
-        xyz_view[index, 2] = reciprocal * integrate(ciexyz_wavelength, ciexyz_z, lower_wavelength, upper_wavelength)
-
-        lower_wavelength = upper_wavelength
+    xyz = zeros((num_samples, 3))
+    xyz[:, 0] = ciexyz_x.generate_samples(min_wavelength, max_wavelength, num_samples).samples
+    xyz[:, 1] = ciexyz_y.generate_samples(min_wavelength, max_wavelength, num_samples).samples
+    xyz[:, 2] = ciexyz_z.generate_samples(min_wavelength, max_wavelength, num_samples).samples
 
     return xyz
 
@@ -136,12 +124,12 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
     cdef:
         double x, y, z
         int index
-        double[::1] bins_view
+        double[::1] samples_view
         double[:, ::1] xyz_view
 
     if resampled_xyz is not None:
 
-        if resampled_xyz.ndim != 2 or resampled_xyz.shape[0] != spectrum.samples or resampled_xyz.shape[1] != 3:
+        if resampled_xyz.ndim != 2 or resampled_xyz.shape[0] != spectrum.num_samples or resampled_xyz.shape[1] != 3:
 
             raise ValueError("The supplied resampled_xyz array size is inconsistent with the number of spectral bins or channel count.")
 
@@ -151,18 +139,18 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
                                         spectrum.max_wavelength,
                                         spectrum.samples)
 
-    bins_view = spectrum.bins
+    samples_view = spectrum.samples
     xyz_view = resampled_xyz
 
     x = 0
     y = 0
     z = 0
 
-    for index in range(spectrum.samples):
+    for index in range(spectrum.num_samples):
 
-        x += bins_view[index] * xyz_view[index, 0]
-        y += bins_view[index] * xyz_view[index, 1]
-        z += bins_view[index] * xyz_view[index, 2]
+        x += samples_view[index] * xyz_view[index, 0]
+        y += samples_view[index] * xyz_view[index, 1]
+        z += samples_view[index] * xyz_view[index, 2]
 
     return x, y, z
 
@@ -182,6 +170,7 @@ cpdef inline tuple ciexyz_to_ciexyy(double x, double y, double z):
     return x / n, y / n, y
 
 
+@cython.cdivision(True)
 cdef inline double srgb_transfer_function(double v):
 
     if v <= 0.0031308:
@@ -190,8 +179,8 @@ cdef inline double srgb_transfer_function(double v):
 
     else:
 
-        return 1.055 * v**(1 / 2.4) - 0.055
-
+        # optimised: return 1.055 * v**(1 / 2.4) - 0.055
+        return 1.055 * v**0.4166666666666667 - 0.055
 
 cpdef inline tuple ciexyz_to_srgb(double x, double y, double z):
     """
@@ -227,11 +216,13 @@ cdef inline double srgb_transfer_function_inverse(double v):
 
     if v <= 0.04045:
 
-        return v / 12.92
+        # optimised: return v / 12.92
+        return 0.07739938080495357 * v
 
     else:
 
-        return ((v + 0.055) / 1.055)**2.4
+        # optimised: return ((v + 0.055) / 1.055)**2.4
+        return (0.9478672985781991 * (v + 0.055))**2.4
 
 
 cpdef inline tuple srgb_to_ciexyz(double r, double g, double b):

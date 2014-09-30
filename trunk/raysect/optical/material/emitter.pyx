@@ -80,17 +80,17 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         emission = self.emission_function(direction, emission)
 
         # sanity check as bounds checking is disabled
-        if (emission.bins.ndim != 1 or spectrum.bins.ndim != 1
-            or emission.bins.shape[0] != spectrum.bins.shape[0]):
+        if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1
+            or emission.samples.shape[0] != spectrum.samples.shape[0]):
 
             raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
 
         # memoryviews used for fast element access
-        e_view = emission.bins
-        s_view = spectrum.bins
+        e_view = emission.samples
+        s_view = spectrum.samples
 
         # integrate emission density along ray path
-        for index in range(spectrum.bins.shape[0]):
+        for index in range(spectrum.samples.shape[0]):
 
             s_view[index] += e_view[index] * length
 
@@ -158,13 +158,13 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         emission_previous = self.emission_function(start, direction, emission_previous)
 
         # sanity check as bounds checking is disabled
-        if (emission_previous.bins.ndim != 1 or spectrum.bins.ndim != 1
-            or emission_previous.bins.shape[0] != spectrum.bins.shape[0]):
+        if (emission_previous.samples.ndim != 1 or spectrum.samples.ndim != 1
+            or emission_previous.samples.shape[0] != spectrum.samples.shape[0]):
 
-            raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
+            raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
         # assign memoryview for fast element access to output spectrum
-        s_view = spectrum.bins
+        s_view = spectrum.samples
 
         # numerical integration
         t = self._step
@@ -182,17 +182,17 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
             emission = self.emission_function(sample_point, direction, emission)
 
             # sanity check as bounds checking is disabled
-            if (emission.bins.ndim != 1 or spectrum.bins.ndim != 1
-                or emission.bins.shape[0] != spectrum.bins.shape[0]):
+            if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1
+                or emission.samples.shape[0] != spectrum.samples.shape[0]):
 
-                raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
+                raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
             # memoryviews used for fast element access
-            e1_view = emission.bins
-            e2_view = emission_previous.bins
+            e1_view = emission.samples
+            e2_view = emission_previous.samples
 
             # trapezium rule integration
-            for index in range(spectrum.bins.shape[0]):
+            for index in range(spectrum.samples.shape[0]):
 
                 s_view[index] += c * (e1_view[index] + e2_view[index])
 
@@ -209,18 +209,18 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         emission = self.emission_function(end, direction, emission)
 
         # sanity check as bounds checking is disabled
-        if (emission.bins.ndim != 1 or spectrum.bins.ndim != 1
-            or emission.bins.shape[0] != spectrum.bins.shape[0]):
+        if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1
+            or emission.samples.shape[0] != spectrum.samples.shape[0]):
 
-            raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
+            raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
         # memoryviews used for fast element access
-        e1_view = emission.bins
-        e2_view = emission_previous.bins
+        e1_view = emission.samples
+        e2_view = emission_previous.samples
 
         # trapezium rule integration of remainder
         c = 0.5 * (length - t)
-        for index in range(spectrum.bins.shape[0]):
+        for index in range(spectrum.samples.shape[0]):
 
             s_view[index] += c * (e1_view[index] + e2_view[index])
 
