@@ -98,6 +98,53 @@ cdef inline int find_index(ndarray x, double v):
     return bottom_index
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline double interpolate(ndarray x, ndarray y, double p):
+    """
+    Linearly interpolates sampled data onto the specified point.
+
+    This function performs a linear interpolation of sampled function data
+    on to x = p. Outside the bounds of the array the value is taken to be the
+    end value of the array closest to the requested point (nearest-neighbour
+    extrapolation).
+
+    .. WARNING:: For speed, this function does not perform any type or bounds
+       checking. Supplying malformed data may result in data corruption or a
+       segmentation fault.
+
+    :param ndarray x: An array containing monotonically increasing values.
+    :param ndarray y: An array of sample values corresponding to the x array points.
+    :param double p: The x point for which an interpolated y value is required.
+    :return: The linearly interpolated y value at point p.
+    :rtype: double
+    """
+
+    cdef:
+        int index, top_index
+        double[::1] x_view, y_view
+
+    # obtain memory views
+    x_view = x
+    y_view = y
+
+    index = find_index(x, p)
+
+    # point is below array limits
+    if index == -1:
+
+        return y_view[0]
+
+    # wavelength is above array limits
+    top_index = x_view.shape[0] - 1
+    if index == top_index:
+
+        return y_view[top_index]
+
+    # interpolate inside array
+    return lerp(x_view[index], x_view[index + 1], y_view[index], y_view[index + 1], p)
+
+
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
