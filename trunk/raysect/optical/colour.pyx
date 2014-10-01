@@ -140,7 +140,6 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
 
     return xyz
 
-
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
@@ -172,9 +171,9 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
 
     for index in range(spectrum.num_samples):
 
-        x += samples_view[index] * xyz_view[index, 0]
-        y += samples_view[index] * xyz_view[index, 1]
-        z += samples_view[index] * xyz_view[index, 2]
+        x += spectrum.delta_wavelength * samples_view[index] * xyz_view[index, 0]
+        y += spectrum.delta_wavelength * samples_view[index] * xyz_view[index, 1]
+        z += spectrum.delta_wavelength * samples_view[index] * xyz_view[index, 2]
 
     return x, y, z
 

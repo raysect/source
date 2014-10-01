@@ -140,7 +140,9 @@ class PinholeCamera(Observer):
 
             lower_wavelength = upper_wavelength
 
+        # initialise statistics
         total_pixels = self._pixels[0] * self._pixels[1]
+        start_time = time()
         progress_timer = time()
 
         display_timer = 0
@@ -157,7 +159,7 @@ class PinholeCamera(Observer):
 
                     current_pixel = y * self._pixels[0] + x
                     completion = 100 * current_pixel / total_pixels
-                    print("{}% complete (line {}/{}, pixel {}/{})".format(completion, y, self._pixels[1], current_pixel, total_pixels))
+                    print("{:0.2f}% complete (line {}/{}, pixel {}/{})".format(completion, y, self._pixels[1], current_pixel, total_pixels))
                     progress_timer = time()
 
                 # calculate ray parameters
@@ -183,9 +185,6 @@ class PinholeCamera(Observer):
 
                     lower_index = upper_index
 
-                # rays sample spectral radiance, convert to radiance
-                spectrum.samples *= spectrum.delta_wavelength
-
                 # convert spectrum to sRGB
                 xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
                 rgb = ciexyz_to_srgb(*xyz)
@@ -199,7 +198,9 @@ class PinholeCamera(Observer):
                     self.display()
                     display_timer = time()
 
-        print("100% complete (line {}/{}, pixel {}/{})".format(self._pixels[1], self._pixels[1], total_pixels, total_pixels))
+        # close statistics
+        elapsed_time = time() - start_time
+        print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
 
         if self.display_progress:
 
@@ -208,7 +209,7 @@ class PinholeCamera(Observer):
     def display(self):
 
         clf()
-        imshow(self.frame, aspect = "equal", origin = "upper")
+        imshow(self.frame, aspect="equal", origin="upper")
         draw()
         show()
 
