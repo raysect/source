@@ -33,6 +33,7 @@ from raysect.optical.material.material cimport NullSurface, NullVolume
 from raysect.core.math.vector cimport Vector
 from raysect.core.math.point cimport Point
 from raysect.optical.spectrum cimport Spectrum
+from raysect.optical.spectralfunction cimport SpectralFunction
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
 
@@ -48,19 +49,27 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
 cdef class UniformSurfaceEmitter(NullVolume):
 
-    cdef public double emission
+    cdef:
+        public SpectralFunction emission_spectrum
+        public double scale
 
 
 cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
-    cdef public double emission
+    cdef:
+        public SpectralFunction emission_spectrum
+        public double scale
+
 
 
 cdef class Checkerboard(NullVolume):
 
-    cdef double _scale
-    cdef double _rscale
-    cdef public double emission1
-    cdef public double emission2
+    cdef:
+        double _width
+        double _rwidth
+        public SpectralFunction emission_spectrum1
+        public SpectralFunction emission_spectrum2
+        public double scale1
+        public double scale2
 
     cdef inline bint _flip(self, bint v, double p)

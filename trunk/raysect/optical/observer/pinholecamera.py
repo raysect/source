@@ -183,6 +183,9 @@ class PinholeCamera(Observer):
 
                     lower_index = upper_index
 
+                # rays sample spectral radiance, convert to radiance
+                spectrum.samples *= spectrum.delta_wavelength
+
                 # convert spectrum to sRGB
                 xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
                 rgb = ciexyz_to_srgb(*xyz)

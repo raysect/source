@@ -4,6 +4,8 @@ from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfac
 from raysect.optical.material.glass import Glass, BK7
 from raysect.primitive import Sphere, Box, Cylinder
 from raysect.primitive.csg import Union, Intersect, Subtract
+from raysect.optical.colour import d65_white
+from raysect.optical.spectralfunction import ConstantSF
 from matplotlib.pylab import *
 from raysect.core.acceleration import Unaccelerated
 
@@ -39,11 +41,6 @@ rotb = 0
 
 #cylinder = Cylinder(0.5, 10.0, world, translate(2, 0, 0) * rotate(90, 0, 0), UniformVolumeEmitter())
 
-def testindex(w):
-
-    return 1.3 + ((w-300.0)/500.0)*0.025
-
-
 
 cyl_x = Cylinder(1, 4.2, transform=rotate(90,0,0)*translate(0,0,-2.1))
 cyl_y = Cylinder(1, 4.2, transform=rotate(0,90,0)*translate(0,0,-2.1))
@@ -53,6 +50,7 @@ sphere = Sphere(2.0)
 
 #Subtract(sphere, Sphere(1.5), world, rotate(30, 23, 5), Glass(testindex, testindex))
 #Intersect(sphere, Subtract(cube, Union(Union(cyl_x, cyl_y), cyl_z)), world, rotate(30, 20, 0), BK7())
+#Intersect(sphere, cube, world, rotate(5, 0, 0), BK7())
 Intersect(sphere, cube, world, rotate(30, 25, 0), BK7())
 
 
@@ -72,12 +70,15 @@ s1 = Sphere(1.0, transform=translate(0,0,1.0-0.01))
 s2 = Sphere(0.5, transform=translate(0,0,-0.5+0.01))
 #Intersect(s1, s2, world, translate(0,0,-7.75)*rotate(55,30,0), BK7())
 
-Box(Point([-50, -50, -50]), Point([50, 50, 50]), world, material=Checkerboard(5, 0.05, 0.3))
+#Box(Point([-50, -50, -50]), Point([50, 50, 50]), world, material=Checkerboard(5, scale2=0.5))
+Box(Point([-50, -50, 50]), Point([50, 50, 50.1]), world, material=Checkerboard(5, d65_white, d65_white, 0.2, 0.4))
+#Box(Point([-50, -50, -50]), Point([50, 50, 50]), world, material=UniformSurfaceEmitter(d65_white, 0.5))
+
 
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -8) * rotate(0, 0, 0))
-camera.ray_max_depth=75
-camera.rays = 1
-camera.spectral_samples = 100
+camera.ray_max_depth = 15
+camera.rays = 15
+camera.spectral_samples = 1
 camera.pixels = (1024, 1024)
 camera.display_progress = True
 camera.display_update_time = 10
