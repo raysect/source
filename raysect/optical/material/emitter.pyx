@@ -39,6 +39,8 @@ from raysect.optical.ray cimport Ray
 from raysect.core.math.normal cimport Normal
 from raysect.core.math.point cimport new_point
 from raysect.optical.spectrum cimport new_spectrum
+from raysect.optical.spectralfunction cimport SampledSF, ConstantSF
+from raysect.optical.colour import d65_white
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
 
@@ -233,69 +235,14 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
 cdef class UniformSurfaceEmitter(NullVolume):
 
-    def __init__(self, double emission = 0.01):
+    def __init__(self, SpectralFunction emission_spectrum, double scale = 1.0):
         """
         Uniform and isotropic surface emitter
 
         emission is spectral radiance: W/m2/str/nm"""
 
-        self.emission = emission
-
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                bint exiting, Point inside_point, Point outside_point,
-                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
-
-        cdef Spectrum spectrum
-
-        spectrum = ray.new_spectrum()
-        spectrum.add_scalar(spectrum.delta_wavelength * self.emission)
-
-        return spectrum
-
-
-cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
-
-    def __init__(self, double emission = 1.0):
-        """
-        Uniform, homogeneous and isotropic volume emitter
-
-        emission is spectral volume radiance: W/m3/str/nm ie spectral radiance per meter"""
-
-        self.emission = emission
-
-    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum):
-
-        spectrum.add_scalar(spectrum.delta_wavelength * self.emission)
-
-        return spectrum
-
-
-cdef class Checkerboard(NullVolume):
-
-    def __init__(self, double scale=0.1, double emission1=0.15, double emission2=0.3):
-        """
-        Isotropic checkerboard surface emitter
-
-        emission1 and emission2 is spectral radiance: W/m2/str/nm
-        scale in meters
-        """
-
-        self._scale = scale
-        self._rscale = 1.0 / scale
-        self.emission1 = emission1
-        self.emission2 = emission2
-
-    property scale:
-
-        def __get__(self):
-
-            return self._scale
-
-        @cython.cdivision(True)
-        def __set__(self, double v):
-
-            self._scale = v
-            self._rscale = 1.0 / v
+        self.emission_spectrum = emission_spectrum
+        self.scale = scale
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
                                 bint exiting, Point inside_point, Point outside_point,
@@ -303,7 +250,96 @@ cdef class Checkerboard(NullVolume):
 
         cdef:
             Spectrum spectrum
+            SampledSF emission
+            double[::1] s_view, e_view
+            int index
+
+        spectrum = ray.new_spectrum()
+
+        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+
+        # obtain memoryviews
+        s_view = spectrum.samples
+        e_view = emission.samples
+
+        for index in range(spectrum.num_samples):
+
+            s_view[index] += e_view[index] * self.scale
+
+        return spectrum
+
+
+cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
+
+    def __init__(self, SpectralFunction emission_spectrum, double scale=1.0):
+        """
+        Uniform, homogeneous and isotropic volume emitter
+
+        emission is spectral volume radiance: W/m3/str/nm ie spectral radiance per meter"""
+
+        self.emission_spectrum = emission_spectrum
+        self.scale = scale
+
+    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum):
+
+        cdef:
+            SampledSF emission
+            double[::1] s_view, e_view
+            int index
+
+        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+
+        # obtain memoryviews
+        s_view = spectrum.samples
+        e_view = emission.samples
+
+        for index in range(spectrum.num_samples):
+
+            s_view[index] += e_view[index] * self.scale
+
+        return spectrum
+
+
+cdef class Checkerboard(NullVolume):
+
+    def __init__(self, double width=0.1, SpectralFunction emission_spectrum1=ConstantSF(0.0), SpectralFunction emission_spectrum2=d65_white, double scale1=1.0, double scale2=0.5):
+        """
+        Isotropic checkerboard surface emitter
+
+        emission1 and emission2 is spectral radiance: W/m2/str/nm
+        scale in meters
+        """
+
+        self._width = width
+        self._rwidth = 1.0 / width
+        self.emission_spectrum1 = emission_spectrum1
+        self.emission_spectrum2 = emission_spectrum2
+        self.scale1 = scale1
+        self.scale2 = scale2
+
+    property width:
+
+        def __get__(self):
+
+            return self._width
+
+        @cython.cdivision(True)
+        def __set__(self, double v):
+
+            self._width = v
+            self._rwidth = 1.0 / v
+
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                bint exiting, Point inside_point, Point outside_point,
+                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+
+        cdef:
+            Spectrum spectrum
+            SampledSF emission
+            double[::1] s_view, e_view
             bint v
+            int index
+            double scale
 
         v = False
 
@@ -314,13 +350,23 @@ cdef class Checkerboard(NullVolume):
 
         # select emission
         spectrum = ray.new_spectrum()
+        s_view = spectrum.samples
+
         if v:
 
-            spectrum.add_scalar(spectrum.delta_wavelength * self.emission1)
+            emission = self.emission_spectrum1.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+            e_view = emission.samples
+            scale = self.scale1
 
         else:
 
-            spectrum.add_scalar(spectrum.delta_wavelength * self.emission2)
+            emission = self.emission_spectrum2.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+            e_view = emission.samples
+            scale = self.scale2
+
+        for index in range(spectrum.num_samples):
+
+            s_view[index] = e_view[index] * scale
 
         return spectrum
 
@@ -331,7 +377,7 @@ cdef class Checkerboard(NullVolume):
         p = round(p * 1e9) / 1e9
 
         # generates check pattern from [0, inf]
-        if abs(self._rscale * p) % 2 >= 1.0:
+        if abs(self._rwidth * p) % 2 >= 1.0:
 
             v = not v
 
