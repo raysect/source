@@ -39,7 +39,7 @@ from raysect.optical.ray cimport Ray
 from raysect.core.math.normal cimport Normal
 from raysect.core.math.point cimport new_point
 from raysect.optical.spectrum cimport new_spectrum
-from raysect.optical.spectralfunction cimport SampledSF, ConstantSF
+from raysect.optical.spectralfunction cimport ConstantSF
 from raysect.optical.colour import d65_white
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
@@ -244,23 +244,27 @@ cdef class UniformSurfaceEmitter(NullVolume):
         self.emission_spectrum = emission_spectrum
         self.scale = scale
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
                                 bint exiting, Point inside_point, Point outside_point,
                                 Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
             Spectrum spectrum
-            SampledSF emission
+            ndarray emission
             double[::1] s_view, e_view
             int index
 
         spectrum = ray.new_spectrum()
 
-        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength,
+                                                          spectrum.max_wavelength,
+                                                          spectrum.num_samples)
 
         # obtain memoryviews
         s_view = spectrum.samples
-        e_view = emission.samples
+        e_view = emission
 
         for index in range(spectrum.num_samples):
 
@@ -280,18 +284,22 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
         self.emission_spectrum = emission_spectrum
         self.scale = scale
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum):
 
         cdef:
-            SampledSF emission
+            ndarray emission
             double[::1] s_view, e_view
             int index
 
-        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength,
+                                                          spectrum.max_wavelength,
+                                                          spectrum.num_samples)
 
         # obtain memoryviews
         s_view = spectrum.samples
-        e_view = emission.samples
+        e_view = emission
 
         for index in range(spectrum.num_samples):
 
@@ -302,7 +310,7 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
 cdef class Checkerboard(NullVolume):
 
-    def __init__(self, double width=0.1, SpectralFunction emission_spectrum1=ConstantSF(0.0), SpectralFunction emission_spectrum2=d65_white, double scale1=1.0, double scale2=0.5):
+    def __init__(self, double width=1.0, SpectralFunction emission_spectrum1=d65_white, SpectralFunction emission_spectrum2=d65_white, double scale1=0.25, double scale2=0.5):
         """
         Isotropic checkerboard surface emitter
 
@@ -329,13 +337,15 @@ cdef class Checkerboard(NullVolume):
             self._width = v
             self._rwidth = 1.0 / v
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
                                 bint exiting, Point inside_point, Point outside_point,
                                 Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
             Spectrum spectrum
-            SampledSF emission
+            ndarray emission
             double[::1] s_view, e_view
             bint v
             int index
@@ -354,14 +364,18 @@ cdef class Checkerboard(NullVolume):
 
         if v:
 
-            emission = self.emission_spectrum1.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
-            e_view = emission.samples
+            emission = self.emission_spectrum1.sample_multiple(spectrum.min_wavelength,
+                                                               spectrum.max_wavelength,
+                                                               spectrum.num_samples)
+            e_view = emission
             scale = self.scale1
 
         else:
 
-            emission = self.emission_spectrum2.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
-            e_view = emission.samples
+            emission = self.emission_spectrum2.sample_multiple(spectrum.min_wavelength,
+                                                               spectrum.max_wavelength,
+                                                               spectrum.num_samples)
+            e_view = emission
             scale = self.scale2
 
         for index in range(spectrum.num_samples):

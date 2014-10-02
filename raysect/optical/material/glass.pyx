@@ -31,6 +31,7 @@
 
 cimport cython
 from numpy import array, float64
+from numpy cimport ndarray
 from libc.math cimport sqrt, pow as cpow
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.point cimport Point
@@ -38,7 +39,7 @@ from raysect.core.math.vector cimport Vector, new_vector
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
-from raysect.optical.spectralfunction cimport InterpolatedSF, SampledSF, new_sampledsf
+from raysect.optical.spectralfunction cimport SampledSF
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.ray cimport Ray
 
@@ -222,6 +223,8 @@ cdef class Glass(Material):
             reflectivity[0] = 0.5 * (((n1*ci - n2*ct) / (n1*ci + n2*ct))**2 + ((n1*ct - n2*ci) / (n1*ct + n2*ci))**2)
             transmission[0] = 1 - reflectivity[0]
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point start_point, Point end_point,
@@ -229,18 +232,22 @@ cdef class Glass(Material):
 
         cdef:
             double length
-            SampledSF transmission
-            double[::1] t_view
+            ndarray transmission
+            double[::1] s_view, t_view
             int index
 
         length = start_point.vector_to(end_point).get_length()
 
-        transmission = self.transmission.sample_multiple(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_samples())
-        t_view = transmission.samples
+        transmission = self.transmission.sample_multiple(spectrum.min_wavelength,
+                                                         spectrum.max_wavelength,
+                                                         spectrum.num_samples)
 
-        for index in range(transmission.num_samples):
+        s_view = spectrum.samples
+        t_view = transmission
 
-            spectrum.samples[index] *= cpow(t_view[index], length)
+        for index in range(spectrum.num_samples):
+
+            s_view[index] *= cpow(t_view[index], length)
 
         return spectrum
 
@@ -261,5 +268,5 @@ def BK7():
         0.000935775, 8.462936461125E-011, 1.78689910246017E-018])
 
     return Glass(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                 transmission=InterpolatedSF(wavelengths, transmission, fast_sample=True))
+                 transmission=SampledSF(wavelengths, transmission, fast_sample=True))
 

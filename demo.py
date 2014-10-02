@@ -79,7 +79,7 @@ camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -8) * rot
 camera.ray_max_depth = 15
 camera.rays = 15
 camera.spectral_samples = 1
-camera.pixels = (1024, 1024)
+camera.pixels = (128, 128)
 camera.display_progress = True
 camera.display_update_time = 10
 
