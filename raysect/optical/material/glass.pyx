@@ -62,12 +62,13 @@ cdef class Sellmeier(SpectralFunction):
 
         cdef double centre_wavelength, w2
 
-        centre_wavelength = 0.5 * (min_wavelength + max_wavelength)
-        w2 = centre_wavelength * centre_wavelength * 1e-6
+        # Sellmeier coefficients are specified for wavelength in micrometers
+        centre_wavelength = 0.5 * (min_wavelength + max_wavelength) * 1e-3
 
         # TODO: prevent div by zero
         # TODO: integrate over range, rather than centrally sample
 
+        w2 = centre_wavelength * centre_wavelength
         return sqrt(1 + (self.b1 * w2) / (w2 - self.c1)
                       + (self.b2 * w2) / (w2 - self.c2)
                       + (self.b3 * w2) / (w2 - self.c3))
@@ -91,7 +92,6 @@ cdef class Glass(Material):
             Vector incident, reflected, transmitted
             double c1, c2s, n1, n2, gamma, reflectivity, transmission, temp, index
             Spectrum spectrum, ray_sample
-            SampledSF index_sample
 
         # convert ray direction normal to local coordinates
         incident = ray.direction.transform(to_local)
@@ -235,12 +235,9 @@ cdef class Glass(Material):
 
         length = start_point.vector_to(end_point).get_length()
 
-        transmission = self.transmission.sample_multiple(ray.get_min_wavelength(),
-                                                         ray.get_max_wavelength(),
-                                                         ray.get_samples())
-
-
+        transmission = self.transmission.sample_multiple(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_samples())
         t_view = transmission.samples
+
         for index in range(transmission.num_samples):
 
             spectrum.samples[index] *= cpow(t_view[index], length)

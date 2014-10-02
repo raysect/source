@@ -30,12 +30,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from raysect.core.math.utility cimport interpolate,  integrate, find_index, lerp
+from raysect.core.math.utility cimport interpolate, integrate
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 from numpy import array
 
 # required by numpy c-api
 import_array()
+
 
 cdef class SpectralFunction:
     """
@@ -77,6 +78,29 @@ cdef class SampledSF(SpectralFunction):
 
         self._construct(min_wavelength, max_wavelength, num_samples, fast_sample)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample):
+
+        cdef:
+            npy_intp size, index
+            double[::1] wavelengths_view
+
+        self.min_wavelength = min_wavelength
+        self.max_wavelength = max_wavelength
+        self.num_samples = num_samples
+        self.delta_wavelength = (max_wavelength - min_wavelength) / num_samples
+        self.fast_sample = fast_sample
+
+        # create spectral sample bins, initialise with zero
+        size = num_samples
+        self.samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
+        PyArray_FILLWBYTE(self.samples, 0)
+
+        # wavelengths is populated on demand
+        self._wavelengths = None
+
     property wavelengths:
 
         def __get__(self):
@@ -88,7 +112,27 @@ cdef class SampledSF(SpectralFunction):
 
         return self.num_samples
 
-    cpdef bint is_shaped(self, double min_wavelength, double max_wavelength, int num_samples):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline void _populate_wavelengths(self):
+
+        cdef:
+            npy_intp size
+            int index
+            double[::1] w_view
+
+        if self._wavelengths is None:
+
+            # create and populate central wavelength array
+            size = self.num_samples
+            self._wavelengths = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
+            w_view = self._wavelengths
+
+            for index in range(self.num_samples):
+
+                w_view[index] = self.min_wavelength + (0.5 + index) * self.delta_wavelength
+
+    cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int num_samples):
         """
         Returns True if the stored samples are consistent with the specified
         wavelength range and sample size.
@@ -152,7 +196,7 @@ cdef class SampledSF(SpectralFunction):
             raise ValueError("Sample array length is inconsistent with num_samples.")
 
         # no need to re-sample if data is already the correct shape
-        if self.is_shaped(min_wavelength, max_wavelength, num_samples):
+        if self.is_compatible(min_wavelength, max_wavelength, num_samples):
 
             return self
 
@@ -186,49 +230,6 @@ cdef class SampledSF(SpectralFunction):
                 lower_wavelength = upper_wavelength
 
         return s
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample):
-
-        cdef:
-            npy_intp size, index
-            double[::1] wavelengths_view
-
-        self.min_wavelength = min_wavelength
-        self.max_wavelength = max_wavelength
-        self.num_samples = num_samples
-        self.delta_wavelength = (max_wavelength - min_wavelength) / num_samples
-        self.fast_sample = fast_sample
-
-        # create spectral sample bins, initialise with zero
-        size = num_samples
-        self.samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-        PyArray_FILLWBYTE(self.samples, 0)
-
-        # wavelengths is populated on demand
-        self._wavelengths = None
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef inline void _populate_wavelengths(self):
-
-        cdef:
-            npy_intp size
-            int index
-            double[::1] w_view
-
-        if self._wavelengths is None:
-
-            # create and populate central wavelength array
-            size = self.num_samples
-            self._wavelengths = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-            w_view = self._wavelengths
-
-            for index in range(self.num_samples):
-
-                w_view[index] = self.min_wavelength + (0.5 + index) * self.delta_wavelength
 
     # low level scalar maths functions
     @cython.boundscheck(False)
@@ -501,7 +502,7 @@ cdef class ConstantSF(SpectralFunction):
             double lower_wavelength, upper_wavelength, reciprocal
 
         if self.cached_samples is not None and \
-           self.cached_samples.is_shaped(min_wavelength, max_wavelength, num_samples):
+           self.cached_samples.is_compatible(min_wavelength, max_wavelength, num_samples):
 
             return self.cached_samples
 

@@ -38,13 +38,14 @@ DEF CONSTANT_HC = 1.9864456832693028e-25
 # required by numpy c-api
 import_array()
 
+
 cdef class Spectrum(SampledSF):
     """
     radiance units: W/m^2/str/nm
 
     """
 
-    cpdef bint is_black(self):
+    cpdef bint is_zero(self):
 
         cdef:
             int index
@@ -110,3 +111,4 @@ cpdef double photon_energy(double wavelength):
 
         # h * c / lambda
         return CONSTANT_HC / (wavelength * 1e-9)
+
