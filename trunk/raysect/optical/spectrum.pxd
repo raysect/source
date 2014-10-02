@@ -29,18 +29,42 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy cimport ndarray, import_array, PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp
-from raysect.optical.ray cimport Ray
-from raysect.optical.spectralfunction cimport SampledSF
+from raysect.optical.spectralfunction cimport SpectralFunction
+from numpy cimport ndarray
 
-cdef class Spectrum(SampledSF):
+cdef class Spectrum(SpectralFunction):
 
-    cpdef bint is_black(self)
+    cdef:
+        readonly double min_wavelength
+        readonly double max_wavelength
+        readonly int num_samples
+        readonly double delta_wavelength
+        public ndarray samples
+        ndarray _wavelengths
+        public bint fast_sample
+
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample)
+
+    cdef inline void _populate_wavelengths(self)
+
+    cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int num_samples)
+
+    cpdef bint is_zero(self)
 
     cpdef double total(self)
 
+    cdef inline void add_scalar(self, double value)
+    cdef inline void sub_scalar(self, double value)
+    cdef inline void mul_scalar(self, double value)
+    cdef inline void div_scalar(self, double value)
 
-cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int samples)
+    cdef inline void add_array(self, double[::1] array)
+    cdef inline void sub_array(self, double[::1] array)
+    cdef inline void mul_array(self, double[::1] array)
+    cdef inline void div_array(self, double[::1] array)
+
+
+cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int num_samples)
 
 
 cpdef double photon_energy(double wavelength)

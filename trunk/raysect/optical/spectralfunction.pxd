@@ -35,41 +35,10 @@ cdef class SpectralFunction:
 
     cpdef double sample_single(self, double min_wavelength, double max_wavelength)
 
-    cpdef SampledSF sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples)
+    cpdef ndarray sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples)
 
 
 cdef class SampledSF(SpectralFunction):
-
-    cdef:
-        readonly double min_wavelength
-        readonly double max_wavelength
-        readonly int num_samples
-        readonly double delta_wavelength
-        public ndarray samples
-        ndarray _wavelengths
-        public bint fast_sample
-
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample)
-
-    cdef inline void _populate_wavelengths(self)
-
-    cpdef bint is_shaped(self, double min_wavelength, double max_wavelength, int num_samples)
-
-    cdef inline void add_scalar(self, double value)
-    cdef inline void sub_scalar(self, double value)
-    cdef inline void mul_scalar(self, double value)
-    cdef inline void div_scalar(self, double value)
-
-    cdef inline void add_array(self, double[::1] array)
-    cdef inline void sub_array(self, double[::1] array)
-    cdef inline void mul_array(self, double[::1] array)
-    cdef inline void div_array(self, double[::1] array)
-
-
-cdef SampledSF new_sampledsf(double min_wavelength, double max_wavelength, int num_samples)
-
-
-cdef class InterpolatedSF(SpectralFunction):
 
     cdef:
         public ndarray wavelengths
@@ -81,4 +50,3 @@ cdef class ConstantSF(SpectralFunction):
 
     cdef:
         readonly double value
-        SampledSF cached_samples
