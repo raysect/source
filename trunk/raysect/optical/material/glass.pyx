@@ -268,5 +268,5 @@ def BK7():
         0.000935775, 8.462936461125E-011, 1.78689910246017E-018])
 
     return Glass(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                 transmission=SampledSF(wavelengths, transmission, fast_sample=True))
+                 transmission=SampledSF(wavelengths, transmission))
 
