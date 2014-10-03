@@ -31,21 +31,21 @@ from time import time
 from numpy import array, zeros
 from math import sin, cos, tan, atan, pi
 from matplotlib.pyplot import imshow, imsave, show, ion, ioff, clf, figure, draw
-from raysect.core import World, Observer, AffineMatrix, Point, Vector
 from raysect.optical.ray import Ray
-from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.optical import Spectrum
+from raysect.core import World, AffineMatrix, Point, Vector, Observer
+from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 
 
 class PinholeCamera(Observer):
 
-    def __init__(self, pixels = (640, 480), fov = 40, spectral_samples = 20, rays = 1, parent = None, transform = AffineMatrix(), name = ""):
+    def __init__(self, pixels=(640, 480), fov = 40, spectral_samples = 20, rays = 1, parent = None, transform = AffineMatrix(), name = ""):
 
         super().__init__(parent, transform, name)
 
         self.pixels = pixels
         self.fov = fov
-        self.frame = None
+        self.frame = zeros((pixels[1], pixels[0], 3))
         # self.subsampling = 1
 
         self.rays = rays
@@ -90,6 +90,7 @@ class PinholeCamera(Observer):
 
     def observe(self):
 
+        xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
         self.frame = zeros((self._pixels[1], self._pixels[0], 3))
 
         if not isinstance(self.root, World):
@@ -142,6 +143,7 @@ class PinholeCamera(Observer):
 
         # initialise statistics
         total_pixels = self._pixels[0] * self._pixels[1]
+        total_work = total_pixels * self.rays
         start_time = time()
         progress_timer = time()
 
@@ -151,31 +153,33 @@ class PinholeCamera(Observer):
             self.display()
             display_timer = time()
 
-        for y in range(0, self._pixels[1]):
+        lower_index = 0
+        for index, ray in enumerate(rays):
 
-            for x in range(0, self._pixels[0]):
+            upper_index = self.spectral_samples * (index + 1)
 
-                if (time() - progress_timer) > 1.0:
+            for y in range(0, self._pixels[1]):
 
-                    current_pixel = y * self._pixels[0] + x
-                    completion = 100 * current_pixel / total_pixels
-                    print("{:0.2f}% complete (line {}/{}, pixel {}/{})".format(completion, y, self._pixels[1], current_pixel, total_pixels))
-                    progress_timer = time()
+                for x in range(0, self._pixels[0]):
 
-                # calculate ray parameters
-                origin = Point([0, 0, 0])
-                direction = Vector([image_start_x - image_delta * x, image_start_y - image_delta * y, 1.0]).normalise()
+                    if (time() - progress_timer) > 1.0:
 
-                # convert to world space
-                origin = origin.transform(self.to_root())
-                direction = direction.transform(self.to_root())
+                        current_pixel = y * self._pixels[0] + x
+                        current_work = self._pixels[0] * self._pixels[1] * index + current_pixel
+                        completion = 100 * current_work / total_work
+                        print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{})".format(completion, index + 1, len(rays), y, self._pixels[1], current_pixel, total_pixels))
+                        progress_timer = time()
 
-                # sample world
-                spectrum = Spectrum(self.min_wavelength, self.max_wavelength, total_samples)
-                lower_index = 0
-                for index, ray in enumerate(rays):
+                    # calculate ray parameters
+                    origin = Point([0, 0, 0])
+                    direction = Vector([image_start_x - image_delta * x, image_start_y - image_delta * y, 1.0]).normalise()
 
-                    upper_index = self.spectral_samples * (index + 1)
+                    # convert to world space
+                    origin = origin.transform(self.to_root())
+                    direction = direction.transform(self.to_root())
+
+                    # sample world
+                    spectrum = Spectrum(self.min_wavelength, self.max_wavelength, total_samples)
 
                     ray.origin = origin
                     ray.direction = direction
@@ -183,20 +187,22 @@ class PinholeCamera(Observer):
                     sample = ray.trace(world)
                     spectrum.samples[lower_index:upper_index] = sample.samples
 
-                    lower_index = upper_index
+                    # convert spectrum to CIE XYZ and accumulate
+                    xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+                    xyz_frame[y, x, 0] += xyz[0]
+                    xyz_frame[y, x, 1] += xyz[1]
+                    xyz_frame[y, x, 2] += xyz[2]
 
-                # convert spectrum to sRGB
-                xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-                rgb = ciexyz_to_srgb(*xyz)
-                self.frame[y, x, 0] = rgb[0]
-                self.frame[y, x, 1] = rgb[1]
-                self.frame[y, x, 2] = rgb[2]
+                    # update display image
+                    self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
 
-                if self.display_progress and (time() - display_timer) > self.display_update_time:
+                    if self.display_progress and (time() - display_timer) > self.display_update_time:
 
-                    print("Refreshing display...")
-                    self.display()
-                    display_timer = time()
+                        print("Refreshing display...")
+                        self.display()
+                        display_timer = time()
+
+            lower_index = upper_index
 
         # close statistics
         elapsed_time = time() - start_time
@@ -216,3 +222,4 @@ class PinholeCamera(Observer):
     def save(self, filename):
 
         imsave(filename, self.frame)
+

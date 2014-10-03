@@ -80,19 +80,13 @@ cdef class SampledSF(SpectralFunction):
 
             raise ValueError("Wavelength and sample arrays must be the same length.")
 
+        # initialise cache with invalid values
+        self.cache_samples = None
+        self.cache_min_wavelength = -1
+        self.cache_max_wavelength = -1
+        self.cache_num_samples = -1
+
     def __call__(self, double wavelength):
-
-        if self.samples is None:
-
-            raise ValueError("Cannot generate samples as the sample array is None.")
-
-        if self.wavelengths is None:
-
-            raise ValueError("Cannot generate wavelengths as the sample array is None.")
-
-        if self.samples.shape[0] != self.wavelengths.shape[0]:
-
-            raise ValueError("Wavelength and sample arrays must be the same length.")
 
         return interpolate(self.wavelengths, self.samples, wavelength)
 
@@ -100,19 +94,6 @@ cdef class SampledSF(SpectralFunction):
     @cython.wraparound(False)
     @cython.cdivision(True)
     cpdef double sample_single(self, double min_wavelength, double max_wavelength):
-
-        # sanity checks, as the user can modify the arrays
-        if self.samples is None:
-
-            raise ValueError("Cannot generate samples as the sample array is None.")
-
-        if self.wavelengths is None:
-
-            raise ValueError("Cannot generate wavelengths as the sample array is None.")
-
-        if self.samples.shape[0] != self.wavelengths.shape[0]:
-
-            raise ValueError("Wavelength and sample arrays must be the same length.")
 
         if self.fast_sample:
 
@@ -135,18 +116,13 @@ cdef class SampledSF(SpectralFunction):
             npy_intp size, index
             double lower_wavelength, upper_wavelength, delta_wavelength, reciprocal
 
-        # sanity checks, as the user can modify the arrays
-        if self.samples is None:
+        # is cached data available to return?
+        if self.cache_samples is not None and \
+            self.cache_min_wavelength == min_wavelength and \
+            self.cache_max_wavelength == max_wavelength and \
+            self.cache_num_samples == num_samples:
 
-            raise ValueError("Cannot generate samples as the sample array is None.")
-
-        if self.wavelengths is None:
-
-            raise ValueError("Cannot generate wavelengths as the sample array is None.")
-
-        if self.samples.shape[0] != self.wavelengths.shape[0]:
-
-            raise ValueError("Wavelength and sample arrays must be the same length.")
+            return self.cache_samples
 
         # create new sample ndarray and obtain a memoryview for fast access
         size = num_samples
@@ -177,6 +153,12 @@ cdef class SampledSF(SpectralFunction):
 
                 lower_wavelength = upper_wavelength
 
+        # update cache
+        self.cache_samples = samples
+        self.cache_min_wavelength = min_wavelength
+        self.cache_max_wavelength = max_wavelength
+        self.cache_num_samples = num_samples
+
         return samples
 
 
@@ -189,6 +171,12 @@ cdef class ConstantSF(SpectralFunction):
 
         self.value = value
 
+        # initialise cache with invalid values
+        self.cache_samples = None
+        self.cache_min_wavelength = -1
+        self.cache_max_wavelength = -1
+        self.cache_num_samples = -1
+
     cpdef double sample_single(self, double min_wavelength, double max_wavelength):
 
         return self.value
@@ -200,6 +188,14 @@ cdef class ConstantSF(SpectralFunction):
             npy_intp size
             double[::1] s_view
 
+        # is cached data available to return?
+        if self.cache_samples is not None and \
+            self.cache_min_wavelength == min_wavelength and \
+            self.cache_max_wavelength == max_wavelength and \
+            self.cache_num_samples == num_samples:
+
+            return self.cache_samples
+
         # create new sample ndarray and obtain a memoryview for fast access
         size = num_samples
         samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
@@ -208,5 +204,11 @@ cdef class ConstantSF(SpectralFunction):
 
         # generate samples
         s_view[:] = self.value
+
+        # update cache
+        self.cache_samples = samples
+        self.cache_min_wavelength = min_wavelength
+        self.cache_max_wavelength = max_wavelength
+        self.cache_num_samples = num_samples
 
         return samples

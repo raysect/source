@@ -41,12 +41,20 @@ cdef class SpectralFunction:
 cdef class SampledSF(SpectralFunction):
 
     cdef:
-        public ndarray wavelengths
-        public ndarray samples
-        public bint fast_sample
+        ndarray wavelengths
+        ndarray samples
+        bint fast_sample
+        ndarray cache_samples
+        double cache_min_wavelength
+        double cache_max_wavelength
+        double cache_num_samples
 
 
 cdef class ConstantSF(SpectralFunction):
 
     cdef:
         readonly double value
+        ndarray cache_samples
+        double cache_min_wavelength
+        double cache_max_wavelength
+        double cache_num_samples
