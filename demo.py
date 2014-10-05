@@ -6,8 +6,12 @@ from raysect.primitive import Sphere, Box, Cylinder
 from raysect.primitive.csg import Union, Intersect, Subtract
 from raysect.optical.colour import d65_white
 from raysect.optical.spectralfunction import ConstantSF
-from matplotlib.pylab import *
+from matplotlib.pyplot import *
 from raysect.core.acceleration import Unaccelerated
+
+# kludge to fix matplotlib 1.4 ion() idiocy
+import sys
+sys.ps1 = 'SOMETHING'
 
 world = World()
 #sphere = Sphere(world, translate(0, 0, 0) * rotate(0, 0, 0), UniformVolumeEmitter(), 1.5)
@@ -51,8 +55,9 @@ sphere = Sphere(2.0)
 #Subtract(sphere, Sphere(1.5), world, rotate(30, 23, 5), Glass(testindex, testindex))
 #Intersect(sphere, Subtract(cube, Union(Union(cyl_x, cyl_y), cyl_z)), world, rotate(30, 20, 0), BK7())
 #Intersect(sphere, cube, world, rotate(5, 0, 0), BK7())
-Intersect(sphere, cube, world, rotate(30, 25, 0), BK7())
+#Intersect(sphere, cube, world, rotate(30, 25, 0), BK7())
 
+#cube = Box(Point(-1.5, -1.5, -1.5), Point(1.5, 1.5, 1.5), world, rotate(30, 25, 0), BK7())
 
 cube1 = Box(Point(-1.5, -1.5, -1.5), Point(1.5, 1.5, 1.5))#, transform=translate(0.25, 0.25, 0.25))
 cube2 = Box(Point(-1.5, -1.5, -1.5), Point(1.5, 1.5, 1.5), transform=rotate(45, 45, 0))#, transform=translate(-0.25, -0.25, -0.25))
@@ -68,13 +73,13 @@ cube2 = Box(Point(-1.5, -1.5, -1.5), Point(1.5, 1.5, 1.5), transform=rotate(45, 
 
 s1 = Sphere(1.0, transform=translate(0, 0, 1.0-0.01))
 s2 = Sphere(0.5, transform=translate(0, 0, -0.5+0.01))
-#Intersect(s1, s2, world, translate(0,0,-7.75)*rotate(55,30,0), BK7())
+Intersect(s1, s2, world, translate(0,0,-7.75)*rotate(55,30,0), BK7())
 
-#Box(Point(-50, -50, -50), Point(50, 50, 50), world, material=Checkerboard(5, scale2=0.5))
-Box(Point(-50, -50, 50), Point(50, 50, 50.1), world, material=Checkerboard(5, d65_white, d65_white, 0.2, 0.4))
+#Box(Point(-50, -50, 50), Point(50, 50, 50.1), world, material=Checkerboard(5, d65_white, d65_white, 0.5, 1.0))
+Box(Point(-50, -50, -50), Point(50, 50, 50), world, material=Checkerboard(5, d65_white, d65_white, 0.5, 1.0))
 #Box(Point(-50, -50, -50), Point(50, 50, 50), world, material=UniformSurfaceEmitter(d65_white, 0.5))
 
-
+ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -8) * rotate(0, 0, 0))
 camera.ray_max_depth = 15
 camera.rays = 15
@@ -83,7 +88,7 @@ camera.pixels = (256, 256)
 camera.display_progress = True
 camera.display_update_time = 10
 
-ion()
+
 camera.observe()
 
 ioff()
