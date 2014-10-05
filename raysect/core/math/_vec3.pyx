@@ -36,51 +36,29 @@ from raysect.core.math.point cimport Point
 cdef class _Vec3:
     """3D Vector base class."""
 
-    def __init__(self, v = (0.0, 0.0, 1.0)):
+    # def __cinit__(self, double x=0.0, double y=0.0, double z=1.0):
+    #     """
+    #     Point constructor.
+    #
+    #     If no initial values are passed, _Vec3 defaults to a unit vector
+    #     aligned with the z-axis: _Vec(0.0, 0.0, 1.0)
+    #     """
+    #
+    #     self.x = x
+    #     self.y = y
+    #     self.z = z
+
+    def __init__(self, double x=0.0, double y=0.0, double z=1.0):
         """
         Constructor.
 
         If no initial values are passed, _Vec3 defaults to a unit vector
-        aligned with the z-axis: [0.0, 0.0, 1.0]
-
-        Any three (or more) item indexable object can be used to initialise the
-        vector. The x, y and z coordinates will be assigned the values of
-        the items at indexes [0, 1, 2].
-
-        e.g. _Vec3([4.0, 5.0, 6.0]) sets the x, y and z coordinates as 4.0,
-        5.0 and 6.0 respectively.
+        aligned with the z-axis: _Vec(0.0, 0.0, 1.0)
         """
 
-        cdef Point p
-        cdef _Vec3 t
-
-        if isinstance(v, _Vec3):
-
-            t = <_Vec3>v
-
-            self.x = t.x
-            self.y = t.y
-            self.z = t.z
-
-        elif isinstance(v, Point):
-
-            p = <Point>v
-
-            self.x = p.x
-            self.y = p.y
-            self.z = p.z
-
-        else:
-
-            try:
-
-                self.x = v[0]
-                self.y = v[1]
-                self.z = v[2]
-
-            except:
-
-                raise TypeError("Vector can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
+        self.x = x
+        self.y = y
+        self.z = z
 
     def __getitem__(self, int i):
         """Returns the vector coordinates by index ([0,1,2] -> [x,y,z])."""

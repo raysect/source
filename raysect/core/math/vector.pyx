@@ -39,51 +39,17 @@ cdef class Vector(_Vec3):
     Represents a vector in 3D affine space.
     """
 
-    def __init__(self, v = (0.0, 0.0, 1.0)):
+    def __init__(self, double x=0.0, double y=0.0, double z=1.0):
         """
-        Vector constructor.
+        Vector Constructor.
 
         If no initial values are passed, Vector defaults to a unit vector
-        aligned with the z-axis: [0.0, 0.0, 1.0]
-
-        Any three (or more) item indexable object can be used to initialise the
-        vector. The x, y and z coordinates will be assigned the values of
-        the items at indexes [0, 1, 2].
-
-        e.g. Vector([4.0, 5.0, 6.0]) sets the x, y and z coordinates as 4.0,
-        5.0 and 6.0 respectively.
+        aligned with the z-axis: Vector(0.0, 0.0, 1.0)
         """
 
-        cdef Point p
-        cdef _Vec3 t
-
-        if isinstance(v, _Vec3):
-
-            t = <_Vec3>v
-
-            self.x = t.x
-            self.y = t.y
-            self.z = t.z
-
-        elif isinstance(v, Point):
-
-            p = <Point>v
-
-            self.x = p.x
-            self.y = p.y
-            self.z = p.z
-
-        else:
-
-            try:
-
-                self.x = v[0]
-                self.y = v[1]
-                self.z = v[2]
-
-            except:
-
-                raise TypeError("Vector can only be initialised with an indexable object, containing numerical values, of length >= 3 items.")
+        self.x = x
+        self.y = y
+        self.z = z
 
     def __repr__(self):
         """Returns a string representation of the Vector object."""

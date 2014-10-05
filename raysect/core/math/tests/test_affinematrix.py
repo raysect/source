@@ -28,8 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from ..affinematrix import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate
-from ..vector import Vector
+from raysect.core.math import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, Vector
 from math import sin, cos, pi, sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -269,7 +268,7 @@ class TestAffineMatrix(unittest.TestCase):
     def test_factory_rotate_vector(self):
         """Rotation about vector matrix factory function."""
 
-        m = rotate_vector(54, Vector([1.0, 0.22, 0.34]))
+        m = rotate_vector(54, Vector(1.0, 0.22, 0.34))
 
         s = sin(pi*54/180)
         c = cos(pi*54/180)
@@ -298,7 +297,7 @@ class TestAffineMatrix(unittest.TestCase):
         """Rotation by yaw, pitch and roll factory function."""
 
         m = rotate(63, -40, 12)
-        r = rotate_z(12) * rotate_x(40) * rotate_y(-63)
+        r = rotate_y(-63) * rotate_x(40) * rotate_z(12)
 
         for i in range(0, 4):
             for j in range(0, 4):

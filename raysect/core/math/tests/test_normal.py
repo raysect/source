@@ -32,9 +32,7 @@ Unit tests for the Normal object.
 """
 
 import unittest
-from ..normal import Normal
-from ..vector import Vector
-from ..affinematrix import AffineMatrix
+from raysect.core.math import Normal, Vector, AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -52,7 +50,7 @@ class TestNormal(unittest.TestCase):
     def test_initialise_indexable(self):
         """Initialisation with an indexable object."""
 
-        v = Normal([1.0, 2.0, 3.0])
+        v = Normal(1.0, 2.0, 3.0)
         self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
         self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
         self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
@@ -63,13 +61,10 @@ class TestNormal(unittest.TestCase):
         with self.assertRaises(TypeError, msg="Initialised with a string."):
             Normal("spoon")
 
-        with self.assertRaises(TypeError, msg="Initialised with a list containing too few items."):
-            Normal([1.0, 2.0])
-
     def test_x(self):
         """Get/set x co-ordinate."""
 
-        v = Normal([2.5, 6.7, -4.6])
+        v = Normal(2.5, 6.7, -4.6)
 
         # get x attribute
         self.assertEqual(v.x, 2.5, "Getting x attribute failed.")
@@ -81,7 +76,7 @@ class TestNormal(unittest.TestCase):
     def test_y(self):
         """Get/set y co-ordinate."""
 
-        v = Normal([2.5, 6.7, -4.6])
+        v = Normal(2.5, 6.7, -4.6)
 
         # get y attribute
         self.assertEqual(v.y, 6.7, "Getting y attribute failed.")
@@ -93,7 +88,7 @@ class TestNormal(unittest.TestCase):
     def test_z(self):
         """Get/set z co-ordinate."""
 
-        v = Normal([2.5, 6.7, -4.6])
+        v = Normal(2.5, 6.7, -4.6)
 
         # get z attribute
         self.assertEqual(v.z, -4.6, "Getting z attribute failed.")
@@ -105,7 +100,7 @@ class TestNormal(unittest.TestCase):
     def test_indexing(self):
         """Getting/setting components by indexing."""
 
-        v = Normal([2.5, 6.7, -4.6])
+        v = Normal(2.5, 6.7, -4.6)
 
         v[0] = 1.0
         v[1] = 2.0
@@ -128,7 +123,7 @@ class TestNormal(unittest.TestCase):
     def test_length(self):
         """Get/set the normal length."""
 
-        v = Normal([1.2, -3, 9.8])
+        v = Normal(1.2, -3, 9.8)
 
         # get length
         r = sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8)
@@ -144,7 +139,7 @@ class TestNormal(unittest.TestCase):
         self.assertAlmostEqual(v.z, rz, 14, "Normal length was not set correctly [Z].")
 
         # trying to rescale a zero length normal should raise a ZeroDivisionError
-        v = Normal([0,0,0])
+        v = Normal(0,0,0)
         with self.assertRaises(ZeroDivisionError, msg="Adjusting length of zero length normal did not raise a ZeroDivisionError."):
 
             v.length = 10.0
@@ -152,7 +147,7 @@ class TestNormal(unittest.TestCase):
     def test_negate(self):
         """Negate operator."""
 
-        r = -Normal([2.5, 6.7, -4.6])
+        r = -Normal(2.5, 6.7, -4.6)
         self.assertTrue(isinstance(r, Normal), "Normal negation did not return a Normal.")
         self.assertEqual(r.x, -2.5, "Negation failed [X].")
         self.assertEqual(r.y, -6.7, "Negation failed [Y].")
@@ -162,8 +157,8 @@ class TestNormal(unittest.TestCase):
         """Add operator."""
 
         # Normal + Normal, returns Normal
-        a = Normal([-1.4, 0.2, 99.1])
-        b = Normal([0.7, -64.0, -0.1])
+        a = Normal(-1.4, 0.2, 99.1)
+        b = Normal(0.7, -64.0, -0.1)
         r = a + b
         self.assertTrue(isinstance(r, Normal), "Normal + Normal did not return a Normal.")
         self.assertEqual(r.x, -1.4 + 0.7, "Normal + Normal failed [X].")
@@ -174,8 +169,8 @@ class TestNormal(unittest.TestCase):
         """Subtract operator."""
 
         # Normal - Normal, returns Normal
-        a = Normal([-1.4, 0.2, 99.1])
-        b = Normal([0.7, -64.0, -0.1])
+        a = Normal(-1.4, 0.2, 99.1)
+        b = Normal(0.7, -64.0, -0.1)
         r = a - b
         self.assertTrue(isinstance(r, Normal), "Normal - Normal did not return a Normal.")
         self.assertEqual(r.x, -1.4 - 0.7, "Normal - Normal failed [X].")
@@ -185,7 +180,7 @@ class TestNormal(unittest.TestCase):
     def test_multiply(self):
         """Multiply operator."""
 
-        v = Normal([-1.4, 0.2, 99.1])
+        v = Normal(-1.4, 0.2, 99.1)
 
         # c * Normal, returns Normal
         r = 0.23 * v
@@ -204,7 +199,7 @@ class TestNormal(unittest.TestCase):
     def test_divide(self):
         """Division operator."""
 
-        v = Normal([-1.4, 0.2, 99.1])
+        v = Normal(-1.4, 0.2, 99.1)
 
         # Normal / c, returns Normal
         r = v / 5.3
@@ -231,7 +226,7 @@ class TestNormal(unittest.TestCase):
         """Testing normalise() method."""
 
         # normalise
-        v = Normal([23.2, 0.12, -5.0])
+        v = Normal(23.2, 0.12, -5.0)
         r = v.normalise()
         l = v.length
         self.assertTrue(isinstance(r, Normal), "Normalise did not return a Normal.")
@@ -240,7 +235,7 @@ class TestNormal(unittest.TestCase):
         self.assertAlmostEqual(r.z, -5.0 / l, 14, "Normalise failed [Z].")
 
         # attempting to normalise a zero length normal should raise a ZeroDivisionError
-        v = Normal([0.0, 0.0, 0.0])
+        v = Normal(0.0, 0.0, 0.0)
         with self.assertRaises(ZeroDivisionError, msg="Normalising a zero length normal did not raise a ZeroDivisionError."):
 
             r = v.normalise()
@@ -248,9 +243,9 @@ class TestNormal(unittest.TestCase):
     def test_dot_product(self):
         """Testing dot product."""
 
-        x = Normal([1,0,0])
-        y = Normal([0,1,0])
-        z = Normal([0,0,1])
+        x = Normal(1,0,0)
+        y = Normal(0,1,0)
+        z = Normal(0,0,1)
 
         # orthogonal
         self.assertEqual(x.dot(y), 0.0, "Dot product of orthogonal normals does not equal 0.0.")
@@ -263,8 +258,8 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(z.dot(z), 1.0, "Dot product of orthonormal normals does not equal 1.0.")
 
         # arbitrary
-        a = Normal([4, 2, 3])
-        b = Normal([-1, 2, 6])
+        a = Normal(4, 2, 3)
+        b = Normal(-1, 2, 6)
         self.assertEqual(a.dot(b), 4*-1 + 2*2 + 3*6, "Dot product of two arbitrary normals gives the wrong value.")
         self.assertEqual(a.dot(b), b.dot(a), "a.b does not equal b.a.")
 
@@ -272,9 +267,9 @@ class TestNormal(unittest.TestCase):
         """Testing cross product."""
 
         # raysect uses a right handed coordinate system
-        x = Normal([1,0,0])
-        y = Normal([0,1,0])
-        z = Normal([0,0,1])
+        x = Normal(1,0,0)
+        y = Normal(0,1,0)
+        z = Normal(0,0,1)
 
         # orthogonal
         r = x.cross(y)
@@ -309,8 +304,8 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(r.z, 0.0, "Cross product failed [Z].")
 
         # arbitrary Normal x Normal
-        a = Normal([4, 2, 3])
-        b = Normal([-1, 2, 6])
+        a = Normal(4, 2, 3)
+        b = Normal(-1, 2, 6)
 
         r1 = a.cross(b)
         r2 = b.cross(a)
@@ -333,7 +328,7 @@ class TestNormal(unittest.TestCase):
                           [9,10,4,9],
                           [4,14,15,16]])
 
-        v = Normal([-1, 2, 6])
+        v = Normal(-1, 2, 6)
 
         r = v.transform(m)
         self.assertTrue(isinstance(r, Normal), "Transform did not return a Normal.")
@@ -349,7 +344,7 @@ class TestNormal(unittest.TestCase):
                              [210/414, -162/414, 72/414, -12/414],
                              [72/414, 114/414, -66/414, -12/414]])
 
-        v = Normal([-1, 2, 6])
+        v = Normal(-1, 2, 6)
 
         r = v.transform_with_inverse(minv)
         self.assertTrue(isinstance(r, Normal), "Transform did not return a Normal.")
@@ -360,7 +355,7 @@ class TestNormal(unittest.TestCase):
     def test_copy(self):
         """Testing method copy()."""
 
-        v = Normal([1.0, 2.0, 3.0])
+        v = Normal(1.0, 2.0, 3.0)
         r = v.copy()
 
         # check a new instance has been created by modifying the original

@@ -35,8 +35,8 @@ DEF INFINITY = 1e999
 cdef class Ray:
 
     def __init__(self,
-                 Point origin not None = Point([0,0,0]),
-                 Vector direction not None = Vector([0,0,1]),
+                 Point origin not None = Point(0, 0, 0),
+                 Vector direction not None = Vector(0, 0, 1),
                  double max_distance = INFINITY):
 
         self.origin = origin

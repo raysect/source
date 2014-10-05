@@ -28,11 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from ..primitive import Primitive
-from ..node import Node
-from ...math import Point, AffineMatrix, translate
-from ...acceleration import BoundingBox
-from ...classes import Material, Ray
+from raysect.core.scenegraph import Primitive, Node
+from raysect.core.math import Point, AffineMatrix, translate
+from raysect.core.acceleration import BoundingBox
+from raysect.core.classes import Material, Ray
 
 # TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures
 # TODO: Add tests for functionality inherited from Node.

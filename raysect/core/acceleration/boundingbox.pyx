@@ -31,7 +31,6 @@
 
 # TODO: add docstrings
 
-from libc.math cimport fabs
 cimport cython
 from raysect.core.math.point cimport new_point
 

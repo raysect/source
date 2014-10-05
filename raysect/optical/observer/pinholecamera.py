@@ -171,8 +171,8 @@ class PinholeCamera(Observer):
                         progress_timer = time()
 
                     # calculate ray parameters
-                    origin = Point([0, 0, 0])
-                    direction = Vector([image_start_x - image_delta * x, image_start_y - image_delta * y, 1.0]).normalise()
+                    origin = Point(0, 0, 0)
+                    direction = Vector(image_start_x - image_delta * x, image_start_y - image_delta * y, 1.0).normalise()
 
                     # convert to world space
                     origin = origin.transform(self.to_root())

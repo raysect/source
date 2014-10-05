@@ -34,10 +34,7 @@ Checks that the mathematical classes interact correctly.
 """
 
 import unittest
-from ..vector import Vector
-from ..normal import Normal
-from ..point import Point
-from ..affinematrix import AffineMatrix
+from raysect.core.math import Vector, Normal, Point, AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -47,39 +44,39 @@ class TestInteraction(unittest.TestCase):
     def test_vector_initialise(self):
         """Initialisation."""
 
-        v = Vector([3, -4, 5])
-        n = Normal([6, 3, -9])
-        p = Point([-5, -2, 10])
+        v = Vector(3, -4, 5)
+        n = Normal(6, 3, -9)
+        p = Point(-5, -2, 10)
 
         # check Vector can be initialise by other vector objects
-        r = Vector(n)
+        r = Vector(*n)
         self.assertEqual(r.x, 6, "Vector initialisation failed [X].")
         self.assertEqual(r.y, 3, "Vector initialisation failed [Y].")
         self.assertEqual(r.z, -9, "Vector initialisation failed [Z].")
 
-        r = Vector(p)
+        r = Vector(*p)
         self.assertEqual(r.x, -5, "Vector initialisation failed [X].")
         self.assertEqual(r.y, -2, "Vector initialisation failed [Y].")
         self.assertEqual(r.z, 10, "Vector initialisation failed [Z].")
 
         # check Normal can be initialise by other vector objects
-        r = Normal(v)
+        r = Normal(*v)
         self.assertEqual(r.x, 3, "Normal initialisation failed [X].")
         self.assertEqual(r.y, -4, "Normal initialisation failed [Y].")
         self.assertEqual(r.z, 5, "Normal initialisation failed [Z].")
 
-        r = Normal(p)
+        r = Normal(*p)
         self.assertEqual(r.x, -5, "Normal initialisation failed [X].")
         self.assertEqual(r.y, -2, "Normal initialisation failed [Y].")
         self.assertEqual(r.z, 10, "Normal initialisation failed [Z].")
 
         # check Point can be initialise by other vector objects
-        r = Point(v)
+        r = Point(*v)
         self.assertEqual(r.x, 3, "Point initialisation failed [X].")
         self.assertEqual(r.y, -4, "Point initialisation failed [Y].")
         self.assertEqual(r.z, 5, "Point initialisation failed [Z].")
 
-        r = Point(n)
+        r = Point(*n)
         self.assertEqual(r.x, 6, "Point initialisation failed [X].")
         self.assertEqual(r.y, 3, "Point initialisation failed [Y].")
         self.assertEqual(r.z, -9, "Point initialisation failed [Z].")
@@ -87,9 +84,9 @@ class TestInteraction(unittest.TestCase):
     def test_vector_add(self):
         """Add operator."""
 
-        v = Vector([3, -4, 5])
-        n = Normal([6, 3, -9])
-        p = Point([-5, -2, 10])
+        v = Vector(3, -4, 5)
+        n = Normal(6, 3, -9)
+        p = Point(-5, -2, 10)
 
         # Vector and Normal
         r = v + n
@@ -129,9 +126,9 @@ class TestInteraction(unittest.TestCase):
     def test_vector_subtract(self):
         """Subtract operator."""
 
-        v = Vector([3, -4, 5])
-        n = Normal([6, 3, -9])
-        p = Point([-5, -2, 10])
+        v = Vector(3, -4, 5)
+        n = Normal(6, 3, -9)
+        p = Point(-5, -2, 10)
 
         # Vector and Normal
         r = v - n
@@ -171,8 +168,8 @@ class TestInteraction(unittest.TestCase):
     def test_vector_cross(self):
         """Cross product."""
 
-        a = Vector([3, -4, 5])
-        b = Normal([6, 3, -9])
+        a = Vector(3, -4, 5)
+        b = Normal(6, 3, -9)
 
         # Vector x Normal
         r = a.cross(b)
@@ -196,9 +193,9 @@ class TestInteraction(unittest.TestCase):
                           [9,10,4,9],
                           [4,14,15,16]])
 
-        v = Vector([-1, 2, 6])
-        n = Normal([-1, 2, 6])
-        p = Point([-1, 2, 6])
+        v = Vector(-1, 2, 6)
+        n = Normal(-1, 2, 6)
+        p = Point(-1, 2, 6)
 
         # AffineMatrix * Vector
         r = m * v

@@ -37,8 +37,8 @@ DEF INFINITY = 1e999
 cdef class Ray(CoreRay):
 
     def __init__(self,
-                 Point origin = Point([0,0,0]),
-                 Vector direction = Vector([0,0,1]),
+                 Point origin = Point(0,0,0),
+                 Vector direction = Vector(0,0,1),
                  double min_wavelength = 375,
                  double max_wavelength = 785,
                  int samples = 40,

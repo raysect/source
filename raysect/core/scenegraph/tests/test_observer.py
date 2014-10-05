@@ -28,9 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from ..node import Node
-from ..observer import Observer
-from ...math import AffineMatrix, translate
+from raysect.core.scenegraph import Node, Observer
+from raysect.core.math import AffineMatrix, translate
 
 # TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures
 # TODO: Add tests for functionality inherited from Node.

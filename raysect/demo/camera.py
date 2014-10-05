@@ -129,10 +129,10 @@ class PinholeCamera(Observer):
                 phi = atan(image_start_y - image_delta * y)
 
                 # calculate ray parameters
-                origin = Point([0, 0, 0])
-                direction = Vector([sin(theta),
-                                    cos(theta) * sin(phi),
-                                    cos(theta) * cos(phi)])
+                origin = Point(0, 0, 0)
+                direction = Vector(sin(theta),
+                                   cos(theta) * sin(phi),
+                                   cos(theta) * cos(phi))
 
                 # convert to world space
                 ray.origin = origin.transform(self.to_root())

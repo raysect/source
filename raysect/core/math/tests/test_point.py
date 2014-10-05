@@ -32,9 +32,7 @@ Unit tests for the Point object.
 """
 
 import unittest
-from ..point import Point
-from ..vector import Vector
-from ..affinematrix import AffineMatrix
+from raysect.core.math import Point, Vector, AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -52,7 +50,7 @@ class TestPoint(unittest.TestCase):
     def test_initialise_indexable(self):
         """Initialisation with an indexable object."""
 
-        v = Point([1.0, 2.0, 3.0])
+        v = Point(1.0, 2.0, 3.0)
         self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
         self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
         self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
@@ -63,13 +61,10 @@ class TestPoint(unittest.TestCase):
         with self.assertRaises(TypeError, msg="Initialised with a string."):
             Point("spoon")
 
-        with self.assertRaises(TypeError, msg="Initialised with a list containing too few items."):
-            Point([1.0, 2.0])
-
     def test_x(self):
         """Get/set x co-ordinate."""
 
-        v = Point([2.5, 6.7, -4.6])
+        v = Point(2.5, 6.7, -4.6)
 
         # get x attribute
         self.assertEqual(v.x, 2.5, "Getting x attribute failed.")
@@ -81,7 +76,7 @@ class TestPoint(unittest.TestCase):
     def test_y(self):
         """Get/set y co-ordinate."""
 
-        v = Point([2.5, 6.7, -4.6])
+        v = Point(2.5, 6.7, -4.6)
 
         # get y attribute
         self.assertEqual(v.y, 6.7, "Getting y attribute failed.")
@@ -93,7 +88,7 @@ class TestPoint(unittest.TestCase):
     def test_z(self):
         """Get/set z co-ordinate."""
 
-        v = Point([2.5, 6.7, -4.6])
+        v = Point(2.5, 6.7, -4.6)
 
         # get z attribute
         self.assertEqual(v.z, -4.6, "Getting z attribute failed.")
@@ -105,7 +100,7 @@ class TestPoint(unittest.TestCase):
     def test_indexing(self):
         """Getting/setting components by indexing."""
 
-        v = Point([2.5, 6.7, -4.6])
+        v = Point(2.5, 6.7, -4.6)
 
         v[0] = 1.0
         v[1] = 2.0
@@ -144,8 +139,8 @@ class TestPoint(unittest.TestCase):
     def test_distance_to(self):
         """Testing method distance_to()."""
 
-        a = Point([-1, 5, 26])
-        b = Point([9, 4, -1])
+        a = Point(-1, 5, 26)
+        b = Point(9, 4, -1)
         v = a.distance_to(b)
         r = sqrt((9 + 1)**2 + (4 - 5)**2 + (-1 - 26)**2)
         self.assertEqual(v, r, "Point to Point distance is incorrect.")
@@ -153,8 +148,8 @@ class TestPoint(unittest.TestCase):
     def test_vector_to(self):
         """Testing method vector_to()."""
 
-        a = Point([-1, 5, 26])
-        b = Point([9, 4, -1])
+        a = Point(-1, 5, 26)
+        b = Point(9, 4, -1)
         v = a.vector_to(b)
         self.assertTrue(isinstance(v, Vector), "Vector_to did not return a Vector.")
         self.assertEqual(v.x, 9 + 1, "Vector_to failed [X].")
@@ -169,7 +164,7 @@ class TestPoint(unittest.TestCase):
                           [9,10,4,9],
                           [4,14,15,16]])
 
-        v = Point([-1, 2, 6])
+        v = Point(-1, 2, 6)
 
         r = v.transform(m)
 
@@ -183,7 +178,7 @@ class TestPoint(unittest.TestCase):
     def test_copy(self):
         """Testing method copy()."""
 
-        v = Point([1.0, 2.0, 3.0])
+        v = Point(1.0, 2.0, 3.0)
         r = v.copy()
 
         # check a new instance has been created by modifying the original
