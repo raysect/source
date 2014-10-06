@@ -39,11 +39,14 @@ from raysect.optical.material.material cimport Material
 
 cdef class Ray(CoreRay):
 
-    cdef int _samples
-    cdef double _min_wavelength
-    cdef double _max_wavelength
-    cdef public int max_depth
-    cdef public int depth
+    cdef:
+        int _num_samples
+        double _min_wavelength
+        double _max_wavelength
+        public int max_depth
+        public int depth
+        readonly int ray_count
+        Ray _primary_ray
 
     cpdef Spectrum new_spectrum(self)
 
@@ -51,7 +54,7 @@ cdef class Ray(CoreRay):
 
     cpdef Ray spawn_daughter(self, Point origin, Vector direction)
 
-    cdef inline int get_samples(self)
+    cdef inline int get_num_samples(self)
 
     cdef inline double get_min_wavelength(self)
 

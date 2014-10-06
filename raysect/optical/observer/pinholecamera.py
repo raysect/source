@@ -30,7 +30,7 @@
 from time import time
 from numpy import array, zeros
 from math import sin, cos, tan, atan, pi
-from matplotlib.pyplot import imshow, imsave, show, ion, ioff, clf, figure, draw
+from matplotlib.pyplot import imshow, imsave, show, ion, ioff, clf, figure, draw, pause
 from raysect.optical.ray import Ray
 from raysect.optical import Spectrum
 from raysect.core import World, AffineMatrix, Point, Vector, Observer
@@ -52,7 +52,7 @@ class PinholeCamera(Observer):
         self.spectral_samples = spectral_samples
 
         self.min_wavelength = 375.0
-        self.max_wavelength = 785.0
+        self.max_wavelength = 740.0
 
         self.ray_max_depth = 15
 
@@ -136,7 +136,7 @@ class PinholeCamera(Observer):
 
             rays.append(Ray(min_wavelength=lower_wavelength,
                             max_wavelength=upper_wavelength,
-                            samples=self.spectral_samples,
+                            num_samples=self.spectral_samples,
                             max_depth=self.ray_max_depth))
 
             lower_wavelength = upper_wavelength
@@ -144,6 +144,7 @@ class PinholeCamera(Observer):
         # initialise statistics
         total_pixels = self._pixels[0] * self._pixels[1]
         total_work = total_pixels * self.rays
+        ray_count = 0
         start_time = time()
         progress_timer = time()
 
@@ -162,12 +163,17 @@ class PinholeCamera(Observer):
 
                 for x in range(0, self._pixels[0]):
 
-                    if (time() - progress_timer) > 1.0:
+                    # display progress statistics
+                    dt = time() - progress_timer
+                    if dt > 1.0:
 
                         current_pixel = y * self._pixels[0] + x
                         current_work = self._pixels[0] * self._pixels[1] * index + current_pixel
                         completion = 100 * current_work / total_work
-                        print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{})".format(completion, index + 1, len(rays), y, self._pixels[1], current_pixel, total_pixels))
+                        rays_per_second = ray_count / (1000 * dt)
+                        print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays/s)".format(
+                            completion, index + 1, len(rays), y, self._pixels[1], current_pixel, total_pixels, rays_per_second))
+                        ray_count = 0
                         progress_timer = time()
 
                     # calculate ray parameters
@@ -186,6 +192,9 @@ class PinholeCamera(Observer):
 
                     sample = ray.trace(world)
                     spectrum.samples[lower_index:upper_index] = sample.samples
+
+                    # collect ray statistics
+                    ray_count += ray.ray_count
 
                     # convert spectrum to CIE XYZ and accumulate
                     xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)

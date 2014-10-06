@@ -44,6 +44,6 @@ cdef class Glass(Material):
     cdef:
         SpectralFunction index
         SpectralFunction transmission
-        double cutoff
+        public double cutoff
 
     cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission)

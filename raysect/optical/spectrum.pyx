@@ -219,6 +219,8 @@ cdef class Spectrum(SpectralFunction):
 
         return samples
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef bint is_zero(self):
 
         cdef:

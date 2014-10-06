@@ -41,11 +41,11 @@ cdef class Ray(CoreRay):
                  Vector direction = Vector(0,0,1),
                  double min_wavelength = 375,
                  double max_wavelength = 785,
-                 int samples = 40,
+                 int num_samples = 40,
                  double max_distance = INFINITY,
                  int max_depth = 15):
 
-        if samples < 1:
+        if num_samples < 1:
 
                 raise("Number of samples can not be less than 1.")
 
@@ -59,30 +59,34 @@ cdef class Ray(CoreRay):
 
         super().__init__(origin, direction, max_distance)
 
-        self._samples = samples
+        self._num_samples = num_samples
         self._min_wavelength = min_wavelength
         self._max_wavelength = max_wavelength
 
         self.max_depth = max_depth
         self.depth = 0
 
-    property samples:
+        # ray statistics
+        self.ray_count = 0
+        self._primary_ray = None
+
+    property num_samples:
 
         def __get__(self):
 
-            return self._samples
+            return self._num_samples
 
-        def __set__(self, int samples):
+        def __set__(self, int num_samples):
 
-            if samples < 1:
+            if num_samples < 1:
 
                 raise ValueError("Number of samples can not be less than 1.")
 
-            self._samples = samples
+            self._num_samples = num_samples
 
-    cdef inline int get_samples(self):
+    cdef inline int get_num_samples(self):
 
-        return self._samples
+        return self._num_samples
 
     property min_wavelength:
 
@@ -133,7 +137,7 @@ cdef class Ray(CoreRay):
         Returns a new Spectrum compatible with the ray spectral settings.
         """
 
-        return new_spectrum(self.min_wavelength, self.max_wavelength, self.samples)
+        return new_spectrum(self._min_wavelength, self._max_wavelength, self._num_samples)
 
     cpdef Spectrum trace(self, World world):
 
@@ -143,6 +147,12 @@ cdef class Ray(CoreRay):
         cdef Primitive primitive
         cdef Point start_point, end_point
         cdef Material material
+
+        # reset ray statistics
+        if self._primary_ray is None:
+
+            # this is the primary ray, count starts at 1 as the primary ray is the first ray
+            self.ray_count = 1
 
         # create a new spectrum object compatible with the ray
         spectrum = self.new_spectrum()
@@ -203,12 +213,25 @@ cdef class Ray(CoreRay):
 
         ray.origin = origin
         ray.direction = direction
-        ray._samples = self._samples
+        ray._num_samples = self._num_samples
         ray._min_wavelength = self._min_wavelength
         ray._max_wavelength = self._max_wavelength
         ray.max_distance = self.max_distance
         ray.max_depth = self.max_depth
         ray.depth = self.depth + 1
+
+        # track ray statistics
+        if self._primary_ray is None:
+
+            # primary ray
+            self.ray_count += 1
+            ray._primary_ray = self
+
+        else:
+
+            # secondary ray
+            self._primary_ray.ray_count += 1
+            ray._primary_ray = self._primary_ray
 
         return ray
 
