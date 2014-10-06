@@ -32,7 +32,7 @@
 cimport cython
 from raysect.core.math.utility cimport interpolate, integrate
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
-from numpy import array
+from numpy import array, float64
 
 # required by numpy c-api
 import_array()
@@ -68,8 +68,8 @@ cdef class SampledSF(SpectralFunction):
         :param samples: 1D array of spectral samples.
         """
 
-        self.wavelengths = array(wavelengths)
-        self.samples = array(samples)
+        self.wavelengths = array(wavelengths, dtype=float64)
+        self.samples = array(samples, dtype=float64)
         self.fast_sample = fast_sample
 
         if self.wavelengths.ndim != 1:
