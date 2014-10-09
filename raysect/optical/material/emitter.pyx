@@ -77,7 +77,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         # obtain emission density from emission function (W/m^3/str)
         emission = new_spectrum(spectrum.min_wavelength,
                                 spectrum.max_wavelength,
-                                spectrum.samples)
+                                spectrum.num_samples)
 
         emission = self.emission_function(direction, emission)
 
@@ -92,7 +92,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         s_view = spectrum.samples
 
         # integrate emission density along ray path
-        for index in range(spectrum.samples.shape[0]):
+        for index in range(spectrum.num_samples):
 
             s_view[index] += e_view[index] * length
 
@@ -155,7 +155,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         emission_previous = new_spectrum(spectrum.min_wavelength,
                                         spectrum.max_wavelength,
-                                        spectrum.samples)
+                                        spectrum.num_samples)
 
         emission_previous = self.emission_function(start, direction, emission_previous)
 
@@ -179,7 +179,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
             emission = new_spectrum(spectrum.min_wavelength,
                                     spectrum.max_wavelength,
-                                    spectrum.samples)
+                                    spectrum.num_samples)
 
             emission = self.emission_function(sample_point, direction, emission)
 
@@ -194,7 +194,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
             e2_view = emission_previous.samples
 
             # trapezium rule integration
-            for index in range(spectrum.samples.shape[0]):
+            for index in range(spectrum.num_samples):
 
                 s_view[index] += c * (e1_view[index] + e2_view[index])
 
@@ -206,7 +206,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         emission = new_spectrum(spectrum.min_wavelength,
                                 spectrum.max_wavelength,
-                                spectrum.samples)
+                                spectrum.num_samples)
 
         emission = self.emission_function(end, direction, emission)
 
@@ -222,7 +222,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         # trapezium rule integration of remainder
         c = 0.5 * (length - t)
-        for index in range(spectrum.samples.shape[0]):
+        for index in range(spectrum.num_samples):
 
             s_view[index] += c * (e1_view[index] + e2_view[index])
 
