@@ -48,5 +48,5 @@ cdef class World(_NodeBase):
 
     cpdef list contains(self, Point point)
 
-    cpdef build_accelerator(self)
+    cpdef build_accelerator(self, bint force=*)
 

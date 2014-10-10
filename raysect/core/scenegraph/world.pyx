@@ -113,27 +113,27 @@ cdef class World(_NodeBase):
         self.build_accelerator()
         return self._accelerator.contains(point)
 
-    cpdef build_accelerator(self):
+    cpdef build_accelerator(self, bint force=False):
         """
         This method manually triggers a rebuild of the Acceleration object.
 
         If the Acceleration object is already in a consistent state this method
-        will do nothing.
+        will do nothing unless the force keyword option is set to True.
 
         The Acceleration object is used to accelerate hit() and contains()
-        calculations, typically using a spatial subdivion method. If changes are
+        calculations, typically using a spatial subdivsion method. If changes are
         made to the scenegraph structure, transforms or to a primitive's
         geometry the acceleration structures may no longer represent the
         geometry of the scene and hence must be rebuilt. This process is
         usually performed automatically as part of the first call to hit() or
         contains() following a change in the scenegraph. As calculating these
         structures can take some time, this method provides the option of
-        triggering a rebuild outside of hit() and contains() incase the user wants
-        to be able to benchmark without including the overhead of the
+        triggering a rebuild outside of hit() and contains() in case the user wants
+        to be able to perform a benchmark without including the overhead of the
         Acceleration object rebuild.
         """
 
-        if self._rebuild_accelerator:
+        if self._rebuild_accelerator or force:
 
             self._accelerator.build(self._primitives)
             self._rebuild_accelerator = False
