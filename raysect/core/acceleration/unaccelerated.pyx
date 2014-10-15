@@ -32,7 +32,7 @@
 # TODO: add docstrings
 
 cimport cython
-from raysect.core.acceleration.acceleratedprimitive cimport AcceleratedPrimitive
+from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
 
 cdef class Unaccelerated(Accelerator):
 
@@ -45,14 +45,14 @@ cdef class Unaccelerated(Accelerator):
 
         cdef:
             Primitive primitive
-            AcceleratedPrimitive accel_primitive
+            BoundPrimitive accel_primitive
 
         self.primitives = []
         self.world_box = BoundingBox()
 
         for primitive in primitives:
 
-            accel_primitive = AcceleratedPrimitive(primitive)
+            accel_primitive = BoundPrimitive(primitive)
             self.primitives.append(accel_primitive)
             self.world_box.union(accel_primitive.box)
 
@@ -63,7 +63,7 @@ cdef class Unaccelerated(Accelerator):
         cdef:
             double distance
             Intersection intersection, closest_intersection
-            AcceleratedPrimitive primitive
+            BoundPrimitive primitive
 
         # does the ray intersect the space containing the primitives
         if not self.world_box.hit(ray):
@@ -95,7 +95,7 @@ cdef class Unaccelerated(Accelerator):
 
         cdef:
             list enclosing_primitives
-            AcceleratedPrimitive primitive
+            BoundPrimitive primitive
 
         if not self.world_box.contains(point):
 

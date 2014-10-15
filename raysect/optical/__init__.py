@@ -27,6 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .colour import *
 from .ray import *
+from .colour import *
 from .spectrum import *
+from .spectralfunction import *
+from ..core.scenegraph import Node, Observer, Primitive, World
+from ..core.math import *
