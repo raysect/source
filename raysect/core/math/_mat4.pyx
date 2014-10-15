@@ -61,7 +61,7 @@ cdef class _Mat4:
 
             return
 
-        # try reading object as 4x4 array of elements with seperate indexing
+        # try reading object as 4x4 array of elements with separate indexing
         try:
 
             for i in range(0, 4):
@@ -167,10 +167,26 @@ cdef class _Mat4:
 
         self.m[row][column] = v
 
-    cdef inline double get_e(self, int row, int column):
+    cdef inline double get_element(self, int row, int column):
+        """
+        Fast getting of matrix elements via indexing.
+
+        Cython equivalent to __getitem__, without the checks and call overhead.
+
+        For speed, this function performs no bounds checking. Invalid indexing
+        may cause a segfault.
+        """
 
         return self.m[row][column]
 
-    cdef inline void set_e(self, int row, int column, double v):
+    cdef inline void set_element(self, int row, int column, double v):
+        """
+        Fast setting of matrix elements via indexing.
+
+        Cython equivalent to __setitem__, without the checks and call overhead.
+
+        For speed, this function performs no bounds checking. Invalid indexing
+        may cause a segfault.
+        """
 
         self.m[row][column] = v

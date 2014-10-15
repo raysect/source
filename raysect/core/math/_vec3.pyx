@@ -31,22 +31,9 @@
 
 cimport cython
 from libc.math cimport sqrt
-from raysect.core.math.point cimport Point
 
 cdef class _Vec3:
     """3D Vector base class."""
-
-    # def __cinit__(self, double x=0.0, double y=0.0, double z=1.0):
-    #     """
-    #     Point constructor.
-    #
-    #     If no initial values are passed, _Vec3 defaults to a unit vector
-    #     aligned with the z-axis: _Vec(0.0, 0.0, 1.0)
-    #     """
-    #
-    #     self.x = x
-    #     self.y = y
-    #     self.z = z
 
     def __init__(self, double x=0.0, double y=0.0, double z=1.0):
         """
@@ -63,26 +50,26 @@ cdef class _Vec3:
     def __getitem__(self, int i):
         """Returns the vector coordinates by index ([0,1,2] -> [x,y,z])."""
 
-        if i < 0 or i > 2:
-            raise IndexError("Index out of range [0, 2].")
-        elif i == 0:
+        if i == 0:
             return self.x
         elif i == 1:
             return self.y
-        else:
+        elif i == 2:
             return self.z
+        else:
+            raise IndexError("Index out of range [0, 2].")
 
     def __setitem__(self, int i, double value):
         """Sets the vector coordinates by index ([0,1,2] -> [x,y,z])."""
 
-        if i < 0 or i > 2:
-            raise IndexError("Index out of range [0, 2].")
-        elif i == 0:
+        if i == 0:
             self.x = value
         elif i == 1:
             self.y = value
-        else:
+        elif i == 2:
             self.z = value
+        else:
+            raise IndexError("Index out of range [0, 2].")
 
     property length:
         """
@@ -110,12 +97,26 @@ cdef class _Vec3:
 
         return self.x * v.x + self.y * v.y + self.z * v.z
 
-    # length getters/setters
     cdef inline double get_length(self):
+        """
+        Fast function to obtain the vectors length.
+
+        Cython only, equivalent to length.__get__() property.
+
+        Use instead of Python attribute access in cython code.
+        """
 
         return sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
 
+    @cython.cdivision(True)
     cdef inline void set_length(self, double v) except *:
+        """
+        Fast function to set the vectors length.
+
+        Cython only, equivalent to length.__set__() property.
+
+        Use instead of Python attribute access in cython code.
+        """
 
         cdef double t
 
@@ -126,9 +127,7 @@ cdef class _Vec3:
             raise ZeroDivisionError("A zero length vector can not be rescaled as the direction of a zero length vector is undefined.")
 
         # normalise and rescale vector
-        with cython.cdivision(True):
-
-            t = v / sqrt(t)
+        t = v / sqrt(t)
 
         self.x = self.x * t
         self.y = self.y * t
@@ -139,20 +138,31 @@ cdef class _Vec3:
         Fast getting of coordinates via indexing.
 
         Cython equivalent to __getitem__, without the checks and call overhead.
+
+        If an invalid index is passed this function return NaN.
         """
 
-        if index == 0: return self.x
-        elif index == 1: return self.y
-        elif index == 2: return self.z
-        else: return float("NaN")
+        if index == 0:
+            return self.x
+        elif index == 1:
+            return self.y
+        elif index == 2:
+            return self.z
+        else:
+            return float("NaN")
 
     cdef inline void set_index(self, int index, double value):
         """
         Fast setting of coordinates via indexing.
 
         Cython equivalent to __setitem__, without the checks and call overhead.
+
+        If an invalid index is passed this function does nothing.
         """
 
-        if index == 0: self.x = value
-        elif index == 1: self.y = value
-        elif index == 2: self.z = value
+        if index == 0:
+            self.x = value
+        elif index == 1:
+            self.y = value
+        elif index == 2:
+            self.z = value

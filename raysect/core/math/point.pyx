@@ -59,26 +59,26 @@ cdef class Point:
     def __getitem__(self, int i):
         """Returns the point coordinates by index ([0,1,2] -> [x,y,z])."""
 
-        if i < 0 or i > 2:
-            raise IndexError("Index out of range [0, 2].")
-        elif i == 0:
+        if i == 0:
             return self.x
         elif i == 1:
             return self.y
-        else:
+        elif i == 2:
             return self.z
+        else:
+            raise IndexError("Index out of range [0, 2].")
 
     def __setitem__(self, int i, double value):
         """Sets the point coordinates by index ([0,1,2] -> [x,y,z])."""
 
-        if i < 0 or i > 2:
-            raise IndexError("Index out of range [0, 2].")
-        elif i == 0:
+        if i == 0:
             self.x = value
         elif i == 1:
             self.y = value
-        else:
+        elif i == 2:
             self.z = value
+        else:
+            raise IndexError("Index out of range [0, 2].")
 
     def __add__(object x, object y):
         """Addition operator."""
@@ -114,11 +114,11 @@ cdef class Point:
                              p.y - v.y,
                              p.z - v.z)
 
-
         else:
 
             return NotImplemented
 
+    @cython.cdivision(True)
     def __mul__(object x, object y):
         """Multiply operator."""
 
@@ -138,9 +138,7 @@ cdef class Point:
                 raise ZeroDivisionError("Bad matrix transform, 4th element of homogeneous coordinate is zero.")
 
             # pre divide for speed (dividing is much slower than multiplying)
-            with cython.cdivision(True):
-
-                w = 1.0 / w
+            w = 1.0 / w
 
             return new_point((m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3]) * w,
                              (m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z + m.m[1][3]) * w,
@@ -168,6 +166,7 @@ cdef class Point:
         z = p.z - self.z
         return sqrt(x*x + y*y + z*z)
 
+    @cython.cdivision(True)
     cpdef Point transform(self, AffineMatrix m):
         """
         Transforms the point with the supplied Affine Matrix.
@@ -191,21 +190,31 @@ cdef class Point:
             raise ZeroDivisionError("Bad matrix transform, 4th element of homogeneous coordinate is zero.")
 
         # pre divide for speed (dividing is much slower than multiplying)
-        with cython.cdivision(True):
-
-            w = 1.0 / w
+        w = 1.0 / w
 
         return new_point((m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z + m.m[0][3]) * w,
                          (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
                          (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
 
     cdef inline Point add(self, _Vec3 v):
+        """
+        Fast addition operator.
+
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
 
         return new_point(self.x + v.x,
                          self.y + v.y,
                          self.z + v.z)
 
     cdef inline Point sub(self, _Vec3 v):
+        """
+        Fast subtraction operator.
+
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
 
         return new_point(self.x - v.x,
                          self.y - v.y,
@@ -225,20 +234,33 @@ cdef class Point:
         Fast getting of coordinates via indexing.
 
         Cython equivalent to __getitem__, without the checks and call overhead.
+
+        If an invalid index is passed this function return NaN.
         """
 
-        if index == 0: return self.x
-        elif index == 1: return self.y
-        elif index == 2: return self.z
-        else: return float("NaN")
+        if index == 0:
+            return self.x
+        elif index == 1:
+            return self.y
+        elif index == 2:
+            return self.z
+        else:
+            return float("NaN")
 
     cdef inline void set_index(self, int index, double value):
         """
         Fast setting of coordinates via indexing.
 
         Cython equivalent to __setitem__, without the checks and call overhead.
+
+        If an invalid index is passed this function does nothing.
         """
 
-        if index == 0: self.x = value
-        elif index == 1: self.y = value
-        elif index == 2: self.z = value
+        if index == 0:
+            self.x = value
+        elif index == 1:
+            self.y = value
+        elif index == 2:
+            self.z = value
+
+

@@ -55,6 +55,12 @@ cdef class Point:
 
 
 cdef inline Point new_point(double x, double y, double z):
+    """
+    Point factory function.
+
+    Creates a new Point object with less overhead than the equivalent Python
+    call. This function is callable from cython only.
+    """
 
     cdef Point v
     v = Point.__new__(Point)

@@ -139,6 +139,7 @@ cdef class Normal(_Vec3):
 
             return NotImplemented
 
+    @cython.cdivision(True)
     def __truediv__(object x, object y):
         """Division operator."""
 
@@ -155,10 +156,7 @@ cdef class Normal(_Vec3):
                 raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
             v = <Normal>x
-
-            with cython.cdivision(True):
-
-                d = 1.0 / d
+            d = 1.0 / d
 
             return new_normal(d * v.x,
                               d * v.y,
@@ -182,6 +180,7 @@ cdef class Normal(_Vec3):
                           self.z * v.x - v.z * self.x,
                           self.x * v.y - v.x * self.y)
 
+    @cython.cdivision(True)
     cpdef Normal normalise(self):
         """
         Returns a normalised copy of the normal vector.
@@ -198,9 +197,7 @@ cdef class Normal(_Vec3):
             raise ZeroDivisionError("A zero length vector can not be normalised as the direction of a zero length vector is undefined.")
 
         # normalise and rescale vector
-        with cython.cdivision(True):
-
-            t = 1.0 / sqrt(t)
+        t = 1.0 / sqrt(t)
 
         return new_normal(self.x * t,
                           self.y * t,
@@ -246,38 +243,67 @@ cdef class Normal(_Vec3):
                           m.m[0][2] * self.x + m.m[1][2] * self.y + m.m[2][2] * self.z)
 
     cdef inline Normal neg(self):
+        """
+        Fast negation operator.
+
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
 
         return new_normal(-self.x,
                           -self.y,
                           -self.z)
 
     cdef inline Normal add(self, _Vec3 v):
+        """
+        Fast addition operator.
+
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
 
         return new_normal(self.x + v.x,
                           self.y + v.y,
                           self.z + v.z)
 
     cdef inline Normal sub(self, _Vec3 v):
+        """
+        Fast subtraction operator.
+
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
 
         return new_normal(self.x - v.x,
                           self.y - v.y,
                           self.z - v.z)
 
     cdef inline Normal mul(self, double m):
+        """
+        Fast multiplication operator.
+
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
 
         return new_normal(self.x * m,
                           self.y * m,
                           self.z * m)
 
+    @cython.cdivision(True)
     cdef inline Normal div(self, double d):
+        """
+        Fast division operator.
+
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
 
         if d == 0.0:
 
             raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
-        with cython.cdivision:
-
-            d = 1.0 / d
+        d = 1.0 / d
 
         return new_normal(self.x * d,
                           self.y * d,

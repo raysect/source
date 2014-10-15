@@ -54,6 +54,12 @@ cdef class Vector(_Vec3):
 
 
 cdef inline Vector new_vector(double x, double y, double z):
+    """
+    Vector factory function.
+
+    Creates a new Vector object with less overhead than the equivalent Python
+    call. This function is callable from cython only.
+    """
 
     cdef Vector v
     v = Vector.__new__(Vector)
