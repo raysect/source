@@ -2,10 +2,11 @@
 import csv
 from collections import namedtuple
 from numpy import array
-from glass import Glass, Sellmeier
-from raysect.optical.spectralfunction cimport SampledSF
+from .glass import Glass, Sellmeier
+from ..spectralfunction import SampledSF
 
 _sellmeier_disp = namedtuple("sellmeier_dispersion", ["B1", "B2", "B3", "C1", "C2", "C3"])
+
 _taui25 = namedtuple("transmission_25mm", ["wavelength", "transmission"])
 
 # wavelenths measured for Schott glass data
@@ -19,9 +20,13 @@ _glass_data = namedtuple("glass_data", ["name", "sellmeier", "taui25"])
 class Schott():
 
     def __init__(self):
+
         try:
-            schott_file = open('./glass_libraries/schott_catalog_2000.csv', 'r')
+
+            schott_file = open('raysect/optical/material/glass_libraries/schott_catalog_2000.csv', 'r')
+
         except FileNotFoundError:
+
             raise ValueError('Schott Glass catalog file could not be found.')
 
         self._schott_glass_data = {}
@@ -30,6 +35,7 @@ class Schott():
         reader = csv.reader(schott_file, quoting=csv.QUOTE_NONNUMERIC, quotechar='"')
 
         for row in reader:
+
             # extract raw csv data into appropriate variables
             glass_name = row[0]
             sellmeir = _sellmeier_disp(*row[1:7])
@@ -43,9 +49,13 @@ class Schott():
             self._schott_glass_data[glass_name] = _glass_data(glass_name, sellmeir, transmission_25)
 
     def __call__(self, glass_name):
+
         try:
+
             chosen_glass = self._schott_glass_data[glass_name]
+
         except KeyError:
+
             raise ValueError('This glass could not be found in the available Schott catalog.')
 
         b1, b2, b3, c1, c2, c3 = chosen_glass.sellmeier
@@ -54,8 +64,11 @@ class Schott():
         return Glass(index=Sellmeier(b1, b2, b3, c1, c2, c3), transmission=SampledSF(wavelengths, transmission))
 
     def list(self):
+
         return self._schott_glass_data.keys()
 
+
+schott = Schott()
 
 # Add classes for other glass libraries here
 # ...
