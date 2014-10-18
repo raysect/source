@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.acceleration.accelerator cimport Accelerator
-from raysect.core.acceleration.acceleratedprimitive cimport AcceleratedPrimitive
+from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.classes cimport Ray
 from raysect.core.math.point cimport Point
@@ -40,7 +40,7 @@ cdef class Edge:
 
     cdef readonly double value
     cdef readonly bint is_upper_edge
-    cdef readonly AcceleratedPrimitive primitive
+    cdef readonly BoundPrimitive primitive
 
 
 cdef class Node:

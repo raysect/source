@@ -1,13 +1,10 @@
-from raysect.core import World, translate, rotate, Point, Vector, Ray
+from raysect.core.acceleration import Unaccelerated
+from raysect.optical import World, translate, rotate, Point, Vector, Ray, d65_white, ConstantSF, SampledSF
 from raysect.optical.observer.pinholecamera import PinholeCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.glass import Glass, BK7, Sellmeier
-from raysect.primitive import Sphere, Box, Cylinder
-from raysect.primitive.csg import Union, Intersect, Subtract
-from raysect.optical.colour import d65_white
-from raysect.optical.spectralfunction import ConstantSF, SampledSF
+from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
 from matplotlib.pyplot import *
-from raysect.core.acceleration import Unaccelerated
 from numpy import array
 
 # kludge to fix matplotlib 1.4 ion() idiocy
@@ -66,8 +63,8 @@ cube = Box(Point(-1.5, -1.5, -1.5), Point(1.5, 1.5, 1.5))
 sphere = Sphere(2.0)
 
 #Subtract(sphere, Sphere(1.5), world, rotate(30, 23, 5), Glass(testindex, testindex))
-Intersect(sphere, Subtract(cube, Union(Union(cyl_x, cyl_y), cyl_z)), world, rotate(30, 20, 0), green_glass)
-#Union(Union(cyl_x, cyl_y), cyl_z, world, rotate(30, 20, 0), BK7())
+#Intersect(sphere, Subtract(cube, Union(Union(cyl_x, cyl_y), cyl_z)), world, rotate(30, 20, 0), green_glass)
+Union(Union(cyl_x, cyl_y), cyl_z, world, rotate(30, 20, 0), BK7())
 
 
 

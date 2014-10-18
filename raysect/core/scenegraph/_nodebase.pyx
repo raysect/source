@@ -81,7 +81,7 @@ cdef class _NodeBase:
 
             if self.root is not self:
 
-                # node has need disconnected from a scenegraph, de-register from old root node
+                # node has been disconnected from the scenegraph, de-register with old root node
                 self.root._deregister(self)
                 self.root = self
 
@@ -94,7 +94,7 @@ cdef class _NodeBase:
             # is node connecting to a different scenegraph?
             if self.root is not self._parent.root:
 
-                # de-register from old root and register with new root
+                # de-register with old root and register with new root
                 self.root._deregister(self)
                 self.root = self._parent.root
                 self._parent.root._register(self)

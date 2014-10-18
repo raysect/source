@@ -92,14 +92,14 @@ cdef class Node(_NodeBase):
 
             if value is None:
 
-                # _parent cannot be None (see above) so it must be a node, disconnect from current parent
+                # _parent cannot be None (due to above if statement) so it must be a node, disconnect from current parent
                 self._parent.children.remove(self)
                 self._parent = None
                 self._update()
 
             else:
 
-                if isinstance(value, _NodeBase) == False:
+                if not isinstance(value, _NodeBase):
 
                     raise TypeError("The specified parent is not a scenegraph node or None (unparented).")
 

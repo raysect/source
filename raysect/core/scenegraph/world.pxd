@@ -41,6 +41,7 @@ cdef class World(_NodeBase):
     cdef bint _rebuild_accelerator
     cdef Accelerator _accelerator
     cdef list _primitives
+    cdef list _observers
 
     cpdef AffineMatrix to(self, _NodeBase node)
 
@@ -48,5 +49,5 @@ cdef class World(_NodeBase):
 
     cpdef list contains(self, Point point)
 
-    cpdef build_accelerator(self)
+    cpdef build_accelerator(self, bint force=*)
 

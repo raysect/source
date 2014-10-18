@@ -57,6 +57,12 @@ cdef class Normal(_Vec3):
 
 
 cdef inline Normal new_normal(double x, double y, double z):
+    """
+    Normal factory function.
+
+    Creates a new Normal object with less overhead than the equivalent Python
+    call. This function is callable from cython only.
+    """
 
     cdef Normal v
     v = Normal.__new__(Normal)

@@ -31,6 +31,7 @@
 
 from raysect.core.acceleration.kdtree cimport KDTree
 from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph.observer cimport Observer
 
 cdef class World(_NodeBase):
 
@@ -43,8 +44,42 @@ cdef class World(_NodeBase):
 
         self._name = name
         self. _primitives = list()
+        self. _observers = list()
         self. _rebuild_accelerator = True
         self._accelerator = KDTree()
+
+    property accelerator:
+
+        def __get__(self):
+
+            return self._accelerator
+
+        def __set__(self, Accelerator accelerator not None):
+
+            self._accelerator = accelerator
+            self._rebuild_accelerator = True
+
+    property name:
+
+        def __get__(self):
+
+            return self._name
+
+        def __set__(self, unicode value not None):
+
+            self._name = value
+
+    property primitives:
+
+        def __get__(self):
+
+            return self._primitives
+
+    property observers:
+
+        def __get__(self):
+
+            return self._observers
 
     def __str__(self):
         """String representation."""
@@ -113,74 +148,60 @@ cdef class World(_NodeBase):
         self.build_accelerator()
         return self._accelerator.contains(point)
 
-    cpdef build_accelerator(self):
+    cpdef build_accelerator(self, bint force=False):
         """
         This method manually triggers a rebuild of the Acceleration object.
 
         If the Acceleration object is already in a consistent state this method
-        will do nothing.
+        will do nothing unless the force keyword option is set to True.
 
         The Acceleration object is used to accelerate hit() and contains()
-        calculations, typically using a spatial subdivion method. If changes are
+        calculations, typically using a spatial subdivsion method. If changes are
         made to the scenegraph structure, transforms or to a primitive's
         geometry the acceleration structures may no longer represent the
         geometry of the scene and hence must be rebuilt. This process is
         usually performed automatically as part of the first call to hit() or
         contains() following a change in the scenegraph. As calculating these
         structures can take some time, this method provides the option of
-        triggering a rebuild outside of hit() and contains() incase the user wants
-        to be able to benchmark without including the overhead of the
+        triggering a rebuild outside of hit() and contains() in case the user wants
+        to be able to perform a benchmark without including the overhead of the
         Acceleration object rebuild.
         """
 
-        if self._rebuild_accelerator:
+        if self._rebuild_accelerator or force:
 
             self._accelerator.build(self._primitives)
             self._rebuild_accelerator = False
 
     def _register(self, _NodeBase node):
-        """Adds primitives to the World's primitive list."""
+        """Adds observers and primitives to the World's object tracking lists."""
 
         if isinstance(node, Primitive):
 
             self._primitives.append(node)
             self._rebuild_accelerator = True
 
+        if isinstance(node, Observer):
+
+            self._observers.append(node)
+
     def _deregister(self, _NodeBase node):
-        """Removes primitives from the World's primitive list."""
+        """Removes observers and primitives from the World's object tracking lists."""
 
         if isinstance(node, Primitive):
 
             self._primitives.remove(node)
             self._rebuild_accelerator = True
 
+        if isinstance(node, Observer):
+
+            self._observers.remove(node)
+
     def _change(self, _NodeBase node):
         """
         Alerts the world that a change to the scenegraph has occurred that could
         have made the acceleration structure no longer a valid representation
-        of the scenegaph geometry.
+        of the scenegraph geometry.
         """
 
         self._rebuild_accelerator = True
-
-    property accelerator:
-
-        def __get__(self):
-
-            return self._accelerator
-
-        def __set__(self, Accelerator accelerator not None):
-
-            self._accelerator = accelerator
-            self._rebuild_accelerator = True
-
-    property name:
-
-        def __get__(self):
-
-            return self._name
-
-        def __set__(self, unicode value not None):
-
-            self._name = value
-

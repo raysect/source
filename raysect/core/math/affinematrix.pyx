@@ -88,13 +88,14 @@ cdef class AffineMatrix(_Mat4):
 
         return NotImplemented
 
+    @cython.cdivision(True)
     cpdef AffineMatrix inverse(self):
         """
         Calculates the inverse of the affine matrix.
 
         Returns an AffineMatrix containing the inverse.
 
-        Raises a ValueError if the matrix is singular ans the inverse can not be
+        Raises a ValueError if the matrix is singular and the inverse can not be
         calculated. All valid affine transforms should be invertable.
         """
 
@@ -122,9 +123,7 @@ cdef class AffineMatrix(_Mat4):
 
             raise ValueError("Matrix is singular and not invertible.")
 
-        with cython.cdivision(True):
-
-            idet = 1.0 / det
+        idet = 1.0 / det
 
         # apply Cramer's rule to invert matrix
         t[6] = self.m[0][0] * self.m[3][1] - self.m[0][1] * self.m[3][0]
@@ -189,6 +188,7 @@ cpdef AffineMatrix translate(double x, double y, double z):
                             0, 0, 0, 1)
 
 
+@cython.cdivision(True)
 cpdef AffineMatrix rotate_x(double angle):
     """
     Returns an affine matrix representing the rotation of the coordinate space
@@ -199,9 +199,7 @@ cpdef AffineMatrix rotate_x(double angle):
 
     cdef double r
 
-    with cython.cdivision(True):
-
-        r = pi * angle / 180.0
+    r = pi * angle / 180.0
 
     return new_affinematrix(1, 0, 0, 0,
                             0, cos(r), -sin(r), 0,
@@ -209,6 +207,7 @@ cpdef AffineMatrix rotate_x(double angle):
                             0, 0, 0, 1)
 
 
+@cython.cdivision(True)
 cpdef AffineMatrix rotate_y(double angle):
     """
     Returns an affine matrix representing the rotation of the coordinate space
@@ -219,9 +218,7 @@ cpdef AffineMatrix rotate_y(double angle):
 
     cdef double r
 
-    with cython.cdivision(True):
-
-        r = pi * angle / 180.0
+    r = pi * angle / 180.0
 
     return new_affinematrix(cos(r), 0, sin(r), 0,
                             0, 1, 0, 0,
@@ -229,6 +226,7 @@ cpdef AffineMatrix rotate_y(double angle):
                             0, 0, 0, 1)
 
 
+@cython.cdivision(True)
 cpdef AffineMatrix rotate_z(double angle):
     """
     Returns an affine matrix representing the rotation of the coordinate space
@@ -239,9 +237,7 @@ cpdef AffineMatrix rotate_z(double angle):
 
     cdef double r
 
-    with cython.cdivision(True):
-
-        r = pi * angle / 180.0
+    r = pi * angle / 180.0
 
     return new_affinematrix(cos(r), -sin(r), 0, 0,
                             sin(r), cos(r), 0, 0,
@@ -249,6 +245,7 @@ cpdef AffineMatrix rotate_z(double angle):
                             0, 0, 0, 1)
 
 
+@cython.cdivision(True)
 cpdef AffineMatrix rotate_vector(double angle, Vector v):
     """
     Returns an affine matrix representing the rotation of the coordinate space
@@ -262,9 +259,7 @@ cpdef AffineMatrix rotate_vector(double angle, Vector v):
 
     vn = v.normalise()
 
-    with cython.cdivision(True):
-
-        r = pi * angle / 180.0
+    r = pi * angle / 180.0
 
     s = sin(r)
     c = cos(r)

@@ -124,7 +124,7 @@ cdef class KDTree(Accelerator):
 
         cdef:
             Primitive primitive
-            AcceleratedPrimitive accel_primitive
+            BoundPrimitive accel_primitive
             list accel_primitives
 
         accel_primitives = []
@@ -132,7 +132,7 @@ cdef class KDTree(Accelerator):
         for primitive in primitives:
 
             # wrap primitive with it's bounding box
-            accel_primitive = AcceleratedPrimitive(primitive)
+            accel_primitive = BoundPrimitive(primitive)
             accel_primitives.append(accel_primitive)
 
         return accel_primitives
@@ -143,7 +143,7 @@ cdef class KDTree(Accelerator):
         """
 
         cdef:
-            AcceleratedPrimitive primitive
+            BoundPrimitive primitive
             BoundingBox box
 
         self.world_box = BoundingBox()
@@ -173,7 +173,7 @@ cdef class Node:
             int lower_primitive_count, upper_primitive_count
             list edges, lower_primitives, upper_primitives
             Edge edge
-            AcceleratedPrimitive primitive
+            BoundPrimitive primitive
 
         if depth == 0 or len(primitives) < min_primitives:
 
@@ -192,7 +192,7 @@ cdef class Node:
         for axis in [X_AXIS, Y_AXIS, Z_AXIS]:
 
             # obtain sorted list of candidate edges along chosen axis
-            # TODO: calculate and store edges for each axis only once per primitive, tcache and pass on to child nodes. The current recalculation is wasteful
+            # TODO: calculate and store edges for each axis only once per primitive, cache and pass on to child nodes. The current recalculation is wasteful.
             edges = self._build_edges(primitives, axis)
 
             # cache primitive counts in lower and upper volumes for speed
@@ -289,7 +289,7 @@ cdef class Node:
 
         cdef:
             list edges
-            AcceleratedPrimitive primitive
+            BoundPrimitive primitive
 
         edges = []
         for primitive in primitives:
@@ -421,7 +421,7 @@ cdef class Node:
         cdef:
             double distance
             Intersection intersection, closest_intersection
-            AcceleratedPrimitive primitive
+            BoundPrimitive primitive
 
         # find the closest primitive-ray intersection
         closest_intersection = None
@@ -447,7 +447,7 @@ cdef class Node:
     cdef list contains(self, Point point):
 
         cdef:
-            AcceleratedPrimitive primitive
+            BoundPrimitive primitive
             list enclosing_primitives
             double location
 

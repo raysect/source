@@ -60,8 +60,8 @@ cdef class CSGPrimitive(Primitive):
         # wrap primitives in bounding boxes
         # this must be done before building the scenegraph as re-parenting
         # triggers rebuild() on the new root node
-        self._primitive_a = AcceleratedPrimitive(primitive_a)
-        self._primitive_b = AcceleratedPrimitive(primitive_b)
+        self._primitive_a = BoundPrimitive(primitive_a)
+        self._primitive_b = BoundPrimitive(primitive_b)
 
         # build CSG scene graph
         self._root = CSGRoot(self)
@@ -87,7 +87,7 @@ cdef class CSGPrimitive(Primitive):
             self._primitive_a.primitive.parent = None
 
             # insert new primitive into scenegraph
-            self._primitive_a = AcceleratedPrimitive(primitive)
+            self._primitive_a = BoundPrimitive(primitive)
             primitive.parent = self._root
 
             # invalidate next_intersection cache
@@ -105,7 +105,7 @@ cdef class CSGPrimitive(Primitive):
             self._primitive_b.primitive.parent = None
 
             # insert new primitive into scenegraph
-            self._primitive_b = AcceleratedPrimitive(primitive)
+            self._primitive_b = BoundPrimitive(primitive)
             primitive.parent = self._root
 
             # invalidate next_intersection cache
@@ -278,8 +278,8 @@ cdef class CSGPrimitive(Primitive):
         Triggers a rebuild of the CSG primitive's acceleration structures.
         """
 
-        self._primitive_a = AcceleratedPrimitive(self._primitive_a.primitive)
-        self._primitive_b = AcceleratedPrimitive(self._primitive_b.primitive)
+        self._primitive_a = BoundPrimitive(self._primitive_a.primitive)
+        self._primitive_b = BoundPrimitive(self._primitive_b.primitive)
 
 
 cdef class NullPrimitive(Primitive):

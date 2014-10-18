@@ -29,20 +29,43 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.acceleration.boundingbox cimport BoundingBox
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.point cimport Point
-from raysect.core.classes cimport Ray
-from raysect.core.classes cimport Intersection
+# TODO: add docstrings
 
-cdef class AcceleratedPrimitive:
+cdef class BoundPrimitive:
 
-    cdef readonly Primitive primitive
-    cdef readonly BoundingBox box
-    cdef bint _primitive_tested
+    def __init__(self, Primitive primitive not None):
 
-    cdef inline Intersection hit(self, Ray ray)
+        self.primitive = primitive
+        self.box = primitive.bounding_box()
+        self._primitive_tested = False
 
-    cdef inline Intersection next_intersection(self)
+    cdef inline Intersection hit(self, Ray ray):
 
-    cdef inline bint contains(self, Point point)
+        if self.box.hit(ray):
+
+            self._primitive_tested = True
+            return self.primitive.hit(ray)
+
+        # primitive hit was not called so next_intersection could now be invalid
+        self._primitive_tested = False
+
+        return None
+
+    cdef inline Intersection next_intersection(self):
+
+        # only permit calls to next intersection if the primitive hit function was called
+        # this is required to prevent intersections from previous hits erroneously
+        # being reported for a hit that a failed bounding box hit
+        if self._primitive_tested:
+
+            return self.primitive.next_intersection()
+
+        return None
+
+    cdef inline bint contains(self, Point point):
+
+        if self.box.contains(point):
+
+            return self.primitive.contains(point)
+
+        return False

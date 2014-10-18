@@ -32,13 +32,13 @@
 from raysect.core.classes cimport Ray, Intersection
 from raysect.core.scenegraph.node cimport Node
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.acceleration.acceleratedprimitive cimport AcceleratedPrimitive
+from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
 
 cdef class CSGPrimitive(Primitive):
 
     cdef CSGRoot _root
-    cdef AcceleratedPrimitive _primitive_a
-    cdef AcceleratedPrimitive _primitive_b
+    cdef BoundPrimitive _primitive_a
+    cdef BoundPrimitive _primitive_b
     cdef Ray _cache_ray
     cdef Intersection _cache_intersection_a
     cdef Intersection _cache_intersection_b
