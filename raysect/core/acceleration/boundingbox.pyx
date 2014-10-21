@@ -138,6 +138,7 @@ cdef class BoundingBox:
 
         return True
 
+    @cython.cdivision(True)
     cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection):
 
         cdef double reciprocal, tmin, tmax
@@ -145,8 +146,7 @@ cdef class BoundingBox:
         if direction != 0.0:
 
             # calculate intersections with slab planes
-            with cython.cdivision(True):
-                reciprocal = 1.0 / direction
+            reciprocal = 1.0 / direction
 
             if direction > 0:
 
