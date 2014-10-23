@@ -85,7 +85,7 @@ cdef class KDTree(Accelerator):
     @cython.boundscheck(False)
     cpdef Intersection hit(self, Ray ray):
         """
-        Returns the first intersection with a primitive or None of no primitive
+        Returns the first intersection with a primitive or None if no primitive
         is intersected.
         """
 
