@@ -68,7 +68,5 @@ class Schott():
         return self._schott_glass_data.keys()
 
 
-schott = Schott()
-
 # Add classes for other glass libraries here
 # ...
