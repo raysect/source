@@ -39,7 +39,6 @@ from raysect.core.math.vector cimport Vector, new_vector
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
-from raysect.optical.spectralfunction cimport SampledSF
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.ray cimport Ray
 
@@ -251,22 +250,4 @@ cdef class Glass(Material):
 
         return spectrum
 
-
-def BK7():
-
-    wavelengths = array([
-        300, 310, 320, 334, 350, 365, 370, 380, 390, 400, 405, 420, 436,
-        460, 500, 546, 580, 620, 660, 700, 1060, 1530, 1970, 2325, 2500],
-        dtype = float64)
-
-    transmission = array([
-        9.0949470177293E-053, 8.27180612553028E-025, 4.36650282421093E-012,
-        4.82818728076233E-005, 0.0356051725, 0.308154984, 0.3942598467,
-        0.5036637716, 0.6424682406, 0.7252151802, 0.7550399649, 0.7550399649,
-        0.7252151802, 0.7550399649, 0.7860594188, 0.8518704175, 0.818320121,
-        0.7860594188, 0.7860594188, 0.8518704175, 0.8867604855, 0.445700404,
-        0.000935775, 8.462936461125E-011, 1.78689910246017E-018])
-
-    return Glass(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                 transmission=SampledSF(wavelengths, transmission))
 
