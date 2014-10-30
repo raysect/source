@@ -8,20 +8,21 @@ import sys
 sys.ps1 = 'SOMETHING'
 
 # Import the new lens classes
-from raysect.optical.optical_components.sphericalsinglets import planar_convex_lens
+from raysect.optical.optical_components.sphericalsinglets import planar_convex_lens, planar_concave_lens
 
 # Instantiate world object
 world = World()
 
 # Create a lens object
-planar_convex_lens(15, 3, parent=world, transform=translate(0, 0, 0) * rotate(90.0, 0.0, 0.0))
+planar_convex_lens(0.1, 0.02, parent=world, transform=translate(-0.02, 0, 0) * rotate(0, 0.0, 0.0))
+planar_concave_lens(0.1, 0.02, parent=world, transform=translate(0.02, 0, 0) * rotate(0, 0.0, 0.0))
 
 # Background Checkerboard
-Box(Point(-50.0, -50.0, 50.0), Point(50.0, 50.0, 50.1), world, material=Checkerboard(4.0, d65_white, d65_white, 0.4, 0.8))
+Box(Point(-10.0, -10.0, 0.10), Point(10.0, 10.0, 0.4), world, material=Checkerboard(0.01, d65_white, d65_white, 0.4, 0.8))
 
 # Instantiate camera object, and configure its settings.
 ion()
-camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -8) * rotate(0, 0, 0))
+camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -0.08) * rotate(0, 0, 0))
 camera.ray_max_depth = 15
 camera.rays = 1
 camera.spectral_samples = 15
