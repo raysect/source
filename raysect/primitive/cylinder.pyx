@@ -59,8 +59,26 @@ DEF UPPER_FACE = 1
 
 
 cdef class Cylinder(Primitive):
+    """
+    A cylinder primitive.
+
+    The cylinder is defined by a radius and height. It lies along the z-axis
+    and extends over the z range [0, height]. The ends of the cylinder are
+    capped with disks forming a closed surface.
+    """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+        """
+        Radius is radius of the cylinder in x-y plane.
+        Height of cylinder is defines extent along z-axis [0, height].
+
+        :param radius: Radius of the cylinder in meters (default = 0.5).
+        :param height: Height of the cylinder in meters (default = 1.0).
+        :param parent: Scene-graph parent node or None (default = None).
+        :param transform: An AffineMatrix defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+        :param material: A Material object defining the cylinder's material (default = None).
+        :param name: A string specifying a user-friendly name for the cylinder (default = "").
+        """
 
         super().__init__(parent, transform, material, name)
 

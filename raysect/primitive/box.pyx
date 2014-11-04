@@ -59,8 +59,22 @@ DEF Z_AXIS = 2
 
 
 cdef class Box(Primitive):
+    """
+    A box primitive.
+
+    The box is defined by lower and upper points in the local co-ordinate
+    system.
+    """
 
     def __init__(self, Point lower=None, Point upper=None, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+        """
+        :param lower: Lower point of the box (default = Point(-0.5, -0.5, -0.5)).
+        :param upper: Upper point of the box (default = Point(0.5, 0.5, 0.5)).
+        :param parent: Scene-graph parent node or None (default = None).
+        :param transform: An AffineMatrix defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+        :param material: A Material object defining the box's material (default = None).
+        :param name: A string specifying a user-friendly name for the box (default = "").
+        """
 
         super().__init__(parent, transform, material, name)
 

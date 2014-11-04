@@ -40,12 +40,24 @@ from libc.math cimport sqrt
 # bounding box is padded by a small amount to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9
 
-# additional ray distance to avoid rehitting the same surface point
+# additional ray distance to avoid re-hitting the same surface point
 DEF EPSILON = 1e-9
 
 cdef class Sphere(Primitive):
+    """
+    A sphere primitive.
 
-    def __init__(self, double radius = 1.0, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+    The sphere is centered at the origin of the local co-ordinate system.
+    """
+
+    def __init__(self, double radius=0.5, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+        """
+        :param radius: Radius of the sphere in meters (default = 0.5).
+        :param parent: Scene-graph parent node or None (default = None).
+        :param transform: An AffineMatrix defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+        :param material: A Material object defining the sphere's material (default = None).
+        :param name: A string specifying a user-friendly name for the sphere (default = "").
+        """
 
         super().__init__(parent, transform, material, name)
 
