@@ -39,13 +39,18 @@ from raysect.core.math.vector cimport Vector, new_vector
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
+from raysect.optical.spectralfunction cimport ConstantSF
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.ray cimport Ray
 
 
 cdef class Sellmeier(SpectralFunction):
 
-    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3):
+    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, int subsamples=10):
+
+        if subsamples < 1:
+
+            raise ValueError("The number of sub-samples cannot be less than 1.")
 
         self.b1 = b1
         self.b2 = b2
@@ -55,32 +60,78 @@ cdef class Sellmeier(SpectralFunction):
         self.c2 = c2
         self.c3 = c3
 
-    # TODO: add caching
+        self.subsamples = subsamples
+
+        # initialise cache to invalid values
+        self.cached_min_wavelength = -1
+        self.cached_max_wavelength = -1
+        self.cached_index = -1
 
     @cython.cdivision(True)
     cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+        """
+        Samples the refractive index given by the Sellmeier equation.
 
-        cdef double centre_wavelength, w2
+        The refractive index returned is the average over the wavelength range.
+        The number of sub-samples used for the average calculation can be
+        configured by modifying the subsamples attribute. If the subsamples
+        attribute is set to 1, a single sample is taken from the centre of the
+        wavelength range.
 
-        # Sellmeier coefficients are specified for wavelength in micrometers
-        centre_wavelength = 0.5 * (min_wavelength + max_wavelength) * 1e-3
+        :param min_wavelength: Minimum wavelength in nm.
+        :param max_wavelength: Maximum wavelength in nm.
+        :return: A refractive index sample.
+        """
 
-        # TODO: prevent div by zero
-        # TODO: integrate over range, rather than centrally sample
+        cdef:
+            double index, delta_wavelength, centre_wavelength, reciprocal
+            int i
 
-        w2 = centre_wavelength * centre_wavelength
+        if self.cached_min_wavelength == min_wavelength and \
+             self.cached_max_wavelength == max_wavelength:
+
+            return self.cached_index
+
+        # sample the refractive index
+        index = 0.0
+        delta_wavelength = (max_wavelength - min_wavelength) / self.subsamples
+        reciprocal =  1.0 / self.subsamples
+        for i in range(self.subsamples):
+
+            centre_wavelength = (min_wavelength + (0.5 + i) * delta_wavelength)
+
+            # Sellmeier coefficients are specified for wavelength in micrometers
+            index += reciprocal * self._sellmeier(centre_wavelength * 1e-3)
+
+        # update cache
+        self.cached_min_wavelength = min_wavelength
+        self.cached_max_wavelength = max_wavelength
+        self.cached_index = index
+
+        return index
+
+    @cython.cdivision(True)
+    cdef inline double _sellmeier(self, double wavelength):
+        """
+        Returns a sample of the three term Sellmeier equation at the specified
+        wavelength.
+
+        :param wavelength: Wavelength in um.
+        :return: Refractive index sample.
+        """
+
+        cdef double w2 = wavelength * wavelength
         return sqrt(1 + (self.b1 * w2) / (w2 - self.c1)
                       + (self.b2 * w2) / (w2 - self.c2)
                       + (self.b3 * w2) / (w2 - self.c3))
 
 
-# note transmission defined as attenuation per meter
-
 cdef class Glass(Material):
 
-    def __init__(self, SpectralFunction index, SpectralFunction transmission, cutoff = 1e-6):
+    def __init__(self, SpectralFunction index, SpectralFunction transmission, cutoff = 1e-6, SpectralFunction external_index=ConstantSF(1.0)):
 
         self.index = index
+        self.external_index = external_index
         self.transmission = transmission
         self.cutoff = cutoff
 
@@ -90,7 +141,8 @@ cdef class Glass(Material):
 
         cdef:
             Vector incident, reflected, transmitted
-            double c1, c2s, n1, n2, gamma, reflectivity, transmission, temp, index
+            double internal_index, external_index, n1, n2
+            double c1, c2s, gamma, reflectivity, transmission, temp
             Spectrum spectrum, ray_sample
 
         # convert ray direction normal to local coordinates
@@ -103,21 +155,22 @@ cdef class Glass(Material):
         # calculate cosine of angle between incident and normal
         c1 = -normal.dot(incident)
 
-        # sample refractive index
-        index = self.index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
+        # sample refractive indicies
+        internal_index = self.index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
+        external_index = self.external_index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
 
         # are we entering or leaving material - calculate refractive change
         if exiting:
 
             # leaving material
-            n1 = index
-            n2 = 1.0
+            n1 = internal_index
+            n2 = external_index
 
         else:
 
             # entering material
-            n1 = 1.0
-            n2 = index
+            n1 = external_index
+            n2 = internal_index
 
         with cython.cdivision:
 

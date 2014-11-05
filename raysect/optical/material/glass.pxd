@@ -37,12 +37,20 @@ cdef class Sellmeier(SpectralFunction):
     cdef:
         double b1, b2, b3
         double c1, c2, c3
+        int subsamples
+        bint cached
+        double cached_min_wavelength
+        double cached_max_wavelength
+        double cached_index
+
+    cdef inline double _sellmeier(self, double wavelength)
 
 
 cdef class Glass(Material):
 
     cdef:
         SpectralFunction index
+        SpectralFunction external_index
         SpectralFunction transmission
         public double cutoff
 
