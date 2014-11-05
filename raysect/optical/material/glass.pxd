@@ -49,9 +49,9 @@ cdef class Sellmeier(SpectralFunction):
 cdef class Glass(Material):
 
     cdef:
-        SpectralFunction index
-        SpectralFunction external_index
-        SpectralFunction transmission
+        public SpectralFunction index
+        public SpectralFunction external_index
+        public SpectralFunction transmission
         public double cutoff
 
     cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission)
