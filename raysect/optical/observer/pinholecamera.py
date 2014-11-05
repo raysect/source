@@ -228,6 +228,9 @@ class PinholeCamera(Observer):
         draw()
         show()
 
+        # workaround for interactivity for QT backend
+        pause(0.1)
+
     def save(self, filename):
 
         imsave(filename, self.frame)
