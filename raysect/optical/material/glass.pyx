@@ -70,7 +70,8 @@ cdef class Sellmeier(SpectralFunction):
     @cython.cdivision(True)
     cpdef double sample_single(self, double min_wavelength, double max_wavelength):
         """
-        Samples the refractive index given by the Sellmeier equation.
+        Generates a single sample of the refractive index given by the
+        Sellmeier equation.
 
         The refractive index returned is the average over the wavelength range.
         The number of sub-samples used for the average calculation can be
@@ -111,7 +112,7 @@ cdef class Sellmeier(SpectralFunction):
         return index
 
     @cython.cdivision(True)
-    cdef inline double _sellmeier(self, double wavelength):
+    cdef inline double _sellmeier(self, double wavelength) nogil:
         """
         Returns a sample of the three term Sellmeier equation at the specified
         wavelength.
@@ -268,12 +269,11 @@ cdef class Glass(Material):
 
             return spectrum
 
-    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission):
+    @cython.cdivision(True)
+    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil:
 
-        with cython.cdivision:
-
-            reflectivity[0] = 0.5 * (((n1*ci - n2*ct) / (n1*ci + n2*ct))**2 + ((n1*ct - n2*ci) / (n1*ct + n2*ci))**2)
-            transmission[0] = 1 - reflectivity[0]
+        reflectivity[0] = 0.5 * (((n1*ci - n2*ct) / (n1*ci + n2*ct))**2 + ((n1*ct - n2*ci) / (n1*ct + n2*ci))**2)
+        transmission[0] = 1 - reflectivity[0]
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

@@ -43,7 +43,7 @@ cdef class Sellmeier(SpectralFunction):
         double cached_max_wavelength
         double cached_index
 
-    cdef inline double _sellmeier(self, double wavelength)
+    cdef inline double _sellmeier(self, double wavelength) nogil
 
 
 cdef class Glass(Material):
@@ -54,4 +54,4 @@ cdef class Glass(Material):
         public SpectralFunction transmission
         public double cutoff
 
-    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission)
+    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil

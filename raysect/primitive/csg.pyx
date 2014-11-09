@@ -30,6 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # TODO: add more advanced material handling
+# TODO: bounding box generation can be optimised by applying csg operations to bounding boxes
+# TODO: 2nd intersection calculation can be avoided subtract and intersection if the fit primitive is missed
 
 from raysect.core.classes cimport Material, new_ray
 from raysect.core.math.point cimport Point, new_point
