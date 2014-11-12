@@ -50,7 +50,7 @@ cdef class _NodeBase:
 
     def _check_parent(self, _NodeBase parent):
         """
-        Raises an exception if this node or its decendents are passed.
+        Raises an exception if this node or its descendants are passed.
 
         The purpose of this function is to enforce the structure of the scene-
         graph. A scene-graph is logically a tree and so cannot contain cyclic
@@ -59,7 +59,7 @@ cdef class _NodeBase:
 
         if parent is self:
 
-            raise ValueError("A node cannot be parented to itself or one of it's decendants.")
+            raise ValueError("A node cannot be parented to itself or one of it's descendants.")
 
         for child in self.children:
 
