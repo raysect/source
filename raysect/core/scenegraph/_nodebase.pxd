@@ -40,6 +40,7 @@ cdef class _NodeBase:
     cdef AffineMatrix _transform
     cdef readonly AffineMatrix _root_transform
     cdef readonly AffineMatrix _root_transform_inverse
+    cdef bint _track_modifications
 
 
 

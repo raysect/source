@@ -62,9 +62,15 @@ cdef class Node(_NodeBase):
 
         super().__init__()
 
+        # prevent _modified() being called during initialisation
+        self._track_modifications = False
+
         self._name = name
         self._transform = transform
         self.parent = parent
+
+        # re-enable _modified() calls
+        self._track_modifications = True
 
     def __str__(self):
         """String representation."""

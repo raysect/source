@@ -47,6 +47,7 @@ cdef class _NodeBase:
         self._transform = AffineMatrix()
         self._root_transform = AffineMatrix()
         self._root_transform_inverse = AffineMatrix()
+        self._track_modifications = True
 
     def _check_parent(self, _NodeBase parent):
         """
@@ -88,7 +89,11 @@ cdef class _NodeBase:
             # this node is now a root node
             self._root_transform = AffineMatrix()
             self._root_transform_inverse = AffineMatrix()
-            self._modified()
+
+            # report root transforms have changed
+            if self._track_modifications:
+
+                self._modified()
 
         else:
 
@@ -103,7 +108,11 @@ cdef class _NodeBase:
             # update root transforms
             self._root_transform = (<_NodeBase> self._parent)._root_transform.mul(self._transform)
             self._root_transform_inverse = self._root_transform.inverse()
-            self._modified()
+
+            # report root transforms have changed
+            if self._track_modifications:
+
+                self._modified()
 
         # inform root node of change to scenegraph
         self.root._change(self)
