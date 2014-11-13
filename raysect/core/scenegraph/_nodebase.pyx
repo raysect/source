@@ -88,6 +88,7 @@ cdef class _NodeBase:
             # this node is now a root node
             self._root_transform = AffineMatrix()
             self._root_transform_inverse = AffineMatrix()
+            self._modified()
 
         else:
 
@@ -102,6 +103,7 @@ cdef class _NodeBase:
             # update root transforms
             self._root_transform = (<_NodeBase> self._parent)._root_transform.mul(self._transform)
             self._root_transform_inverse = self._root_transform.inverse()
+            self._modified()
 
         # inform root node of change to scenegraph
         self.root._change(self)
@@ -114,7 +116,8 @@ cdef class _NodeBase:
     def _register(self, _NodeBase node):
         """
         When implemented by root nodes this method allows nodes in the
-        scene-graph to register themselves for special handling.
+        scene-graph to register themselves with the root node for special
+        handling.
 
         Virtual method call.
 
@@ -126,7 +129,7 @@ cdef class _NodeBase:
     def _deregister(self, _NodeBase node):
         """
         When implemented by root nodes this method allows nodes in the
-        scene-graph to deregister themselves.
+        scene-graph to deregister themselves with the root node.
 
         Virtual method call.
 
@@ -140,6 +143,18 @@ cdef class _NodeBase:
         When implemented by root nodes this method allows nodes in the
         scene-graph to inform the root node of any change to scenegraph
         structure or to the nodes themselves.
+
+        Virtual method call.
+        """
+
+        pass
+
+    def _modified(self):
+        """
+        This method is called when a scene-graph change occurs that modifies
+        the node's root transforms. This will occur if the node's transform is
+        modified, a parent node's transform is modified or if the node's
+        section of scene-graph is re-parented.
 
         Virtual method call.
         """
