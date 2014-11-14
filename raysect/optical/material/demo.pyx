@@ -30,6 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
+from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph.world cimport World
+from raysect.optical.ray cimport Ray
 from raysect.core.math.point cimport Point
 from raysect.core.math.vector cimport Vector, new_vector
 from raysect.optical.spectrum cimport Spectrum
@@ -59,7 +63,9 @@ cdef class GaussianBeam(VolumeEmitterInhomogeneous):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum):
+    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
             int index, count

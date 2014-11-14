@@ -32,10 +32,7 @@
 cimport cython
 from numpy cimport ndarray
 from libc.math cimport round
-from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.scenegraph.world cimport World
-from raysect.optical.ray cimport Ray
+
 from raysect.core.math.normal cimport Normal
 from raysect.core.math.point cimport new_point
 from raysect.optical.spectrum cimport new_spectrum
@@ -63,8 +60,8 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         start = start_point.transform(to_local)
         end = end_point.transform(to_local)
 
-        # obtain local space ray direction and integration length
-        direction = start.vector_to(end)
+        # obtain local space ray direction (travels end->start) and integration length
+        direction = end.vector_to(start)
         length = direction.get_length()
 
         if length == 0:
@@ -79,7 +76,8 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
                                 spectrum.max_wavelength,
                                 spectrum.num_samples)
 
-        emission = self.emission_function(direction, emission)
+        # emission function specifies direction from ray origin to hit-point
+        emission = self.emission_function(direction, emission, world, ray, primitive, to_local, to_world)
 
         # sanity check as bounds checking is disabled
         if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1
@@ -98,7 +96,9 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum):
+    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix to_local, AffineMatrix to_world):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
@@ -132,7 +132,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         cdef:
             Point start, end
-            Vector direction
+            Vector integration_direction, ray_direction
             double length, t, c
             Spectrum emission, emission_previous
             double[::1] e1_view, e2_view, s_view
@@ -143,21 +143,22 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         end = end_point.transform(to_local)
 
         # obtain local space ray direction and integration length
-        direction = start.vector_to(end)
-        length = direction.get_length()
+        integration_direction = start.vector_to(end)
+        length = integration_direction.get_length()
 
         if length == 0:
 
             # nothing to contribute
             return spectrum
 
-        direction = direction.normalise()
+        integration_direction = integration_direction.normalise()
+        ray_direction = -integration_direction
 
         emission_previous = new_spectrum(spectrum.min_wavelength,
                                         spectrum.max_wavelength,
                                         spectrum.num_samples)
 
-        emission_previous = self.emission_function(start, direction, emission_previous)
+        emission_previous = self.emission_function(start, ray_direction, emission_previous, world, ray, primitive, to_local, to_world)
 
         # sanity check as bounds checking is disabled
         if (emission_previous.samples.ndim != 1 or spectrum.samples.ndim != 1
@@ -173,15 +174,15 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         c = 0.5 * self._step
         while t <= length:
 
-            sample_point = new_point(start.x + t * direction.x,
-                                     start.y + t * direction.y,
-                                     start.z + t * direction.z)
+            sample_point = new_point(start.x + t * integration_direction.x,
+                                     start.y + t * integration_direction.y,
+                                     start.z + t * integration_direction.z)
 
             emission = new_spectrum(spectrum.min_wavelength,
                                     spectrum.max_wavelength,
                                     spectrum.num_samples)
 
-            emission = self.emission_function(sample_point, direction, emission)
+            emission = self.emission_function(sample_point, ray_direction, emission, world, ray, primitive, to_local, to_world)
 
             # sanity check as bounds checking is disabled
             if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1
@@ -208,7 +209,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
                                 spectrum.max_wavelength,
                                 spectrum.num_samples)
 
-        emission = self.emission_function(end, direction, emission)
+        emission = self.emission_function(end, ray_direction, emission, world, ray, primitive, to_local, to_world)
 
         # sanity check as bounds checking is disabled
         if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1
@@ -228,7 +229,9 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum):
+    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix to_local, AffineMatrix to_world):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
@@ -286,7 +289,9 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum):
+    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
             ndarray emission
