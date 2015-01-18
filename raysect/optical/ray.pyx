@@ -70,6 +70,34 @@ cdef class Ray(CoreRay):
         self.ray_count = 0
         self._primary_ray = None
 
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return (
+            super().__getstate__(),
+            self._num_samples,
+            self._min_wavelength,
+            self._max_wavelength,
+            self.max_depth,
+            self.depth,
+            self.ray_count,
+            self._primary_ray
+        )
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        (super_state,
+         self._num_samples,
+         self._min_wavelength,
+         self._max_wavelength,
+         self.max_depth,
+         self.depth,
+         self.ray_count,
+         self._primary_ray) = state
+
+        super().__setstate__(super_state)
+
     property num_samples:
 
         def __get__(self):

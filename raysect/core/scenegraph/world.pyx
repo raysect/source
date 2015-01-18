@@ -42,17 +42,11 @@ cdef class World(_NodeBase):
 
         super().__init__()
 
-        # prevent _modified() being called during initialisation
-        self._track_modifications = False
-
         self._name = name
         self. _primitives = list()
         self. _observers = list()
         self. _rebuild_accelerator = True
         self._accelerator = KDTree()
-
-        # re-enable _modified() calls
-        self._track_modifications = True
 
     property accelerator:
 

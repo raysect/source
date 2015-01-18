@@ -102,6 +102,30 @@ cdef class Spectrum(SpectralFunction):
 
         return self.num_samples
 
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return (
+            self.min_wavelength,
+            self.max_wavelength,
+            self.num_samples,
+            self.delta_wavelength,
+            self.samples,
+            self._wavelengths,
+            self.fast_sample
+        )
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        (self.min_wavelength,
+         self.max_wavelength,
+         self.num_samples,
+         self.delta_wavelength,
+         self.samples,
+         self._wavelengths,
+         self.fast_sample) = state
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef inline void _populate_wavelengths(self):

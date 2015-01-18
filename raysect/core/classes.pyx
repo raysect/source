@@ -47,6 +47,17 @@ cdef class Ray:
 
         return "Ray({}, {}, {})".format(self.origin, self.direction, self.max_distance)
 
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return self.origin, self.direction, self.max_distance
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.origin, self.direction, self.max_distance = state
+
+
 
 cdef class Intersection:
 
