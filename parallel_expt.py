@@ -1,6 +1,6 @@
 import numpy as np
 from matplotlib.pyplot import imshow, imsave, show, ion, ioff, clf, figure, draw, pause
-from multiprocessing import Pool, Queue, Pipe, Process, cpu_count
+from multiprocessing import Pool, Queue, Pipe, Process, cpu_count, Manager
 from time import time
 
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
@@ -72,7 +72,7 @@ def worker(pid, world, task_queue, result_queue):
 
 # setup render
 fov = 60
-pixels = (512, 512)
+pixels = (200, 100)
 min_wavelength, max_wavelength, spectral_samples = 375.0, 740.0, 20
 max_depth = 20
 display_update_time = 10
@@ -106,13 +106,17 @@ Box(Point(-50, -50, 50), Point(50, 50, 50.1), world, material=Checkerboard(4, d6
 Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfaceEmitter(d65_white, 0.1))
 
 # setup queues
-task_queue = Queue()
-result_queue = Queue()
+#task_queue = Queue()
+#result_queue = Queue()
+
+manager = Manager()
+task_queue = manager.Queue()
+result_queue = manager.Queue()
 
 # start worker processes
 processes = []
 for pid in range(num_processes):
-    process = Process(target=worker, args=(pid,world, task_queue, result_queue))
+    process = Process(target=worker, args=(pid, world, task_queue, result_queue))
     process.start()
     processes.append(process)
 
@@ -165,7 +169,6 @@ for i in range(0, pixels[0]*pixels[1]):
     if (time() - display_timer) > display_update_time:
 
         print("{:0.2f}%: pixel {}/{}".format(100 * i / (pixels[0]*pixels[1]), i, pixels[0]*pixels[1]))
-        #print("Refreshing display...")
         display(rgb_frame)
         display_timer = time()
 
