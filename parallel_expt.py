@@ -72,7 +72,7 @@ def worker(pid, world, task_queue, result_queue):
 
 # setup render
 fov = 60
-pixels = (200, 100)
+pixels = (1024, 1024)
 min_wavelength, max_wavelength, spectral_samples = 375.0, 740.0, 20
 max_depth = 20
 display_update_time = 10
@@ -105,10 +105,11 @@ Intersect(sphere, Subtract(cube, Union(Union(cyl_x, cyl_y), cyl_z)), world, tran
 Box(Point(-50, -50, 50), Point(50, 50, 50.1), world, material=Checkerboard(4, d65_white, d65_white, 0.4, 0.8))
 Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfaceEmitter(d65_white, 0.1))
 
-# setup queues
-#task_queue = Queue()
-#result_queue = Queue()
+s1 = Sphere(1.0, transform=translate(0, 0, 1.0-0.01))
+s2 = Sphere(0.5, transform=translate(0, 0, -0.5+0.01))
+Intersect(s1, s2, world, translate(0,0,-3.6)*rotate(65,30,0), schott("N-BK7"))
 
+# setup queues
 manager = Manager()
 task_queue = manager.Queue()
 result_queue = manager.Queue()
