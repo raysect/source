@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from time import time
-from math import sin, cos, tan, atan, pi
+from math import tan, pi, ceil
 from multiprocessing import Process, Manager, cpu_count
 
 from numpy import array, zeros
@@ -188,8 +188,8 @@ class PinholeCamera(Observer):
                     rays_per_second = ray_count / (1000 * dt)
                     print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays/s)".format(
                         completion, index + 1, self.rays,
-                        pixel / self._pixels[0], self._pixels[1],
-                        pixel, total_pixels, rays_per_second))
+                        ceil((pixel + 1) / self._pixels[0]), self._pixels[1],
+                        pixel + 1, total_pixels, rays_per_second))
                     ray_count = 0
                     progress_timer = time()
 
@@ -273,7 +273,7 @@ def _producer(pixels, fov, min_wavelength, max_wavelength, spectral_samples, max
             direction = direction.transform(to_root)
 
             # build task
-            ray = Ray(origin, direction, min_wavelength, max_wavelength, spectral_samples, max_depth)
+            ray = Ray(origin, direction, min_wavelength, max_wavelength, spectral_samples, max_depth=max_depth)
             task = ((x, y), ray)
 
             # submit task
@@ -288,7 +288,7 @@ def _worker(world, task_queue, result_queue):
         task = task_queue.get()
 
         # have we been commanded to shutdown?
-        if task is "STOP":
+        if task == "STOP":
 
             # return shutdown task to queue for other processes to read
             task_queue.put(task)
@@ -296,6 +296,7 @@ def _worker(world, task_queue, result_queue):
 
         # decode task
         (meta_data, ray) = task
+
 
         # trace
         spectrum = ray.trace(world)
