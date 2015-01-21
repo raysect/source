@@ -146,6 +146,18 @@ cdef class Point:
 
         return NotImplemented
 
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return self.x, self.y, self.z
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.x = state[0]
+        self.y = state[1]
+        self.z = state[2]
+
     cpdef Vector vector_to(self, Point p):
         """
         Returns a vector from this point to the passed point.

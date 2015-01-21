@@ -127,7 +127,7 @@ cdef class Sellmeier(SpectralFunction):
                       + (self.b3 * w2) / (w2 - self.c3))
 
 
-cdef class Glass(Material):
+cdef class Dielectric(Material):
 
     def __init__(self, SpectralFunction index, SpectralFunction transmission, cutoff = 1e-6, SpectralFunction external_index=ConstantSF(1.0)):
 

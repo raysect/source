@@ -46,7 +46,7 @@ cdef class Sellmeier(SpectralFunction):
     cdef inline double _sellmeier(self, double wavelength) nogil
 
 
-cdef class Glass(Material):
+cdef class Dielectric(Material):
 
     cdef:
         public SpectralFunction index
