@@ -297,7 +297,6 @@ def _worker(world, task_queue, result_queue):
         # decode task
         (meta_data, ray) = task
 
-
         # trace
         spectrum = ray.trace(world)
 
