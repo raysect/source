@@ -118,19 +118,11 @@ class PinholeCamera(Observer):
 
         # generate spectral data
         channels = self._calc_channel_config()
-        resampled_xyz = resample_ciexyz(self.min_wavelength, self.max_wavelength, total_samples)
 
         # establish ipc queues using a manager process
         manager = Manager()
         task_queue = manager.Queue()
         result_queue = manager.Queue()
-
-        # start worker processes
-        workers = []
-        for pid in range(self.process_count):
-            p = Process(target=_worker, args=(world, task_queue, result_queue))
-            p.start()
-            workers.append(p)
 
         # display live render
         display_timer = 0
@@ -148,30 +140,36 @@ class PinholeCamera(Observer):
         # render
         for index, channel in enumerate(channels):
 
-            # spectrum indices corresponding to the current channel
-            lower_index = self.spectral_samples * index
-            upper_index = self.spectral_samples * (index + 1)
+            # generate resampled XYZ curves for channel spectral range
+            resampled_xyz = resample_ciexyz(channel[0], channel[1], channel[2])
 
             # start process to generate image samples
-            Process(target=_producer, args=(self._pixels, self._fov, channel[0], channel[1], channel[2],
-                                            self.ray_max_depth, self.to_root(), task_queue)).start()
+            producer = Process(target=_producer,
+                               args=(self._pixels, self._fov, channel[0], channel[1], channel[2],
+                                     self.ray_max_depth, self.to_root(),
+                                     task_queue))
+            producer.start()
+
+            # start worker processes
+            workers = []
+            for pid in range(self.process_count):
+                p = Process(target=_worker,
+                            args=(world, self.sensitivity, resampled_xyz,
+                                  task_queue, result_queue))
+                p.start()
+                workers.append(p)
 
             # collect results
             for pixel in range(total_pixels):
 
                 # obtain result
-                location, sample_spectrum, sample_ray_count = result_queue.get()
+                location, xyz, sample_ray_count = result_queue.get()
                 fx, fy = location
 
                 # collect ray statistics
                 ray_count += sample_ray_count
 
-                # generate full spectrum for colour calculation
-                spectrum = Spectrum(self.min_wavelength, self.max_wavelength, total_samples)
-                spectrum.samples[lower_index:upper_index] = self.sensitivity * sample_spectrum.samples
-
-                # convert spectrum to CIE XYZ and accumulate
-                xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+                # accumulate colour
                 xyz_frame[fy, fx, 0] += xyz[0]
                 xyz_frame[fy, fx, 1] += xyz[1]
                 xyz_frame[fy, fx, 2] += xyz[2]
@@ -200,6 +198,10 @@ class PinholeCamera(Observer):
                     self.display()
                     display_timer = time()
 
+            # shutdown workers
+            for _ in workers:
+                task_queue.put(None)
+
         # close statistics
         elapsed_time = time() - start_time
         print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
@@ -208,9 +210,6 @@ class PinholeCamera(Observer):
         if self.display_progress:
 
             self.display()
-
-        # shutdown workers
-        task_queue.put("STOP")
 
     def _calc_channel_config(self):
 
@@ -280,7 +279,7 @@ def _producer(pixels, fov, min_wavelength, max_wavelength, spectral_samples, max
             task_queue.put(task)
 
 
-def _worker(world, task_queue, result_queue):
+def _worker(world, sensitivity, resampled_xyz, task_queue, result_queue):
 
     while True:
 
@@ -288,10 +287,7 @@ def _worker(world, task_queue, result_queue):
         task = task_queue.get()
 
         # have we been commanded to shutdown?
-        if task == "STOP":
-
-            # return shutdown task to queue for other processes to read
-            task_queue.put(task)
+        if task is None:
             break
 
         # decode task
@@ -300,7 +296,13 @@ def _worker(world, task_queue, result_queue):
         # trace
         spectrum = ray.trace(world)
 
+        # camera sensitivity
+        spectrum.samples *= sensitivity
+
+        # convert spectrum to CIE XYZ
+        xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+
         # encode result and send
-        result = (meta_data, spectrum, ray.ray_count)
+        result = (meta_data, xyz, ray.ray_count)
         result_queue.put(result)
 
