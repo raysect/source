@@ -119,10 +119,6 @@ class PinholeCamera(Observer):
         # generate spectral data
         channels = self._calc_channel_config()
 
-        # establish ipc queues using a manager process
-        task_queue = Queue()
-        result_queue = Queue()
-
         # display live render
         display_timer = 0
         if self.display_progress:
@@ -141,6 +137,10 @@ class PinholeCamera(Observer):
 
             # generate resampled XYZ curves for channel spectral range
             resampled_xyz = resample_ciexyz(channel[0], channel[1], channel[2])
+
+            # establish ipc queues using a manager process
+            task_queue = Queue()
+            result_queue = Queue()
 
             # start process to generate image samples
             producer = Process(target=_producer,
