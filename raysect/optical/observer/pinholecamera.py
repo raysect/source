@@ -29,7 +29,7 @@
 
 from time import time
 from math import tan, pi, ceil
-from multiprocessing import Process, Manager, cpu_count
+from multiprocessing import Process, Manager, cpu_count, Queue
 
 from numpy import array, zeros
 from matplotlib.pyplot import imshow, imsave, show, ion, ioff, clf, figure, draw, pause
@@ -114,15 +114,14 @@ class PinholeCamera(Observer):
 
         world = self.root
         total_pixels = self._pixels[0] * self._pixels[1]
-        total_samples = self.rays * self.spectral_samples
+        #total_samples = self.rays * self.spectral_samples
 
         # generate spectral data
         channels = self._calc_channel_config()
 
         # establish ipc queues using a manager process
-        manager = Manager()
-        task_queue = manager.Queue()
-        result_queue = manager.Queue()
+        task_queue = Queue()
+        result_queue = Queue()
 
         # display live render
         display_timer = 0
