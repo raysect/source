@@ -177,16 +177,14 @@ class PinholeCamera(Observer):
                 self.frame[fy, fx, :] = ciexyz_to_srgb(*xyz_frame[fy, fx, :])
 
                 # display progress statistics
-                dt = time() - progress_timer
-                if dt > 1.0:
+                if (time() - progress_timer) > 1.0:
 
                     current_work = total_pixels * index + pixel
                     completion = 100 * current_work / total_work
-                    rays_per_second = ray_count / (1000 * dt)
-                    print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays/s)".format(
+                    print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
                         completion, index + 1, self.rays,
                         ceil((pixel + 1) / self._pixels[0]), self._pixels[1],
-                        pixel + 1, total_pixels, rays_per_second))
+                        pixel + 1, total_pixels, ray_count / 1000))
                     ray_count = 0
                     progress_timer = time()
 
