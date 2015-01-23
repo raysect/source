@@ -43,7 +43,7 @@ from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_t
 class PinholeCamera(Observer):
 
     def __init__(self, pixels=(512, 512), fov = 45, sensitivity = 1.0,
-                 spectral_samples = 20, rays = 1, process_count = cpu_count(),
+                 spectral_samples = 20, rays = 1, super_samples = 0, process_count = cpu_count(),
                  parent = None, transform = AffineMatrix(), name = ""):
 
         super().__init__(parent, transform, name)
@@ -54,6 +54,7 @@ class PinholeCamera(Observer):
         self._pixels = pixels
         self._fov = fov
         self.sensitivity = sensitivity
+        self.super_samples = super_samples
 
         # ray configuration
         self.rays = rays
@@ -117,7 +118,7 @@ class PinholeCamera(Observer):
         #total_samples = self.rays * self.spectral_samples
 
         # generate spectral data
-        channels = self._calc_channel_config()
+        channel_configs = self._calc_channel_config()
 
         # display live render
         display_timer = 0
@@ -133,28 +134,27 @@ class PinholeCamera(Observer):
         progress_timer = time()
 
         # render
-        for index, channel in enumerate(channels):
+        for index, channel_config in enumerate(channel_configs):
+
+            min_wavelength, max_wavelength, spectral_samples = channel_config
 
             # generate resampled XYZ curves for channel spectral range
-            resampled_xyz = resample_ciexyz(channel[0], channel[1], channel[2])
+            resampled_xyz = resample_ciexyz(min_wavelength, max_wavelength, spectral_samples)
 
             # establish ipc queues using a manager process
             task_queue = Queue()
             result_queue = Queue()
 
             # start process to generate image samples
-            producer = Process(target=_producer,
-                               args=(self._pixels, self._fov, channel[0], channel[1], channel[2],
-                                     self.ray_max_depth, self.to_root(),
-                                     task_queue))
+            producer = Process(target=self._producer, args=(task_queue, ))
             producer.start()
 
             # start worker processes
             workers = []
             for pid in range(self.process_count):
-                p = Process(target=_worker,
-                            args=(world, self.sensitivity, resampled_xyz,
-                                  task_queue, result_queue))
+                p = Process(target=self._worker,
+                            args=(world, min_wavelength, max_wavelength, spectral_samples,
+                                  resampled_xyz, task_queue, result_queue))
                 p.start()
                 workers.append(p)
 
@@ -163,18 +163,18 @@ class PinholeCamera(Observer):
 
                 # obtain result
                 location, xyz, sample_ray_count = result_queue.get()
-                fx, fy = location
+                x, y = location
 
                 # collect ray statistics
                 ray_count += sample_ray_count
 
                 # accumulate colour
-                xyz_frame[fy, fx, 0] += xyz[0]
-                xyz_frame[fy, fx, 1] += xyz[1]
-                xyz_frame[fy, fx, 2] += xyz[2]
+                xyz_frame[y, x, 0] += xyz[0]
+                xyz_frame[y, x, 1] += xyz[1]
+                xyz_frame[y, x, 2] += xyz[2]
 
                 # convert to sRGB colourspace
-                self.frame[fy, fx, :] = ciexyz_to_srgb(*xyz_frame[fy, fx, :])
+                self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
 
                 # display progress statistics
                 dt = time() - progress_timer
@@ -235,73 +235,89 @@ class PinholeCamera(Observer):
 
         imsave(filename, self.frame)
 
+    def _producer(self, task_queue):
 
-def _producer(pixels, fov, min_wavelength, max_wavelength, spectral_samples, max_depth, to_root, task_queue):
+        # task is simply the pixel location
+        nx, ny = self._pixels
+        for y in range(ny):
+            for x in range(nx):
+                task_queue.put((x, y))
 
-    max_pixels = max(pixels)
+    def _worker(self, world, min_wavelength, max_wavelength, spectral_samples, resampled_xyz, task_queue, result_queue):
 
-    if max_pixels > 1:
+        max_pixels = max(self._pixels)
 
-        # generate ray directions by simulating an image plane 1m from pinhole "aperture"
-        # max width of image plane at 1 meter for given field of view
-        image_max_width = 2 * tan(pi / 180 * 0.5 * fov)
+        if max_pixels > 1:
 
-        # pixel step and start point in image plane
-        image_delta = image_max_width / (max_pixels - 1)
+            # generate ray directions by simulating an image plane 1m from pinhole "aperture"
+            # max width of image plane at 1 meter for given field of view
+            image_max_width = 2 * tan(pi / 180 * 0.5 * self._fov)
 
-        # start point of scan in image plane
-        image_start_x = 0.5 * pixels[0] * image_delta
-        image_start_y = 0.5 * pixels[1] * image_delta
+            # pixel step and start point in image plane
+            image_delta = image_max_width / (max_pixels - 1)
 
-    else:
+            # start point of scan in image plane
+            image_start_x = 0.5 * self._pixels[0] * image_delta
+            image_start_y = 0.5 * self._pixels[1] * image_delta
 
-        # single ray on axis
-        image_delta = 0
-        image_start_x = 0
-        image_start_y = 0
+        else:
 
-    origin = Point(0, 0, 0).transform(to_root)
+            # single ray on axis
+            image_delta = 0
+            image_start_x = 0
+            image_start_y = 0
 
-    for y in range(pixels[1]):
+        origin = Point(0, 0, 0).transform(self.to_root())
 
-        for x in range(pixels[0]):
+        while True:
 
-            # calculate ray parameters
-            direction = Vector(image_start_x - image_delta * x, image_start_y - image_delta * y, 1.0).normalise()
-            direction = direction.transform(to_root)
+            # request next pixel
+            pixel = task_queue.get()
 
-            # build task
-            ray = Ray(origin, direction, min_wavelength, max_wavelength, spectral_samples, max_depth=max_depth)
-            task = ((x, y), ray)
+            # have we been commanded to shutdown?
+            if pixel is None:
+                break
 
-            # submit task
-            task_queue.put(task)
+            # extract pixel coordinate
+            x, y = pixel
 
+            # subsample AA
+            super_samples = self.super_samples
+            delta = 1 / super_samples
+            offset = delta / 2
+            weight = 1 / (super_samples * super_samples)
+            ray_count = 0
+            spectrum = Spectrum(min_wavelength, max_wavelength, spectral_samples)
+            for i in range(super_samples):
 
-def _worker(world, sensitivity, resampled_xyz, task_queue, result_queue):
+                for j in range(super_samples):
 
-    while True:
+                    dx = delta * i - offset
+                    dy = delta * j - offset
 
-        # request next task
-        task = task_queue.get()
+                    # calculate ray parameters
+                    direction = Vector(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
+                    direction = direction.transform(self.to_root())
 
-        # have we been commanded to shutdown?
-        if task is None:
-            break
+                    # generate ray
+                    ray = Ray(origin, direction,
+                              min_wavelength=min_wavelength,
+                              max_wavelength=max_wavelength,
+                              num_samples=spectral_samples,
+                              max_depth=self.ray_max_depth)
 
-        # decode task
-        (meta_data, ray) = task
+                    # trace
+                    sample = ray.trace(world)
 
-        # trace
-        spectrum = ray.trace(world)
+                    # camera sensitivity
+                    spectrum.samples += weight * self.sensitivity * sample.samples
 
-        # camera sensitivity
-        spectrum.samples *= sensitivity
+                    # accumulate statistics
+                    ray_count += ray.ray_count
 
-        # convert spectrum to CIE XYZ
-        xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+            # convert spectrum to CIE XYZ
+            xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
 
-        # encode result and send
-        result = (meta_data, xyz, ray.ray_count)
-        result_queue.put(result)
-
+            # encode result and send
+            result = (pixel, xyz, ray_count)
+            result_queue.put(result)
