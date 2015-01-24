@@ -110,12 +110,8 @@ class PinholeCamera(Observer):
         xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
         self.frame = zeros((self._pixels[1], self._pixels[0], 3))
 
-        # record number of samples per frame
-        #sample_table = zeros(self._pixels[1], self._pixels[0])
-
         world = self.root
         total_pixels = self._pixels[0] * self._pixels[1]
-        #total_samples = self.rays * self.spectral_samples
 
         # generate spectral data
         channel_configs = self._calc_channel_config()
@@ -282,7 +278,7 @@ class PinholeCamera(Observer):
             # subsample AA
             super_samples = self.super_samples
             delta = 1 / super_samples
-            offset = delta / 2
+            offset = delta / 2 - 0.5
             weight = 1 / (super_samples * super_samples)
             ray_count = 0
             spectrum = Spectrum(min_wavelength, max_wavelength, spectral_samples)
@@ -290,8 +286,8 @@ class PinholeCamera(Observer):
 
                 for j in range(super_samples):
 
-                    dx = delta * i - offset
-                    dy = delta * j - offset
+                    dx = delta * i + offset
+                    dy = delta * j + offset
 
                     # calculate ray parameters
                     direction = Vector(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
