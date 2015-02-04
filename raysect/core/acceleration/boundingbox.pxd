@@ -49,7 +49,10 @@ cdef class BoundingBox:
 
     cpdef object union(self, BoundingBox box)
 
+    cpdef object extend(self, Point point, double padding=*)
+
     cpdef double surface_area(self)
 
     cpdef double volume(self)
 
+    cpdef list vertices(self)

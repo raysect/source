@@ -30,11 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # TODO: add more advanced material handling
-# TODO: bounding box generation can be optimised by applying csg operations to bounding boxes
-# TODO: 2nd intersection calculation can be avoided subtract and intersection if the fit primitive is missed
+# TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
 
 from raysect.core.classes cimport Material, new_ray
-from raysect.core.math.point cimport Point, new_point
+from raysect.core.math.point cimport Point
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.scenegraph._nodebase cimport _NodeBase
@@ -196,7 +195,7 @@ cdef class CSGPrimitive(Primitive):
                     return None
 
             # closest intersection was rejected so need a replacement candidate intersection
-            # from the primitive that was the source of the closest intersectionS
+            # from the primitive that was the source of the closest intersection
             if closest_intersection is intersection_a:
 
                 intersection_a = self._primitive_a.next_intersection()
@@ -234,46 +233,6 @@ cdef class CSGPrimitive(Primitive):
 
         # by default, do nothing
         pass
-
-    cpdef BoundingBox bounding_box(self):
-
-        cdef:
-            list points
-            Point point
-            BoundingBox box
-
-        box = BoundingBox()
-
-        # combine local space bounding boxes
-        box.union(self._primitive_a.box)
-        box.union(self._primitive_b.box)
-
-        # convert box vertices to world space
-        points = [
-            box.lower.transform(self.to_root()),
-            new_point(box.lower.x, box.lower.y, box.upper.z).transform(self.to_root()),
-            new_point(box.lower.x, box.upper.y, box.lower.z).transform(self.to_root()),
-            new_point(box.lower.x, box.upper.y, box.upper.z).transform(self.to_root()),
-            new_point(box.upper.x, box.lower.y, box.lower.z).transform(self.to_root()),
-            new_point(box.upper.x, box.lower.y, box.upper.z).transform(self.to_root()),
-            new_point(box.upper.x, box.upper.y, box.lower.z).transform(self.to_root()),
-            box.upper.transform(self.to_root())
-            ]
-
-        # build new world space bounding box that enclose all points
-        # a small degree of padding is added to avoid potential numerical accuracy issues
-        box = BoundingBox()
-        for point in points:
-
-            box.lower.x = min(box.lower.x, point.x - BOX_PADDING)
-            box.lower.y = min(box.lower.y, point.y - BOX_PADDING)
-            box.lower.z = min(box.lower.z, point.z - BOX_PADDING)
-
-            box.upper.x = max(box.upper.x, point.x + BOX_PADDING)
-            box.upper.y = max(box.upper.y, point.y + BOX_PADDING)
-            box.upper.z = max(box.upper.z, point.z + BOX_PADDING)
-
-        return box
 
     cdef void rebuild(self):
         """
@@ -376,6 +335,30 @@ cdef class Union(CSGPrimitive):
 
         return self._primitive_a.contains(p) or self._primitive_b.contains(p)
 
+    cpdef BoundingBox bounding_box(self):
+
+        cdef:
+            list points
+            Point point
+            BoundingBox box
+
+        box = BoundingBox()
+
+        # union local space bounding boxes
+        box.union(self._primitive_a.box)
+        box.union(self._primitive_b.box)
+
+        # obtain local space vertices
+        points = box.vertices()
+
+        # convert points to world space and build an enclosing world space bounding box
+        # a small degree of padding is added to avoid potential numerical accuracy issues
+        box = BoundingBox()
+        for point in points:
+
+            box.extend(point.transform(self.to_root()), BOX_PADDING)
+
+        return box
 
 cdef class Intersect(CSGPrimitive):
 
@@ -426,6 +409,36 @@ cdef class Intersect(CSGPrimitive):
         p = p.transform(self.to_local())
 
         return self._primitive_a.contains(p) and self._primitive_b.contains(p)
+
+    cpdef BoundingBox bounding_box(self):
+
+        cdef:
+            list points
+            Point point
+            BoundingBox box
+
+        box = BoundingBox()
+
+        # find the intersection of the bounding boxes (this will always surround the intersected primitives)
+        box.lower.x = max(self._primitive_a.box.lower.x, self._primitive_b.box.lower.x)
+        box.lower.y = max(self._primitive_a.box.lower.y, self._primitive_b.box.lower.y)
+        box.lower.z = max(self._primitive_a.box.lower.z, self._primitive_b.box.lower.z)
+
+        box.upper.x = min(self._primitive_a.box.upper.x, self._primitive_b.box.upper.x)
+        box.upper.y = min(self._primitive_a.box.upper.y, self._primitive_b.box.upper.y)
+        box.upper.z = min(self._primitive_a.box.upper.z, self._primitive_b.box.upper.z)
+
+        # obtain local space vertices
+        points = box.vertices()
+
+        # convert points to world space and build an enclosing world space bounding box
+        # a small degree of padding is added to avoid potential numerical accuracy issues
+        box = BoundingBox()
+        for point in points:
+
+            box.extend(point.transform(self.to_root()), BOX_PADDING)
+
+        return box
 
 
 cdef class Subtract(CSGPrimitive):
@@ -496,3 +509,23 @@ cdef class Subtract(CSGPrimitive):
         p = p.transform(self.to_local())
 
         return self._primitive_a.contains(p) and not self._primitive_b.contains(p)
+
+    cpdef BoundingBox bounding_box(self):
+
+        cdef:
+            list points
+            Point point
+            BoundingBox box
+
+        # a subtracted object (A - B) will only ever occupy the same or less space than the original primitive (A)
+        # for simplicity just use the original primitive bounding box (A)
+        points = self._primitive_a.box.vertices()
+
+        # convert points to world space and build an enclosing world space bounding box
+        # a small degree of padding is added to avoid potential numerical accuracy issues
+        box = BoundingBox()
+        for point in points:
+
+            box.extend(point.transform(self.to_root()), BOX_PADDING)
+
+        return box

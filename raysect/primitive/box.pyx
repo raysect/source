@@ -392,29 +392,23 @@ cdef class Box(Primitive):
             Point point
             BoundingBox box
 
-        # convert box vertices to world space
+        # generate box vertices
         points = [
-            self._lower.transform(self.to_root()),
-            new_point(self._lower.x, self._lower.y, self._upper.z).transform(self.to_root()),
-            new_point(self._lower.x, self._upper.y, self._lower.z).transform(self.to_root()),
-            new_point(self._lower.x, self._upper.y, self._upper.z).transform(self.to_root()),
-            new_point(self._upper.x, self._lower.y, self._lower.z).transform(self.to_root()),
-            new_point(self._upper.x, self._lower.y, self._upper.z).transform(self.to_root()),
-            new_point(self._upper.x, self._upper.y, self._lower.z).transform(self.to_root()),
-            self._upper.transform(self.to_root())
+            self._lower,
+            new_point(self._lower.x, self._lower.y, self._upper.z),
+            new_point(self._lower.x, self._upper.y, self._lower.z),
+            new_point(self._lower.x, self._upper.y, self._upper.z),
+            new_point(self._upper.x, self._lower.y, self._lower.z),
+            new_point(self._upper.x, self._lower.y, self._upper.z),
+            new_point(self._upper.x, self._upper.y, self._lower.z),
+            self._upper
             ]
 
-        # configure bounding box to enclose all points
+        # convert points to world space and build an enclosing world space bounding box
         # a small degree of padding is added to avoid potential numerical accuracy issues
         box = BoundingBox()
         for point in points:
 
-            box.lower.x = min(box.lower.x, point.x - BOX_PADDING)
-            box.lower.y = min(box.lower.y, point.y - BOX_PADDING)
-            box.lower.z = min(box.lower.z, point.z - BOX_PADDING)
-
-            box.upper.x = max(box.upper.x, point.x + BOX_PADDING)
-            box.upper.y = max(box.upper.y, point.y + BOX_PADDING)
-            box.upper.z = max(box.upper.z, point.z + BOX_PADDING)
+            box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box

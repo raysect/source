@@ -113,7 +113,7 @@ cdef class BoundingBox:
 
         hit = self.intersect(ray, &front_intersection, &back_intersection)
 
-        return (hit, front_intersection, back_intersection)
+        return hit, front_intersection, back_intersection
 
     cdef inline bint intersect(self, Ray ray, double *front_intersection, double *back_intersection):
 
@@ -212,6 +212,16 @@ cdef class BoundingBox:
         self.upper.y = max(self.upper.y, box.upper.y)
         self.upper.z = max(self.upper.z, box.upper.z)
 
+    cpdef object extend(self, Point point, double padding=0.0):
+
+        self.lower.x = min(self.lower.x, point.x - padding)
+        self.lower.y = min(self.lower.y, point.y - padding)
+        self.lower.z = min(self.lower.z, point.z - padding)
+
+        self.upper.x = max(self.upper.x, point.x + padding)
+        self.upper.y = max(self.upper.y, point.y + padding)
+        self.upper.z = max(self.upper.z, point.z + padding)
+
     cpdef double surface_area(self):
 
         cdef double dx, dy, dz
@@ -225,3 +235,16 @@ cdef class BoundingBox:
     cpdef double volume(self):
 
         return (self.upper.x - self.lower.x) * (self.upper.y - self.lower.y) * (self.upper.z - self.lower.z)
+
+    cpdef list vertices(self):
+
+        return [
+            new_point(self.lower.x, self.lower.y, self.lower.z),
+            new_point(self.lower.x, self.lower.y, self.upper.z),
+            new_point(self.lower.x, self.upper.y, self.lower.z),
+            new_point(self.lower.x, self.upper.y, self.upper.z),
+            new_point(self.upper.x, self.lower.y, self.lower.z),
+            new_point(self.upper.x, self.lower.y, self.upper.z),
+            new_point(self.upper.x, self.upper.y, self.lower.z),
+            new_point(self.upper.x, self.upper.y, self.upper.z),
+        ]
