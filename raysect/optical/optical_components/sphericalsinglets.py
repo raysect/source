@@ -26,7 +26,7 @@ def planar_convex_lens(focallength, diameter, thickness=None, material=NBK7, des
     r2 = -focallength * (n - 1)
 
     # check for appropriate thickness value
-    if diameter > fabs(r2):
+    if diameter > fabs(r2)*2:
         raise ValueError("Lens diameter should not be greater than Convex surface radius.")
     else:
         dia = diameter
@@ -169,7 +169,51 @@ def symmetric_biconcave_lens(focallength, diameter, thickness=None, material=NBK
     cyl = Cylinder(0.5 * dia, (th + 2 * hyp), transform=translate(0, 0, -hyp))
     return Subtract(cyl, Union(s1, s2), parent, transform, material)
 
-def meniscus_convex_lens(focallength, diameter, thickness=None, material=NBK7, designwvl=587.6,
-                            parent=None, transform=AffineMatrix()):
 
-    raise NotImplementedError("Still being developed.")
+def positive_meniscus_lens(focallength, diameter, r1, r2=None, thickness=None, material=NBK7, designwvl=587.6,
+                            parent=None, transform=AffineMatrix()):
+    # Also known as a meniscus convex lens
+
+    r1 = abs(r1)  # sign convention is arbitrary for meniscus lens.
+    # TODO: fix this to get refractive index n from material properly. Needs to be at the design wavelength
+    n = 1.25
+
+    # test or calculate the required lens parameters.
+    if (focallength <= 0) or (diameter <= 0):
+        raise ValueError("The focal-length, aperture and thickness of a meniscus lens must all be greater than zero.")
+    if r2:
+        if fabs(r1) >= fabs(r2):
+            raise ValueError("abs(r1) must be less than abs(r2) for a positive meniscus (convex) lens.")
+        elif r2 != 1/(1/r1 - 1/(f(n-1))):
+            raise ValueError("The r1 and r2 values given are not consistant with the thin lens approximation for the parameters given.")
+    else:
+        r2 = 1/(1/r1 - 1/(f(n-1)))
+
+    if thickness:
+        if thickness >= diameter/3:
+            raise ValueError("Thickness larger than expected. Thin lens approximation may be invalid.")
+    else:
+        pass
+
+
+def generic_spherical_singlet(r1, r2, dia, thickness, material=NBK7, parent=None, transform=AffineMatrix()):
+
+    # generic planar-convex lens
+    if r1 == INFINITY and r2 < 0:
+        s2 = Sphere(fabs(r2), transform=translate(0, 0, r2 + thickness))
+        box = Box(Point(-dia, -dia, 0.0), Point(dia, dia, thickness))
+        return Intersect(box, s2, parent, transform, material)
+
+    # generic planar-concave lens
+    elif r1 == INFINITY and r2 > 0:
+        hyp = sqrt(r2**2 - (0.5 * dia)**2)
+        vacuum_th = fabs(r2) - hyp
+        s2 = Sphere(fabs(r2), transform=translate(0, 0, r2 + thickness))
+        cyl = Cylinder(0.5 * dia, (thickness + vacuum_th))
+        return Subtract(cyl, s2, parent, transform, material)
+
+    else:
+        raise ValueError("Lens specification is invalid.")
+
+
+
