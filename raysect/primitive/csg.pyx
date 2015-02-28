@@ -65,9 +65,9 @@ cdef class CSGPrimitive(Primitive):
         self._primitive_b = BoundPrimitive(primitive_b)
 
         # build CSG scene graph
-        self._root = CSGRoot(self)
-        primitive_a.parent = self._root
-        primitive_b.parent = self._root
+        self._csgroot = CSGRoot(self)
+        primitive_a.parent = self._csgroot
+        primitive_b.parent = self._csgroot
 
         # initialise next_intersection cache
         self._cache_ray = None
@@ -89,7 +89,7 @@ cdef class CSGPrimitive(Primitive):
 
             # insert new primitive into scenegraph
             self._primitive_a = BoundPrimitive(primitive)
-            primitive.parent = self._root
+            primitive.parent = self._csgroot
 
             # invalidate next_intersection cache
             self._cache_invalid = True
@@ -107,7 +107,7 @@ cdef class CSGPrimitive(Primitive):
 
             # insert new primitive into scenegraph
             self._primitive_b = BoundPrimitive(primitive)
-            primitive.parent = self._root
+            primitive.parent = self._csgroot
 
             # invalidate next_intersection cache
             self._cache_invalid = True
