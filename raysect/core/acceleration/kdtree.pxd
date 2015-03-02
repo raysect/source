@@ -36,17 +36,17 @@ from raysect.core.classes cimport Ray
 from raysect.core.math.point cimport Point
 from raysect.core.classes cimport Intersection
 
-cdef class Edge:
+cdef class _Edge:
 
     cdef readonly double value
     cdef readonly bint is_upper_edge
     cdef readonly BoundPrimitive primitive
 
 
-cdef class Node:
+cdef class _Node:
 
-    cdef readonly Node lower_branch
-    cdef readonly Node upper_branch
+    cdef readonly _Node lower_branch
+    cdef readonly _Node upper_branch
     cdef readonly list primitives
     cdef readonly int axis
     cdef readonly double split
@@ -66,13 +66,15 @@ cdef class Node:
 
     cdef inline Intersection _hit_leaf(self, Ray ray, double max_range)
 
+    cdef inline Intersection _hit_branch(self, Ray ray, double min_range, double max_range)
+
     cdef list contains(self, Point point)
 
 
 cdef class KDTree(Accelerator):
 
     cdef readonly BoundingBox world_box
-    cdef readonly Node tree
+    cdef readonly _Node tree
     cdef public int max_depth
     cdef public double hit_cost
     cdef public int min_primitives
@@ -81,7 +83,7 @@ cdef class KDTree(Accelerator):
 
     cpdef list contains(self, Point point)
 
-    cdef list _accelerate_primitives(self, list primitives)
+    cdef list _bound_primitives(self, list primitives)
 
     cdef void _build_world_box(self, list primitives)
 

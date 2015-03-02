@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: this can be heavily optimised, a job for the future
+# TODO: this can be heavily optimised by packing data into a cache aligned c-structure, a job for the future
 
 from raysect.core.scenegraph.primitive cimport Primitive
 from libc.math cimport log, ceil
@@ -46,7 +46,7 @@ cdef class KDTree(Accelerator):
     def __init__(self):
 
         self.world_box = BoundingBox()
-        self.tree = Node()
+        self.tree = _Node()
 
         self.max_depth = -1
         self.min_primitives = 1
@@ -63,20 +63,16 @@ cdef class KDTree(Accelerator):
         cdef int max_depth
 
         # wrap primitives with their bounding boxes
-        primitives = self._accelerate_primitives(primitives)
+        primitives = self._bound_primitives(primitives)
 
         # construct a bounding box that contains all the primitive in the world
         self._build_world_box(primitives)
 
+        # default max tree depth is set to the value suggested in "Physically Based Rendering From Theory to
+        # Implementation 2nd Edition", Matt Phar and Greg Humphreys, Morgan Kaufmann 2010, p232
         if self.max_depth <= 0:
-
-            # set max tree depth to value suggested in "Physically Based Rendering
-            # From Theory to Implementation 2nd Edition", Matt Phar and Greg Humphreys,
-            # Morgan Kaufmann 2010, p232
             max_depth = <int> ceil(8 + 1.3 * log(len(primitives)))
-
         else:
-
             max_depth = self.max_depth
 
         # calling build on the root node triggers a recursive rebuild of the tree
@@ -101,9 +97,7 @@ cdef class KDTree(Accelerator):
         max_range = intersection[2]
 
         if not hit:
-
             return None
-
         return self.tree.hit(ray, min_range, max_range)
 
     cpdef list contains(self, Point point):
@@ -112,34 +106,32 @@ cdef class KDTree(Accelerator):
         """
 
         if not self.world_box.contains(point):
-
             return []
-
         return self.tree.contains(point)
 
-    cdef list _accelerate_primitives(self, list primitives):
+    cdef list _bound_primitives(self, list primitives):
         """
-        Wraps the list of Primitives with AcceleratedPrimitives.
+        Wraps each primitive in the list with a BoundPrimitive object.
+
+        A bound primitive is a primitive that is wrapped by its world space bounding box.
         """
 
         cdef:
             Primitive primitive
-            BoundPrimitive accel_primitive
-            list accel_primitives
+            BoundPrimitive bound_primitive
+            list bound_primitives
 
-        accel_primitives = []
-
+        # wrap primitives with their bounding boxes
+        bound_primitives = []
         for primitive in primitives:
+            bound_primitive = BoundPrimitive(primitive)
+            bound_primitives.append(bound_primitive)
 
-            # wrap primitive with it's bounding box
-            accel_primitive = BoundPrimitive(primitive)
-            accel_primitives.append(accel_primitive)
-
-        return accel_primitives
+        return bound_primitives
 
     cdef void _build_world_box(self, list primitives):
         """
-        Builds a bounding box that encloses all the supplied primitives .
+        Builds a bounding box that encloses all the supplied primitives.
         """
 
         cdef:
@@ -147,13 +139,41 @@ cdef class KDTree(Accelerator):
             BoundingBox box
 
         self.world_box = BoundingBox()
-
         for primitive in primitives:
-
             self.world_box.union(primitive.box)
 
 
-cdef class Node:
+cdef class _Edge:
+    """
+    Represents the upper or lower edge of a bounding box on a specified axis.
+    """
+
+    def __init__(self, BoundPrimitive primitive, int axis, bint is_upper_edge):
+
+        self.primitive = primitive
+        self.is_upper_edge = is_upper_edge
+
+        if is_upper_edge:
+            self.value = primitive.box.upper.get_index(axis)
+        else:
+            self.value = primitive.box.lower.get_index(axis)
+
+    def __richcmp__(_Edge x, _Edge y, int operation):
+
+        if operation == 0:  # __lt__(), less than
+            # lower edge must always be encountered first
+            # break tie by ensuring lower edge sorted before upper edge
+            if x.value == y.value:
+                if x.is_upper_edge:
+                    return False
+                else:
+                    return True
+            return x.value < y.value
+        else:
+            return NotImplemented
+
+
+cdef class _Node:
 
     def __init__(self):
 
@@ -167,16 +187,15 @@ cdef class Node:
     cdef object build(self, BoundingBox node_bounds, list primitives, int depth, int min_primitives, double hit_cost):
 
         cdef:
-            double cost, best_cost, best_split
+            double cost, best_cost, split, best_split
             double recip_total_sa, lower_sa, upper_sa
             int best_axis
             int lower_primitive_count, upper_primitive_count
             list edges, lower_primitives, upper_primitives
-            Edge edge
+            _Edge edge
             BoundPrimitive primitive
 
         if depth == 0 or len(primitives) < min_primitives:
-
             self._become_leaf(primitives)
             return
 
@@ -192,7 +211,6 @@ cdef class Node:
         for axis in [X_AXIS, Y_AXIS, Z_AXIS]:
 
             # obtain sorted list of candidate edges along chosen axis
-            # TODO: calculate and store edges for each axis only once per primitive, cache and pass on to child nodes. The current recalculation is wasteful.
             edges = self._build_edges(primitives, axis)
 
             # cache primitive counts in lower and upper volumes for speed
@@ -207,74 +225,66 @@ cdef class Node:
                 # boxes are coincident however the invalid solutions cost
                 # more than the valid solutions and will not be selected
                 if edge.is_upper_edge:
-
                     upper_primitive_count -= 1
 
-                # only consider edge if it lies inside the node bounds
-                if edge.value > node_bounds.lower.get_index(axis) and edge.value < node_bounds.upper.get_index(axis):
+                # a split on the node boundary serves no useful purpose
+                # only consider edges that lie inside the node bounds
+                split = edge.value
+                if node_bounds.lower.get_index(axis) < split < node_bounds.upper.get_index(axis):
 
                     # calculate surface area of split volumes
-                    lower_sa = self._calc_lower_bounds(node_bounds, edge.value, axis).surface_area()
-                    upper_sa = self._calc_upper_bounds(node_bounds, edge.value, axis).surface_area()
+                    lower_sa = self._calc_lower_bounds(node_bounds, split, axis).surface_area()
+                    upper_sa = self._calc_upper_bounds(node_bounds, split, axis).surface_area()
 
                     # calculate SAH cost
                     cost = 1 + (lower_sa * lower_primitive_count + upper_sa * upper_primitive_count) * recip_total_sa * hit_cost
 
+                    # has a better split been found?
                     if cost < best_cost:
-
                         best_cost = cost
                         best_axis = axis
-                        best_split = edge.value
+                        best_split = split
 
                 # update primitive counts for lower volume
                 # note: this occasionally creates invalid solutions if edges of
                 # boxes are coincident however the invalid solutions cost
                 # more than the valid solutions and will not be selected
                 if not edge.is_upper_edge:
-
                     lower_primitive_count += 1
 
+        # no better solution found?
         if best_axis == NO_AXIS:
-
-            # no better solution found
             self._become_leaf(primitives)
+            return
 
-        else:
+        # using cached values split primitive into two lists
+        # note the split boundary is defined as lying in the upper node
+        lower_primitives = []
+        upper_primitives = []
+        for primitive in primitives:
 
-            lower_primitives = []
-            upper_primitives = []
+            # is the box present in the lower node?
+            if primitive.box.lower.get_index(best_axis) < best_split:
+                lower_primitives.append(primitive)
 
-            # using cached values split primitive into two lists
-            for primitive in primitives:
+            # is the box present in the upper node?
+            if primitive.box.upper.get_index(best_axis) >= best_split:
+                upper_primitives.append(primitive)
 
-                if primitive.box.lower.get_index(best_axis) < best_split:
+        # become a branch node
+        self.lower_branch = _Node()
+        self.upper_branch = _Node()
+        self.primitives = None
+        self.axis = best_axis
+        self.split = best_split
+        self.is_leaf = False
 
-                    lower_primitives.append(primitive)
+        # continue expanding the tree inside the two volumes
+        self.lower_branch.build(self._calc_lower_bounds(node_bounds, best_split, best_axis),
+                                lower_primitives, depth - 1, min_primitives, hit_cost)
 
-                if primitive.box.upper.get_index(best_axis) > best_split:
-
-                    upper_primitives.append(primitive)
-
-                if primitive.box.lower.get_index(best_axis) == best_split and primitive.box.upper.get_index(best_axis) == best_split:
-
-                    # an infinitesimally thin box should never happen, but just for safety
-                    lower_primitives.append(primitive)
-                    upper_primitives.append(primitive)
-
-            # become a branch node
-            self.lower_branch = Node()
-            self.upper_branch = Node()
-            self.primitives = None
-            self.axis = best_axis
-            self.split = best_split
-            self.is_leaf = False
-
-            # continue expanding the tree inside the two volumes
-            self.lower_branch.build(self._calc_lower_bounds(node_bounds, best_split, best_axis),
-                                    lower_primitives, depth - 1, min_primitives, hit_cost)
-
-            self.upper_branch.build(self._calc_upper_bounds(node_bounds, best_split, best_axis),
-                                    upper_primitives, depth - 1, min_primitives, hit_cost)
+        self.upper_branch.build(self._calc_upper_bounds(node_bounds, best_split, best_axis),
+                                upper_primitives, depth - 1, min_primitives, hit_cost)
 
     cdef void _become_leaf(self, list primitives):
 
@@ -293,10 +303,8 @@ cdef class Node:
 
         edges = []
         for primitive in primitives:
-
-            edges.append(Edge(primitive, primitive.box.lower.get_index(axis), is_upper_edge=False))
-            edges.append(Edge(primitive, primitive.box.upper.get_index(axis), is_upper_edge=True))
-
+            edges.append(_Edge(primitive, axis, is_upper_edge=False))
+            edges.append(_Edge(primitive, axis, is_upper_edge=True))
         edges.sort()
 
         return edges
@@ -304,143 +312,95 @@ cdef class Node:
     cdef BoundingBox _calc_lower_bounds(self, BoundingBox node_bounds, double split_value, int axis):
 
         cdef Point upper
-
         upper = node_bounds.upper.copy()
         upper.set_index(axis, split_value)
-
         return BoundingBox(node_bounds.lower.copy(), upper)
 
     cdef BoundingBox _calc_upper_bounds(self, BoundingBox node_bounds, double split_value, int axis):
 
         cdef Point lower
-
         lower = node_bounds.lower.copy()
         lower.set_index(axis, split_value)
-
         return BoundingBox(lower, node_bounds.upper.copy())
 
     cdef Intersection hit(self, Ray ray, double min_range, double max_range):
 
-        cdef:
-            double origin, direction
-            Intersection lower_intersection, upper_intersection, intersection
-            double plane_distance
-            Node near, far
-
         if self.is_leaf:
-
-            # find the closest primitive-ray intersection
             return self._hit_leaf(ray, max_range)
-
         else:
-
-            origin = ray.origin.get_index(self.axis)
-            direction = ray.direction.get_index(self.axis)
-
-            if direction == 0:
-
-                # ray propagating parallel to split plane
-                if origin < self.split:
-
-                    # only need to consider the lower node
-                    return self.lower_branch.hit(ray, min_range, max_range)
-
-                elif origin > self.split:
-
-                    # only need to consider the upper node
-                    return self.upper_branch.hit(ray, min_range, max_range)
-
-                else:
-
-                    # ray origin sitting in split plane
-                    lower_intersection = self.lower_branch.hit(ray, min_range, max_range)
-                    upper_intersection = self.upper_branch.hit(ray, min_range, max_range)
-
-                    if lower_intersection is None:
-
-                        return upper_intersection
-
-                    else:
-
-                        if upper_intersection is None:
-
-                            return lower_intersection
-
-                        else:
-
-                            if lower_intersection.ray_distance < upper_intersection.ray_distance:
-
-                                return lower_intersection
-
-                            else:
-
-                                return upper_intersection
-
-            else:
-
-                # ray propagation not parallel to split plane
-                with cython.cdivision(True):
-
-                    plane_distance = (self.split - origin) / direction
-
-                if origin < self.split or (origin == self.split and direction < 0):
-
-                    near = self.lower_branch
-                    far = self.upper_branch
-
-                else:
-
-                    near = self.upper_branch
-                    far = self.lower_branch
-
-                if plane_distance > max_range or plane_distance <= 0:
-
-                    # only intersects the near node
-                    return near.hit(ray, min_range, max_range)
-
-                if plane_distance < min_range:
-
-                    # only intersects the far node
-                    return far.hit(ray, min_range, max_range)
-
-                # intersects both nodes
-                intersection = near.hit(ray, min_range, plane_distance)
-
-                if intersection is not None:
-
-                    return intersection
-
-                intersection = far.hit(ray, plane_distance, max_range)
-
-                return intersection
+            return self._hit_branch(ray, min_range, max_range)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef inline Intersection _hit_leaf(self, Ray ray, double max_range):
+        """
+        Find the closest primitive-ray intersection.
+        """
 
         cdef:
             double distance
             Intersection intersection, closest_intersection
             BoundPrimitive primitive
 
-        # find the closest primitive-ray intersection
+        # find the closest primitive-ray intersection with intial search distance limited by node and ray limits
         closest_intersection = None
-
-        # intial search distance limited by node and ray limits
         distance = min(ray.max_distance, max_range)
-
         for primitive in self.primitives:
-
             intersection = primitive.hit(ray)
-
-            if intersection is not None:
-
-                if intersection.ray_distance <= distance:
-
-                    distance = intersection.ray_distance
-                    closest_intersection = intersection
-
+            if intersection is not None and intersection.ray_distance <= distance:
+                distance = intersection.ray_distance
+                closest_intersection = intersection
         return closest_intersection
+
+    @cython.cdivision(True)
+    cdef inline Intersection _hit_branch(self, Ray ray, double min_range, double max_range):
+
+        cdef:
+            double origin, direction
+            Intersection lower_intersection, upper_intersection, intersection
+            double plane_distance
+            _Node near, far
+
+        origin = ray.origin.get_index(self.axis)
+        direction = ray.direction.get_index(self.axis)
+
+        # is the ray propagating parallel to the split plane?
+        if direction == 0:
+
+            # a ray propagating parallel to the split plane will only ever interact with one of the nodes
+            if origin < self.split:
+                return self.lower_branch.hit(ray, min_range, max_range)
+            else:
+                return self.upper_branch.hit(ray, min_range, max_range)
+
+        else:
+
+            # ray propagation is not parallel to split plane
+            plane_distance = (self.split - origin) / direction
+
+            # identify the order in which the ray will interact with the nodes
+            if origin < self.split:
+                near = self.lower_branch
+                far = self.upper_branch
+            else:
+                near = self.upper_branch
+                far = self.lower_branch
+
+            # does ray only intersect with the near node?
+            if plane_distance > max_range or plane_distance <= 0:
+                return near.hit(ray, min_range, max_range)
+
+            # does ray only intersect with the far node?
+            if plane_distance < min_range:
+                return far.hit(ray, min_range, max_range)
+
+            # ray must intersect both nodes, try nearest node first
+            intersection = near.hit(ray, min_range, plane_distance)
+            if intersection is not None:
+                return intersection
+
+            intersection = far.hit(ray, plane_distance, max_range)
+            return intersection
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -455,61 +415,16 @@ cdef class Node:
 
             enclosing_primitives = []
             for primitive in self.primitives:
-
                 if primitive.contains(point):
-
                     enclosing_primitives.append(primitive.primitive)
-
             return enclosing_primitives
 
         else:
 
             location = point.get_index(self.axis)
-
             if location < self.split:
-
                 return self.lower_branch.contains(point)
-
-            if location > self.split:
-
+            else:
                 return self.upper_branch.contains(point)
 
-            else:
 
-                # on split plane this should be relatively rare
-                enclosing_primitives = self.lower_branch.contains(point)
-                enclosing_primitives.extend(self.upper_branch.contains(point))
-
-                # ensure primitives are unique in list
-                return list(set(enclosing_primitives))
-
-
-cdef class Edge:
-
-    def __init__(self, primitive, value, is_upper_edge):
-
-        self.primitive = primitive
-        self.value = value
-        self.is_upper_edge = is_upper_edge
-
-    def __richcmp__(Edge x, Edge y, int operation):
-
-        if operation == 0:  # __lt__(), less than
-
-            # break tie by ensuring lower edge sorted before upper edge
-            if x.value == y.value:
-
-                # lower edge must always be encountered first
-                if x.is_upper_edge:
-
-                    return False
-
-                else:
-
-                    return True
-
-            return x.value < y.value
-
-        else:
-
-            return NotImplemented
