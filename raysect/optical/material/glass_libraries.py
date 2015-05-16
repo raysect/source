@@ -1,5 +1,6 @@
 
 import csv
+from pkg_resources import resource_filename
 from collections import namedtuple
 from numpy import array
 from .dielectric import Dielectric, Sellmeier
@@ -23,7 +24,7 @@ class Schott():
 
         try:
 
-            schott_file = open('raysect/optical/material/glass_libraries/schott_catalog_2000.csv', 'r')
+            schott_file = open(resource_filename("raysect", "optical/material/glass_libraries/schott_catalog_2000.csv"), "r")
 
         except FileNotFoundError:
 
