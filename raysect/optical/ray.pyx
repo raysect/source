@@ -46,15 +46,12 @@ cdef class Ray(CoreRay):
                  int max_depth = 15):
 
         if num_samples < 1:
-
-                raise("Number of samples can not be less than 1.")
+            raise("Number of samples can not be less than 1.")
 
         if min_wavelength <= 0.0 or max_wavelength <= 0.0:
-
             raise ValueError("Wavelength can not be less than or equal to zero.")
 
         if min_wavelength >= max_wavelength:
-
             raise ValueError("Minimum wavelength can not be greater or eaual to the maximum wavelength.")
 
         super().__init__(origin, direction, max_distance)
@@ -107,13 +104,11 @@ cdef class Ray(CoreRay):
         def __set__(self, int num_samples):
 
             if num_samples < 1:
-
                 raise ValueError("Number of samples can not be less than 1.")
 
             self._num_samples = num_samples
 
     cdef inline int get_num_samples(self):
-
         return self._num_samples
 
     property min_wavelength:
@@ -125,11 +120,9 @@ cdef class Ray(CoreRay):
         def __set__(self, double min_wavelength):
 
             if min_wavelength <= 0.0:
-
                 raise ValueError("Wavelength can not be less than or equal to zero.")
 
             if min_wavelength >= self._max_wavelength:
-
                 raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
             self._min_wavelength = min_wavelength
@@ -147,11 +140,9 @@ cdef class Ray(CoreRay):
         def __set__(self, double max_wavelength):
 
             if max_wavelength <= 0.0:
-
                 raise ValueError("Wavelength can not be less than or equal to zero.")
 
             if self.min_wavelength >= max_wavelength:
-
                 raise ValueError("Maximum wavelength can not be less than or equal to the minimum wavelength.")
 
             self._max_wavelength = max_wavelength
@@ -187,7 +178,6 @@ cdef class Ray(CoreRay):
 
         # limit ray recursion depth
         if self.depth >= self.max_depth:
-
             return spectrum
 
         # does the ray intersect with any of the primitives in the world?
@@ -197,15 +187,16 @@ cdef class Ray(CoreRay):
             # request surface contribution to spectrum from primitive material
             material = intersection.primitive.material
             spectrum = material.evaluate_surface(
-                           world, self,
-                           intersection.primitive,
-                           intersection.hit_point,
-                           intersection.exiting,
-                           intersection.inside_point,
-                           intersection.outside_point,
-                           intersection.normal,
-                           intersection.to_local,
-                           intersection.to_world)
+                world, self,
+                intersection.primitive,
+                intersection.hit_point,
+                intersection.exiting,
+                intersection.inside_point,
+                intersection.outside_point,
+                intersection.normal,
+                intersection.to_local,
+                intersection.to_world
+            )
 
             # identify any primitive volumes the ray is propagating through
             primitives = world.contains(self.origin)
@@ -222,14 +213,15 @@ cdef class Ray(CoreRay):
 
                     material = primitive.material
                     spectrum = material.evaluate_volume(
-                                   spectrum,
-                                   world,
-                                   self,
-                                   primitive,
-                                   start_point,
-                                   end_point,
-                                   primitive.to_local(),
-                                   primitive.to_root())
+                        spectrum,
+                        world,
+                        self,
+                        primitive,
+                        start_point,
+                        end_point,
+                        primitive.to_local(),
+                        primitive.to_root()
+                    )
 
         return spectrum
 
