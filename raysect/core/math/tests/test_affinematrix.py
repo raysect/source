@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from raysect.core.math import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, Vector
+from raysect.core.math import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, Vector
 from math import sin, cos, pi, sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -47,8 +47,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i, row in enumerate(r):
             for j, v in enumerate(row):
-
-                self.assertEqual(m[i,j], v, "Default initialisation is not an identity matrix (R"+str(i)+", C"+str(j)+").")
+                self.assertEqual(m[i, j], v, "Default initialisation is not an identity matrix (R"+str(i)+", C"+str(j)+").")
 
     def test_initialise_4x4_indexable(self):
         """Initialisation with an 4 x 4 indexable object."""
@@ -62,8 +61,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i, row in enumerate(r):
             for j, v in enumerate(row):
-
-                self.assertEqual(m[i,j], v, "Initialisation with 4x4 indexable failed (R"+str(i)+", C"+str(j)+").")
+                self.assertEqual(m[i, j], v, "Initialisation with 4x4 indexable failed (R"+str(i)+", C"+str(j)+").")
 
     def test_initialise_16_element_indexable(self):
         """Initialisation with a 16 element array."""
@@ -77,8 +75,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i in range(0, 4):
             for j in range(0, 4):
-
-                self.assertEqual(m[i,j], r[4*i + j], "Initialisation with 16 element indexable failed (R"+str(i)+", C"+str(j)+").")
+                self.assertEqual(m[i, j], r[4*i + j], "Initialisation with 16 element indexable failed (R"+str(i)+", C"+str(j)+").")
 
     def test_initialise_affine_matrix(self):
         """Initialisation with a _Mat4 matrix."""
@@ -92,8 +89,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i in range(0, 4):
             for j in range(0, 4):
-
-                self.assertEqual(m[i,j], r[i,j], "Initialisation with 16 element indexable failed (R"+str(i)+", C"+str(j)+").")
+                self.assertEqual(m[i, j], r[i, j], "Initialisation with 16 element indexable failed (R"+str(i)+", C"+str(j)+").")
 
     def test_initialise_invalid(self):
         """Invalid initialisation should raise a TypeError."""
@@ -109,8 +105,8 @@ class TestAffineMatrix(unittest.TestCase):
 
         m = AffineMatrix()
 
-        for row in range(0,4):
-            for column in range(0,4):
+        for row in range(0, 4):
+            for column in range(0, 4):
 
                 m[row, column] = row * 1.2 - column * 5.1
 
@@ -176,8 +172,7 @@ class TestAffineMatrix(unittest.TestCase):
         self.assertTrue(isinstance(t, AffineMatrix), "AffineMatrix * AffineMatrix did not return an AffineMatrix.")
         for i, row in enumerate(r):
             for j, v in enumerate(row):
-
-                self.assertAlmostEqual(t[i,j], v, places = 14, msg = "Matrix multiplication failed (R"+str(i)+", C"+str(j)+").")
+                self.assertAlmostEqual(t[i, j], v, places=14, msg="Matrix multiplication failed (R"+str(i)+", C"+str(j)+").")
 
     def test_inverse(self):
         """Matrix inverse."""
@@ -196,8 +191,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i, row in enumerate(r):
             for j, v in enumerate(row):
-
-                self.assertAlmostEqual(minv[i,j], v, places = 14, msg = "Inverse calculation failed (R"+str(i)+", C"+str(j)+").")
+                self.assertAlmostEqual(minv[i, j], v, places=14, msg="Inverse calculation failed (R"+str(i)+", C"+str(j)+").")
 
     def test_factory_translate(self):
         """Translation matrix factory function."""
@@ -211,8 +205,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i, row in enumerate(r):
             for j, v in enumerate(row):
-
-                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Transform matrix generation failed (R"+str(i)+", C"+str(j)+").")
+                self.assertAlmostEqual(m[i, j], v, places=14, msg="Transform matrix generation failed (R"+str(i)+", C"+str(j)+").")
 
     def test_factory_rotate_x(self):
         """Rotation about x-axis matrix factory function."""
@@ -228,8 +221,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i, row in enumerate(r):
             for j, v in enumerate(row):
-
-                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Rotate_x matrix generation failed (R"+str(i)+", C"+str(j)+").")
+                self.assertAlmostEqual(m[i, j], v, places=14, msg="Rotate_x matrix generation failed (R"+str(i)+", C"+str(j)+").")
 
     def test_factory_rotate_y(self):
         """Rotation about y-axis matrix factory function."""
@@ -245,8 +237,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i, row in enumerate(r):
             for j, v in enumerate(row):
-
-                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Rotate_y matrix generation failed (R"+str(i)+", C"+str(j)+").")
+                self.assertAlmostEqual(m[i, j], v, places=14, msg="Rotate_y matrix generation failed (R"+str(i)+", C"+str(j)+").")
 
     def test_factory_rotate_z(self):
         """Rotation about z-axis matrix factory function."""
@@ -262,8 +253,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i, row in enumerate(r):
             for j, v in enumerate(row):
-
-                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Rotate_z matrix generation failed (R"+str(i)+", C"+str(j)+").")
+                self.assertAlmostEqual(m[i, j], v, places=14, msg="Rotate_z matrix generation failed (R"+str(i)+", C"+str(j)+").")
 
     def test_factory_rotate_vector(self):
         """Rotation about vector matrix factory function."""
@@ -290,8 +280,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i, row in enumerate(r):
             for j, v in enumerate(row):
-
-                self.assertAlmostEqual(m[i,j], v, places = 14, msg = "Rotate_vector matrix generation failed (R"+str(i)+", C"+str(j)+").")
+                self.assertAlmostEqual(m[i, j], v, places=14, msg="Rotate_vector matrix generation failed (R"+str(i)+", C"+str(j)+").")
 
     def test_factory_rotate(self):
         """Rotation by yaw, pitch and roll factory function."""
@@ -301,8 +290,25 @@ class TestAffineMatrix(unittest.TestCase):
 
         for i in range(0, 4):
             for j in range(0, 4):
+                self.assertAlmostEqual(m[i, j], r[i, j], places=14, msg="Rotate matrix generation failed (R"+str(i)+", C"+str(j)+").")
 
-                self.assertAlmostEqual(m[i,j], r[i,j], places = 14, msg = "Rotate matrix generation failed (R"+str(i)+", C"+str(j)+").")
+    def test_factory_rotate_basis(self):
+        """Rotation specified by a pair of basis vectors."""
+
+        # valid vectors
+        m = rotate_basis(Vector(1.0, 0.0, 0.0), Vector(0.0, -1.0, 0.0))
+        r = [[0, 0, 1, 0],
+             [0, -1, 0, 0],
+             [1, 0, 0, 0],
+             [0, 0, 0, 1]]
+
+        for i, row in enumerate(r):
+            for j, v in enumerate(row):
+                self.assertAlmostEqual(m[i, j], v, places=14, msg="Rotate_basis matrix generation failed (R"+str(i)+", C"+str(j)+").")
+
+        # invalid, coincident vectors
+        with self.assertRaises(ValueError, msg="Coincident forward and up vectors did not raise a ValueError."):
+            rotate_basis(Vector(1, 2, 3), Vector(1, 2, 3))
 
 
 if __name__ == "__main__":

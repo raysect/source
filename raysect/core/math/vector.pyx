@@ -55,6 +55,22 @@ cdef class Vector(_Vec3):
 
         return "Vector([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
 
+    def __richcmp__(self, object other, int op):
+        """Provides basic vector comparison operations."""
+
+        cdef Vector v
+
+        if not isinstance(other, Vector):
+            return NotImplemented
+
+        v = <Vector> other
+        if op == 2:     # __eq__()
+            return self.x == v.x and self.y == v.y and self.z == v.z
+        elif op == 3:   # __ne__()
+            return self.x != v.x or self.y != v.y or self.z != v.z
+        else:
+            return NotImplemented
+
     def __neg__(self):
         """Returns a vector with the reverse orientation (negation operator)."""
 

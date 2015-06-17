@@ -51,6 +51,8 @@ cpdef AffineMatrix rotate_vector(double angle, Vector v)
 
 cpdef AffineMatrix rotate(double yaw, double pitch, double roll)
 
+cpdef AffineMatrix rotate_basis(Vector forward, Vector up)
+
 cdef inline AffineMatrix new_affinematrix(double m00, double m01, double m02, double m03,
                                           double m10, double m11, double m12, double m13,
                                           double m20, double m21, double m22, double m23,
@@ -58,7 +60,7 @@ cdef inline AffineMatrix new_affinematrix(double m00, double m01, double m02, do
     """
     AffineMatrix factory function.
 
-    Creates a new AffineMAtrix object with less overhead than the equivalent
+    Creates a new AffineMatrix object with less overhead than the equivalent
     Python call. This function is callable from cython only.
     """
 

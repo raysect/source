@@ -56,6 +56,22 @@ cdef class Point:
 
         return "Point([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
 
+    def __richcmp__(self, object other, int op):
+        """Provides basic point comparison operations."""
+
+        cdef Point p
+
+        if not isinstance(other, Point):
+            return NotImplemented
+
+        p = <Vector> other
+        if op == 2:     # __eq__()
+            return self.x == p.x and self.y == p.y and self.z == p.z
+        elif op == 3:   # __ne__()
+            return self.x != p.x or self.y != p.y or self.z != p.z
+        else:
+            return NotImplemented
+
     def __getitem__(self, int i):
         """Returns the point coordinates by index ([0,1,2] -> [x,y,z])."""
 
