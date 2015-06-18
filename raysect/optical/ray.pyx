@@ -46,13 +46,13 @@ cdef class Ray(CoreRay):
                  int max_depth = 15):
 
         if num_samples < 1:
-            raise("Number of samples can not be less than 1.")
+            raise ValueError("Number of samples can not be less than 1.")
 
         if min_wavelength <= 0.0 or max_wavelength <= 0.0:
-            raise ValueError("Wavelength can not be less than or equal to zero.")
+            raise ValueError("Wavelength must be greater than to zero.")
 
         if min_wavelength >= max_wavelength:
-            raise ValueError("Minimum wavelength can not be greater or eaual to the maximum wavelength.")
+            raise ValueError("Minimum wavelength must be less than the maximum wavelength.")
 
         super().__init__(origin, direction, max_distance)
 
