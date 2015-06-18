@@ -311,7 +311,7 @@ cpdef AffineMatrix rotate_basis(Vector forward, Vector up):
         raise ValueError("Forward vector must not be None.")
 
     if up is None:
-        raise ValueError("Forward vector must not be None.")
+        raise ValueError("Up vector must not be None.")
 
     z = forward.normalise()
     y = up.normalise()
