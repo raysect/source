@@ -30,14 +30,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from numpy cimport ndarray
-from libc.math cimport round
 
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
-from raysect.core.math.vector cimport Vector
 from raysect.core.math.point cimport Point
 from raysect.core.math.normal cimport Normal
 from raysect.optical.spectrum cimport Spectrum
