@@ -120,6 +120,22 @@ class TestPoint(unittest.TestCase):
 
             r = v[-1]
 
+    def test_equal(self):
+        """Equality operator."""
+
+        self.assertTrue(Point(1, 2, 3) == Point(1, 2, 3), "Equality operator returned false for equal points.")
+        self.assertFalse(Point(5, 2, 3) == Point(1, 2, 3), "Equality operator returned true for a point with non-equal x components.")
+        self.assertFalse(Point(1, 5, 3) == Point(1, 2, 3), "Equality operator returned true for a point with non-equal y components.")
+        self.assertFalse(Point(1, 2, 5) == Point(1, 2, 3), "Equality operator returned true for a point with non-equal z components.")
+
+    def test_not_equal(self):
+        """Inequality operator."""
+
+        self.assertFalse(Point(1, 2, 3) != Point(1, 2, 3), "Inequality operator returned true for equal points.")
+        self.assertTrue(Point(5, 2, 3) != Point(1, 2, 3), "Inequality operator returned false for a point with non-equal x components.")
+        self.assertTrue(Point(1, 5, 3) != Point(1, 2, 3), "Inequality operator returned false for a point with non-equal y components.")
+        self.assertTrue(Point(1, 2, 5) != Point(1, 2, 3), "Inequality operator returned false for a point with non-equal z components.")
+
     def test_add(self):
         """Addition operator."""
 

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,38 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# 1D functions -----------------------------------------------------------------
-
-cdef class Function1D:
-
-    cdef double evaluate(self, double x) except *
-
-
-cdef class PythonFunction1D(Function1D):
-
-    cdef public object function
-
-
-cdef inline Function1D autowrap_function1d(object function)
-
-
-# 2D functions -----------------------------------------------------------------
-
-cdef class Function2D:
-
-    cdef double evaluate(self, double x, double y) except *
-
-
-cdef class PythonFunction2D(Function2D):
-
-    cdef public object function
-
-
-cdef inline Function2D autowrap_function2d(object function)
-
-
-# 3D functions -----------------------------------------------------------------
-
 cdef class Function3D:
 
     cdef double evaluate(self, double x, double y, double z) except *
@@ -72,3 +40,39 @@ cdef class PythonFunction3D(Function3D):
 
 
 cdef inline Function3D autowrap_function3d(object function)
+
+
+cdef class AddFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class SubtractFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class MultiplyFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class DivideFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class AddScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class SubtractScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class MultiplyScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class DivideScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function

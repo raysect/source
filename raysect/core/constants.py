@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,44 +29,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.spectralfunction cimport SpectralFunction
-from numpy cimport ndarray
+from .math import Vector, Point, AffineMatrix
 
-cdef class Spectrum(SpectralFunction):
+# coordinate system vectors
+UP = Vector(0, 1, 0)
+DOWN = Vector(0, -1, 0)
+LEFT = Vector(1, 0, 0)
+RIGHT = Vector(-1, 0, 0)
+FORWARD = Vector(0, 0, 1)
+BACK = Vector(0, 0, -1)
+ORIGIN = Point()
 
-    cdef:
-        readonly double min_wavelength
-        readonly double max_wavelength
-        readonly int num_samples
-        readonly double delta_wavelength
-        public ndarray samples
-        ndarray _wavelengths
-        public bint fast_sample
+# affine matrix representing no transform
+NULL_TRANSFORM = AffineMatrix()
 
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample)
-
-    cdef inline void _populate_wavelengths(self)
-
-    cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int num_samples)
-
-    cpdef bint is_zero(self)
-
-    cpdef double total(self)
-
-    cpdef ndarray to_photons(self)
-
-    cdef inline void add_scalar(self, double value)
-    cdef inline void sub_scalar(self, double value)
-    cdef inline void mul_scalar(self, double value)
-    cdef inline void div_scalar(self, double value)
-
-    cdef inline void add_array(self, double[::1] array)
-    cdef inline void sub_array(self, double[::1] array)
-    cdef inline void mul_array(self, double[::1] array)
-    cdef inline void div_array(self, double[::1] array)
-
-
-cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int num_samples)
-
-
-cpdef double photon_energy(double wavelength) except *

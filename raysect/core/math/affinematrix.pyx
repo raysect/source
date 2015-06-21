@@ -43,20 +43,14 @@ cdef class AffineMatrix(_Mat4):
 
         s = "AffineMatrix(["
         for i in range(0, 4):
-
             s += "["
-
             for j in range(0, 4):
-
                 s += str(self.m[i][j])
                 if j < 3:
                     s += ", "
-
             s += "]"
-
             if i < 3:
                 s += ", "
-
         return s + "])"
 
     def __mul__(object x, object y):
@@ -68,7 +62,6 @@ cdef class AffineMatrix(_Mat4):
 
             mx = <AffineMatrix>x
             my = <AffineMatrix>y
-
             return new_affinematrix(mx.m[0][0] * my.m[0][0] + mx.m[0][1] * my.m[1][0] + mx.m[0][2] * my.m[2][0] + mx.m[0][3] * my.m[3][0],
                                     mx.m[0][0] * my.m[0][1] + mx.m[0][1] * my.m[1][1] + mx.m[0][2] * my.m[2][1] + mx.m[0][3] * my.m[3][1],
                                     mx.m[0][0] * my.m[0][2] + mx.m[0][1] * my.m[1][2] + mx.m[0][2] * my.m[2][2] + mx.m[0][3] * my.m[3][2],
@@ -120,7 +113,6 @@ cdef class AffineMatrix(_Mat4):
 
         # check matrix is invertible, small value must be greater than machine precision
         if fabs(det) < 1e-14:
-
             raise ValueError("Matrix is singular and not invertible.")
 
         idet = 1.0 / det
@@ -200,7 +192,6 @@ cpdef AffineMatrix rotate_x(double angle):
     cdef double r
 
     r = pi * angle / 180.0
-
     return new_affinematrix(1, 0, 0, 0,
                             0, cos(r), -sin(r), 0,
                             0, sin(r), cos(r), 0,
@@ -219,7 +210,6 @@ cpdef AffineMatrix rotate_y(double angle):
     cdef double r
 
     r = pi * angle / 180.0
-
     return new_affinematrix(cos(r), 0, sin(r), 0,
                             0, 1, 0, 0,
                             -sin(r), 0, cos(r), 0,
@@ -238,7 +228,6 @@ cpdef AffineMatrix rotate_z(double angle):
     cdef double r
 
     r = pi * angle / 180.0
-
     return new_affinematrix(cos(r), -sin(r), 0, 0,
                             sin(r), cos(r), 0, 0,
                             0, 0, 1, 0,
@@ -258,13 +247,10 @@ cpdef AffineMatrix rotate_vector(double angle, Vector v):
     cdef double r, s, c, ci
 
     vn = v.normalise()
-
     r = pi * angle / 180.0
-
     s = sin(r)
     c = cos(r)
     ci = 1.0 - c
-
     return new_affinematrix(vn.x * vn.x + (1.0 - vn.x * vn.x) * c,
                             vn.x * vn.y * ci - vn.z * s,
                             vn.x * vn.z * ci + vn.y * s,
@@ -283,16 +269,66 @@ cpdef AffineMatrix rotate_vector(double angle, Vector v):
                             1)
 
 
-cpdef AffineMatrix rotate(double alpha, double beta, double gamma):
+cpdef AffineMatrix rotate(double yaw, double pitch, double roll):
     """
     Returns an affine transform matrix representing an intrinsic rotation with
     an axis order (-Y)(-X)'Z''.
 
-    If an object is aligned such that forward/back is the Z-axis, left/right is
-    the X-axis and up/down is the Y-axis then alpha, beta and gamma correspond
-    to the yaw, pitch and roll of the object.
+    For an object aligned such that forward is the +ve Z-axis, left is the +ve
+    X-axis and up is the +ve Y-axis then this rotation operation corresponds to
+    the yaw, pitch and roll of the object.
 
-    All angles are specified in degrees.
+    :param yaw: Yaw angle in degrees.
+    :param pitch: Pitch angle in degrees.
+    :param roll: Roll angle in degrees.
+    :return: An AffineMatrix object.
     """
 
-    return rotate_y(-alpha) * rotate_x(-beta) * rotate_z(gamma)
+    return rotate_y(-yaw) * rotate_x(-pitch) * rotate_z(roll)
+
+
+cpdef AffineMatrix rotate_basis(Vector forward, Vector up):
+    """
+    Returns a rotation matrix defined by forward and up vectors.
+
+    The +ve Z-axis of the resulting coordinate space will be aligned with the
+    forward vector. The +ve Y-axis will be aligned to lie in the plane defined
+    the forward and up vectors, along the projection of the up vector that
+    lies orthogonal to the forward vector. The X-axis will lie perpendicular to
+    the plane.
+
+    The forward and upwards vectors need not be orthogonal. The up vector will
+    be rotated in the plane defined by the two vectors until it is orthogonal.
+
+    :param forward: A Vector object defining the forward direction.
+    :param up: A Vector object defining the up direction.
+    :return: An AffineMatrix object.
+    """
+
+    cdef Vector x, y, z
+
+    if forward is None:
+        raise ValueError("Forward vector must not be None.")
+
+    if up is None:
+        raise ValueError("Up vector must not be None.")
+
+    z = forward.normalise()
+    y = up.normalise()
+
+    # forward and up vectors must not be the same!
+    if y == z:
+        raise ValueError("Forward and up vectors must not be coincident.")
+
+    # ensure y vector is perpendicular to z
+    y = y - y.dot(z) * z
+    y = y.normalise()
+
+    # generate remaining basis vector
+    x = y.cross(z)
+
+    return new_affinematrix(x.x, x.y, x.z, 0.0,
+                            y.x, y.y, y.z, 0.0,
+                            z.x, z.y, z.z, 0.0,
+                            0.0, 0.0, 0.0, 1.0)
+

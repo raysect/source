@@ -33,7 +33,6 @@ import numbers
 cimport cython
 from libc.math cimport sqrt
 from raysect.core.math.vector cimport new_vector
-from raysect.core.math.point cimport Point
 
 cdef class Normal(_Vec3):
     """
@@ -56,6 +55,22 @@ cdef class Normal(_Vec3):
         """Returns a string representation of the Normal object."""
 
         return "Normal([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
+
+    def __richcmp__(self, object other, int op):
+        """Provides basic normal comparison operations."""
+
+        cdef Normal n
+
+        if not isinstance(other, Normal):
+            return NotImplemented
+
+        n = <Normal> other
+        if op == 2: # __eq__()
+            return self.x == n.x and self.y == n.y and self.z == n.z
+        elif op == 3: # __ne__()
+            return self.x != n.x or self.y != n.y or self.z != n.z
+        else:
+            return NotImplemented
 
     def __neg__(self):
         """Returns a normal with the reverse orientation."""

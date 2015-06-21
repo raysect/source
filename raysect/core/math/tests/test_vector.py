@@ -144,6 +144,22 @@ class TestVector(unittest.TestCase):
 
             v.length = 10.0
 
+    def test_equal(self):
+        """Equality operator."""
+
+        self.assertTrue(Vector(1, 2, 3) == Vector(1, 2, 3), "Equality operator returned false for equal vectors.")
+        self.assertFalse(Vector(5, 2, 3) == Vector(1, 2, 3), "Equality operator returned true for a vector with non-equal x components.")
+        self.assertFalse(Vector(1, 5, 3) == Vector(1, 2, 3), "Equality operator returned true for a vector with non-equal y components.")
+        self.assertFalse(Vector(1, 2, 5) == Vector(1, 2, 3), "Equality operator returned true for a vector with non-equal z components.")
+
+    def test_not_equal(self):
+        """Inequality operator."""
+
+        self.assertFalse(Vector(1, 2, 3) != Vector(1, 2, 3), "Inequality operator returned true for equal vectors.")
+        self.assertTrue(Vector(5, 2, 3) != Vector(1, 2, 3), "Inequality operator returned false for a vector with non-equal x components.")
+        self.assertTrue(Vector(1, 5, 3) != Vector(1, 2, 3), "Inequality operator returned false for a vector with non-equal y components.")
+        self.assertTrue(Vector(1, 2, 5) != Vector(1, 2, 3), "Inequality operator returned false for a vector with non-equal z components.")
+
     def test_negate(self):
         """Negate operator."""
 

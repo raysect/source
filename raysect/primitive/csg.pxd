@@ -36,7 +36,7 @@ from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
 
 cdef class CSGPrimitive(Primitive):
 
-    cdef CSGRoot _root
+    cdef CSGRoot _csgroot
     cdef BoundPrimitive _primitive_a
     cdef BoundPrimitive _primitive_b
     cdef Ray _cache_ray
