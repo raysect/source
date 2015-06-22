@@ -109,12 +109,20 @@ cdef class _Triangle:
         # assumes ray is in local co-ordinates
 
         # to minimise numerical error cycle the direction components so the largest becomes the z-component
-        if ray.direction.x > ray.direction.y and ray.direction.x > ray.direction.z:
-            ix, iy, iz = 1, 2, 0  # x dimension largest
-        elif ray.direction.y > ray.direction.x and ray.direction.y > ray.direction.z:
-            ix, iy, iz = 2, 0, 1  # y dimension largest
+        if fabs(ray.direction.x) > fabs(ray.direction.y) and fabs(ray.direction.x) > fabs(ray.direction.z):
+
+            # x dimension largest
+            ix, iy, iz = 1, 2, 0
+
+        elif fabs(ray.direction.y) > fabs(ray.direction.x) and fabs(ray.direction.y) > fabs(ray.direction.z):
+
+            # y dimension largest
+            ix, iy, iz = 2, 0, 1
+
         else:
-            ix, iy, iz = 0, 1, 2  # z dimension largest
+
+            # z dimension largest
+            ix, iy, iz = 0, 1, 2
 
         # if the z component is negative, swap x and y to restore the handedness of the space
         if ray.direction[iz] < 0.0:
@@ -147,7 +155,7 @@ cdef class _Triangle:
 
         # # catch cases where there is insufficient numerical accuracy to resolve the subsequent edge tests
         # if u == 0.0 or v == 0.0 or w == 0.0:
-        #     # TODO: add a higher precision (128bit) fallback calculation
+        #     # TODO: add a higher precision (128bit) fallback calculation to make this watertight
 
         # perform edge tests
         if (u < 0.0 or v < 0.0 or w < 0.0) and (u > 0.0 or v > 0.0 or w > 0.0):
