@@ -1,5 +1,7 @@
 import numpy
 from mesh import Mesh
+import struct
+import os
 
 #: Automatically detect whether the output is a TTY, if so, write ASCII
 #: otherwise write BINARY
@@ -38,11 +40,16 @@ class StlMesh(Mesh):
         """
 
         if mode == ASCII:
-            solid_name, data = self._load_ascii(filename)
+            solid_name, mesh_data = self._load_ascii(filename)
+        elif mode == BINARY:
+            solid_name, mesh_data = self._load_binary(filename)
         else:
-            raise NotImplementedError('Binary and Automatic .stl mode not implemented yet.')
+            try:
+                solid_name, mesh_data = self._load_ascii(filename)
+            except RuntimeError:
+                solid_name, mesh_data = self._load_binary(filename)
 
-        super().__init__(data, calculate_normals, name=solid_name)
+        super().__init__(mesh_data, calculate_normals, name=solid_name)
 
     @classmethod
     def _load_ascii(cls, filename):
@@ -99,9 +106,35 @@ class StlMesh(Mesh):
         else:
             return line
 
+    @classmethod
+    def _load_binary(cls, filename, check_size=True):
+        fh = open(filename, 'rb')
+        header = fh.read(80).lower()
+        solid_name = header[5:].strip()
+
+        count, = struct.unpack('@i', fh.read(COUNT_SIZE))
+        assert count < MAX_COUNT, ('File too large, got {} triangles which exceeds the maximum of {}'
+                                   ''.format(count, MAX_COUNT))
+
+        if check_size:
+            # Check the size of the file
+            fh.seek(0, os.SEEK_END)
+            raw_size = fh.tell() - HEADER_SIZE - COUNT_SIZE
+            expected_count = raw_size / cls.dtype.itemsize
+            if expected_count != count:
+                raise ValueError('Expected {} vectors but header indicates {}. '
+                                 'Is file invalid?'.format(expected_count, count))
+            #
+            fh.seek(HEADER_SIZE + COUNT_SIZE)
+
+        # Read the rest of the binary data
+        meshdata = numpy.fromfile(fh, dtype=cls.dtype, count=count)
+
+        return solid_name, meshdata
+
 
 if __name__ == "__main__":
-    stlfile = "/home/matt/ccfe/stl/MAST-M9-BEAM_DUMPS_+_GDC_ascii.stl"
-    mesh = StlMesh(stlfile, mode=ASCII)
+    stlfile = "/home/matt/ccfe/stl/MAST-M9-BEAM_DUMPS_+_GDC.stl"
+    mesh = StlMesh(stlfile, mode=BINARY)
     print('hello world')
 
