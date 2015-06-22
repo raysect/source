@@ -36,4 +36,6 @@ from raysect.core.classes cimport Ray, Intersection
 
 cdef class Mesh(Primitive):
 
-    pass
+    cdef:
+        readonly list vertices
+        readonly list triangles

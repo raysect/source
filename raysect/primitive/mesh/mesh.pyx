@@ -78,12 +78,12 @@ extremely small triangles that are being tested against a ray with an origin far
 cdef class _Triangle:
 
     cdef:
-        Point v1, v2, v3
-        Normal n1, n2, n3
-        Normal face_normal
+        readonly Point v1, v2, v3
+        readonly Normal n1, n2, n3
+        readonly Normal face_normal
 
     def __init__(self, Point v1 not None, Point v2 not None, Point v3 not None,
-                 Normal n1 not None, Normal n2 not None, Normal n3 not None):
+                 Normal n1=None, Normal n2=None, Normal n3=None):
 
         self.v1 = v1
         self.v2 = v2
@@ -96,25 +96,42 @@ cdef class _Triangle:
         self._calc_face_normal()
 
     def _calc_face_normal(self):
+        """
+        Calculate the triangles face normal from the vertices.
 
-        # TODO: calculate using winding order (right hand screw rule)
-        pass
+        The triangle face normal direction is defined by the right hand screw
+        rule. When looking at the triangle from the back face, the vertices
+        will be ordered in a clockwise fashion and the normal will be pointing
+        away from the observer.
+        """
+
+        a = self.v1.vector_to(self.v2)
+        b = self.v1.vector_to(self.v3)
+        self.face_normal = Normal(*a.cross(b).normalise())
 
     def hit(self, ray):
 
-        # this code is a cython port of the code listed in appendix A of
+        # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
         #  Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
 
-        # assumes ray is in local co-ordinates
+        # this code assumes ray is in local co-ordinates
 
         # to minimise numerical error cycle the direction components so the largest becomes the z-component
-        if ray.direction.x > ray.direction.y and ray.direction.x > ray.direction.z:
-            ix, iy, iz = 1, 2, 0  # x dimension largest
-        elif ray.direction.y > ray.direction.x and ray.direction.y > ray.direction.z:
-            ix, iy, iz = 2, 0, 1  # y dimension largest
+        if fabs(ray.direction.x) > fabs(ray.direction.y) and fabs(ray.direction.x) > fabs(ray.direction.z):
+
+            # x dimension largest
+            ix, iy, iz = 1, 2, 0
+
+        elif fabs(ray.direction.y) > fabs(ray.direction.x) and fabs(ray.direction.y) > fabs(ray.direction.z):
+
+            # y dimension largest
+            ix, iy, iz = 2, 0, 1
+
         else:
-            ix, iy, iz = 0, 1, 2  # z dimension largest
+
+            # z dimension largest
+            ix, iy, iz = 0, 1, 2
 
         # if the z component is negative, swap x and y to restore the handedness of the space
         if ray.direction[iz] < 0.0:
@@ -147,7 +164,7 @@ cdef class _Triangle:
 
         # # catch cases where there is insufficient numerical accuracy to resolve the subsequent edge tests
         # if u == 0.0 or v == 0.0 or w == 0.0:
-        #     # TODO: add a higher precision (128bit) fallback calculation
+        #     # TODO: add a higher precision (128bit) fallback calculation to make this watertight
 
         # perform edge tests
         if (u < 0.0 or v < 0.0 or w < 0.0) and (u > 0.0 or v > 0.0 or w > 0.0):
@@ -183,7 +200,7 @@ cdef class _Triangle:
 
         return t, u, v, w
 
-    # cdef bint side(self, Point p):
+    # def side(self, p):
     #     """
     #     Returns which side of the face the point lies on.
     #
@@ -194,7 +211,6 @@ cdef class _Triangle:
     #     :return: Returns True if the point lies in front of the triangle, False otherwise
     #     """
     #     pass
-
 
 
 # todo: get/set attributes must return copies of arrays to protect internals of the mesh object
@@ -211,7 +227,11 @@ cdef class Mesh(Primitive):
             # check normals are valid
             # check polygons are not dangling
 
-        pass
+        self.vertices = vertices
+        self.triangles = []
+        for i1, i2, i3 in polygons:
+            self.triangles.append(_Triangle(Point(*vertices[i1]), Point(*vertices[i2]), Point(*vertices[i3])))
+
 
     cpdef Intersection hit(self, Ray ray):
         """
@@ -226,7 +246,30 @@ cdef class Mesh(Primitive):
         the objects involved in the intersection.
         """
 
-        raise NotImplementedError("Primitive surface has not been defined. Virtual method hit() has not been implemented.")
+        local_ray = Ray(ray.origin.transform(self.to_local()),
+                        ray.direction.transform(self.to_local()))
+
+        closest = None
+        ray_distance = ray.max_distance
+        for triangle in self.triangles:
+            result = triangle.hit(local_ray)
+            if result is not None:
+                t, _, _, _ = result
+                if t < ray_distance:
+                    closest = triangle
+                    ray_distance = t
+
+        if closest is None:
+            return None
+
+        hit_point = local_ray.origin + local_ray.direction * ray_distance
+        normal = closest.face_normal
+        exiting = local_ray.direction.dot(normal) > 0.0
+        inside_point = hit_point - normal * EPSILON
+        outside_point = hit_point + normal * EPSILON
+        return Intersection(ray, ray_distance, self,
+                            hit_point, inside_point, outside_point,
+                            normal, exiting, self.to_local(), self.to_root())
 
 
     cpdef Intersection next_intersection(self):
@@ -279,5 +322,9 @@ cdef class Mesh(Primitive):
         exception.
         """
 
-        raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
+        bbox = BoundingBox()
+        for vertex in self.vertices:
+            bbox.extend(Point(*vertex).transform(self.to_root()), BOX_PADDING)
+        return bbox
+
 
