@@ -78,9 +78,9 @@ extremely small triangles that are being tested against a ray with an origin far
 cdef class _Triangle:
 
     cdef:
-        Point v1, v2, v3
-        Normal n1, n2, n3
-        Normal face_normal
+        readonly Point v1, v2, v3
+        readonly Normal n1, n2, n3
+        readonly Normal face_normal
 
     def __init__(self, Point v1 not None, Point v2 not None, Point v3 not None,
                  Normal n1 not None, Normal n2 not None, Normal n3 not None):
@@ -96,17 +96,26 @@ cdef class _Triangle:
         self._calc_face_normal()
 
     def _calc_face_normal(self):
+        """
+        Calculate the triangles face normal from the vertices.
 
-        # TODO: calculate using winding order (right hand screw rule)
-        pass
+        The triangle face normal direction is defined by the right hand screw
+        rule. When looking at the triangle from the back face, the vertices
+        will be ordered in a clockwise fashion and the normal will be pointing
+        away from the observer.
+        """
+
+        a = self.v1.vector_to(self.v2)
+        b = self.v1.vector_to(self.v3)
+        self.face_normal = Normal(*a.cross(b).normalise())
 
     def hit(self, ray):
 
-        # this code is a cython port of the code listed in appendix A of
+        # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
         #  Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
 
-        # assumes ray is in local co-ordinates
+        # this code assumes ray is in local co-ordinates
 
         # to minimise numerical error cycle the direction components so the largest becomes the z-component
         if fabs(ray.direction.x) > fabs(ray.direction.y) and fabs(ray.direction.x) > fabs(ray.direction.z):
