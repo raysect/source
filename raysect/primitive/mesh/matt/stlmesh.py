@@ -1,5 +1,5 @@
 import numpy
-from mesh import Mesh
+from .mesh import Mesh
 import struct
 import os
 

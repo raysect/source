@@ -232,7 +232,6 @@ cdef class Mesh(Primitive):
         for i1, i2, i3 in polygons:
             self.triangles.append(_Triangle(Point(*vertices[i1]), Point(*vertices[i2]), Point(*vertices[i3])))
 
-
     cpdef Intersection hit(self, Ray ray):
         """
         Virtual method - to be implemented by derived classes.
