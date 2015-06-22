@@ -327,8 +327,8 @@ cpdef AffineMatrix rotate_basis(Vector forward, Vector up):
     # generate remaining basis vector
     x = y.cross(z)
 
-    return new_affinematrix(x.x, x.y, x.z, 0.0,
-                            y.x, y.y, y.z, 0.0,
-                            z.x, z.y, z.z, 0.0,
+    return new_affinematrix(x.x, y.x, z.x, 0.0,
+                            x.y, y.y, z.y, 0.0,
+                            x.z, y.z, z.z, 0.0,
                             0.0, 0.0, 0.0, 1.0)
 
