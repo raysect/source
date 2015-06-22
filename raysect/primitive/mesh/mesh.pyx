@@ -30,8 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.normal cimport Normal, new_normal
-from raysect.core.math.point cimport new_point
+from raysect.core.math.normal cimport Normal
+from raysect.core.math.point cimport Point
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from libc.math cimport fabs
@@ -46,10 +46,163 @@ DEF BOX_PADDING = 1e-9
 # additional ray distance to avoid re-hitting the same surface point
 DEF EPSILON = 1e-9
 
+"""
+Requirements:
+* tri-poly mesh support
+* option to set mesh closed or open (code will assume user is not an idiot), open mesh means contains() always reports False
+* normal interpolation option (smoothing)
+
+Development plan for mesh:
+
+1) initial prototype
+* implement watertight triangle intersection, ignoring normal interpolation for now - just use polygon normal
+* implement a brute force (list based) search for closest poly and next poly -
+* meshes are always open (i.e skip implementation of contains())
+
+2) 2nd pass
+* add smoothing parameter and add normal interpolation
+* add open/closed mesh support (implement contains using a surface intersection count)
+
+3) release
+* add kdtree to optimise hit and contains
+
+Notes:
+The ray-triangle intersection is a partial implementation of the algorithm described in:
+    "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald, Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
+
+As implemented, the algorithm is not fully watertight due to the use of double precision throughout. At present, there is no appeal to
+higher precision to resolve cases when the edge tests result in a degenerate solution. This should only occur when a mesh contains
+extremely small triangles that are being tested against a ray with an origin far from the mesh.
+"""
+
+cdef class _Triangle:
+
+    cdef:
+        Point v1, v2, v3
+        Normal n1, n2, n3
+        Normal face_normal
+
+    def __init__(self, Point v1 not None, Point v2 not None, Point v3 not None,
+                 Normal n1 not None, Normal n2 not None, Normal n3 not None):
+
+        self.v1 = v1
+        self.v2 = v2
+        self.v3 = v3
+
+        self.n1 = n1
+        self.n2 = n2
+        self.n3 = n3
+
+        self._calc_face_normal()
+
+    def _calc_face_normal(self):
+
+        # TODO: calculate using winding order (right hand screw rule)
+        pass
+
+    def hit(self, ray):
+
+        # this code is a cython port of the code listed in appendix A of
+        #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
+        #  Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
+
+        # assumes ray is in local co-ordinates
+
+        # to minimise numerical error cycle the direction components so the largest becomes the z-component
+        if ray.direction.x > ray.direction.y and ray.direction.x > ray.direction.z:
+            ix, iy, iz = 1, 2, 0  # x dimension largest
+        elif ray.direction.y > ray.direction.x and ray.direction.y > ray.direction.z:
+            ix, iy, iz = 2, 0, 1  # y dimension largest
+        else:
+            ix, iy, iz = 0, 1, 2  # z dimension largest
+
+        # if the z component is negative, swap x and y to restore the handedness of the space
+        if ray.direction[iz] < 0.0:
+            ix, iy = iy, ix
+
+        # calculate shear transform
+        sx = ray.direction[ix] / ray.direction[iz]
+        sy = ray.direction[iy] / ray.direction[iz]
+        sz = 1.0 / ray.direction[iz]
+
+        # center coordinate space on ray origin
+        v1 = Point(self.v1.x - ray.origin.x, self.v1.y - ray.origin.y, self.v1.z - ray.origin.z)
+        v2 = Point(self.v2.x - ray.origin.x, self.v2.y - ray.origin.y, self.v2.z - ray.origin.z)
+        v3 = Point(self.v3.x - ray.origin.x, self.v3.y - ray.origin.y, self.v3.z - ray.origin.z)
+
+        # transform vertices by shearing and scaling space so the ray points along the +ve z axis
+        # we can now discard the z-axis and work with the 2D projection of the triangle in x and y
+        x1 = v1[ix] - sx * v1[iz]
+        x2 = v2[ix] - sx * v2[iz]
+        x3 = v3[ix] - sx * v3[iz]
+
+        y1 = v1[iy] - sy * v1[iz]
+        y2 = v2[iy] - sy * v2[iz]
+        y3 = v3[iy] - sy * v3[iz]
+
+        # calculate scaled barycentric coordinates
+        u = x3 * y2 - y3 * x2
+        v = x1 * y3 - y1 * x3
+        w = x2 * y1 - y2 * x1
+
+        # # catch cases where there is insufficient numerical accuracy to resolve the subsequent edge tests
+        # if u == 0.0 or v == 0.0 or w == 0.0:
+        #     # TODO: add a higher precision (128bit) fallback calculation
+
+        # perform edge tests
+        if (u < 0.0 or v < 0.0 or w < 0.0) and (u > 0.0 or v > 0.0 or w > 0.0):
+            return None
+
+        # calculate determinant
+        det = u + v + w
+
+        # if determinant is zero the ray is parallel to the face
+        if det == 0.0:
+            return None
+
+        # calculate z coordinates for the transform vertices, we need the z component to calculate the hit distance
+        z1 = sz * v1[iz]
+        z2 = sz * v2[iz]
+        z3 = sz * v3[iz]
+        t = u * z1 + v * z2 + w * z3
+
+        # is hit distance within ray limits
+        if det > 0.0:
+            if t < 0.0 or t > ray.max_distance * det:
+                return None
+        else:
+            if t > 0.0 or t < ray.max_distance * det:
+                return None
+
+        # normalise barycentric coordinates and hit distance
+        det_reciprocal = 1.0 / det
+        u *= det_reciprocal
+        v *= det_reciprocal
+        w *= det_reciprocal
+        t *= det_reciprocal
+
+        return t, u, v, w
+
+    # cdef bint side(self, Point p):
+    #     """
+    #     Returns which side of the face the point lies on.
+    #
+    #     The front of the triangle is defined as the side towards which the face normal is pointing.
+    #     Everywhere else is considered to liw behind the triangle. A point lying on the plane in
+    #     which the triangle lies is considered to be behind the triangle.
+    #
+    #     :return: Returns True if the point lies in front of the triangle, False otherwise
+    #     """
+    #     pass
+
+
+
+# todo: get/set attributes must return copies of arrays to protect internals of the mesh object
 cdef class Mesh(Primitive):
 
-    def __init__(self, object vertices, object polygons, object normals=None, #object texture_coords=None, bint validate=True, bint optimise_now=True,
-                 object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+    def __init__(self, object vertices, object polygons, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+
+        super().__init__(parent, transform, material, name)
 
         # convert to internal numpy arrays and obtain memory views
 
@@ -58,17 +211,7 @@ cdef class Mesh(Primitive):
             # check normals are valid
             # check polygons are not dangling
 
-        # build kdtree
-
         pass
-
-
-    # todo: get/set attributes must return copies of arrays to protect internals of the mesh object
-
-    cdef _build_kdtree():
-
-        pass
-
 
     cpdef Intersection hit(self, Ray ray):
         """
@@ -84,6 +227,7 @@ cdef class Mesh(Primitive):
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method hit() has not been implemented.")
+
 
     cpdef Intersection next_intersection(self):
         """
@@ -118,7 +262,7 @@ cdef class Mesh(Primitive):
         defined by the Primitive. False is returned otherwise.
         """
 
-        raise NotImplementedError("Primitive surface has not been defined. Virtual method inside() has not been implemented.")
+        return False
 
     cpdef BoundingBox bounding_box(self):
         """
