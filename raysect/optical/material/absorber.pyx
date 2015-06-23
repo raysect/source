@@ -45,8 +45,6 @@ cdef class AbsorbingSurface(NullVolume):
     A perfectly absorbing surface material.
     """
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
                                 bint exiting, Point inside_point, Point outside_point,
                                 Normal normal, AffineMatrix to_local, AffineMatrix to_world):
