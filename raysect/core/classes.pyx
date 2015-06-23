@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-#Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -56,7 +56,6 @@ cdef class Ray:
         """Decodes state for pickling."""
 
         self.origin, self.direction, self.max_distance = state
-
 
 
 cdef class Intersection:
