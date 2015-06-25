@@ -1,2 +1,2 @@
-from .mesh import Mesh
+from .mesh import Mesh, Triangle
 

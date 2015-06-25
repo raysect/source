@@ -60,11 +60,12 @@ Development plan for mesh:
 * meshes are always open (i.e skip implementation of contains())
 
 2) 2nd pass
+* add kdtree to optimise hit and contains
+
+3) release
 * add smoothing parameter and add normal interpolation
 * add open/closed mesh support (implement contains using a surface intersection count)
 
-3) release
-* add kdtree to optimise hit and contains
 
 Notes:
 The ray-triangle intersection is a partial implementation of the algorithm described in:
@@ -75,12 +76,13 @@ higher precision to resolve cases when the edge tests result in a degenerate sol
 extremely small triangles that are being tested against a ray with an origin far from the mesh.
 """
 
-cdef class _Triangle:
+cdef class Triangle:
 
     cdef:
         readonly Point v1, v2, v3
         readonly Normal n1, n2, n3
         readonly Normal face_normal
+        readonly bint smoothing
 
     def __init__(self, Point v1 not None, Point v2 not None, Point v3 not None,
                  Normal n1=None, Normal n2=None, Normal n3=None):
@@ -89,11 +91,19 @@ cdef class _Triangle:
         self.v2 = v2
         self.v3 = v3
 
-        self.n1 = n1
-        self.n2 = n2
-        self.n3 = n3
-
         self._calc_face_normal()
+
+        # if any of the vertex normals is missing, disable interpolation
+        if n1 is None or n2 is None or n3 is None:
+            self.smoothing = False
+            self.n1 = None
+            self.n2 = None
+            self.n3 = None
+        else:
+            self.smoothing = True
+            self.n1 = n1.normalise()
+            self.n2 = n2.normalise()
+            self.n3 = n3.normalise()
 
     def _calc_face_normal(self):
         """
@@ -200,6 +210,25 @@ cdef class _Triangle:
 
         return t, u, v, w
 
+    def interpolate_normal(self, u, v, w):
+        """
+        Returns the surface normal for the specified barycentric coordinate.
+
+        The result is undefined if u, v or w are outside the range [0, 1].
+        If smoothing is disabled the result will be the face normal.
+
+        :param u: Barycentric U coordinate.
+        :param v: Barycentric V coordinate.
+        :param w: Barycentric W coordinate.
+        :return The surface normal at the specified coordinate.
+        """
+
+        if self.smoothing:
+            return u * self.n1 + v * self.n2 + w * self.n3
+        else:
+            return self.face_normal
+
+
     # def side(self, p):
     #     """
     #     Returns which side of the face the point lies on.
@@ -216,7 +245,7 @@ cdef class _Triangle:
 # todo: get/set attributes must return copies of arrays to protect internals of the mesh object
 cdef class Mesh(Primitive):
 
-    def __init__(self, object vertices, object polygons, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, list triangles, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
@@ -227,10 +256,7 @@ cdef class Mesh(Primitive):
             # check normals are valid
             # check polygons are not dangling
 
-        self.vertices = vertices
-        self.triangles = []
-        for i1, i2, i3 in polygons:
-            self.triangles.append(_Triangle(Point(*vertices[i1]), Point(*vertices[i2]), Point(*vertices[i3])))
+        self.triangles = triangles
 
     cpdef Intersection hit(self, Ray ray):
         """
@@ -253,19 +279,20 @@ cdef class Mesh(Primitive):
         for triangle in self.triangles:
             result = triangle.hit(local_ray)
             if result is not None:
-                t, _, _, _ = result
+                t, u, v, w = result
                 if t < ray_distance:
                     closest = triangle
                     ray_distance = t
+                    cu, cv, cw = u, v, w
 
         if closest is None:
             return None
 
         hit_point = local_ray.origin + local_ray.direction * ray_distance
-        normal = closest.face_normal
-        exiting = local_ray.direction.dot(normal) > 0.0
-        inside_point = hit_point - normal * EPSILON
-        outside_point = hit_point + normal * EPSILON
+        inside_point = hit_point - closest.face_normal * EPSILON
+        outside_point = hit_point + closest.face_normal * EPSILON
+        normal = closest.interpolate_normal(cu, cv, cw)
+        exiting = local_ray.direction.dot(closest.face_normal) > 0.0
         return Intersection(ray, ray_distance, self,
                             hit_point, inside_point, outside_point,
                             normal, exiting, self.to_local(), self.to_root())
@@ -310,7 +337,7 @@ cdef class Mesh(Primitive):
         """
         Virtual method - to be implemented by derived classes.
 
-        When the primitive is connected to a scenegrpah containing a World
+        When the primitive is connected to a scenegraph containing a World
         object at its root, this method should return a bounding box that
         fully encloses the primitive's surface (plus a small margin to
         avoid numerical accuracy problems). The bounding box must be defined in
@@ -322,8 +349,10 @@ cdef class Mesh(Primitive):
         """
 
         bbox = BoundingBox()
-        for vertex in self.vertices:
-            bbox.extend(Point(*vertex).transform(self.to_root()), BOX_PADDING)
+        for triangle in self.triangles:
+            bbox.extend(Point(*triangle.v1).transform(self.to_root()), BOX_PADDING)
+            bbox.extend(Point(*triangle.v2).transform(self.to_root()), BOX_PADDING)
+            bbox.extend(Point(*triangle.v3).transform(self.to_root()), BOX_PADDING)
         return bbox
 
 
