@@ -31,11 +31,25 @@
 
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.point cimport Point
+from raysect.core.math.normal cimport Normal
 from raysect.core.math.vector cimport Vector
-from raysect.core.classes cimport Ray, Intersection
+from raysect.core.classes cimport Ray
+
+cdef class Triangle:
+
+    cdef:
+        readonly Point v1, v2, v3
+        readonly Normal n1, n2, n3
+        readonly Normal face_normal
+        readonly bint _smoothing_enabled
+
 
 cdef class Mesh(Primitive):
 
     cdef:
-        readonly list vertices
         readonly list triangles
+        public bint smoothing
+
+        cdef tuple _calc_rayspace_transform(self, Ray ray)
+
+        cdef tuple _hit_triangle(self, Triangle triangle, int ix, int iy, int iz, double sx, double sy, double sz, Ray ray)

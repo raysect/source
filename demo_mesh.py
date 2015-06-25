@@ -9,58 +9,60 @@ from matplotlib.pyplot import *
 from numpy import array
 
 
-# from raysect.primitive.mesh.matt.stlmesh import StlMesh, BINARY
-# stlfile = "/home/alex/work/ccfe/MAST-M9-BEAM_DUMPS_+_GDC.stl"
-# mesh = StlMesh(stlfile, mode=BINARY)
-#
-# vertices = []
-# polygons = []
-# for i in range(len(mesh.v0)):
-#     vertices.append(mesh.v0[i] / 1000)
-#     vertices.append(mesh.v1[i] / 1000)
-#     vertices.append(mesh.v2[i] / 1000)
-#     polygons.append((3*i, 3*i + 1, 3*i + 2))
+from raysect.primitive.mesh.matt.stlmesh import StlMesh, BINARY
+stlfile = "/home/alex/work/ccfe/MAST-M9-BEAM_DUMPS_+_GDC.stl"
+mesh = StlMesh(stlfile, mode=BINARY)
+
+triangles = []
+for i in range(len(mesh.v0)):
+    triangles.append(
+        Triangle(
+            Point(*(mesh.v0[i] / 1000)),
+            Point(*(mesh.v1[i] / 1000)),
+            Point(*(mesh.v2[i] / 1000))
+        )
+    )
 
 world = World()
 
 # test data:
-vertices = [
-    Point(1.4, -1, -1),   # left
-    Point(0, -1., 1.4),   # forward
-    Point(-1.4, -1, -1),  # right
-    Point(0, 1, 0)        # up
-]
+# vertices = [
+#     Point(1.4, -1, -1),   # left
+#     Point(0, -1., 1.4),   # forward
+#     Point(-1.4, -1, -1),  # right
+#     Point(0, 1, 0)        # up
+# ]
+#
+# normals = [
+#     Normal(1.4, 0, -1),   # left
+#     Normal(0, 0, 1.4),   # forward
+#     Normal(-1.4, 0, -1),  # right
+#     Normal(0, 1, 0)        # up
+# ]
+#
+# #normals = [None, None, None, None]
+#
+# polygons = [
+#     (0, 1, 2),
+#     (0, 2, 3),
+#     (0, 3, 1),
+#     (2, 1, 3)
+# ]
+#
+# triangles = []
+# for i1, i2, i3 in polygons:
+#     triangles.append(
+#         Triangle(
+#             vertices[i1],
+#             vertices[i2],
+#             vertices[i3],
+#             normals[i1],
+#             normals[i2],
+#             normals[i3]
+#         )
+#     )
 
-normals = [
-    Normal(1.4, 0, -1),   # left
-    Normal(0, 0, 1.4),   # forward
-    Normal(-1.4, 0, -1),  # right
-    Normal(0, 1, 0)        # up
-]
-
-#normals = [None, None, None, None]
-
-polygons = [
-    (0, 1, 2),
-    (0, 2, 3),
-    (0, 3, 1),
-    (2, 1, 3)
-]
-
-triangles = []
-for i1, i2, i3 in polygons:
-    triangles.append(
-        Triangle(
-            vertices[i1],
-            vertices[i2],
-            vertices[i3],
-            normals[i1],
-            normals[i2],
-            normals[i3]
-        )
-    )
-
-Mesh(triangles, world, translate(0, 0, 0) * rotate(0, 90, 0), debug.Light(Vector(0, 0, 1.0), 0.4))
+Mesh(triangles, True, world, translate(0, 0, 0) * rotate(0, 90, 0), debug.Light(Vector(0, 0, 1.0), 0.4))
 # Mesh(vertices, polygons, world, translate(0, 0, 0)*rotate(0, 90, 0), debug.Normal('+x'))
 # Mesh(vertices, polygons, world, translate(0, 0, 0)*rotate(0, 90, 0), debug.Exiting())
 
