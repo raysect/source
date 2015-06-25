@@ -203,7 +203,7 @@ cdef class Mesh(Primitive):
 
         cdef:
             int ix, iy, iz
-            double rdx, rdy, rdz
+            double rdz
             double sx, sy, sz
 
         # to minimise numerical error cycle the direction components so the largest becomes the z-component
@@ -222,18 +222,15 @@ cdef class Mesh(Primitive):
             # z dimension largest
             ix, iy, iz = 0, 1, 2
 
-        rdx = ray.direction.get_index(ix)
-        rdy = ray.direction.get_index(iy)
-        rdz = ray.direction.get_index(iz)
-
         # if the z component is negative, swap x and y to restore the handedness of the space
+        rdz = ray.direction.get_index(iz)
         if rdz < 0.0:
             ix, iy = iy, ix
 
         # calculate shear transform
-        sz = 1 / rdz
-        sx = rdx * sz
-        sy = rdy * sz
+        sz = 1.0 / rdz
+        sx = ray.direction.get_index(ix) * sz
+        sy = ray.direction.get_index(iy) * sz
 
         return ix, iy, iz, sx, sy, sz
 
