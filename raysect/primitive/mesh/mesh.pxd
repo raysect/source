@@ -43,6 +43,10 @@ cdef class Triangle:
         readonly Normal face_normal
         readonly bint _smoothing_enabled
 
+        cdef Normal _calc_face_normal(self)
+
+        cpdef Normal interpolate_normal(self, double u, double v, double w, bint smoothing=*)
+
 
 cdef class Mesh(Primitive):
 

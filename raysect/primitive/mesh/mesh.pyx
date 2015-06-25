@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.normal cimport Normal
+from raysect.core.math.normal cimport Normal, new_normal
 from raysect.core.math.point cimport Point, new_point
 from raysect.core.classes cimport Material, Intersection, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
@@ -98,7 +98,7 @@ cdef class Triangle:
             self.n2 = n2.normalise()
             self.n3 = n3.normalise()
 
-    def _calc_face_normal(self):
+    cdef Normal _calc_face_normal(self):
         """
         Calculate the triangles face normal from the vertices.
 
@@ -108,11 +108,15 @@ cdef class Triangle:
         away from the observer.
         """
 
+        cdef:
+            Vector a, b, c
+
         a = self.v1.vector_to(self.v2)
         b = self.v1.vector_to(self.v3)
-        self.face_normal = Normal(*a.cross(b).normalise())
+        c = a.cross(b).normalise()
+        self.face_normal = new_normal(c.x, c.y, c.z)
 
-    def interpolate_normal(self, u, v, w, smoothing=True):
+    cpdef Normal interpolate_normal(self, double u, double v, double w, bint smoothing=True):
         """
         Returns the surface normal for the specified barycentric coordinate.
 
@@ -126,10 +130,13 @@ cdef class Triangle:
         """
 
         if smoothing and self._smoothing_enabled:
-            return u * self.n1 + v * self.n2 + w * self.n3
+            return new_normal(
+                u * self.n1.x + v * self.n2.x + w * self.n3.x,
+                u * self.n1.y + v * self.n2.y + w * self.n3.y,
+                u * self.n1.z + v * self.n2.z + w * self.n3.z,
+            )
         else:
             return self.face_normal
-
 
     # def side(self, p):
     #     """
