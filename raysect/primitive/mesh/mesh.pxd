@@ -30,10 +30,51 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.math.point cimport Point
 from raysect.core.math.normal cimport Normal
 from raysect.core.math.vector cimport Vector
 from raysect.core.classes cimport Ray
+
+cdef class _Edge:
+
+    cdef:
+        readonly double value
+        readonly bint is_upper_edge
+        readonly Triangle triangle
+
+
+cdef class _Node:
+
+    cdef readonly _Node lower_branch
+    cdef readonly _Node upper_branch
+    cdef readonly list triangles
+    cdef readonly int axis
+    cdef readonly double split
+    cdef readonly bint is_leaf
+
+    cdef object build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost)
+
+    cdef void _become_leaf(self, list triangles)
+
+    cdef list _build_edges(self, list triangles, int axis)
+
+    cdef BoundingBox _calc_lower_bounds(self, BoundingBox node_bounds, double split_value, int axis)
+
+    cdef BoundingBox _calc_upper_bounds(self, BoundingBox node_bounds, double split_value, int axis)
+
+    cdef tuple hit(self, Ray ray, double min_range, double max_range)
+
+    cdef inline tuple _hit_branch(self, Ray ray, double min_range, double max_range)
+
+    cdef inline tuple _hit_leaf(self, Ray ray, double max_range)
+
+    cdef tuple _calc_rayspace_transform(self, Ray ray)
+
+    cdef tuple _hit_triangle(self, Triangle triangle, tuple ray_transform, Ray ray)
+
+    cdef list contains(self, Point point)
+
 
 cdef class Triangle:
 
@@ -43,9 +84,9 @@ cdef class Triangle:
         readonly Normal face_normal
         readonly bint _smoothing_enabled
 
-        cdef Normal _calc_face_normal(self)
+    cdef Normal _calc_face_normal(self)
 
-        cpdef Normal interpolate_normal(self, double u, double v, double w, bint smoothing=*)
+    cpdef Normal interpolate_normal(self, double u, double v, double w, bint smoothing=*)
 
 
 cdef class Mesh(Primitive):
@@ -53,7 +94,14 @@ cdef class Mesh(Primitive):
     cdef:
         readonly list triangles
         public bint smoothing
+        public int kdtree_max_depth
+        public int kdtree_min_triangles
+        public double kdtree_hit_cost
+        BoundingBox _world_box
+        _Node _kdtree
 
-        cdef tuple _calc_rayspace_transform(self, Ray ray)
+        cdef object _build_kdtree(self)
 
-        cdef tuple _hit_triangle(self, Triangle triangle, int ix, int iy, int iz, double sx, double sy, double sz, Ray ray)
+        cdef object _build_world_box(self)
+
+

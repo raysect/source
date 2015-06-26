@@ -62,7 +62,7 @@ world = World()
 #         )
 #     )
 
-Mesh(triangles, True, world, translate(0, 0, 0) * rotate(0, 90, 0), debug.Light(Vector(0, 0, 1.0), 0.4))
+Mesh(triangles, True, world, translate(0, 0, 0) * rotate(0, 90, 0), debug.Light(Vector(0.2, 0.0, 1.0), 0.4))
 # Mesh(vertices, polygons, world, translate(0, 0, 0)*rotate(0, 90, 0), debug.Normal('+x'))
 # Mesh(vertices, polygons, world, translate(0, 0, 0)*rotate(0, 90, 0), debug.Exiting())
 
