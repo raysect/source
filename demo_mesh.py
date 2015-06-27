@@ -72,7 +72,7 @@ world = World()
 #     )
 
 t = time()
-Mesh(triangles, True, world, translate(0, 0, 0) * rotate(0, 90, 0), debug.Light(Vector(0.2, 0.0, 1.0), 0.4))
+Mesh(triangles, True, parent=world, transform=translate(0, 0, 0) * rotate(0, 90, 0), material=debug.Light(Vector(0.2, 0.0, 1.0), 0.4))
 # Mesh(vertices, polygons, world, translate(0, 0, 0)*rotate(0, 90, 0), debug.Normal('+x'))
 # Mesh(vertices, polygons, world, translate(0, 0, 0)*rotate(0, 90, 0), debug.Exiting())
 print("mesh opt. time = {}s".format(time()-t))

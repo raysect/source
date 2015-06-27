@@ -44,7 +44,7 @@ cdef class _Edge:
         readonly Triangle triangle
 
 
-cdef class TriangleData:
+cdef class _TriangleData:
 
     cdef:
         readonly Triangle triangle
@@ -63,7 +63,7 @@ cdef class _KDTreeNode:
     cdef readonly double split
     cdef readonly bint is_leaf
 
-    cdef object build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost, int last_axis=*)
+    cdef void build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost, int last_axis=*)
 
     cdef tuple _split(self, int axis, list triangles, BoundingBox node_bounds, double hit_cost)
 

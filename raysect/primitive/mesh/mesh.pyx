@@ -1,5 +1,5 @@
 # cython: language_level=3
-# cython: profile=False
+# cython: profile=True
 
 # Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -243,14 +243,11 @@ cdef class Mesh(Primitive):
         # Implementation 2nd Edition", Matt Phar and Greg Humphreys, Morgan Kaufmann 2010, p232
         if self.kdtree_max_depth <= 0:
             max_depth = <int> ceil(8 + 1.3 * log(len(self.triangles)))
-            print(max_depth, "max_depth")
         else:
             max_depth = self.kdtree_max_depth
 
         # pack triangles into form required by kd-Tree
-        triangle_data = []
-        for triangle in self.triangles:
-            triangle_data.append(TriangleData(triangle))
+        triangle_data = [_TriangleData(triangle) for triangle in self.triangles]
 
         # calling build on the root node triggers a recursive rebuild of the tree
         self._kdtree.build(self._local_bbox, triangle_data, max_depth, self.kdtree_min_triangles, self.kdtree_hit_cost)
@@ -402,7 +399,7 @@ cdef class _Edge:
             return NotImplemented
 
 
-cdef class TriangleData:
+cdef class _TriangleData:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -448,7 +445,7 @@ cdef class _KDTreeNode:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef object build(self, BoundingBox node_bounds, list triangle_data, int depth, int min_triangles, double hit_cost, int last_axis=X_AXIS):
+    cdef void build(self, BoundingBox node_bounds, list triangle_data, int depth, int min_triangles, double hit_cost, int last_axis=X_AXIS):
 
         cdef:
             int axis
@@ -483,7 +480,7 @@ cdef class _KDTreeNode:
             double recip_total_sa, lower_sa, upper_sa
             list edges, lower_triangle_data, upper_triangle_data
             _Edge edge
-            TriangleData data
+            _TriangleData data
 
         # store cost of leaf as current best solution
         best_cost = len(triangle_data) * hit_cost
@@ -556,7 +553,7 @@ cdef class _KDTreeNode:
 
     cdef void _become_leaf(self, list triangle_data):
 
-        cdef TriangleData data
+        cdef _TriangleData data
 
         self.lower_branch = None
         self.upper_branch = None
@@ -591,7 +588,7 @@ cdef class _KDTreeNode:
 
         cdef:
             list edges
-            TriangleData triangle
+            _TriangleData triangle
 
         edges = []
         for data in triangle_data:
