@@ -34,7 +34,7 @@ from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport Normal, new_normal
 from raysect.core.math.point cimport Point, new_point
 from raysect.core.classes cimport Material, Intersection, new_intersection
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
 cimport cython
 
@@ -130,6 +130,14 @@ cdef class Triangle:
         c = a.cross(b).normalise()
         self.face_normal = new_normal(c.x, c.y, c.z)
 
+    cpdef Point centre_point(self):
+
+        return new_point(
+            (self.v1.x + self.v2.x + self.n3.x) / 3,
+            (self.v1.y + self.v2.y + self.n3.y) / 3,
+            (self.v1.z + self.v2.z + self.n3.z) / 3
+        )
+
     cpdef Normal interpolate_normal(self, double u, double v, double w, bint smoothing=True):
         """
         Returns the surface normal for the specified barycentric coordinate.
@@ -152,19 +160,23 @@ cdef class Triangle:
         else:
             return self.face_normal
 
-    def lower_extent(self, axis):
+    cpdef double lower_extent(self, int axis):
         """
         Returns the lowest extent of the triangle along the specified axis.
         """
 
-        return min(self.v1[axis], self.v2[axis], self.v3[axis])
+        return min(self.v1.get_index(axis),
+                   self.v2.get_index(axis),
+                   self.v3.get_index(axis))
 
-    def upper_extent(self, axis):
+    cpdef double upper_extent(self, int axis):
         """
         Returns the upper extent of the triangle along the specified axis.
         """
 
-        return max(self.v1[axis], self.v2[axis], self.v3[axis])
+        return max(self.v1.get_index(axis),
+                   self.v2.get_index(axis),
+                   self.v3.get_index(axis))
 
     # def side(self, p):
     #     """
@@ -177,6 +189,22 @@ cdef class Triangle:
     #     :return: Returns True if the point lies in front of the triangle, False otherwise
     #     """
     #     pass
+
+    def __richcmp__(Triangle x, Triangle y, int operation):
+
+        cdef Point xp, yp
+
+        if operation == 0:  # __lt__(), less than
+            # sort by x, then z, then y
+            xp = x.centre_point()
+            yp = y.centre_point()
+            if xp.x == yp.x:
+                if xp.y == yp.y:
+                    return xp.z < yp.z
+                return xp.y < yp.y
+            return xp.x < yp.x
+        else:
+            return NotImplemented
 
 
 cdef class Mesh(Primitive):
@@ -235,7 +263,6 @@ cdef class Mesh(Primitive):
             self._local_bbox.extend(triangle.v1, BOX_PADDING)
             self._local_bbox.extend(triangle.v2, BOX_PADDING)
             self._local_bbox.extend(triangle.v3, BOX_PADDING)
-
 
     @cython.boundscheck(False)
     cpdef Intersection hit(self, Ray ray):
@@ -337,19 +364,12 @@ cdef class Mesh(Primitive):
         return bbox
 
 
-# cdef class _TriangleData
-
-
-
-
-
-
 cdef class _Edge:
     """
     Represents the upper or lower edge of a triangle's bounding box on a specified axis.
     """
 
-    def __init__(self, Triangle triangle, int axis, bint is_upper_edge):
+    def __cinit__(self, Triangle triangle, int axis, bint is_upper_edge):
 
         self.triangle = triangle
         self.is_upper_edge = is_upper_edge
@@ -401,9 +421,7 @@ cdef class _Node:
             return
 
         # attempt split with next axis
-        axis = last_axis + 1
-        if axis > Z_AXIS:
-            axis = X_AXIS
+        axis = (last_axis + 1) % 3
 
         is_leaf, split = self._select_split(triangles, axis, node_bounds, hit_cost)
 
@@ -534,14 +552,14 @@ cdef class _Node:
         cdef Point upper
         upper = node_bounds.upper.copy()
         upper.set_index(axis, split_value)
-        return BoundingBox(node_bounds.lower.copy(), upper)
+        return new_boundingbox(node_bounds.lower.copy(), upper)
 
     cdef BoundingBox _calc_upper_bounds(self, BoundingBox node_bounds, double split_value, int axis):
 
         cdef Point lower
         lower = node_bounds.lower.copy()
         lower.set_index(axis, split_value)
-        return BoundingBox(lower, node_bounds.upper.copy())
+        return new_boundingbox(lower, node_bounds.upper.copy())
 
     cdef tuple hit(self, Ray ray, double min_range, double max_range):
 

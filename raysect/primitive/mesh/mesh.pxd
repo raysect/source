@@ -88,7 +88,13 @@ cdef class Triangle:
 
     cdef Normal _calc_face_normal(self)
 
+    cpdef Point centre_point(self)
+
     cpdef Normal interpolate_normal(self, double u, double v, double w, bint smoothing=*)
+
+    cpdef double lower_extent(self, int axis)
+
+    cpdef double upper_extent(self, int axis)
 
 
 cdef class Mesh(Primitive):
