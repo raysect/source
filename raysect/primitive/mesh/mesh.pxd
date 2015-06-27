@@ -44,10 +44,20 @@ cdef class _Edge:
         readonly Triangle triangle
 
 
-cdef class _Node:
+cdef class TriangleData:
 
-    cdef readonly _Node lower_branch
-    cdef readonly _Node upper_branch
+    cdef:
+        readonly Triangle triangle
+        readonly double[3] lower_extent
+        readonly double[3] upper_extent
+        readonly list lower_edges
+        readonly list upper_edges
+
+
+cdef class _KDTreeNode:
+
+    cdef readonly _KDTreeNode lower_branch
+    cdef readonly _KDTreeNode upper_branch
     cdef readonly list triangles
     cdef readonly int axis
     cdef readonly double split
@@ -55,9 +65,11 @@ cdef class _Node:
 
     cdef object build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost, int last_axis=*)
 
-    cdef tuple _select_split(self, list triangles, int axis, BoundingBox node_bounds, double hit_cost)
+    cdef tuple _split(self, int axis, list triangles, BoundingBox node_bounds, double hit_cost)
 
     cdef void _become_leaf(self, list triangles)
+
+    cdef void _become_branch(self, int axis, double split, list lower_triangles, list upper_triangles, BoundingBox node_bounds, int depth, int min_triangles, double hit_cost)
 
     cdef list _build_edges(self, list triangles, int axis)
 
@@ -106,7 +118,7 @@ cdef class Mesh(Primitive):
         public int kdtree_min_triangles
         public double kdtree_hit_cost
         BoundingBox _local_bbox
-        _Node _kdtree
+        _KDTreeNode _kdtree
 
         cdef object _build_kdtree(self)
 

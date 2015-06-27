@@ -1,5 +1,5 @@
 # cython: language_level=3
-# cython: profile=True
+# cython: profile=False
 
 # Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -209,19 +209,17 @@ cdef class Triangle:
 
 cdef class Mesh(Primitive):
 
-    def __init__(self, list triangles, bint smoothing=True, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    # TODO: calculate or measure triangle hit cost vs split traversal
+    def __init__(self, list triangles, bint smoothing=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=20.0, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
         self.triangles = triangles
         self.smoothing = smoothing
 
-        self.kdtree_max_depth = -1
-        self.kdtree_min_triangles = 1
-
-        # TODO: calculate or measure this, relative cost of a triangle hit
-        # calculation compared to a kdtree split traversal
-        self.kdtree_hit_cost = 20.0
+        self.kdtree_max_depth = kdtree_max_depth
+        self.kdtree_min_triangles = kdtree_min_triangles
+        self.kdtree_hit_cost = kdtree_hit_cost
 
         # construct a bounding box that contains all the triangles in the mesh
         self._build_local_bbox()
@@ -234,7 +232,10 @@ cdef class Mesh(Primitive):
         Rebuilds the kd-Tree acceleration structure with the list of triangles.
         """
 
-        cdef int max_depth
+        cdef:
+            int max_depth
+            list triangle_data
+            Triangle triangle
 
         self._kdtree = _KDTreeNode()
 
@@ -246,8 +247,13 @@ cdef class Mesh(Primitive):
         else:
             max_depth = self.kdtree_max_depth
 
+        # pack triangles into form required by kd-Tree
+        triangle_data = []
+        for triangle in self.triangles:
+            triangle_data.append(TriangleData(triangle))
+
         # calling build on the root node triggers a recursive rebuild of the tree
-        self._kdtree.build(self._local_bbox, self.triangles, max_depth, self.kdtree_min_triangles, self.kdtree_hit_cost)
+        self._kdtree.build(self._local_bbox, triangle_data, max_depth, self.kdtree_min_triangles, self.kdtree_hit_cost)
 
     cdef object _build_local_bbox(self):
         """
@@ -369,21 +375,17 @@ cdef class _Edge:
     Represents the upper or lower edge of a triangle's bounding box on a specified axis.
     """
 
-    cdef:
-        readonly double value
-        readonly bint is_upper_edge
-        readonly Triangle triangle
-
-    def __cinit__(self, Triangle triangle, int axis, bint is_upper_edge):
+    def __cinit__(self, Triangle triangle, double extent, bint is_upper_edge):
 
         self.triangle = triangle
         self.is_upper_edge = is_upper_edge
 
-        # value is padded by a small margin as the watertight hit algorithm requires conservative bounds
+        # value is padded by a small margin as the watertight hit algorithm
+        # requires conservative bounds
         if is_upper_edge:
-            self.value = EDGE_UPPER_PADDING * triangle.upper_extent(axis)
+            self.value = EDGE_UPPER_PADDING * extent
         else:
-            self.value = EDGE_LOWER_PADDING * triangle.lower_extent(axis)
+            self.value = EDGE_LOWER_PADDING * extent
 
     def __richcmp__(_Edge x, _Edge y, int operation):
 
@@ -402,36 +404,37 @@ cdef class _Edge:
 
 cdef class TriangleData:
 
-    cdef:
-        readonly Triangle triangle
-        readonly list lower_edges
-        readonly list upper_edges
-
-    def __init__(self, triangle):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def __cinit__(self, Triangle triangle):
 
         self.triangle = triangle
 
+        self.lower_extent = [
+            triangle.lower_extent(X_AXIS),
+            triangle.lower_extent(Y_AXIS),
+            triangle.lower_extent(Z_AXIS)
+        ]
+
+        self.upper_extent = [
+            triangle.upper_extent(X_AXIS),
+            triangle.upper_extent(Y_AXIS),
+            triangle.upper_extent(Z_AXIS)
+        ]
+
         self.lower_edges = [
-            _Edge(triangle, X_AXIS, False),
-            _Edge(triangle, Y_AXIS, False),
-            _Edge(triangle, Z_AXIS, False)
+            _Edge(triangle, self.lower_extent[X_AXIS], False),
+            _Edge(triangle, self.lower_extent[Y_AXIS], False),
+            _Edge(triangle, self.lower_extent[Z_AXIS], False)
         ]
 
         self.upper_edges = [
-            _Edge(triangle, X_AXIS, True),
-            _Edge(triangle, Y_AXIS, True),
-            _Edge(triangle, Z_AXIS, True)
+            _Edge(triangle, self.upper_extent[X_AXIS], True),
+            _Edge(triangle, self.upper_extent[Y_AXIS], True),
+            _Edge(triangle, self.upper_extent[Z_AXIS], True)
         ]
 
 cdef class _KDTreeNode:
-
-    cdef:
-        readonly _KDTreeNode lower_branch
-        readonly _KDTreeNode upper_branch
-        readonly list triangles
-        readonly int axis
-        readonly double split
-        readonly bint is_leaf
 
     def __init__(self):
 
@@ -443,41 +446,47 @@ cdef class _KDTreeNode:
         self.split = 0
         self.is_leaf = True
 
-    cdef object build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost, int last_axis=X_AXIS):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef object build(self, BoundingBox node_bounds, list triangle_data, int depth, int min_triangles, double hit_cost, int last_axis=X_AXIS):
 
         cdef:
             int axis
             tuple result
             double split
-            list lower_triangles, upper_triangles
+            list lower_triangle_data, upper_triangle_data
 
-        if depth == 0 or len(triangles) < min_triangles:
-            self._become_leaf(triangles)
+        if depth == 0 or len(triangle_data) < min_triangles:
+            self._become_leaf(triangle_data)
             return
 
         # attempt split with next axis
         axis = (last_axis + 1) % 3
-        result = self._split(axis, triangles, node_bounds, hit_cost)
+        result = self._split(axis, triangle_data, node_bounds, hit_cost)
 
         # split solution found?
         if result is None:
-            self._become_leaf(triangles)
+            self._become_leaf(triangle_data)
         else:
-            split, lower_triangles, upper_triangles = result
-            self._become_branch(axis, split, lower_triangles, upper_triangles, node_bounds, depth, min_triangles, hit_cost)
+            split, lower_triangle_data, upper_triangle_data = result
+            self._become_branch(axis, split, lower_triangle_data, upper_triangle_data, node_bounds, depth, min_triangles, hit_cost)
 
-    cdef tuple _split(self, int axis, list triangles, BoundingBox node_bounds, double hit_cost):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef tuple _split(self, int axis, list triangle_data, BoundingBox node_bounds, double hit_cost):
 
         cdef:
             double split, cost, best_cost, best_split
             bint is_leaf
             int lower_triangle_count, upper_triangle_count
             double recip_total_sa, lower_sa, upper_sa
-            list edges, lower_triangles, upper_triangles
+            list edges, lower_triangle_data, upper_triangle_data
             _Edge edge
+            TriangleData data
 
         # store cost of leaf as current best solution
-        best_cost = len(triangles) * hit_cost
+        best_cost = len(triangle_data) * hit_cost
         best_split = 0
         is_leaf = True
 
@@ -485,11 +494,11 @@ cdef class _KDTreeNode:
         recip_total_sa = 1.0 / node_bounds.surface_area()
 
         # obtain sorted list of candidate edges along chosen axis
-        edges = self._build_edges(triangles, axis)
+        edges = self._build_edges(triangle_data, axis)
 
         # cache triangle counts in lower and upper volumes for speed
         lower_triangle_count = 0
-        upper_triangle_count = len(triangles)
+        upper_triangle_count = len(triangle_data)
 
         # scan through candidate edges from lowest to highest
         for edge in edges:
@@ -531,30 +540,35 @@ cdef class _KDTreeNode:
 
         # using cached values split triangles into two lists
         # note the split boundary is defined as lying in the upper node
-        lower_triangles = []
-        upper_triangles = []
-        for triangle in triangles:
+        lower_triangle_data = []
+        upper_triangle_data = []
+        for data in triangle_data:
 
             # is the triangle present in the lower node?
-            if triangle.lower_extent(axis) < best_split:
-                lower_triangles.append(triangle)
+            if data.lower_extent[axis] < best_split:
+                lower_triangle_data.append(data)
 
             # is the triangle present in the upper node?
-            if triangle.upper_extent(axis) >= best_split:
-                upper_triangles.append(triangle)
+            if data.upper_extent[axis] >= best_split:
+                upper_triangle_data.append(data)
 
-        return best_split, lower_triangles, upper_triangles
+        return best_split, lower_triangle_data, upper_triangle_data
 
-    cdef void _become_leaf(self, list triangles):
+    cdef void _become_leaf(self, list triangle_data):
+
+        cdef TriangleData data
 
         self.lower_branch = None
         self.upper_branch = None
-        self.triangles = triangles
         self.axis = NO_AXIS
         self.split = 0
         self.is_leaf = True
 
-    cdef void _become_branch(self, int axis, double split, list lower_triangles, list upper_triangles, BoundingBox node_bounds, int depth, int min_triangles, double hit_cost):
+        self.triangles = []
+        for data in triangle_data:
+            self.triangles.append(data.triangle)
+
+    cdef void _become_branch(self, int axis, double split, list lower_triangle_data, list upper_triangle_data, BoundingBox node_bounds, int depth, int min_triangles, double hit_cost):
 
         # become a branch node
         self.lower_branch = _KDTreeNode()
@@ -566,21 +580,23 @@ cdef class _KDTreeNode:
 
         # continue expanding the tree inside the two volumes
         self.lower_branch.build(self._calc_lower_bounds(node_bounds, split, axis),
-                                lower_triangles, depth - 1, min_triangles, hit_cost, axis)
+                                lower_triangle_data, depth - 1, min_triangles, hit_cost, axis)
 
         self.upper_branch.build(self._calc_upper_bounds(node_bounds, split, axis),
-                                upper_triangles, depth - 1, min_triangles, hit_cost, axis)
+                                upper_triangle_data, depth - 1, min_triangles, hit_cost, axis)
 
-    cdef list _build_edges(self, list triangles, int axis):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef list _build_edges(self, list triangle_data, int axis):
 
         cdef:
             list edges
-            Triangle triangle
+            TriangleData triangle
 
         edges = []
-        for triangle in triangles:
-            edges.append(_Edge(triangle, axis, is_upper_edge=False))
-            edges.append(_Edge(triangle, axis, is_upper_edge=True))
+        for data in triangle_data:
+            edges.append(data.lower_edges[axis])
+            edges.append(data.upper_edges[axis])
         edges.sort()
 
         return edges
