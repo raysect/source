@@ -195,7 +195,7 @@ cdef class Triangle:
         cdef Point xp, yp
 
         if operation == 0:  # __lt__(), less than
-            # sort by x, then z, then y
+            # sort by the centre point of the triangle in x, then y, then z
             xp = x.centre_point()
             yp = y.centre_point()
             if xp.x == yp.x:
@@ -236,7 +236,7 @@ cdef class Mesh(Primitive):
 
         cdef int max_depth
 
-        self._kdtree = _Node()
+        self._kdtree = _KDTreeNode()
 
         # default max tree depth is set to the value suggested in "Physically Based Rendering From Theory to
         # Implementation 2nd Edition", Matt Phar and Greg Humphreys, Morgan Kaufmann 2010, p232
@@ -369,6 +369,11 @@ cdef class _Edge:
     Represents the upper or lower edge of a triangle's bounding box on a specified axis.
     """
 
+    cdef:
+        readonly double value
+        readonly bint is_upper_edge
+        readonly Triangle triangle
+
     def __cinit__(self, Triangle triangle, int axis, bint is_upper_edge):
 
         self.triangle = triangle
@@ -395,81 +400,80 @@ cdef class _Edge:
             return NotImplemented
 
 
-cdef class _Node:
+cdef class TriangleData:
+
+    cdef:
+        readonly Triangle triangle
+        readonly list lower_edges
+        readonly list upper_edges
+
+    def __init__(self, triangle):
+
+        self.triangle = triangle
+
+        self.lower_edges = [
+            _Edge(triangle, X_AXIS, False),
+            _Edge(triangle, Y_AXIS, False),
+            _Edge(triangle, Z_AXIS, False)
+        ]
+
+        self.upper_edges = [
+            _Edge(triangle, X_AXIS, True),
+            _Edge(triangle, Y_AXIS, True),
+            _Edge(triangle, Z_AXIS, True)
+        ]
+
+cdef class _KDTreeNode:
+
+    cdef:
+        readonly _KDTreeNode lower_branch
+        readonly _KDTreeNode upper_branch
+        readonly list triangles
+        readonly int axis
+        readonly double split
+        readonly bint is_leaf
 
     def __init__(self):
 
+        # default to an empty leaf
         self.lower_branch = None
         self.upper_branch = None
         self.triangles = []
         self.axis = NO_AXIS
         self.split = 0
-        self.is_leaf = False
+        self.is_leaf = True
 
     cdef object build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost, int last_axis=X_AXIS):
 
         cdef:
             int axis
-            bint is_leaf
+            tuple result
             double split
-            list edges, lower_triangles, upper_triangles
-            Triangle triangle
+            list lower_triangles, upper_triangles
 
         if depth == 0 or len(triangles) < min_triangles:
-            # print("FORCED LEAF with {} triangles, depth={}".format(len(triangles), depth))
             self._become_leaf(triangles)
             return
 
         # attempt split with next axis
         axis = (last_axis + 1) % 3
+        result = self._split(axis, triangles, node_bounds, hit_cost)
 
-        is_leaf, split = self._select_split(triangles, axis, node_bounds, hit_cost)
-
-        # no split solution found?
-        if is_leaf:
-            # print("LEAF with {} triangles, depth={}".format(len(triangles), depth))
+        # split solution found?
+        if result is None:
             self._become_leaf(triangles)
-            return
+        else:
+            split, lower_triangles, upper_triangles = result
+            self._become_branch(axis, split, lower_triangles, upper_triangles, node_bounds, depth, min_triangles, hit_cost)
 
-        # print(depth, best_axis, "cost {}%".format(100 * best_cost/(len(triangles) * hit_cost)), (best_split - node_bounds.lower[best_axis]) / (node_bounds.upper[best_axis] - node_bounds.lower[best_axis]))
-
-        # using cached values split triangles into two lists
-        # note the split boundary is defined as lying in the upper node
-        lower_triangles = []
-        upper_triangles = []
-        for triangle in triangles:
-
-            # is the triangle present in the lower node?
-            if triangle.lower_extent(axis) < split:
-                lower_triangles.append(triangle)
-
-            # is the triangle present in the upper node?
-            if triangle.upper_extent(axis) >= split:
-                upper_triangles.append(triangle)
-
-        # become a branch node
-        self.lower_branch = _Node()
-        self.upper_branch = _Node()
-        self.triangles = None
-        self.axis = axis
-        self.split = split
-        self.is_leaf = False
-
-        # continue expanding the tree inside the two volumes
-        self.lower_branch.build(self._calc_lower_bounds(node_bounds, split, axis),
-                                lower_triangles, depth - 1, min_triangles, hit_cost, axis)
-
-        self.upper_branch.build(self._calc_upper_bounds(node_bounds, split, axis),
-                                upper_triangles, depth - 1, min_triangles, hit_cost, axis)
-
-    cdef tuple _select_split(self, list triangles, int axis, BoundingBox node_bounds, double hit_cost):
+    cdef tuple _split(self, int axis, list triangles, BoundingBox node_bounds, double hit_cost):
 
         cdef:
             double split, cost, best_cost, best_split
             bint is_leaf
             int lower_triangle_count, upper_triangle_count
             double recip_total_sa, lower_sa, upper_sa
-            list edges
+            list edges, lower_triangles, upper_triangles
             _Edge edge
 
         # store cost of leaf as current best solution
@@ -522,7 +526,24 @@ cdef class _Node:
             if not edge.is_upper_edge:
                 lower_triangle_count += 1
 
-        return is_leaf, best_split
+        if is_leaf:
+            return None
+
+        # using cached values split triangles into two lists
+        # note the split boundary is defined as lying in the upper node
+        lower_triangles = []
+        upper_triangles = []
+        for triangle in triangles:
+
+            # is the triangle present in the lower node?
+            if triangle.lower_extent(axis) < best_split:
+                lower_triangles.append(triangle)
+
+            # is the triangle present in the upper node?
+            if triangle.upper_extent(axis) >= best_split:
+                upper_triangles.append(triangle)
+
+        return best_split, lower_triangles, upper_triangles
 
     cdef void _become_leaf(self, list triangles):
 
@@ -532,6 +553,23 @@ cdef class _Node:
         self.axis = NO_AXIS
         self.split = 0
         self.is_leaf = True
+
+    cdef void _become_branch(self, int axis, double split, list lower_triangles, list upper_triangles, BoundingBox node_bounds, int depth, int min_triangles, double hit_cost):
+
+        # become a branch node
+        self.lower_branch = _KDTreeNode()
+        self.upper_branch = _KDTreeNode()
+        self.triangles = None
+        self.axis = axis
+        self.split = split
+        self.is_leaf = False
+
+        # continue expanding the tree inside the two volumes
+        self.lower_branch.build(self._calc_lower_bounds(node_bounds, split, axis),
+                                lower_triangles, depth - 1, min_triangles, hit_cost, axis)
+
+        self.upper_branch.build(self._calc_upper_bounds(node_bounds, split, axis),
+                                upper_triangles, depth - 1, min_triangles, hit_cost, axis)
 
     cdef list _build_edges(self, list triangles, int axis):
 
@@ -575,7 +613,7 @@ cdef class _Node:
             double origin, direction
             tuple lower_intersection, upper_intersection, intersection
             double plane_distance
-            _Node near, far
+            _KDTreeNode near, far
 
         origin = ray.origin.get_index(self.axis)
         direction = ray.direction.get_index(self.axis)
