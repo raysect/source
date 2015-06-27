@@ -1,4 +1,5 @@
 # cython: language_level=3
+# cython: profile=True
 
 # Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -192,10 +193,10 @@ cdef class Mesh(Primitive):
 
         # TODO: calculate or measure this, relative cost of a triangle hit
         # calculation compared to a kdtree split traversal
-        self.kdtree_hit_cost = 80.0
+        self.kdtree_hit_cost = 20.0
 
         # construct a bounding box that contains all the triangles in the mesh
-        self._build_world_box()
+        self._build_local_bbox()
 
         # build the kd-Tree
         self._build_kdtree()
@@ -213,26 +214,27 @@ cdef class Mesh(Primitive):
         # Implementation 2nd Edition", Matt Phar and Greg Humphreys, Morgan Kaufmann 2010, p232
         if self.kdtree_max_depth <= 0:
             max_depth = <int> ceil(8 + 1.3 * log(len(self.triangles)))
+            print(max_depth, "max_depth")
         else:
             max_depth = self.kdtree_max_depth
 
         # calling build on the root node triggers a recursive rebuild of the tree
-        self._kdtree.build(self._world_box, self.triangles, max_depth, self.kdtree_min_triangles, self.kdtree_hit_cost)
+        self._kdtree.build(self._local_bbox, self.triangles, max_depth, self.kdtree_min_triangles, self.kdtree_hit_cost)
 
-    cdef object _build_world_box(self):
+    cdef object _build_local_bbox(self):
         """
-        Builds a bounding box that encloses all the supplied triangles.
+        Builds a local space bounding box that encloses all the supplied triangles.
         """
 
         cdef:
             Triangle triangle
             BoundingBox box
 
-        self._world_box = BoundingBox()
+        self._local_bbox = BoundingBox()
         for triangle in self.triangles:
-            self._world_box.extend(triangle.v1, BOX_PADDING)
-            self._world_box.extend(triangle.v2, BOX_PADDING)
-            self._world_box.extend(triangle.v3, BOX_PADDING)
+            self._local_bbox.extend(triangle.v1, BOX_PADDING)
+            self._local_bbox.extend(triangle.v2, BOX_PADDING)
+            self._local_bbox.extend(triangle.v3, BOX_PADDING)
 
 
     @cython.boundscheck(False)
@@ -255,16 +257,14 @@ cdef class Mesh(Primitive):
         )
 
         # unpacking manually is marginally faster...
-        intersection = self._world_box.full_intersection(local_ray)
+        intersection = self._local_bbox.full_intersection(local_ray)
         hit = intersection[0]
         min_range = intersection[1]
         max_range = intersection[2]
-
         if not hit:
             return None
 
         intersection = self._kdtree.hit(local_ray, min_range, max_range)
-
         if intersection is None:
             return None
 
@@ -278,29 +278,6 @@ cdef class Mesh(Primitive):
         return Intersection(ray, t, self,
                             hit_point, inside_point, outside_point,
                             normal, exiting, self.to_local(), self.to_root())
-
-    # cpdef Intersection hit(self, Ray ray):
-    #     """
-    #     Calculates the closest intersection of the Ray with the Primitive
-    #     surface, if such an intersection exists.
-    #     """
-    #
-    #     local_ray = Ray(
-    #         ray.origin.transform(self.to_local()),
-    #         ray.direction.transform(self.to_local())
-    #     )
-    #
-    #     t, u, v, w =
-    #
-    #
-    #     hit_point = local_ray.origin + local_ray.direction * ray_distance
-    #     inside_point = hit_point - closest.face_normal * EPSILON
-    #     outside_point = hit_point + closest.face_normal * EPSILON
-    #     normal = closest.interpolate_normal(cu, cv, cw, self.smoothing)
-    #     exiting = local_ray.direction.dot(closest.face_normal) > 0.0
-    #     return Intersection(ray, ray_distance, self,
-    #                         hit_point, inside_point, outside_point,
-    #                         normal, exiting, self.to_local(), self.to_root())
 
     cpdef Intersection next_intersection(self):
         """
@@ -360,6 +337,13 @@ cdef class Mesh(Primitive):
         return bbox
 
 
+# cdef class _TriangleData
+
+
+
+
+
+
 cdef class _Edge:
     """
     Represents the upper or lower edge of a triangle's bounding box on a specified axis.
@@ -402,78 +386,34 @@ cdef class _Node:
         self.split = 0
         self.is_leaf = False
 
-    cdef object build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost):
+    cdef object build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost, int last_axis=X_AXIS):
 
         cdef:
-            double cost, best_cost, split, best_split
-            double recip_total_sa, lower_sa, upper_sa
-            int best_axis
-            int lower_triangle_count, upper_triangle_count
+            int axis
+            bint is_leaf
+            double split
             list edges, lower_triangles, upper_triangles
-            _Edge edge
             Triangle triangle
 
         if depth == 0 or len(triangles) < min_triangles:
+            # print("FORCED LEAF with {} triangles, depth={}".format(len(triangles), depth))
             self._become_leaf(triangles)
             return
 
-        # store cost of leaf as current best solution
-        best_cost = len(triangles) * hit_cost
-        best_axis = NO_AXIS
-        best_split = 0
+        # attempt split with next axis
+        axis = last_axis + 1
+        if axis > Z_AXIS:
+            axis = X_AXIS
 
-        # cache reciprocal of node's surface area
-        recip_total_sa = 1.0 / node_bounds.surface_area()
+        is_leaf, split = self._select_split(triangles, axis, node_bounds, hit_cost)
 
-        # attempt splits along each axis to attempt to find a lower cost solution
-        for axis in [X_AXIS, Y_AXIS, Z_AXIS]:
-
-            # obtain sorted list of candidate edges along chosen axis
-            edges = self._build_edges(triangles, axis)
-
-            # cache triangle counts in lower and upper volumes for speed
-            lower_triangle_count = 0
-            upper_triangle_count = len(triangles)
-
-            # scan through candidate edges from lowest to highest
-            for edge in edges:
-
-                # update primitive counts for upper volume
-                # note: this occasionally creates invalid solutions if edges of
-                # boxes are coincident however the invalid solutions cost
-                # more than the valid solutions and will not be selected
-                if edge.is_upper_edge:
-                    upper_triangle_count -= 1
-
-                # a split on the node boundary serves no useful purpose
-                # only consider edges that lie inside the node bounds
-                split = edge.value
-                if node_bounds.lower.get_index(axis) < split < node_bounds.upper.get_index(axis):
-
-                    # calculate surface area of split volumes
-                    lower_sa = self._calc_lower_bounds(node_bounds, split, axis).surface_area()
-                    upper_sa = self._calc_upper_bounds(node_bounds, split, axis).surface_area()
-
-                    # calculate SAH cost
-                    cost = 1 + (lower_sa * lower_triangle_count + upper_sa * upper_triangle_count) * recip_total_sa * hit_cost
-
-                    # has a better split been found?
-                    if cost < best_cost:
-                        best_cost = cost
-                        best_axis = axis
-                        best_split = split
-
-                # update triangle counts for lower volume
-                # note: this occasionally creates invalid solutions if edges of
-                # boxes are coincident however the invalid solutions cost
-                # more than the valid solutions and will not be selected
-                if not edge.is_upper_edge:
-                    lower_triangle_count += 1
-
-        # no better solution found?
-        if best_axis == NO_AXIS:
+        # no split solution found?
+        if is_leaf:
+            # print("LEAF with {} triangles, depth={}".format(len(triangles), depth))
             self._become_leaf(triangles)
             return
+
+        # print(depth, best_axis, "cost {}%".format(100 * best_cost/(len(triangles) * hit_cost)), (best_split - node_bounds.lower[best_axis]) / (node_bounds.upper[best_axis] - node_bounds.lower[best_axis]))
 
         # using cached values split triangles into two lists
         # note the split boundary is defined as lying in the upper node
@@ -482,27 +422,89 @@ cdef class _Node:
         for triangle in triangles:
 
             # is the triangle present in the lower node?
-            if triangle.lower_extent(best_axis) < best_split:
+            if triangle.lower_extent(axis) < split:
                 lower_triangles.append(triangle)
 
             # is the triangle present in the upper node?
-            if triangle.upper_extent(best_axis) >= best_split:
+            if triangle.upper_extent(axis) >= split:
                 upper_triangles.append(triangle)
 
         # become a branch node
         self.lower_branch = _Node()
         self.upper_branch = _Node()
         self.triangles = None
-        self.axis = best_axis
-        self.split = best_split
+        self.axis = axis
+        self.split = split
         self.is_leaf = False
 
         # continue expanding the tree inside the two volumes
-        self.lower_branch.build(self._calc_lower_bounds(node_bounds, best_split, best_axis),
-                                lower_triangles, depth - 1, min_triangles, hit_cost)
+        self.lower_branch.build(self._calc_lower_bounds(node_bounds, split, axis),
+                                lower_triangles, depth - 1, min_triangles, hit_cost, axis)
 
-        self.upper_branch.build(self._calc_upper_bounds(node_bounds, best_split, best_axis),
-                                upper_triangles, depth - 1, min_triangles, hit_cost)
+        self.upper_branch.build(self._calc_upper_bounds(node_bounds, split, axis),
+                                upper_triangles, depth - 1, min_triangles, hit_cost, axis)
+
+    cdef tuple _select_split(self, list triangles, int axis, BoundingBox node_bounds, double hit_cost):
+
+        cdef:
+            double split, cost, best_cost, best_split
+            bint is_leaf
+            int lower_triangle_count, upper_triangle_count
+            double recip_total_sa, lower_sa, upper_sa
+            list edges
+            _Edge edge
+
+        # store cost of leaf as current best solution
+        best_cost = len(triangles) * hit_cost
+        best_split = 0
+        is_leaf = True
+
+        # cache reciprocal of node's surface area
+        recip_total_sa = 1.0 / node_bounds.surface_area()
+
+        # obtain sorted list of candidate edges along chosen axis
+        edges = self._build_edges(triangles, axis)
+
+        # cache triangle counts in lower and upper volumes for speed
+        lower_triangle_count = 0
+        upper_triangle_count = len(triangles)
+
+        # scan through candidate edges from lowest to highest
+        for edge in edges:
+
+            # update primitive counts for upper volume
+            # note: this occasionally creates invalid solutions if edges of
+            # boxes are coincident however the invalid solutions cost
+            # more than the valid solutions and will not be selected
+            if edge.is_upper_edge:
+                upper_triangle_count -= 1
+
+            # a split on the node boundary serves no useful purpose
+            # only consider edges that lie inside the node bounds
+            split = edge.value
+            if node_bounds.lower.get_index(axis) < split < node_bounds.upper.get_index(axis):
+
+                # calculate surface area of split volumes
+                lower_sa = self._calc_lower_bounds(node_bounds, split, axis).surface_area()
+                upper_sa = self._calc_upper_bounds(node_bounds, split, axis).surface_area()
+
+                # calculate SAH cost
+                cost = 1 + (lower_sa * lower_triangle_count + upper_sa * upper_triangle_count) * recip_total_sa * hit_cost
+
+                # has a better split been found?
+                if cost < best_cost:
+                    best_cost = cost
+                    best_split = split
+                    is_leaf = False
+
+            # update triangle counts for lower volume
+            # note: this occasionally creates invalid solutions if edges of
+            # boxes are coincident however the invalid solutions cost
+            # more than the valid solutions and will not be selected
+            if not edge.is_upper_edge:
+                lower_triangle_count += 1
+
+        return is_leaf, best_split
 
     cdef void _become_leaf(self, list triangles):
 

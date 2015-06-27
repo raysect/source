@@ -53,7 +53,9 @@ cdef class _Node:
     cdef readonly double split
     cdef readonly bint is_leaf
 
-    cdef object build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost)
+    cdef object build(self, BoundingBox node_bounds, list triangles, int depth, int min_triangles, double hit_cost, int last_axis=*)
+
+    cdef tuple _select_split(self, list triangles, int axis, BoundingBox node_bounds, double hit_cost)
 
     cdef void _become_leaf(self, list triangles)
 
@@ -97,11 +99,11 @@ cdef class Mesh(Primitive):
         public int kdtree_max_depth
         public int kdtree_min_triangles
         public double kdtree_hit_cost
-        BoundingBox _world_box
+        BoundingBox _local_bbox
         _Node _kdtree
 
         cdef object _build_kdtree(self)
 
-        cdef object _build_world_box(self)
+        cdef object _build_local_bbox(self)
 
 

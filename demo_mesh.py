@@ -12,8 +12,9 @@ from numpy import array
 from raysect.primitive.mesh.matt.stlmesh import StlMesh, BINARY
 stlfile = "/home/alex/work/ccfe/MAST-M9-BEAM_DUMPS_+_GDC.stl"
 mesh = StlMesh(stlfile, mode=BINARY)
-
+print("start")
 triangles = []
+print(len(mesh.v0), "triangles")
 for i in range(len(mesh.v0)):
     triangles.append(
         Triangle(
@@ -22,6 +23,9 @@ for i in range(len(mesh.v0)):
             Point(*(mesh.v2[i] / 1000))
         )
     )
+
+#triangles *= 10
+print("end")
 
 world = World()
 
