@@ -385,7 +385,7 @@ cdef class _Node:
             elif origin > self.split:
                 near = self.upper_branch
                 far = self.lower_branch
-            elif origin == self.split:
+            else:
                 # degenerate case, note split plane lives in upper branch
                 if direction >= 0:
                     near = self.upper_branch
