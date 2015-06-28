@@ -382,9 +382,17 @@ cdef class _Node:
             if origin < self.split:
                 near = self.lower_branch
                 far = self.upper_branch
-            else:
+            elif origin > self.split:
                 near = self.upper_branch
                 far = self.lower_branch
+            elif origin == self.split:
+                # degenerate case, note split plane lives in upper branch
+                if direction >= 0:
+                    near = self.upper_branch
+                    far = self.lower_branch
+                else:
+                    near = self.lower_branch
+                    far = self.upper_branch
 
             # does ray only intersect with the near node?
             if plane_distance > max_range or plane_distance <= 0:

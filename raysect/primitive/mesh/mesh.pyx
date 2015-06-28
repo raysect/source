@@ -489,7 +489,7 @@ cdef class _KDTreeNode:
             double split
             list lower_triangle_data, upper_triangle_data
 
-        if depth == 0 or len(triangle_data) < min_triangles:
+        if depth == 0 or len(triangle_data) <= min_triangles:
             self._become_leaf(triangle_data)
             return
 
@@ -685,10 +685,19 @@ cdef class _KDTreeNode:
             if origin < self.split:
                 near = self.lower_branch
                 far = self.upper_branch
-            else:
+            elif origin > self.split:
                 near = self.upper_branch
                 far = self.lower_branch
+            elif origin == self.split:
+                # degenerate case, note split plane lives in upper branch
+                if direction >= 0:
+                    near = self.upper_branch
+                    far = self.lower_branch
+                else:
+                    near = self.lower_branch
+                    far = self.upper_branch
 
+            # IN LOCAL SPACE THIS SPLIT IS ON THE AXIS
             # does ray only intersect with the near node?
             if plane_distance > max_range or plane_distance <= 0:
                 return near.hit(ray, min_range, max_range)
