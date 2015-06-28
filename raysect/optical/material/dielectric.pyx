@@ -127,6 +127,7 @@ cdef class Sellmeier(SpectralFunction):
                       + (self.b3 * w2) / (w2 - self.c3))
 
 
+# TODO: consider carefully the impact of changes made to support mesh normal interpolation
 cdef class Dielectric(Material):
 
     def __init__(self, SpectralFunction index, SpectralFunction transmission, cutoff = 1e-6, SpectralFunction external_index=ConstantSF(1.0)):
@@ -156,12 +157,14 @@ cdef class Dielectric(Material):
         # calculate cosine of angle between incident and normal
         c1 = -normal.dot(incident)
 
-        # sample refractive indicies
+        # sample refractive indices
         internal_index = self.index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
         external_index = self.external_index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
 
         # are we entering or leaving material - calculate refractive change
-        if exiting:
+        # note, we do not use the supplied exiting parameter as the normal is
+        # not guaranteed to be perpendicular to the surface for meshes
+        if c1 < 0.0:
 
             # leaving material
             n1 = internal_index
@@ -193,7 +196,9 @@ cdef class Dielectric(Material):
             reflected = reflected.transform(to_world)
 
             # spawn reflected ray and trace
-            if exiting:
+            # note, we do not use the supplied exiting parameter as the normal is
+            # not guaranteed to be perpendicular to the surface for meshes
+            if c1 < 0.0:
 
                 # incident ray is pointing out of surface, reflection is therefore inside
                 reflected_ray = ray.spawn_daughter(inside_point.transform(to_world), reflected)
@@ -213,7 +218,9 @@ cdef class Dielectric(Material):
                                    incident.y + temp * normal.y,
                                    incident.z + temp * normal.z)
 
-            if exiting:
+            # note, we do not use the supplied exiting parameter as the normal is
+            # not guaranteed to be perpendicular to the surface for meshes
+            if c1 < 0.0:
 
                 temp = gamma * c1 + sqrt(c2s)
                 transmitted = new_vector(gamma * incident.x + temp * normal.x,
