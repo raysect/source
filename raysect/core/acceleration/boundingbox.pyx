@@ -62,16 +62,11 @@ cdef class BoundingBox:
 
         # initialise to a null box if called without both initial points
         if lower is None or upper is None:
-
             self.lower = new_point(INFINITY, INFINITY, INFINITY)
             self.upper = new_point(-INFINITY, -INFINITY, -INFINITY)
-
         else:
-
             if lower.x > upper.x or lower.y > upper.y or lower.z > upper.z:
-
                 raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
-
             self.lower = lower
             self.upper = upper
 
@@ -79,24 +74,30 @@ cdef class BoundingBox:
 
         return "BoundingBox({}, {})".format(self.lower, self.upper)
 
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return self.lower, self.upper
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.lower, self.upper = state
+
     property lower:
 
         def __get__(self):
-
             return self.lower
 
         def __set__(self, Point value not None):
-
             self.lower = value
 
     property upper:
 
         def __get__(self):
-
             return self.upper
 
         def __set__(self, Point value not None):
-
             self.upper = value
 
     cpdef bint hit(self, Ray ray):
@@ -129,14 +130,11 @@ cdef class BoundingBox:
 
         # does ray intersect box?
         if front_intersection[0] > back_intersection[0]:
-
             return False
 
         # are both intersections behind ray origin?
         if (front_intersection[0] < 0.0) and (back_intersection[0] < 0.0):
-
             return False
-
         return True
 
     @cython.cdivision(True)
@@ -190,17 +188,11 @@ cdef class BoundingBox:
 
         # point is inside box if it is inside all slabs
         if (point.x < self.lower.x) or (point.x > self.upper.x):
-
             return False
-
         if (point.y < self.lower.y) or (point.y > self.upper.y):
-
             return False
-
         if (point.z < self.lower.z) or (point.z > self.upper.z):
-
             return False
-
         return True
 
     cpdef object union(self, BoundingBox box):

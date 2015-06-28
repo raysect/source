@@ -1,5 +1,5 @@
 # cython: language_level=3
-# cython: profile=True
+# cython: profile=False
 
 # Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -36,6 +36,7 @@ from raysect.core.math.point cimport Point, new_point
 from raysect.core.classes cimport Material, Intersection, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
+import pickle
 cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
@@ -59,7 +60,7 @@ DEF EPSILON = 1e-9
 
 """
 Requirements:
-* tri-poly mesh support
+* tri-poly self support
 * option to set mesh closed or open (code will assume user is not an idiot), open mesh means contains() always reports False
 * normal interpolation option (smoothing)
 
@@ -111,6 +112,16 @@ cdef class Triangle:
             self.n1 = n1.normalise()
             self.n2 = n2.normalise()
             self.n3 = n3.normalise()
+
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return self.v1, self.v2, self.v3, self.n1, self.n2, self.n3, self.face_normal, self._smoothing_enabled
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.v1, self.v2, self.v3, self.n1, self.n2, self.n3, self.face_normal, self._smoothing_enabled = state
 
     cdef Normal _calc_face_normal(self):
         """
@@ -190,31 +201,19 @@ cdef class Triangle:
     #     """
     #     pass
 
-    def __richcmp__(Triangle x, Triangle y, int operation):
-
-        cdef Point xp, yp
-
-        if operation == 0:  # __lt__(), less than
-            # sort by the centre point of the triangle in x, then y, then z
-            xp = x.centre_point()
-            yp = y.centre_point()
-            if xp.x == yp.x:
-                if xp.y == yp.y:
-                    return xp.z < yp.z
-                return xp.y < yp.y
-            return xp.x < yp.x
-        else:
-            return NotImplemented
-
 
 cdef class Mesh(Primitive):
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, list triangles, bint smoothing=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=20.0, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, list triangles=None, bint smoothing=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=20.0, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
-        self.triangles = triangles
+        if triangles is None:
+            self.triangles = []
+        else:
+            self.triangles = triangles
+
         self.smoothing = smoothing
 
         self.kdtree_max_depth = kdtree_max_depth
@@ -275,10 +274,12 @@ cdef class Mesh(Primitive):
         """
 
         cdef:
+            Ray local_ray
             tuple intersection
             double min_range, max_range
             bint hit
             double t, u, v, w
+            Triangle triangle
 
         local_ray = Ray(
             ray.origin.transform(self.to_local()),
@@ -286,20 +287,17 @@ cdef class Mesh(Primitive):
             ray.max_distance
         )
 
-        # unpacking manually is marginally faster...
-        intersection = self._local_bbox.full_intersection(local_ray)
-        hit = intersection[0]
-        min_range = intersection[1]
-        max_range = intersection[2]
+        # check local bounding box
+        hit, min_range, max_range = self._local_bbox.full_intersection(local_ray)
         if not hit:
             return None
 
+        # search for closest triangle intersection
         intersection = self._kdtree.hit(local_ray, min_range, max_range)
         if intersection is None:
             return None
 
         triangle, t, u, v, w = intersection
-
         hit_point = local_ray.origin + local_ray.direction * t
         inside_point = hit_point - triangle.face_normal * EPSILON
         outside_point = hit_point + triangle.face_normal * EPSILON
@@ -366,6 +364,31 @@ cdef class Mesh(Primitive):
             bbox.extend(triangle.v3.transform(self.to_root()), BOX_PADDING)
         return bbox
 
+    cpdef to_file(self, filename):
+        state = (
+            self.triangles,
+            self.smoothing,
+            self.kdtree_max_depth,
+            self.kdtree_min_triangles,
+            self.kdtree_hit_cost,
+            self._local_bbox,
+            self._kdtree
+        )
+        with open(filename, mode="wb") as f:
+            pickle.dump(state, f)
+
+    cpdef from_file(self, filename):
+        with open(filename, mode="rb") as f:
+            (
+                self.triangles,
+                self.smoothing,
+                self.kdtree_max_depth,
+                self.kdtree_min_triangles,
+                self.kdtree_hit_cost,
+                self._local_bbox,
+                self._kdtree
+            ) = pickle.load(f)
+
 
 cdef class _Edge:
     """
@@ -431,6 +454,7 @@ cdef class _TriangleData:
             _Edge(triangle, self.upper_extent[Z_AXIS], True)
         ]
 
+
 cdef class _KDTreeNode:
 
     def __init__(self):
@@ -442,6 +466,16 @@ cdef class _KDTreeNode:
         self.axis = NO_AXIS
         self.split = 0
         self.is_leaf = True
+
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return self.is_leaf, self.split, self.axis, self.triangles, self.lower_branch, self.upper_branch
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.is_leaf, self.split, self.axis, self.triangles, self.lower_branch, self.upper_branch = state
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
