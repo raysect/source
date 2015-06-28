@@ -78,6 +78,8 @@ Development plan for mesh:
 * add smoothing parameter and add normal interpolation
 * add open/closed mesh support (implement contains using a surface intersection count)
 
+4) rebuild internals in C to optimise memory usage
+* when process forked, the current code uses huge mounts of memory as reference counts are updated - moving to C structures will avoid python reference counting
 
 Notes:
 The ray-triangle intersection is a partial implementation of the algorithm described in:
