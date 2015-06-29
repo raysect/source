@@ -124,6 +124,6 @@ cdef class Mesh(Primitive):
 
         cdef object _build_local_bbox(self)
 
-        cpdef to_file(self, filename)
+        cpdef dump(self, filename)
 
-        cpdef from_file(self, filename)
+        cpdef load(self, filename)

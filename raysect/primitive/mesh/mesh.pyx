@@ -1,5 +1,5 @@
 # cython: language_level=3
-# cython: profile=False
+# cython: profile=True
 
 # Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -207,7 +207,7 @@ cdef class Triangle:
 cdef class Mesh(Primitive):
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, list triangles=None, bint smoothing=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=20.0, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, list triangles=None, bint smoothing=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=5.0, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
@@ -311,8 +311,6 @@ cdef class Mesh(Primitive):
 
     cpdef Intersection next_intersection(self):
         """
-        Virtual method - to be implemented by derived classes.
-
         Returns the next intersection of the ray with the primitive along the
         ray path.
 
@@ -336,27 +334,36 @@ cdef class Mesh(Primitive):
 
     cpdef bint contains(self, Point p) except -1:
         """
-        Virtual method - to be implemented by derived classes.
-
-        Must returns True if the Point lies within the boundary of the surface
+        Returns True if the Point lies within the boundary of the surface
         defined by the Primitive. False is returned otherwise.
         """
 
-        return False
+        # TODO: toy code atm!!!
+        # fires ray along z axis, if it encounters a polygon it inspects the orientation of the face
+        # if the face is outwards, then the ray was spawned inside the mesh
+        # this assumes the mesh has all face normals facing outwards from the mesh interior
+        p = p.transform(self.to_local())
+        ray = Ray(origin=p)
+
+        hit, min_range, max_range = self._local_bbox.full_intersection(ray)
+        if not hit:
+            return False
+
+        # search for closest triangle intersection
+        intersection = self._kdtree.hit(ray, min_range, max_range)
+        if intersection is None:
+            return False
+
+        triangle, t, u, v, w = intersection
+        return triangle.face_normal.dot(ray.direction) > 0.0
 
     cpdef BoundingBox bounding_box(self):
         """
-        Virtual method - to be implemented by derived classes.
+        Returns a world space bounding box that encloses the mesh.
 
-        When the primitive is connected to a scenegraph containing a World
-        object at its root, this method should return a bounding box that
-        fully encloses the primitive's surface (plus a small margin to
-        avoid numerical accuracy problems). The bounding box must be defined in
-        the world's coordinate space.
-
-        If this method is called when the primitive is not connected to a
-        scenegraph with a World object at its root, it must throw a TypeError
-        exception.
+        The box is padded by a small margin to reduce the risk of numerical
+        accuracy problems between the mesh and box representations following
+        coordinate transforms.
         """
 
         bbox = BoundingBox()
@@ -366,7 +373,7 @@ cdef class Mesh(Primitive):
             bbox.extend(triangle.v3.transform(self.to_root()), BOX_PADDING)
         return bbox
 
-    cpdef to_file(self, filename):
+    cpdef dump(self, filename):
         state = (
             self.triangles,
             self.smoothing,
@@ -379,7 +386,7 @@ cdef class Mesh(Primitive):
         with open(filename, mode="wb") as f:
             pickle.dump(state, f)
 
-    cpdef from_file(self, filename):
+    cpdef load(self, filename):
         with open(filename, mode="rb") as f:
             (
                 self.triangles,
@@ -726,6 +733,8 @@ cdef class _KDTreeNode:
             tuple intersection, closest_intersection, ray_transform
             Triangle triangle, closest_triangle
             double t, u, v, w
+
+        #print(len(self.triangles))
 
         # find the closest triangle-ray intersection with initial search distance limited by node and ray limits
         closest_intersection = None
