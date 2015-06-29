@@ -130,12 +130,17 @@ cdef class Sellmeier(SpectralFunction):
 # TODO: consider carefully the impact of changes made to support mesh normal interpolation
 cdef class Dielectric(Material):
 
-    def __init__(self, SpectralFunction index, SpectralFunction transmission, cutoff = 1e-6, SpectralFunction external_index=ConstantSF(1.0)):
+    def __init__(self, SpectralFunction index, SpectralFunction transmission, cutoff = 1e-6, SpectralFunction external_index=None, transmit_only=False):
 
         self.index = index
-        self.external_index = external_index
         self.transmission = transmission
         self.cutoff = cutoff
+        self.transmit_only = transmit_only
+
+        if external_index is None:
+            self.external_index = ConstantSF(1.0)
+        else:
+            self.external_index = external_index
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
                                     bint exiting, Point inside_point, Point outside_point,
@@ -246,7 +251,9 @@ cdef class Dielectric(Material):
             outside_point = outside_point.transform(to_world)
 
             # spawn reflected and transmitted rays
-            if exiting:
+            # note, we do not use the supplied exiting parameter as the normal is
+            # not guaranteed to be perpendicular to the surface for meshes
+            if c1 < 0.0:
 
                 # incident ray is pointing out of surface
                 reflected_ray = ray.spawn_daughter(inside_point, reflected)
@@ -259,7 +266,7 @@ cdef class Dielectric(Material):
                 transmitted_ray = ray.spawn_daughter(inside_point, transmitted)
 
             # trace rays and return results
-            if reflectivity > self.cutoff:
+            if reflectivity > self.cutoff and not self.transmit_only :
 
                 spectrum = reflected_ray.trace(world)
                 spectrum.mul_scalar(reflectivity)
