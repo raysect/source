@@ -73,7 +73,6 @@ class STLHandler:
     @classmethod
     def _ascii_read_triangle(cls, fh, scaling):
 
-        vertices = set()
         while True:
             try:
                 _ = cls._get_ascii_line(fh, 'facet normal')
