@@ -38,6 +38,12 @@ from raysect.core.math.point cimport new_point
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
 
+# axis defines
+DEF X_AXIS = 0
+DEF Y_AXIS = 1
+DEF Z_AXIS = 2
+
+
 cdef class BoundingBox:
     """
     Axis aligned bounding box.
@@ -241,3 +247,39 @@ cdef class BoundingBox:
             new_point(self.upper.x, self.upper.y, self.lower.z),
             new_point(self.upper.x, self.upper.y, self.upper.z),
         ]
+
+    cpdef double extent(self, axis) except *:
+
+        if axis == 0:
+            return max(0.0, self.upper.x - self.lower.x)
+        elif axis == 1:
+            return max(0.0, self.upper.y - self.lower.y)
+        elif axis == 2:
+            return max(0.0, self.upper.z - self.lower.z)
+        else:
+            raise ValueError("Axis must be in the range [0, 2].")
+
+    cpdef int largest_axis(self):
+
+        cdef:
+            int largest_axis
+            double largest_extent, extent
+
+        largest_axis = X_AXIS
+        largest_extent = self.extent(X_AXIS)
+
+        extent = self.extent(Y_AXIS)
+        if extent > largest_extent:
+            longest_axis = Y_AXIS
+            largest_extent = extent
+
+        extent = self.extent(Z_AXIS)
+        if extent > largest_extent:
+            longest_axis = Z_AXIS
+            largest_extent = extent
+
+        return longest_axis
+
+    cpdef double largest_extent(self):
+
+        return max(self.extent(X_AXIS), self.extent(Y_AXIS), self.extent(Z_AXIS)
