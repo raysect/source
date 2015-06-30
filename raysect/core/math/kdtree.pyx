@@ -29,8 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from random import random
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+from libc.string cimport memcpy
 cimport cython
 
 # void *calloc (size_t count, size_t eltsize)
@@ -52,8 +54,6 @@ DEF Z_AXIS = 2  # branch, z-axis split
 
 # axis
 
-
-
 cdef struct kdnode:
     int type            # LEAF, BRANCH_X, BRANCH_Y, BRANCH_Z
     double split
@@ -69,9 +69,41 @@ cdef class KDTree:
         int _allocated_nodes
         int _next_node
 
+    def __cinit__(self):
+
+        self._nodes = <kdnode *> PyMem_Malloc(sizeof(kdnode) * INITIAL_NODE_COUNT)
+        if not self._nodes:
+            raise MemoryError()
+
+        self._allocated_nodes = INITIAL_NODE_COUNT
+        self._next_node = 0
+
     def __init__(self, items):
 
-        self.build(X_AXIS, items, None)
+        #self.build(X_AXIS, items, None, 0)
+        self.testme(0, items)
+
+    cdef void testme(self, int depth, int maxd):
+
+        cdef:
+            kdnode *b
+
+        if depth >= maxd:
+            return
+
+        b = self._nodes
+        self._new_leaf([1,2,3,4])
+        self.testme(depth + 1, maxd)
+        print(depth, <unsigned long> b, <unsigned long> self._nodes)
+
+    def testme2(self, n):
+
+        for i in range(n):
+            self._new_leaf([1,2,3,4])
+
+
+
+    def dump_info(self):
 
         for i in range(self._next_node):
             self.node_info(i)
@@ -94,10 +126,9 @@ cdef class KDTree:
                 print("id={} BRANCH: axis {}, split {}, count {}".format(id, self._nodes[id].type, self._nodes[id].split, self._nodes[id].count))
 
 
-    cpdef int build(self, int axis, list items, BoundingBox bounds):
+    cdef int build(self, int axis, list items, BoundingBox bounds, int depth):
 
         # come in blind
-
         # this function does a split test then creates appropriates node
 
         # it returns the id of it's node
@@ -113,42 +144,33 @@ cdef class KDTree:
         if is_leaf:
             return self._new_leaf(items)
         else:
-            return self._new_branch(axis, split, lower_items, lower_bounds, upper_items, upper_bounds)
+            return self._new_branch(axis, split, lower_items, lower_bounds, upper_items, upper_bounds, depth)
 
-    def __cinit__(self):
+    cdef int _new_node(self):
 
-        self._nodes = <kdnode *> PyMem_Malloc(sizeof(kdnode) * INITIAL_NODE_COUNT)
-        if not self._nodes:
-            raise MemoryError()
-
-        self._allocated_nodes = INITIAL_NODE_COUNT
-        self._next_node = 0
-
-    cdef _new_node(self):
-
-        cdef kdnode *new_nodes
+        cdef:
+            kdnode *new_nodes = NULL
+            int id, new_size
 
         # have we exhausted the allocated memory?
-        if self._next_node == self._allocated_nodes:
+        if self._next_node >= self._allocated_nodes:
 
             # double allocated memory
             new_nodes = <kdnode *> PyMem_Realloc(self._nodes, sizeof(kdnode) * self._allocated_nodes * 2)
+            # new_nodes = <kdnode *> PyMem_Malloc(sizeof(kdnode) * self._allocated_nodes * 2)
             if not new_nodes:
                 raise MemoryError()
 
+            # memcpy(new_nodes, self._nodes, sizeof(kdnode) * self._allocated_nodes)
+
             self._nodes = new_nodes
             self._allocated_nodes *= 2
-            print(self._allocated_nodes)
 
         id = self._next_node
         self._next_node += 1
-
-        print(id)
         return id
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
-    cdef int _new_leaf(self, list items):
+    cdef int _new_leaf(self, list items): # except -1:
 
         cdef:
             int id, count, i
@@ -158,30 +180,33 @@ cdef class KDTree:
         id = self._new_node()
         self._nodes[id].type = LEAF
         self._nodes[id].count = count
-        self._nodes[id].items = <int *> PyMem_Malloc(sizeof(int) * count)
-        if not self._nodes[id].items:
-            raise MemoryError()
+        if count >= 0:
+            self._nodes[id].items = <int *> PyMem_Malloc(sizeof(int) * count)
+            if not self._nodes[id].items:
+                raise MemoryError()
 
-        for i in range(count):
-            self._nodes[id].items[i] = items[i]
+            for i in range(count):
+                self._nodes[id].items[i] = items[i]
 
         return id
 
-    cdef int _new_branch(self, int axis, double split, list lower_items, BoundingBox lower_bounds, list upper_items, BoundingBox upper_bounds):
+    cdef int _new_branch(self, int axis, double split, list lower_items, BoundingBox lower_bounds, list upper_items, BoundingBox upper_bounds, int depth): # except -1:
 
         cdef:
             int id
+            int upper_id
 
         id = self._new_node()
-        self._nodes[id].type = axis
-        self._nodes[id].split = split
+
 
         # recursively build lower and upper nodes
         # the lower node is always the next node in the list
         # the upper node may be an arbitrary distance along the list
         # we store the upper node id in count for future evaluation
-        self.build(axis, lower_items, lower_bounds)
-        self._nodes[id].count = self.build(axis, upper_items, upper_bounds)
+        self.build(axis, lower_items, lower_bounds, depth + 1)
+        self._nodes[id].count = self.build(axis, upper_items, upper_bounds, depth + 1)
+        self._nodes[id].type = axis
+        self._nodes[id].split = split
 
         return id
 
