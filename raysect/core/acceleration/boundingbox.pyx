@@ -282,4 +282,4 @@ cdef class BoundingBox:
 
     cpdef double largest_extent(self):
 
-        return max(self.extent(X_AXIS), self.extent(Y_AXIS), self.extent(Z_AXIS)
+        return max(self.extent(X_AXIS), self.extent(Y_AXIS), self.extent(Z_AXIS))
