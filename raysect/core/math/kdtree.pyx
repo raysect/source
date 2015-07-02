@@ -1,4 +1,5 @@
 # cython: language_level=3
+# cython: profile=False
 
 # Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -29,7 +30,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from random import random
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from raysect.core.classes cimport Intersection
 from raysect.core.math.point cimport Point
@@ -139,7 +139,9 @@ cdef class KDTree:
         self._allocated_nodes = 0
         self._next_node = 0
 
-    def __init__(self, items, max_depth=0, min_items=1, hit_cost=20.0, empty_bonus=0.2):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def __init__(self, list items, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         # sanity check
         if empty_bonus < 0.0 or empty_bonus > 1.0:
@@ -184,8 +186,6 @@ cdef class KDTree:
             else:
                 print("id={} BRANCH: axis {}, split {}, count {}".format(id, self._nodes[id].type, self._nodes[id].split, self._nodes[id].count))
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
     cdef int _build(self, int axis, list items, BoundingBox bounds, int depth):
 
         # cdef:
@@ -209,8 +209,8 @@ cdef class KDTree:
     # TODO: write _hit
     # TODO: write _contains
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.cdivision(True)
     cdef tuple _split(self, int axis, list items, BoundingBox bounds):
 
@@ -251,7 +251,6 @@ cdef class KDTree:
             # a split on the node boundary serves no useful purpose
             # only consider edges that lie inside the node bounds
             split = edge.value
-            print(split)
             if bounds.lower.get_index(axis) < split < bounds.upper.get_index(axis):
 
                 # calculate surface area of split volumes
@@ -349,6 +348,8 @@ cdef class KDTree:
         self._next_node += 1
         return id
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cdef int _new_leaf(self, list items):
 
         cdef:
@@ -365,10 +366,12 @@ cdef class KDTree:
                 raise MemoryError()
 
             for i in range(count):
-                self._nodes[id].items[i] = items[i].id
+                self._nodes[id].items[i] = (<Item> items[i]).id
 
         return id
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cdef int _new_branch(self, int axis, tuple split_solution, int depth):
 
         cdef:
