@@ -1,3 +1,6 @@
+Conventions
+-----------
+
 In raysect the following conventions apply:
 
 * the coordinate system is right-handed
@@ -22,11 +25,3 @@ In raysect.optical:
 * wavelength is in nanometers
 * power is in Watts
 * spectral radiance is in W/m^2/str/nm
-
-
-
-
-
-
-
-
