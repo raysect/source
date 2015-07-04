@@ -712,7 +712,7 @@ cdef class KDTree(KDTreeCore):
             else:
                 print("id={} BRANCH: axis {}, split {}, count {}".format(id, self._nodes[id].type, self._nodes[id].split, self._nodes[id].count))
 
-    cdef tuple _hit_leaf(self, int id, Ray ray, double max_range):
+    cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
         """
         Wraps the C-level API so users can derive a class from KDTree using Python.
 
@@ -722,17 +722,17 @@ cdef class KDTree(KDTreeCore):
         :param id: Index of node in node array.
         :param ray: Ray object.
         :param max_range: The maximum intersection search range.
-        :return: Tuple containing data related to the hit intersection, None if no intersection occurs.
+        :return: True is a hit occurs, false otherwise.
         """
 
-        # convert list of items in c-array into a list
+        # convert list of items in C-array into a list
         items = []
         for index in range(self._nodes[id].count):
             items.append(self._nodes[id].items[index])
 
         return self._hit_items(items, ray, max_range)
 
-    cpdef tuple _hit_items(self, list items, Ray ray, double max_range):
+    cpdef bint _hit_items(self, list items, Ray ray, double max_range):
 
         raise NotImplementedError("KDTree Virtual function _hit_items() has not been implemented.")
 
@@ -749,7 +749,7 @@ cdef class KDTree(KDTreeCore):
         :return: List of nodes containing the point.
         """
 
-        # convert list of items in c-array into a list
+        # convert list of items in C-array into a list
         items = []
         for index in range(self._nodes[id].count):
             items.append(self._nodes[id].items[index])
