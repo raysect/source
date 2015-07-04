@@ -49,13 +49,12 @@ DEF EPSILON = 1e-9
 
 # object type enumeration
 DEF NO_TYPE = -1
-DEF CYLINDER = 0
+DEF CONE = 0
 DEF SLAB = 1
 
 # slab face enumeration
 DEF NO_FACE = -1
 DEF LOWER_FACE = 0
-DEF UPPER_FACE = 1
 
 
 cdef class Cone(Primitive):
@@ -127,7 +126,6 @@ cdef class Cone(Primitive):
 
             # the next intersection cache has been invalidated by the geometry change
             self._further_intersection = False
-
             # any geometry caching in the root node is now invalid, inform root
             self.notify_root()
 
@@ -154,26 +152,6 @@ cdef class Cone(Primitive):
         # convert ray origin and direction to local space
         origin = ray.origin.transform(self.to_local())
         direction = ray.direction.transform(self.to_local())
-
-
-        # Matt - I don't understand what this bit is doing.
-
-        # check ray intersects infinite cone and obtain intersections
-        # is ray parallel to cylinder surface?
-        # if direction.x == 0 and direction.y == 0:
-        #
-        #     if self._inside_cone(origin):
-        #         near_intersection = -INFINITY
-        #         near_type = NO_TYPE
-        #         near_face = NO_FACE
-        #
-        #         far_intersection = INFINITY
-        #         far_type = NO_TYPE
-        #         far_face = NO_FACE
-        #
-        #     else:
-        #         # no ray cylinder intersection
-        #         return None
 
         radius = self._radius
         height = self._height
@@ -205,66 +183,61 @@ cdef class Cone(Primitive):
 
         # set intersection parameters
         near_intersection = t0
-        # near_type = CYLINDER
-        # near_face = NO_FACE
+        near_type = CONE
+        near_face = NO_FACE
 
         far_intersection = t1
-        # far_type = CYLINDER
-        # far_face = NO_FACE
+        far_type = CONE
+        far_face = NO_FACE
 
-
-        # Matt - Not sure if I need to implement this.
 
         # union slab with the cylinder
         # slab contributes no intersections if the ray is parallel to the slab surfaces
-        # if direction.z != 0.0:
-        #
-        #     # calculate intersections with slab planes
-        #     temp = 1.0 / direction.z
-        #
-        #     if direction.z > 0:
-        #         # calculate length along ray path of intersections
-        #         t0 = -origin.z * temp
-        #         t1 = (self._height - origin.z) * temp
-        #         f0 = LOWER_FACE
-        #         f1 = UPPER_FACE
-        #
-        #     else:
-        #         # calculate length along ray path of intersections
-        #         t0 = (self._height - origin.z) * temp
-        #         t1 = -origin.z * temp
-        #         f0 = UPPER_FACE
-        #         f1 = LOWER_FACE
-        #
-        #     # calculate intersection overlap
-        #     if t0 > near_intersection:
-        #         near_intersection = t0
-        #         near_face = f0
-        #         near_type = SLAB
-        #     if t1 < far_intersection:
-        #         far_intersection = t1
-        #         far_face = f1
-        #         far_type = SLAB
+        if direction.z != 0.0:
 
-        # Matt - this has already been evaluated above by checking for solutions???
-        # # does ray intersect cone?
-        # if near_intersection > far_intersection:
-        #     return None
+            # calculate intersections with slab planes
+            temp = 1.0 / direction.z
+
+            if direction.z > 0:
+                # calculate length along ray path of intersections
+                t0 = -origin.z * temp
+                t1 = (self._height - origin.z) * temp
+                f0 = LOWER_FACE
+                f1 = NO_FACE
+
+            else:
+                # calculate length along ray path of intersections
+                t0 = (self._height - origin.z) * temp
+                t1 = -origin.z * temp
+                f0 = NO_FACE
+                f1 = LOWER_FACE
+
+            # calculate intersection overlap
+            if t0 > near_intersection:
+                near_intersection = t0
+                near_face = f0
+                near_type = SLAB
+            if t1 < far_intersection:
+                far_intersection = t1
+                far_face = f1
+                far_type = SLAB
+
+        # What does this do???
+        # does ray intersect cone?
+        if near_intersection > far_intersection:
+            return None
 
         # are there any intersections inside the ray search range?
         if near_intersection > ray.max_distance or far_intersection < 0.0:
-
             return None
 
         # identify closest intersection
         if near_intersection >= 0.0:
-
             closest_intersection = near_intersection
             closest_face = near_face
             closest_type = near_type
 
             if far_intersection <= ray.max_distance:
-
                 self._further_intersection = True
                 self._next_t = far_intersection
                 self._cached_origin = origin
@@ -274,13 +247,11 @@ cdef class Cone(Primitive):
                 self._cached_type = far_type
 
         elif far_intersection <= ray.max_distance:
-
             closest_intersection = far_intersection
             closest_face = far_face
             closest_type = far_type
 
         else:
-
             return None
 
         return self._generate_intersection(ray, origin, direction, closest_intersection, closest_face, closest_type)
@@ -288,7 +259,6 @@ cdef class Cone(Primitive):
     cpdef Intersection next_intersection(self):
 
         if not self._further_intersection:
-
             return None
 
         # this is the 2nd and therefore last intersection
@@ -296,14 +266,12 @@ cdef class Cone(Primitive):
 
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_type)
 
-    # TODO - need to implement from here.
-
     cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int face, int type):
 
         cdef:
             Point hit_point, inside_point, outside_point
             Vector interior_offset
-            Normal normal
+            Normal normal, op
             bint exiting
 
         # point of surface intersection in local space
@@ -312,20 +280,15 @@ cdef class Cone(Primitive):
                               origin.z + ray_distance * direction.z)
 
         # calculate surface normal in local space
-        if type == CYLINDER:
-
-            normal = new_normal(hit_point.x, hit_point.y, 0)
+        if type == CONE:
+            # Unit vector that points from origin to hit_point in x-y plane at the base of the cone.
+            op = new_normal(hit_point.x, hit_point.y, 0)
+            op = op.normalise()
+            heighttoradius = self.height/self.radius
+            normal = new_normal(op.x * heighttoradius, op.y * heighttoradius, 1/heighttoradius)
             normal = normal.normalise()
-
         else:
-
-            if face == LOWER_FACE:
-
-                normal = new_normal(0, 0, -1)
-
-            else:
-
-                normal = new_normal(0, 0, 1)
+            normal = new_normal(0, 0, -1)
 
         # displace hit_point away from surface to generate inner and outer points
         interior_offset = self._interior_offset(hit_point, normal, type)
@@ -340,11 +303,8 @@ cdef class Cone(Primitive):
 
         # is ray exiting surface
         if direction.dot(normal) >= 0.0:
-
             exiting = True
-
         else:
-
             exiting = False
 
         return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
@@ -355,14 +315,12 @@ cdef class Cone(Primitive):
 
         cdef double x, y, z, length
 
-        # shift away from cylinder surface
-        if type == CYLINDER:
-
+        # shift away from cone surface
+        if type == CONE:
             x = -EPSILON * normal.x
             y = -EPSILON * normal.y
-
+            z = -EPSILON * normal.z
         else:
-
             x = 0
             y = 0
 
@@ -376,41 +334,39 @@ cdef class Cone(Primitive):
                     x = -EPSILON * length * hit_point.x
                     y = -EPSILON * length * hit_point.y
 
-        # shift away from slab surface
+        # shift away from bottom surface
         if fabs(hit_point.z) < EPSILON:
-
             z = EPSILON
-
-        elif fabs(hit_point.z - self._height) < EPSILON:
-
-            z = -EPSILON
-
         else:
-
             z = 0
 
         return new_vector(x, y, z)
 
     cpdef bint contains(self, Point point) except -1:
+        cdef:
+            double cone_dist, cone_radius, orth_distance
 
         # convert point to local object space
         point = point.transform(self.to_local())
 
-        return self._inside_slab(point) and self._inside_cylinder(point)
+        # Calculate points' distance along z axis from cone tip
+        cone_dist = self.height - point.z
 
-    cdef inline bint _inside_cylinder(self, Point point):
+        # reject points that are outside the cone's height (i.e. above the cones' tip or below its base)
+        if not 0 <= cone_dist <= self.height:
+            return False
 
-        # is the point inside the cylinder radius
-        return (point.x * point.x + point.y * point.y) <= (self._radius * self._radius)
+        # Calculate the cone radius at that point along the height axis:
+        cone_radius = (cone_dist / self.height) * self.radius
 
-    cdef inline bint _inside_slab(self, Point point):
+        # Calculate the point's orthogonal distance from the axis to compare against the cone radius:
+        orth_distance = sqrt(point.x**2 + point.y**2)
 
-        # first check point is within the cylinder upper and lower bounds
-        return 0.0 <= point.z <= self._height
+        # Points distance from axis must be less than cone radius at that height
+        return orth_distance < cone_radius
 
     cpdef BoundingBox bounding_box(self):
 
-        # TODO: wrapping a local bbox with a world bbox is common -> move to a method on bbox (transform?)
         cdef:
             list points
             Point point

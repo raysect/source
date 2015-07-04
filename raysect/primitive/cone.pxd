@@ -51,8 +51,3 @@ cdef class Cone(Primitive):
                                                     int face, int type)
 
     cdef inline Vector _interior_offset(self, Point hit_point, Normal normal, int type)
-
-    cdef inline bint _inside_cone(self, Point point)
-
-# not sure what this is for yet
-#    cdef inline bint _inside_slab(self, Point point)
