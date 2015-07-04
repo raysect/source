@@ -3,11 +3,15 @@ Welcome to raysect's documentation!
 
 We recommend you start with the quickstart guide.
 
-Quickstart Guide
-----------------
+Raysect Guide
+-------------
 .. toctree::
+   :maxdepth: 2
+   :numbered:
+
    license
    conventions
+   raysect
    help
 
 Indices and tables
