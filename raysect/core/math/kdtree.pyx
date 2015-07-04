@@ -120,7 +120,7 @@ cdef class _Edge:
         else:
             return NotImplemented
 
-
+# TODO: empty bonus is not currently implemented
 cdef class KDTreeCore:
 
     cdef:
@@ -133,6 +133,7 @@ cdef class KDTreeCore:
         double _hit_cost
         double _empty_bonus
 
+    # TODO: check if this declaration must be consistent with __init__ in the cython docs
     def __cinit__(self):
 
         self._nodes = NULL
@@ -142,6 +143,10 @@ cdef class KDTreeCore:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def __init__(self, list items, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
+
+        cdef:
+            Item item
+            int axis
 
         # sanity check
         if empty_bonus < 0.0 or empty_bonus > 1.0:
@@ -167,24 +172,6 @@ cdef class KDTreeCore:
         # start build with the longest axis to try to avoid large narrow nodes
         axis = self.bounds.largest_axis()
         self._build(axis, items, self.bounds, 0)
-
-    def debug_print_all(self):
-
-        for i in range(self._next_node):
-            self.debug_print_node(i)
-
-    def debug_print_node(self, id):
-
-        if 0 <= id < self._next_node:
-            if self._nodes[id].type == LEAF:
-                print("id={} LEAF: count {}, contents: [".format(id, self._nodes[id].count), end="")
-                for i in range(self._nodes[id].count):
-                    print("{}".format(self._nodes[id].items[i]), end="")
-                    if i < self._nodes[id].count - 1:
-                        print(", ", end="")
-                print("]")
-            else:
-                print("id={} BRANCH: axis {}, split {}, count {}".format(id, self._nodes[id].type, self._nodes[id].split, self._nodes[id].count))
 
     cdef int _build(self, int axis, list items, BoundingBox bounds, int depth):
 
@@ -434,7 +421,8 @@ cdef class KDTreeCore:
         else:
             return self._hit_branch(id, ray, min_range, max_range)
 
-    cdef tuple _hit_branch(self, id, Ray ray, double min_range, double max_range):
+    @cython.cdivision(True)
+    cdef tuple _hit_branch(self, int id, Ray ray, double min_range, double max_range):
 
         cdef:
             int axis
@@ -505,7 +493,7 @@ cdef class KDTreeCore:
             intersection = self._hit_node(far_id, ray, plane_distance, max_range)
             return intersection
 
-    cdef tuple _hit_leaf(self, id, ray, max_range):
+    cdef tuple _hit_leaf(self, int id, Ray ray, double max_range):
 
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTreeCore _hit_leaf() method not implemented.")
@@ -577,7 +565,25 @@ cdef class KDTreeCore:
 
 cdef class KDTree(KDTreeCore):
 
-    cdef tuple _hit_leaf(self, id, ray, max_range):
+    def debug_print_all(self):
+
+        for i in range(self._next_node):
+            self.debug_print_node(i)
+
+    def debug_print_node(self, id):
+
+        if 0 <= id < self._next_node:
+            if self._nodes[id].type == LEAF:
+                print("id={} LEAF: count {}, contents: [".format(id, self._nodes[id].count), end="")
+                for i in range(self._nodes[id].count):
+                    print("{}".format(self._nodes[id].items[i]), end="")
+                    if i < self._nodes[id].count - 1:
+                        print(", ", end="")
+                print("]")
+            else:
+                print("id={} BRANCH: axis {}, split {}, count {}".format(id, self._nodes[id].type, self._nodes[id].split, self._nodes[id].count))
+
+    cdef tuple _hit_leaf(self, int id, Ray ray, double max_range):
         """
         Wraps the C-level API so users can derive a class from KDTree using Python.
 
