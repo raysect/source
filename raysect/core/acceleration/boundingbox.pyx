@@ -270,15 +270,15 @@ cdef class BoundingBox:
 
         extent = self.extent(Y_AXIS)
         if extent > largest_extent:
-            longest_axis = Y_AXIS
+            largest_axis = Y_AXIS
             largest_extent = extent
 
         extent = self.extent(Z_AXIS)
         if extent > largest_extent:
-            longest_axis = Z_AXIS
+            largest_axis = Z_AXIS
             largest_extent = extent
 
-        return longest_axis
+        return largest_axis
 
     cpdef double largest_extent(self):
 
