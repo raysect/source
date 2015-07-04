@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
-from raysect.core.classes cimport Intersection
+from raysect.core.classes cimport Intersection, Ray
 from raysect.core.math.point cimport Point
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from libc.math cimport log, ceil
@@ -121,7 +121,7 @@ cdef class _Edge:
             return NotImplemented
 
 
-cdef class KDTree:
+cdef class KDTreeCore:
 
     cdef:
         kdnode *_nodes
@@ -205,9 +205,6 @@ cdef class KDTree:
             return self._new_leaf(items)
         else:
             return self._new_branch(axis, split_solution, depth)
-
-    # TODO: write _hit
-    # TODO: write _contains
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -326,28 +323,6 @@ cdef class KDTree:
         lower.set_index(axis, split)
         return new_boundingbox(lower, bounds.upper.copy())
 
-    cdef int _new_node(self):
-
-        cdef:
-            kdnode *new_nodes = NULL
-            int id, new_size
-
-        # have we exhausted the allocated memory?
-        if self._next_node == self._allocated_nodes:
-
-            # double allocated memory
-            new_size = max(INITIAL_NODE_COUNT, self._allocated_nodes * 2)
-            new_nodes = <kdnode *> PyMem_Realloc(self._nodes, sizeof(kdnode) * new_size)
-            if not new_nodes:
-                raise MemoryError()
-
-            self._nodes = new_nodes
-            self._allocated_nodes = new_size
-
-        id = self._next_node
-        self._next_node += 1
-        return id
-
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef int _new_leaf(self, list items):
@@ -407,6 +382,184 @@ cdef class KDTree:
 
         return id
 
+    cdef int _new_node(self):
+
+        cdef:
+            kdnode *new_nodes = NULL
+            int id, new_size
+
+        # have we exhausted the allocated memory?
+        if self._next_node == self._allocated_nodes:
+
+            # double allocated memory
+            new_size = max(INITIAL_NODE_COUNT, self._allocated_nodes * 2)
+            new_nodes = <kdnode *> PyMem_Realloc(self._nodes, sizeof(kdnode) * new_size)
+            if not new_nodes:
+                raise MemoryError()
+
+            self._nodes = new_nodes
+            self._allocated_nodes = new_size
+
+        id = self._next_node
+        self._next_node += 1
+        return id
+
+    cpdef tuple hit(self, Ray ray):
+
+        cdef:
+            bint hit
+            double min_range, max_range
+
+        # check tree bounds
+        hit, min_range, max_range = self.bounds.full_intersection(ray)
+        if not hit:
+            return None
+
+        # start exploration of kd-Tree
+        return self._hit_node(0, ray, min_range, max_range)
+
+    cdef tuple _hit_node(self, int id, Ray ray, double min_range, double max_range):
+        """
+        Dispatches hit calculation to the relevant node handler.
+
+        :param id: Index of node in node array.
+        :param ray: Ray object.
+        :param min_range: The minimum intersection search range.
+        :param max_range: The maximum intersection search range.
+        :return: Tuple containing data related to the hit intersection, None if no intersection occurs.
+        """
+
+        if self._nodes[id].type == LEAF:
+            return self._hit_leaf(id, ray, max_range)
+        else:
+            return self._hit_branch(id, ray, min_range, max_range)
+
+    cdef tuple _hit_branch(self, id, Ray ray, double min_range, double max_range):
+
+        cdef:
+            int axis
+            double split
+            int lower_id, upper_id
+            double origin, direction
+            tuple lower_intersection, upper_intersection, intersection
+            double plane_distance
+            int near_id, far_id
+
+        # unpack branch kdnode
+        # notes:
+        #  * the branch type enumeration is the same as axis index
+        #  * the lower_id is always the next node in the array
+        #  * the upper_id is store in the count attribute
+        axis = self._nodes[id].type
+        split = self._nodes[id].split
+        lower_id = id + 1
+        upper_id = self._nodes[id].count
+
+        origin = ray.origin.get_index(axis)
+        direction = ray.direction.get_index(axis)
+
+        # is the ray propagating parallel to the split plane?
+        if direction == 0:
+
+            # a ray propagating parallel to the split plane will only ever interact with one of the nodes
+            if origin < split:
+                return self._hit_node(lower_id, ray, min_range, max_range)
+            else:
+                return self._hit_node(upper_id, ray, min_range, max_range)
+
+        else:
+
+            # ray propagation is not parallel to split plane
+            plane_distance = (split - origin) / direction
+
+            # identify the order in which the ray will interact with the nodes
+            if origin < split:
+                near_id = lower_id
+                far_id = upper_id
+            elif origin > split:
+                near_id = upper_id
+                far_id = lower_id
+            else:
+                #TODO: THIS SHOULD NOT BE NECESSARY... the split should be enough to solve this perfectly, why did it break?
+                # degenerate case, note split plane lives in upper branch
+                if direction >= 0:
+                    near_id = upper_id
+                    far_id = lower_id
+                else:
+                    near_id = lower_id
+                    far_id = upper_id
+
+            # does ray only intersect with the near node?
+            if plane_distance > max_range or plane_distance <= 0:
+                return self._hit_node(near_id, ray, min_range, max_range)
+
+            # does ray only intersect with the far node?
+            if plane_distance < min_range:
+                return self._hit_node(far_id, ray, min_range, max_range)
+
+            # ray must intersect both nodes, try nearest node first
+            intersection = self._hit_node(near_id, ray, min_range, plane_distance)
+            if intersection is not None:
+                return intersection
+
+            intersection = self._hit_node(far_id, ray, plane_distance, max_range)
+            return intersection
+
+    cdef tuple _hit_leaf(self, id, ray, max_range):
+
+        # virtual function that must be implemented by derived classes
+        raise NotImplementedError("KDTreeCore _hit_leaf() method not implemented.")
+
+    cpdef list contains(self, Point point):
+
+        # exit early if point is not inside bounds of the kd-Tree
+        if not self.bounds.contains(point):
+            return []
+
+        # start search
+        self._contains_node(0, point)
+
+    cdef list _contains_node(self, int id, Point point):
+        """
+        Dispatches point look-ups to the relevant node handler.
+
+        :param id: Index of node in node array.
+        :param point: Point to evaluate.
+        :return: List of nodes containing the point.
+        """
+
+        if self._nodes[id].type == LEAF:
+            return self._contains_leaf(id, point)
+        else:
+            return self._contains_branch(id, point)
+
+    cdef list _contains_branch(self, int id, Point point):
+
+        cdef:
+            int axis
+            double split
+            int lower_id, upper_id
+
+        # unpack branch kdnode
+        # notes:
+        #  * the branch type enumeration is the same as axis index
+        #  * the lower_id is always the next node in the array
+        #  * the upper_id is store in the count attribute
+        axis = self._nodes[id].type
+        split = self._nodes[id].split
+        lower_id = id + 1
+        upper_id = self._nodes[id].count
+
+        if point.get_index(axis) < split:
+            return self._contains_node(lower_id, point)
+        else:
+            return self._contains_node(upper_id, point)
+
+    cdef list _contains_leaf(self, int id, Point point):
+
+        # virtual function that must be implemented by derived classes
+        raise NotImplementedError("KDTreeCore _contains_leaf() method not implemented.")
+
     def __dealloc__(self):
 
         cdef:
@@ -422,3 +575,52 @@ cdef class KDTree:
         PyMem_Free(self._nodes)
 
 
+cdef class KDTree(KDTreeCore):
+
+    cdef tuple _hit_leaf(self, id, ray, max_range):
+        """
+        Wraps the C-level API so users can derive a class from KDTree using Python.
+
+        Converts the arguments to types accessible from Python and re-exposes
+        _hit_leaf() as the Python accessible method _hit_items().
+
+        :param id: Index of node in node array.
+        :param ray: Ray object.
+        :param max_range: The maximum intersection search range.
+        :return: Tuple containing data related to the hit intersection, None if no intersection occurs.
+        """
+
+        # convert list of items in c-array into a list
+        items = []
+        for index in range(self._nodes[id].count):
+            items.append(self._nodes[id].items[index])
+
+        return self._hit_items(items, ray, max_range)
+
+    cpdef tuple _hit_items(self, list items, Ray ray, double max_range):
+
+        raise NotImplementedError("KDTree Virtual function _hit_items() has not been implemented.")
+
+
+    cdef list _contains_leaf(self, int id, Point point):
+        """
+        Wraps the C-level API so users can derive a class from KDTree using Python.
+
+        Converts the arguments to types accessible from Python and re-exposes
+        _contains_leaf() as the Python accessible method _contains_items().
+
+        :param id: Index of node in node array.
+        :param point: Point to evaluate.
+        :return: List of nodes containing the point.
+        """
+
+        # convert list of items in c-array into a list
+        items = []
+        for index in range(self._nodes[id].count):
+            items.append(self._nodes[id].items[index])
+
+        return self._contains_items(items, point)
+
+    cpdef list _contains_items(self, list items, Point point):
+
+        raise NotImplementedError("KDTree Virtual function _contains_items() has not been implemented.")
