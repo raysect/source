@@ -40,12 +40,14 @@ cimport cython
 # this number of nodes will be pre-allocated when the kd-tree is initially created
 DEF INITIAL_NODE_COUNT = 128
 
+# friendly name for first node
+DEF ROOT_NODE = 0
+
 # node types
 DEF LEAF = -1
 DEF X_AXIS = 0  # branch, x-axis split
 DEF Y_AXIS = 1  # branch, y-axis split
 DEF Z_AXIS = 2  # branch, z-axis split
-
 
 # c-structure that represent a kd-tree node
 cdef struct kdnode:
@@ -171,15 +173,20 @@ cdef class KDTreeCore:
 
         # start build with the longest axis to try to avoid large narrow nodes
         axis = self.bounds.largest_axis()
-        self._build(axis, items, self.bounds, 0)
+        self._build(axis, items, self.bounds, depth=0)
 
     cdef int _build(self, int axis, list items, BoundingBox bounds, int depth):
+        """
+        Extends the kd-Tree by creating a new node.
 
-        # cdef:
-        #     int axis
-        #     tuple result
-        #     double split
-        #     list lower_triangle_data, upper_triangle_data
+        Attempts to split the items along the specified axis.
+
+        :param axis: The axis to split along.
+        :param items: A list of items.
+        :param bounds: A BoundingBox defining the node bounds.
+        :param depth: The current tree depth.
+        :return: The id (index) of the generated node.
+        """
 
         if depth == self._max_depth or len(items) <= self._min_items:
             return self._new_leaf(items)
@@ -197,6 +204,16 @@ cdef class KDTreeCore:
     @cython.wraparound(False)
     @cython.cdivision(True)
     cdef tuple _split(self, int axis, list items, BoundingBox bounds):
+        """
+        Attempts to locate a split solution that minimises the cost of traversing the node.
+
+        The cost of the node traversal is evaluated using the Surface Area Heuristic (SAH) method.
+
+        :param axis: The axis to split along.
+        :param items: A list of items.
+        :param bounds: A BoundingBox defining the node bounds.
+        :return: A tuple containing the split solution or None if a split solution is not found.
+        """
 
         cdef:
             double split, cost, best_cost, best_split
@@ -283,6 +300,13 @@ cdef class KDTreeCore:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef list _get_edges(self, list items, int axis):
+        """
+        Generates a sorted list of edges along the specified axis.
+
+        :param axis: The axis to split along.
+        :param items: A list of items.
+        :return: List of edges.
+        """
 
         cdef:
             list edges
@@ -297,6 +321,14 @@ cdef class KDTreeCore:
         return edges
 
     cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int axis):
+        """
+        Returns the lower box generated when the node bounding box is split.
+
+        :param bounds: A BoundingBox defining the node bounds.
+        :param split: The value along the axis at which to split.
+        :param axis: The axis to split along.
+        :return: A bounding box defining the lower bounds.
+        """
 
         cdef Point upper
         upper = bounds.upper.copy()
@@ -304,6 +336,14 @@ cdef class KDTreeCore:
         return new_boundingbox(bounds.lower.copy(), upper)
 
     cdef BoundingBox _get_upper_bounds(self, BoundingBox bounds, double split, int axis):
+        """
+        Returns the upper box generated when the node bounding box is split.
+
+        :param bounds: A BoundingBox defining the node bounds.
+        :param split: The value along the axis at which to split.
+        :param axis: The axis to split along.
+        :return: A bounding box defining the upper bounds.
+        """
 
         cdef Point lower
         lower = bounds.lower.copy()
@@ -313,9 +353,14 @@ cdef class KDTreeCore:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef int _new_leaf(self, list items):
+        """
+        Adds a new leaf node to the kd-Tree and populates it.
 
-        cdef:
-            int id, count, i
+        :param items: The items to add to the leaf node.
+        :return: The id (index) of the generated node.
+        """
+
+        cdef int id, count, index
 
         count = len(items)
 
@@ -327,14 +372,22 @@ cdef class KDTreeCore:
             if not self._nodes[id].items:
                 raise MemoryError()
 
-            for i in range(count):
-                self._nodes[id].items[i] = (<Item> items[i]).id
+            for index in range(count):
+                self._nodes[id].items[index] = (<Item> items[index]).id
 
         return id
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef int _new_branch(self, int axis, tuple split_solution, int depth):
+        """
+        Adds a new branch node to the kd-Tree and populates it.
+
+        :param axis: The axis along which the split occurs.
+        :param split_solution: A tuple containing the split solution.
+        :param depth: The current tree depth.
+        :return: The id (index) of the generated node.
+        """
 
         cdef:
             int id, upper_id
@@ -370,6 +423,11 @@ cdef class KDTreeCore:
         return id
 
     cdef int _new_node(self):
+        """
+        Adds a new, empty node to the kd-Tree.
+
+        :return: The id (index) of the generated node.
+        """
 
         cdef:
             kdnode *new_nodes = NULL
@@ -391,7 +449,15 @@ cdef class KDTreeCore:
         self._next_node += 1
         return id
 
-    cpdef tuple hit(self, Ray ray):
+    cpdef bint hit(self, Ray ray):
+        """
+        Traverses the kd-Tree to find the first intersection with an item stored in the tree.
+
+        This method returns True is an item is hit and False otherwise.
+
+        :param ray: A Ray object.
+        :return: True is a hit occurs, false otherwise.
+        """
 
         cdef:
             bint hit
@@ -403,9 +469,9 @@ cdef class KDTreeCore:
             return None
 
         # start exploration of kd-Tree
-        return self._hit_node(0, ray, min_range, max_range)
+        return self._hit_node(ROOT_NODE, ray, min_range, max_range)
 
-    cdef tuple _hit_node(self, int id, Ray ray, double min_range, double max_range):
+    cdef bint _hit_node(self, int id, Ray ray, double min_range, double max_range):
         """
         Dispatches hit calculation to the relevant node handler.
 
@@ -413,7 +479,7 @@ cdef class KDTreeCore:
         :param ray: Ray object.
         :param min_range: The minimum intersection search range.
         :param max_range: The maximum intersection search range.
-        :return: Tuple containing data related to the hit intersection, None if no intersection occurs.
+        :return: True is a hit occurs, false otherwise.
         """
 
         if self._nodes[id].type == LEAF:
@@ -422,16 +488,25 @@ cdef class KDTreeCore:
             return self._hit_branch(id, ray, min_range, max_range)
 
     @cython.cdivision(True)
-    cdef tuple _hit_branch(self, int id, Ray ray, double min_range, double max_range):
+    cdef bint _hit_branch(self, int id, Ray ray, double min_range, double max_range):
+        """
+        Traverses a kd-Tree branch node along the ray path.
+
+        :param id: Index of node in node array.
+        :param ray: Ray object.
+        :param min_range: The minimum intersection search range.
+        :param max_range: The maximum intersection search range.
+        :return: True is a hit occurs, false otherwise.
+        """
 
         cdef:
             int axis
             double split
             int lower_id, upper_id
             double origin, direction
-            tuple lower_intersection, upper_intersection, intersection
             double plane_distance
             int near_id, far_id
+            bint hit
 
         # unpack branch kdnode
         # notes:
@@ -486,34 +561,59 @@ cdef class KDTreeCore:
                 return self._hit_node(far_id, ray, min_range, max_range)
 
             # ray must intersect both nodes, try nearest node first
-            intersection = self._hit_node(near_id, ray, min_range, plane_distance)
-            if intersection is not None:
-                return intersection
+            # note: this could theoretically be an OR operation, but we don't
+            # want to risk an optimiser inverting the logic (paranoia!)
+            hit = self._hit_node(near_id, ray, min_range, plane_distance)
+            if hit:
+                return True
+            else:
+                return self._hit_node(far_id, ray, plane_distance, max_range)
 
-            intersection = self._hit_node(far_id, ray, plane_distance, max_range)
-            return intersection
+    cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
+        """
+        Tests each item in the kd-Tree leaf node to identify if an intersection occurs.
 
-    cdef tuple _hit_leaf(self, int id, Ray ray, double max_range):
+        This is a virtual method and must be implemented in a derived class if
+        ray intersections are to be identified. This method must return True
+        if an intersection is found and False otherwise.
+
+        Derived classes may need to return information about the intersection.
+        This can be done by setting object attributes prior to returning True.
+        The kd-Tree search algorithm stops as soon as the first leaf is
+        identified that contains an intersection. Any attributes set when
+        _hit_leaf() returns True are guaranteed not to be further modified.
+
+        :param id: Index of node in node array.
+        :param ray: Ray object.
+        :param max_range: The maximum intersection search range.
+        :return: True is a hit occurs, false otherwise.
+        """
 
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTreeCore _hit_leaf() method not implemented.")
 
     cpdef list contains(self, Point point):
+        """
+        Traverses the kd-Tree to find the items that contain the specified point.
+
+        :param point: A Point object.
+        :return: A list of ids (indices) of the items containing the point
+        """
 
         # exit early if point is not inside bounds of the kd-Tree
         if not self.bounds.contains(point):
             return []
 
         # start search
-        self._contains_node(0, point)
+        self._contains_node(ROOT_NODE, point)
 
     cdef list _contains_node(self, int id, Point point):
         """
-        Dispatches point look-ups to the relevant node handler.
+        Dispatches contains point look-ups to the relevant node handler.
 
         :param id: Index of node in node array.
         :param point: Point to evaluate.
-        :return: List of nodes containing the point.
+        :return: List of items containing the point.
         """
 
         if self._nodes[id].type == LEAF:
@@ -522,6 +622,13 @@ cdef class KDTreeCore:
             return self._contains_branch(id, point)
 
     cdef list _contains_branch(self, int id, Point point):
+        """
+        Locates the kd-Tree node containing the point.
+
+        :param id: Index of node in node array.
+        :param point: Point to evaluate.
+        :return: List of items containing the point.
+        """
 
         cdef:
             int axis
@@ -544,11 +651,33 @@ cdef class KDTreeCore:
             return self._contains_node(upper_id, point)
 
     cdef list _contains_leaf(self, int id, Point point):
+        """
+        Tests each item in the node to identify if they enclose the point.
+
+        This is a virtual method and must be implemented in a derived class if
+        the identification of items enclosing a point is required. This method
+        must return a list of ids for the items that enclose the point. If no
+        items enclose the point, an empty list must be returned.
+
+        Derived classes may need to wish to return additional information about
+        the enclosing items. This can be done by setting object attributes
+        prior to returning the list. Any attributes set when _contains_leaf()
+        returns are guaranteed not to be further modified.
+
+        :param id: Index of node in node array.
+        :param point: Point to evaluate.
+        :return: List of items containing the point.
+        """
 
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTreeCore _contains_leaf() method not implemented.")
 
     def __dealloc__(self):
+        """
+        Frees the memory allocated to store the kd-Tree.
+
+        :return: None
+        """
 
         cdef:
             int index
