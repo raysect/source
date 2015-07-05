@@ -49,6 +49,11 @@ DEF X_AXIS = 0  # branch, x-axis split
 DEF Y_AXIS = 1  # branch, y-axis split
 DEF Z_AXIS = 2  # branch, z-axis split
 
+# we include a small amount of padding to the upper edge to prevent the item,
+# to which the edge belongs, ending up on both sides of the split (the split
+# value is included in the upper node)
+DEF UPPER_EDGE_PADDING = 1.000000001
+
 # c-structure that represent a kd-tree node
 cdef struct kdnode:
 
@@ -104,7 +109,7 @@ cdef class _Edge:
         self.is_upper_edge = is_upper_edge
 
         if is_upper_edge:
-            self.value = item.box.upper.get_index(axis)
+            self.value = item.box.upper.get_index(axis) * UPPER_EDGE_PADDING
         else:
             self.value = item.box.lower.get_index(axis)
 
@@ -710,7 +715,7 @@ cdef class KDTree(KDTreeCore):
                         print(", ", end="")
                 print("]")
             else:
-                print("id={} BRANCH: axis {}, split {}, count {}".format(id, self._nodes[id].type, self._nodes[id].split, self._nodes[id].count))
+                print("id={} BRANCH: axis {}, split {}, lower_id {}, upper_id {}".format(id, self._nodes[id].type, self._nodes[id].split, id+1, self._nodes[id].count))
 
     cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
         """
