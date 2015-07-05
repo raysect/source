@@ -153,7 +153,6 @@ cdef class KDTreeCore:
 
         cdef:
             Item item
-            int axis
 
         # sanity check
         if empty_bonus < 0.0 or empty_bonus > 1.0:
@@ -176,17 +175,15 @@ cdef class KDTreeCore:
         for item in items:
             self.bounds.union(item.box)
 
-        # start build with the longest axis to try to avoid large narrow nodes
-        axis = self.bounds.largest_axis()
-        self._build(axis, items, self.bounds, depth=0)
+        # start build
+        self._build(items, self.bounds)
 
-    cdef int _build(self, int axis, list items, BoundingBox bounds, int depth):
+    cdef int _build(self, list items, BoundingBox bounds, int depth=0):
         """
         Extends the kd-Tree by creating a new node.
 
-        Attempts to split the items along the specified axis.
+        Attempts to partition space for efficient traversal.
 
-        :param axis: The axis to split along.
         :param items: A list of items.
         :param bounds: A BoundingBox defining the node bounds.
         :param depth: The current tree depth.
@@ -197,24 +194,23 @@ cdef class KDTreeCore:
             return self._new_leaf(items)
 
         # attempt to identify a suitable node split
-        split_solution = self._split(axis, items, bounds)
+        split_solution = self._split(items, bounds)
 
         # split solution found?
         if split_solution is None:
             return self._new_leaf(items)
         else:
-            return self._new_branch(axis, split_solution, depth)
+            return self._new_branch(split_solution, depth)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef tuple _split(self, int axis, list items, BoundingBox bounds):
+    cdef tuple _split(self, list items, BoundingBox bounds):
         """
         Attempts to locate a split solution that minimises the cost of traversing the node.
 
         The cost of the node traversal is evaluated using the Surface Area Heuristic (SAH) method.
 
-        :param axis: The axis to split along.
         :param items: A list of items.
         :param bounds: A BoundingBox defining the node bounds.
         :return: A tuple containing the split solution or None if a split solution is not found.
@@ -223,6 +219,7 @@ cdef class KDTreeCore:
         cdef:
             double split, cost, best_cost, best_split
             bint is_leaf
+            int axis, best_axis
             int lower_count, upper_count
             double recip_total_sa, lower_sa, upper_sa
             list edges, lower_items, upper_items
@@ -232,52 +229,57 @@ cdef class KDTreeCore:
         # store cost of leaf as current best solution
         best_cost = len(items) * self._hit_cost
         best_split = 0
+        best_axis = X_AXIS
         is_leaf = True
 
         # cache reciprocal of node's surface area
         recip_total_sa = 1.0 / bounds.surface_area()
 
-        # obtain sorted list of candidate edges along chosen axis
-        edges = self._get_edges(items, axis)
+        # search each axis for a solution
+        for axis in [X_AXIS, Y_AXIS, Z_AXIS]:
 
-        # cache item counts in lower and upper volumes for speed
-        lower_count = 0
-        upper_count = len(items)
+            # obtain sorted list of candidate edges along chosen axis
+            edges = self._get_edges(items, axis)
 
-        # scan through candidate edges from lowest to highest
-        for edge in edges:
+            # cache item counts in lower and upper volumes for speed
+            lower_count = 0
+            upper_count = len(items)
 
-            # update item counts for upper volume
-            # note: this occasionally creates invalid solutions if edges of
-            # boxes are coincident however the invalid solutions cost
-            # more than the valid solutions and will not be selected
-            if edge.is_upper_edge:
-                upper_count -= 1
+            # scan through candidate edges from lowest to highest
+            for edge in edges:
 
-            # a split on the node boundary serves no useful purpose
-            # only consider edges that lie inside the node bounds
-            split = edge.value
-            if bounds.lower.get_index(axis) < split < bounds.upper.get_index(axis):
+                # update item counts for upper volume
+                # note: this occasionally creates invalid solutions if edges of
+                # boxes are coincident however the invalid solutions cost
+                # more than the valid solutions and will not be selected
+                if edge.is_upper_edge:
+                    upper_count -= 1
 
-                # calculate surface area of split volumes
-                lower_sa = self._get_lower_bounds(bounds, split, axis).surface_area()
-                upper_sa = self._get_upper_bounds(bounds, split, axis).surface_area()
+                # a split on the node boundary serves no useful purpose
+                # only consider edges that lie inside the node bounds
+                split = edge.value
+                if bounds.lower.get_index(axis) < split < bounds.upper.get_index(axis):
 
-                # calculate SAH cost
-                cost = 1 + (lower_sa * lower_count + upper_sa * upper_count) * recip_total_sa * self._hit_cost
+                    # calculate surface area of split volumes
+                    lower_sa = self._get_lower_bounds(bounds, split, axis).surface_area()
+                    upper_sa = self._get_upper_bounds(bounds, split, axis).surface_area()
 
-                # has a better split been found?
-                if cost < best_cost:
-                    best_cost = cost
-                    best_split = split
-                    is_leaf = False
+                    # calculate SAH cost
+                    cost = 1 + (lower_sa * lower_count + upper_sa * upper_count) * recip_total_sa * self._hit_cost
 
-            # update item counts for lower volume
-            # note: this occasionally creates invalid solutions if edges of
-            # boxes are coincident however the invalid solutions cost
-            # more than the valid solutions and will not be selected
-            if not edge.is_upper_edge:
-                lower_count += 1
+                    # has a better split been found?
+                    if cost < best_cost:
+                        best_cost = cost
+                        best_split = split
+                        best_axis = axis
+                        is_leaf = False
+
+                # update item counts for lower volume
+                # note: this occasionally creates invalid solutions if edges of
+                # boxes are coincident however the invalid solutions cost
+                # more than the valid solutions and will not be selected
+                if not edge.is_upper_edge:
+                    lower_count += 1
 
         if is_leaf:
             return None
@@ -289,18 +291,18 @@ cdef class KDTreeCore:
         for item in items:
 
             # is the triangle present in the lower node?
-            if item.box.lower.get_index(axis) < best_split:
+            if item.box.lower.get_index(best_axis) < best_split:
                 lower_items.append(item)
 
             # is the triangle present in the upper node?
-            if item.box.upper.get_index(axis) >= best_split:
+            if item.box.upper.get_index(best_axis) >= best_split:
                 upper_items.append(item)
 
         # construct bounding boxes that enclose the lower and upper nodes
-        lower_bounds = self._get_lower_bounds(bounds, best_split, axis)
-        upper_bounds = self._get_upper_bounds(bounds, best_split, axis)
+        lower_bounds = self._get_lower_bounds(bounds, best_split, best_axis)
+        upper_bounds = self._get_upper_bounds(bounds, best_split, best_axis)
 
-        return best_split, lower_items, lower_bounds, upper_items, upper_bounds
+        return best_axis, best_split, lower_items, lower_bounds, upper_items, upper_bounds
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -384,11 +386,10 @@ cdef class KDTreeCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int _new_branch(self, int axis, tuple split_solution, int depth):
+    cdef int _new_branch(self, tuple split_solution, int depth):
         """
         Adds a new branch node to the kd-Tree and populates it.
 
-        :param axis: The axis along which the split occurs.
         :param split_solution: A tuple containing the split solution.
         :param depth: The current tree depth.
         :return: The id (index) of the generated node.
@@ -396,25 +397,22 @@ cdef class KDTreeCore:
 
         cdef:
             int id, upper_id
-            int next_axis
+            int axis
             double split
             list lower_items, upper_items
             BoundingBox lower_bounds,  upper_bounds
 
         id = self._new_node()
 
-        # cycle to the next axis
-        next_axis = (axis + 1) % 3
-
         # unpack split solution
-        split, lower_items, lower_bounds, upper_items, upper_bounds = split_solution
+        axis, split, lower_items, lower_bounds, upper_items, upper_bounds = split_solution
 
         # recursively build lower and upper nodes
         # the lower node is always the next node in the list
         # the upper node may be an arbitrary distance along the list
         # we store the upper node id in count for future evaluation
-        self._build(next_axis, lower_items, lower_bounds, depth + 1)
-        upper_id = self._build(next_axis, upper_items, upper_bounds, depth + 1)
+        self._build(lower_items, lower_bounds, depth + 1)
+        upper_id = self._build(upper_items, upper_bounds, depth + 1)
 
         # WARNING: Don't "optimise" this code by writing self._nodes[id].count = self._build(...)
         # it appears that the self._nodes[id] is de-referenced *before* the call to _build() and
