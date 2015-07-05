@@ -63,6 +63,8 @@ cdef class BoundingBox:
 
     cpdef double largest_extent(self)
 
+    cpdef object pad(self, double padding)
+
 
 cdef inline BoundingBox new_boundingbox(Point lower, Point upper):
     """

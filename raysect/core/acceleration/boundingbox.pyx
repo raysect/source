@@ -250,11 +250,11 @@ cdef class BoundingBox:
 
     cpdef double extent(self, axis) except *:
 
-        if axis == 0:
+        if axis == X_AXIS:
             return max(0.0, self.upper.x - self.lower.x)
-        elif axis == 1:
+        elif axis == Y_AXIS:
             return max(0.0, self.upper.y - self.lower.y)
-        elif axis == 2:
+        elif axis == Z_AXIS:
             return max(0.0, self.upper.z - self.lower.z)
         else:
             raise ValueError("Axis must be in the range [0, 2].")
@@ -283,3 +283,13 @@ cdef class BoundingBox:
     cpdef double largest_extent(self):
 
         return max(self.extent(X_AXIS), self.extent(Y_AXIS), self.extent(Z_AXIS))
+
+    cpdef object pad(self, double padding):
+
+        self.lower.x = self.lower.x - padding
+        self.lower.y = self.lower.y - padding
+        self.lower.z = self.lower.z - padding
+
+        self.upper.x = self.upper.x + padding
+        self.upper.y = self.upper.y + padding
+        self.upper.z = self.upper.z + padding
