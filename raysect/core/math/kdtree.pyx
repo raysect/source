@@ -30,9 +30,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
-from raysect.core.classes cimport Intersection, Ray
-from raysect.core.math.point cimport Point
+from raysect.core.acceleration.boundingbox cimport new_boundingbox
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from libc.math cimport log, ceil
 cimport cython
@@ -48,19 +46,6 @@ DEF LEAF = -1
 DEF X_AXIS = 0  # branch, x-axis split
 DEF Y_AXIS = 1  # branch, y-axis split
 DEF Z_AXIS = 2  # branch, z-axis split
-
-# we include a small amount of padding to the upper edge to prevent the item,
-# to which the edge belongs, ending up on both sides of the split (the split
-# value is included in the upper node)
-DEF UPPER_EDGE_PADDING = 1.000000001
-
-# c-structure that represent a kd-tree node
-cdef struct kdnode:
-
-    int type        # LEAF, X_AXIS, Y_AXIS, Z_AXIS
-    double split
-    int count       # upper index (BRANCH_*), item count (LEAF)
-    int *items
 
 
 cdef class Item:
@@ -79,10 +64,6 @@ cdef class Item:
     :param box: A BoundingBox object defining the item's spatial extent.
     """
 
-    cdef:
-        readonly int id
-        readonly BoundingBox box
-
     def __init__(self, int id, BoundingBox box):
 
         self.id = id
@@ -98,18 +79,13 @@ cdef class _Edge:
     :param is_upper_edge: True if the edge is the upper edge, false otherwise.
     """
 
-    cdef:
-        readonly int item
-        readonly bint is_upper_edge
-        readonly double value
-
     def __init__(self, Item item, int axis, bint is_upper_edge):
 
         self.item = item.id
         self.is_upper_edge = is_upper_edge
 
         if is_upper_edge:
-            self.value = item.box.upper.get_index(axis) * UPPER_EDGE_PADDING
+            self.value = item.box.upper.get_index(axis)
         else:
             self.value = item.box.lower.get_index(axis)
 
@@ -127,18 +103,27 @@ cdef class _Edge:
         else:
             return NotImplemented
 
+
 # TODO: empty bonus is not currently implemented
 cdef class KDTreeCore:
 
-    cdef:
-        kdnode *_nodes
-        int _allocated_nodes
-        int _next_node
-        readonly BoundingBox bounds
-        int _max_depth
-        int _min_items
-        double _hit_cost
-        double _empty_bonus
+    def debug_print_all(self):
+
+        for i in range(self._next_node):
+            self.debug_print_node(i)
+
+    def debug_print_node(self, id):
+
+        if 0 <= id < self._next_node:
+            if self._nodes[id].type == LEAF:
+                print("id={} LEAF: count {}, contents: [".format(id, self._nodes[id].count), end="")
+                for i in range(self._nodes[id].count):
+                    print("{}".format(self._nodes[id].items[i]), end="")
+                    if i < self._nodes[id].count - 1:
+                        print(", ", end="")
+                print("]")
+            else:
+                print("id={} BRANCH: axis {}, split {}, lower_id {}, upper_id {}".format(id, self._nodes[id].type, self._nodes[id].split, id+1, self._nodes[id].count))
 
     # TODO: check if this declaration must be consistent with __init__ in the cython docs
     def __cinit__(self):
@@ -217,19 +202,22 @@ cdef class KDTreeCore:
         """
 
         cdef:
-            double split, cost, best_cost, best_split
+            double split, cost
             bint is_leaf
-            int axis, best_axis
+            int axis,
+            double best_cost, best_split
+            int best_axis, best_item
+            _Edge edge
             int lower_count, upper_count
             double recip_total_sa, lower_sa, upper_sa
             list edges, lower_items, upper_items
-            _Edge edge
             Item item
 
         # store cost of leaf as current best solution
         best_cost = len(items) * self._hit_cost
         best_split = 0
-        best_axis = X_AXIS
+        best_axis = -1
+        best_item = -1
         is_leaf = True
 
         # cache reciprocal of node's surface area
@@ -271,6 +259,7 @@ cdef class KDTreeCore:
                     if cost < best_cost:
                         best_cost = cost
                         best_split = split
+                        best_item = edge.item
                         best_axis = axis
                         is_leaf = False
 
@@ -292,11 +281,16 @@ cdef class KDTreeCore:
 
             # is the item present in the lower node?
             if item.box.lower.get_index(best_axis) < best_split:
+                print("LN", item.id, item.box.lower.get_index(best_axis), best_split)
                 lower_items.append(item)
 
             # is the item present in the upper node?
-            if item.box.upper.get_index(best_axis) >= best_split:
+            # special logic required to prevent the best_item ending up in both nodes
+            if item.box.upper.get_index(best_axis) >= best_split and item != best_item:
+                print("UN", item.id, item.box.upper.get_index(best_axis), best_split)
                 upper_items.append(item)
+
+        print(lower_items, upper_items)
 
         # construct bounding boxes that enclose the lower and upper nodes
         lower_bounds = self._get_lower_bounds(bounds, best_split, best_axis)
@@ -462,6 +456,16 @@ cdef class KDTreeCore:
         :return: True is a hit occurs, false otherwise.
         """
 
+        return self._hit(ray)
+
+    cdef bint _hit(self, Ray ray):
+        """
+        Starts the hit traversal of the kd tree.
+
+        :param ray: A Ray object.
+        :return: True is a hit occurs, false otherwise.
+        """
+
         cdef:
             bint hit
             double min_range, max_range
@@ -592,7 +596,18 @@ cdef class KDTreeCore:
 
     cpdef list contains(self, Point point):
         """
+        Starts contains traversal of the kd-Tree.
         Traverses the kd-Tree to find the items that contain the specified point.
+
+        :param point: A Point object.
+        :return: A list of ids (indices) of the items containing the point
+        """
+
+        return self._contains(point)
+
+    cdef list _contains(self, Point point):
+        """
+        Starts contains traversal of the kd-Tree.
 
         :param point: A Point object.
         :return: A list of ids (indices) of the items containing the point
@@ -691,24 +706,6 @@ cdef class KDTreeCore:
 
 
 cdef class KDTree(KDTreeCore):
-
-    def debug_print_all(self):
-
-        for i in range(self._next_node):
-            self.debug_print_node(i)
-
-    def debug_print_node(self, id):
-
-        if 0 <= id < self._next_node:
-            if self._nodes[id].type == LEAF:
-                print("id={} LEAF: count {}, contents: [".format(id, self._nodes[id].count), end="")
-                for i in range(self._nodes[id].count):
-                    print("{}".format(self._nodes[id].items[i]), end="")
-                    if i < self._nodes[id].count - 1:
-                        print(", ", end="")
-                print("]")
-            else:
-                print("id={} BRANCH: axis {}, split {}, lower_id {}, upper_id {}".format(id, self._nodes[id].type, self._nodes[id].split, id+1, self._nodes[id].count))
 
     cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
         """
