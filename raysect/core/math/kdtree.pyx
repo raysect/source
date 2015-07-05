@@ -290,11 +290,11 @@ cdef class KDTreeCore:
         upper_items = []
         for item in items:
 
-            # is the triangle present in the lower node?
+            # is the item present in the lower node?
             if item.box.lower.get_index(best_axis) < best_split:
                 lower_items.append(item)
 
-            # is the triangle present in the upper node?
+            # is the item present in the upper node?
             if item.box.upper.get_index(best_axis) >= best_split:
                 upper_items.append(item)
 
@@ -505,6 +505,7 @@ cdef class KDTreeCore:
         cdef:
             int axis
             double split
+            bint below_split
             int lower_id, upper_id
             double origin, direction
             double plane_distance
@@ -527,7 +528,7 @@ cdef class KDTreeCore:
         # is the ray propagating parallel to the split plane?
         if direction == 0:
 
-            # a ray propagating parallel to the split plane will only ever interact with one of the nodes
+            # a ray propagating parallel to the split plane
             if origin < split:
                 return self._hit_node(lower_id, ray, min_range, max_range)
             else:
@@ -538,22 +539,16 @@ cdef class KDTreeCore:
             # ray propagation is not parallel to split plane
             plane_distance = (split - origin) / direction
 
+            # does the ray origin sit below the split
+            below_split = origin < split or (origin == split and direction < 0)
+
             # identify the order in which the ray will interact with the nodes
-            if origin < split:
+            if below_split:
                 near_id = lower_id
                 far_id = upper_id
-            elif origin > split:
+            else:
                 near_id = upper_id
                 far_id = lower_id
-            else:
-                #TODO: THIS SHOULD NOT BE NECESSARY... the split should be enough to solve this perfectly, why did it break?
-                # degenerate case, note split plane lives in upper branch
-                if direction >= 0:
-                    near_id = upper_id
-                    far_id = lower_id
-                else:
-                    near_id = lower_id
-                    far_id = upper_id
 
             # does ray only intersect with the near node?
             if plane_distance > max_range or plane_distance <= 0:
