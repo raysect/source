@@ -281,16 +281,12 @@ cdef class KDTreeCore:
 
             # is the item present in the lower node?
             if item.box.lower.get_index(best_axis) < best_split:
-                print("LN", item.id, item.box.lower.get_index(best_axis), best_split)
                 lower_items.append(item)
 
             # is the item present in the upper node?
             # special logic required to prevent the best_item ending up in both nodes
             if item.box.upper.get_index(best_axis) >= best_split and item != best_item:
-                print("UN", item.id, item.box.upper.get_index(best_axis), best_split)
                 upper_items.append(item)
-
-        print(lower_items, upper_items)
 
         # construct bounding boxes that enclose the lower and upper nodes
         lower_bounds = self._get_lower_bounds(bounds, best_split, best_axis)
