@@ -278,14 +278,13 @@ cdef class KDTreeCore:
         lower_items = []
         upper_items = []
         for item in items:
-
+            # todo: check the most recent change - including items sitting on the split should be unnecessary as boxes are padded
             # is the item present in the lower node?
             if item.box.lower.get_index(best_axis) < best_split:
                 lower_items.append(item)
 
             # is the item present in the upper node?
-            # special logic required to prevent the best_item ending up in both nodes
-            if item.box.upper.get_index(best_axis) >= best_split and item != best_item:
+            if item.box.upper.get_index(best_axis) > best_split:
                 upper_items.append(item)
 
         # construct bounding boxes that enclose the lower and upper nodes

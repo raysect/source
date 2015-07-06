@@ -224,14 +224,12 @@ cdef class MeshKDTree(KDTreeCore):
 
     cdef:
         list triangles
-        bint smoothing
         tuple _hit_ray_transform
         readonly tuple hit_intersection
 
-    def __init__(self, list triangles, bint smoothing=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
+    def __init__(self, list triangles, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         self.triangles = triangles
-        self.smoothing = smoothing
         self._hit_ray_transform = None
         self.hit_intersection = None
 
@@ -283,7 +281,7 @@ cdef class MeshKDTree(KDTreeCore):
             return False
 
         t, u, v, w = closest_intersection
-        self.hit_intersection = triangle, t, u, v, w
+        self.hit_intersection = closest_triangle, t, u, v, w
         return True
 
     @cython.cdivision(True)
@@ -412,7 +410,9 @@ cdef class MeshKDTree(KDTreeCore):
 
 cdef class Mesh(Primitive):
 
-    cdef MeshKDTree _kdtree
+    cdef:
+        MeshKDTree _kdtree
+        public bint smoothing
 
     def debug_print_all(self):
         self._kdtree.debug_print_all()
@@ -425,8 +425,10 @@ cdef class Mesh(Primitive):
         if triangles is None:
             triangles = []
 
+        self.smoothing = smoothing
+
         # build the kd-Tree
-        self._kdtree = MeshKDTree(triangles, smoothing, kdtree_max_depth, kdtree_min_triangles, kdtree_hit_cost, kdtree_empty_bonus)
+        self._kdtree = MeshKDTree(triangles, kdtree_max_depth, kdtree_min_triangles, kdtree_hit_cost, kdtree_empty_bonus)
 
     property triangles:
 
@@ -449,18 +451,18 @@ cdef class Mesh(Primitive):
         )
 
         if self._kdtree.hit(local_ray):
-            print(self._kdtree.hit_intersection)
 
-        # hit_point = ray.origin + ray.direction * t
-        # inside_point = hit_point - triangle.face_normal * EPSILON
-        # outside_point = hit_point + triangle.face_normal * EPSILON
-        # normal = triangle.interpolate_normal(u, v, w, self.smoothing)
-        # exiting = ray.direction.dot(triangle.face_normal) > 0.0
-        # self._hit_intersection = new_intersection(
-        #     ray, t, None,
-        #     hit_point, inside_point, outside_point,
-        #     normal, exiting, None, None
-        # )
+            triangle, t, u, v, w = self._kdtree.hit_intersection
+            hit_point = local_ray.origin + local_ray.direction * t
+            inside_point = hit_point - triangle.face_normal * EPSILON
+            outside_point = hit_point + triangle.face_normal * EPSILON
+            normal = triangle.interpolate_normal(u, v, w, self.smoothing)
+            exiting = local_ray.direction.dot(triangle.face_normal) > 0.0
+            return new_intersection(
+                ray, t, self,
+                hit_point, inside_point, outside_point,
+                normal, exiting, self.to_local(), self.to_root()
+            )
 
         return None
 
