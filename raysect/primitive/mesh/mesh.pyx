@@ -34,10 +34,9 @@ from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport Normal, new_normal
 from raysect.core.math.point cimport Point, new_point
-from raysect.core.math.vector cimport Vector
-from raysect.core.classes cimport Ray, Intersection
+from raysect.core.math.vector cimport Vector, new_vector
 from raysect.core.math.kdtree cimport KDTreeCore, Item, kdnode
-from raysect.core.classes cimport Material, Intersection, new_intersection
+from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
 import pickle
@@ -60,20 +59,20 @@ Requirements:
 
 Development plan for mesh:
 
-1) initial prototype
+1) initial prototype [DONE]
 * implement watertight triangle intersection, ignoring normal interpolation for now - just use polygon normal
 * implement a brute force (list based) search for closest poly and next poly -
 * meshes are always open (i.e skip implementation of contains())
 
-2) 2nd pass
+2) 2nd pass [DONE]
 * add kdtree to optimise hit and contains
 
-3) release
+3) rebuild internals in C to optimise memory usage [DONE]
+* when process forked, the current code uses huge mounts of memory as reference counts are updated - moving to C structures will avoid python reference counting
+
+4) release
 * add smoothing parameter and add normal interpolation
 * add open/closed mesh support (implement contains using a surface intersection count)
-
-4) rebuild internals in C to optimise memory usage
-* when process forked, the current code uses huge mounts of memory as reference counts are updated - moving to C structures will avoid python reference counting
 
 Notes:
 The ray-triangle intersection is a partial implementation of the algorithm described in:
@@ -413,6 +412,9 @@ cdef class Mesh(Primitive):
     cdef:
         MeshKDTree _kdtree
         public bint smoothing
+        bint _seek_next_intersection
+        Ray _next_world_ray
+        Ray _next_local_ray
 
     def debug_print_all(self):
         self._kdtree.debug_print_all()
@@ -430,6 +432,11 @@ cdef class Mesh(Primitive):
         # build the kd-Tree
         self._kdtree = MeshKDTree(triangles, kdtree_max_depth, kdtree_min_triangles, kdtree_hit_cost, kdtree_empty_bonus)
 
+        # initialise next intersection search
+        self._seek_next_intersection = False
+        self._next_world_ray = None
+        self._next_local_ray = None
+
     property triangles:
 
         def __get__(self):
@@ -444,118 +451,94 @@ cdef class Mesh(Primitive):
         is intersected.
         """
 
-        local_ray = Ray(
+        local_ray = new_ray(
             ray.origin.transform(self.to_local()),
             ray.direction.transform(self.to_local()),
             ray.max_distance
         )
 
+        # do we hit the mesh?
         if self._kdtree.hit(local_ray):
+            return self._process_intersection(ray, local_ray)
 
+        # there was no intersection so disable next intersection search
+        self._seek_next_intersection = False
+
+        return None
+
+    cpdef Intersection next_intersection(self):
+        """
+        Returns the next intersection of the ray with the primitive along the
+        ray path.
+        """
+
+        if self._seek_next_intersection:
+
+            # do we hit the mesh again?
+            if self._kdtree.hit(self._next_local_ray):
+                return self._process_intersection(self._next_world_ray, self._next_local_ray)
+
+            # there was no intersection so disable further searching
+            self._seek_next_intersection = False
+
+        return None
+
+    cdef Intersection _process_intersection(self, Ray world_ray, Ray local_ray):
+
+            # on a hit the kd-tree populates an attribute containing the intersection data, unpack it
             triangle, t, u, v, w = self._kdtree.hit_intersection
+
+            # generate intersection description
             hit_point = local_ray.origin + local_ray.direction * t
             inside_point = hit_point - triangle.face_normal * EPSILON
             outside_point = hit_point + triangle.face_normal * EPSILON
             normal = triangle.interpolate_normal(u, v, w, self.smoothing)
             exiting = local_ray.direction.dot(triangle.face_normal) > 0.0
+
+            # enable next intersection search and cache the local ray for the next intersection calculation
+            # we must shift the new origin past the last intersection
+            self._seek_next_intersection = True
+            self._next_world_ray = world_ray
+            self._next_local_ray = new_ray(
+                hit_point + local_ray.direction * EPSILON,
+                local_ray.direction,
+                local_ray.max_distance - t - EPSILON
+            )
+
             return new_intersection(
-                ray, t, self,
+                world_ray, t, self,
                 hit_point, inside_point, outside_point,
                 normal, exiting, self.to_local(), self.to_root()
             )
 
-        return None
+    cpdef bint contains(self, Point p) except -1:
+        """
+        Returns True if the Point lies within the boundary of the surface
+        defined by the Primitive. False is returned otherwise.
+        """
 
+        # TODO: add an option to use an intersection count algorithm for meshes that have bad face normal orientations
+        # fires ray along z axis, if it encounters a polygon it inspects the orientation of the face
+        # if the face is outwards, then the ray was spawned inside the mesh
+        # this assumes the mesh has all face normals facing outwards from the mesh interior
+        ray = new_ray(
+            p.transform(self.to_local()),
+            new_vector(0, 0, 1),
+            INFINITY
+        )
 
+        # if the box is missed, the origin cannot be in the mesh
+        hit, min_range, max_range = self._kdtree.bounds.full_intersection(ray)
+        if not hit:
+            return False
 
-    # @cython.boundscheck(False)
-    # cpdef Intersection hit(self, Ray ray):
-    #     """
-    #     Returns the first intersection with a primitive or None if no primitive
-    #     is intersected.
-    #     """
-    #
-    #     cdef:
-    #         Ray local_ray
-    #         tuple intersection
-    #         double min_range, max_range
-    #         bint hit
-    #         double t, u, v, w
-    #         Triangle triangle
-    #
-    #     local_ray = Ray(
-    #         ray.origin.transform(self.to_local()),
-    #         ray.direction.transform(self.to_local()),
-    #         ray.max_distance
-    #     )
-    #
-    #     # check local bounding box
-    #     hit, min_range, max_range = self._local_bbox.full_intersection(local_ray)
-    #     if not hit:
-    #         return None
-    #
-    #     # search for closest triangle intersection
-    #     intersection = self._kdtree.hit(local_ray, min_range, max_range)
-    #     if intersection is None:
-    #         return None
-    #
-    #     triangle, t, u, v, w = intersection
-    #     hit_point = local_ray.origin + local_ray.direction * t
-    #     inside_point = hit_point - triangle.face_normal * EPSILON
-    #     outside_point = hit_point + triangle.face_normal * EPSILON
-    #     normal = triangle.interpolate_normal(u, v, w, self.smoothing)
-    #     exiting = local_ray.direction.dot(triangle.face_normal) > 0.0
-    #     return Intersection(ray, t, self,
-    #                         hit_point, inside_point, outside_point,
-    #                         normal, exiting, self.to_local(), self.to_root())
+        # search for closest triangle intersection
+        intersection = self._kdtree.hit(ray)
+        if intersection is None:
+            return False
 
-    # cpdef Intersection next_intersection(self):
-    #     """
-    #     Returns the next intersection of the ray with the primitive along the
-    #     ray path.
-    #
-    #     This method may only be called following a call to hit(). If the ray
-    #     has further intersections with the primitive, these may be obtained by
-    #     repeatedly calling the next_intersection() method. Each call to
-    #     next_intersection() will return the next ray-primitive intersection
-    #     along the ray's path. If no further intersections are found or
-    #     intersections lie outside the ray parameters then next_intersection()
-    #     will return None.
-    #
-    #     If any geometric elements of the primitive, ray and/or scenegraph are
-    #     altered between a call to hit() and calls to next_intersection() the
-    #     data returned by next_intersection() may be invalid. Primitives may
-    #     cache data to accelerate next_intersection() calls which will be
-    #     invalidated by geometric alterations to the scene. If the scene is
-    #     altered the data returned by next_intersection() is undefined.
-    #     """
-    #
-    #     raise NotImplementedError("Primitive surface has not been defined. Virtual method next_intersection() has not been implemented.")
-
-    # cpdef bint contains(self, Point p) except -1:
-    #     """
-    #     Returns True if the Point lies within the boundary of the surface
-    #     defined by the Primitive. False is returned otherwise.
-    #     """
-    #
-    #     # TODO: toy code atm!!!
-    #     # fires ray along z axis, if it encounters a polygon it inspects the orientation of the face
-    #     # if the face is outwards, then the ray was spawned inside the mesh
-    #     # this assumes the mesh has all face normals facing outwards from the mesh interior
-    #     p = p.transform(self.to_local())
-    #     ray = Ray(origin=p)
-    #
-    #     hit, min_range, max_range = self._local_bbox.full_intersection(ray)
-    #     if not hit:
-    #         return False
-    #
-    #     # search for closest triangle intersection
-    #     intersection = self._kdtree.hit(ray, min_range, max_range)
-    #     if intersection is None:
-    #         return False
-    #
-    #     triangle, t, u, v, w = intersection
-    #     return triangle.face_normal.dot(ray.direction) > 0.0
+        triangle, t, u, v, w = intersection
+        return triangle.face_normal.dot(ray.direction) > 0.0
 
     cpdef BoundingBox bounding_box(self):
         """
