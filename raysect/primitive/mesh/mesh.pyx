@@ -254,7 +254,7 @@ cdef class MeshKDTree(KDTreeCore):
             double distance
             double t, u, v, w
             Triangle triangle, closest_triangle
-            tuple closest_intersection
+            tuple intersection, closest_intersection
 
         # unpack leaf data
         count = self._nodes[id].count
@@ -451,6 +451,8 @@ cdef class Mesh(Primitive):
         is intersected.
         """
 
+        cdef Ray local_ray
+
         local_ray = new_ray(
             ray.origin.transform(self.to_local()),
             ray.direction.transform(self.to_local()),
@@ -485,37 +487,51 @@ cdef class Mesh(Primitive):
 
     cdef Intersection _process_intersection(self, Ray world_ray, Ray local_ray):
 
-            # on a hit the kd-tree populates an attribute containing the intersection data, unpack it
-            triangle, t, u, v, w = self._kdtree.hit_intersection
+        cdef:
+            Triangle triangle
+            double t, u, v, w
+            Point hit_point, inside_point, outside_point
+            Normal normal
+            bint exiting
 
-            # generate intersection description
-            hit_point = local_ray.origin + local_ray.direction * t
-            inside_point = hit_point - triangle.face_normal * EPSILON
-            outside_point = hit_point + triangle.face_normal * EPSILON
-            normal = triangle.interpolate_normal(u, v, w, self.smoothing)
-            exiting = local_ray.direction.dot(triangle.face_normal) > 0.0
+        # on a hit the kd-tree populates an attribute containing the intersection data, unpack it
+        triangle, t, u, v, w = self._kdtree.hit_intersection
 
-            # enable next intersection search and cache the local ray for the next intersection calculation
-            # we must shift the new origin past the last intersection
-            self._seek_next_intersection = True
-            self._next_world_ray = world_ray
-            self._next_local_ray = new_ray(
-                hit_point + local_ray.direction * EPSILON,
-                local_ray.direction,
-                local_ray.max_distance - t - EPSILON
-            )
+        # generate intersection description
+        hit_point = local_ray.origin + local_ray.direction * t
+        inside_point = hit_point - triangle.face_normal * EPSILON
+        outside_point = hit_point + triangle.face_normal * EPSILON
+        normal = triangle.interpolate_normal(u, v, w, self.smoothing)
+        exiting = local_ray.direction.dot(triangle.face_normal) > 0.0
 
-            return new_intersection(
-                world_ray, t, self,
-                hit_point, inside_point, outside_point,
-                normal, exiting, self.to_local(), self.to_root()
-            )
+        # enable next intersection search and cache the local ray for the next intersection calculation
+        # we must shift the new origin past the last intersection
+        self._seek_next_intersection = True
+        self._next_world_ray = world_ray
+        self._next_local_ray = new_ray(
+            hit_point + local_ray.direction * EPSILON,
+            local_ray.direction,
+            local_ray.max_distance - t - EPSILON
+        )
+
+        return new_intersection(
+            world_ray, t, self,
+            hit_point, inside_point, outside_point,
+            normal, exiting, self.to_local(), self.to_root()
+        )
 
     cpdef bint contains(self, Point p) except -1:
         """
         Returns True if the Point lies within the boundary of the surface
         defined by the Primitive. False is returned otherwise.
         """
+
+        cdef:
+            Ray ray
+            bint hit
+            double min_range, max_range
+            Triangle triangle
+            double t, u, v, w
 
         # TODO: add an option to use an intersection count algorithm for meshes that have bad face normal orientations
         # fires ray along z axis, if it encounters a polygon it inspects the orientation of the face
@@ -527,17 +543,11 @@ cdef class Mesh(Primitive):
             INFINITY
         )
 
-        # if the box is missed, the origin cannot be in the mesh
-        hit, min_range, max_range = self._kdtree.bounds.full_intersection(ray)
-        if not hit:
-            return False
-
         # search for closest triangle intersection
-        intersection = self._kdtree.hit(ray)
-        if intersection is None:
+        if not self._kdtree.hit(ray):
             return False
 
-        triangle, t, u, v, w = intersection
+        triangle, t, u, v, w = self._kdtree.hit_intersection
         return triangle.face_normal.dot(ray.direction) > 0.0
 
     cpdef BoundingBox bounding_box(self):
@@ -548,6 +558,10 @@ cdef class Mesh(Primitive):
         accuracy problems between the mesh and box representations following
         coordinate transforms.
         """
+
+        cdef:
+            BoundingBox bbox
+            Triangle triangle
 
         # TODO: reconsider the padding - the padding should a multiple of max extent, not a fixed value
         bbox = BoundingBox()
