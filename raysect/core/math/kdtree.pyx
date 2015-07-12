@@ -270,6 +270,9 @@ cdef class KDTreeCore:
                 if not edge.is_upper_edge:
                     lower_count += 1
 
+        # allow python to clean up edges memory
+        del edges
+
         if is_leaf:
             return None
 
