@@ -412,6 +412,7 @@ cdef class Mesh(Primitive):
     cdef:
         MeshKDTree _kdtree
         public bint smoothing
+        public bint closed
         bint _seek_next_intersection
         Ray _next_world_ray
         Ray _next_local_ray
@@ -420,7 +421,7 @@ cdef class Mesh(Primitive):
         self._kdtree.debug_print_all()
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, list triangles=None, bint smoothing=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, list triangles=None, bint smoothing=True, bint closed=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
@@ -428,6 +429,7 @@ cdef class Mesh(Primitive):
             triangles = []
 
         self.smoothing = smoothing
+        self.closed = closed
 
         # build the kd-Tree
         self._kdtree = MeshKDTree(triangles, kdtree_max_depth, kdtree_min_triangles, kdtree_hit_cost, kdtree_empty_bonus)
@@ -520,6 +522,7 @@ cdef class Mesh(Primitive):
             normal, exiting, self.to_local(), self.to_root()
         )
 
+    # TODO: add an option to use an intersection count algorithm for meshes that have bad face normal orientations
     cpdef bint contains(self, Point p) except -1:
         """
         Returns True if the Point lies within the boundary of the surface
@@ -533,8 +536,10 @@ cdef class Mesh(Primitive):
             Triangle triangle
             double t, u, v, w
 
-        # TODO: add an option to use an intersection count algorithm for meshes that have bad face normal orientations
-        # fires ray along z axis, if it encounters a polygon it inspects the orientation of the face
+        if not self.closed:
+            return False
+
+        # fire ray along z axis, if it encounters a polygon it inspects the orientation of the face
         # if the face is outwards, then the ray was spawned inside the mesh
         # this assumes the mesh has all face normals facing outwards from the mesh interior
         ray = new_ray(
