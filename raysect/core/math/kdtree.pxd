@@ -42,19 +42,17 @@ cdef struct kdnode:
     int *items      # array of item ids
 
 
+cdef struct edge:
+
+        bint is_upper_edge
+        double value
+
+
 cdef class Item:
 
     cdef:
         readonly int id
         readonly BoundingBox box
-
-
-cdef class _Edge:
-
-    cdef:
-        readonly int item
-        readonly bint is_upper_edge
-        readonly double value
 
 
 cdef class KDTreeCore:
@@ -73,7 +71,9 @@ cdef class KDTreeCore:
 
     cdef tuple _split(self, list items, BoundingBox bounds)
 
-    cdef list _get_edges(self, list items, int axis)
+    cdef void _get_edges(self, list items, int axis, int *num_edges, edge **edges_ptr)
+
+    cdef void _free_edges(self, edge **edges_ptr)
 
     cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int axis)
 

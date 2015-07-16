@@ -32,6 +32,7 @@
 
 from raysect.core.acceleration.boundingbox cimport new_boundingbox
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+from libc.stdlib cimport qsort
 from libc.math cimport log, ceil
 cimport cython
 
@@ -70,43 +71,29 @@ cdef class Item:
         self.box = box
 
 
-cdef class _Edge:
-    """
-    Edge class. Represents the edge of an item's bounding box on a specified axis.
+cdef int _edge_compare(const void *p1, const void *p2) nogil:
 
-    :param item: Item object.
-    :param axis: The index of the axis on which the edge is defined.
-    :param is_upper_edge: True if the edge is the upper edge, false otherwise.
-    """
+    cdef edge e1, e2
 
-    def __init__(self, Item item, int axis, bint is_upper_edge):
+    e1 = (<edge *> p1)[0]
+    e2 = (<edge *> p2)[0]
 
-        self.item = item.id
-        self.is_upper_edge = is_upper_edge
-
-        if is_upper_edge:
-            self.value = item.box.upper.get_index(axis)
+    # lower edge must always be encountered first
+    # break tie by ensuring lower extent sorted before upper edge
+    if e1.value == e2.value:
+        if e2.is_upper_edge:
+            return -1
         else:
-            self.value = item.box.lower.get_index(axis)
+            return 1
 
-    def __richcmp__(_Edge x, _Edge y, int operation):
-
-        if operation == 0:  # __lt__(), less than
-            # lower edge must always be encountered first
-            # break tie by ensuring lower extent sorted before upper edge
-            if x.value == y.value:
-                if x.is_upper_edge:
-                    return False
-                else:
-                    return True
-            return x.value < y.value
-        else:
-            return NotImplemented
+    if e1.value < e2.value:
+        return -1
+    else:
+        return 1
 
 
 # TODO: empty bonus is not currently implemented
 # TODO: check if the __cinit__ declaration must be consistent with __init__ in the cython docs
-# TODO: convert edges code to pure C, python comparison in sort is *very* expensive
 cdef class KDTreeCore:
 
     def debug_print_all(self):
@@ -252,18 +239,18 @@ cdef class KDTreeCore:
             bint is_leaf
             int longest_axis, axis,
             double best_cost, best_split
-            int best_axis, best_item
-            _Edge edge
+            int best_axis
+            edge *edges = NULL
+            int edge, num_edges
             int lower_count, upper_count
             double recip_total_sa, lower_sa, upper_sa
-            list edges, lower_items, upper_items
+            list lower_items, upper_items
             Item item
 
         # store cost of leaf as current best solution
         best_cost = len(items) * self._hit_cost
         best_split = 0
         best_axis = -1
-        best_item = -1
         is_leaf = True
 
         # cache reciprocal of node's surface area
@@ -275,25 +262,26 @@ cdef class KDTreeCore:
         for axis in [longest_axis, (longest_axis + 1) % 3, (longest_axis +2) % 3]:
 
             # obtain sorted list of candidate edges along chosen axis
-            edges = self._get_edges(items, axis)
+            self._get_edges(items, axis, &num_edges, &edges)
+            # print(edges[num_edges - 1])
 
             # cache item counts in lower and upper volumes for speed
             lower_count = 0
             upper_count = len(items)
 
             # scan through candidate edges from lowest to highest
-            for edge in edges:
+            for edge in range(num_edges):
 
                 # update item counts for upper volume
                 # note: this occasionally creates invalid solutions if edges of
                 # boxes are coincident however the invalid solutions cost
                 # more than the valid solutions and will not be selected
-                if edge.is_upper_edge:
+                if edges[edge].is_upper_edge:
                     upper_count -= 1
 
                 # a split on the node boundary serves no useful purpose
                 # only consider edges that lie inside the node bounds
-                split = edge.value
+                split = edges[edge].value
                 if bounds.lower.get_index(axis) < split < bounds.upper.get_index(axis):
 
                     # calculate surface area of split volumes
@@ -307,7 +295,6 @@ cdef class KDTreeCore:
                     if cost < best_cost:
                         best_cost = cost
                         best_split = split
-                        best_item = edge.item
                         best_axis = axis
                         is_leaf = False
 
@@ -315,13 +302,11 @@ cdef class KDTreeCore:
                 # note: this occasionally creates invalid solutions if edges of
                 # boxes are coincident however the invalid solutions cost
                 # more than the valid solutions and will not be selected
-                if not edge.is_upper_edge:
+                if not edges[edge].is_upper_edge:
                     lower_count += 1
 
-            # allow python to clean up edges memory
-            # this is required to prevent python unnecessarily holding on to
-            # the edge array through recursive calls to _build()
-            del edges
+            # clean up edges memory
+            self._free_edges(&edges)
 
             # stop searching through axes if we have found a reasonable split solution
             if not is_leaf:
@@ -352,26 +337,49 @@ cdef class KDTreeCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef list _get_edges(self, list items, int axis):
+    cdef void _get_edges(self, list items, int axis, int *num_edges, edge **edges_ptr):
         """
         Generates a sorted list of edges along the specified axis.
 
-        :param axis: The axis to split along.
         :param items: A list of items.
-        :return: List of edges.
+        :param axis: The axis to split along.
+        :param num_edges: Pointer to number of edges (returned).
+        :param edges: Pointer to array of edges (returned).
         """
 
         cdef:
-            list edges
+            int index, lower_index, upper_index
             Item item
+            edge *edges
 
-        edges = []
-        for item in items:
-            edges.append(_Edge(item, axis, False))
-            edges.append(_Edge(item, axis, True))
-        edges.sort()
+        # allocate edge array
+        num_edges[0] = len(items) * 2
+        edges_ptr[0] = <edge *> PyMem_Malloc(sizeof(edge) * num_edges[0])
+        if not edges_ptr[0]:
+            raise MemoryError()
 
-        return edges
+        # populate
+        edges = edges_ptr[0]
+        for index, item in enumerate(items):
+
+            lower_index = 2 * index
+            upper_index = lower_index + 1
+
+            # lower edge
+            edges[lower_index].is_upper_edge = False
+            edges[lower_index].value = item.box.lower.get_index(axis)
+
+            # upper edge
+            edges[upper_index].is_upper_edge = True
+            edges[upper_index].value = item.box.upper.get_index(axis)
+
+        # sort
+        qsort(<void *> edges, num_edges[0], sizeof(edge), _edge_compare)
+
+    cdef void _free_edges(self, edge **edges_ptr):
+
+        # free allocated array
+        PyMem_Free(edges_ptr[0])
 
     cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int axis):
         """
