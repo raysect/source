@@ -79,7 +79,7 @@ cdef class KDTreeCore:
 
     cdef BoundingBox _get_upper_bounds(self, BoundingBox bounds, double split, int axis)
 
-    cdef int _new_leaf(self, list items)
+    cdef int _new_leaf(self, list ids)
 
     cdef int _new_branch(self, tuple split_solution, int depth)
 
@@ -104,6 +104,8 @@ cdef class KDTreeCore:
     cdef list _contains_branch(self, int id, Point point)
 
     cdef list _contains_leaf(self, int id, Point point)
+
+    cdef void _reset(self)
 
 
 cdef class KDTree(KDTreeCore):

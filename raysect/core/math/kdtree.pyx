@@ -105,6 +105,8 @@ cdef class _Edge:
 
 
 # TODO: empty bonus is not currently implemented
+# TODO: check if the __cinit__ declaration must be consistent with __init__ in the cython docs
+# TODO: convert edges code to pure C, python comparison in sort is *very* expensive
 cdef class KDTreeCore:
 
     def debug_print_all(self):
@@ -125,7 +127,6 @@ cdef class KDTreeCore:
             else:
                 print("id={} BRANCH: axis {}, split {}, lower_id {}, upper_id {}".format(id, self._nodes[id].type, self._nodes[id].split, id+1, self._nodes[id].count))
 
-    # TODO: check if this declaration must be consistent with __init__ in the cython docs
     def __cinit__(self):
 
         self._nodes = NULL
@@ -162,6 +163,51 @@ cdef class KDTreeCore:
 
         # start build
         self._build(items, self.bounds)
+
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        # encode nodes
+        nodes = []
+        for id in range(self._next_node):
+            if self._nodes[id].type == LEAF:
+                items = []
+                for item in range(self._nodes[id].count):
+                    items.append(self._nodes[id].items[item])
+                node = (self._nodes[id].type, items)
+            else:
+                node = (self._nodes[id].type, (self._nodes[id].split, self._nodes[id].count))
+            nodes.append(node)
+
+        # encode settings
+        settings = (self._max_depth, self._min_items, self._hit_cost, self._empty_bonus)
+
+        state = (self.bounds, tuple(nodes), settings)
+        return state
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.bounds, nodes, settings = state
+
+        # reset the object
+        self._reset()
+
+        # decode nodes
+        for node in nodes:
+            type, data = node
+            if type == LEAF:
+                items = [Item(id, None) for id in data]
+                self._new_leaf(items)
+            else:
+                split, count = data
+                id = self._new_node()
+                self._nodes[id].type = type
+                self._nodes[id].split = split
+                self._nodes[id].count = count
+
+        # decode settings
+        self._max_depth, self._min_items, self._hit_cost, self._empty_bonus = settings
 
     cdef int _build(self, list items, BoundingBox bounds, int depth=0):
         """
@@ -204,7 +250,7 @@ cdef class KDTreeCore:
         cdef:
             double split, cost
             bint is_leaf
-            int axis,
+            int longest_axis, axis,
             double best_cost, best_split
             int best_axis, best_item
             _Edge edge
@@ -223,8 +269,10 @@ cdef class KDTreeCore:
         # cache reciprocal of node's surface area
         recip_total_sa = 1.0 / bounds.surface_area()
 
-        # search each axis for a solution
-        for axis in [X_AXIS, Y_AXIS, Z_AXIS]:
+        # search for a solution along the longest axis first
+        # if a split isn't found, then try the other axes
+        longest_axis = bounds.largest_axis()
+        for axis in [longest_axis, (longest_axis + 1) % 3, (longest_axis +2) % 3]:
 
             # obtain sorted list of candidate edges along chosen axis
             edges = self._get_edges(items, axis)
@@ -270,8 +318,14 @@ cdef class KDTreeCore:
                 if not edge.is_upper_edge:
                     lower_count += 1
 
-        # allow python to clean up edges memory
-        del edges
+            # allow python to clean up edges memory
+            # this is required to prevent python unnecessarily holding on to
+            # the edge array through recursive calls to _build()
+            del edges
+
+            # stop searching through axes if we have found a reasonable split solution
+            if not is_leaf:
+                break
 
         if is_leaf:
             return None
@@ -281,7 +335,7 @@ cdef class KDTreeCore:
         lower_items = []
         upper_items = []
         for item in items:
-            # todo: check the most recent change - including items sitting on the split should be unnecessary as boxes are padded
+
             # is the item present in the lower node?
             if item.box.lower.get_index(best_axis) < best_split:
                 lower_items.append(item)
@@ -366,7 +420,7 @@ cdef class KDTreeCore:
         id = self._new_node()
         self._nodes[id].type = LEAF
         self._nodes[id].count = count
-        if count >= 0:
+        if count > 0:
             self._nodes[id].items = <int *> PyMem_Malloc(sizeof(int) * count)
             if not self._nodes[id].items:
                 raise MemoryError()
@@ -650,7 +704,7 @@ cdef class KDTreeCore:
         # notes:
         #  * the branch type enumeration is the same as axis index
         #  * the lower_id is always the next node in the array
-        #  * the upper_id is store in the count attribute
+        #  * the upper_id is stored in the count attribute
         axis = self._nodes[id].type
         split = self._nodes[id].split
         lower_id = id + 1
@@ -683,11 +737,9 @@ cdef class KDTreeCore:
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTreeCore _contains_leaf() method not implemented.")
 
-    def __dealloc__(self):
+    cdef void _reset(self):
         """
-        Frees the memory allocated to store the kd-Tree.
-
-        :return: None
+        Resets the kd-tree state, de-allocating all memory.
         """
 
         cdef:
@@ -701,6 +753,18 @@ cdef class KDTreeCore:
 
         # free the nodes
         PyMem_Free(self._nodes)
+
+        # reset
+        self._nodes = NULL
+        self._allocated_nodes = 0
+        self._next_node = 0
+
+    def __dealloc__(self):
+        """
+        Frees the memory allocated to store the kd-Tree.
+        """
+
+        self._reset()
 
 
 cdef class KDTree(KDTreeCore):

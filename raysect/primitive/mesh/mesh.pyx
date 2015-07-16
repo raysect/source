@@ -239,6 +239,17 @@ cdef class MeshKDTree(KDTreeCore):
 
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
 
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return self.triangles, super().__getstate__()
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.triangles, base_state = state
+        super().__setstate__(base_state)
+
     cpdef bint hit(self, Ray ray):
 
         self.hit_intersection = None
@@ -417,9 +428,6 @@ cdef class Mesh(Primitive):
         Ray _next_world_ray
         Ray _next_local_ray
 
-    def debug_print_all(self):
-        self._kdtree.debug_print_all()
-
     # TODO: calculate or measure triangle hit cost vs split traversal
     def __init__(self, list triangles=None, bint smoothing=True, bint closed=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
@@ -576,27 +584,13 @@ cdef class Mesh(Primitive):
             bbox.extend(triangle.v3.transform(self.to_root()), BOX_PADDING)
         return bbox
 
-    # cpdef dump(self, filename):
-    #     state = (
-    #         self.triangles,
-    #         self.smoothing,
-    #         self.kdtree_max_depth,
-    #         self.kdtree_min_triangles,
-    #         self.kdtree_hit_cost,
-    #         self._local_bbox,
-    #         self._kdtree
-    #     )
-    #     with open(filename, mode="wb") as f:
-    #         pickle.dump(state, f)
-    #
-    # cpdef load(self, filename):
-    #     with open(filename, mode="rb") as f:
-    #         (
-    #             self.triangles,
-    #             self.smoothing,
-    #             self.kdtree_max_depth,
-    #             self.kdtree_min_triangles,
-    #             self.kdtree_hit_cost,
-    #             self._local_bbox,
-    #             self._kdtree
-    #         ) = pickle.load(f)
+    cpdef dump(self, filename):
+        state = (self._kdtree, self.smoothing, self.closed)
+        with open(filename, mode="wb") as f:
+            pickle.dump(state, f)
+
+    cpdef load(self, filename):
+        with open(filename, mode="rb") as f:
+            self._kdtree, self.smoothing, self.closed = pickle.load(f)
+        self._seek_next_intersection = False
+
