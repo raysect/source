@@ -52,28 +52,6 @@ DEF BOX_PADDING = 1e-9
 DEF EPSILON = 1e-9
 
 """
-Requirements:
-* tri-poly self support
-* option to set mesh closed or open (code will assume user is not an idiot), open mesh means contains() always reports False
-* normal interpolation option (smoothing)
-
-Development plan for mesh:
-
-1) initial prototype [DONE]
-* implement watertight triangle intersection, ignoring normal interpolation for now - just use polygon normal
-* implement a brute force (list based) search for closest poly and next poly -
-* meshes are always open (i.e skip implementation of contains())
-
-2) 2nd pass [DONE]
-* add kdtree to optimise hit and contains
-
-3) rebuild internals in C to optimise memory usage [DONE]
-* when process forked, the current code uses huge mounts of memory as reference counts are updated - moving to C structures will avoid python reference counting
-
-4) release
-* add smoothing parameter and add normal interpolation
-* add open/closed mesh support (implement contains using a surface intersection count)
-
 Notes:
 The ray-triangle intersection is a partial implementation of the algorithm described in:
     "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald, Journal of Computer Graphics Techniques (2013), Vol.2, No. 1

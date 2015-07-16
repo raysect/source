@@ -92,7 +92,6 @@ cdef int _edge_compare(const void *p1, const void *p2) nogil:
         return 1
 
 
-# TODO: empty bonus is not currently implemented
 # TODO: check if the __cinit__ declaration must be consistent with __init__ in the cython docs
 cdef class KDTreeCore:
 
@@ -235,13 +234,13 @@ cdef class KDTreeCore:
         """
 
         cdef:
-            double split, cost
+            double split, bonus, cost
             bint is_leaf
             int longest_axis, axis,
             double best_cost, best_split
             int best_axis
             edge *edges = NULL
-            int edge, num_edges
+            int index, num_edges
             int lower_count, upper_count
             double recip_total_sa, lower_sa, upper_sa
             list lower_items, upper_items
@@ -270,26 +269,31 @@ cdef class KDTreeCore:
             upper_count = len(items)
 
             # scan through candidate edges from lowest to highest
-            for edge in range(num_edges):
+            for index in range(num_edges):
 
                 # update item counts for upper volume
                 # note: this occasionally creates invalid solutions if edges of
                 # boxes are coincident however the invalid solutions cost
                 # more than the valid solutions and will not be selected
-                if edges[edge].is_upper_edge:
+                if edges[index].is_upper_edge:
                     upper_count -= 1
 
                 # a split on the node boundary serves no useful purpose
                 # only consider edges that lie inside the node bounds
-                split = edges[edge].value
+                split = edges[index].value
                 if bounds.lower.get_index(axis) < split < bounds.upper.get_index(axis):
 
                     # calculate surface area of split volumes
                     lower_sa = self._get_lower_bounds(bounds, split, axis).surface_area()
                     upper_sa = self._get_upper_bounds(bounds, split, axis).surface_area()
 
+                    # is there an empty bonus?
+                    bonus = 1.0
+                    if lower_count == 0 or upper_count == 0:
+                        bonus -= self._empty_bonus
+
                     # calculate SAH cost
-                    cost = 1 + (lower_sa * lower_count + upper_sa * upper_count) * recip_total_sa * self._hit_cost
+                    cost = 1 + bonus * (lower_sa * lower_count + upper_sa * upper_count) * recip_total_sa * self._hit_cost
 
                     # has a better split been found?
                     if cost < best_cost:
@@ -302,7 +306,7 @@ cdef class KDTreeCore:
                 # note: this occasionally creates invalid solutions if edges of
                 # boxes are coincident however the invalid solutions cost
                 # more than the valid solutions and will not be selected
-                if not edges[edge].is_upper_edge:
+                if not edges[index].is_upper_edge:
                     lower_count += 1
 
             # clean up edges memory
@@ -348,18 +352,17 @@ cdef class KDTreeCore:
         """
 
         cdef:
-            int index, lower_index, upper_index
+            int count, index, lower_index, upper_index
             Item item
             edge *edges
 
         # allocate edge array
-        num_edges[0] = len(items) * 2
-        edges_ptr[0] = <edge *> PyMem_Malloc(sizeof(edge) * num_edges[0])
-        if not edges_ptr[0]:
+        count = len(items) * 2
+        edges = <edge *> PyMem_Malloc(sizeof(edge) * count)
+        if not edges:
             raise MemoryError()
 
         # populate
-        edges = edges_ptr[0]
         for index, item in enumerate(items):
 
             lower_index = 2 * index
@@ -374,7 +377,11 @@ cdef class KDTreeCore:
             edges[upper_index].value = item.box.upper.get_index(axis)
 
         # sort
-        qsort(<void *> edges, num_edges[0], sizeof(edge), _edge_compare)
+        qsort(<void *> edges, count, sizeof(edge), _edge_compare)
+
+        # return
+        num_edges[0] = count
+        edges_ptr[0] = edges
 
     cdef void _free_edges(self, edge **edges_ptr):
 
