@@ -1,5 +1,5 @@
 # cython: language_level=3
-# cython: profile=True
+# cython: profile=False
 
 # Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -30,10 +30,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport Normal, new_normal
 from raysect.core.math.point cimport Point, new_point
-from raysect.core.classes cimport Material, Intersection, new_intersection
+from raysect.core.math.vector cimport Vector, new_vector
+from raysect.core.math.kdtree cimport KDTreeCore, Item, kdnode
+from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
 import pickle
@@ -45,42 +48,10 @@ DEF INFINITY = 1e999
 # bounding box is padded by a small amount to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9
 
-# extent padding for the triangles in the kd-Tree
-DEF EDGE_LOWER_PADDING = 0.99999
-DEF EDGE_UPPER_PADDING = 1.00001
-
-# kd-Tree axis definitions
-DEF X_AXIS = 0
-DEF Y_AXIS = 1
-DEF Z_AXIS = 2
-DEF NO_AXIS = 3
-
 # additional ray distance to avoid re-hitting the same surface point
 DEF EPSILON = 1e-9
 
 """
-Requirements:
-* tri-poly self support
-* option to set mesh closed or open (code will assume user is not an idiot), open mesh means contains() always reports False
-* normal interpolation option (smoothing)
-
-Development plan for mesh:
-
-1) initial prototype
-* implement watertight triangle intersection, ignoring normal interpolation for now - just use polygon normal
-* implement a brute force (list based) search for closest poly and next poly -
-* meshes are always open (i.e skip implementation of contains())
-
-2) 2nd pass
-* add kdtree to optimise hit and contains
-
-3) release
-* add smoothing parameter and add normal interpolation
-* add open/closed mesh support (implement contains using a surface intersection count)
-
-4) rebuild internals in C to optimise memory usage
-* when process forked, the current code uses huge mounts of memory as reference counts are updated - moving to C structures will avoid python reference counting
-
 Notes:
 The ray-triangle intersection is a partial implementation of the algorithm described in:
     "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald, Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
@@ -91,6 +62,12 @@ extremely small triangles that are being tested against a ray with an origin far
 """
 
 cdef class Triangle:
+
+    cdef:
+        readonly Point v1, v2, v3
+        readonly Normal n1, n2, n3
+        readonly Normal face_normal
+        bint _smoothing_enabled
 
     def __init__(self, Point v1 not None, Point v2 not None, Point v3 not None,
                  Normal n1=None, Normal n2=None, Normal n3=None):
@@ -143,6 +120,7 @@ cdef class Triangle:
         c = a.cross(b).normalise()
         self.face_normal = new_normal(c.x, c.y, c.z)
 
+    @cython.cdivision(True)
     cpdef Point centre_point(self):
 
         return new_point(
@@ -191,571 +169,111 @@ cdef class Triangle:
                    self.v2.get_index(axis),
                    self.v3.get_index(axis))
 
-    # def side(self, p):
-    #     """
-    #     Returns which side of the face the point lies on.
-    #
-    #     The front of the triangle is defined as the side towards which the face normal is pointing.
-    #     Everywhere else is considered to liw behind the triangle. A point lying on the plane in
-    #     which the triangle lies is considered to be behind the triangle.
-    #
-    #     :return: Returns True if the point lies in front of the triangle, False otherwise
-    #     """
-    #     pass
-
-
-cdef class Mesh(Primitive):
-
-    # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, list triangles=None, bint smoothing=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=5.0, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
-
-        super().__init__(parent, transform, material, name)
-
-        if triangles is None:
-            self.triangles = []
-        else:
-            self.triangles = triangles
-
-        self.smoothing = smoothing
-
-        self.kdtree_max_depth = kdtree_max_depth
-        self.kdtree_min_triangles = kdtree_min_triangles
-        self.kdtree_hit_cost = kdtree_hit_cost
-
-        # construct a bounding box that contains all the triangles in the mesh
-        self._build_local_bbox()
-
-        # build the kd-Tree
-        self._build_kdtree()
-
-    cdef object _build_kdtree(self):
-        """
-        Rebuilds the kd-Tree acceleration structure with the list of triangles.
-        """
-
-        cdef:
-            int max_depth
-            list triangle_data
-            Triangle triangle
-
-        self._kdtree = _KDTreeNode()
-
-        # default max tree depth is set to the value suggested in "Physically Based Rendering From Theory to
-        # Implementation 2nd Edition", Matt Phar and Greg Humphreys, Morgan Kaufmann 2010, p232
-        if self.kdtree_max_depth <= 0:
-            max_depth = <int> ceil(8 + 1.3 * log(len(self.triangles)))
-        else:
-            max_depth = self.kdtree_max_depth
-
-        # pack triangles into form required by kd-Tree
-        triangle_data = [_TriangleData(triangle) for triangle in self.triangles]
-
-        # calling build on the root node triggers a recursive rebuild of the tree
-        self._kdtree.build(self._local_bbox, triangle_data, max_depth, self.kdtree_min_triangles, self.kdtree_hit_cost)
-
-    cdef object _build_local_bbox(self):
-        """
-        Builds a local space bounding box that encloses all the supplied triangles.
-        """
-
-        cdef:
-            Triangle triangle
-            BoundingBox box
-
-        self._local_bbox = BoundingBox()
-        for triangle in self.triangles:
-            self._local_bbox.extend(triangle.v1, BOX_PADDING)
-            self._local_bbox.extend(triangle.v2, BOX_PADDING)
-            self._local_bbox.extend(triangle.v3, BOX_PADDING)
-
-    @cython.boundscheck(False)
-    cpdef Intersection hit(self, Ray ray):
-        """
-        Returns the first intersection with a primitive or None if no primitive
-        is intersected.
-        """
-
-        cdef:
-            Ray local_ray
-            tuple intersection
-            double min_range, max_range
-            bint hit
-            double t, u, v, w
-            Triangle triangle
-
-        local_ray = Ray(
-            ray.origin.transform(self.to_local()),
-            ray.direction.transform(self.to_local()),
-            ray.max_distance
-        )
-
-        # check local bounding box
-        hit, min_range, max_range = self._local_bbox.full_intersection(local_ray)
-        if not hit:
-            return None
-
-        # search for closest triangle intersection
-        intersection = self._kdtree.hit(local_ray, min_range, max_range)
-        if intersection is None:
-            return None
-
-        triangle, t, u, v, w = intersection
-        hit_point = local_ray.origin + local_ray.direction * t
-        inside_point = hit_point - triangle.face_normal * EPSILON
-        outside_point = hit_point + triangle.face_normal * EPSILON
-        normal = triangle.interpolate_normal(u, v, w, self.smoothing)
-        exiting = local_ray.direction.dot(triangle.face_normal) > 0.0
-        return Intersection(ray, t, self,
-                            hit_point, inside_point, outside_point,
-                            normal, exiting, self.to_local(), self.to_root())
-
-    cpdef Intersection next_intersection(self):
-        """
-        Returns the next intersection of the ray with the primitive along the
-        ray path.
-
-        This method may only be called following a call to hit(). If the ray
-        has further intersections with the primitive, these may be obtained by
-        repeatedly calling the next_intersection() method. Each call to
-        next_intersection() will return the next ray-primitive intersection
-        along the ray's path. If no further intersections are found or
-        intersections lie outside the ray parameters then next_intersection()
-        will return None.
-
-        If any geometric elements of the primitive, ray and/or scenegraph are
-        altered between a call to hit() and calls to next_intersection() the
-        data returned by next_intersection() may be invalid. Primitives may
-        cache data to accelerate next_intersection() calls which will be
-        invalidated by geometric alterations to the scene. If the scene is
-        altered the data returned by next_intersection() is undefined.
-        """
-
-        raise NotImplementedError("Primitive surface has not been defined. Virtual method next_intersection() has not been implemented.")
-
-    cpdef bint contains(self, Point p) except -1:
-        """
-        Returns True if the Point lies within the boundary of the surface
-        defined by the Primitive. False is returned otherwise.
-        """
-
-        # TODO: toy code atm!!!
-        # fires ray along z axis, if it encounters a polygon it inspects the orientation of the face
-        # if the face is outwards, then the ray was spawned inside the mesh
-        # this assumes the mesh has all face normals facing outwards from the mesh interior
-        p = p.transform(self.to_local())
-        ray = Ray(origin=p)
-
-        hit, min_range, max_range = self._local_bbox.full_intersection(ray)
-        if not hit:
-            return False
-
-        # search for closest triangle intersection
-        intersection = self._kdtree.hit(ray, min_range, max_range)
-        if intersection is None:
-            return False
-
-        triangle, t, u, v, w = intersection
-        return triangle.face_normal.dot(ray.direction) > 0.0
-
     cpdef BoundingBox bounding_box(self):
         """
-        Returns a world space bounding box that encloses the mesh.
+        Returns a bounding box enclosing the triangle.
 
-        The box is padded by a small margin to reduce the risk of numerical
-        accuracy problems between the mesh and box representations following
-        coordinate transforms.
+        The box is defined in the triangle's coordinate system. A small degree
+        of padding is added to the bounding box to provide the conservative
+        bounds required by the watertight mesh algorithm.
+
+        :return: A BoundingBox object.
         """
 
-        bbox = BoundingBox()
-        for triangle in self.triangles:
-            bbox.extend(triangle.v1.transform(self.to_root()), BOX_PADDING)
-            bbox.extend(triangle.v2.transform(self.to_root()), BOX_PADDING)
-            bbox.extend(triangle.v3.transform(self.to_root()), BOX_PADDING)
+        bbox = new_boundingbox(
+            Point(
+                min(self.v1.x, self.v2.x, self.v3.x),
+                min(self.v1.y, self.v2.y, self.v3.y),
+                min(self.v1.z, self.v2.z, self.v3.z),
+            ),
+            Point(
+                max(self.v1.x, self.v2.x, self.v3.x),
+                max(self.v1.y, self.v2.y, self.v3.y),
+                max(self.v1.z, self.v2.z, self.v3.z),
+            ),
+        )
+        bbox.pad(bbox.largest_extent() * BOX_PADDING)
         return bbox
 
-    cpdef dump(self, filename):
-        state = (
-            self.triangles,
-            self.smoothing,
-            self.kdtree_max_depth,
-            self.kdtree_min_triangles,
-            self.kdtree_hit_cost,
-            self._local_bbox,
-            self._kdtree
-        )
-        with open(filename, mode="wb") as f:
-            pickle.dump(state, f)
 
-    cpdef load(self, filename):
-        with open(filename, mode="rb") as f:
-            (
-                self.triangles,
-                self.smoothing,
-                self.kdtree_max_depth,
-                self.kdtree_min_triangles,
-                self.kdtree_hit_cost,
-                self._local_bbox,
-                self._kdtree
-            ) = pickle.load(f)
+# TODO: this can be further optimised by removing the tuples from the inner loop
+cdef class MeshKDTree(KDTreeCore):
 
+    cdef:
+        list triangles
+        tuple _hit_ray_transform
+        readonly tuple hit_intersection
 
-cdef class _Edge:
-    """
-    Represents the upper or lower edge of a triangle's bounding box on a specified axis.
-    """
+    def __init__(self, list triangles, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
-    def __cinit__(self, Triangle triangle, double extent, bint is_upper_edge):
+        self.triangles = triangles
+        self._hit_ray_transform = None
+        self.hit_intersection = None
 
-        self.triangle = triangle
-        self.is_upper_edge = is_upper_edge
+        # kd-Tree init requires the triangle's id (it's index here) and bounding box
+        items = []
+        for id, triangle in enumerate(triangles):
+            items.append(Item(id, triangle.bounding_box()))
 
-        # value is padded by a small margin as the watertight hit algorithm
-        # requires conservative bounds
-        if is_upper_edge:
-            self.value = EDGE_UPPER_PADDING * extent
-        else:
-            self.value = EDGE_LOWER_PADDING * extent
-
-    def __richcmp__(_Edge x, _Edge y, int operation):
-
-        if operation == 0:  # __lt__(), less than
-            # lower edge must always be encountered first
-            # break tie by ensuring lower extent sorted before upper edge
-            if x.value == y.value:
-                if x.is_upper_edge:
-                    return False
-                else:
-                    return True
-            return x.value < y.value
-        else:
-            return NotImplemented
-
-
-cdef class _TriangleData:
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def __cinit__(self, Triangle triangle):
-
-        self.triangle = triangle
-
-        self.lower_extent = [
-            triangle.lower_extent(X_AXIS),
-            triangle.lower_extent(Y_AXIS),
-            triangle.lower_extent(Z_AXIS)
-        ]
-
-        self.upper_extent = [
-            triangle.upper_extent(X_AXIS),
-            triangle.upper_extent(Y_AXIS),
-            triangle.upper_extent(Z_AXIS)
-        ]
-
-        self.lower_edges = [
-            _Edge(triangle, self.lower_extent[X_AXIS], False),
-            _Edge(triangle, self.lower_extent[Y_AXIS], False),
-            _Edge(triangle, self.lower_extent[Z_AXIS], False)
-        ]
-
-        self.upper_edges = [
-            _Edge(triangle, self.upper_extent[X_AXIS], True),
-            _Edge(triangle, self.upper_extent[Y_AXIS], True),
-            _Edge(triangle, self.upper_extent[Z_AXIS], True)
-        ]
-
-
-cdef class _KDTreeNode:
-
-    def __init__(self):
-
-        # default to an empty leaf
-        self.lower_branch = None
-        self.upper_branch = None
-        self.triangles = []
-        self.axis = NO_AXIS
-        self.split = 0
-        self.is_leaf = True
+        super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
 
     def __getstate__(self):
         """Encodes state for pickling."""
 
-        return self.is_leaf, self.split, self.axis, self.triangles, self.lower_branch, self.upper_branch
+        return self.triangles, super().__getstate__()
 
     def __setstate__(self, state):
         """Decodes state for pickling."""
 
-        self.is_leaf, self.split, self.axis, self.triangles, self.lower_branch, self.upper_branch = state
+        self.triangles, base_state = state
+        super().__setstate__(base_state)
+
+    cpdef bint hit(self, Ray ray):
+
+        self.hit_intersection = None
+        self._calc_rayspace_transform(ray)
+        return self._hit(ray)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void build(self, BoundingBox node_bounds, list triangle_data, int depth, int min_triangles, double hit_cost, int last_axis=X_AXIS):
+    cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
 
         cdef:
-            int axis
-            tuple result
-            double split
-            list lower_triangle_data, upper_triangle_data
-
-        if depth == 0 or len(triangle_data) <= min_triangles:
-            self._become_leaf(triangle_data)
-            return
-
-        # attempt split with next axis
-        axis = (last_axis + 1) % 3
-        result = self._split(axis, triangle_data, node_bounds, hit_cost)
-
-        # split solution found?
-        if result is None:
-            self._become_leaf(triangle_data)
-        else:
-            split, lower_triangle_data, upper_triangle_data = result
-            self._become_branch(axis, split, lower_triangle_data, upper_triangle_data, node_bounds, depth, min_triangles, hit_cost)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cdef tuple _split(self, int axis, list triangle_data, BoundingBox node_bounds, double hit_cost):
-
-        cdef:
-            double split, cost, best_cost, best_split
-            bint is_leaf
-            int lower_triangle_count, upper_triangle_count
-            double recip_total_sa, lower_sa, upper_sa
-            list edges, lower_triangle_data, upper_triangle_data
-            _Edge edge
-            _TriangleData data
-
-        # store cost of leaf as current best solution
-        best_cost = len(triangle_data) * hit_cost
-        best_split = 0
-        is_leaf = True
-
-        # cache reciprocal of node's surface area
-        recip_total_sa = 1.0 / node_bounds.surface_area()
-
-        # obtain sorted list of candidate edges along chosen axis
-        edges = self._build_edges(triangle_data, axis)
-
-        # cache triangle counts in lower and upper volumes for speed
-        lower_triangle_count = 0
-        upper_triangle_count = len(triangle_data)
-
-        # scan through candidate edges from lowest to highest
-        for edge in edges:
-
-            # update primitive counts for upper volume
-            # note: this occasionally creates invalid solutions if edges of
-            # boxes are coincident however the invalid solutions cost
-            # more than the valid solutions and will not be selected
-            if edge.is_upper_edge:
-                upper_triangle_count -= 1
-
-            # a split on the node boundary serves no useful purpose
-            # only consider edges that lie inside the node bounds
-            split = edge.value
-            if node_bounds.lower.get_index(axis) < split < node_bounds.upper.get_index(axis):
-
-                # calculate surface area of split volumes
-                lower_sa = self._calc_lower_bounds(node_bounds, split, axis).surface_area()
-                upper_sa = self._calc_upper_bounds(node_bounds, split, axis).surface_area()
-
-                # calculate SAH cost
-                cost = 1 + (lower_sa * lower_triangle_count + upper_sa * upper_triangle_count) * recip_total_sa * hit_cost
-
-                # has a better split been found?
-                if cost < best_cost:
-                    best_cost = cost
-                    best_split = split
-                    is_leaf = False
-
-            # update triangle counts for lower volume
-            # note: this occasionally creates invalid solutions if edges of
-            # boxes are coincident however the invalid solutions cost
-            # more than the valid solutions and will not be selected
-            if not edge.is_upper_edge:
-                lower_triangle_count += 1
-
-        if is_leaf:
-            return None
-
-        # using cached values split triangles into two lists
-        # note the split boundary is defined as lying in the upper node
-        lower_triangle_data = []
-        upper_triangle_data = []
-        for data in triangle_data:
-
-            # is the triangle present in the lower node?
-            if data.lower_extent[axis] < best_split:
-                lower_triangle_data.append(data)
-
-            # is the triangle present in the upper node?
-            if data.upper_extent[axis] >= best_split:
-                upper_triangle_data.append(data)
-
-        return best_split, lower_triangle_data, upper_triangle_data
-
-    cdef void _become_leaf(self, list triangle_data):
-
-        cdef _TriangleData data
-
-        self.lower_branch = None
-        self.upper_branch = None
-        self.axis = NO_AXIS
-        self.split = 0
-        self.is_leaf = True
-
-        self.triangles = []
-        for data in triangle_data:
-            self.triangles.append(data.triangle)
-
-    cdef void _become_branch(self, int axis, double split, list lower_triangle_data, list upper_triangle_data, BoundingBox node_bounds, int depth, int min_triangles, double hit_cost):
-
-        # become a branch node
-        self.lower_branch = _KDTreeNode()
-        self.upper_branch = _KDTreeNode()
-        self.triangles = None
-        self.axis = axis
-        self.split = split
-        self.is_leaf = False
-
-        # continue expanding the tree inside the two volumes
-        self.lower_branch.build(self._calc_lower_bounds(node_bounds, split, axis),
-                                lower_triangle_data, depth - 1, min_triangles, hit_cost, axis)
-
-        self.upper_branch.build(self._calc_upper_bounds(node_bounds, split, axis),
-                                upper_triangle_data, depth - 1, min_triangles, hit_cost, axis)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef list _build_edges(self, list triangle_data, int axis):
-
-        cdef:
-            list edges
-            _TriangleData triangle
-
-        edges = []
-        for data in triangle_data:
-            edges.append(data.lower_edges[axis])
-            edges.append(data.upper_edges[axis])
-        edges.sort()
-
-        return edges
-
-    cdef BoundingBox _calc_lower_bounds(self, BoundingBox node_bounds, double split_value, int axis):
-
-        cdef Point upper
-        upper = node_bounds.upper.copy()
-        upper.set_index(axis, split_value)
-        return new_boundingbox(node_bounds.lower.copy(), upper)
-
-    cdef BoundingBox _calc_upper_bounds(self, BoundingBox node_bounds, double split_value, int axis):
-
-        cdef Point lower
-        lower = node_bounds.lower.copy()
-        lower.set_index(axis, split_value)
-        return new_boundingbox(lower, node_bounds.upper.copy())
-
-    cdef tuple hit(self, Ray ray, double min_range, double max_range):
-
-        if self.is_leaf:
-            return self._hit_leaf(ray, max_range)
-        else:
-            return self._hit_branch(ray, min_range, max_range)
-
-    @cython.cdivision(True)
-    cdef inline tuple _hit_branch(self, Ray ray, double min_range, double max_range):
-
-        cdef:
-            double origin, direction
-            tuple lower_intersection, upper_intersection, intersection
-            double plane_distance
-            _KDTreeNode near, far
-
-        origin = ray.origin.get_index(self.axis)
-        direction = ray.direction.get_index(self.axis)
-
-        # is the ray propagating parallel to the split plane?
-        if direction == 0:
-
-            # a ray propagating parallel to the split plane will only ever interact with one of the nodes
-            if origin < self.split:
-                return self.lower_branch.hit(ray, min_range, max_range)
-            else:
-                return self.upper_branch.hit(ray, min_range, max_range)
-
-        else:
-
-            # ray propagation is not parallel to split plane
-            plane_distance = (self.split - origin) / direction
-
-            # identify the order in which the ray will interact with the nodes
-            if origin < self.split:
-                near = self.lower_branch
-                far = self.upper_branch
-            elif origin > self.split:
-                near = self.upper_branch
-                far = self.lower_branch
-            else:
-                # degenerate case, note split plane lives in upper branch
-                if direction >= 0:
-                    near = self.upper_branch
-                    far = self.lower_branch
-                else:
-                    near = self.lower_branch
-                    far = self.upper_branch
-
-            # IN LOCAL SPACE THIS SPLIT IS ON THE AXIS
-            # does ray only intersect with the near node?
-            if plane_distance > max_range or plane_distance <= 0:
-                return near.hit(ray, min_range, max_range)
-
-            # does ray only intersect with the far node?
-            if plane_distance < min_range:
-                return far.hit(ray, min_range, max_range)
-
-            # ray must intersect both nodes, try nearest node first
-            intersection = near.hit(ray, min_range, plane_distance)
-            if intersection is not None:
-                return intersection
-
-            intersection = far.hit(ray, plane_distance, max_range)
-            return intersection
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef inline tuple _hit_leaf(self, Ray ray, double max_range):
-        """
-        Find the closest triangle-ray intersection.
-        """
-
-        cdef:
+            int count, item, index
             double distance
-            tuple intersection, closest_intersection, ray_transform
-            Triangle triangle, closest_triangle
             double t, u, v, w
+            Triangle triangle, closest_triangle
+            tuple intersection, closest_intersection
 
-        #print(len(self.triangles))
+        # unpack leaf data
+        count = self._nodes[id].count
 
         # find the closest triangle-ray intersection with initial search distance limited by node and ray limits
-        closest_intersection = None
         distance = min(ray.max_distance, max_range)
-        for triangle in self.triangles:
-            # TODO: move transform calc outside the tree - it is common
-            ray_transform = self._calc_rayspace_transform(ray)
-            intersection = self._hit_triangle(triangle, ray_transform, ray)
-            if intersection is not None and intersection[0] <= distance:
+        closest_intersection = None
+        closest_triangle = None
+        for item in range(count):
+
+            # dereference the triangle
+            index = self._nodes[id].items[item]
+            triangle = self.triangles[index]
+
+            # test for intersection
+            intersection = self._hit_triangle(triangle, ray)
+            if intersection is not None and intersection[0] < distance:
                 distance = intersection[0]
-                closest_intersection = intersection
                 closest_triangle = triangle
+                closest_intersection = intersection
 
         if closest_intersection is None:
-            return None
+            return False
 
         t, u, v, w = closest_intersection
-        return closest_triangle, t, u, v, w
+        self.hit_intersection = closest_triangle, t, u, v, w
+        return True
 
     @cython.cdivision(True)
-    cdef tuple _calc_rayspace_transform(self, Ray ray):
+    cdef void _calc_rayspace_transform(self, Ray ray):
 
         # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
@@ -792,10 +310,11 @@ cdef class _KDTreeNode:
         sx = ray.direction.get_index(ix) * sz
         sy = ray.direction.get_index(iy) * sz
 
-        return ix, iy, iz, sx, sy, sz
+        # store ray transform
+        self._hit_ray_transform = ix, iy, iz, sx, sy, sz
 
     @cython.cdivision(True)
-    cdef tuple _hit_triangle(self, Triangle triangle, tuple ray_transform, Ray ray):
+    cdef tuple _hit_triangle(self, Triangle triangle, Ray ray):
 
         # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
@@ -811,7 +330,7 @@ cdef class _KDTreeNode:
             double det, det_reciprocal
 
         # unpack ray transform
-        ix, iy, iz, sx, sy, sz = ray_transform
+        ix, iy, iz, sx, sy, sz = self._hit_ray_transform
 
         # center coordinate space on ray origin
         v1 = new_point(triangle.v1.x - ray.origin.x, triangle.v1.y - ray.origin.y, triangle.v1.z - ray.origin.z)
@@ -876,30 +395,180 @@ cdef class _KDTreeNode:
 
         return t, u, v, w
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef list contains(self, Point point):
 
-        pass
+cdef class Mesh(Primitive):
 
-        # cdef:
-        #     BoundPrimitive primitive
-        #     list enclosing_primitives
-        #     double location
-        #
-        # if self.is_leaf:
-        #
-        #     enclosing_primitives = []
-        #     for primitive in self.primitives:
-        #         if primitive.contains(point):
-        #             enclosing_primitives.append(primitive.primitive)
-        #     return enclosing_primitives
-        #
-        # else:
-        #
-        #     location = point.get_index(self.axis)
-        #     if location < self.split:
-        #         return self.lower_branch.contains(point)
-        #     else:
-        #         return self.upper_branch.contains(point)
+    cdef:
+        MeshKDTree _kdtree
+        public bint smoothing
+        public bint closed
+        bint _seek_next_intersection
+        Ray _next_world_ray
+        Ray _next_local_ray
+
+    # TODO: calculate or measure triangle hit cost vs split traversal
+    def __init__(self, list triangles=None, bint smoothing=True, bint closed=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+
+        super().__init__(parent, transform, material, name)
+
+        if triangles is None:
+            triangles = []
+
+        self.smoothing = smoothing
+        self.closed = closed
+
+        # build the kd-Tree
+        self._kdtree = MeshKDTree(triangles, kdtree_max_depth, kdtree_min_triangles, kdtree_hit_cost, kdtree_empty_bonus)
+
+        # initialise next intersection search
+        self._seek_next_intersection = False
+        self._next_world_ray = None
+        self._next_local_ray = None
+
+    property triangles:
+
+        def __get__(self):
+
+            # return a copy to prevent users altering the list
+            # if the list size is altered it could cause a segfault
+            return self._kdtree.triangles.copy()
+
+    cpdef Intersection hit(self, Ray ray):
+        """
+        Returns the first intersection with a primitive or None if no primitive
+        is intersected.
+        """
+
+        cdef Ray local_ray
+
+        local_ray = new_ray(
+            ray.origin.transform(self.to_local()),
+            ray.direction.transform(self.to_local()),
+            ray.max_distance
+        )
+
+        # do we hit the mesh?
+        if self._kdtree.hit(local_ray):
+            return self._process_intersection(ray, local_ray)
+
+        # there was no intersection so disable next intersection search
+        self._seek_next_intersection = False
+
+        return None
+
+    cpdef Intersection next_intersection(self):
+        """
+        Returns the next intersection of the ray with the primitive along the
+        ray path.
+        """
+
+        if self._seek_next_intersection:
+
+            # do we hit the mesh again?
+            if self._kdtree.hit(self._next_local_ray):
+                return self._process_intersection(self._next_world_ray, self._next_local_ray)
+
+            # there was no intersection so disable further searching
+            self._seek_next_intersection = False
+
+        return None
+
+    cdef Intersection _process_intersection(self, Ray world_ray, Ray local_ray):
+
+        cdef:
+            Triangle triangle
+            double t, u, v, w
+            Point hit_point, inside_point, outside_point
+            Normal normal
+            bint exiting
+
+        # on a hit the kd-tree populates an attribute containing the intersection data, unpack it
+        triangle, t, u, v, w = self._kdtree.hit_intersection
+
+        # generate intersection description
+        hit_point = local_ray.origin + local_ray.direction * t
+        inside_point = hit_point - triangle.face_normal * EPSILON
+        outside_point = hit_point + triangle.face_normal * EPSILON
+        normal = triangle.interpolate_normal(u, v, w, self.smoothing)
+        exiting = local_ray.direction.dot(triangle.face_normal) > 0.0
+
+        # enable next intersection search and cache the local ray for the next intersection calculation
+        # we must shift the new origin past the last intersection
+        self._seek_next_intersection = True
+        self._next_world_ray = world_ray
+        self._next_local_ray = new_ray(
+            hit_point + local_ray.direction * EPSILON,
+            local_ray.direction,
+            local_ray.max_distance - t - EPSILON
+        )
+
+        return new_intersection(
+            world_ray, t, self,
+            hit_point, inside_point, outside_point,
+            normal, exiting, self.to_local(), self.to_root()
+        )
+
+    # TODO: add an option to use an intersection count algorithm for meshes that have bad face normal orientations
+    cpdef bint contains(self, Point p) except -1:
+        """
+        Returns True if the Point lies within the boundary of the surface
+        defined by the Primitive. False is returned otherwise.
+        """
+
+        cdef:
+            Ray ray
+            bint hit
+            double min_range, max_range
+            Triangle triangle
+            double t, u, v, w
+
+        if not self.closed:
+            return False
+
+        # fire ray along z axis, if it encounters a polygon it inspects the orientation of the face
+        # if the face is outwards, then the ray was spawned inside the mesh
+        # this assumes the mesh has all face normals facing outwards from the mesh interior
+        ray = new_ray(
+            p.transform(self.to_local()),
+            new_vector(0, 0, 1),
+            INFINITY
+        )
+
+        # search for closest triangle intersection
+        if not self._kdtree.hit(ray):
+            return False
+
+        triangle, t, u, v, w = self._kdtree.hit_intersection
+        return triangle.face_normal.dot(ray.direction) > 0.0
+
+    cpdef BoundingBox bounding_box(self):
+        """
+        Returns a world space bounding box that encloses the mesh.
+
+        The box is padded by a small margin to reduce the risk of numerical
+        accuracy problems between the mesh and box representations following
+        coordinate transforms.
+        """
+
+        cdef:
+            BoundingBox bbox
+            Triangle triangle
+
+        # TODO: reconsider the padding - the padding should a multiple of max extent, not a fixed value
+        bbox = BoundingBox()
+        for triangle in self._kdtree.triangles:
+            bbox.extend(triangle.v1.transform(self.to_root()), BOX_PADDING)
+            bbox.extend(triangle.v2.transform(self.to_root()), BOX_PADDING)
+            bbox.extend(triangle.v3.transform(self.to_root()), BOX_PADDING)
+        return bbox
+
+    cpdef dump(self, filename):
+        state = (self._kdtree, self.smoothing, self.closed)
+        with open(filename, mode="wb") as f:
+            pickle.dump(state, f)
+
+    cpdef load(self, filename):
+        with open(filename, mode="rb") as f:
+            self._kdtree, self.smoothing, self.closed = pickle.load(f)
+        self._seek_next_intersection = False
 

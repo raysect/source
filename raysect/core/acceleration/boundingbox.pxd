@@ -57,6 +57,14 @@ cdef class BoundingBox:
 
     cpdef list vertices(self)
 
+    cpdef double extent(self, axis) except *
+
+    cpdef int largest_axis(self)
+
+    cpdef double largest_extent(self)
+
+    cpdef object pad(self, double padding)
+
 
 cdef inline BoundingBox new_boundingbox(Point lower, Point upper):
     """

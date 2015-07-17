@@ -3,7 +3,8 @@ from raysect.optical import World, translate, rotate, Point, Vector, Normal, Ray
 from raysect.optical.observer.pinholecamera import PinholeCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material import debug
-from raysect.primitive import Box, Sphere
+from raysect.optical.material.glass_libraries import schott
+from raysect.primitive import Box, Sphere, Subtract
 from raysect.primitive.mesh import Mesh, Triangle
 from raysect.primitive.mesh import import_obj
 from matplotlib.pyplot import *
@@ -34,15 +35,16 @@ world = World()
 #     filename = BASE_PATH + "/obj/" + name + ".obj"
 #     print("Reading {}...".format(filename))
 #     mesh = import_obj(
-#         filename, scaling=1e-3, kdtree_min_triangles=10,
-#         parent=world,
+#         filename, scaling=1e-3, # kdtree_min_triangles=1000000,
+#         # parent=world,
 #         transform=rotate(0, 90, 0),
+#         # material=schott("LF5G19")
 #         material=debug.Light(Vector(0.2, 0.0, 1.0), 0.4)
 #     )
 #
 #     filename = BASE_PATH + "/rsom/" + name + ".rsom"
 #     print("Writing {}...".format(filename))
-#     mesh.to_file(filename)
+#     mesh.dump(filename)
 #     print()
 
 # raysect mesh format (pickle)
@@ -53,18 +55,21 @@ for name in mesh_list:
         parent=world,
         transform=rotate(0, 90, 0),
         material=debug.Light(Vector(0.2, 0.0, 1.0), 0.4)
-    ).from_file(filename)
+    )
+    mesh.load(filename)
 
+print("Rendering...")
+# Subtract(mesh, Box(Point(-5, -5, -5), Point(5, 5, 0)), material=debug.Light(Vector(0.2, 0.0, 1.0), 0.4), parent=world)
 
 Box(Point(-50, -50, 50), Point(50, 50, 50.1), world, material=Checkerboard(4, d65_white, d65_white, 0.4, 0.8))
 Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfaceEmitter(d65_white, 0.1))
 
 ion()
-camera = PinholeCamera(fov=60, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0), process_count=3)
+camera = PinholeCamera(fov=60, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0), process_count=4)
 camera.ray_max_depth = 15
 camera.rays = 1
 camera.spectral_samples = 15
-camera.pixels = (1024, 1024)
+camera.pixels = (512, 512)
 camera.display_progress = True
 camera.display_update_time = 5
 camera.super_samples = 3
