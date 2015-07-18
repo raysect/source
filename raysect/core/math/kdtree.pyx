@@ -348,7 +348,7 @@ cdef class KDTreeCore:
         :param items: A list of items.
         :param axis: The axis to split along.
         :param num_edges: Pointer to number of edges (returned).
-        :param edges: Pointer to array of edges (returned).
+        :param edges_ptr: Pointer to array of edges (returned).
         """
 
         cdef:
@@ -384,8 +384,12 @@ cdef class KDTreeCore:
         edges_ptr[0] = edges
 
     cdef void _free_edges(self, edge **edges_ptr):
+        """
+        Free allocated edge array.
 
-        # free allocated array
+        :param edges_ptr: Pointer to array of edges.
+        """
+
         PyMem_Free(edges_ptr[0])
 
     cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int axis):
