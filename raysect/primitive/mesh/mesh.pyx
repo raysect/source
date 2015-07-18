@@ -39,6 +39,7 @@ from raysect.core.math.kdtree cimport KDTreeCore, Item, kdnode
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
+import io
 import pickle
 cimport cython
 
@@ -400,25 +401,33 @@ cdef class Mesh(Primitive):
 
     cdef:
         MeshKDTree _kdtree
-        public bint smoothing
-        public bint closed
+        readonly bint smoothing
+        readonly bint closed
         bint _seek_next_intersection
         Ray _next_world_ray
         Ray _next_local_ray
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, list triangles=None, bint smoothing=True, bint closed=True, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, list triangles=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
-        if triangles is None:
-            triangles = []
+        if instance:
+            # hold references to internal data of the specified mesh
+            self.smoothing = instance.smoothing
+            self.closed = instance.closed
+            self._kdtree = instance._kdtree
 
-        self.smoothing = smoothing
-        self.closed = closed
+        else:
 
-        # build the kd-Tree
-        self._kdtree = MeshKDTree(triangles, kdtree_max_depth, kdtree_min_triangles, kdtree_hit_cost, kdtree_empty_bonus)
+            if triangles is None:
+                triangles = []
+
+            self.smoothing = smoothing
+            self.closed = closed
+
+            # build the kd-Tree
+            self._kdtree = MeshKDTree(triangles, kdtree_max_depth, kdtree_min_triangles, kdtree_hit_cost, kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
@@ -562,13 +571,46 @@ cdef class Mesh(Primitive):
             bbox.extend(triangle.v3.transform(self.to_root()), BOX_PADDING)
         return bbox
 
-    cpdef dump(self, filename):
-        state = (self._kdtree, self.smoothing, self.closed)
-        with open(filename, mode="wb") as f:
-            pickle.dump(state, f)
+    cpdef dump(self, file):
+        """
+        Writes the mesh data to the specified file descriptor or filename.
 
-    cpdef load(self, filename):
-        with open(filename, mode="rb") as f:
-            self._kdtree, self.smoothing, self.closed = pickle.load(f)
+        This method can be used as part of a caching system to avoid the
+        computational cost of building a mesh's kd-tree. The kd-tree is stored
+        with the mesh data and is restored when the mesh is loaded.
+
+        This method may be supplied with a file object or a string path.
+
+        :param file: File object or string path.
+        """
+
+        state = (self._kdtree, self.smoothing, self.closed)
+
+        if isinstance(file, io.BytesIO):
+             pickle.dump(state, file)
+        else:
+            with open(file, mode="wb") as f:
+                pickle.dump(state, f)
+
+    cpdef load(self, file):
+        """
+        Reads the mesh data from the specified file descriptor or filename.
+
+        This method can be used as part of a caching system to avoid the
+        computational cost of building a mesh's kd-tree. The kd-tree is stored
+        with the mesh data and is restored when the mesh is loaded.
+
+        This method may be supplied with a file object or a string path.
+
+        :param file: File object or string path.
+        """
+
+        if isinstance(file, io.BytesIO):
+             state = pickle.load(file)
+        else:
+            with open(file, mode="rb") as f:
+                state = pickle.load(f)
+
+        self._kdtree, self.smoothing, self.closed = state
         self._seek_next_intersection = False
 
