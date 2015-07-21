@@ -92,26 +92,20 @@ cdef int _edge_compare(const void *p1, const void *p2) nogil:
         return 1
 
 
-# TODO: check if the __cinit__ declaration must be consistent with __init__ in the cython docs
 cdef class KDTreeCore:
+    """
+    Implements a 3D kd-tree for items with finite extents.
 
-    def debug_print_all(self):
+    This is a Cython abstract base class. It cannot be directly extended in
+    Python due to the need to implement cdef methods _contains_leaf() and
+     _hit_leaf(). Use the KDTree wrapper class if extending from Python.
 
-        for i in range(self._next_node):
-            self.debug_print_node(i)
-
-    def debug_print_node(self, id):
-
-        if 0 <= id < self._next_node:
-            if self._nodes[id].type == LEAF:
-                print("id={} LEAF: count {}, contents: [".format(id, self._nodes[id].count), end="")
-                for i in range(self._nodes[id].count):
-                    print("{}".format(self._nodes[id].items[i]), end="")
-                    if i < self._nodes[id].count - 1:
-                        print(", ", end="")
-                print("]")
-            else:
-                print("id={} BRANCH: axis {}, split {}, lower_id {}, upper_id {}".format(id, self._nodes[id].type, self._nodes[id].split, id+1, self._nodes[id].count))
+    :param items: A list of Items.
+    :param max_depth: The maximum tree depth (automatic if set to 0, default is 0).
+    :param min_items: The item count threshold for forcing creation of a new leaf node (default 1).
+    :param hit_cost: The relative computational cost of item hit evaluations vs kd-tree traversal (default 20.0).
+    :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
+    """
 
     def __cinit__(self):
 
@@ -171,7 +165,7 @@ cdef class KDTreeCore:
         state = (self.bounds, tuple(nodes), settings)
         return state
 
-    def __setstate__(self, state):
+    def __setstate__(self, tuple state):
         """Decodes state for pickling."""
 
         self.bounds, nodes, settings = state
@@ -785,8 +779,39 @@ cdef class KDTreeCore:
 
         self._reset()
 
+    # def debug_print_all(self):
+    #
+    #     for i in range(self._next_node):
+    #         self.debug_print_node(i)
+    #
+    # def debug_print_node(self, id):
+    #
+    #     if 0 <= id < self._next_node:
+    #         if self._nodes[id].type == LEAF:
+    #             print("id={} LEAF: count {}, contents: [".format(id, self._nodes[id].count), end="")
+    #             for i in range(self._nodes[id].count):
+    #                 print("{}".format(self._nodes[id].items[i]), end="")
+    #                 if i < self._nodes[id].count - 1:
+    #                     print(", ", end="")
+    #             print("]")
+    #         else:
+    #             print("id={} BRANCH: axis {}, split {}, lower_id {}, upper_id {}".format(id, self._nodes[id].type, self._nodes[id].split, id+1, self._nodes[id].count))
+
+
 
 cdef class KDTree(KDTreeCore):
+    """
+    Implements a 3D kd-tree for items with finite extents.
+
+    This class cannot be used directly, it must be sub-classed. One or both of
+    _hit_item() and _contains_item() must be implemented.
+
+    :param items: A list of Items.
+    :param max_depth: The maximum tree depth (automatic if set to 0, default is 0).
+    :param min_items: The item count threshold for forcing creation of a new leaf node (default 1).
+    :param hit_cost: The relative computational cost of item hit evaluations vs kd-tree traversal (default 20.0).
+    :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
+    """
 
     cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
         """
@@ -808,7 +833,25 @@ cdef class KDTree(KDTreeCore):
 
         return self._hit_items(items, ray, max_range)
 
-    cpdef bint _hit_items(self, list items, Ray ray, double max_range):
+    cpdef bint _hit_items(self, list item_ids, Ray ray, double max_range):
+        """
+        Tests each item to identify if an intersection occurs.
+
+        This is a virtual method and must be implemented in a derived class if
+        ray intersections are to be identified. This method must return True
+        if an intersection is found and False otherwise.
+
+        Derived classes may need to return information about the intersection.
+        This can be done by setting object attributes prior to returning True.
+        The kd-Tree search algorithm stops as soon as the first leaf is
+        identified that contains an intersection. Any attributes set when
+        _hit_items() returns True are guaranteed not to be further modified.
+
+        :param item_ids: List of item ids.
+        :param ray: Ray object.
+        :param max_range: The maximum intersection search range.
+        :return: True is a hit occurs, false otherwise.
+        """
 
         raise NotImplementedError("KDTree Virtual function _hit_items() has not been implemented.")
 
@@ -832,6 +875,24 @@ cdef class KDTree(KDTreeCore):
 
         return self._contains_items(items, point)
 
-    cpdef list _contains_items(self, list items, Point point):
+    cpdef list _contains_items(self, list item_ids, Point point):
+        """
+        Tests each item in the list to identify if they enclose the point.
+
+        This is a virtual method and must be implemented in a derived class if
+        the identification of items enclosing a point is required. This method
+        must return a list of ids for the items that enclose the point. If no
+        items enclose the point, an empty list must be returned.
+
+        Derived classes may need to wish to return additional information about
+        the enclosing items. This can be done by setting object attributes
+        prior to returning the list. Any attributes set when _contains_items()
+        returns are guaranteed not to be further modified.
+
+        :param item_ids: List of item ids.
+        :param point: Point to evaluate.
+        :return: List of ids of the items containing the point.
+        """
+
 
         raise NotImplementedError("KDTree Virtual function _contains_items() has not been implemented.")
