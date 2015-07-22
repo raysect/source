@@ -84,33 +84,34 @@ cdef class Cone(Primitive):
         super().__init__(parent, transform, material, name)
 
         # validate radius and height values
-        if radius < 0.0:
-            raise ValueError("Cone radius cannot be less than zero.")
-        if height < 0.0:
-            raise ValueError("Cone height cannot be less than zero.")
+        if radius <= 0.0:
+            raise ValueError("Cone radius cannot be less than or equal to zero.")
+        if height <= 0.0:
+            raise ValueError("Cone height cannot be less than or equal to zero.")
         self._radius = radius
         self._height = height
 
+        # Only needed for next CSG intersection (i.e. when you have overlapping primitives)
         # initialise next intersection caching and control attributes
-        self._further_intersection = False
-        self._next_t = 0.0
-        self._cached_origin = None
-        self._cached_direction = None
-        self._cached_ray = None
-        self._cached_face = NO_FACE
-        self._cached_type = NO_TYPE
+        # self._further_intersection = False
+        # self._next_t = 0.0
+        # self._cached_origin = None
+        # self._cached_direction = None
+        # self._cached_ray = None
+        # self._cached_face = NO_FACE
+        # self._cached_type = NO_TYPE
 
     property radius:
         def __get__(self):
             return self._radius
 
         def __set__(self, double value):
-            if value < 0.0:
-                raise ValueError("Cone radius cannot be less than zero.")
+            if value <= 0.0:
+                raise ValueError("Cone radius cannot be less than or equal to zero.")
             self._radius = value
 
             # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+            # self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
             self.notify_root()
@@ -120,12 +121,12 @@ cdef class Cone(Primitive):
             return self._height
 
         def __set__(self, double value):
-            if value < 0.0:
-                raise ValueError("Cone height cannot be less than zero.")
+            if value <= 0.0:
+                raise ValueError("Cone height cannot be less than or equal to zero.")
             self._height = value
 
             # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+            # self._further_intersection = False
             # any geometry caching in the root node is now invalid, inform root
             self.notify_root()
 
@@ -147,7 +148,7 @@ cdef class Cone(Primitive):
             int f0, f1
 
         # reset the next intersection cache
-        self._further_intersection = False
+        # self._further_intersection = False
 
         # convert ray origin and direction to local space
         origin = ray.origin.transform(self.to_local())
@@ -158,7 +159,8 @@ cdef class Cone(Primitive):
 
         # Compute quadratic cone coefficients
         # based on "Physically Based Rendering - 2nd Edition", Elsevier 2010
-        k = (radius / height) * (radius / height)
+        k = radius / height
+        k = k * k
         a = direction.x * direction.x + direction.y * direction.y - k * direction.z * direction.z
         b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z-height) )
         c = origin.x * origin.x + origin.y * origin.y - k * (origin.z - height) * (origin.z - height)
@@ -190,6 +192,7 @@ cdef class Cone(Primitive):
         far_type = CONE
         far_face = NO_FACE
 
+        # TODO = Matt needs to document this section and explain what it does.
 
         # union slab with the cylinder
         # slab contributes no intersections if the ray is parallel to the slab surfaces
@@ -222,8 +225,6 @@ cdef class Cone(Primitive):
                 far_face = f1
                 far_type = SLAB
 
-        # What does this do???
-        # does ray intersect cone?
         if near_intersection > far_intersection:
             return None
 
@@ -237,14 +238,14 @@ cdef class Cone(Primitive):
             closest_face = near_face
             closest_type = near_type
 
-            if far_intersection <= ray.max_distance:
-                self._further_intersection = True
-                self._next_t = far_intersection
-                self._cached_origin = origin
-                self._cached_direction = direction
-                self._cached_ray = ray
-                self._cached_face = far_face
-                self._cached_type = far_type
+            # if far_intersection <= ray.max_distance:
+            #     self._further_intersection = True
+            #     self._next_t = far_intersection
+            #     self._cached_origin = origin
+            #     self._cached_direction = direction
+            #     self._cached_ray = ray
+            #     self._cached_face = far_face
+            #     self._cached_type = far_type
 
         elif far_intersection <= ray.max_distance:
             closest_intersection = far_intersection
@@ -254,18 +255,23 @@ cdef class Cone(Primitive):
         else:
             return None
 
+        # If you got here, passed all criteria for an intersection.
+
         return self._generate_intersection(ray, origin, direction, closest_intersection, closest_face, closest_type)
 
-    cpdef Intersection next_intersection(self):
+    # Only used by CSG
+    # cpdef Intersection next_intersection(self):
+    #
+    #     if not self._further_intersection:
+    #         return None
+    #
+    #     # this is the 2nd and therefore last intersection
+    #     self._further_intersection = False
+    #
+    #     return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_type)
 
-        if not self._further_intersection:
-            return None
 
-        # this is the 2nd and therefore last intersection
-        self._further_intersection = False
-
-        return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_type)
-
+    # This function is called twice. Used in hit() and next_intersection()
     cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int face, int type):
 
         cdef:
@@ -287,12 +293,14 @@ cdef class Cone(Primitive):
             heighttoradius = self.height/self.radius
             normal = new_normal(op.x * heighttoradius, op.y * heighttoradius, 1/heighttoradius)
             normal = normal.normalise()
+        # TODO if hit point equals tip, set normal to up.
         else:
             normal = new_normal(0, 0, -1)
 
         # displace hit_point away from surface to generate inner and outer points
         interior_offset = self._interior_offset(hit_point, normal, type)
 
+        # TODO - make sure this is working correctly for special cases, i.e. tip.
         inside_point = new_point(hit_point.x + interior_offset.x,
                                  hit_point.y + interior_offset.y,
                                  hit_point.z + interior_offset.z)

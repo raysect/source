@@ -13,9 +13,9 @@ sys.ps1 = 'SOMETHING'
 
 world = World()
 
-cone = Cone(material=schott("N-BK7"))
+cone = Cone(material=schott("N-BK7"), parent=world)
 
-cyl_x = Cylinder(1, 4.2, transform=rotate(90, 0, 0)*translate(0, 0, -2.1))
+cyl_x = Cylinder(1, 4.2, transform=rotate(90, 0, 0)*translate(0, 0, -2.1), material=schott("N-BK7"), parent=world)
 
 Box(Point(-50, -50, 50), Point(50, 50, 50.1), world, material=Checkerboard(4, d65_white, d65_white, 0.4, 0.8))
 Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfaceEmitter(d65_white, 0.1))
