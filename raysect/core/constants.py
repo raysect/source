@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.emitter cimport VolumeEmitterInhomogeneous
+from .math import Vector, Point, AffineMatrix
 
-cdef class GaussianBeam(VolumeEmitterInhomogeneous):
+# coordinate system vectors
+UP = Vector(0, 1, 0)
+DOWN = Vector(0, -1, 0)
+LEFT = Vector(1, 0, 0)
+RIGHT = Vector(-1, 0, 0)
+FORWARD = Vector(0, 0, 1)
+BACK = Vector(0, 0, -1)
+ORIGIN = Point()
 
-    cdef double power
-    cdef double _sigma
-    cdef double _denominator
+# affine matrix representing no transform
+NULL_TRANSFORM = AffineMatrix()
+

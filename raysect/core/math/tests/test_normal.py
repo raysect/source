@@ -144,6 +144,22 @@ class TestNormal(unittest.TestCase):
 
             v.length = 10.0
 
+    def test_equal(self):
+        """Equality operator."""
+
+        self.assertTrue(Normal(1, 2, 3) == Normal(1, 2, 3), "Equality operator returned false for equal normals.")
+        self.assertFalse(Normal(5, 2, 3) == Normal(1, 2, 3), "Equality operator returned true for a normal with non-equal x components.")
+        self.assertFalse(Normal(1, 5, 3) == Normal(1, 2, 3), "Equality operator returned true for a normal with non-equal y components.")
+        self.assertFalse(Normal(1, 2, 5) == Normal(1, 2, 3), "Equality operator returned true for a normal with non-equal z components.")
+
+    def test_not_equal(self):
+        """Inequality operator."""
+
+        self.assertFalse(Normal(1, 2, 3) != Normal(1, 2, 3), "Inequality operator returned true for equal normals.")
+        self.assertTrue(Normal(5, 2, 3) != Normal(1, 2, 3), "Inequality operator returned false for a normal with non-equal x components.")
+        self.assertTrue(Normal(1, 5, 3) != Normal(1, 2, 3), "Inequality operator returned false for a normal with non-equal y components.")
+        self.assertTrue(Normal(1, 2, 5) != Normal(1, 2, 3), "Inequality operator returned false for a normal with non-equal z components.")
+
     def test_negate(self):
         """Negate operator."""
 

@@ -426,7 +426,6 @@ cdef class Cylinder(Primitive):
 
     cpdef BoundingBox bounding_box(self):
 
-        # TODO: wrapping a local bbox with a world bbox is common -> move to a method on bbox (transform?)
         cdef:
             list points
             Point point

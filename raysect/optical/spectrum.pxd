@@ -53,6 +53,8 @@ cdef class Spectrum(SpectralFunction):
 
     cpdef double total(self)
 
+    cpdef ndarray to_photons(self)
+
     cdef inline void add_scalar(self, double value)
     cdef inline void sub_scalar(self, double value)
     cdef inline void mul_scalar(self, double value)
@@ -67,4 +69,4 @@ cdef class Spectrum(SpectralFunction):
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int num_samples)
 
 
-cpdef double photon_energy(double wavelength)
+cpdef double photon_energy(double wavelength) except *

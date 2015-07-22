@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,67 +30,23 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
+
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector, new_vector
+from raysect.core.math.normal cimport Normal
 from raysect.optical.spectrum cimport Spectrum
-from libc.math cimport exp, floor, fabs
 
-cdef class GaussianBeam(VolumeEmitterInhomogeneous):
 
-    def __init__(self, double power = 1, double sigma = 0.2, double step = 0.05):
+cdef class AbsorbingSurface(NullVolume):
+    """
+    A perfectly absorbing surface material.
+    """
 
-        super().__init__(step)
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                bint exiting, Point inside_point, Point outside_point,
+                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
-        self.power = power
-        self.sigma = sigma
-
-    property sigma:
-
-        def __get__(self):
-
-            return self._sigma
-
-        @cython.cdivision(True)
-        def __set__(self, double sigma):
-
-            self._sigma = sigma
-            self._denominator = 0.5 / (sigma * sigma)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix to_local, AffineMatrix to_world):
-
-        cdef:
-            int index, count
-            double scale
-            double[::1] samples_view
-
-        samples_view = spectrum.samples
-
-        # gaussian beam uniform spectal power density
-        scale = exp(-self._denominator * (point.x * point.x + point.y * point.y)) ** 4
-
-        for index in range(spectrum.samples):
-
-            samples_view[index] = self.power * scale / spectrum.samples
-
-        index = int(floor(fabs(point.z * spectrum.samples)))
-        if index < 0:
-
-            index = 0
-
-        if index >= spectrum.samples:
-
-            index = spectrum.samples - 1
-
-        samples_view[index] += self.power * scale
-
-        return spectrum
-
+        return ray.new_spectrum()
