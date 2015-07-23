@@ -123,6 +123,10 @@ cdef class Triangle:
 
     @cython.cdivision(True)
     cpdef Point centre_point(self):
+        """
+        Returns the centre point (centroid) of the triangle.
+        :return: Point object.
+        """
 
         return new_point(
             (self.v1.x + self.v2.x + self.n3.x) / 3,
@@ -140,7 +144,7 @@ cdef class Triangle:
         :param u: Barycentric U coordinate.
         :param v: Barycentric V coordinate.
         :param w: Barycentric W coordinate.
-        :return The surface normal at the specified coordinate.
+        :return: The surface normal at the specified coordinate.
         """
 
         if smoothing and self._smoothing_enabled:
@@ -398,6 +402,49 @@ cdef class MeshKDTree(KDTreeCore):
 
 
 cdef class Mesh(Primitive):
+    """
+    This primitive defines a polyhedral surface with triangular faces.
+
+    To define a mesh, a list of Triangle objects must be supplied.
+
+    The mesh may be an open surface (which does not enclose a volume) or a
+    closed surface (which defines a volume). The nature of the mesh must be
+    specified using the closed argument. If closed is True (default) then the
+    mesh must be watertight and the face normals must be facing so they point
+    out of the volume. If the mesh is open then closed must be set to False.
+    Incorrectly setting the closed argument may result in undefined behaviour,
+    depending on the application of the ray-tracer.
+
+    If vertex normals are defined for some or all of the triangles of the mesh
+    then normal interpolation may be enabled for the mesh. For optical models
+    this will result in a (suitably defined) mesh appearing smooth rather than
+    faceted. If the triangles do not have vertex normals defined, the smoothing
+    argument is ignored.
+
+    An alternate option for creating a new mesh is to create an instance of an
+    existing mesh. An instance is a "clone" of the original mesh. Instances
+    hold references to the internal data of the target mesh, they are therefore
+    very memory efficient (particularly for detailed meshes) compared to
+    creating a new mesh from scratch. If instance is set, it takes precedence
+    over any other mesh creation settings.
+
+    The kdtree_* arguments are tuning parameters for the kd-tree construction.
+    For more information see the documentation of MeshKDTree.
+
+    :param triangles: A list of Triangles defining the mesh.
+    :param smoothing: True to enable normal interpolation, False to disable.
+    :param closed: True is the mesh defines a closed volume, False otherwise.
+    :param instance: The Mesh to become an instance of.
+    :param kdtree_max_depth: The maximum tree depth (automatic if set to 0, default is 0).
+    :param kdtree_min_items: The item count threshold for forcing creation of a new leaf node (default 1).
+    :param kdtree_hit_cost: The relative computational cost of item hit evaluations vs kd-tree traversal (default 20.0).
+    :param kdtree_empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
+    :param parent: Attaches the mesh to the specified scene-graph node.
+    :param transform: The co-ordinate transform between the mesh and its parent.
+    :param material: The surface/volume material.
+    :param name: A human friendly name to identity the mesh in the scene-graph.
+    :return:
+    """
 
     cdef:
         MeshKDTree _kdtree
@@ -408,7 +455,7 @@ cdef class Mesh(Primitive):
         Ray _next_local_ray
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, list triangles=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_triangles=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, list triangles=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
@@ -427,7 +474,7 @@ cdef class Mesh(Primitive):
             self.closed = closed
 
             # build the kd-Tree
-            self._kdtree = MeshKDTree(triangles, kdtree_max_depth, kdtree_min_triangles, kdtree_hit_cost, kdtree_empty_bonus)
+            self._kdtree = MeshKDTree(triangles, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
@@ -444,8 +491,17 @@ cdef class Mesh(Primitive):
 
     cpdef Intersection hit(self, Ray ray):
         """
-        Returns the first intersection with a primitive or None if no primitive
-        is intersected.
+        Returns the first intersection with the mesh surface.
+
+        If an intersection occurs this method will return an Intersection
+        object. The Intersection object will contain the details of the
+        ray-surface intersection, sucah as the surface normal and intersection
+        point.
+
+        If no intersection occurs None is returned.
+
+        :param ray: A world-space ray.
+        :return: An Intersection or None.
         """
 
         cdef Ray local_ray
@@ -467,8 +523,18 @@ cdef class Mesh(Primitive):
 
     cpdef Intersection next_intersection(self):
         """
-        Returns the next intersection of the ray with the primitive along the
-        ray path.
+        Returns the next intersection of the ray with the mesh along the ray
+        path.
+
+        This method may only be called following a call to hit(). If the ray
+        has further intersections with the mesh, these may be obtained by
+        repeatedly calling the next_intersection() method. Each call to
+        next_intersection() will return the next ray-mesh intersection
+        along the ray's path. If no further intersections are found or
+        intersections lie outside the ray parameters then next_intersection()
+        will return None.
+
+        :return: An Intersection or None.
         """
 
         if self._seek_next_intersection:
@@ -557,6 +623,8 @@ cdef class Mesh(Primitive):
         The box is padded by a small margin to reduce the risk of numerical
         accuracy problems between the mesh and box representations following
         coordinate transforms.
+
+        :return: A BoundingBox object.
         """
 
         cdef:
