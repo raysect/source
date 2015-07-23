@@ -201,7 +201,6 @@ cdef class Triangle:
         return bbox
 
 
-# TODO: this can be further optimised by removing the tuples from the inner loop
 cdef class MeshKDTree(KDTreeCore):
 
     cdef:
@@ -429,7 +428,11 @@ cdef class Mesh(Primitive):
     over any other mesh creation settings.
 
     The kdtree_* arguments are tuning parameters for the kd-tree construction.
-    For more information see the documentation of MeshKDTree.
+    For more information see the documentation of KDTree. The default values
+    should result in efficient construction of the mesh's internal kd-tree.
+    Generally there is no need to modify these parameters unless the memory
+    used by the kd-tree must be controlled. This may occur if very large meshes
+    are used.
 
     :param triangles: A list of Triangles defining the mesh.
     :param smoothing: True to enable normal interpolation, False to disable.
@@ -586,8 +589,16 @@ cdef class Mesh(Primitive):
     # TODO: add an option to use an intersection count algorithm for meshes that have bad face normal orientations
     cpdef bint contains(self, Point p) except -1:
         """
-        Returns True if the Point lies within the boundary of the surface
-        defined by the Primitive. False is returned otherwise.
+        Identifies if the point lies in the volume defined by the mesh.
+
+        If a mesh is open, this method will always return False.
+
+        This method will fail if the face normals of the mesh triangles are not
+        oriented to be pointing out of the volume surface.
+
+        :param p: The point to test.
+        :return: True if the point lies in the volume, False otherwise.
+
         """
 
         cdef:
