@@ -36,6 +36,10 @@ from libc.math cimport sqrt
 cdef class Vector(_Vec3):
     """
     Represents a vector in 3D affine space.
+
+    Vectors are described by their (x, y, z) coordinates in the chosen coordinate system. Standard Vector operations are
+    supported such as addition, subtraction, scaling, dot product, cross product, normalisation and coordinate
+    transformations.
     """
 
     def __init__(self, double x=0.0, double y=0.0, double z=1.0):
