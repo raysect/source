@@ -12,7 +12,7 @@ from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_t
 from collections import namedtuple
 
 # Variables
-_pinhole_camera_pixel_vector_variables = namedtuple("Pixel Vector Variables", "origin image_delta image_start_x image_start_y")
+_pinhole_camera_pixel_vector_variables = namedtuple("Pixel_Vector_Variables", "origin image_delta image_start_x image_start_y")
 
 
 class Camera(Observer):
@@ -299,7 +299,7 @@ class PinholeCamera(Camera):
 
         origin = Point(0, 0, 0).transform(self.to_root())
 
-        self._pixel_vector_variables = _pinhole_camera_pixel_vector_variables(origin, image_delta,
+        self._pixel_vectors_variables = _pinhole_camera_pixel_vector_variables(origin, image_delta,
                                                                               image_start_x, image_start_y)
 
     def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples):

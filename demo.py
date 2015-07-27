@@ -1,6 +1,6 @@
 from raysect.core.acceleration import Unaccelerated
 from raysect.optical import World, translate, rotate, Point, Vector, Ray, d65_white, ConstantSF, SampledSF
-from raysect.optical.observer.pinholecamera import PinholeCamera
+from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
 from raysect.optical.material.glass_libraries import schott
@@ -46,16 +46,16 @@ Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfac
 
 ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0))
-camera.ray_max_depth = 20
-camera.rays = 32
+camera.ray_max_depth = 10
+camera.rays = 1
 camera.spectral_samples = 1
-camera.pixels = (1024, 1024)
+camera.pixels = (250, 250)
 camera.display_progress = True
 camera.display_update_time = 10
 camera.observe()
 
 ioff()
-camera.save("render.png")
+# camera.save("render.png")
 camera.display()
 show()
 
