@@ -12,7 +12,7 @@ from raysect.core import World, AffineMatrix, Point, Vector, Observer
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 
 
-class VectoredCamera(Observer):
+class VectorCamera(Observer):
 
     def __init__(self, pixel_origins, pixel_directions, name="", sensitivity=1.0, spectral_samples=20, rays=1,
                  super_samples=1, process_count=cpu_count(), parent=None, transform=AffineMatrix()):

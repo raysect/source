@@ -28,4 +28,4 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .pinholecamera import PinholeCamera
-from .vectoredcamera import VectoredCamera
+from .vectorcamera import VectorCamera
