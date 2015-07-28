@@ -194,7 +194,7 @@ cdef class Cone(Primitive):
 
         # TODO = Matt needs to document this section and explain what it does.
 
-        # union slab with the cylinder
+        # union slab with the cone
         # slab contributes no intersections if the ray is parallel to the slab surfaces
         if direction.z != 0.0:
 
@@ -285,15 +285,19 @@ cdef class Cone(Primitive):
                               origin.y + ray_distance * direction.y,
                               origin.z + ray_distance * direction.z)
 
+        # if hit point equals tip, set normal to up.
+        if type == CONE and (hit_point.x == 0.0) and (hit_point.y == 0.0) and (hit_point.z == self.height):
+            normal = new_normal(0, 0, 1)
+
         # calculate surface normal in local space
-        if type == CONE:
+        elif type == CONE:
             # Unit vector that points from origin to hit_point in x-y plane at the base of the cone.
             op = new_normal(hit_point.x, hit_point.y, 0)
             op = op.normalise()
             heighttoradius = self.height/self.radius
             normal = new_normal(op.x * heighttoradius, op.y * heighttoradius, 1/heighttoradius)
             normal = normal.normalise()
-        # TODO if hit point equals tip, set normal to up.
+
         else:
             normal = new_normal(0, 0, -1)
 
