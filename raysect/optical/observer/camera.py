@@ -60,11 +60,19 @@ class Camera(Observer):
         self._pixels = pixels
 
     def observe(self):
-        # TODO - this test should move to a getter/setter on Node class???
         # must be connected to a world node to be able to perform a ray trace
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
+        if self.process_count == 1:
+            self._observe_single()
+        else:
+            self._observe_parallel()
+
+    def _observe_single(self):
+        pass
+
+    def _observe_parallel(self):
         # create intermediate and final frame-buffers
         xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
         self.frame = zeros((self._pixels[1], self._pixels[0], 3))
@@ -75,20 +83,12 @@ class Camera(Observer):
         # generate spectral data
         channel_configs = self._calc_channel_config()
 
-        # display live render
-        display_timer = 0
-        if self.display_progress:
-            self.display()
-            display_timer = time()
-
-        # initialise statistics
-        total_work = total_pixels * self.rays
-        ray_count = 0
-        start_time = time()
-        progress_timer = time()
-
         # Setup pixel Vectors in advance of main loop
         pixel_configuration = self._setup_pixel_vectors_variables()
+
+        # initialise user interface
+        display_timer = self._start_display()
+        statistics_data = self._start_statistics()
 
         # render
         for index, channel_config in enumerate(channel_configs):
@@ -133,24 +133,9 @@ class Camera(Observer):
                 # convert to sRGB colourspace
                 self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
 
-                # display progress statistics
-                if (time() - progress_timer) > 1.0:
+                display_timer = self._update_display(display_timer)
 
-                    current_work = total_pixels * index + pixel
-                    completion = 100 * current_work / total_work
-                    print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
-                        completion, index + 1, self.rays,
-                        ceil((pixel + 1) / self._pixels[0]), self._pixels[1],
-                        pixel + 1, total_pixels, ray_count / 1000))
-                    ray_count = 0
-                    progress_timer = time()
-
-                # update live render display
-                if self.display_progress and (time() - display_timer) > self.display_update_time:
-
-                    print("Refreshing display...")
-                    self.display()
-                    display_timer = time()
+                statistics_data = self._update_statistics(statistics_data)
 
             # shutdown workers
             for _ in workers:
@@ -163,16 +148,6 @@ class Camera(Observer):
         # display final frame
         if self.display_progress:
             self.display()
-
-    def _calc_channel_config(self):
-        config = []
-        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.rays
-        for index in range(self.rays):
-            config.append((self.min_wavelength + delta_wavelength * index,
-                           self.min_wavelength + delta_wavelength * (index + 1),
-                           self.spectral_samples))
-
-        return config
 
     def _producer(self, task_queue):
         # task is simply the pixel location
@@ -216,6 +191,52 @@ class Camera(Observer):
             # encode result and send
             result = (pixel, xyz, ray_count)
             result_queue.put(result)
+
+    def _calc_channel_config(self):
+        config = []
+        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.rays
+        for index in range(self.rays):
+            config.append((self.min_wavelength + delta_wavelength * index,
+                           self.min_wavelength + delta_wavelength * (index + 1),
+                           self.spectral_samples))
+
+        return config
+
+    def _start_display(self):
+        # display live render
+        display_timer = 0
+        if self.display_progress:
+            self.display()
+            display_timer = time()
+        return display_timer
+
+    def _updates(self):
+        # display progress statistics
+        if (time() - progress_timer) > 1.0:
+
+            current_work = total_pixels * index + pixel
+            completion = 100 * current_work / total_work
+            print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
+                completion, index + 1, self.rays,
+                ceil((pixel + 1) / self._pixels[0]), self._pixels[1],
+                pixel + 1, total_pixels, ray_count / 1000))
+            ray_count = 0
+            progress_timer = time()
+
+        # update live render display
+        if self.display_progress and (time() - display_timer) > self.display_update_time:
+
+            print("Refreshing display...")
+            self.display()
+            display_timer = time()
+
+    def _start_statistics(self, total_pixels):
+        # initialise statistics
+        total_work = total_pixels * self.rays
+        ray_count = 0
+        start_time = time()
+        progress_timer = time()
+        return total_work, ray_count, start_time, progress_timer
 
     def _setup_pixel_vectors_variables(self):
         """
