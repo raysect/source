@@ -101,24 +101,8 @@ class Camera(Observer):
 
                 for x in range(nx):
 
-                    # TODO: this code is shared with the _worker - refactor
-
-                    # obtain rays for this pixel
-                    rays = self._get_pixel_rays(x, y, min_wavelength, max_wavelength, spectral_samples, pixel_config)
-
-                    weight = 1 / len(rays)
-                    sample_ray_count = 0
-                    spectrum = Spectrum(min_wavelength, max_wavelength, spectral_samples)
-
-                    for ray in rays:
-                            # trace
-                            sample = ray.trace(world)
-
-                            # camera sensitivity
-                            spectrum.samples += weight * self.sensitivity * sample.samples
-
-                            # accumulate statistics
-                            sample_ray_count += ray.ray_count
+                    spectrum, ray_count = self._sample_pixel(x, y, min_wavelength, max_wavelength, spectral_samples,
+                                                             pixel_config, world)
 
                     # convert spectrum to CIE XYZ
                     xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
@@ -128,12 +112,12 @@ class Camera(Observer):
                     xyz_frame[y, x, 1] += xyz[1]
                     xyz_frame[y, x, 2] += xyz[2]
 
-                    # convert to sRGB colourspace
+                    # convert to sRGB colour-space
                     self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
 
                     # update users
                     pixel = x + self._pixels[0] * y
-                    statistics_data = self._update_statistics(statistics_data, channel, pixel, sample_ray_count)
+                    statistics_data = self._update_statistics(statistics_data, channel, pixel, ray_count)
                     display_timer = self._update_display(display_timer)
 
         # final update for users
@@ -183,7 +167,7 @@ class Camera(Observer):
                 xyz_frame[y, x, 1] += xyz[1]
                 xyz_frame[y, x, 2] += xyz[2]
 
-                # convert to sRGB colourspace
+                # convert to sRGB colour-space
                 self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
 
                 # update users
@@ -216,24 +200,9 @@ class Camera(Observer):
             if pixel is None:
                 break
 
-            # TODO: this code is shared with the single process code - refactor
-            # get all direction vectors for this pixel
             x, y = pixel
-            rays = self._get_pixel_rays(x, y, min_wavelength, max_wavelength, spectral_samples, pixel_config)
-
-            weight = 1 / len(rays)
-            ray_count = 0
-            spectrum = Spectrum(min_wavelength, max_wavelength, spectral_samples)
-
-            for ray in rays:
-                    # trace
-                    sample = ray.trace(world)
-
-                    # camera sensitivity
-                    spectrum.samples += weight * self.sensitivity * sample.samples
-
-                    # accumulate statistics
-                    ray_count += ray.ray_count
+            spectrum, ray_count = self._sample_pixel(x, y, min_wavelength, max_wavelength, spectral_samples,
+                                                     pixel_config, world)
 
             # convert spectrum to CIE XYZ
             xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
@@ -243,6 +212,7 @@ class Camera(Observer):
             result_queue.put(result)
 
     def _calc_channel_config(self):
+
         config = []
         delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.rays
         for index in range(self.rays):
@@ -250,6 +220,27 @@ class Camera(Observer):
                            self.min_wavelength + delta_wavelength * (index + 1),
                            self.spectral_samples))
         return config
+
+    def _sample_pixel(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_config, world):
+
+        # obtain rays for this pixel
+        rays = self._get_pixel_rays(x, y, min_wavelength, max_wavelength, spectral_samples, pixel_config)
+
+        weight = 1 / len(rays)
+        ray_count = 0
+        spectrum = Spectrum(min_wavelength, max_wavelength, spectral_samples)
+
+        for ray in rays:
+                # trace
+                sample = ray.trace(world)
+
+                # camera sensitivity
+                spectrum.samples += weight * self.sensitivity * sample.samples
+
+                # accumulate statistics
+                ray_count += ray.ray_count
+
+        return spectrum, ray_count
 
     def _start_display(self):
         """
