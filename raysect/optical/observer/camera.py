@@ -1,9 +1,9 @@
 from time import time
 from math import tan, pi, ceil
-from multiprocessing import Process, Manager, cpu_count, Queue
+from multiprocessing import Process, cpu_count, Queue
 
-from numpy import zeros, empty, ndenumerate, nditer
-from matplotlib.pyplot import imshow, imsave, show, ion, ioff, clf, figure, draw, pause
+from numpy import zeros
+from matplotlib.pyplot import imshow, imsave, show, clf, draw, pause
 
 from raysect.optical.ray import Ray
 from raysect.optical import Spectrum
@@ -38,7 +38,6 @@ class Camera(Observer):
         self._pixels = pixels
         self.sensitivity = sensitivity
         self.super_samples = super_samples
-        self._pixel_vectors_variables = None
 
         # output from last call to Observe()
         self.frame = zeros((pixels[1], pixels[0], 3))
