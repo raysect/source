@@ -40,7 +40,6 @@ class Camera(Observer):
 
         # camera configuration
         self._pixels = pixels
-        self._max_pixels = max(self._pixels)
         self.sensitivity = sensitivity
         self.super_samples = super_samples
         self._pixel_vectors_variables = None
@@ -55,37 +54,38 @@ class Camera(Observer):
     @pixels.setter
     def pixels(self, pixels):
         if len(pixels) != 2:
-            raise ValueError("Pixel dimensions of camera framebuffer must be a tuple "
+            raise ValueError("Pixel dimensions of camera frame-buffer must be a tuple "
                              "containing the x and y pixel counts.")
         self._pixels = pixels
 
     def observe(self):
+
         # must be connected to a world node to be able to perform a ray trace
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
-        if self.process_count == 1:
-            self._observe_single()
-        else:
-            self._observe_parallel()
-
-    def _observe_single(self):
-        pass
-
-    def _observe_parallel(self):
+        world = self.root
+        total_pixels = self._pixels[0] * self._pixels[1]
 
         # create intermediate and final frame-buffers
         xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
         self.frame = zeros((self._pixels[1], self._pixels[0], 3))
 
-        world = self.root
-        total_pixels = self._pixels[0] * self._pixels[1]
-
         # generate spectral data
         channel_configs = self._calc_channel_config()
 
-        # Setup pixel Vectors in advance of main loop
-        pixel_configuration = self._setup_pixel_vectors_variables()
+        # setup pixel vectors in advance of main loop
+        pixel_config = self._setup_pixel_config()
+
+        if self.process_count == 1:
+            self._observe_single(world, xyz_frame, total_pixels, channel_configs, pixel_config)
+        else:
+            self._observe_parallel(world, xyz_frame, total_pixels, channel_configs, pixel_config)
+
+    def _observe_single(self, world, xyz_frame, total_pixels, channel_configs, pixel_config):
+        pass
+
+    def _observe_parallel(self, world, xyz_frame, total_pixels, channel_configs, pixel_config):
 
         # initialise user interface
         display_timer = self._start_display()
@@ -112,7 +112,7 @@ class Camera(Observer):
             for pid in range(self.process_count):
                 p = Process(target=self._worker,
                             args=(world, min_wavelength, max_wavelength, spectral_samples,
-                                  resampled_xyz, pixel_configuration, task_queue, result_queue))
+                                  resampled_xyz, pixel_config, task_queue, result_queue))
                 p.start()
                 workers.append(p)
 
@@ -269,7 +269,7 @@ class Camera(Observer):
         elapsed_time = time() - start_time
         print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
 
-    def _setup_pixel_vectors_variables(self):
+    def _setup_pixel_config(self):
         """
         Virtual method - to be implemented by derived classes.
 
@@ -321,15 +321,17 @@ class PinholeCamera(Camera):
             raise ValueError("Field of view angle can not be less than or equal to 0 degrees.")
         self._fov = fov
 
-    def _setup_pixel_vectors_variables(self):
+    def _setup_pixel_config(self):
 
-        if self._max_pixels > 1:
+        max_pixels = max(self._pixels)
+
+        if max_pixels > 1:
             # generate ray directions by simulating an image plane 1m from pinhole "aperture"
             # max width of image plane at 1 meter for given field of view
             image_max_width = 2 * tan(pi / 180 * 0.5 * self._fov)
 
             # pixel step and start point in image plane
-            image_delta = image_max_width / (self._max_pixels - 1)
+            image_delta = image_max_width / (max_pixels - 1)
 
             # start point of scan in image plane
             image_start_x = 0.5 * self._pixels[0] * image_delta
@@ -391,7 +393,7 @@ class VectorCamera(Camera):
         self.pixel_origins = pixel_origins
         self.pixel_directions = pixel_directions
 
-    def _setup_pixel_vectors_variables(self):
+    def _setup_pixel_config(self):
         pass
 
     def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
