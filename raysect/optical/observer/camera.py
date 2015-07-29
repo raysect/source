@@ -58,9 +58,7 @@ class Camera(Observer):
         # must be connected to a world node to be able to perform a ray trace
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
-
         world = self.root
-        total_pixels = self._pixels[0] * self._pixels[1]
 
         # create intermediate and final frame-buffers
         xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
@@ -73,11 +71,11 @@ class Camera(Observer):
         pixel_config = self._setup_pixel_config()
 
         if self.process_count == 1:
-            self._observe_single(world, xyz_frame, total_pixels, channel_configs, pixel_config)
+            self._observe_single(world, xyz_frame, channel_configs, pixel_config)
         else:
-            self._observe_parallel(world, xyz_frame, total_pixels, channel_configs, pixel_config)
+            self._observe_parallel(world, xyz_frame, channel_configs, pixel_config)
 
-    def _observe_single(self, world, xyz_frame, total_pixels, channel_configs, pixel_config):
+    def _observe_single(self, world, xyz_frame, channel_configs, pixel_config):
 
         # initialise user interface
         display_timer = self._start_display()
@@ -119,11 +117,13 @@ class Camera(Observer):
         self._final_statistics(statistics_data)
         self._final_display()
 
-    def _observe_parallel(self, world, xyz_frame, total_pixels, channel_configs, pixel_config):
+    def _observe_parallel(self, world, xyz_frame, channel_configs, pixel_config):
 
         # initialise user interface
         display_timer = self._start_display()
         statistics_data = self._start_statistics()
+
+        total_pixels = self._pixels[0] * self._pixels[1]
 
         # render
         for channel, channel_config in enumerate(channel_configs):

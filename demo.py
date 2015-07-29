@@ -8,9 +8,6 @@ from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
 from matplotlib.pyplot import *
 from numpy import array
 
-# kludge to fix matplotlib 1.4 ion() idiocy
-import sys
-sys.ps1 = 'SOMETHING'
 
 red_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
                   transmission=SampledSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0])*0.7),
