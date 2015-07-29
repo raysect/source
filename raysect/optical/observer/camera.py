@@ -88,7 +88,7 @@ class Camera(Observer):
         progress_timer = time()
 
         # Setup pixel Vectors in advance of main loop
-        self._setup_pixel_vectors_variables()
+        pixel_configuration = self._setup_pixel_vectors_variables()
 
         # render
         for index, channel_config in enumerate(channel_configs):
@@ -111,7 +111,7 @@ class Camera(Observer):
             for pid in range(self.process_count):
                 p = Process(target=self._worker,
                             args=(world, min_wavelength, max_wavelength, spectral_samples,
-                                  resampled_xyz, task_queue, result_queue))
+                                  resampled_xyz, pixel_configuration, task_queue, result_queue))
                 p.start()
                 workers.append(p)
 
@@ -181,25 +181,7 @@ class Camera(Observer):
             for x in range(nx):
                 task_queue.put((x, y))
 
-    @property
-    def pixel_vectors_variables(self):
-        """
-        These are variables unique to each camera implementation used to calculate the ray Vectors for each pixel.
-        Implementation details will depend on how each camera determines pixel acceptance, etc.
-        """
-        return self._pixel_vectors_variables
-
-    def _setup_pixel_vectors_variables(self):
-        """
-        Virtual method - to be implemented by derived classes.
-
-        Runs at the start of observe() loop to set up any data needed for calculating pixel vectors
-        and supersampling that shouldn't be calculated at every loop iteration. The result of this
-        functon should be written to self._pixel_vectors_variables.
-        """
-        raise NotImplementedError("Virtual method _setup_pixel_vectors() has not been implemented for this Camera.")
-
-    def _worker(self, world, min_wavelength, max_wavelength, spectral_samples, resampled_xyz, task_queue, result_queue):
+    def _worker(self, world, min_wavelength, max_wavelength, spectral_samples, resampled_xyz, pixel_configuration, task_queue, result_queue):
 
         while True:
 
@@ -212,13 +194,13 @@ class Camera(Observer):
 
             # get all direction vectors for this pixel
             x, y = pixel
-            rays = self._get_pixel_rays(x, y, min_wavelength, max_wavelength, spectral_samples)
+            rays = self._get_pixel_rays(x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration)
 
-            weight = 1 / (rays.shape[0] * rays.shape[1])
+            weight = 1 / len(rays)
             ray_count = 0
             spectrum = Spectrum(min_wavelength, max_wavelength, spectral_samples)
 
-            for ray in nditer(rays):
+            for ray in rays:
                     # trace
                     sample = ray.trace(world)
 
@@ -235,7 +217,17 @@ class Camera(Observer):
             result = (pixel, xyz, ray_count)
             result_queue.put(result)
 
-    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples):
+    def _setup_pixel_vectors_variables(self):
+        """
+        Virtual method - to be implemented by derived classes.
+
+        Runs at the start of observe() loop to set up any data needed for calculating pixel vectors
+        and supersampling that shouldn't be calculated at every loop iteration. The result of this
+        functon should be written to self._pixel_vectors_variables.
+        """
+        raise NotImplementedError("Virtual method _setup_pixel_vectors() has not been implemented for this Camera.")
+
+    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
         """
         Virtual method - to be implemented by derived classes.
 
@@ -299,31 +291,34 @@ class PinholeCamera(Camera):
 
         origin = Point(0, 0, 0).transform(self.to_root())
 
-        self._pixel_vectors_variables = _pinhole_camera_pixel_vector_variables(origin, image_delta,
-                                                                              image_start_x, image_start_y)
+        return origin, image_delta, image_start_x, image_start_y
 
-    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples):
+    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
 
-        origin, image_delta, image_start_x, image_start_y = self.pixel_vectors_variables
+        origin, image_delta, image_start_x, image_start_y = pixel_configuration
 
         # subsample AA
         super_samples = self.super_samples
         delta = 1 / super_samples
         offset = delta / 2 - 0.5
 
-        rays = empty((super_samples, super_samples), dtype=object)
+        rays = []
 
-        for (i, j), _ in ndenumerate(rays):
-            dx = delta * i + offset
-            dy = delta * j + offset
+        for i in range(super_samples):
+            for j in range(super_samples):
 
-            # calculate ray parameters
-            direction = Vector(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
-            direction = direction.transform(self.to_root())
+                dx = delta * i + offset
+                dy = delta * j + offset
 
-            # generate ray and add to array to return
-            rays[i, j] = Ray(origin, direction, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
-                             num_samples=spectral_samples, max_depth=self.ray_max_depth)
+                # calculate ray parameters
+                direction = Vector(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
+                direction = direction.transform(self.to_root())
+
+                # generate ray and add to array to return
+                rays.append(
+                    Ray(origin, direction, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
+                        num_samples=spectral_samples, max_depth=self.ray_max_depth)
+                )
 
         return rays
 
@@ -347,13 +342,12 @@ class VectorCamera(Camera):
     def _setup_pixel_vectors_variables(self):
         pass
 
-    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples):
+    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
         # TODO - support super_samples > 1
         origin = self.pixel_origins[x, y]
         direction = self.pixel_directions[x, y]
 
-        rays = empty((1, 1), dtype=object)
-        rays[0, 0] = Ray(origin, direction, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
-                         num_samples=spectral_samples, max_depth=self.ray_max_depth)
-
-        return rays
+        return [
+            Ray(origin, direction, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
+                num_samples=spectral_samples, max_depth=self.ray_max_depth)
+        ]
