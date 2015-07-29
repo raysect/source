@@ -73,6 +73,7 @@ class Camera(Observer):
         pass
 
     def _observe_parallel(self):
+
         # create intermediate and final frame-buffers
         xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
         self.frame = zeros((self._pixels[1], self._pixels[0], 3))
@@ -91,7 +92,7 @@ class Camera(Observer):
         statistics_data = self._start_statistics()
 
         # render
-        for index, channel_config in enumerate(channel_configs):
+        for channel, channel_config in enumerate(channel_configs):
 
             min_wavelength, max_wavelength, spectral_samples = channel_config
 
@@ -122,9 +123,6 @@ class Camera(Observer):
                 location, xyz, sample_ray_count = result_queue.get()
                 x, y = location
 
-                # collect ray statistics
-                ray_count += sample_ray_count
-
                 # accumulate colour
                 xyz_frame[y, x, 0] += xyz[0]
                 xyz_frame[y, x, 1] += xyz[1]
@@ -133,21 +131,17 @@ class Camera(Observer):
                 # convert to sRGB colourspace
                 self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
 
+                # update users
                 display_timer = self._update_display(display_timer)
-
-                statistics_data = self._update_statistics(statistics_data)
+                statistics_data = self._update_statistics(statistics_data, channel, pixel, sample_ray_count)
 
             # shutdown workers
             for _ in workers:
                 task_queue.put(None)
 
-        # close statistics
-        elapsed_time = time() - start_time
-        print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
-
-        # display final frame
-        if self.display_progress:
-            self.display()
+        # final update for users
+        self._final_statistics(statistics_data)
+        self._final_display()
 
     def _producer(self, task_queue):
         # task is simply the pixel location
@@ -199,19 +193,61 @@ class Camera(Observer):
             config.append((self.min_wavelength + delta_wavelength * index,
                            self.min_wavelength + delta_wavelength * (index + 1),
                            self.spectral_samples))
-
         return config
 
     def _start_display(self):
-        # display live render
+        """
+        Display live render.
+        """
+
         display_timer = 0
         if self.display_progress:
             self.display()
             display_timer = time()
         return display_timer
 
-    def _updates(self):
-        # display progress statistics
+    def _update_display(self, display_timer):
+        """
+        Update live render.
+        """
+
+        # update live render display
+        if self.display_progress and (time() - display_timer) > self.display_update_time:
+
+            print("Refreshing display...")
+            self.display()
+            display_timer = time()
+
+        return display_timer
+
+    def _final_display(self):
+        """
+        Display final frame.
+        """
+
+        if self.display_progress:
+            self.display()
+
+    def _start_statistics(self):
+        """
+        Initialise statistics.
+        """
+
+        total_pixels = self._pixels[0] * self._pixels[1]
+        total_work = total_pixels * self.rays
+        ray_count = 0
+        start_time = time()
+        progress_timer = time()
+        return total_work, total_pixels, ray_count, start_time, progress_timer
+
+    def _update_statistics(self, statistics_data, index, pixel, sample_ray_count):
+        """
+        Display progress statistics.
+        """
+
+        total_work, total_pixels, ray_count, start_time, progress_timer = statistics_data
+        ray_count += sample_ray_count
+
         if (time() - progress_timer) > 1.0:
 
             current_work = total_pixels * index + pixel
@@ -223,20 +259,15 @@ class Camera(Observer):
             ray_count = 0
             progress_timer = time()
 
-        # update live render display
-        if self.display_progress and (time() - display_timer) > self.display_update_time:
+        return total_work, total_pixels, ray_count, start_time, progress_timer
 
-            print("Refreshing display...")
-            self.display()
-            display_timer = time()
-
-    def _start_statistics(self, total_pixels):
-        # initialise statistics
-        total_work = total_pixels * self.rays
-        ray_count = 0
-        start_time = time()
-        progress_timer = time()
-        return total_work, ray_count, start_time, progress_timer
+    def _final_statistics(self, statistics_data):
+        """
+        Final statistics output.
+        """
+        _, _, _, start_time, _ = statistics_data
+        elapsed_time = time() - start_time
+        print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
 
     def _setup_pixel_vectors_variables(self):
         """
