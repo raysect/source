@@ -9,10 +9,6 @@ from raysect.optical.ray import Ray
 from raysect.optical import Spectrum
 from raysect.core import World, AffineMatrix, Point, Vector, Observer
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
-from collections import namedtuple
-
-# Variables
-_pinhole_camera_pixel_vector_variables = namedtuple("Pixel_Vector_Variables", "origin image_delta image_start_x image_start_y")
 
 
 class Camera(Observer):
