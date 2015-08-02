@@ -3,7 +3,8 @@ from raysect.optical import World, translate, rotate, Point, Vector, d65_white
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter, Checkerboard
 
-from raysect.primitive import Box, Cone
+from raysect.primitive import Box
+from raysect.primitive.cone import Cone
 from matplotlib.pyplot import *
 from raysect.optical.material.debug import Light
 

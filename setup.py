@@ -45,5 +45,5 @@ else:
 
     directives = {}
 
-setup(ext_modules=cythonize(extensions, force=force, compiler_directives=directives))
+setup(ext_modules=cythonize(extensions, force=force, compiler_directives=directives, requires=['scipy']))
 
