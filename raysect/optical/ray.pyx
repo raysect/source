@@ -160,12 +160,13 @@ cdef class Ray(CoreRay):
 
     cpdef Spectrum trace(self, World world):
 
-        cdef Spectrum spectrum
-        cdef Intersection intersection
-        cdef list primitives
-        cdef Primitive primitive
-        cdef Point start_point, end_point
-        cdef Material material
+        cdef:
+            Spectrum spectrum
+            Intersection intersection
+            list primitives
+            Primitive primitive
+            Point start_point, end_point
+            Material material
 
         # reset ray statistics
         if self._primary_ray is None:

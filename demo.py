@@ -1,6 +1,6 @@
 from raysect.core.acceleration import Unaccelerated
 from raysect.optical import World, translate, rotate, Point, Vector, Ray, d65_white, ConstantSF, SampledSF
-from raysect.optical.observer.pinholecamera import PinholeCamera
+from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
 from raysect.optical.material.glass_libraries import schott
@@ -8,9 +8,6 @@ from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
 from matplotlib.pyplot import *
 from numpy import array
 
-# kludge to fix matplotlib 1.4 ion() idiocy
-import sys
-sys.ps1 = 'SOMETHING'
 
 red_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
                   transmission=SampledSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0])*0.7),
@@ -46,16 +43,16 @@ Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfac
 
 ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0))
-camera.ray_max_depth = 20
-camera.rays = 32
-camera.spectral_samples = 1
-camera.pixels = (1024, 1024)
+camera.ray_max_depth = 10
+camera.rays = 3
+camera.spectral_samples = 3
+camera.pixels = (250, 250)
 camera.display_progress = True
 camera.display_update_time = 10
 camera.observe()
 
 ioff()
-camera.save("render.png")
+# camera.save("render.png")
 camera.display()
 show()
 

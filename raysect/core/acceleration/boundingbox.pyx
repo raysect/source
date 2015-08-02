@@ -1,4 +1,5 @@
 # cython: language_level=3
+# cython: profile=False
 
 # Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -37,6 +38,12 @@ from raysect.core.math.point cimport new_point
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
 
+# axis defines
+DEF X_AXIS = 0
+DEF Y_AXIS = 1
+DEF Z_AXIS = 2
+
+
 cdef class BoundingBox:
     """
     Axis aligned bounding box.
@@ -61,16 +68,11 @@ cdef class BoundingBox:
 
         # initialise to a null box if called without both initial points
         if lower is None or upper is None:
-
             self.lower = new_point(INFINITY, INFINITY, INFINITY)
             self.upper = new_point(-INFINITY, -INFINITY, -INFINITY)
-
         else:
-
             if lower.x > upper.x or lower.y > upper.y or lower.z > upper.z:
-
                 raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
-
             self.lower = lower
             self.upper = upper
 
@@ -78,24 +80,30 @@ cdef class BoundingBox:
 
         return "BoundingBox({}, {})".format(self.lower, self.upper)
 
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return self.lower, self.upper
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.lower, self.upper = state
+
     property lower:
 
         def __get__(self):
-
             return self.lower
 
         def __set__(self, Point value not None):
-
             self.lower = value
 
     property upper:
 
         def __get__(self):
-
             return self.upper
 
         def __set__(self, Point value not None):
-
             self.upper = value
 
     cpdef bint hit(self, Ray ray):
@@ -128,14 +136,11 @@ cdef class BoundingBox:
 
         # does ray intersect box?
         if front_intersection[0] > back_intersection[0]:
-
             return False
 
         # are both intersections behind ray origin?
         if (front_intersection[0] < 0.0) and (back_intersection[0] < 0.0):
-
             return False
-
         return True
 
     @cython.cdivision(True)
@@ -189,17 +194,11 @@ cdef class BoundingBox:
 
         # point is inside box if it is inside all slabs
         if (point.x < self.lower.x) or (point.x > self.upper.x):
-
             return False
-
         if (point.y < self.lower.y) or (point.y > self.upper.y):
-
             return False
-
         if (point.z < self.lower.z) or (point.z > self.upper.z):
-
             return False
-
         return True
 
     cpdef object union(self, BoundingBox box):
@@ -248,3 +247,49 @@ cdef class BoundingBox:
             new_point(self.upper.x, self.upper.y, self.lower.z),
             new_point(self.upper.x, self.upper.y, self.upper.z),
         ]
+
+    cpdef double extent(self, axis) except *:
+
+        if axis == X_AXIS:
+            return max(0.0, self.upper.x - self.lower.x)
+        elif axis == Y_AXIS:
+            return max(0.0, self.upper.y - self.lower.y)
+        elif axis == Z_AXIS:
+            return max(0.0, self.upper.z - self.lower.z)
+        else:
+            raise ValueError("Axis must be in the range [0, 2].")
+
+    cpdef int largest_axis(self):
+
+        cdef:
+            int largest_axis
+            double largest_extent, extent
+
+        largest_axis = X_AXIS
+        largest_extent = self.extent(X_AXIS)
+
+        extent = self.extent(Y_AXIS)
+        if extent > largest_extent:
+            largest_axis = Y_AXIS
+            largest_extent = extent
+
+        extent = self.extent(Z_AXIS)
+        if extent > largest_extent:
+            largest_axis = Z_AXIS
+            largest_extent = extent
+
+        return largest_axis
+
+    cpdef double largest_extent(self):
+
+        return max(self.extent(X_AXIS), self.extent(Y_AXIS), self.extent(Z_AXIS))
+
+    cpdef object pad(self, double padding):
+
+        self.lower.x = self.lower.x - padding
+        self.lower.y = self.lower.y - padding
+        self.lower.z = self.lower.z - padding
+
+        self.upper.x = self.upper.x + padding
+        self.upper.y = self.upper.y + padding
+        self.upper.z = self.upper.z + padding
