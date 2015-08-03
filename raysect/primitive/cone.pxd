@@ -29,35 +29,25 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray as CoreRay, Intersection
+from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.point cimport Point
 from raysect.core.math.vector cimport Vector
-from raysect.core.scenegraph.world cimport World
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.material.material cimport Material
+from raysect.core.math.normal cimport Normal
+from raysect.core.classes cimport Ray, Intersection
 
-cdef class Ray(CoreRay):
+cdef class Cone(Primitive):
 
-    cdef:
-        int _num_samples
-        double _min_wavelength
-        double _max_wavelength
-        public int max_depth
-        public int depth
-        readonly int ray_count
-        Ray _primary_ray
+    cdef double _height
+    cdef double _radius
+    cdef bint _further_intersection
+    cdef double _next_t
+    cdef Point _cached_origin
+    cdef Vector _cached_direction
+    cdef Ray _cached_ray
+    cdef int _cached_face
+    cdef int _cached_type
 
-    cpdef Spectrum new_spectrum(self)
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance,
+                                                    int face, int type)
 
-    cpdef Spectrum trace(self, World world)
-
-    cpdef Ray spawn_daughter(self, Point origin, Vector direction)
-
-    cdef inline int get_num_samples(self)
-
-    cdef inline double get_min_wavelength(self)
-
-    cdef inline double get_max_wavelength(self)
-
-    cpdef Point get_point_at_distance(self, float distance)
+    cdef inline Vector _interior_offset(self, Point hit_point, Normal normal, int type)
