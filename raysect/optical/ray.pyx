@@ -256,3 +256,20 @@ cdef class Ray(CoreRay):
 
         return ray
 
+    cpdef Point get_point_at_distance(self, float distance):
+        """ Get the point at a given distance alone the ray direction measured from the ray origin.
+
+        Example use case, during a hit_intersection on a primitive you solve for the distances t0, t1 along the ray that
+        define a hit intersection. Use this function to return the hit points in local coordinates.
+
+        :param distance: A float value that defines the distance along the ray
+        :return: A point at distance d along the ray direction measured from its origin.
+        """
+        cdef Point origin = self.origin
+        cdef Vector direction = self.direction
+
+        return Point(origin.x + distance * direction.x,
+                     origin.y + distance * direction.y,
+                     origin.z + distance * direction.z)
+
+

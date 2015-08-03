@@ -59,3 +59,5 @@ cdef class Ray(CoreRay):
     cdef inline double get_min_wavelength(self)
 
     cdef inline double get_max_wavelength(self)
+
+    cpdef Point get_point_at_distance(self, float distance)
