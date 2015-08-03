@@ -31,7 +31,7 @@
 
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport new_normal
-from raysect.core.math.point cimport new_point
+from raysect.core.math.point cimport new_point, Point
 from raysect.core.math.vector cimport new_vector
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
@@ -141,11 +141,12 @@ cdef class Cone(Primitive):
     cpdef Intersection hit(self, Ray ray):
 
         cdef:
-            double near_intersection, far_intersection, closest_intersection
-            int near_face, far_face, closest_face
-            int near_type, far_type, closest_type
+            double near_intersection, far_intersection
+            int near_face, far_face
+            int near_type, far_type
             double a, b, c, d, t0, t1, temp
             int f0, f1
+            Point near_point, far_point
 
         # reset the next intersection cache
         # self._further_intersection = False
@@ -183,81 +184,51 @@ cdef class Cone(Primitive):
             t0 = t1
             t1 = temp
 
-        # set intersection parameters
-        near_intersection = t0
-        near_type = CONE
-        near_face = NO_FACE
-
-        far_intersection = t1
-        far_type = CONE
-        far_face = NO_FACE
-
         # TODO = Matt needs to document this section and explain what it does.
 
-        # union slab with the cone
-        # slab contributes no intersections if the ray is parallel to the slab surfaces
-        if direction.z != 0.0:
+        near_point = ray.get_point_at_distance(t0).transform(self.to_local())
+        far_point = ray.get_point_at_distance(t1).transform(self.to_local())
 
-            # calculate intersections with slab planes
-            temp = 1.0 / direction.z
+        # Are both intersections inside the cone height
+        if 0 < near_point.z < height and 0 < far_point.z < height:
 
-            if direction.z > 0:
-                # calculate length along ray path of intersections
-                t0 = -origin.z * temp
-                t1 = (self._height - origin.z) * temp
-                f0 = LOWER_FACE
-                f1 = NO_FACE
+            # Both intersections are with the cone body
+            near_intersection = t0
+            near_type = CONE
+            near_face = NO_FACE
+
+            far_intersection = t1
+            far_type = CONE
+            far_face = NO_FACE
+
+        # Is only one of the intersections inside the cone body, therefore other is with flat cone base.
+        elif 0 < near_point.z < height or 0 < far_point.z < height:
+
+            if near_point.z < 0 or far_point.z > height:
+                # Near intersection is cone base, far is cone face
+                near_intersection = -origin.z / direction.z
+                near_type = SLAB
+                near_face = LOWER_FACE
+
+                far_intersection = t0
+                far_type = CONE
+                far_face = NO_FACE
 
             else:
-                # calculate length along ray path of intersections
-                t0 = (self._height - origin.z) * temp
-                t1 = -origin.z * temp
-                f0 = NO_FACE
-                f1 = LOWER_FACE
-
-            # calculate intersection overlap
-            if t0 > near_intersection:
+                # Otherwise far intersection is cone bace, near is cone face.
                 near_intersection = t0
-                near_face = f0
-                near_type = SLAB
-            if t1 < far_intersection:
-                far_intersection = t1
-                far_face = f1
+                near_type = CONE
+                near_face = NO_FACE
+
+                far_intersection = (self._height - origin.z) / direction.z
                 far_type = SLAB
+                far_face = LOWER_FACE
 
-        if near_intersection > far_intersection:
-            return None
-
-        # are there any intersections inside the ray search range?
-        if near_intersection > ray.max_distance or far_intersection < 0.0:
-            return None
-
-        # identify closest intersection
-        if near_intersection >= 0.0:
-            closest_intersection = near_intersection
-            closest_face = near_face
-            closest_type = near_type
-
-            # if far_intersection <= ray.max_distance:
-            #     self._further_intersection = True
-            #     self._next_t = far_intersection
-            #     self._cached_origin = origin
-            #     self._cached_direction = direction
-            #     self._cached_ray = ray
-            #     self._cached_face = far_face
-            #     self._cached_type = far_type
-
-        elif far_intersection <= ray.max_distance:
-            closest_intersection = far_intersection
-            closest_face = far_face
-            closest_type = far_type
-
+        # Both intersections are outside the bounding box.
         else:
             return None
 
-        # If you got here, passed all criteria for an intersection.
-
-        return self._generate_intersection(ray, origin, direction, closest_intersection, closest_face, closest_type)
+        return self._generate_intersection(ray, origin, direction, near_intersection, near_face, near_type)
 
     # Only used by CSG
     # cpdef Intersection next_intersection(self):
