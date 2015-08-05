@@ -56,3 +56,26 @@ cdef class BoundingBox:
     cpdef double volume(self)
 
     cpdef list vertices(self)
+
+    cpdef double extent(self, axis) except *
+
+    cpdef int largest_axis(self)
+
+    cpdef double largest_extent(self)
+
+    cpdef object pad(self, double padding)
+
+
+cdef inline BoundingBox new_boundingbox(Point lower, Point upper):
+    """
+    BoundingBox factory function.
+
+    Creates a new BoundingBox object with less overhead than the equivalent
+    Python call. This function is callable from cython only.
+    """
+
+    cdef BoundingBox v
+    v = BoundingBox.__new__(BoundingBox)
+    v.lower = lower
+    v.upper = upper
+    return v
