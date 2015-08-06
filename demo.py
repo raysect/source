@@ -1,5 +1,5 @@
 from raysect.core.acceleration import Unaccelerated
-from raysect.optical import World, translate, rotate, Point, Vector, Ray, d65_white, ConstantSF, SampledSF
+from raysect.optical import World, translate, rotate, Point, Vector, Ray, d65_white, ConstantSF, InterpolatedSF
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
@@ -10,15 +10,15 @@ from numpy import array
 
 
 red_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                  transmission=SampledSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0])*0.7),
+                  transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0])*0.7),
                   cutoff=1e-4)
 
 green_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                    transmission=SampledSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0])*0.7),
+                    transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0])*0.7),
                     cutoff=1e-4)
 
 blue_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                   transmission=SampledSF([300, 490, 510, 590, 610, 800], array([1.0, 1.0, 0.0, 0.0, 0.0, 0.0])*0.7),
+                   transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([1.0, 1.0, 0.0, 0.0, 0.0, 0.0])*0.7),
                    cutoff=1e-4)
 
 world = World()

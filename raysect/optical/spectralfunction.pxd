@@ -38,7 +38,7 @@ cdef class SpectralFunction:
     cpdef ndarray sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples)
 
 
-cdef class SampledSF(SpectralFunction):
+cdef class InterpolatedSF(SpectralFunction):
 
     cdef:
         ndarray wavelengths
