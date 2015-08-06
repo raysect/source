@@ -42,7 +42,7 @@ from raysect.core.scenegraph.world cimport World
 from raysect.optical.spectralfunction cimport ConstantSF
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.ray cimport Ray
-from raysect.core.math.random import probability
+from raysect.core.math.random cimport probability
 
 
 cdef class Sellmeier(SpectralFunction):
