@@ -11,6 +11,7 @@ from raysect.core import World, AffineMatrix, Point, Vector, Observer
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 
 
+# TODO: make sure workers receive/generate a NEW seed or the random numbers will be identical!
 class Camera(Observer):
 
     def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=20, rays=1, super_samples=1,
@@ -25,7 +26,9 @@ class Camera(Observer):
         self.spectral_samples = spectral_samples
         self.min_wavelength = 375.0
         self.max_wavelength = 740.0
-        self.ray_max_depth = 15
+        self.ray_extinction_prob = 0.1
+        self.ray_min_depth = 3
+        self.ray_max_depth = 100
 
         # progress information
         self.display_progress = True
@@ -412,8 +415,14 @@ class PinholeCamera(Camera):
 
                 # generate ray and add to array to return
                 rays.append(
-                    Ray(origin, direction, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
-                        num_samples=spectral_samples, max_depth=self.ray_max_depth)
+                    Ray(origin, direction,
+                        min_wavelength=min_wavelength,
+                        max_wavelength=max_wavelength,
+                        num_samples=spectral_samples,
+                        extinction_prob=self.ray_extinction_prob,
+                        min_depth=self.ray_min_depth,
+                        max_depth=self.ray_max_depth
+                    )
                 )
 
         return rays
@@ -444,6 +453,12 @@ class VectorCamera(Camera):
         direction = self.pixel_directions[x, y]
 
         return [
-            Ray(origin, direction, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
-                num_samples=spectral_samples, max_depth=self.ray_max_depth)
+            Ray(origin, direction,
+                min_wavelength=min_wavelength,
+                max_wavelength=max_wavelength,
+                num_samples=spectral_samples,
+                extinction_prob=self.ray_extinction_prob,
+                min_depth=self.ray_min_depth,
+                max_depth=self.ray_max_depth
+            )
         ]

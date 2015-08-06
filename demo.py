@@ -43,12 +43,15 @@ Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfac
 
 ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0))
-camera.ray_max_depth = 10
+camera.ray_min_depth = 3
+camera.ray_max_depth = 100
+camera.ray_extinction_prob = 0.2
 camera.rays = 3
 camera.spectral_samples = 3
 camera.pixels = (250, 250)
 camera.display_progress = True
 camera.display_update_time = 10
+camera.process_count = 1
 camera.observe()
 
 ioff()

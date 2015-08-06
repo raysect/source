@@ -30,9 +30,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.spectrum cimport new_spectrum
+from raysect.core.math.random cimport probability
+from raysect.core.math.utility cimport clamp
+cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
+
 
 cdef class Ray(CoreRay):
 
@@ -43,7 +47,9 @@ cdef class Ray(CoreRay):
                  double max_wavelength = 785,
                  int num_samples = 40,
                  double max_distance = INFINITY,
-                 int max_depth = 15):
+                 double extinction_prob = 0.1,
+                 int min_depth = 3,
+                 int max_depth = 100):
 
         if num_samples < 1:
             raise ValueError("Number of samples can not be less than 1.")
@@ -60,6 +66,8 @@ cdef class Ray(CoreRay):
         self._min_wavelength = min_wavelength
         self._max_wavelength = max_wavelength
 
+        self.extinction_prob = extinction_prob
+        self.min_depth = min_depth
         self.max_depth = max_depth
         self.depth = 0
 
@@ -75,7 +83,9 @@ cdef class Ray(CoreRay):
             self._num_samples,
             self._min_wavelength,
             self._max_wavelength,
-            self.max_depth,
+            self._extinction_prob,
+            self._min_depth,
+            self._max_depth,
             self.depth,
             self.ray_count,
             self._primary_ray
@@ -88,7 +98,9 @@ cdef class Ray(CoreRay):
          self._num_samples,
          self._min_wavelength,
          self._max_wavelength,
-         self.max_depth,
+         self._extinction_prob,
+         self._min_depth,
+         self._max_depth,
          self.depth,
          self.ray_count,
          self._primary_ray) = state
@@ -98,7 +110,6 @@ cdef class Ray(CoreRay):
     property num_samples:
 
         def __get__(self):
-
             return self._num_samples
 
         def __set__(self, int num_samples):
@@ -114,7 +125,6 @@ cdef class Ray(CoreRay):
     property min_wavelength:
 
         def __get__(self):
-
             return self._min_wavelength
 
         def __set__(self, double min_wavelength):
@@ -128,13 +138,11 @@ cdef class Ray(CoreRay):
             self._min_wavelength = min_wavelength
 
     cdef inline double get_min_wavelength(self):
-
         return self._min_wavelength
 
     property max_wavelength:
 
         def __get__(self):
-
             return self._max_wavelength
 
         def __set__(self, double max_wavelength):
@@ -148,8 +156,35 @@ cdef class Ray(CoreRay):
             self._max_wavelength = max_wavelength
 
     cdef inline double get_max_wavelength(self):
-
         return self._max_wavelength
+
+    property extinction_prob:
+
+        def __get__(self):
+            return self._extinction_prob
+
+        def __set__(self, double extinction_prob):
+            self._extinction_prob = clamp(extinction_prob, 0.0, 1.0)
+
+    property min_depth:
+
+        def __get__(self):
+            return self._min_depth
+
+        def __set__(self, int min_depth):
+            if min_depth <= 1:
+                raise ValueError("The minimum depth cannot be less than 1.")
+            self._min_depth = min_depth
+
+    property max_depth:
+
+        def __get__(self):
+            return self._max_depth
+
+        def __set__(self, int max_depth):
+            if max_depth < self._min_depth:
+                raise ValueError("The maximum depth cannot be less than the minimum depth.")
+            self._max_depth = max_depth
 
     cpdef Spectrum new_spectrum(self):
         """
@@ -158,7 +193,8 @@ cdef class Ray(CoreRay):
 
         return new_spectrum(self._min_wavelength, self._max_wavelength, self._num_samples)
 
-    cpdef Spectrum trace(self, World world):
+    @cython.cdivision(True)
+    cpdef Spectrum trace(self, World world, bint keep_alive=False):
 
         cdef:
             Spectrum spectrum
@@ -167,6 +203,7 @@ cdef class Ray(CoreRay):
             Primitive primitive
             Point start_point, end_point
             Material material
+            double normalisation
 
         # reset ray statistics
         if self._primary_ray is None:
@@ -177,9 +214,17 @@ cdef class Ray(CoreRay):
         # create a new spectrum object compatible with the ray
         spectrum = self.new_spectrum()
 
-        # limit ray recursion depth
-        if self.depth >= self.max_depth:
-            return spectrum
+        # limit ray recursion depth with russian roulette
+        # set normalisation to ensure the sampling remains unbiased
+
+        if keep_alive or self.depth < self._min_depth:
+            normalisation = 1.0
+        else:
+            if self.depth >= self._max_depth or probability(self._extinction_prob):
+                # print("DEAD @", self.depth)
+                return spectrum
+            else:
+                normalisation = 1.0 / self._extinction_prob
 
         # does the ray intersect with any of the primitives in the world?
         intersection = world.hit(self)
@@ -224,6 +269,8 @@ cdef class Ray(CoreRay):
                         primitive.to_root()
                     )
 
+        # apply normalisation to ensure the sampling remains unbiased
+        spectrum.mul_scalar(normalisation)
         return spectrum
 
     cpdef Ray spawn_daughter(self, Point origin, Vector direction):
@@ -238,7 +285,9 @@ cdef class Ray(CoreRay):
         ray._min_wavelength = self._min_wavelength
         ray._max_wavelength = self._max_wavelength
         ray.max_distance = self.max_distance
-        ray.max_depth = self.max_depth
+        ray._extinction_prob = self._extinction_prob
+        ray._min_depth = self._min_depth
+        ray._max_depth = self._max_depth
         ray.depth = self.depth + 1
 
         # track ray statistics

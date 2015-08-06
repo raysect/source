@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,35 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray as CoreRay, Intersection
-from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector
-from raysect.core.scenegraph.world cimport World
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.material.material cimport Material
+cpdef bint probability(double prob)
 
-cdef class Ray(CoreRay):
 
-    cdef:
-        int _num_samples
-        double _min_wavelength
-        double _max_wavelength
-        double _extinction_prob
-        int _min_depth
-        int _max_depth
-        public int depth
-        readonly int ray_count
-        Ray _primary_ray
-
-    cpdef Spectrum new_spectrum(self)
-
-    cpdef Spectrum trace(self, World world, bint keep_alive=*)
-
-    cpdef Ray spawn_daughter(self, Point origin, Vector direction)
-
-    cdef inline int get_num_samples(self)
-
-    cdef inline double get_min_wavelength(self)
-
-    cdef inline double get_max_wavelength(self)
