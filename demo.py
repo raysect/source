@@ -10,16 +10,13 @@ from numpy import array
 
 
 red_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                  transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0])*0.7),
-                  cutoff=1e-4)
+                       transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0])*0.7))
 
 green_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                    transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0])*0.7),
-                    cutoff=1e-4)
+                         transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 1.0, 1.0, 0.0, 0.0])*0.7))
 
 blue_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
-                   transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([1.0, 1.0, 0.0, 0.0, 0.0, 0.0])*0.7),
-                   cutoff=1e-4)
+                        transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([1.0, 1.0, 0.0, 0.0, 0.0, 0.0])*0.7))
 
 world = World()
 
@@ -44,14 +41,15 @@ Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfac
 ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0))
 camera.ray_min_depth = 3
-camera.ray_max_depth = 100
-camera.ray_extinction_prob = 0.2
-camera.rays = 3
-camera.spectral_samples = 3
+camera.ray_max_depth = 200
+camera.ray_extinction_prob = 0.01
+camera.pixel_samples = 50
+camera.rays = 1
+camera.spectral_samples = 15
 camera.pixels = (250, 250)
 camera.display_progress = True
 camera.display_update_time = 10
-camera.process_count = 1
+camera.sub_sample = False
 camera.observe()
 
 ioff()

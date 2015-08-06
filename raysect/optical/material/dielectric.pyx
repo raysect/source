@@ -42,6 +42,7 @@ from raysect.core.scenegraph.world cimport World
 from raysect.optical.spectralfunction cimport ConstantSF
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.ray cimport Ray
+from raysect.core.math.random import probability
 
 
 cdef class Sellmeier(SpectralFunction):
@@ -130,18 +131,17 @@ cdef class Sellmeier(SpectralFunction):
 # TODO: consider carefully the impact of changes made to support mesh normal interpolation
 cdef class Dielectric(Material):
 
-    def __init__(self, SpectralFunction index, SpectralFunction transmission, cutoff = 1e-6, SpectralFunction external_index=None, transmit_only=False):
+    def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None):
 
         self.index = index
         self.transmission = transmission
-        self.cutoff = cutoff
-        self.transmit_only = transmit_only
 
         if external_index is None:
             self.external_index = ConstantSF(1.0)
         else:
             self.external_index = external_index
 
+    @cython.cdivision(True)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
                                     bint exiting, Point inside_point, Point outside_point,
                                     Normal normal, AffineMatrix to_local, AffineMatrix to_world):
@@ -181,9 +181,7 @@ cdef class Dielectric(Material):
             n1 = external_index
             n2 = internal_index
 
-        with cython.cdivision:
-
-            gamma = n1 / n2
+        gamma = n1 / n2
 
         # calculate square of cosine of angle between transmitted ray and normal
         c2s = 1 - (gamma * gamma) * (1 - c1 * c1)
@@ -217,70 +215,77 @@ cdef class Dielectric(Material):
 
         else:
 
-            # calculate reflected and transmitted ray normals
-            temp = 2 * c1
-            reflected = new_vector(incident.x + temp * normal.x,
-                                   incident.y + temp * normal.y,
-                                   incident.z + temp * normal.z)
-
+            # calculate transmitted ray normal
             # note, we do not use the supplied exiting parameter as the normal is
             # not guaranteed to be perpendicular to the surface for meshes
             if c1 < 0.0:
-
                 temp = gamma * c1 + sqrt(c2s)
-                transmitted = new_vector(gamma * incident.x + temp * normal.x,
-                                         gamma * incident.y + temp * normal.y,
-                                         gamma * incident.z + temp * normal.z)
-
             else:
-
                 temp = gamma * c1 - sqrt(c2s)
-                transmitted = new_vector(gamma * incident.x + temp * normal.x,
-                                         gamma * incident.y + temp * normal.y,
-                                         gamma * incident.z + temp * normal.z)
+
+            transmitted = new_vector(gamma * incident.x + temp * normal.x,
+                                     gamma * incident.y + temp * normal.y,
+                                     gamma * incident.z + temp * normal.z)
 
             # calculate fresnel reflection and transmission coefficients
             self._fresnel(c1, -normal.dot(transmitted), n1, n2, &reflectivity, &transmission)
 
-            # convert reflected and transmitted rays to world space
-            reflected = reflected.transform(to_world)
-            transmitted = transmitted.transform(to_world)
+            # select path by roulette using the strength of the coefficients as probabilities
+            # if probability(0.5):
+            if probability(reflectivity):
 
-            # convert origin points to world space
-            inside_point = inside_point.transform(to_world)
-            outside_point = outside_point.transform(to_world)
+                # reflected ray path selected
 
-            # spawn reflected and transmitted rays
-            # note, we do not use the supplied exiting parameter as the normal is
-            # not guaranteed to be perpendicular to the surface for meshes
-            if c1 < 0.0:
+                # calculate ray normal
+                temp = 2 * c1
+                reflected = new_vector(incident.x + temp * normal.x,
+                                       incident.y + temp * normal.y,
+                                       incident.z + temp * normal.z)
+                reflected = reflected.transform(to_world)
 
-                # incident ray is pointing out of surface
-                reflected_ray = ray.spawn_daughter(inside_point, reflected)
-                transmitted_ray = ray.spawn_daughter(outside_point, transmitted)
+                # spawn ray on correct side of surface
+                # note, we do not use the supplied exiting parameter as the normal is
+                # not guaranteed to be perpendicular to the surface for meshes
+                if c1 < 0.0:
 
-            else:
+                    # incident ray is pointing out of surface
+                    inside_point = inside_point.transform(to_world)
+                    reflected_ray = ray.spawn_daughter(inside_point, reflected)
 
-                # incident ray is pointing in to surface
-                reflected_ray = ray.spawn_daughter(outside_point, reflected)
-                transmitted_ray = ray.spawn_daughter(inside_point, transmitted)
+                else:
 
-            # trace rays and return results
-            if reflectivity > self.cutoff and not self.transmit_only :
+                    # incident ray is pointing in to surface
+                    outside_point = outside_point.transform(to_world)
+                    reflected_ray = ray.spawn_daughter(outside_point, reflected)
 
                 spectrum = reflected_ray.trace(world)
-                spectrum.mul_scalar(reflectivity)
 
             else:
 
-                spectrum = ray.new_spectrum()
+                # transmitted ray path selected
 
-            if transmission > self.cutoff:
+                # we have already calculated the transmitted normal
+                transmitted = transmitted.transform(to_world)
 
-                ray_sample = transmitted_ray.trace(world)
-                ray_sample.mul_scalar(transmission)
-                spectrum.add_array(ray_sample.samples)
+                # spawn ray on correct side of surface
+                # note, we do not use the supplied exiting parameter as the normal is
+                # not guaranteed to be perpendicular to the surface for meshes
+                if c1 < 0.0:
 
+                    # incident ray is pointing out of surface
+                    outside_point = outside_point.transform(to_world)
+                    transmitted_ray = ray.spawn_daughter(outside_point, transmitted)
+
+                else:
+
+                    # incident ray is pointing in to surface
+                    inside_point = inside_point.transform(to_world)
+                    transmitted_ray = ray.spawn_daughter(inside_point, transmitted)
+
+                spectrum = transmitted_ray.trace(world)
+
+            # note, normalisation not required as path probability equals the reflection/transmission coefficient
+            # the two values cancel exactly
             return spectrum
 
     @cython.cdivision(True)

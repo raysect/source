@@ -30,7 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # TODO: replace python random() with a cython optimised version
-from random import random
+from random import random as _py_rand
+
+cpdef double random():
+    return _py_rand()
 
 cpdef bint probability(double prob):
     """
@@ -43,4 +46,4 @@ cpdef bint probability(double prob):
     :return: True or False.
     """
 
-    return random() < prob
+    return _py_rand() < prob

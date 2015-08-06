@@ -52,7 +52,5 @@ cdef class Dielectric(Material):
         public SpectralFunction index
         public SpectralFunction external_index
         public SpectralFunction transmission
-        public double cutoff
-        public bint transmit_only
 
     cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil

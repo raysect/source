@@ -224,7 +224,7 @@ cdef class Ray(CoreRay):
                 # print("DEAD @", self.depth)
                 return spectrum
             else:
-                normalisation = 1.0 / self._extinction_prob
+                normalisation = 1 / (1 - self._extinction_prob)
 
         # does the ray intersect with any of the primitives in the world?
         intersection = world.hit(self)
