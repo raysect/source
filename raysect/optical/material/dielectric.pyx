@@ -131,10 +131,11 @@ cdef class Sellmeier(SpectralFunction):
 # TODO: consider carefully the impact of changes made to support mesh normal interpolation
 cdef class Dielectric(Material):
 
-    def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None):
+    def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None, bint transmission_only=False):
 
         self.index = index
         self.transmission = transmission
+        self.transmission_only = transmission_only
 
         if external_index is None:
             self.external_index = ConstantSF(1.0)
@@ -189,6 +190,10 @@ cdef class Dielectric(Material):
         # check for total internal reflection
         if c2s <= 0:
 
+            # skip calculation if transmission only enabled
+            if self.transmission_only:
+                return ray.new_spectrum()
+
             # total internal reflection
             temp = 2 * c1
             reflected = new_vector(incident.x + temp * normal.x,
@@ -231,8 +236,31 @@ cdef class Dielectric(Material):
             self._fresnel(c1, -normal.dot(transmitted), n1, n2, &reflectivity, &transmission)
 
             # select path by roulette using the strength of the coefficients as probabilities
-            # if probability(0.5):
-            if probability(reflectivity):
+            if self.transmission_only or probability(transmission):
+
+                # transmitted ray path selected
+
+                # we have already calculated the transmitted normal
+                transmitted = transmitted.transform(to_world)
+
+                # spawn ray on correct side of surface
+                # note, we do not use the supplied exiting parameter as the normal is
+                # not guaranteed to be perpendicular to the surface for meshes
+                if c1 < 0.0:
+
+                    # incident ray is pointing out of surface
+                    outside_point = outside_point.transform(to_world)
+                    transmitted_ray = ray.spawn_daughter(outside_point, transmitted)
+
+                else:
+
+                    # incident ray is pointing in to surface
+                    inside_point = inside_point.transform(to_world)
+                    transmitted_ray = ray.spawn_daughter(inside_point, transmitted)
+
+                spectrum = transmitted_ray.trace(world)
+
+            else:
 
                 # reflected ray path selected
 
@@ -259,30 +287,6 @@ cdef class Dielectric(Material):
                     reflected_ray = ray.spawn_daughter(outside_point, reflected)
 
                 spectrum = reflected_ray.trace(world)
-
-            else:
-
-                # transmitted ray path selected
-
-                # we have already calculated the transmitted normal
-                transmitted = transmitted.transform(to_world)
-
-                # spawn ray on correct side of surface
-                # note, we do not use the supplied exiting parameter as the normal is
-                # not guaranteed to be perpendicular to the surface for meshes
-                if c1 < 0.0:
-
-                    # incident ray is pointing out of surface
-                    outside_point = outside_point.transform(to_world)
-                    transmitted_ray = ray.spawn_daughter(outside_point, transmitted)
-
-                else:
-
-                    # incident ray is pointing in to surface
-                    inside_point = inside_point.transform(to_world)
-                    transmitted_ray = ray.spawn_daughter(inside_point, transmitted)
-
-                spectrum = transmitted_ray.trace(world)
 
             # note, normalisation not required as path probability equals the reflection/transmission coefficient
             # the two values cancel exactly
