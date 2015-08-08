@@ -47,7 +47,7 @@ cpdef bint probability(double prob):
     """
     Samples from the Bernoulli distribution where P(True) = prob.
 
-    For example, if probability is 0.8. This function will return True 80% of
+    For example, if probability is 0.8, this function will return True 80% of
     the time and False 20% of the time.
 
     Values of prob outside the [0, 1] range of probabilities will be clamped to
