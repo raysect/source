@@ -29,11 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: replace python random() with a cython optimised version
+# TODO: replace python random() with a cython optimised version?
 from random import random as _py_rand
 
 cpdef double random():
+    """
+    Generate random doubles in range [0, 1).
+
+    Values are uniformly distributed.
+
+    :return: Random double.
+    """
     return _py_rand()
+
 
 cpdef bint probability(double prob):
     """
@@ -41,6 +49,9 @@ cpdef bint probability(double prob):
 
     For example, if probability is 0.8. This function will return True 80% of
     the time and False 20% of the time.
+
+    Values of prob outside the [0, 1] range of probabilities will be clamped to
+    the nearest end of the range [0, 1].
 
     :param double prob: A probability from [0, 1].
     :return: True or False.
