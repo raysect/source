@@ -60,7 +60,7 @@ emitter = Box(Point(-0.10 + glass_thickness + padding, -0.02 + glass_thickness +
 
 # CAMERA
 ion()
-camera = PinholeCamera(fov=40, parent=world, transform=translate(0, 0.16, -0.4) * rotate(0, -12, 0), process_count=4)
+camera = PinholeCamera(fov=40, parent=world, transform=translate(0, 0.16, -0.4) * rotate(0, -12, 0))
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
