@@ -27,7 +27,7 @@ world = World()
 
 # BUNNY
 mesh = import_obj(
-        "stanford_bunny.obj",
+        "./demos/resources/stanford_bunny.obj",
         scaling=1,
         parent=world,
         transform=translate(0, 0, 0)*rotate(165, 0, 0),
