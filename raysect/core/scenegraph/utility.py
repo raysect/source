@@ -32,11 +32,13 @@
 
 def print_scenegraph(node):
     """
-    Pretty-prints a scenegraph.
+    Pretty-prints a scene-graph.
     
-    This function will print the scenegraph that contains the specified node.
+    This function will print the scene-graph that contains the specified node.
     The specified node will be highlighted in the tree by post-fixing the node
     with the string: "[referring node]".
+
+    :param _NodeBase node: The target node.
     """
      
     # start from root node
@@ -51,7 +53,6 @@ def print_scenegraph(node):
     # print children
     n = len(root.children)
     for i in range(0, n):
-            
         if i < (n-1):
             _print_node(root.children[i], "", " |  ", node)    
         else:
@@ -60,7 +61,7 @@ def print_scenegraph(node):
 
 def _print_node(node, indent, link, highlight):
     """
-    Internal function called recursively to print a scenegraph.
+    Internal function called recursively to print a scene-graph.
     """
 
     # print node
@@ -74,7 +75,6 @@ def _print_node(node, indent, link, highlight):
     # print children
     n = len(node.children)
     for i in range(0, n):
-            
         if i < (n-1):
             _print_node(node.children[i], indent + link, " |  ", highlight)    
         else:

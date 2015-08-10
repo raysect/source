@@ -31,6 +31,7 @@
 
 # TODO: add more advanced material handling
 # TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
+# TODO: currently only works with objects that present just two intersections - fails with meshes
 
 from raysect.core.classes cimport Material, new_ray
 from raysect.core.math.point cimport Point

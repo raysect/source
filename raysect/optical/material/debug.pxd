@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -27,4 +29,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .camera import PinholeCamera, VectorCamera
+from raysect.optical.material.material cimport NullVolume
+from raysect.core.math.vector cimport Vector
+from raysect.optical.spectralfunction cimport SpectralFunction
+
+cdef class Light(NullVolume):
+
+    cdef:
+        Vector light_direction
+        double intensity
+        SpectralFunction spectrum

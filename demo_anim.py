@@ -1,5 +1,5 @@
 from raysect.optical import World, translate, rotate, Point, Vector, Ray, d65_white, ConstantSF, SampledSF
-from raysect.optical.observer.pinholecamera import PinholeCamera
+from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.glass_libraries import schott
 from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract

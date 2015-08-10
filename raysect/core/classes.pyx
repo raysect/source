@@ -33,11 +33,22 @@
 DEF INFINITY = 1e999
 
 cdef class Ray:
+    """
+    Describes a line in space with an origin and direction.
 
-    def __init__(self,
-                 Point origin not None = Point(0, 0, 0),
-                 Vector direction not None = Vector(0, 0, 1),
-                 double max_distance = INFINITY):
+    :param Point origin: Point defining origin (default is Point(0, 0, 0)).
+    :param Vector direction: Vector defining origin (default is Point(0, 0, 0)).
+    :param double max_distance: The terminating distance of the ray.
+
+    """
+
+    def __init__(self, Point origin=None, Vector direction=None, double max_distance=INFINITY):
+
+        if origin is None:
+            origin = Point(0, 0, 0)
+
+        if direction is None:
+            direction = Vector(0, 0, 1)
 
         self.origin = origin
         self.direction = direction
@@ -59,6 +70,27 @@ cdef class Ray:
 
 
 cdef class Intersection:
+    """
+    Describes the result of a ray-primitive intersection.
+
+    The inside and outside points are launch points for rays emitted from the hit point on the surface. Rays cannot be
+    launched from the hit point directly as they risk re-intersecting the same surface due to numerical accuracy. The
+    inside and outside points are slightly displaced from the primitive surface at a sufficient distance to prevent
+    re-intersection due to numerical accuracy issues. The inside_point is shifted backwards into the surface relative to
+    the surface normal. The outside_point is equivalently shifted away from the surface in the direction of the surface
+    normal.
+
+    :param Ray ray: The incident ray object (world space).
+    :param double ray_distance: The distance of the intersection along the ray path.
+    :param Primitive primitive: The intersected primitive object.
+    :param Point hit_point: The point of intersection between the ray and the primitive (primitive local space).
+    :param Point inside_point: The interior ray launch point (primitive local space).
+    :param Point outside_point: The exterior ray launch point (primitive local space).
+    :param Normal normal: The surface normal (primitive local space)
+    :param bint exiting: True if the ray is exiting the surface, False otherwise.
+    :param AffineMatrix to_local: A world to primitive local transform matrix.
+    :param AffineMatrix to_world: A primitive local to world transform matrix.
+    """
 
     def __init__(self, Ray ray, double ray_distance, Primitive primitive,
                  Point hit_point, Point inside_point, Point outside_point,
@@ -83,6 +115,8 @@ cdef class Intersection:
             self.normal, self.exiting, self.to_local, self.to_world)
 
 
+# TODO - Better name like "Properties" since models built on raysect.core may need to store information on primitives.
+# TODO - This should probably be moved to the Primitive class.
 cdef class Material
 
 

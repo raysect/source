@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -31,10 +33,17 @@
 This module contains materials to aid with debugging.
 """
 
-from raysect.optical.material.material import Material
+from raysect.core.math.point cimport Point
+from raysect.core.math.normal cimport Normal
+from raysect.optical.spectrum cimport Spectrum
+from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph.world cimport World
+from raysect.optical.ray cimport Ray
 from raysect.optical.colour import d65_white
 
-class Light(Material):
+
+cdef class Light(NullVolume):
     """
     A Lambertian surface material illuminated by a distant light source.
 
@@ -48,7 +57,7 @@ class Light(Material):
     :param spectrum: A SpectralFunction defining the light spectrum (default is D65 white).
     """
 
-    def __init__(self, light_direction, intensity=1.0, spectrum=None):
+    def __init__(self, Vector light_direction, double intensity=1.0, SpectralFunction spectrum=None):
 
         self.light_direction = light_direction.normalise()
         self.intensity = max(0, intensity)
@@ -58,7 +67,11 @@ class Light(Material):
         else:
             self.spectrum = spectrum
 
-    def evaluate_surface(self, world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, to_local, to_world):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
+                                bint exiting, Point inside_point, Point outside_point,
+                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+
+        cdef Spectrum spectrum
 
         spectrum = ray.new_spectrum()
         if self.intensity != 0.0:

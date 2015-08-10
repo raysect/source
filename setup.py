@@ -20,6 +20,7 @@ if "--profile" in sys.argv:
     del sys.argv[sys.argv.index("--profile")]
 
 compilation_includes = [".", numpy.get_include()]
+compilation_args = []  # ["-O0", "-g"]
 
 setup_path = path.dirname(path.abspath(__file__))
 
@@ -34,7 +35,7 @@ for root, dirs, files in os.walk(setup_path):
             pyx_file = path.relpath(path.join(root, file), setup_path)
             module = path.splitext(pyx_file)[0].replace("/", ".")
 
-            extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes),)
+            extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
 
 if profile:
 
