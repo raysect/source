@@ -30,7 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.material.material cimport NullVolume
+from raysect.optical.spectralfunction cimport SpectralFunction
 
 cdef class Lambert(NullVolume):
 
-    pass
+    cdef SpectralFunction reflectivity

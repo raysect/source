@@ -40,7 +40,6 @@ from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.normal cimport Normal
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.core.math.random cimport vector_hemisphere_cosine
-from libc.math cimport M_PI as PI
 
 cdef class Lambert(NullVolume):
 
@@ -48,6 +47,8 @@ cdef class Lambert(NullVolume):
 
         if reflectivity is None:
             reflectivity = ConstantSF(0.5)
+
+        self.reflectivity = reflectivity
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
                                     bint exiting, Point inside_point, Point outside_point,
@@ -58,9 +59,6 @@ cdef class Lambert(NullVolume):
             Vector v_normal, v_tangent, v_bitangent, direction
             AffineMatrix surface_to_local
             Spectrum spectrum
-
-        # obtain samples of reflectivity
-        # todo: reflectivity
 
         # generate an orthogonal basis about surface normal
         v_normal = normal.as_vector()
@@ -83,11 +81,6 @@ cdef class Lambert(NullVolume):
         # obtain new world space ray vector from cosine-weighted hemisphere
         direction = vector_hemisphere_cosine()
         direction = direction.transform(surface_to_local)
-        # normalisation = direction.dot(normal)
-
-        # avoid a divide by zero, kill rays that are fully orthogonal to direction
-        # if normalisation == 0.0:
-        #     return ray.new_spectrum()
 
         # generate and trace ray
         if exiting:
@@ -97,12 +90,11 @@ cdef class Lambert(NullVolume):
 
         spectrum = reflected.trace(world)
 
-        # apply reflectivity and normalisation
-        # todo: reflectivity, fudged here as 0.5
-        spectrum.mul_scalar(0.5)
-
-        # TODO: figure out normalisation, this isn't right
-        #spectrum.mul_scalar(2*PI / normalisation)
+        # obtain samples of reflectivity
+        reflectivity = self.reflectivity.sample_multiple(spectrum.min_wavelength,
+                                                         spectrum.max_wavelength,
+                                                         spectrum.num_samples)
+        spectrum.mul_array(reflectivity)
 
         return spectrum
 
