@@ -40,6 +40,7 @@ from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.normal cimport Normal
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.core.math.random cimport vector_hemisphere_cosine
+from numpy cimport ndarray
 
 cdef class Lambert(NullVolume):
 
@@ -59,6 +60,7 @@ cdef class Lambert(NullVolume):
             Vector v_normal, v_tangent, v_bitangent, direction
             AffineMatrix surface_to_local
             Spectrum spectrum
+            ndarray reflectivity
 
         # generate an orthogonal basis about surface normal
         v_normal = normal.as_vector()
@@ -84,7 +86,7 @@ cdef class Lambert(NullVolume):
 
         # generate and trace ray
         if exiting:
-            reflected = ray.spawn_daughter(inside_point.transform(local_to_world), -direction.transform(local_to_world))
+            reflected = ray.spawn_daughter(inside_point.transform(local_to_world), direction.neg().transform(local_to_world))
         else:
             reflected = ray.spawn_daughter(outside_point.transform(local_to_world), direction.transform(local_to_world))
 
