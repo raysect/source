@@ -342,7 +342,6 @@ cdef class Normal(_Vec3):
                           self.y,
                           self.z)
 
-    # TODO: broken
     cpdef Vector orthogonal(self):
         """
         Returns a vector that is guaranteed to be orthogonal to the normal.
@@ -354,11 +353,11 @@ cdef class Normal(_Vec3):
 
         # try x-axis first, if too closely aligned use the y-axis
         v = new_vector(1, 0, 0)
-        m = self.dot(v)
-        if fabs(m) > 0.5:
+        if fabs(self.dot(v)) > 0.5:
             v = new_vector(0, 1, 0)
 
         # make vector perpendicular to normal
+        m = self.dot(v)
         v = new_vector(v.x - m * self.x, v.y - m * self.y, v.z - m * self.z)
         v = v.normalise()
 

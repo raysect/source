@@ -67,52 +67,42 @@ cdef class Lambert(NullVolume):
         v_tangent = normal.orthogonal()
         v_bitangent = v_normal.cross(v_tangent)
 
-        if v_normal.dot(v_tangent) > 0.001:
-            print("NON-ORTHOGONAL BASIS")
-        # print(v_normal.dot(v_bitangent))
-        # print(v_tangent.dot(v_bitangent))
-
         # generate inverse surface transform matrix
         # TODO: MOVE THIS TO A UTILITY FUNCTION AND TEST - math.cython.transforms <- high performance but no safety
-        # local_to_surface = new_affinematrix(v_tangent.x, v_bitangent.x, v_normal.x, 0.0,
-        #                                     v_tangent.y, v_bitangent.y, v_normal.y, 0.0,
-        #                                     v_tangent.z, v_bitangent.z, v_normal.z, 0.0,
-        #                                     0.0, 0.0, 0.0, 1.0)
-
-        # TODO: MOVE THIS TO A UTILITY FUNCTION AND TEST - math.cython.transforms <- high performance but no safety
-        surface_to_local = new_affinematrix(v_tangent.x, v_tangent.y, v_tangent.z, 0.0,
-                                            v_bitangent.x, v_bitangent.y, v_bitangent.z, 0.0,
-                                            v_normal.x, v_normal.y, v_normal.z, 0.0,
+        surface_to_local = new_affinematrix(v_tangent.x, v_bitangent.x, v_normal.x, 0.0,
+                                            v_tangent.y, v_bitangent.y, v_normal.y, 0.0,
+                                            v_tangent.z, v_bitangent.z, v_normal.z, 0.0,
                                             0.0, 0.0, 0.0, 1.0)
 
-        # obtain new ray vector from cosine-weighted hemisphere
-        direction = vector_hemisphere_cosine()
-        normalisation = direction.dot(normal)
+        # TODO: MOVE THIS TO A UTILITY FUNCTION AND TEST - math.cython.transforms <- high performance but no safety
+        # local_to_surface = new_affinematrix(v_tangent.x, v_tangent.y, v_tangent.z, 0.0,
+        #                                     v_bitangent.x, v_bitangent.y, v_bitangent.z, 0.0,
+        #                                     v_normal.x, v_normal.y, v_normal.z, 0.0,
+        #                                     0.0, 0.0, 0.0, 1.0)
 
-        #print(normalisation)
+        # obtain new world space ray vector from cosine-weighted hemisphere
+        direction = vector_hemisphere_cosine()
+        direction = direction.transform(surface_to_local)
+        # normalisation = direction.dot(normal)
 
         # avoid a divide by zero, kill rays that are fully orthogonal to direction
-        if normalisation == 0.0:
-            return ray.new_spectrum()
-
-
-
-        # direction is in surface space, convert to normal
-        # note: rather than multiplying the transforms, it is quicker to do this as two transform for a vector
-        direction.transform(surface_to_local)
-        direction.transform(local_to_world)
+        # if normalisation == 0.0:
+        #     return ray.new_spectrum()
 
         # generate and trace ray
         if exiting:
-            reflected = ray.spawn_daughter(outside_point, direction)
+            reflected = ray.spawn_daughter(inside_point.transform(local_to_world), -direction.transform(local_to_world))
         else:
-            reflected = ray.spawn_daughter(inside_point, direction)
+            reflected = ray.spawn_daughter(outside_point.transform(local_to_world), direction.transform(local_to_world))
+
         spectrum = reflected.trace(world)
 
         # apply reflectivity and normalisation
         # todo: reflectivity, fudged here as 0.5
         spectrum.mul_scalar(0.5)
-        spectrum.mul_scalar(2*PI / normalisation)
+
+        # TODO: figure out normalisation, this isn't right
+        #spectrum.mul_scalar(2*PI / normalisation)
 
         return spectrum
 
