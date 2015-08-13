@@ -110,17 +110,21 @@ camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
 camera.rays = 1
-camera.spectral_samples = 20
-camera.pixels = (512, 512)
-camera.pixel_samples = 1000
+camera.spectral_samples = 15
+camera.pixels = (256, 256)
+camera.pixel_samples = 25
 camera.sub_sample = True
 camera.display_progress = True
 camera.display_update_time = 10
+camera.accumulate = True
 
 # start ray tracing
 ion()
-camera.observe()
-camera.save("cornell_box.png")
+for p in range(1, 1000):
+    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples))
+    camera.observe()
+    camera.save("cornell_box_{}_samples.png".format(camera.accumulated_samples))
+    print()
 
 # display final result
 ioff()
