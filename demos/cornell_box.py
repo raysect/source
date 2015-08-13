@@ -121,7 +121,7 @@ camera.accumulate = True
 # start ray tracing
 ion()
 for p in range(1, 1000):
-    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples))
+    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.rays))
     camera.observe()
     camera.save("cornell_box_{}_samples.png".format(camera.accumulated_samples))
     print()

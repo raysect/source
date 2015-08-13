@@ -14,6 +14,7 @@ from random import random
 
 # TODO: make sure workers receive/generate a NEW seed or the random numbers will be identical!
 # TODO: make an object called Frame?
+# TODO: clean up duplicated code in parallel and single observe methods
 class Camera(Observer):
 
     def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
@@ -92,13 +93,21 @@ class Camera(Observer):
             self._observe_parallel(world, self.xyz_frame, channel_configs, pixel_config)
 
         # update sample accumulation statistics
-        self.accumulated_samples += self.pixel_samples
+        self.accumulated_samples += self.pixel_samples * self.rays
 
     def _observe_single(self, world, xyz_frame, channel_configs, pixel_config):
 
         # initialise user interface
         display_timer = self._start_display()
         statistics_data = self._start_statistics()
+
+        # generate weightings for accumulation
+        total_samples = self.accumulated_samples + self.pixel_samples * self.rays
+        previous_weight = self.accumulated_samples / total_samples
+        added_weight = self.rays * self.pixel_samples / total_samples
+
+        # scale previous state to account for additional samples
+        xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
 
         # render
         for channel, channel_config in enumerate(channel_configs):
@@ -119,14 +128,9 @@ class Camera(Observer):
                     # convert spectrum to CIE XYZ
                     xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
 
-                    # accumulate colour
-                    total_samples = self.accumulated_samples + self.pixel_samples
-                    previous_weight = self.accumulated_samples / total_samples
-                    added_weight = self.accumulated_samples / total_samples
-
-                    xyz_frame[y, x, 0] = previous_weight * xyz_frame[y, x, 0] + added_weight * xyz[0]
-                    xyz_frame[y, x, 1] = previous_weight * xyz_frame[y, x, 1] + added_weight * xyz[1]
-                    xyz_frame[y, x, 2] = previous_weight * xyz_frame[y, x, 2] + added_weight * xyz[2]
+                    xyz_frame[y, x, 0] += added_weight * xyz[0]
+                    xyz_frame[y, x, 1] += added_weight * xyz[1]
+                    xyz_frame[y, x, 2] += added_weight * xyz[2]
 
                     # convert to sRGB colour-space
                     self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
@@ -147,6 +151,14 @@ class Camera(Observer):
         statistics_data = self._start_statistics()
 
         total_pixels = self._pixels[0] * self._pixels[1]
+
+        # generate weightings for accumulation
+        total_samples = self.accumulated_samples + self.pixel_samples * self.rays
+        previous_weight = self.accumulated_samples / total_samples
+        added_weight = self.rays * self.pixel_samples / total_samples
+
+        # scale previous state to account for additional samples
+        xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
 
         # render
         for channel, channel_config in enumerate(channel_configs):
@@ -180,14 +192,9 @@ class Camera(Observer):
                 location, xyz, sample_ray_count = result_queue.get()
                 x, y = location
 
-                # accumulate colour
-                total_samples = self.accumulated_samples + self.pixel_samples
-                previous_weight = self.accumulated_samples / total_samples
-                added_weight = self.pixel_samples / total_samples
-
-                xyz_frame[y, x, 0] = previous_weight * xyz_frame[y, x, 0] + added_weight * xyz[0]
-                xyz_frame[y, x, 1] = previous_weight * xyz_frame[y, x, 1] + added_weight * xyz[1]
-                xyz_frame[y, x, 2] = previous_weight * xyz_frame[y, x, 2] + added_weight * xyz[2]
+                xyz_frame[y, x, 0] += added_weight * xyz[0]
+                xyz_frame[y, x, 1] += added_weight * xyz[1]
+                xyz_frame[y, x, 2] += added_weight * xyz[2]
 
                 # convert to sRGB colour-space
                 self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
