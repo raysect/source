@@ -15,4 +15,4 @@ If you would like to experiment with the code you can use our development script
 
 Raysect currently only supports Linux. Windows support will come at a later stage.
 
-Please note, for legal reasons we require the copyright to any contributed code to be handed over to the Raysect project.
+Please note, for legal reasons we require the copyright to any contributed code to be passed to the Raysect project.
