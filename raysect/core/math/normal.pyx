@@ -31,7 +31,7 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt
+from libc.math cimport sqrt, fabs
 from raysect.core.math.vector cimport new_vector
 
 cdef class Normal(_Vec3):
@@ -336,3 +336,36 @@ cdef class Normal(_Vec3):
         return new_normal(self.x,
                           self.y,
                           self.z)
+
+    cpdef Vector as_vector(self):
+        """
+        Returns a Vector copy of the normal.
+        """
+
+        return new_vector(self.x,
+                          self.y,
+                          self.z)
+
+    cpdef Vector orthogonal(self):
+        """
+        Returns a unit vector that is guaranteed to be orthogonal to the normal.
+        """
+
+        cdef:
+            Normal n
+            Vector v
+            double m
+
+        n = self.normalise()
+
+        # try x-axis first, if too closely aligned use the y-axis
+        v = new_vector(1, 0, 0)
+        if fabs(n.dot(v)) > 0.5:
+            v = new_vector(0, 1, 0)
+
+        # make vector perpendicular to normal
+        m = n.dot(v)
+        v = new_vector(v.x - m * n.x, v.y - m * n.y, v.z - m * n.z)
+        v = v.normalise()
+
+        return v

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,48 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math._vec3 cimport _Vec3
-from raysect.core.math.vector cimport Vector
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.optical.material.material cimport NullVolume
+from raysect.optical.spectralfunction cimport SpectralFunction
 
-cdef class Normal(_Vec3):
+cdef class Lambert(NullVolume):
 
-    cpdef Vector cross(self, _Vec3 v)
-
-    cpdef Normal normalise(self)
-
-    cpdef Normal transform(self, AffineMatrix m)
-
-    cpdef Normal transform_with_inverse(self, AffineMatrix m)
-
-    cdef inline Normal neg(self)
-
-    cdef inline Normal add(self, _Vec3 v)
-
-    cdef inline Normal sub(self, _Vec3 v)
-
-    cdef inline Normal mul(self, double m)
-
-    cdef inline Normal div(self, double m)
-
-    cpdef Normal copy(self)
-
-    cpdef Vector as_vector(self)
-
-    cpdef Vector orthogonal(self)
-
-
-cdef inline Normal new_normal(double x, double y, double z):
-    """
-    Normal factory function.
-
-    Creates a new Normal object with less overhead than the equivalent Python
-    call. This function is callable from cython only.
-    """
-
-    cdef Normal v
-    v = Normal.__new__(Normal)
-    v.x = x
-    v.y = y
-    v.z = z
-    return v
+    cdef SpectralFunction reflectivity
