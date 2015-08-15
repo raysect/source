@@ -11,7 +11,10 @@ from raysect.core import World, AffineMatrix, Point, Vector, Observer
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from random import random
 
+
 # TODO: make sure workers receive/generate a NEW seed or the random numbers will be identical!
+# TODO: make an object called Frame?
+# TODO: clean up duplicated code in parallel and single observe methods
 class Camera(Observer):
 
     def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
@@ -41,8 +44,11 @@ class Camera(Observer):
         self._pixels = pixels
         self.sensitivity = sensitivity
         self.pixel_samples = pixel_samples
+        self.accumulate = False
+        self.accumulated_samples = 0
 
         # output from last call to Observe()
+        self.xyz_frame = zeros((pixels[1], pixels[0], 3))
         self.frame = zeros((pixels[1], pixels[0], 3))
 
     @property
@@ -56,6 +62,11 @@ class Camera(Observer):
                              "containing the x and y pixel counts.")
         self._pixels = pixels
 
+        # reset frames
+        self.xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
+        self.frame = zeros((self._pixels[1], self._pixels[0], 3))
+        self.accumulated_samples = 0
+
     def observe(self):
 
         # must be connected to a world node to be able to perform a ray trace
@@ -64,8 +75,10 @@ class Camera(Observer):
         world = self.root
 
         # create intermediate and final frame-buffers
-        xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
-        self.frame = zeros((self._pixels[1], self._pixels[0], 3))
+        if not self.accumulate:
+            self.xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
+            self.frame = zeros((self._pixels[1], self._pixels[0], 3))
+            self.accumulated_samples = 0
 
         # generate spectral data
         channel_configs = self._calc_channel_config()
@@ -73,16 +86,28 @@ class Camera(Observer):
         # setup pixel vectors in advance of main loop
         pixel_config = self._setup_pixel_config()
 
+        # trace
         if self.process_count == 1:
-            self._observe_single(world, xyz_frame, channel_configs, pixel_config)
+            self._observe_single(world, self.xyz_frame, channel_configs, pixel_config)
         else:
-            self._observe_parallel(world, xyz_frame, channel_configs, pixel_config)
+            self._observe_parallel(world, self.xyz_frame, channel_configs, pixel_config)
+
+        # update sample accumulation statistics
+        self.accumulated_samples += self.pixel_samples * self.rays
 
     def _observe_single(self, world, xyz_frame, channel_configs, pixel_config):
 
         # initialise user interface
         display_timer = self._start_display()
         statistics_data = self._start_statistics()
+
+        # generate weightings for accumulation
+        total_samples = self.accumulated_samples + self.pixel_samples * self.rays
+        previous_weight = self.accumulated_samples / total_samples
+        added_weight = self.rays * self.pixel_samples / total_samples
+
+        # scale previous state to account for additional samples
+        xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
 
         # render
         for channel, channel_config in enumerate(channel_configs):
@@ -103,10 +128,9 @@ class Camera(Observer):
                     # convert spectrum to CIE XYZ
                     xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
 
-                    # accumulate colour
-                    xyz_frame[y, x, 0] += xyz[0]
-                    xyz_frame[y, x, 1] += xyz[1]
-                    xyz_frame[y, x, 2] += xyz[2]
+                    xyz_frame[y, x, 0] += added_weight * xyz[0]
+                    xyz_frame[y, x, 1] += added_weight * xyz[1]
+                    xyz_frame[y, x, 2] += added_weight * xyz[2]
 
                     # convert to sRGB colour-space
                     self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
@@ -127,6 +151,14 @@ class Camera(Observer):
         statistics_data = self._start_statistics()
 
         total_pixels = self._pixels[0] * self._pixels[1]
+
+        # generate weightings for accumulation
+        total_samples = self.accumulated_samples + self.pixel_samples * self.rays
+        previous_weight = self.accumulated_samples / total_samples
+        added_weight = self.rays * self.pixel_samples / total_samples
+
+        # scale previous state to account for additional samples
+        xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
 
         # render
         for channel, channel_config in enumerate(channel_configs):
@@ -160,10 +192,9 @@ class Camera(Observer):
                 location, xyz, sample_ray_count = result_queue.get()
                 x, y = location
 
-                # accumulate colour
-                xyz_frame[y, x, 0] += xyz[0]
-                xyz_frame[y, x, 1] += xyz[1]
-                xyz_frame[y, x, 2] += xyz[2]
+                xyz_frame[y, x, 0] += added_weight * xyz[0]
+                xyz_frame[y, x, 1] += added_weight * xyz[1]
+                xyz_frame[y, x, 2] += added_weight * xyz[2]
 
                 # convert to sRGB colour-space
                 self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])

@@ -379,9 +379,33 @@ class TestNormal(unittest.TestCase):
         v.y = 6.0
         v.z = 7.0
 
+        self.assertTrue(isinstance(r, Normal), "Copy did not return a Normal.")
         self.assertEqual(r.x, 1.0, "Copy failed [X].")
         self.assertEqual(r.y, 2.0, "Copy failed [Y].")
         self.assertEqual(r.z, 3.0, "Copy failed [Z].")
+
+    def test_as_vector(self):
+        """Testing method as_vector()."""
+
+        v = Normal(1.0, 2.0, 3.0)
+        r = v.as_vector()
+
+        # check a new instance has been created by modifying the original
+        v.x = 5.0
+        v.y = 6.0
+        v.z = 7.0
+
+        self.assertTrue(isinstance(r, Vector), "As_vector did not return a Normal.")
+        self.assertEqual(r.x, 1.0, "As_vector failed [X].")
+        self.assertEqual(r.y, 2.0, "As_vector failed [Y].")
+        self.assertEqual(r.z, 3.0, "As_vector failed [Z].")
+
+    def test_orthogonal(self):
+
+        v = Normal(1.0, 2.0, 3.0)
+        r = v.orthogonal()
+
+        self.assertAlmostEqual(v.dot(r), 0.0, delta=1e-10, msg="Orthogonal did not return an orthogonal vector.")
 
 
 if __name__ == "__main__":

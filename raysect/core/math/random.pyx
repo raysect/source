@@ -29,6 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.math.vector cimport new_vector
+from raysect.core.math.point cimport new_point
+from libc.math cimport cos, sin, sqrt, M_PI as PI
+cimport cython
+
+
 # TODO: replace python random() with a cython optimised version?
 from random import random as _py_rand
 
@@ -58,3 +64,39 @@ cpdef bint probability(double prob):
     """
 
     return _py_rand() < prob
+
+
+cpdef Point point_disk():
+    """
+    Returns a random point on a disk of unit radius.
+
+    The disk lies in the x-y plane and is centered at the origin.
+
+    :return: A Point on the disk.
+    """
+
+    cdef double r = sqrt(random())
+    cdef double theta = 2.0 * PI * random()
+    return new_point(r * cos(theta), r * sin(theta), 0)
+
+
+# cpdef Vector vector_sphere():
+#     pass
+
+
+# cpdef Vector vector_hemisphere_uniform():
+#     pass
+
+
+cpdef Vector vector_hemisphere_cosine():
+    """
+    Generates a cosine- weighted random vector on a unit hemisphere.
+
+    The hemisphere is aligned along the z-axis - the plane that forms the
+    hemisphere based lies in the x-y plane.
+
+    :return: A unit Vector.
+    """
+
+    cdef Point p = point_disk()
+    return new_vector(p.x, p.y, sqrt(max(0, 1 - p.x*p.x - p.y*p.y)))
