@@ -45,11 +45,10 @@ else:
 
     directives = {}
 
-setup(name="raysect", version="0.1.0", packages=['raysect'], url="http://raysect.org", author="Alex Meakins",
+setup(name="raysect", version="0.1.0", url="http://raysect.org", author="Alex Meakins",
       author_email="developers@raysect.org",
-      data_files=[('',
-                   ['raysect/optical/material/glass_libraries/schott_catalog_2000.csv',
-                    'raysect/optical/material/glass_libraries/schott_catalog_2000_full.csv']
-                   )],
+      packages=['raysect'],
+      package_dir={'raysect': 'raysect'},
+      package_data={'raysect': ['optical/material/glass_libraries/*.csv']},
       ext_modules=cythonize(extensions, force=force, compiler_directives=directives))
 

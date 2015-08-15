@@ -1,3 +1,9 @@
+
+# External imports
+from matplotlib.pyplot import *
+import time
+
+# Internal imports
 from raysect.optical import World, translate, rotate, Point, Vector, Normal, Ray, d65_white, ConstantSF, InterpolatedSF, Node
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.dielectric import Sellmeier, Dielectric
@@ -6,9 +12,8 @@ from raysect.optical.material.absorber import AbsorbingSurface
 from raysect.primitive import Box, Subtract
 from raysect.primitive.mesh import Mesh
 from raysect.primitive.mesh import import_obj
-from matplotlib.pyplot import *
-import time
 from raysect.optical.material.glass_libraries import schott
+
 
 """
 A Diamond Stanford Bunny on an Illuminated Glass Pedestal
@@ -26,14 +31,8 @@ diamond = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0), 
 world = World()
 
 # BUNNY
-mesh = import_obj(
-        "./demos/resources/stanford_bunny.obj",
-        scaling=1,
-        parent=world,
-        transform=translate(0, 0, 0)*rotate(165, 0, 0),
-        material=diamond
-        # material=schott("LF5G19")
-    )
+mesh = import_obj("./resources/stanford_bunny.obj", scaling=1, parent=world,
+                  transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)  # material=schott("LF5G19")
 
 # LIGHT BOX
 padding = 1e-5
