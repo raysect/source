@@ -52,7 +52,7 @@ cdef class SpectralFunction:
         return NotImplemented
 
 
-cdef class SampledSF(SpectralFunction):
+cdef class InterpolatedSF(SpectralFunction):
     """
     Linearly interpolated spectral function.
 

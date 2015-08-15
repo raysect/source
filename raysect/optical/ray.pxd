@@ -43,14 +43,16 @@ cdef class Ray(CoreRay):
         int _num_samples
         double _min_wavelength
         double _max_wavelength
-        public int max_depth
+        double _extinction_prob
+        int _min_depth
+        int _max_depth
         public int depth
         readonly int ray_count
         Ray _primary_ray
 
     cpdef Spectrum new_spectrum(self)
 
-    cpdef Spectrum trace(self, World world)
+    cpdef Spectrum trace(self, World world, bint keep_alive=*)
 
     cpdef Ray spawn_daughter(self, Point origin, Vector direction)
 
