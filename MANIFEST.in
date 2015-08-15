@@ -1,0 +1,3 @@
+include README.md
+recursive-include demos *.py *.obj
+recursive-include raysect *.py *.pyx *.pxd *.obj *.csv
