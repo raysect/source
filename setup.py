@@ -45,5 +45,10 @@ else:
 
     directives = {}
 
-setup(ext_modules=cythonize(extensions, force=force, compiler_directives=directives))
+setup(name="raysect", version="0.1.0", url="http://raysect.org", author="Alex Meakins",
+      author_email="developers@raysect.org",
+      packages=['raysect'],
+      package_dir={'raysect': 'raysect'},
+      package_data={'raysect': ['optical/material/glass_libraries/*.csv']},
+      ext_modules=cythonize(extensions, force=force, compiler_directives=directives))
 
