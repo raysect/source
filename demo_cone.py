@@ -27,7 +27,7 @@ Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfac
 
 ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -8) * rotate(0, 0, 0),
-                       spectral_samples=3, super_samples=5)
+                       spectral_samples=3, pixel_samples=5)
 camera.ray_max_depth = 10
 camera.rays = 1
 camera.spectral_samples = 1
@@ -37,7 +37,6 @@ camera.display_update_time = 10
 camera.observe()
 
 ioff()
-camera.save("render.png")
 camera.display()
 show()
 
