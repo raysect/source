@@ -37,6 +37,10 @@ from raysect.core.math._vec3 cimport _Vec3
 cdef class Point:
     """
     Represents a point in 3D affine space.
+
+    A point is a location in 3D space which is defined by its x, y and z coordinates in a given coordinate system.
+    Vectors can be added/subtracted from Points yielding another Vector. You can also find the Vector and distance
+    between two Points, and transform a Point from one coordinate system to another.
     """
 
     def __init__(self, double x=0.0, double y=0.0, double z=0.0):
