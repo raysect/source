@@ -1,3 +1,7 @@
+
+.. image:: RaysectLogo_small.png
+   :align: center
+
 Welcome to raysect's documentation!
 ===================================
 
