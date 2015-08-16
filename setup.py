@@ -41,6 +41,7 @@ setup(
     url="http://www.raysect.org",
     author="Dr Alex Meakins",
     author_email="developers@raysect.org",
+    description='A Ray-tracing Framework for Science and Engineering',
     license="BSD",
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -58,7 +59,5 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
-    #package_dir={'raysect': 'raysect'},
-    #package_data={'raysect': ['optical/material/glass_libraries/*.csv']},
     ext_modules=cythonize(extensions, force=force, compiler_directives=directives))
 
