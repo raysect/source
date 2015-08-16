@@ -20,13 +20,14 @@ Raysect Guide
    :maxdepth: 2
    :numbered:
 
-   intro
    conventions
    installation
    license
    raysect_core
    raysect_core_math
    raysect_core_scenegraph
+   raysect_core_kdtree
+   help
 
 Indices and tables
 ==================
