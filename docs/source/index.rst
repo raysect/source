@@ -2,10 +2,7 @@
 .. image:: RaysectLogo_small.png
    :align: center
 
-Welcome to raysect's documentation!
-===================================
-
-Welcome to raysect, an OOP ray-tracing framework in python. Raysect has been
+Welcome to Raysect, an OOP ray-tracing framework in python. Raysect has been
 built with scientific ray-tracing in mind. Some of its features include:
 
 * Fully spectral. Supports scientific ray-tracing of spectra from sources such
