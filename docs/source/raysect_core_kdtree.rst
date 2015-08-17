@@ -2,6 +2,8 @@
 kd-tree Classes
 ===============
 
+Some example text.
+
 .. automodule:: raysect.core.acceleration.accelerator
    :members:
 

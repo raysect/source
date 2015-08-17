@@ -31,7 +31,7 @@ Installation with pip and setup tools is not currently supported but will be wit
 Testing
 ~~~~~~~
 
-A selection of test scripts can be run with the `nose`_ testing framework. These are routinely
+A selection of test scripts can be run with the `nose` testing framework. These are routinely
 run on the development version.  Running ``nosetests`` at the terminal in the source directory
 should run all of these tests to completion without errors or failures.
 
