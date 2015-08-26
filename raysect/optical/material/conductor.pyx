@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from numpy import array, float64
+from numpy import array
 from numpy cimport ndarray
 from libc.math cimport fabs
 from raysect.core.math.affinematrix cimport AffineMatrix
@@ -39,10 +39,9 @@ from raysect.core.math.vector cimport Vector, new_vector
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
-from raysect.optical.spectralfunction cimport ConstantSF, InterpolatedSF
+from raysect.optical.spectralfunction cimport InterpolatedSF
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.ray cimport Ray
-from raysect.core.math.random cimport probability
 
 # GOLD TEST
 
@@ -142,7 +141,8 @@ cdef class Conductor(Material):
         self.index = index
         self.extinction = extinction
 
-    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
                                     bint exiting, Point inside_point, Point outside_point,
                                     Normal normal, AffineMatrix to_local, AffineMatrix to_world):
@@ -153,7 +153,7 @@ cdef class Conductor(Material):
             ndarray n, k, reflection_coefficient
             Ray reflected_ray
             Spectrum spectrum
-            double[::1] s_view
+            double[::1] s_view, n_view, k_view
             int i
 
         # convert ray direction normal to local coordinates
@@ -197,15 +197,17 @@ cdef class Conductor(Material):
         # calculate reflection coefficients at each wavelength and apply
         ci = fabs(ci)
         s_view = spectrum.samples
+        n_view = n
+        k_view = k
         for i in range(spectrum.num_samples):
-            s_view[i] *= self._fresnel(ci, n[i], k[i])
+            s_view[i] *= self._fresnel(ci, n_view[i], k_view[i])
 
         return spectrum
 
     @cython.cdivision(True)
     cdef inline double _fresnel(self, double ci, double n, double k) nogil:
 
-        cdef double k0, k1, k2, k3
+        cdef double c12, k0, k1, k2, k3
 
         ci2 = ci * ci
         k0 = n * n + k * k
