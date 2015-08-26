@@ -137,10 +137,10 @@ gold_k = InterpolatedSF(gold_wavelength, gold_absorption)
 
 cdef class Conductor(Material):
 
-    def __init__(self, SpectralFunction index, SpectralFunction absorption):
+    def __init__(self, SpectralFunction index, SpectralFunction extinction):
 
         self.index = index
-        self.absorption = absorption
+        self.extinction = extinction
 
     @cython.cdivision(True)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
@@ -168,7 +168,7 @@ cdef class Conductor(Material):
 
         # sample refractive index and absorption
         n = self.index.sample_multiple(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
-        k = self.absorption.sample_multiple(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
+        k = self.extinction.sample_multiple(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
 
         # reflection
         temp = 2 * ci

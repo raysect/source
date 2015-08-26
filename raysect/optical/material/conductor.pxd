@@ -37,6 +37,6 @@ cdef class Conductor(Material):
 
     cdef:
         public SpectralFunction index
-        public SpectralFunction absorption
+        public SpectralFunction extinction
 
     cdef inline double _fresnel(self, double ci, double n, double k) nogil
