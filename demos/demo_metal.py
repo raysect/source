@@ -1,23 +1,18 @@
-from raysect.optical import World, Node, translate, rotate, Point, d65_white, ConstantSF
+from raysect.optical import World, translate, rotate, Point, d65_white, ConstantSF
 from raysect.primitive import Sphere, Box, Cylinder
 from raysect.optical.observer import PinholeCamera
-from raysect.optical.material import Conductor, Lambert, UniformSurfaceEmitter
-from raysect.optical.material import gold_n, gold_k
-from raysect.optical.material import silver_n, silver_k
-from raysect.optical.material import copper_n, copper_k
-from raysect.optical.material import titanium_n, titanium_k
-from raysect.optical.material import aluminium_n, aluminium_k
+from raysect.optical.material import Gold, Silver, Copper, Titanium, Aluminium, Lambert, UniformSurfaceEmitter
 from matplotlib.pyplot import *
 
 world = World()
 
-Sphere(0.5, world, transform=translate(1.2, 0.5001, 0.6), material=Conductor(gold_n, gold_k))
-Sphere(0.5, world, transform=translate(0.6, 0.5001, -0.6), material=Conductor(silver_n, silver_k))
-Sphere(0.5, world, transform=translate(0, 0.5001, 0.6), material=Conductor(copper_n, copper_k))
-Sphere(0.5, world, transform=translate(-0.6, 0.5001, -0.6), material=Conductor(titanium_n, titanium_k))
-Sphere(0.5, world, transform=translate(-1.2, 0.5001, 0.6), material=Conductor(aluminium_n, aluminium_k))
+Sphere(0.5, world, transform=translate(1.2, 0.5001, 0.6), material=Gold())
+Sphere(0.5, world, transform=translate(0.6, 0.5001, -0.6), material=Silver())
+Sphere(0.5, world, transform=translate(0, 0.5001, 0.6), material=Copper())
+Sphere(0.5, world, transform=translate(-0.6, 0.5001, -0.6), material=Titanium())
+Sphere(0.5, world, transform=translate(-1.2, 0.5001, 0.6), material=Aluminium())
 
-Box(Point(-100, -0.1, -100), Point(100, 0, 100), world, material=Lambert(ConstantSF(0.5)))
+Box(Point(-100, -0.1, -100), Point(100, 0, 100), world, material=Lambert(ConstantSF(1.0)))
 Cylinder(3.0, 8.0, world, transform=translate(4, 8, 0) * rotate(90, 0, 0), material=UniformSurfaceEmitter(d65_white, 1.0))
 
 camera = PinholeCamera(parent=world, transform=translate(0, 4, -3.5) * rotate(0, -48, 0))
