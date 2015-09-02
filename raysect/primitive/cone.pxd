@@ -44,10 +44,9 @@ cdef class Cone(Primitive):
     cdef Point _cached_origin
     cdef Vector _cached_direction
     cdef Ray _cached_ray
-    cdef int _cached_face
     cdef int _cached_type
 
     cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance,
-                                                    int face, int type)
+                                                    int type)
 
-    cdef inline Vector _interior_offset(self, Point hit_point, Normal normal, int type)
+    cdef inline Point _interior_point(self, Point hit_point, Normal normal, int type)

@@ -44,17 +44,14 @@ DEF INFINITY = 1e999
 # bounding box is padded by a small amount to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9
 
+# TODO - Perhaps should be calculated based on primitive scale
 # additional ray distance to avoid re-hitting the same surface point
 DEF EPSILON = 1e-9
 
 # object type enumeration
 DEF NO_TYPE = -1
 DEF CONE = 0
-DEF SLAB = 1
-
-# slab face enumeration
-DEF NO_FACE = -1
-DEF LOWER_FACE = 0
+DEF FACE = 1
 
 
 cdef class Cone(Primitive):
@@ -98,7 +95,6 @@ cdef class Cone(Primitive):
         self._cached_origin = None
         self._cached_direction = None
         self._cached_ray = None
-        self._cached_face = NO_FACE
         self._cached_type = NO_TYPE
 
     property radius:
@@ -140,9 +136,8 @@ cdef class Cone(Primitive):
     cpdef Intersection hit(self, Ray ray):
 
         cdef:
-            double near_intersection, far_intersection
-            int near_face, far_face
-            int near_type, far_type
+            double near_intersection, far_intersection, closest_intersection
+            int near_type, far_type, closest_type
             double a, b, c, d, t0, t1, temp, near_point_z, far_point_z
             int f0, f1
             Point near_point, far_point
@@ -192,40 +187,58 @@ cdef class Cone(Primitive):
             # Both intersections are with the cone body
             near_intersection = t0
             near_type = CONE
-            near_face = NO_FACE
 
             far_intersection = t1
             far_type = CONE
-            far_face = NO_FACE
 
         # Is only one of the intersections inside the cone body, therefore other is with flat cone base.
         elif 0 < near_point_z < height or 0 < far_point_z < height:
 
             if near_point_z < 0 or far_point_z > height:
-                # Near intersection is cone base, far is cone face
+                # Near intersection is cone base, far is cone surface
                 near_intersection = -origin.z / direction.z
-                near_type = SLAB
-                near_face = LOWER_FACE
+                near_type = FACE
 
                 far_intersection = t0
                 far_type = CONE
-                far_face = NO_FACE
 
             else:
-                # Otherwise far intersection is cone bace, near is cone face.
+                # Otherwise near intersection is cone surface, far is cone base.
                 near_intersection = t0
                 near_type = CONE
-                near_face = NO_FACE
 
                 far_intersection = (self._height - origin.z) / direction.z
-                far_type = SLAB
-                far_face = LOWER_FACE
+                far_type = FACE
 
         # Both intersections are outside the bounding box.
         else:
             return None
 
-        return self._generate_intersection(ray, origin, direction, near_intersection, near_face, near_type)
+        # are there any intersections inside the ray search range?
+        if near_intersection > ray.max_distance or far_intersection < 0.0:
+            return None
+
+        # identify closest intersection
+        if near_intersection >= 0.0:
+            closest_intersection = near_intersection
+            closest_type = near_type
+
+            if far_intersection <= ray.max_distance:
+                self._further_intersection = True
+                self._next_t = far_intersection
+                self._cached_origin = origin
+                self._cached_direction = direction
+                self._cached_ray = ray
+                self._cached_type = far_type
+
+        elif far_intersection <= ray.max_distance:
+            closest_intersection = far_intersection
+            closest_type = far_type
+
+        else:
+            return None
+
+        return self._generate_intersection(ray, origin, direction, closest_intersection, closest_type)
 
     # Only used by CSG intersections
     cpdef Intersection next_intersection(self):
@@ -236,11 +249,12 @@ cdef class Cone(Primitive):
         # this is the 2nd and therefore last intersection
         self._further_intersection = False
 
-        return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_type)
+        return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_type)
 
 
     # This function is called twice. Used in hit() and next_intersection()
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int face, int type):
+    @cython.cdivision(True)
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int type):
 
         cdef:
             Point hit_point, inside_point, outside_point
@@ -254,11 +268,12 @@ cdef class Cone(Primitive):
                               origin.z + ray_distance * direction.z)
 
         # if hit point equals tip, set normal to up.
+        # calculate surface normal in local space
         if type == CONE and (hit_point.x == 0.0) and (hit_point.y == 0.0) and (hit_point.z == self.height):
             normal = new_normal(0, 0, 1)
 
-        # calculate surface normal in local space
         elif type == CONE:
+            # TODO - explore optimisation of this section, two sqrts too many
             # Unit vector that points from origin to hit_point in x-y plane at the base of the cone.
             op = new_normal(hit_point.x, hit_point.y, 0)
             op = op.normalise()
@@ -270,11 +285,11 @@ cdef class Cone(Primitive):
             normal = new_normal(0, 0, -1)
 
         # displace hit_point away from surface to generate inner and outer points
-        interior_offset = self._interior_offset(hit_point, normal, type)
+        # inside_point = self._interior_point(hit_point, normal, type)
 
-        inside_point = new_point(hit_point.x + interior_offset.x,
-                                 hit_point.y + interior_offset.y,
-                                 hit_point.z + interior_offset.z)
+        inside_point = new_point(hit_point.x - EPSILON * normal.x,
+                                  hit_point.y - EPSILON * normal.y,
+                                  hit_point.z - EPSILON * normal.z)
 
         outside_point = new_point(hit_point.x + EPSILON * normal.x,
                                   hit_point.y + EPSILON * normal.y,
@@ -290,36 +305,47 @@ cdef class Cone(Primitive):
                                 normal, exiting, self.to_local(), self.to_root())
 
     @cython.cdivision(True)
-    cdef inline Vector _interior_offset(self, Point hit_point, Normal normal, int type):
+    cdef inline Point _interior_point(self, Point hit_point, Normal normal, int type):
 
-        cdef double x, y, z, length
+        cdef double x, y, z, old_radius, new_radius, scale
 
-        # shift away from cone surface
-        if type == CONE:
-            x = -EPSILON * normal.x
-            y = -EPSILON * normal.y
-            z = -EPSILON * normal.z
+        if self.height - hit_point.z < EPSILON:
+            # Avoid tip of cone
+            x = 0.0
+            y = 0.0
+            z = self.height - EPSILON
+
+        elif hit_point.z < EPSILON:
+
+            if (hit_point.x**2 + hit_point.y**2) > self.radius**2:
+                # Avoid bottom edges of cone
+                new_radius = self.radius - EPSILON
+                old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
+
+                scale = new_radius/old_radius
+
+                x = scale * hit_point.x
+                y = scale * hit_point.y
+                z = EPSILON
+
+            else:
+                # Avoid base of cone
+                x = hit_point.x
+                y = hit_point.y
+                z = EPSILON
+
         else:
-            x = 0
-            y = 0
+            # Avoid sides of cone
+            old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
+            new_radius = old_radius - EPSILON
 
-            if hit_point.x != 0.0 and hit_point.y != 0.0:
+            scale = new_radius/old_radius
+            x = scale * hit_point.x
+            y = scale * hit_point.y
+            z = hit_point.z
 
-                length = sqrt(hit_point.x * hit_point.x + hit_point.y * hit_point.y)
+        return new_point(x, y, z)
 
-                if (length - self._radius) < EPSILON:
-
-                    length = 1.0 / length
-                    x = -EPSILON * length * hit_point.x
-                    y = -EPSILON * length * hit_point.y
-
-        # shift away from bottom surface
-        if fabs(hit_point.z) < EPSILON:
-            z = EPSILON
-        else:
-            z = 0
-
-        return new_vector(x, y, z)
 
     cpdef bint contains(self, Point point) except -1:
         cdef:
