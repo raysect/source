@@ -9,11 +9,15 @@ from raysect.optical.ray import Ray
 from raysect.optical import Spectrum
 from raysect.core import World, AffineMatrix, Point, Vector, Observer
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
+from random import random
 
 
+# TODO: make sure workers receive/generate a NEW seed or the random numbers will be identical!
+# TODO: make an object called Frame?
+# TODO: clean up duplicated code in parallel and single observe methods
 class Camera(Observer):
 
-    def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=20, rays=1, super_samples=1,
+    def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
                  process_count=cpu_count(), parent=None, transform=AffineMatrix(), name=""):
 
         super().__init__(parent, transform, name)
@@ -25,7 +29,9 @@ class Camera(Observer):
         self.spectral_samples = spectral_samples
         self.min_wavelength = 375.0
         self.max_wavelength = 740.0
-        self.ray_max_depth = 15
+        self.ray_extinction_prob = 0.1
+        self.ray_min_depth = 3
+        self.ray_max_depth = 100
 
         # progress information
         self.display_progress = True
@@ -37,9 +43,12 @@ class Camera(Observer):
         # camera configuration
         self._pixels = pixels
         self.sensitivity = sensitivity
-        self.super_samples = super_samples
+        self.pixel_samples = pixel_samples
+        self.accumulate = False
+        self.accumulated_samples = 0
 
         # output from last call to Observe()
+        self.xyz_frame = zeros((pixels[1], pixels[0], 3))
         self.frame = zeros((pixels[1], pixels[0], 3))
 
     @property
@@ -53,6 +62,11 @@ class Camera(Observer):
                              "containing the x and y pixel counts.")
         self._pixels = pixels
 
+        # reset frames
+        self.xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
+        self.frame = zeros((self._pixels[1], self._pixels[0], 3))
+        self.accumulated_samples = 0
+
     def observe(self):
 
         # must be connected to a world node to be able to perform a ray trace
@@ -61,8 +75,10 @@ class Camera(Observer):
         world = self.root
 
         # create intermediate and final frame-buffers
-        xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
-        self.frame = zeros((self._pixels[1], self._pixels[0], 3))
+        if not self.accumulate:
+            self.xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
+            self.frame = zeros((self._pixels[1], self._pixels[0], 3))
+            self.accumulated_samples = 0
 
         # generate spectral data
         channel_configs = self._calc_channel_config()
@@ -70,16 +86,28 @@ class Camera(Observer):
         # setup pixel vectors in advance of main loop
         pixel_config = self._setup_pixel_config()
 
+        # trace
         if self.process_count == 1:
-            self._observe_single(world, xyz_frame, channel_configs, pixel_config)
+            self._observe_single(world, self.xyz_frame, channel_configs, pixel_config)
         else:
-            self._observe_parallel(world, xyz_frame, channel_configs, pixel_config)
+            self._observe_parallel(world, self.xyz_frame, channel_configs, pixel_config)
+
+        # update sample accumulation statistics
+        self.accumulated_samples += self.pixel_samples * self.rays
 
     def _observe_single(self, world, xyz_frame, channel_configs, pixel_config):
 
         # initialise user interface
         display_timer = self._start_display()
         statistics_data = self._start_statistics()
+
+        # generate weightings for accumulation
+        total_samples = self.accumulated_samples + self.pixel_samples * self.rays
+        previous_weight = self.accumulated_samples / total_samples
+        added_weight = self.rays * self.pixel_samples / total_samples
+
+        # scale previous state to account for additional samples
+        xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
 
         # render
         for channel, channel_config in enumerate(channel_configs):
@@ -100,10 +128,9 @@ class Camera(Observer):
                     # convert spectrum to CIE XYZ
                     xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
 
-                    # accumulate colour
-                    xyz_frame[y, x, 0] += xyz[0]
-                    xyz_frame[y, x, 1] += xyz[1]
-                    xyz_frame[y, x, 2] += xyz[2]
+                    xyz_frame[y, x, 0] += added_weight * xyz[0]
+                    xyz_frame[y, x, 1] += added_weight * xyz[1]
+                    xyz_frame[y, x, 2] += added_weight * xyz[2]
 
                     # convert to sRGB colour-space
                     self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
@@ -124,6 +151,14 @@ class Camera(Observer):
         statistics_data = self._start_statistics()
 
         total_pixels = self._pixels[0] * self._pixels[1]
+
+        # generate weightings for accumulation
+        total_samples = self.accumulated_samples + self.pixel_samples * self.rays
+        previous_weight = self.accumulated_samples / total_samples
+        added_weight = self.rays * self.pixel_samples / total_samples
+
+        # scale previous state to account for additional samples
+        xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
 
         # render
         for channel, channel_config in enumerate(channel_configs):
@@ -157,10 +192,9 @@ class Camera(Observer):
                 location, xyz, sample_ray_count = result_queue.get()
                 x, y = location
 
-                # accumulate colour
-                xyz_frame[y, x, 0] += xyz[0]
-                xyz_frame[y, x, 1] += xyz[1]
-                xyz_frame[y, x, 2] += xyz[2]
+                xyz_frame[y, x, 0] += added_weight * xyz[0]
+                xyz_frame[y, x, 1] += added_weight * xyz[1]
+                xyz_frame[y, x, 2] += added_weight * xyz[2]
 
                 # convert to sRGB colour-space
                 self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
@@ -316,8 +350,8 @@ class Camera(Observer):
         Virtual method - to be implemented by derived classes.
 
         Runs at the start of observe() loop to set up any data needed for calculating pixel vectors
-        and supersampling that shouldn't be calculated at every loop iteration. The result of this
-        functon should be written to self._pixel_vectors_variables.
+        and super-sampling that shouldn't be calculated at every loop iteration. The result of this
+        function should be written to self._pixel_vectors_variables.
         """
         raise NotImplementedError("Virtual method _setup_pixel_vectors() has not been implemented for this Camera.")
 
@@ -344,14 +378,15 @@ class Camera(Observer):
 
 class PinholeCamera(Camera):
 
-    def __init__(self, pixels=(512, 512), fov=45, sensitivity=1.0, spectral_samples=20, rays=1, super_samples=1,
-                 process_count=cpu_count(), parent=None, transform=AffineMatrix(), name=""):
+    def __init__(self, pixels=(512, 512), fov=45, sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
+                 sub_sample=False, process_count=cpu_count(), parent=None, transform=AffineMatrix(), name=""):
 
         super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples, rays=rays,
-                         super_samples=super_samples, process_count=process_count, parent=parent,
+                         pixel_samples=pixel_samples, process_count=process_count, parent=parent,
                          transform=transform, name=name)
 
         self._fov = fov
+        self.sub_sample = sub_sample
 
     @property
     def fov(self):
@@ -393,28 +428,33 @@ class PinholeCamera(Camera):
 
         origin, image_delta, image_start_x, image_start_y = pixel_configuration
 
-        # subsample AA
-        super_samples = self.super_samples
-        delta = 1 / super_samples
-        offset = delta / 2 - 0.5
-
         rays = []
+        for _ in range(self.pixel_samples):
 
-        for i in range(super_samples):
-            for j in range(super_samples):
+            if self.sub_sample:
+                # TODO: make this LESS stupid
+                # uniform sample (stupid, but it will do for now)
+                dx = random() - 0.5
+                dy = random() - 0.5
+            else:
+                dx = 0
+                dy = 0
 
-                dx = delta * i + offset
-                dy = delta * j + offset
+            # calculate ray parameters
+            direction = Vector(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
+            direction = direction.transform(self.to_root())
 
-                # calculate ray parameters
-                direction = Vector(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
-                direction = direction.transform(self.to_root())
-
-                # generate ray and add to array to return
-                rays.append(
-                    Ray(origin, direction, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
-                        num_samples=spectral_samples, max_depth=self.ray_max_depth)
+            # generate ray and add to array to return
+            rays.append(
+                Ray(origin, direction,
+                    min_wavelength=min_wavelength,
+                    max_wavelength=max_wavelength,
+                    num_samples=spectral_samples,
+                    extinction_prob=self.ray_extinction_prob,
+                    min_depth=self.ray_min_depth,
+                    max_depth=self.ray_max_depth
                 )
+            )
 
         return rays
 
@@ -422,13 +462,10 @@ class PinholeCamera(Camera):
 class VectorCamera(Camera):
 
     def __init__(self, pixel_origins, pixel_directions, name="", sensitivity=1.0, spectral_samples=20, rays=1,
-                 super_samples=1, process_count=cpu_count(), parent=None, transform=AffineMatrix()):
-
-        if super_samples > 1:
-            raise NotImplementedError("The VectorCamera does not yet implement supersampling.")
+                 pixel_samples=100, process_count=cpu_count(), parent=None, transform=AffineMatrix()):
 
         super().__init__(pixels=pixel_directions.shape, sensitivity=sensitivity, spectral_samples=spectral_samples,
-                         rays=rays, super_samples=super_samples, process_count=process_count, parent=parent,
+                         rays=rays, pixel_samples=pixel_samples, process_count=process_count, parent=parent,
                          transform=transform, name=name)
 
         # camera configuration
@@ -444,6 +481,12 @@ class VectorCamera(Camera):
         direction = self.pixel_directions[x, y]
 
         return [
-            Ray(origin, direction, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
-                num_samples=spectral_samples, max_depth=self.ray_max_depth)
-        ]
+            Ray(origin, direction,
+                min_wavelength=min_wavelength,
+                max_wavelength=max_wavelength,
+                num_samples=spectral_samples,
+                extinction_prob=self.ray_extinction_prob,
+                min_depth=self.ray_min_depth,
+                max_depth=self.ray_max_depth
+            )
+        ] * self.pixel_samples

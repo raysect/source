@@ -71,7 +71,8 @@ cdef class NullSurface(Material):
         # do not count null surfaces in ray depth
         daughter_ray.depth -= 1
 
-        return daughter_ray.trace(world)
+        # prevent extinction on a null surface
+        return daughter_ray.trace(world, keep_alive=True)
 
 
 cdef class NullVolume(Material):

@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.utility cimport clamp
-from raysect.optical.spectralfunction cimport SampledSF
+from raysect.optical.spectralfunction cimport InterpolatedSF
 from numpy import array, float64, zeros, linspace
 cimport cython
 
@@ -86,9 +86,9 @@ ciexyz_z_samples = array([
     0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
     0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000]) / 106.8566
 
-ciexyz_x = SampledSF(ciexyz_wavelength_samples, ciexyz_x_samples)
-ciexyz_y = SampledSF(ciexyz_wavelength_samples, ciexyz_y_samples)
-ciexyz_z = SampledSF(ciexyz_wavelength_samples, ciexyz_z_samples)
+ciexyz_x = InterpolatedSF(ciexyz_wavelength_samples, ciexyz_x_samples)
+ciexyz_y = InterpolatedSF(ciexyz_wavelength_samples, ciexyz_y_samples)
+ciexyz_z = InterpolatedSF(ciexyz_wavelength_samples, ciexyz_z_samples)
 
 # CIE D65 standard illuminant, normalised to 1.0 over visual range 375-785 nm
 d65_wavelength_samples = linspace(300.0, 830.0, 107)
@@ -113,7 +113,7 @@ d65_white_samples = array([
      63.382800,  63.843400,  64.304000,  61.877900,  59.451900,  55.705400,
      51.959000,  54.699800,  57.440600,  58.876500,  60.312500]) / 87.1971
 
-d65_white = SampledSF(d65_wavelength_samples, d65_white_samples)
+d65_white = InterpolatedSF(d65_wavelength_samples, d65_white_samples)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

@@ -54,14 +54,14 @@ cdef class Spectrum(SpectralFunction):
 
     def __init__(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample=False):
 
-        if num_samples < 1:
-            raise("Number of samples cannot be less than 1.")
-
         if min_wavelength <= 0.0 or max_wavelength <= 0.0:
             raise ValueError("Wavelength cannot be less than or equal to zero.")
 
         if min_wavelength >= max_wavelength:
             raise ValueError("Minimum wavelength cannot be greater or equal to the maximum wavelength.")
+
+        if num_samples < 1:
+            raise ValueError("Number of samples cannot be less than 1.")
 
         self._construct(min_wavelength, max_wavelength, num_samples, fast_sample)
 

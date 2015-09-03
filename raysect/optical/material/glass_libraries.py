@@ -4,7 +4,7 @@ from pkg_resources import resource_filename
 from collections import namedtuple
 from numpy import array
 from .dielectric import Dielectric, Sellmeier
-from ..spectralfunction import SampledSF
+from ..spectralfunction import InterpolatedSF
 
 _sellmeier_disp = namedtuple("sellmeier_dispersion", ["B1", "B2", "B3", "C1", "C2", "C3"])
 
@@ -62,7 +62,7 @@ class Schott():
         b1, b2, b3, c1, c2, c3 = chosen_glass.sellmeier
         wavelengths, transmission = chosen_glass.taui25
 
-        return Dielectric(index=Sellmeier(b1, b2, b3, c1, c2, c3), transmission=SampledSF(wavelengths, transmission))
+        return Dielectric(index=Sellmeier(b1, b2, b3, c1, c2, c3), transmission=InterpolatedSF(wavelengths, transmission))
 
     def list(self):
 

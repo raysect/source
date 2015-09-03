@@ -55,6 +55,10 @@ cdef class Normal(_Vec3):
 
     cpdef Normal copy(self)
 
+    cpdef Vector as_vector(self)
+
+    cpdef Vector orthogonal(self)
+
 
 cdef inline Normal new_normal(double x, double y, double z):
     """
