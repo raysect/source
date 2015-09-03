@@ -88,7 +88,6 @@ cdef class Cone(Primitive):
         self._radius = radius
         self._height = height
 
-        # Only needed for next CSG intersection (i.e. when you have overlapping primitives)
         # initialise next intersection caching and control attributes
         self._further_intersection = False
         self._next_t = 0.0
@@ -153,7 +152,7 @@ cdef class Cone(Primitive):
         height = self._height
 
         # Compute quadratic cone coefficients
-        # based on "Physically Based Rendering - 2nd Edition", Elsevier 2010
+        # based on math from "Physically Based Rendering - 2nd Edition", Elsevier 2010
         k = radius / height
         k = k * k
         a = direction.x * direction.x + direction.y * direction.y - k * direction.z * direction.z
@@ -223,6 +222,7 @@ cdef class Cone(Primitive):
             closest_intersection = near_intersection
             closest_type = near_type
 
+            # If there is a further intersection, setup values for next calculation.
             if far_intersection <= ray.max_distance:
                 self._further_intersection = True
                 self._next_t = far_intersection
@@ -240,7 +240,6 @@ cdef class Cone(Primitive):
 
         return self._generate_intersection(ray, origin, direction, closest_intersection, closest_type)
 
-    # Only used by CSG intersections
     cpdef Intersection next_intersection(self):
 
         if not self._further_intersection:
@@ -285,11 +284,11 @@ cdef class Cone(Primitive):
             normal = new_normal(0, 0, -1)
 
         # displace hit_point away from surface to generate inner and outer points
-        # inside_point = self._interior_point(hit_point, normal, type)
+        inside_point = self._interior_point(hit_point, normal, type)
 
-        inside_point = new_point(hit_point.x - EPSILON * normal.x,
-                                  hit_point.y - EPSILON * normal.y,
-                                  hit_point.z - EPSILON * normal.z)
+        # inside_point = new_point(hit_point.x - EPSILON * normal.x,
+        #                           hit_point.y - EPSILON * normal.y,
+        #                           hit_point.z - EPSILON * normal.z)
 
         outside_point = new_point(hit_point.x + EPSILON * normal.x,
                                   hit_point.y + EPSILON * normal.y,
@@ -310,12 +309,18 @@ cdef class Cone(Primitive):
         cdef double x, y, z, old_radius, new_radius, scale
 
         if self.height - hit_point.z < EPSILON:
+            print("cone tip")
+            print(self.height)
+            print(hit_point.z)
+            print(self.height - hit_point.z)
+            input("...")
             # Avoid tip of cone
             x = 0.0
             y = 0.0
             z = self.height - EPSILON
 
         elif hit_point.z < EPSILON:
+            print("cone base")
 
             if (hit_point.x**2 + hit_point.y**2) > self.radius**2:
                 # Avoid bottom edges of cone
