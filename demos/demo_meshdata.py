@@ -3,6 +3,22 @@ from scipy.interpolate import griddata
 from scipy.io import loadmat
 
 
+# Concept
+# =======
+#
+# - Essentially, this is a mesh interpolator. Data is read in from a mesh-like data set. The data is parsed into a
+# raysect mesh object. Data is stored at the mesh vertices. To get the data value at any 2D (x, y) or 3D (x, y, z)
+# coordinate, the kdTree looks up the nearest triangular cells. Each triangular cell is tested for inclusion of the
+# coordinate point. Once inside the point is known to be inside the cell, Barycentric interpolation is used to
+# interpolate the value inside the mesh cell.
+#
+# - A single mesh may be used for multiple data values. For example, in the case of a plasma, the same input mesh may
+# have plasma values of electron temperature, electron density, etc, as attributes.
+#
+# - The Polygon File Format (also known as Stanford Triangle Format) would be suitable for storing this data in files.
+# It would allow us to write a list of triangle verticies with associated data values.
+
+
 class DataMesh2D:
     pass
 
