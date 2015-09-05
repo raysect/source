@@ -51,8 +51,11 @@ cdef class Ray:
             direction = Vector(0, 0, 1)
 
         self.origin = origin
+        """Point defining origin (default is Point(0, 0, 0))."""
         self.direction = direction
+        """Vector defining origin (default is Point(0, 0, 0))."""
         self.max_distance = max_distance
+        """The terminating distance of the ray."""
 
     def __repr__(self):
 
@@ -97,15 +100,25 @@ cdef class Intersection:
                  Normal normal, bint exiting, AffineMatrix to_local, AffineMatrix to_world):
 
         self.ray = ray
+        """The incident ray object (world space)."""
         self.ray_distance = ray_distance
+        """The distance of the intersection along the ray path."""
         self.exiting = exiting
+        """True if the ray is exiting the surface, False otherwise."""
         self.primitive = primitive
+        """The intersected primitive object."""
         self.hit_point = hit_point
+        """The point of intersection between the ray and the primitive (primitive local space)."""
         self.inside_point = inside_point
+        """The interior ray launch point (primitive local space)."""
         self.outside_point = outside_point
+        """The exterior ray launch point (primitive local space)."""
         self.normal = normal
+        """The surface normal (primitive local space)"""
         self.to_local = to_local
+        """A world to primitive local transform matrix."""
         self.to_world = to_world
+        """A primitive local to world transform matrix."""
 
     def __repr__(self):
 
