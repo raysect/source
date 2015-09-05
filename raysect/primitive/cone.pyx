@@ -308,7 +308,7 @@ cdef class Cone(Primitive):
 
         cdef double x, y, z, old_radius, new_radius, scale
 
-        if self.height - hit_point.z < EPSILON:
+        if 0 < self.height - hit_point.z < EPSILON:
             print("cone tip")
             print(self.height)
             print(hit_point.z)
@@ -347,7 +347,7 @@ cdef class Cone(Primitive):
             scale = new_radius/old_radius
             x = scale * hit_point.x
             y = scale * hit_point.y
-            z = hit_point.z
+            z = hit_point.z - EPSILON * normal.z
 
         return new_point(x, y, z)
 

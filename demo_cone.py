@@ -32,10 +32,10 @@ ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -2.3) * rotate(0, 0, 0))
 # camera.process_count = 1
 camera.process_count = 1
-camera.pixel_samples = 25
+camera.pixel_samples = 5
 camera.rays = 1
 camera.spectral_samples = 15
-camera.pixels = (512, 512)
+camera.pixels = (256, 256)
 camera.display_progress = True
 camera.display_update_time = 10
 camera.observe()
