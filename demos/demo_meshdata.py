@@ -18,7 +18,7 @@ import os
 # have plasma values of electron temperature, electron density, etc, as attributes.
 #
 # - The Polygon File Format (also known as Stanford Triangle Format) would be suitable for storing this data in files.
-# It would allow us to write a list of triangle verticies with associated data values.
+# It would allow us to write a list of triangle vertices with associated data values.
 
 
 # TODO - This name could be better.
@@ -99,6 +99,38 @@ class TriangleMeshTriangle:
         yield(self.v2)
         yield(self.v3)
 
+    def __repr__(self):
+        repr_str = "v1 => ({}, {})\n".format(self.v1.u, self.v1.v)
+        repr_str += "v2 => ({}, {})\n".format(self.v2.u, self.v2.v)
+        repr_str += "v3 => ({}, {})".format(self.v3.u, self.v3.v)
+        return repr_str
+
+    def point_inside_triangle(self, point):
+        """
+        Test if a 2D point lies inside this triangle.
+
+        Covert
+
+        :param Point2D point: The point of interest
+        :return True or False.
+        """
+
+        px, py = point
+        v1, v2, v3 = self
+
+        # Compute barycentric coordinates
+        alpha = ((v2.v - v3.v)*(px - v3.u) + (v3.u - v2.u)*(py - v3.v)) / \
+                ((v2.v - v3.v)*(v1.u - v3.u) + (v3.u - v2.u)*(v1.v - v3.v))
+        beta = ((v3.v - v1.v)*(px - v3.u) + (v1.u - v3.u)*(py - v3.v)) /\
+               ((v2.v - v3.v)*(v1.u - v3.u) + (v3.u - v2.u)*(v1.v - v3.v))
+        gamma = 1.0 - alpha - beta
+
+        # Point is inside triangle if all coordinates between [0, 1]
+        if 0 <= alpha <= 1 and 0 <= beta <= 1 and 0 <= gamma <= 1:
+            return True
+        else:
+            return False
+
 
 class TriangleMeshVertex:
     """
@@ -175,4 +207,3 @@ if __name__ == '__main__':
             # Create mesh triangles associated with this vertices.
             triangle1 = datamesh.add_triangle(v1, v2, v3)
             triangle2 = datamesh.add_triangle(v3, v4, v1)
-
