@@ -105,7 +105,28 @@ class TriangleMeshTriangle:
         repr_str += "v3 => ({}, {})".format(self.v3.u, self.v3.v)
         return repr_str
 
-    def point_inside_triangle(self, point):
+    def __call__(self, point, data_name):
+
+        px, py = point
+        v1, v2, v3 = self
+
+        try:
+            alpha_data = getattr(v1, data_name)
+            beta_data = getattr(v2, data_name)
+            gamma_data = getattr(v3, data_name)
+
+        except AttributeError:
+            raise ValueError("The data value requested ({}) could not be found on these vertices.".format(data_name))
+
+        alpha = ((v2.v - v3.v)*(px - v3.u) + (v3.u - v2.u)*(py - v3.v)) / \
+                ((v2.v - v3.v)*(v1.u - v3.u) + (v3.u - v2.u)*(v1.v - v3.v))
+        beta = ((v3.v - v1.v)*(px - v3.u) + (v1.u - v3.u)*(py - v3.v)) /\
+               ((v2.v - v3.v)*(v1.u - v3.u) + (v3.u - v2.u)*(v1.v - v3.v))
+        gamma = 1.0 - alpha - beta
+
+        return alpha * alpha_data + beta * beta_data + gamma * gamma_data
+
+    def is_point_inside_triangle(self, point):
         """
         Test if a 2D point lies inside this triangle.
 
@@ -202,8 +223,8 @@ if __name__ == '__main__':
             v3 = datamesh.add_vertex(u, v, [tot_linerad((u, v))])
             u, v = r[i, j, 1], z[i, j, 1]
             v4 = datamesh.add_vertex(u, v, [tot_linerad((u, v))])
-            print(tot_linerad(u, v))
 
             # Create mesh triangles associated with this vertices.
             triangle1 = datamesh.add_triangle(v1, v2, v3)
             triangle2 = datamesh.add_triangle(v3, v4, v1)
+
