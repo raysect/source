@@ -1,7 +1,8 @@
 
-from scipy.interpolate import griddata, CloughTocher2DInterpolator
+from scipy.interpolate import CloughTocher2DInterpolator
 from scipy.io import loadmat
-from numpy import array
+from numpy import array, zeros, arange
+from matplotlib.pylab import imshow, show
 import os
 
 
@@ -38,6 +39,15 @@ class TriangularDataMesh:
         self.attached_data_names = data_names
 
         self._bounding_box = None
+
+    def __call__(self, u, v, dataname):
+
+        triangle = self.find_triangle_containing((u, v))
+
+        if triangle:
+            return triangle((u, v), dataname)
+        else:
+            return 0.0
 
     @property
     def number_of_triangles(self):
@@ -85,6 +95,14 @@ class TriangularDataMesh:
         self._triangles.append(triangle)
 
         return triangle
+
+    def find_triangle_containing(self, point):
+
+        for triangle in self._triangles:
+            result = triangle.is_point_inside_triangle(point)
+            if result:
+                return triangle
+        return None
 
 
 class TriangleMeshTriangle:
@@ -172,6 +190,9 @@ class TriangleMeshVertex:
 
 if __name__ == '__main__':
 
+    # Loading SOLPS data
+    ####################
+
     solps_pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources/solps_39625.mat')
     # solps_output = loadmat('./demos/resources/solps_39625.mat')
     solps_output = loadmat(solps_pth)
@@ -228,3 +249,18 @@ if __name__ == '__main__':
             triangle1 = datamesh.add_triangle(v1, v2, v3)
             triangle2 = datamesh.add_triangle(v3, v4, v1)
 
+    # Begin testing
+    ###############
+
+    # Sample our mesh for imshow test
+    samples = zeros((50, 50))
+    xrange = list(arange(0, 2, 2/50))
+    yrange = list(arange(-2, 0, 2/50))
+
+    for x in xrange:
+        print(x)
+        for y in yrange:
+            samples[y, x] = datamesh(x, y, "linerad")
+
+    imshow(samples, extent=[minr, maxr, minz, maxz], origin='lower')
+    show()
