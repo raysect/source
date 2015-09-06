@@ -1,6 +1,8 @@
 
-from scipy.interpolate import griddata
+from scipy.interpolate import griddata, CloughTocher2DInterpolator
 from scipy.io import loadmat
+from numpy import array
+import os
 
 
 # Concept
@@ -19,59 +21,107 @@ from scipy.io import loadmat
 # It would allow us to write a list of triangle verticies with associated data values.
 
 
-class DataMesh2D:
-    pass
+# TODO - This name could be better.
+class TriangularDataMesh:
+
+    def __init__(self, *data_names):
+        self._triangles = []
+        self._vertices = {}
+
+        if data_names is None or len(data_names) == 0:
+            raise ValueError("Must be at least one data value for the mesh.")
+
+        for name in data_names:
+            if not isinstance(name, str):
+                raise ValueError("All data names must be strings.")
+
+        self.attached_data_names = data_names
+
+        self._bounding_box = None
+
+    @property
+    def number_of_triangles(self):
+        return len(self._triangles)
+
+    @property
+    def number_of_vertices(self):
+        return len(self._vertices)
+
+    # TODO - better name for this function
+    def add_vertex(self, u, v, data):
+        """
+        Make a new 2D vertex point with associated data.
+
+        :param float u: U coordinate
+        :param float v: V coordinate
+        :param list data: List of data values for this vertex.
+        :return: new_vertex or the existing vertex that was found
+        """
+
+        if not len(data) == len(self.attached_data_names):
+            ValueError("Insufficient data given for this vertex. "
+                       "Every vertex in the mesh must have the same number of data values.")
+
+        try:
+            # Try to load the vertex if it already exists
+            vertex = self._vertices[(u, v)]
+
+        except KeyError:            # Else, create the vertex and return it, add to list of mesh vertices.
+            vertex = TriangleMeshVertex(u, v, self.attached_data_names, data)
+            self._vertices[(u, v)] = vertex
+        return vertex
+
+    def add_triangle(self, v1, v2, v3):
+        """
+        Make a new triangle for three input vertices.
+
+        :param v1: Vertex 1. Eventually Point 2D, currently Tuple.
+        :param v2: Vertex 2. Eventually Point 2D, currently Tuple.
+        :param v3: Vertex 3. Eventually Point 2D, currently Tuple.
+        :param data: Tuple value for each data value in order.
+        """
+
+        triangle = TriangleMeshTriangle(v1, v2, v3)
+        self._triangles.append(triangle)
+
+        return triangle
 
 
-class DataMeshTriangle:
+class TriangleMeshTriangle:
 
     def __init__(self, v1, v2, v3):
+        self.v1 = v1
+        self.v2 = v2
+        self.v3 = v3
 
-        self.verticies = [v1, v2, v3]
+    def __iter__(self):
+        yield(self.v1)
+        yield(self.v2)
+        yield(self.v3)
 
-        for vertex in self.verticies:
-            vertex.register_triangle(self)
 
-
-class DataMeshVertex:
+class TriangleMeshVertex:
     """
     An individual vertex of the mesh.
     """
 
     _all_verticies = {}
 
-    def __init__(self, u, v):
+    def __init__(self, u, v, data_names, data_values):
 
         self.u = u
         self.v = v
 
-        self.triangles = []
-
-        self.data = {}
-
-        DataMeshVertex._all_verticies[(u, v)] = self
-
-    def register_triangle(self, triangle):
-        self.triangles.append(triangle)
-
-    @classmethod
-    def all_vertex_coords(cls):
-        return [(vert.u, vert.v) for vert in cls._all_verticies.values()]
-
-    # TODO - this function should be renamed. It doesn't quite do what its name implies.
-    @classmethod
-    def get_vertex(cls, coords):
-
-        try:
-            vertex = cls._all_verticies[coords]
-        except IndexError:
-            vertex = DataMeshVertex(*coords)
-
-        return vertex
+        # Set data values as attributes
+        for k in range(len(data_names)):
+            setattr(self, data_names[k], data_values[k])
 
 
 if __name__ == '__main__':
-    solps_output = loadmat('./demos/resources/solps_39625.mat')
+
+    solps_pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources/solps_39625.mat')
+    # solps_output = loadmat('./demos/resources/solps_39625.mat')
+    solps_output = loadmat(solps_pth)
 
     # temporary variable for all the r's and z's
     r = solps_output['r']
@@ -89,29 +139,40 @@ if __name__ == '__main__':
     centre_pts = []
     tot_linerad = []
 
-    # Generate the triangle mesh
+    datamesh = TriangularDataMesh("linerad")
+
+    # Generate the data interpolators
     for i in range(0, mesh_shape[0]):
         for j in range(0, mesh_shape[1]):
-            # Get vertices of cells
-            cell_r = [r[i, j, 0], r[i, j, 2], r[i, j, 3], r[i, j, 1]]
-            cell_z = [z[i, j, 0], z[i, j, 2], z[i, j, 3], z[i, j, 1]]
+            # Get centre point of cell
+            centre_pts.append([cr[i, j], cz[i, j]])
 
-            # Create vertex objects
-            v1 = DataMeshVertex.get_vertex((cell_r[0], cell_z[0]))
-            v2 = DataMeshVertex.get_vertex((cell_r[1], cell_z[1]))
-            v3 = DataMeshVertex.get_vertex((cell_r[2], cell_z[2]))
-            v4 = DataMeshVertex.get_vertex((cell_r[3], cell_z[3]))
-
-            # Create triangles associated with this vertices.
-            triangle1 = DataMeshTriangle(v1, v2, v3)
-            triangle2 = DataMeshTriangle(v3, v4, v1)
-
-            # Extract centre point and associated data
-            centre_pts.append((cr[i, j], cz[i, j]))
+            # get linerad data for this cell
             tot_linerad.append((solps_output['linerad'][i, j, :].sum() + solps_output['brmrad'][i, j, :].sum()) /
                                solps_output['vol'][i, j])
 
-    vertex_coords = DataMeshVertex.all_vertex_coords()
+    # Generate interpolators for data
+    centre_pts = array(centre_pts)
+    tot_linerad = array(tot_linerad)
+    tot_linerad /= tot_linerad.max()
+    tot_linerad = CloughTocher2DInterpolator(centre_pts, tot_linerad, fill_value=0.0)
 
+    # Generate the triangle mesh
+    for i in range(0, mesh_shape[0]):
+        for j in range(0, mesh_shape[1]):
 
-    interp = griddata(vertex_coords, tot_linerad, self.regular_grid_pts, method='cubic').reshape((Y_SIZE, X_SIZE))
+            # Get vertices of cells
+            u, v = r[i, j, 0], z[i, j, 0]
+            v1 = datamesh.add_vertex(u, v, [tot_linerad((u, v))])
+            u, v = r[i, j, 2], z[i, j, 2]
+            v2 = datamesh.add_vertex(u, v, [tot_linerad((u, v))])
+            u, v = r[i, j, 3], z[i, j, 3]
+            v3 = datamesh.add_vertex(u, v, [tot_linerad((u, v))])
+            u, v = r[i, j, 1], z[i, j, 1]
+            v4 = datamesh.add_vertex(u, v, [tot_linerad((u, v))])
+            print(tot_linerad(u, v))
+
+            # Create mesh triangles associated with this vertices.
+            triangle1 = datamesh.add_triangle(v1, v2, v3)
+            triangle2 = datamesh.add_triangle(v3, v4, v1)
+
