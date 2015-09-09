@@ -177,7 +177,7 @@ class TriangleMeshTriangle:
         else:
             return False
 
-# Point2D
+# this won't be necessary if the init of the interpolator takes lists/ndarrays of vertices + faces
 class TriangleMeshVertex:
     """
     An individual vertex of the mesh.
