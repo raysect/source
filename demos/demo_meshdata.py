@@ -29,6 +29,12 @@ import os
 
 # TODO - This name could be better.
 # Interpolator2DMesh(Function2D)
+
+# would prefer these types of classes to have immutable data - once data is passed into them it can not be altered
+# this simplifies the code hugely.
+# do not allow users to gain access to data that could cause a seg fault if altered e.g. array shape changes
+# they should have the data already - they used it to populate an instance
+# if they want to change the data, they must do it outside and create a new instance = safety first
 class TriangularDataMesh:
 
     def __init__(self, *data_names):
@@ -54,14 +60,6 @@ class TriangularDataMesh:
             return triangle((u, v), dataname)
         else:
             return 0.0
-
-    @property
-    def number_of_triangles(self):
-        return len(self._triangles)
-
-    @property
-    def number_of_vertices(self):
-        return len(self._vertices)
 
     # TODO - better name for this function
     def add_vertex(self, u, v, data):
