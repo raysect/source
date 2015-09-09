@@ -311,24 +311,25 @@ cdef class Cone(Primitive):
     @cython.cdivision(True)
     cdef inline Point _interior_point(self, Point hit_point, Normal normal, int type):
 
-        cdef double x, y, z, old_radius, new_radius, scale
+        cdef double x, y, z, old_radius, new_radius, scale, inner_height, inner_radius, hit_radius_sqr
 
-        if hit_point.z <= self.height and hit_point.z > (self.height - EPSILON):
+        inner_height = self.height - EPSILON
+        hit_radius_sqr = hit_point.x**2 + hit_point.y**2
+
+        if self.height >= hit_point.z > inner_height:
 
             # Avoid tip of cone
             x = 0.0
             y = 0.0
-            z = self.height - EPSILON
+            z = inner_height
 
         elif hit_point.z < EPSILON:
 
-            if (hit_point.x**2 + hit_point.y**2) > (self.radius - EPSILON)**2:
+            inner_radius = self.radius - EPSILON
+
+            if hit_radius_sqr > inner_radius**2:
                 # Avoid bottom edges of cone
-                new_radius = self.radius - EPSILON
-                old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
-
-                scale = new_radius/old_radius
-
+                scale = inner_radius / sqrt(hit_radius_sqr)
                 x = scale * hit_point.x
                 y = scale * hit_point.y
                 z = EPSILON
@@ -344,10 +345,10 @@ cdef class Cone(Primitive):
             old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
             new_radius = old_radius - EPSILON
 
-            scale = new_radius/old_radius
+            scale = new_radius / old_radius
             x = scale * hit_point.x
             y = scale * hit_point.y
-            z = hit_point.z - EPSILON * normal.z
+            z = hit_point.z
 
         return new_point(x, y, z)
 
