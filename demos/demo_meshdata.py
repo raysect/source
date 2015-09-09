@@ -22,7 +22,13 @@ import os
 # It would allow us to write a list of triangle vertices with associated data values.
 
 
+# to differentiate the api from the mesh primitive do the following:
+# the init accepts a Nx3 list of vertices, and an Mx4 list of faces (3 vertices and a value)
+# the interpolator uses triangle internally, it is not exposed to the user.
+# this is to avoid there being multiple incompatible Triangle classes floating around the API.
+
 # TODO - This name could be better.
+# Interpolator2DMesh(Function2D)
 class TriangularDataMesh:
 
     def __init__(self, *data_names):
@@ -99,12 +105,13 @@ class TriangularDataMesh:
     def find_triangle_containing(self, point):
 
         for triangle in self._triangles:
-            result = triangle.is_point_inside_triangle(point)
+            result = triangle.contains(point)
             if result:
                 return triangle
         return None
 
 
+# Triangle
 class TriangleMeshTriangle:
 
     def __init__(self, v1, v2, v3):
@@ -144,7 +151,7 @@ class TriangleMeshTriangle:
 
         return alpha * alpha_data + beta * beta_data + gamma * gamma_data
 
-    def is_point_inside_triangle(self, point):
+    def contains(self, point):
         """
         Test if a 2D point lies inside this triangle.
 
@@ -165,12 +172,12 @@ class TriangleMeshTriangle:
         gamma = 1.0 - alpha - beta
 
         # Point is inside triangle if all coordinates between [0, 1]
-        if 0 <= alpha <= 1 and 0 <= beta <= 1 and 0 <= gamma <= 1:
+        if alpha > 0 and beta > 0 and gamma > 0:
             return True
         else:
             return False
 
-
+# Point2D
 class TriangleMeshVertex:
     """
     An individual vertex of the mesh.
