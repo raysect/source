@@ -29,13 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray as CoreRay, Intersection
+from raysect.core.classes cimport Ray as CoreRay
 from raysect.core.math.point cimport Point
 from raysect.core.math.vector cimport Vector
 from raysect.core.scenegraph.world cimport World
-from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.material.material cimport Material
+
 
 cdef class Ray(CoreRay):
 
@@ -62,4 +61,3 @@ cdef class Ray(CoreRay):
 
     cdef inline double get_max_wavelength(self)
 
-    cpdef Point get_point_at_distance(self, float distance)
