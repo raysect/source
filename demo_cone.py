@@ -13,7 +13,7 @@ sys.ps1 = 'SOMETHING'
 world = World()
 
 # Fun example
-cone = Cone(height=0.3, material=schott("N-BK7"), parent=world, transform=translate(0, -0, 0) * rotate(2, 178, 0))
+cone = Cone(height=1, material=schott("N-BK7"), parent=world, transform=translate(0, -0, 0) * rotate(120, 20, 0))
 
 # cone = Cone(material=Light(Vector(0.2, -0.1, 1.0)), parent=world, transform=translate(1.5, 1.5, 0) * rotate(0, 0, 0))
 # cone = Cone(material=Light(Vector(0.2, -0.1, 1.0)), parent=world, transform=translate(0, 1.5, 0) * rotate(0, 45, 0))
@@ -31,7 +31,7 @@ Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfac
 ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -2.5) * rotate(0, 0, 0))
 camera.sub_sample = True
-camera.pixel_samples = 25
+camera.pixel_samples = 100
 camera.rays = 1
 camera.spectral_samples = 15
 camera.pixels = (512, 512)
