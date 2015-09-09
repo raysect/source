@@ -293,11 +293,7 @@ cdef class Cone(Primitive):
             normal = new_normal(0, 0, -1)
 
         # displace hit_point away from surface to generate inner and outer points
-        # inside_point = self._interior_point(hit_point, normal, type)
-
-        inside_point = new_point(hit_point.x - EPSILON * normal.x,
-                                  hit_point.y - EPSILON * normal.y,
-                                  hit_point.z - EPSILON * normal.z)
+        inside_point = self._interior_point(hit_point, normal, type)
 
         outside_point = new_point(hit_point.x + EPSILON * normal.x,
                                   hit_point.y + EPSILON * normal.y,
@@ -317,21 +313,16 @@ cdef class Cone(Primitive):
 
         cdef double x, y, z, old_radius, new_radius, scale
 
-        if 0 < self.height - hit_point.z < EPSILON:
-            print("cone tip")
-            print(self.height)
-            print(hit_point.z)
-            print(self.height - hit_point.z)
-            input("...")
+        if hit_point.z <= self.height and hit_point.z > (self.height - EPSILON):
+
             # Avoid tip of cone
             x = 0.0
             y = 0.0
             z = self.height - EPSILON
 
         elif hit_point.z < EPSILON:
-            print("cone base")
 
-            if (hit_point.x**2 + hit_point.y**2) > self.radius**2:
+            if (hit_point.x**2 + hit_point.y**2) > (self.radius - EPSILON)**2:
                 # Avoid bottom edges of cone
                 new_radius = self.radius - EPSILON
                 old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
