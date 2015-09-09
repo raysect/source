@@ -51,7 +51,7 @@ DEF EPSILON = 1e-9
 # object type enumeration
 DEF NO_TYPE = -1
 DEF CONE = 0
-DEF FACE = 1
+DEF BASE = 1
 
 
 cdef class Cone(Primitive):
@@ -107,6 +107,7 @@ cdef class Cone(Primitive):
 
             # the next intersection cache has been invalidated by the geometry change
             self._further_intersection = False
+
             # any geometry caching in the root node is now invalid, inform root
             self.notify_root()
 
@@ -121,6 +122,7 @@ cdef class Cone(Primitive):
 
             # the next intersection cache has been invalidated by the geometry change
             self._further_intersection = False
+
             # any geometry caching in the root node is now invalid, inform root
             self.notify_root()
 
@@ -137,8 +139,8 @@ cdef class Cone(Primitive):
         cdef:
             double near_intersection, far_intersection, closest_intersection
             int near_type, far_type, closest_type
-            double a, b, c, d, t0, t1, temp, near_point_z, far_point_z
-            int f0, f1
+            double a, b, c, d, t0, t1, temp_d, near_point_z, far_point_z
+            int f0, f1, temp_i
             Point near_point, far_point
 
         # reset the next intersection cache
@@ -164,76 +166,83 @@ cdef class Cone(Primitive):
         if d < 0:
             return None
 
-        d = sqrt(d)
+        elif d > 0:
 
-        # calculate intersections
-        temp = 1 / (2.0 * a)
-        t0 = -(d + b) * temp
-        t1 = (d - b) * temp
+            # calculate intersections
+            d = sqrt(d)
+            temp_d = 1 / (2.0 * a)
+            t0 = -(d + b) * temp_d
+            t1 = (d - b) * temp_d
+
+            # Calculate z height of intersection points
+            t0_z = origin.z + t0 * direction.z
+            t1_z = origin.z + t1 * direction.z
+
+            # Ray intersects cone outside of height range
+            if (t0_z < 0 or t0_z > height) and (t1_z < 0 or t1_z > height):
+                # Ray intersects cone outside of height range
+                return None
+
+            elif (t0_z > 0 and t0_z < height) and (t1_z < 0 or t1_z > height):
+                # t0 is in range, t1 is outside
+
+                t0_type = CONE
+
+                t1 = -origin.z / direction.z
+                t1_type = BASE
+
+            elif (t0_z < 0 or t0_z > height) and (t1_z > 0 and t1_z < height):
+                # t0 is outside range, t1 is inside
+
+                t0_type = BASE
+                t0 = -origin.z / direction.z
+
+                t1_type = CONE
+
+            else:
+                # Both intersections are with the cone body
+                t0_type = CONE
+                t1_type = CONE
+
+        else:
+            # ray intersecting the tip of the cone
+            t0 = -b / (2.0 * a)
+            t0_type = CONE
+
+            t1 = -origin.z / direction.z
+            t1_type = BASE
 
         # ensure t0 is always smaller than t1
         if t0 > t1:
-            temp = t0
+            temp_d = t0
             t0 = t1
-            t1 = temp
+            t1 = temp_d
 
-        near_point_z = origin.z + t0 * direction.z
-        far_point_z = origin.z + t1 * direction.z
-
-        # Are both intersections inside the cone height
-        if 0 < near_point_z < height and 0 < far_point_z < height:
-
-            # Both intersections are with the cone body
-            near_intersection = t0
-            near_type = CONE
-
-            far_intersection = t1
-            far_type = CONE
-
-        # Is only one of the intersections inside the cone body, therefore other is with flat cone base.
-        elif 0 < near_point_z < height or 0 < far_point_z < height:
-
-            if near_point_z < 0 or far_point_z > height:
-                # Near intersection is cone base, far is cone surface
-                near_intersection = -origin.z / direction.z
-                near_type = FACE
-
-                far_intersection = t0
-                far_type = CONE
-
-            else:
-                # Otherwise near intersection is cone surface, far is cone base.
-                near_intersection = t0
-                near_type = CONE
-
-                far_intersection = (self._height - origin.z) / direction.z
-                far_type = FACE
-
-        # Both intersections are outside the bounding box.
-        else:
-            return None
+            temp_i = t0_type
+            t0_type = t1_type
+            t1_type = temp_i
 
         # are there any intersections inside the ray search range?
-        if near_intersection > ray.max_distance or far_intersection < 0.0:
+        if t0 > ray.max_distance or t1 < 0.0:
             return None
 
         # identify closest intersection
-        if near_intersection >= 0.0:
-            closest_intersection = near_intersection
-            closest_type = near_type
+        if t0 >= 0.0:
+            closest_intersection = t0
+            closest_type = t0_type
 
             # If there is a further intersection, setup values for next calculation.
-            if far_intersection <= ray.max_distance:
+            if t1 <= ray.max_distance:
                 self._further_intersection = True
-                self._next_t = far_intersection
+                self._next_t = t1
                 self._cached_origin = origin
                 self._cached_direction = direction
                 self._cached_ray = ray
-                self._cached_type = far_type
+                self._cached_type = t1_type
 
-        elif far_intersection <= ray.max_distance:
-            closest_intersection = far_intersection
-            closest_type = far_type
+        elif t1 <= ray.max_distance:
+            closest_intersection = t1
+            closest_type = t1_type
 
         else:
             return None
@@ -284,11 +293,11 @@ cdef class Cone(Primitive):
             normal = new_normal(0, 0, -1)
 
         # displace hit_point away from surface to generate inner and outer points
-        inside_point = self._interior_point(hit_point, normal, type)
+        # inside_point = self._interior_point(hit_point, normal, type)
 
-        # inside_point = new_point(hit_point.x - EPSILON * normal.x,
-        #                           hit_point.y - EPSILON * normal.y,
-        #                           hit_point.z - EPSILON * normal.z)
+        inside_point = new_point(hit_point.x - EPSILON * normal.x,
+                                  hit_point.y - EPSILON * normal.y,
+                                  hit_point.z - EPSILON * normal.z)
 
         outside_point = new_point(hit_point.x + EPSILON * normal.x,
                                   hit_point.y + EPSILON * normal.y,
