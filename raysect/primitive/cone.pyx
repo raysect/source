@@ -32,10 +32,9 @@
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport new_normal
 from raysect.core.math.point cimport new_point, Point
-from raysect.core.math.vector cimport new_vector
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
-from libc.math cimport sqrt, fabs
+from libc.math cimport sqrt
 cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
@@ -137,11 +136,14 @@ cdef class Cone(Primitive):
     cpdef Intersection hit(self, Ray ray):
 
         cdef:
-            double near_intersection, far_intersection, closest_intersection
-            int near_type, far_type, closest_type
-            double a, b, c, d, t0, t1, temp_d, near_point_z, far_point_z
-            int f0, f1, temp_i
-            Point near_point, far_point
+            Point origin
+            Vector direction
+            double radius, height
+            double a, b, c, d, k, t0, t1, t0_z, t1_z, temp_d
+            int t0_type, t1_type, temp_i
+            bint t0_outside, t1_outside
+            double closest_intersection
+            int closest_type
 
         # reset the next intersection cache
         self._further_intersection = False
@@ -158,15 +160,18 @@ cdef class Cone(Primitive):
         k = radius / height
         k = k * k
         a = direction.x * direction.x + direction.y * direction.y - k * direction.z * direction.z
-        b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z-height) )
+        b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z - height) )
         c = origin.x * origin.x + origin.y * origin.y - k * (origin.z - height) * (origin.z - height)
         d = b * b - 4 * a * c
 
-        # ray misses cone if there are no real roots of the quadratic
         if d < 0:
+
+            # ray misses cone if there are no real roots of the quadratic
             return None
 
         elif d > 0:
+
+            # ray hits full cone quadratic twice
 
             # calculate intersections
             d = sqrt(d)
@@ -174,50 +179,58 @@ cdef class Cone(Primitive):
             t0 = -(d + b) * temp_d
             t1 = (d - b) * temp_d
 
-            # Calculate z height of intersection points
+            # calculate z height of intersection points
             t0_z = origin.z + t0 * direction.z
             t1_z = origin.z + t1 * direction.z
 
-            # Ray intersects cone outside of height range
-            if (t0_z < 0 or t0_z > height) and (t1_z < 0 or t1_z > height):
-                # Ray intersects cone outside of height range
+            t0_outside = t0_z < 0 or t0_z > height
+            t1_outside = t1_z < 0 or t1_z > height
+
+            if t0_outside and t1_outside:
+
+                # ray intersects cone outside of height range
                 return None
 
-            elif (t0_z > 0 and t0_z < height) and (t1_z < 0 or t1_z > height):
-                # t0 is in range, t1 is outside
+            elif 0 < t0_z < height and t1_outside:
 
+                # t0 is in range, t1 is outside
                 t0_type = CONE
 
                 t1 = -origin.z / direction.z
                 t1_type = BASE
 
-            elif (t0_z < 0 or t0_z > height) and (t1_z > 0 and t1_z < height):
-                # t0 is outside range, t1 is inside
+            elif t0_outside and 0 < t1_z < height:
 
+                # t0 is outside range, t1 is inside
                 t0_type = BASE
                 t0 = -origin.z / direction.z
 
                 t1_type = CONE
 
             else:
-                # Both intersections are with the cone body
+
+                # both intersections are valid and with the cone body
                 t0_type = CONE
                 t1_type = CONE
 
         else:
-            # ray intersecting the tip of the cone
+
+            # ray intersects the tip of the cone
             t0 = -b / (2.0 * a)
             t0_type = CONE
 
             t1 = -origin.z / direction.z
             t1_type = BASE
 
-        # ensure t0 is always smaller than t1
+        # ensure t0 is always smaller (closer) than t1
         if t0 > t1:
+
+            # swap ray distance
             temp_d = t0
             t0 = t1
             t1 = temp_d
 
+            # swap intersection type
             temp_i = t0_type
             t0_type = t1_type
             t1_type = temp_i
@@ -259,15 +272,13 @@ cdef class Cone(Primitive):
 
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_type)
 
-
-    # This function is called twice. Used in hit() and next_intersection()
     @cython.cdivision(True)
     cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int type):
 
         cdef:
             Point hit_point, inside_point, outside_point
-            Vector interior_offset
-            Normal normal, op
+            Normal normal
+            double a, b
             bint exiting
 
         # point of surface intersection in local space
@@ -275,22 +286,26 @@ cdef class Cone(Primitive):
                               origin.y + ray_distance * direction.y,
                               origin.z + ray_distance * direction.z)
 
-        # if hit point equals tip, set normal to up.
         # calculate surface normal in local space
-        if type == CONE and (hit_point.x == 0.0) and (hit_point.y == 0.0) and (hit_point.z == self.height):
+        if type == BASE:
+
+            # cone base
+            normal = new_normal(0, 0, -1)
+
+        elif type == CONE and hit_point.z == self._height:
+
+            # cone tip
             normal = new_normal(0, 0, 1)
 
-        elif type == CONE:
-            # TODO - explore optimisation of this section, two sqrts too many
-            # Unit vector that points from origin to hit_point in x-y plane at the base of the cone.
-            op = new_normal(hit_point.x, hit_point.y, 0)
-            op = op.normalise()
-            heighttoradius = self.height/self.radius
-            normal = new_normal(op.x * heighttoradius, op.y * heighttoradius, 1/heighttoradius)
-            normal = normal.normalise()
-
         else:
-            normal = new_normal(0, 0, -1)
+
+            # cone body
+            # calculate unit vector that points from origin to hit_point in x-y
+            # plane at the base of the cone and rotate perpendicular to cone surface
+            a = self._radius / self._height
+            b = 1 / (a * sqrt(hit_point.x**2 + hit_point.y**2))
+            normal = new_normal(b * hit_point.x , b * hit_point.y, a)
+            normal = normal.normalise()
 
         # displace hit_point away from surface to generate inner and outer points
         inside_point = self._interior_point(hit_point, normal, type)
@@ -300,10 +315,7 @@ cdef class Cone(Primitive):
                                   hit_point.z + EPSILON * normal.z)
 
         # is ray exiting surface
-        if direction.dot(normal) >= 0.0:
-            exiting = True
-        else:
-            exiting = False
+        exiting = direction.dot(normal) >= 0.0
 
         return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
                                 normal, exiting, self.to_local(), self.to_root())
@@ -311,12 +323,14 @@ cdef class Cone(Primitive):
     @cython.cdivision(True)
     cdef inline Point _interior_point(self, Point hit_point, Normal normal, int type):
 
-        cdef double x, y, z, old_radius, new_radius, scale, inner_height, inner_radius, hit_radius_sqr
+        cdef:
+            double x, y, z
+            double old_radius, new_radius, scale
+            double inner_height, inner_radius, hit_radius_sqr
 
-        inner_height = self.height - EPSILON
-        hit_radius_sqr = hit_point.x**2 + hit_point.y**2
+        inner_height = self._height - EPSILON
 
-        if self.height >= hit_point.z > inner_height:
+        if self._height >= hit_point.z > inner_height:
 
             # Avoid tip of cone
             x = 0.0
@@ -325,7 +339,8 @@ cdef class Cone(Primitive):
 
         elif hit_point.z < EPSILON:
 
-            inner_radius = self.radius - EPSILON
+            inner_radius = self._radius - EPSILON
+            hit_radius_sqr = hit_point.x**2 + hit_point.y**2
 
             if hit_radius_sqr > inner_radius**2:
                 # Avoid bottom edges of cone
@@ -352,29 +367,27 @@ cdef class Cone(Primitive):
 
         return new_point(x, y, z)
 
-
+    @cython.cdivision(True)
     cpdef bint contains(self, Point point) except -1:
+
         cdef:
-            double cone_dist, cone_radius, orth_distance
+            double cone_radius, point_radius
 
         # convert point to local object space
         point = point.transform(self.to_local())
 
-        # Calculate points' distance along z axis from cone tip
-        cone_dist = self.height - point.z
-
         # reject points that are outside the cone's height (i.e. above the cones' tip or below its base)
-        if not 0 <= cone_dist <= self.height:
+        if point.z < 0 or point.z > self._height:
             return False
 
-        # Calculate the cone radius at that point along the height axis:
-        cone_radius = (cone_dist / self.height) * self.radius
+        # calculate the cone radius at that point along the height axis:
+        cone_radius = (self._height - point.z) * self._radius / self._height
 
-        # Calculate the point's orthogonal distance from the axis to compare against the cone radius:
-        orth_distance = sqrt(point.x**2 + point.y**2)
+        # calculate the point's orthogonal distance from the axis to compare against the cone radius:
+        point_radius = sqrt(point.x**2 + point.y**2)
 
         # Points distance from axis must be less than cone radius at that height
-        return orth_distance < cone_radius
+        return point_radius <= cone_radius
 
     cpdef BoundingBox bounding_box(self):
 
@@ -396,7 +409,6 @@ cdef class Cone(Primitive):
         # a small degree of padding is added to avoid potential numerical accuracy issues
         box = BoundingBox()
         for point in points:
-
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
