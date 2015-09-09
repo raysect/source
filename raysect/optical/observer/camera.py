@@ -260,14 +260,14 @@ class Camera(Observer):
         spectrum = Spectrum(min_wavelength, max_wavelength, spectral_samples)
 
         for ray in rays:
-                # trace
-                sample = ray.trace(world)
+            # trace
+            sample = ray.trace(world)
 
-                # camera sensitivity
-                spectrum.samples += weight * self.sensitivity * sample.samples
+            # camera sensitivity
+            spectrum.samples += weight * self.sensitivity * sample.samples
 
-                # accumulate statistics
-                ray_count += ray.ray_count
+            # accumulate statistics
+            ray_count += ray.ray_count
 
         return spectrum, ray_count
 
