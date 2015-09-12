@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.math.point cimport new_point
+
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
 
@@ -37,9 +39,8 @@ cdef class Ray:
     Describes a line in space with an origin and direction.
 
     :param Point origin: Point defining origin (default is Point(0, 0, 0)).
-    :param Vector direction: Vector defining origin (default is Point(0, 0, 0)).
+    :param Vector direction: Vector defining direction (default is Vector(0, 0, 1)).
     :param double max_distance: The terminating distance of the ray.
-
     """
 
     def __init__(self, Point origin=None, Vector direction=None, double max_distance=INFINITY):
@@ -53,7 +54,7 @@ cdef class Ray:
         self.origin = origin
         """Point defining origin (default is Point(0, 0, 0))."""
         self.direction = direction
-        """Vector defining origin (default is Point(0, 0, 0))."""
+        """Vector defining direction (default is Vector(0, 0, 1))."""
         self.max_distance = max_distance
         """The terminating distance of the ray."""
 
@@ -70,6 +71,23 @@ cdef class Ray:
         """Decodes state for pickling."""
 
         self.origin, self.direction, self.max_distance = state
+
+    cpdef Point point_on(self, double t):
+        """
+        Returns the point on the ray at the specified parametric distance from the ray origin.
+
+        Positive values correspond to points forward of the ray origin, along the ray direction.
+
+        :param t: The distance along the ray.
+        :return: A point at distance t along the ray direction measured from its origin.
+        """
+        cdef:
+            Point origin = self.origin
+            Vector direction = self.direction
+
+        return new_point(origin.x + t * direction.x,
+                         origin.y + t * direction.y,
+                         origin.z + t * direction.z)
 
 
 cdef class Intersection:
@@ -128,8 +146,6 @@ cdef class Intersection:
             self.normal, self.exiting, self.to_local, self.to_world)
 
 
-# TODO - Better name like "Properties" since models built on raysect.core may need to store information on primitives.
-# TODO - This should probably be moved to the Primitive class.
 cdef class Material
 
 
