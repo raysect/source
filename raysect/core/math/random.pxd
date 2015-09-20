@@ -32,6 +32,7 @@
 from raysect.core.math.vector cimport Vector
 from raysect.core.math.point cimport Point
 
+
 cpdef double random()
 
 cpdef bint probability(double prob)

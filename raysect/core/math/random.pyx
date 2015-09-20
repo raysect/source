@@ -32,11 +32,184 @@
 from raysect.core.math.vector cimport new_vector
 from raysect.core.math.point cimport new_point
 from libc.math cimport cos, sin, sqrt, M_PI as PI
+from libc.stdint cimport uint64_t, int64_t
 cimport cython
 
+DEF NN = 312
+DEF MM = 156
 
-# TODO: replace python random() with a cython optimised version?
-from random import random as _py_rand
+# The array for the state vector
+cdef uint64_t mt[NN]
+
+# mti == NN+1 means mt[NN] is not initialized
+cdef int mti = NN + 1
+
+# initializes mt[NN] with a seed
+cdef void init_genrand64(uint64_t seed):
+
+    global mti
+
+    mt[0] = seed
+    for mti in range(1, NN):
+        mt[mti] = 6364136223846793005UL * (mt[mti - 1] ^ (mt[mti - 1] >> 62)) + mti
+
+    # force word generation
+    mti = NN
+
+# initialize by an array with array-length
+# init_key is the array for initializing keys
+# key_length is its length
+cdef void init_by_array64(uint64_t init_key[], uint64_t key_length):
+
+    cdef:
+        unsigned int i, j
+        uint64_t k
+
+    init_genrand64(19650218UL)
+
+    i = 1
+    j = 0
+    if NN > key_length:
+        k = NN
+    else:
+        k = key_length
+
+    # for (; k; k--)
+    # TODO: refactor as k is not used! k_max = max(NN, key_length)
+    for k in range(k, 0, -1):
+
+        # non-linear
+        mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 62)) * 3935559000370003845UL)) + init_key[j] + j
+
+        i += 1
+        if i >= NN:
+            mt[0] = mt[NN - 1]
+            i = 1
+
+        j += 1
+        if j >= key_length:
+            j = 0
+
+    #for (k=NN-1; k; k--) {
+    # TODO: refactor as k is not used
+    for k in range(NN-1, 0, -1):
+
+        # non-linear
+        mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 62)) * 2862933555777941757UL)) - i
+        i += 1
+        if i >= NN:
+            mt[0] = mt[NN-1]
+            i = 1
+
+    mt[0] = 9223372036854775808UL  # 1 << 63, MSB is 1 assuring non-zero initial array
+
+
+# generates a random number on [0, 2^64-1]-interval
+cdef uint64_t genrand64_int64():
+
+    global mti
+
+    cdef:
+        int i
+        uint64_t x
+        uint64_t mag01[2]
+
+    mag01[0] = 0
+    mag01[1] = 0xB5026F5AA96619E9UL
+
+    # generate NN words at one time
+    if mti >= NN:
+
+        # if init_genrand64() has not been called,
+        # a default initial seed is used
+        if mti == NN + 1:
+            init_genrand64(5489UL)
+
+        # for (i=0;i<NN-MM;i++) {
+        for i in range(0, NN - MM):
+            x = (mt[i] & 0xFFFFFFFF80000000UL) | (mt[i+1] & 0x7FFFFFFFUL)
+            mt[i] = mt[i + MM] ^ (x >> 1) ^ mag01[x & 1]
+
+        for i in range(NN - MM, NN-1):
+            x = (mt[i] & 0xFFFFFFFF80000000UL) | (mt[i+1] & 0x7FFFFFFFUL)
+            mt[i] = mt[i + (MM - NN)] ^ (x >> 1) ^ mag01[x & 1]
+
+        x = (mt[NN - 1] & 0xFFFFFFFF80000000UL) | (mt[0] & 0x7FFFFFFFUL)
+        mt[NN - 1] = mt[MM - 1] ^ (x >> 1) ^ mag01[x & 1]
+
+        mti = 0
+
+    x = mt[mti]
+    mti += 1
+
+    x ^= (x >> 29) & 0x5555555555555555UL
+    x ^= (x << 17) & 0x71D67FFFEDA60000UL
+    x ^= (x << 37) & 0xFFF7EEE000000000UL
+    x ^= (x >> 43)
+
+    return x
+
+
+# /* generates a random number on [0, 2^63-1]-interval */
+# int64_t genrand64_int63(void)
+# {
+#     return (int64_t)(genrand64_int64() >> 1);
+# }
+#
+# /* generates a random number on [0,1]-real-interval */
+# double genrand64_real1(void)
+# {
+#     return (genrand64_int64() >> 11) * (1.0/9007199254740991.0);
+# }
+#
+# /* generates a random number on [0,1)-real-interval */
+# double genrand64_real2(void)
+# {
+#     return (genrand64_int64() >> 11) * (1.0/9007199254740992.0);
+# }
+#
+# /* generates a random number on (0,1)-real-interval */
+# double genrand64_real3(void)
+# {
+#     return ((genrand64_int64() >> 12) + 0.5) * (1.0/4503599627370496.0);
+# }
+
+
+
+
+def test_random(n):
+
+    cdef:
+        int i
+        uint64_t init[4]
+        uint64_t length
+
+    init[0] = 0x12345UL
+    init[1] = 0x23456UL
+    init[2] = 0x34567UL
+    init[3] = 0x45678UL
+    length = 4
+
+    init_by_array64(init, length);
+
+    print("1000 outputs of genrand64_int64()")
+    for i in range(n):
+        print("{} ".format(genrand64_int64()), end="")
+        if i % 5 == 4:
+            print()
+
+    # printf("\n1000 outputs of genrand64_real2()\n");
+    # for (i=0; i<1000; i++) {
+    #   printf("%10.8f ", genrand64_real2());
+    #   if (i%5==4) printf("\n");
+    # }
+
+
+
+
+
+
+
 
 cpdef double random():
     """
@@ -46,7 +219,7 @@ cpdef double random():
 
     :return: Random double.
     """
-    return _py_rand()
+    return 1 #genrand64_real2()
 
 
 cpdef bint probability(double prob):
@@ -63,7 +236,7 @@ cpdef bint probability(double prob):
     :return: True or False.
     """
 
-    return _py_rand() < prob
+    return 1 #genrand64_real2() < prob
 
 
 cpdef Point point_disk():
@@ -100,3 +273,4 @@ cpdef Vector vector_hemisphere_cosine():
 
     cdef Point p = point_disk()
     return new_vector(p.x, p.y, sqrt(max(0, 1 - p.x*p.x - p.y*p.y)))
+
