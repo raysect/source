@@ -29,6 +29,64 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# This code is a cython port of the mt19937-64 pseudorandom number generator
+# developed by Takuji Nishimura and Makoto Matsumoto. The original license
+# follows.
+
+# A C-program for MT19937-64 (2014/2/23 version).
+# Coded by Takuji Nishimura and Makoto Matsumoto.
+#
+# This is a 64-bit version of Mersenne Twister pseudorandom number
+# generator.
+#
+# Before using, initialize the state by using init_genrand64(seed)
+# or init_by_array64(init_key, key_length).
+#
+# Copyright (C) 2004, 2014, Makoto Matsumoto and Takuji Nishimura,
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#   1. Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
+#      documentation and/or other materials provided with the distribution.
+#
+#   3. The names of its contributors may not be used to endorse or promote
+#      products derived from this software without specific prior written
+#      permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# References:
+# T. Nishimura, ``Tables of 64-bit Mersenne Twisters''
+#   ACM Transactions on Modeling and
+#   Computer Simulation 10. (2000) 348--357.
+# M. Matsumoto and T. Nishimura,
+#   ``Mersenne Twister: a 623-dimensionally equidistributed
+#     uniform pseudorandom number generator''
+#   ACM Transactions on Modeling and
+#   Computer Simulation 8. (Jan. 1998) 3--30.
+#
+# Any feedback is very welcome.
+# http://www.math.hiroshima-u.ac.jp/~m-mat/MT/emt.html
+# email: m-mat @ math.sci.hiroshima-u.ac.jp (remove spaces)
+
+from os import urandom as _urandom
 from raysect.core.math.vector cimport new_vector
 from raysect.core.math.point cimport new_point
 from libc.math cimport cos, sin, sqrt, M_PI as PI
@@ -44,8 +102,11 @@ cdef uint64_t mt[NN]
 # mti == NN+1 means mt[NN] is not initialized
 cdef int mti = NN + 1
 
-# initializes mt[NN] with a seed
-cdef void init_genrand64(uint64_t seed):
+
+cdef void init_genrand64(uint64_t seed) nogil:
+    """
+    Initializes mt[NN] with a seed.
+    """
 
     global mti
 
@@ -56,10 +117,13 @@ cdef void init_genrand64(uint64_t seed):
     # force word generation
     mti = NN
 
-# initialize by an array with array-length
-# init_key is the array for initializing keys
-# key_length is its length
-cdef void init_by_array64(uint64_t init_key[], uint64_t key_length):
+
+cdef void init_by_array64(uint64_t init_key[], uint64_t key_length) nogil:
+    """
+    Initialize with an array.
+    :param init_key: The array containing the initializing key.
+    :param key_length: The array length.
+    """
 
     cdef:
         unsigned int i, j
@@ -104,8 +168,10 @@ cdef void init_by_array64(uint64_t init_key[], uint64_t key_length):
     mt[0] = 9223372036854775808UL  # 1 << 63, MSB is 1 assuring non-zero initial array
 
 
-# generates a random number on [0, 2^64-1]-interval
-cdef uint64_t genrand64_int64():
+cdef inline uint64_t _rand_uint64() nogil:
+    """
+    Generates a random number on [0, 2^64-1] - interval.
+    """
 
     global mti
 
@@ -150,67 +216,25 @@ cdef uint64_t genrand64_int64():
     return x
 
 
-# /* generates a random number on [0, 2^63-1]-interval */
-# int64_t genrand64_int63(void)
-# {
-#     return (int64_t)(genrand64_int64() >> 1);
-# }
-#
-# /* generates a random number on [0,1]-real-interval */
-# double genrand64_real1(void)
-# {
-#     return (genrand64_int64() >> 11) * (1.0/9007199254740991.0);
-# }
-#
-# /* generates a random number on [0,1)-real-interval */
-# double genrand64_real2(void)
-# {
-#     return (genrand64_int64() >> 11) * (1.0/9007199254740992.0);
-# }
-#
-# /* generates a random number on (0,1)-real-interval */
-# double genrand64_real3(void)
-# {
-#     return ((genrand64_int64() >> 12) + 0.5) * (1.0/4503599627370496.0);
-# }
+cpdef seed():
+    """
+    Automatically re-seeds the random number generator.
 
-
-
-
-def test_random(n):
+    Calling this function causes the random number generator to be re-seed
+    using the system cryptographic random number generator.
+    """
 
     cdef:
         int i
-        uint64_t init[4]
-        uint64_t length
+        uint64_t s[NN]
 
-    init[0] = 0x12345UL
-    init[1] = 0x23456UL
-    init[2] = 0x34567UL
-    init[3] = 0x45678UL
-    length = 4
-
-    init_by_array64(init, length);
-
-    print("1000 outputs of genrand64_int64()")
-    for i in range(n):
-        print("{} ".format(genrand64_int64()), end="")
-        if i % 5 == 4:
-            print()
-
-    # printf("\n1000 outputs of genrand64_real2()\n");
-    # for (i=0; i<1000; i++) {
-    #   printf("%10.8f ", genrand64_real2());
-    #   if (i%5==4) printf("\n");
-    # }
+    b = _urandom(8 * NN)
+    for i in range(NN):
+        s[i] = int.from_bytes(b[i*8:(i+1)*8], byteorder='big')
+    init_by_array64(s, len(s))
 
 
-
-
-
-
-
-
+@cython.cdivision(True)
 cpdef double random():
     """
     Generate random doubles in range [0, 1).
@@ -219,7 +243,8 @@ cpdef double random():
 
     :return: Random double.
     """
-    return 1 #genrand64_real2()
+
+    return (_rand_uint64() >> 11) * (1.0 / 9007199254740992.0)
 
 
 cpdef bint probability(double prob):
@@ -236,7 +261,7 @@ cpdef bint probability(double prob):
     :return: True or False.
     """
 
-    return 1 #genrand64_real2() < prob
+    return random() < prob
 
 
 cpdef Point point_disk():
@@ -274,3 +299,34 @@ cpdef Vector vector_hemisphere_cosine():
     cdef Point p = point_disk()
     return new_vector(p.x, p.y, sqrt(max(0, 1 - p.x*p.x - p.y*p.y)))
 
+
+# initialise random number generator
+seed()
+
+
+# def test_random(n):
+#
+#     cdef:
+#         int i
+#         uint64_t init[4]
+#         uint64_t length
+#
+#     init[0] = 0x12345UL
+#     init[1] = 0x23456UL
+#     init[2] = 0x34567UL
+#     init[3] = 0x45678UL
+#     length = 4
+#
+#     init_by_array64(init, length);
+#
+#     print("1000 outputs of genrand64_int64()")
+#     for i in range(n):
+#         print("{} ".format(_rand_uint64()), end="")
+#         if i % 5 == 4:
+#             print()
+#
+#     # printf("\n1000 outputs of random()\n");
+#     # for (i=0; i<1000; i++) {
+#     #   printf("%10.8f ", genrand64_real2());
+#     #   if (i%5==4) printf("\n");
+#     # }
