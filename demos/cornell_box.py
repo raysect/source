@@ -3,7 +3,7 @@ from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.material.lambert import Lambert
 from raysect.optical.material.glass_libraries import schott
-from raysect.primitive import Sphere, Box, Cone
+from raysect.primitive import Sphere, Box
 from matplotlib.pyplot import *
 from numpy import array
 
@@ -94,14 +94,9 @@ light = Box(Point(-0.4, -0.4, -0.01), Point(0.4, 0.4, 0.0),
     material=UniformSurfaceEmitter(light_spectrum, 2.0))
 
 # objects in enclosure
-# box = Box(Point(-0.4, 0, -0.4), Point(0.3, 1.4, 0.3),
-#     parent=world,
-#     transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
-#     material=schott("N-BK7"))
-
-cone = Cone(0.4, 1.4,
+box = Box(Point(-0.4, 0, -0.4), Point(0.3, 1.4, 0.3),
     parent=world,
-    transform=translate(0.4, -0.75 + 1e-6, 0.4)*rotate(0, 90, 0),
+    transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
     material=schott("N-BK7"))
 
 sphere = Sphere(0.4,
@@ -117,7 +112,7 @@ camera.ray_extinction_prob = 0.01
 camera.rays = 1
 camera.spectral_samples = 15
 camera.pixels = (256, 256)
-camera.pixel_samples = 50
+camera.pixel_samples = 25
 camera.sub_sample = True
 camera.display_progress = True
 camera.display_update_time = 10
