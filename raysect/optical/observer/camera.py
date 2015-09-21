@@ -9,10 +9,9 @@ from raysect.optical.ray import Ray
 from raysect.optical import Spectrum
 from raysect.core import World, AffineMatrix, Point, Vector, Observer
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
-from random import random
+from raysect.core.math import random
 
 
-# TODO: make sure workers receive/generate a NEW seed or the random numbers will be identical!
 # TODO: make an object called Frame?
 # TODO: clean up duplicated code in parallel and single observe methods
 class Camera(Observer):
@@ -219,6 +218,9 @@ class Camera(Observer):
                 task_queue.put((x, y))
 
     def _worker(self, world, min_wavelength, max_wavelength, spectral_samples, resampled_xyz, pixel_config, task_queue, result_queue):
+
+        # re-seed the random number generator to prevent all workers inheriting the same sequence
+        random.seed()
 
         while True:
 
@@ -434,8 +436,8 @@ class PinholeCamera(Camera):
             if self.sub_sample:
                 # TODO: make this LESS stupid
                 # uniform sample (stupid, but it will do for now)
-                dx = random() - 0.5
-                dy = random() - 0.5
+                dx = random.random() - 0.5
+                dy = random.random() - 0.5
             else:
                 dx = 0
                 dy = 0
@@ -476,7 +478,7 @@ class VectorCamera(Camera):
         pass
 
     def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
-        # TODO - support super_samples > 1
+        # TODO - support sub_sample?
         origin = self.pixel_origins[x, y]
         direction = self.pixel_directions[x, y]
 
