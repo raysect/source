@@ -29,10 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
 # This code is a cython port of the mt19937-64 pseudorandom number generator
 # developed by Takuji Nishimura and Makoto Matsumoto. The original license
 # follows.
 
+# -----------------------------------------------------------------------------
 # A C-program for MT19937-64 (2014/2/23 version).
 # Coded by Takuji Nishimura and Makoto Matsumoto.
 #
@@ -85,6 +87,7 @@
 # Any feedback is very welcome.
 # http://www.math.hiroshima-u.ac.jp/~m-mat/MT/emt.html
 # email: m-mat @ math.sci.hiroshima-u.ac.jp (remove spaces)
+# -----------------------------------------------------------------------------
 
 from os import urandom as _urandom
 from raysect.core.math.vector cimport new_vector
@@ -133,14 +136,8 @@ cdef void init_by_array64(uint64_t init_key[], uint64_t key_length) nogil:
 
     i = 1
     j = 0
-    if NN > key_length:
-        k = NN
-    else:
-        k = key_length
 
-    # for (; k; k--)
-    # TODO: refactor as k is not used! k_max = max(NN, key_length)
-    for k in range(k, 0, -1):
+    for k in range(max(NN, key_length)):
 
         # non-linear
         mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 62)) * 3935559000370003845UL)) + init_key[j] + j
@@ -154,9 +151,7 @@ cdef void init_by_array64(uint64_t init_key[], uint64_t key_length) nogil:
         if j >= key_length:
             j = 0
 
-    #for (k=NN-1; k; k--) {
-    # TODO: refactor as k is not used
-    for k in range(NN-1, 0, -1):
+    for k in range(NN-1):
 
         # non-linear
         mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 62)) * 2862933555777941757UL)) - i
@@ -216,22 +211,30 @@ cdef inline uint64_t _rand_uint64() nogil:
     return x
 
 
-cpdef seed():
+cpdef seed(object d=None):
     """
-    Automatically re-seeds the random number generator.
+    Seeds the random number generator with the specified integer.
 
-    Calling this function causes the random number generator to be re-seed
-    using the system cryptographic random number generator.
+    If a seed is not specified the generator is automatically re-seed using the
+    system cryptographic random number generator (urandom).
+
+    :param d: Integer seed.
     """
 
     cdef:
         int i
         uint64_t s[NN]
 
-    b = _urandom(8 * NN)
-    for i in range(NN):
+    if d:
+        # unpack int into the required number of bytes
+        b = d.to_bytes(8*NN, 'big')
+    else:
+        # if d is not set, source the seed from the system cryptographic random source
+        b = _urandom(8*NN)
+
+    for i in range(0, NN):
         s[i] = int.from_bytes(b[i*8:(i+1)*8], byteorder='big')
-    init_by_array64(s, len(s))
+    init_by_array64(s, NN)
 
 
 @cython.cdivision(True)
@@ -302,31 +305,3 @@ cpdef Vector vector_hemisphere_cosine():
 
 # initialise random number generator
 seed()
-
-
-# def test_random(n):
-#
-#     cdef:
-#         int i
-#         uint64_t init[4]
-#         uint64_t length
-#
-#     init[0] = 0x12345UL
-#     init[1] = 0x23456UL
-#     init[2] = 0x34567UL
-#     init[3] = 0x45678UL
-#     length = 4
-#
-#     init_by_array64(init, length);
-#
-#     print("1000 outputs of genrand64_int64()")
-#     for i in range(n):
-#         print("{} ".format(_rand_uint64()), end="")
-#         if i % 5 == 4:
-#             print()
-#
-#     # printf("\n1000 outputs of random()\n");
-#     # for (i=0; i<1000; i++) {
-#     #   printf("%10.8f ", genrand64_real2());
-#     #   if (i%5==4) printf("\n");
-#     # }
