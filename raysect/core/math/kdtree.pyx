@@ -683,7 +683,7 @@ cdef class KDTreeCore:
             return []
 
         # start search
-        self._contains_node(ROOT_NODE, point)
+        return self._contains_node(ROOT_NODE, point)
 
     cdef list _contains_node(self, int id, Point point):
         """

@@ -35,7 +35,7 @@ from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport Normal, new_normal
 from raysect.core.math.point cimport Point, new_point
 from raysect.core.math.vector cimport Vector, new_vector
-from raysect.core.math.kdtree cimport KDTreeCore, Item, kdnode
+from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
@@ -498,7 +498,7 @@ cdef class Mesh(Primitive):
 
         If an intersection occurs this method will return an Intersection
         object. The Intersection object will contain the details of the
-        ray-surface intersection, sucah as the surface normal and intersection
+        ray-surface intersection, such as the surface normal and intersection
         point.
 
         If no intersection occurs None is returned.
