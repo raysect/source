@@ -151,12 +151,17 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 cdef class KDTree(_Accelerator):
 
     cpdef build(self, list primitives):
+
         self._kdtree = _PrimitiveKDTree(primitives)
 
     cpdef Intersection hit(self, Ray ray):
-        if self._kdtree._hit(ray):    # erm... why do I have a cpdef function in kdtreecore? and it calls cdef _function! The core is cython only!!!! FIX
+
+        # we explicitly use _hit() rather than hit() as _hit() is cdef, rather than cpdef
+        if self._kdtree._hit(ray):
             return self._kdtree.hit_intersection
         return None
 
     cpdef list contains(self, Point point):
-        return self._kdtree._contains(point)    # erm... why do I have a cpdef function in kdtreecore? and it calls cdef _function! The core is cython only!!!! FIX
+
+        # we explicitly use _contains() rather than contains() as _contains() is cdef, rather than cpdef
+        return self._kdtree._contains(point)

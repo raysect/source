@@ -87,21 +87,21 @@ cdef class KDTreeCore:
 
     cpdef bint hit(self, Ray ray)
 
-    cdef bint _hit(self, Ray ray)
+    cdef inline bint _hit(self, Ray ray)
 
-    cdef bint _hit_node(self, int id, Ray ray, double min_range, double max_range)
+    cdef inline bint _hit_node(self, int id, Ray ray, double min_range, double max_range)
 
-    cdef bint _hit_branch(self, int id, Ray ray, double min_range, double max_range)
+    cdef inline bint _hit_branch(self, int id, Ray ray, double min_range, double max_range)
 
     cdef bint _hit_leaf(self, int id, Ray ray, double max_range)
 
     cpdef list contains(self, Point point)
 
-    cdef list _contains(self, Point point)
+    cdef inline list _contains(self, Point point)
 
-    cdef list _contains_node(self, int id, Point point)
+    cdef inline list _contains_node(self, int id, Point point)
 
-    cdef list _contains_branch(self, int id, Point point)
+    cdef inline list _contains_branch(self, int id, Point point)
 
     cdef list _contains_leaf(self, int id, Point point)
 
