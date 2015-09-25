@@ -456,6 +456,7 @@ cdef class Mesh(Primitive):
         bint _seek_next_intersection
         Ray _next_world_ray
         Ray _next_local_ray
+        double _ray_distance
 
     # TODO: calculate or measure triangle hit cost vs split traversal
     def __init__(self, list triangles=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
@@ -483,6 +484,7 @@ cdef class Mesh(Primitive):
         self._seek_next_intersection = False
         self._next_world_ray = None
         self._next_local_ray = None
+        self._ray_distance = 0
 
     property triangles:
 
@@ -514,6 +516,9 @@ cdef class Mesh(Primitive):
             ray.direction.transform(self.to_local()),
             ray.max_distance
         )
+
+        # reset accumulated ray distance (used by next_intersection)
+        self._ray_distance = 0
 
         # do we hit the mesh?
         if self._kdtree.hit(local_ray):
@@ -559,6 +564,7 @@ cdef class Mesh(Primitive):
             Point hit_point, inside_point, outside_point
             Normal normal
             bint exiting
+            double distance
 
         # on a hit the kd-tree populates an attribute containing the intersection data, unpack it
         triangle, t, u, v, w = self._kdtree.hit_intersection
@@ -580,8 +586,15 @@ cdef class Mesh(Primitive):
             local_ray.max_distance - t - EPSILON
         )
 
+        # for next intersection calculations the ray local origin is moved past the last intersection point so
+        # we therefore need to add the additional distance between the local ray origin and the original ray origin.
+        distance = self._ray_distance + t
+
+        # ray origin is shifted to avoid self intersection, account for this in subsequent intersections
+        self._ray_distance = distance + EPSILON
+
         return new_intersection(
-            world_ray, t, self,
+            world_ray, distance, self,
             hit_point, inside_point, outside_point,
             normal, exiting, self.to_local(), self.to_root()
         )

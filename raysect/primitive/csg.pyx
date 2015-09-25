@@ -33,7 +33,7 @@
 # TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
 # TODO: currently only works with objects that present just two intersections - fails with meshes
 
-from raysect.core.classes cimport Material, new_ray
+from raysect.core.classes cimport Material, new_ray, new_intersection
 from raysect.core.math.point cimport Point
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.acceleration.boundingbox cimport BoundingBox
@@ -80,7 +80,6 @@ cdef class CSGPrimitive(Primitive):
     property primitive_a:
 
         def __get__(self):
-
             return self._primitive_a.primitive
 
         def __set__(self, Primitive primitive not None):
@@ -98,7 +97,6 @@ cdef class CSGPrimitive(Primitive):
     property primitive_b:
 
         def __get__(self):
-
             return self._primitive_b.primitive
 
         def __set__(self, Primitive primitive not None):
@@ -140,7 +138,6 @@ cdef class CSGPrimitive(Primitive):
         cdef Intersection intersection_a, intersection_b, closest_intersection
 
         if self._cache_invalid:
-
             return None
 
         intersection_a = self._cache_intersection_a
@@ -148,11 +145,8 @@ cdef class CSGPrimitive(Primitive):
 
         # replace intersection that was returned during the last call to hit() or next_intersection()
         if self._cache_last_intersection is intersection_a:
-
             intersection_a = self._primitive_a.next_intersection()
-
         else:
-
             intersection_b = self._primitive_b.next_intersection()
 
         closest_intersection = self._closest_intersection(intersection_a, intersection_b)
@@ -160,52 +154,47 @@ cdef class CSGPrimitive(Primitive):
         # identify first valid intersection
         return self._identify_intersection(self._cache_ray, intersection_a, intersection_b, closest_intersection)
 
-    cdef inline Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection):
+    cdef inline Intersection _identify_intersection(self, Ray ray, Intersection a, Intersection b, Intersection closest):
+
+        cdef Intersection intersection
 
         # identify first intersection that satisfies csg operator
-        while closest_intersection is not None:
-
-            if self._valid_intersection(intersection_a, intersection_b, closest_intersection):
-
-                if closest_intersection.ray_distance <= ray.max_distance:
+        while closest is not None:
+            if self._valid_intersection(a, b, closest):
+                if closest.ray_distance <= ray.max_distance:
 
                     # cache data for next_intersection
                     self._cache_ray = ray
-                    self._cache_intersection_a = intersection_a
-                    self._cache_intersection_b = intersection_b
-                    self._cache_last_intersection = closest_intersection
+                    self._cache_intersection_a = a
+                    self._cache_intersection_b = b
+                    self._cache_last_intersection = closest
                     self._cache_invalid = False
 
                     # allow derived classes to modify intersection if required
-                    self._modify_intersection(closest_intersection, intersection_a, intersection_b)
+                    intersection = self._modify_intersection(closest, a, b)
 
                     # convert local intersection attributes to csg primitive coordinate space
-                    closest_intersection.ray = ray
-                    closest_intersection.hit_point = closest_intersection.hit_point.transform(closest_intersection.to_world)
-                    closest_intersection.inside_point = closest_intersection.inside_point.transform(closest_intersection.to_world)
-                    closest_intersection.outside_point = closest_intersection.outside_point.transform(closest_intersection.to_world)
-                    closest_intersection.normal = closest_intersection.normal.transform(closest_intersection.to_world)
-                    closest_intersection.to_local = self.to_local()
-                    closest_intersection.to_world = self.to_root()
-                    closest_intersection.primitive = self
+                    intersection.ray = ray
+                    intersection.hit_point = closest.hit_point.transform(closest.to_world)
+                    intersection.inside_point = closest.inside_point.transform(closest.to_world)
+                    intersection.outside_point = closest.outside_point.transform(closest.to_world)
+                    intersection.normal = closest.normal.transform(closest.to_world)
+                    intersection.to_local = self.to_local()
+                    intersection.to_world = self.to_root()
+                    intersection.primitive = self
 
-                    return closest_intersection
+                    return intersection
 
                 else:
-
                     return None
 
             # closest intersection was rejected so need a replacement candidate intersection
             # from the primitive that was the source of the closest intersection
-            if closest_intersection is intersection_a:
-
-                intersection_a = self._primitive_a.next_intersection()
-
+            if closest is a:
+                a = self._primitive_a.next_intersection()
             else:
-
-                intersection_b = self._primitive_b.next_intersection()
-
-            closest_intersection = self._closest_intersection(intersection_a, intersection_b)
+                b = self._primitive_b.next_intersection()
+            closest = self._closest_intersection(a, b)
 
         # no valid intersections
         return None
@@ -213,27 +202,19 @@ cdef class CSGPrimitive(Primitive):
     cdef inline Intersection _closest_intersection(self, Intersection a, Intersection b):
 
         if a is None:
-
             return b
-
         else:
-
             if b is None or a.ray_distance < b.ray_distance:
-
                 return a
-
             else:
-
                 return b
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
-
         raise NotImplementedError("Warning: CSG operator not implemented")
 
-    cdef void _modify_intersection(self, Intersection intersection, Intersection a, Intersection b):
-
-        # by default, do nothing
-        pass
+    cdef Intersection _modify_intersection(self, Intersection closest, Intersection a, Intersection b):
+         # by default, do nothing
+        return closest
 
     cdef void rebuild(self):
         """
@@ -254,7 +235,6 @@ cdef class NullPrimitive(Primitive):
     """
 
     cpdef BoundingBox bounding_box(self):
-
         return BoundingBox()
 
 
@@ -289,18 +269,14 @@ cdef class CSGRoot(Node):
 cdef class Union(CSGPrimitive):
 
     def __repr__(self):
-
         return "<Union at " + str(hex(id(self))) + ">"
 
     def __str__(self):
         """String representation."""
 
         if self.name == "":
-
             return "<Union at " + str(hex(id(self))) + ">"
-
         else:
-
             return self.name + " <Union at " + str(hex(id(self))) + ">"
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
@@ -313,17 +289,14 @@ cdef class Union(CSGPrimitive):
 
         # union logic
         if not inside_a and not inside_b:
-
             # outside the whole object, intersection must be entering the object
             return True
 
         elif inside_a and not inside_b and closest is a:
-
             # outside primitive B and leaving primitive A, therefore leaving the unioned object
             return True
 
         elif not inside_a and inside_b and closest is b:
-
             # outside primitive A and leaving primitive B, therefore leaving the unioned object
             return True
 
@@ -333,7 +306,6 @@ cdef class Union(CSGPrimitive):
     cpdef bint contains(self, Point p) except -1:
 
         p = p.transform(self.to_local())
-
         return self._primitive_a.contains(p) or self._primitive_b.contains(p)
 
     cpdef BoundingBox bounding_box(self):
@@ -356,7 +328,6 @@ cdef class Union(CSGPrimitive):
         # a small degree of padding is added to avoid potential numerical accuracy issues
         box = BoundingBox()
         for point in points:
-
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
@@ -364,18 +335,14 @@ cdef class Union(CSGPrimitive):
 cdef class Intersect(CSGPrimitive):
 
     def __repr__(self):
-
         return "<Intersect at " + str(hex(id(self))) + ">"
 
     def __str__(self):
         """String representation."""
 
         if self.name == "":
-
             return "<Intersect at " + str(hex(id(self))) + ">"
-
         else:
-
             return self.name + " <Intersect at " + str(hex(id(self))) + ">"
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
@@ -388,17 +355,14 @@ cdef class Intersect(CSGPrimitive):
 
         # intersect logic
         if inside_a and inside_b:
-
             # leaving both primitives
             return True
 
         elif inside_a and not inside_b and closest is b:
-
             # already inside primitive A and now entering primitive B
             return True
 
         elif not inside_a and inside_b and closest is a:
-
             # already inside primitive B and now entering primitive A
             return True
 
@@ -408,7 +372,6 @@ cdef class Intersect(CSGPrimitive):
     cpdef bint contains(self, Point p) except -1:
 
         p = p.transform(self.to_local())
-
         return self._primitive_a.contains(p) and self._primitive_b.contains(p)
 
     cpdef BoundingBox bounding_box(self):
@@ -445,18 +408,14 @@ cdef class Intersect(CSGPrimitive):
 cdef class Subtract(CSGPrimitive):
 
     def __repr__(self):
-
         return "<Subtract at " + str(hex(id(self))) + ">"
 
     def __str__(self):
         """String representation."""
 
         if self.name == "":
-
             return "<Subtract at " + str(hex(id(self))) + ">"
-
         else:
-
             return self.name + " <Subtract at " + str(hex(id(self))) + ">"
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
@@ -469,46 +428,45 @@ cdef class Subtract(CSGPrimitive):
 
         # intersect logic
         if not inside_a and not inside_b and closest is a:
-
             # entering primitive A
             return True
 
         elif inside_a and not inside_b:
-
             # either exiting A or entering B
             return True
 
         elif inside_a and inside_b and closest is b:
-
             # inside both primitives, but leaving primitive B
             return True
 
         # all other intersections are invalid
         return False
 
-    cdef void _modify_intersection(self, Intersection intersection, Intersection a, Intersection b):
+    cdef Intersection _modify_intersection(self, Intersection closest, Intersection a, Intersection b):
 
-        cdef Point temp
+        if closest is b:
 
-        if intersection is b:
+            # invert exiting/entering state, normal and swap inside and outside points
+            return new_intersection(
+                ray=closest.ray,
+                ray_distance=closest.ray_distance,
+                primitive=closest.primitive,
+                hit_point=closest.hit_point,
+                inside_point=closest.outside_point,
+                outside_point=closest.inside_point,
+                normal=closest.normal.neg(),
+                exiting=not closest.exiting,
+                to_local=closest.to_local,
+                to_world=closest.to_world
+            )
 
-            # invert exiting/entering state
-            intersection.exiting = not intersection.exiting
+        else:
 
-            # swap inside and outside points
-            temp = intersection.inside_point
-            intersection.inside_point = intersection.outside_point
-            intersection.outside_point = temp
-
-            # invert normal
-            intersection.normal.x = -intersection.normal.x
-            intersection.normal.y = -intersection.normal.y
-            intersection.normal.z = -intersection.normal.z
+            return closest
 
     cpdef bint contains(self, Point p) except -1:
 
         p = p.transform(self.to_local())
-
         return self._primitive_a.contains(p) and not self._primitive_b.contains(p)
 
     cpdef BoundingBox bounding_box(self):
@@ -526,7 +484,6 @@ cdef class Subtract(CSGPrimitive):
         # a small degree of padding is added to avoid potential numerical accuracy issues
         box = BoundingBox()
         for point in points:
-
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
