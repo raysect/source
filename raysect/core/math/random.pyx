@@ -291,7 +291,7 @@ cpdef Point point_disk():
 
 cpdef Vector vector_hemisphere_cosine():
     """
-    Generates a cosine- weighted random vector on a unit hemisphere.
+    Generates a cosine-weighted random vector on a unit hemisphere.
 
     The hemisphere is aligned along the z-axis - the plane that forms the
     hemisphere based lies in the x-y plane.
