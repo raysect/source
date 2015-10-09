@@ -1,5 +1,4 @@
 # cython: language_level=3
-# cython: profile=False
 
 # Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
