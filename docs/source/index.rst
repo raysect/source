@@ -21,14 +21,30 @@ Raysect Guide
    :maxdepth: 2
    :numbered:
 
-   conventions
+   introduction
    installation
+   how_it_works_bck
+   quickstart_guide
+   architecture_bck
+   tutorial
+   gallery
+   references
    license
+   help
+
+Reference
+---------
+
+.. toctree::
+   :maxdepth: 2
+   :numbered:
+
+   conventions
    raysect_core
    raysect_core_math
    raysect_core_scenegraph
    raysect_core_kdtree
-   help
+   raysect_optical
 
 Indices and tables
 ==================

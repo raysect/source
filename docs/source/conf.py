@@ -50,7 +50,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'raysect'
+project = 'Raysect'
 copyright = '2015, Dr Alex Meakins'
 
 # The version info for the project you're documenting, acts as replacement for
