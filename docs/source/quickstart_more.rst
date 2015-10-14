@@ -1,5 +1,6 @@
-
+==============
 Camera example
+==============
 - create a world
 - place a primitive (sphere) in a scene with a lambert material.
 - Primitive = anything that rays interact with. Only rays. Convention => object => primitive.
@@ -17,7 +18,10 @@ Camera example
 - change color of sphere? Define reflectivity function
 - change material to glass
 
+
+================================
 Spectral Examples based on scene
+================================
 - reset sphere to white
 - manual sampling of scene
 - sample d65 white spectra
@@ -26,5 +30,3 @@ Spectral Examples based on scene
 
 
 - have a look at flask quickstart
-
-

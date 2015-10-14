@@ -23,10 +23,10 @@ Raysect Guide
 
    introduction
    installation
-   how_it_works (Process of raytracing, key concepts, scenegraph, spectra, rays, observers, sample strategy.)
+   how_it_works_bck
    quickstart_guide
-   architecture (core, optical_model)
-   tutorials and how tos
+   architecture_bck
+   tutorial
    gallery
    references
    license
@@ -44,7 +44,6 @@ Reference
    raysect_core_math
    raysect_core_scenegraph
    raysect_core_kdtree
-
    raysect_optical
 
 Indices and tables
