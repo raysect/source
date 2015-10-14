@@ -41,6 +41,8 @@ cdef class Ray:
     cdef public Vector direction
     cdef public double max_distance
 
+    cpdef Point point_on(self, double t)
+
 
 cdef inline new_ray(Point origin, Vector direction, double max_distance):
 

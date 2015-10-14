@@ -151,6 +151,7 @@ cdef class Dielectric(Material):
             Vector incident, reflected, transmitted
             double internal_index, external_index, n1, n2
             double c1, c2s, gamma, reflectivity, transmission, temp
+            Ray reflected_ray, transmitted_ray
             Spectrum spectrum
 
         # convert ray direction normal to local coordinates

@@ -1,5 +1,4 @@
 # cython: language_level=3
-# cython: profile=False
 
 # Copyright (c) 2014, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -523,7 +522,7 @@ cdef class KDTreeCore:
 
         return self._hit(ray)
 
-    cdef bint _hit(self, Ray ray):
+    cdef inline bint _hit(self, Ray ray):
         """
         Starts the hit traversal of the kd tree.
 
@@ -543,7 +542,7 @@ cdef class KDTreeCore:
         # start exploration of kd-Tree
         return self._hit_node(ROOT_NODE, ray, min_range, max_range)
 
-    cdef bint _hit_node(self, int id, Ray ray, double min_range, double max_range):
+    cdef inline bint _hit_node(self, int id, Ray ray, double min_range, double max_range):
         """
         Dispatches hit calculation to the relevant node handler.
 
@@ -560,7 +559,7 @@ cdef class KDTreeCore:
             return self._hit_branch(id, ray, min_range, max_range)
 
     @cython.cdivision(True)
-    cdef bint _hit_branch(self, int id, Ray ray, double min_range, double max_range):
+    cdef inline bint _hit_branch(self, int id, Ray ray, double min_range, double max_range):
         """
         Traverses a kd-Tree branch node along the ray path.
 
@@ -670,7 +669,7 @@ cdef class KDTreeCore:
 
         return self._contains(point)
 
-    cdef list _contains(self, Point point):
+    cdef inline list _contains(self, Point point):
         """
         Starts contains traversal of the kd-Tree.
 
@@ -683,9 +682,9 @@ cdef class KDTreeCore:
             return []
 
         # start search
-        self._contains_node(ROOT_NODE, point)
+        return self._contains_node(ROOT_NODE, point)
 
-    cdef list _contains_node(self, int id, Point point):
+    cdef inline list _contains_node(self, int id, Point point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -699,7 +698,7 @@ cdef class KDTreeCore:
         else:
             return self._contains_branch(id, point)
 
-    cdef list _contains_branch(self, int id, Point point):
+    cdef inline list _contains_branch(self, int id, Point point):
         """
         Locates the kd-Tree node containing the point.
 
@@ -750,7 +749,7 @@ cdef class KDTreeCore:
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTreeCore _contains_leaf() method not implemented.")
 
-    cdef void _reset(self):
+    cdef inline void _reset(self):
         """
         Resets the kd-tree state, de-allocating all memory.
         """

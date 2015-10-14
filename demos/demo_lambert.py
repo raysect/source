@@ -3,6 +3,7 @@ from raysect.optical import World, translate, rotate, Point, Vector, Ray, d65_wh
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
+from raysect.optical.material.conductor import Gold
 from raysect.optical.material.lambert import Lambert
 from raysect.optical.material.glass_libraries import schott
 from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
@@ -23,11 +24,13 @@ sphere = Sphere(2.0)
 # Box(Point(-100, -100, -100), Point(100, 100, 100), world, material=UniformSurfaceEmitter(d65_white, 0.1))
 
 Sphere(1.5, world, translate(0, 0.0001, 0)*rotate(20, 0, 0), schott("N-BK7"))
+# Sphere(1.5, world, translate(0, 0.0001, 0)*rotate(20, 0, 0), material=Gold())
 #Sphere(1.5, world, translate(0, 0.0001, 0)*rotate(20, 0, 0), Lambert())
 
 # Intersect(sphere, Subtract(cube, Union(Union(cyl_x, cyl_y), cyl_z)), world, translate(0, 0.0001, 2)*rotate(20, 0, 0), schott("N-BK7"))
 # Intersect(sphere, Subtract(cube, Union(Union(cyl_x, cyl_y), cyl_z)), world, translate(0, 0.0001, 2)*rotate(20, 0, 0), Lambert())
 
+# Box(Point(-50, -1.51, -50), Point(50, -1.5, 50), world, material=Conductor(gold_n, gold_k))
 Box(Point(-50, -1.51, -50), Point(50, -1.5, 50), world, material=Lambert())
 
 
@@ -43,7 +46,7 @@ camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 10, -10) * r
 camera.ray_min_depth = 3
 camera.ray_max_depth = 100
 camera.ray_extinction_prob = 0.1
-camera.pixel_samples = 2500
+camera.pixel_samples = 250
 camera.rays = 1
 camera.spectral_samples = 20
 camera.pixels = (512, 512)

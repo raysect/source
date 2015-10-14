@@ -29,63 +29,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.acceleration.accelerator cimport Accelerator
-from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
-from raysect.core.acceleration.boundingbox cimport BoundingBox
-from raysect.core.classes cimport Ray
-from raysect.core.math.point cimport Point
+from raysect.core.acceleration.accelerator cimport Accelerator as _Accelerator
+from raysect.core.math.kdtree cimport KDTreeCore as _KDTreeCore
 from raysect.core.classes cimport Intersection
 
-cdef class _Edge:
-
-    cdef readonly double value
-    cdef readonly bint is_upper_edge
-    cdef readonly BoundPrimitive primitive
-
-
-cdef class _Node:
-
-    cdef readonly _Node lower_branch
-    cdef readonly _Node upper_branch
-    cdef readonly list primitives
-    cdef readonly int axis
-    cdef readonly double split
-    cdef readonly bint is_leaf
-
-    cdef object build(self, BoundingBox node_bounds, list primitives, int depth, int min_primitives, double hit_cost)
-
-    cdef void _become_leaf(self, list primitives)
-
-    cdef list _build_edges(self, list primitives, int axis)
-
-    cdef BoundingBox _calc_lower_bounds(self, BoundingBox node_bounds, double split_value, int axis)
-
-    cdef BoundingBox _calc_upper_bounds(self, BoundingBox node_bounds, double split_value, int axis)
-
-    cdef Intersection hit(self, Ray ray, double min_range, double max_range)
-
-    cdef inline Intersection _hit_leaf(self, Ray ray, double max_range)
-
-    cdef inline Intersection _hit_branch(self, Ray ray, double min_range, double max_range)
-
-    cdef list contains(self, Point point)
+cdef class _PrimitiveKDTree(_KDTreeCore):
+    cdef:
+        list primitives
+        Intersection hit_intersection
 
 
-cdef class KDTree(Accelerator):
-
-    cdef readonly BoundingBox world_box
-    cdef readonly _Node tree
-    cdef public int max_depth
-    cdef public double hit_cost
-    cdef public int min_primitives
-
-    cpdef Intersection hit(self, Ray ray)
-
-    cpdef list contains(self, Point point)
-
-    cdef list _bound_primitives(self, list primitives)
-
-    cdef void _build_world_box(self, list primitives)
-
-
+cdef class KDTree(_Accelerator):
+    cdef _PrimitiveKDTree _kdtree
 
