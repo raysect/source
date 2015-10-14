@@ -38,8 +38,13 @@ from raysect.core.math.point cimport Point
 from raysect.core.math.vector cimport Vector
 from raysect.core.math.affinematrix cimport new_affinematrix
 from raysect.optical.spectrum cimport Spectrum
-from raysect.core.math.normal cimport Normal
+from raysect.core.math.normal cimport Normal, new_normal
 from raysect.core.math.random cimport vector_hemisphere_cosine
+
+# sets the maximum number of attempts to find a valid perturbed normal
+# it is highly unlikely (REALLY!) this number will ever be reached, it is just there for my paranoia
+# in the worst case 50% of the random hemisphere will always generate a valid solution... so P(fail) > 0.5^50!
+DEF SAMPLE_ATTEMPTS = 50
 
 
 cdef class Roughen(Material):
@@ -82,35 +87,52 @@ cdef class Roughen(Material):
 
         cdef:
             Ray reflected
-            Vector v_normal, v_tangent, v_bitangent, v_random
+            Vector l_normal, l_tangent, l_bitangent
+            Vector s_incident, s_random
+            Normal s_normal
             AffineMatrix surface_to_local
+            int attempt
 
         # generate an orthogonal basis about surface normal
-        v_normal = normal.as_vector()
-        v_tangent = normal.orthogonal()
-        v_bitangent = v_normal.cross(v_tangent)
+        l_normal = normal.as_vector()
+        l_tangent = normal.orthogonal()
+        l_bitangent = l_normal.cross(l_tangent)
 
         # generate inverse surface transform matrix
-        # TODO: MOVE THIS TO A UTILITY FUNCTION AND TEST - math.cython.transforms <- high performance but no safety
-        surface_to_local = new_affinematrix(v_tangent.x, v_bitangent.x, v_normal.x, 0.0,
-                                            v_tangent.y, v_bitangent.y, v_normal.y, 0.0,
-                                            v_tangent.z, v_bitangent.z, v_normal.z, 0.0,
+        surface_to_local = new_affinematrix(l_tangent.x, l_bitangent.x, l_normal.x, 0.0,
+                                            l_tangent.y, l_bitangent.y, l_normal.y, 0.0,
+                                            l_tangent.z, l_bitangent.z, l_normal.z, 0.0,
                                             0.0, 0.0, 0.0, 1.0)
 
-        # TODO: MOVE THIS TO A UTILITY FUNCTION AND TEST - math.cython.transforms <- high performance but no safety
-        # local_to_surface = new_affinematrix(v_tangent.x, v_tangent.y, v_tangent.z, 0.0,
-        #                                     v_bitangent.x, v_bitangent.y, v_bitangent.z, 0.0,
-        #                                     v_normal.x, v_normal.y, v_normal.z, 0.0,
-        #                                     0.0, 0.0, 0.0, 1.0)
+        local_to_surface = new_affinematrix(l_tangent.x, l_tangent.y, l_tangent.z, 0.0,
+                                            l_bitangent.x, l_bitangent.y, l_bitangent.z, 0.0,
+                                            l_normal.x, l_normal.y, l_normal.z, 0.0,
+                                            0.0, 0.0, 0.0, 1.0)
 
-        # Generate a new normal about the original normal by lerping between a random vector and the original normal.
-        # The lerp strength is determined by the roughness. Calculation performed in surface space, so the original
-        # normal is aligned with the z-axis.
-        v_random = vector_hemisphere_cosine()
-        normal.x = self.roughness * v_random.x
-        normal.y = self.roughness * v_random.y
-        normal.z = self.roughness * v_random.z + (1 - self.roughness)
-        normal = normal.transform(surface_to_local).normalise()
+        # convert ray direction to surface space
+        s_incident = ray.direction.transform(local_to_surface)
+
+        # attempt to find a valid (intersectable by ray) surface perturbation
+        s_normal = new_normal(0, 0, 1)
+        for attempt in range(SAMPLE_ATTEMPTS):
+
+            # Generate a new normal about the original normal by lerping between a random vector and the original normal.
+            # The lerp strength is determined by the roughness. Calculation performed in surface space, so the original
+            # normal is aligned with the z-axis.
+            s_random = vector_hemisphere_cosine()
+            s_normal.x = self.roughness * s_random.x
+            s_normal.y = self.roughness * s_random.y
+            s_normal.z = self.roughness * s_random.z + (1 - self.roughness)
+
+            # Only accept the new normal if it does not change the side of the surface the incident ray is on.
+            # An incident ray could not hit a surface facet that is facing away from it.
+            # If (incident.normal) * (incident.perturbed_normal) < 0 the ray has swapped sides.
+            # Note: normal in surface space is Normal(0, 0, 1), therefore incident.normal is just incident.z.
+            if (s_incident.z * s_incident.dot(s_normal)) > 0:
+
+                # we have found a valid perturbation, re-assign normal
+                normal = s_normal.transform(surface_to_local).normalise()
+                break
 
         return self.material.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point,
                                               normal, world_to_local, local_to_world)
