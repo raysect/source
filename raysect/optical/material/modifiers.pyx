@@ -43,7 +43,7 @@ from raysect.core.math.random cimport vector_hemisphere_cosine
 
 # sets the maximum number of attempts to find a valid perturbed normal
 # it is highly unlikely (REALLY!) this number will ever be reached, it is just there for my paranoia
-# in the worst case 50% of the random hemisphere will always generate a valid solution... so P(fail) > 0.5^50!
+# in the worst case 50% of the random hemisphere will always generate a valid solution... so P(fail) < 0.5^50!
 DEF SAMPLE_ATTEMPTS = 50
 
 
@@ -110,7 +110,7 @@ cdef class Roughen(Material):
                                             0.0, 0.0, 0.0, 1.0)
 
         # convert ray direction to surface space
-        s_incident = ray.direction.transform(local_to_surface)
+        s_incident = ray.direction.transform(world_to_local).transform(local_to_surface)
 
         # attempt to find a valid (intersectable by ray) surface perturbation
         s_normal = new_normal(0, 0, 1)
