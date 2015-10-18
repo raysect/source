@@ -23,6 +23,7 @@ Raysect Guide
    how_it_works
    quickstart_guide
    primitives
+   materials
 
    gallery
    references
