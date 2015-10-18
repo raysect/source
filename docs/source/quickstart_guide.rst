@@ -3,15 +3,12 @@
 Quickstart Guide
 ****************
 
-===============
-Lambert Example
-===============
-
 This example is based on the demo file demos/quickstart/demo_lambert.py. It outlines the typical workflow used in
 raysect.
 
+=================
 Create Primitives
------------------
+=================
 
 Set-up your primitives by defining materials, meshes, etc::
 
@@ -27,8 +24,10 @@ Set-up your primitives by defining materials, meshes, etc::
     # cause a light leak at the intersection between the sphere and the ground.
     sphere = Sphere(radius=1.5, transform=translate(0, 0.0001, 0), material=schott("N-BK7"))
 
+
+============
 Add Observer
-------------
+============
 
 Add an observer and configure its sampling settings. All of these camera settings have sensible defaults, The camera
 settings will be explained in detail in another section::
@@ -55,8 +54,10 @@ settings will be explained in detail in another section::
     camera.display_progress = True
     camera.display_update_time = 10
 
+
+================
 Build Scenegraph
-----------------
+================
 
 Assemble the scene-graph by linking primitives and observers to the World. Set their transforms::
 
@@ -67,8 +68,10 @@ Assemble the scene-graph by linking primitives and observers to the World. Set t
     emitter.parent = world
     camera.parent = world
 
+
+=========
 Observe()
----------
+=========
 
 Call observe() on an Observer or trace a ray manually::
 
@@ -82,5 +85,23 @@ Call observe() on an Observer or trace a ray manually::
 The resulting image should render like this.
 
 .. image:: images/demo_lambert.png
+   :align: center
+
+
+==================
+Simulated Spectrum
+==================
+
+Lets simulate measuring a spectrum by launching a single ray::
+
+    ray = Ray(origin=Point(0, 0, -5),
+              direction=Vector(0, 0, 1),
+              min_wavelength=375,
+              max_wavelength=785,
+              num_samples=100)
+
+The resulting plot should look something like this.
+
+.. image:: images/example_spectra.png
    :align: center
 
