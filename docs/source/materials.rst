@@ -1,7 +1,7 @@
 
-**********
-Primitives
-**********
+*********
+Materials
+*********
 
 .. image:: images/metal_balls.png
    :align: center
