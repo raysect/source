@@ -53,6 +53,8 @@ cdef class Ray(CoreRay):
 
     cpdef Spectrum trace(self, World world, bint keep_alive=*)
 
+    cpdef Spectrum sample(self, World world, int samples)
+
     cpdef Ray spawn_daughter(self, Point origin, Vector direction)
 
     cdef inline int get_num_samples(self)

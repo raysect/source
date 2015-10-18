@@ -415,6 +415,32 @@ cdef class Spectrum(SpectralFunction):
         for index in range(samples_view.shape[0]):
             samples_view[index] /= array[index]
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef inline void mad_scalar(self, double scalar, double[::1] array):
+
+        cdef:
+            double[::1] samples_view
+            npy_intp index
+
+        samples_view = self.samples
+        for index in range(samples_view.shape[0]):
+            samples_view[index] += scalar * array[index]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef inline void mad_array(self, double[::1] a, double[::1] b):
+
+        cdef:
+            double[::1] samples_view
+            npy_intp index
+
+        samples_view = self.samples
+        for index in range(samples_view.shape[0]):
+            samples_view[index] += a[index] * b[index]
+
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int num_samples):
 

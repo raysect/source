@@ -198,6 +198,13 @@ cdef class Ray(CoreRay):
 
     @cython.cdivision(True)
     cpdef Spectrum trace(self, World world, bint keep_alive=False):
+        """
+        Traces a single ray path through the world.
+
+        :param world: World object defining the scene.
+        :param keep_alive: If true, disables Russian roulette termination of the ray.
+        :return: A Spectrum object.
+        """
 
         cdef:
             Spectrum spectrum
@@ -217,14 +224,12 @@ cdef class Ray(CoreRay):
         # create a new spectrum object compatible with the ray
         spectrum = self.new_spectrum()
 
-        # limit ray recursion depth with russian roulette
+        # limit ray recursion depth with Russian roulette
         # set normalisation to ensure the sampling remains unbiased
-
         if keep_alive or self.depth < self._min_depth:
             normalisation = 1.0
         else:
             if self.depth >= self._max_depth or probability(self._extinction_prob):
-                # print("DEAD @", self.depth)
                 return spectrum
             else:
                 normalisation = 1 / (1 - self._extinction_prob)
@@ -276,7 +281,47 @@ cdef class Ray(CoreRay):
         spectrum.mul_scalar(normalisation)
         return spectrum
 
+    cpdef Spectrum sample(self, World world, int count):
+        """
+        Samples the radiance directed along the ray direction.
+
+        This methods calls trace repeatedly to obtain a statistical sample of
+        the radiance directed along the ray direction from the world. The count
+        parameter specifies the number of samples to obtain. The mean spectrum
+        accumulated from these samples is returned.
+
+        :param world: World object defining the scene.
+        :param count: Number of samples to take.
+        :return: A Spectrum object.
+        """
+
+        cdef:
+            Spectrum spectrum, sample
+            double normalisation
+
+        if count < 1:
+            raise ValueError("Samples must be >= 1.")
+
+        spectrum = self.new_spectrum()
+        normalisation = 1 / count
+        while count:
+            sample = self.trace(world)
+            spectrum.mad_scalar(normalisation, sample.samples)
+            count -= 1
+
+        return spectrum
+
     cpdef Ray spawn_daughter(self, Point origin, Vector direction):
+        """
+        Spawns a new daughter of the ray.
+
+        A daughter ray has the same spectral configuration as the source ray,
+        however the ray depth is increased by 1.
+
+        :param origin: A Point defining the ray origin.
+        :param direction: A vector defining the ray direction.
+        :return: A Ray object.
+        """
 
         cdef Ray ray
 
