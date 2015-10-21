@@ -281,6 +281,7 @@ cdef class Ray(CoreRay):
         spectrum.mul_scalar(normalisation)
         return spectrum
 
+    @cython.cdivision(True)
     cpdef Spectrum sample(self, World world, int count):
         """
         Samples the radiance directed along the ray direction.
@@ -303,7 +304,7 @@ cdef class Ray(CoreRay):
             raise ValueError("Samples must be >= 1.")
 
         spectrum = self.new_spectrum()
-        normalisation = 1 / count
+        normalisation = 1 / <double> count
         while count:
             sample = self.trace(world)
             spectrum.mad_scalar(normalisation, sample.samples)
