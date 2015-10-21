@@ -2,7 +2,7 @@
 from scipy.interpolate import CloughTocher2DInterpolator
 from scipy.io import loadmat
 from numpy import array, zeros, arange
-from matplotlib.pylab import imshow, show
+from matplotlib.pylab import imshow, show, ion
 import os
 
 
@@ -258,14 +258,15 @@ if __name__ == '__main__':
     ###############
 
     # Sample our mesh for imshow test
-    samples = zeros((50, 50))
-    xrange = list(arange(0, 2, 2/50))
-    yrange = list(arange(-2, 0, 2/50))
+    samples = zeros((100, 50))
+    xrange = list(arange(0, 1, 1/50))
+    yrange = list(arange(-2, 0, 2/100))
 
-    for x in xrange:
-        print(x)
-        for y in yrange:
-            samples[y, x] = datamesh(x, y, "linerad")
+    for i, x in enumerate(xrange):
+        for j, y in enumerate(yrange):
+            samples[j, i] = datamesh(x, y, "linerad")
 
-    imshow(samples, extent=[minr, maxr, minz, maxz], origin='lower')
+    ion()
+    # imshow(samples, extent=[minr, maxr, minz, maxz], origin='lower')
+    imshow(samples, extent=[0, 1, -2, 0], origin='lower')
     show()
