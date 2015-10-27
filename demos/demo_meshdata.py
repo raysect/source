@@ -35,6 +35,8 @@ import os
 # do not allow users to gain access to data that could cause a seg fault if altered e.g. array shape changes
 # they should have the data already - they used it to populate an instance
 # if they want to change the data, they must do it outside and create a new instance = safety first
+
+
 class TriangularDataMesh:
 
     def __init__(self, *data_names):
@@ -175,6 +177,7 @@ class TriangleMeshTriangle:
         else:
             return False
 
+
 # this won't be necessary if the init of the interpolator takes lists/ndarrays of vertices + faces
 class TriangleMeshVertex:
     """
@@ -198,7 +201,7 @@ if __name__ == '__main__':
     # Loading SOLPS data
     ####################
 
-    solps_pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources/solps_39625.mat')
+    solps_pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mesh_interp/solps_39625.mat')
     # solps_output = loadmat('./demos/resources/solps_39625.mat')
     solps_output = loadmat(solps_pth)
 
