@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core import Point, Normal
-from raysect.primitive.mesh import Mesh, Triangle
+from raysect.primitive.mesh import Mesh
 
 class OBJHandler:
 
@@ -68,46 +68,53 @@ class OBJHandler:
                     normals.append(normal)
 
                 elif cmd == "f":
-                    triangle = cls._to_triangle(tokens, vertices, normals)
+                    triangle = cls._to_triangle(tokens)
                     triangles.append(triangle)
 
-        return Mesh(triangles, **kwargs)
+        if normals:
+            return Mesh(vertices, triangles, normals, **kwargs)
+        return Mesh(vertices, triangles, **kwargs)
 
     @classmethod
     def _to_point(cls, tokens, scaling):
 
         x, y, z = tokens
-        return Point(scaling * float(x), scaling * float(y), scaling * float(z))
+        return [scaling * float(x), scaling * float(y), scaling * float(z)]
 
     @classmethod
     def _to_normal(cls, tokens):
 
         x, y, z = tokens
-        return Normal(float(x), float(y), float(z)).normalise()
+        n = Normal(float(x), float(y), float(z)).normalise()
+        return [n.x, n.y, n.z]
 
     @classmethod
-    def _to_triangle(cls, tokens, vertices, normals):
+    def _to_triangle(cls, tokens):
 
         if len(tokens) != 3:
             raise ValueError("The .obj importer only support meshes containing 3 sided faces (triangles).")
 
-        v0, n0 = cls._parse_face_token(tokens[0], vertices, normals)
-        v1, n1 = cls._parse_face_token(tokens[1], vertices, normals)
-        v2, n2 = cls._parse_face_token(tokens[2], vertices, normals)
-        return Triangle(v0, v1, v2, n0, n1, n2)
+        v1, n1 = cls._parse_face_token(tokens[0])
+        v2, n2 = cls._parse_face_token(tokens[1])
+        v3, n3 = cls._parse_face_token(tokens[2])
+
+        # do we have a full set of normals?
+        if n1 is None or n2 is None or n3 is None:
+            return [v1, v2, v3]
+        return [v1, v2, v3, n1, n2, n3]
 
     @classmethod
-    def _parse_face_token(cls, token, vertices, normals):
+    def _parse_face_token(cls, token):
 
         # texture coordinates not currently supported
         # note indexing in obj format is 1 based, Python is 0 based
         indices = token.split("/")
         v, vn = None, None
         if len(indices) == 1 or len(indices) == 2:
-            v = vertices[int(indices[0]) - 1]
+            v = int(indices[0]) - 1
         elif len(indices) == 3:
-            v = vertices[int(indices[0]) - 1]
-            vn = normals[int(indices[2]) - 1]
+            v = int(indices[0]) - 1
+            vn = int(indices[2]) - 1
         else:
             raise ValueError("The .obj contains an invalid face definition.")
 
