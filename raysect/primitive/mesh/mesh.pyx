@@ -48,10 +48,10 @@ cimport cython
 DEF INFINITY = 1e999
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-9
+DEF BOX_PADDING = 1e-6
 
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-9
+DEF EPSILON = 1e-6
 
 # handy defines
 DEF X = 0
@@ -148,6 +148,10 @@ cdef class MeshKDTree(KDTreeCore):
             invalid = (triangles[:, 3:6] < 0) | (triangles[:, 3:6] >= vertex_normals.shape[0])
             if invalid.any():
                 raise ValueError("The triangle array references non-existent normals.")
+
+        # ensure vertex normals are normalised
+        #if vertex_normals is not None:
+            # TODO: write me
 
         # assign to memory views
         self.vertices = vertices
@@ -253,7 +257,8 @@ cdef class MeshKDTree(KDTreeCore):
                 max(vertices[i1, Z], vertices[i2, Z], vertices[i3, Z]),
             ),
         )
-        bbox.pad(bbox.largest_extent() * BOX_PADDING)
+        bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
+
         return bbox
 
     # def __getstate__(self):
@@ -274,6 +279,7 @@ cdef class MeshKDTree(KDTreeCore):
         self._v = -1.0
         self._w = -1.0
         self._t = INFINITY
+        self._i = NO_INTERSECTION
 
         self._calc_rayspace_transform(ray)
         return self._hit(ray)
@@ -320,7 +326,7 @@ cdef class MeshKDTree(KDTreeCore):
         self._u = u
         self._v = v
         self._w = w
-        self._t = t
+        self._t = distance
         self._i = closest_triangle
 
         return True
@@ -480,6 +486,8 @@ cdef class MeshKDTree(KDTreeCore):
 
         return True
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef Intersection calc_intersection(self, Ray ray):
 
         cdef:
@@ -574,6 +582,8 @@ cdef class MeshKDTree(KDTreeCore):
                 face_normals[self._i, Z]
             )
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef BoundingBox bounding_box(self, AffineMatrix to_world):
         """
         Returns a bounding box that encloses the mesh.
@@ -598,7 +608,7 @@ cdef class MeshKDTree(KDTreeCore):
         # TODO: padding should really be a function of mesh extent
         # convert vertices to world space and grow a bounding box around them
         bbox = BoundingBox()
-        for i in range(self.vertices.shape[0]):
+        for i in range(vertices.shape[0]):
             vertex = new_point(vertices[i, X], vertices[i, Y], vertices[i, Z])
             bbox.extend(vertex.transform(to_world), BOX_PADDING)
 
@@ -758,7 +768,7 @@ cdef class Mesh(Primitive):
 
         return None
 
-    cdef Intersection _process_intersection(self, world_ray, local_ray):
+    cdef Intersection _process_intersection(self, Ray world_ray, Ray local_ray):
 
         cdef:
             Intersection intersection
