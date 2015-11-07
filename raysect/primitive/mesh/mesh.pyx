@@ -70,7 +70,6 @@ DEF N1 = 3
 DEF N2 = 4
 DEF N3 = 5
 
-
 DEF NO_INTERSECTION = -1
 
 """
@@ -82,20 +81,6 @@ As implemented, the algorithm is not fully watertight due to the use of double p
 higher precision to resolve cases when the edge tests result in a degenerate solution. This should only occur when a mesh contains
 extremely small triangles that are being tested against a ray with an origin far from the mesh.
 """
-
-#     @cython.cdivision(True)
-#     cpdef Point centre_point(self):
-#         """
-#         Returns the centre point (centroid) of the triangle.
-#         :return: Point object.
-#         """
-#
-#         return new_point(
-#             (self.v1.x + self.v2.x + self.n3.x) / 3,
-#             (self.v1.y + self.v2.y + self.n3.y) / 3,
-#             (self.v1.z + self.v2.z + self.n3.z) / 3
-#         )
-
 
 cdef class MeshKDTree(KDTreeCore):
 
