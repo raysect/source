@@ -569,6 +569,25 @@ cdef class MeshKDTree(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    cpdef bint mesh_contains(self, Point p):
+
+        cdef Ray ray
+
+        # fire ray along z axis, if it encounters a polygon it inspects the orientation of the face
+        # if the face is outwards, then the ray was spawned inside the mesh
+        # this assumes the mesh has all face normals facing outwards from the mesh interior
+        ray = new_ray(p, new_vector(0, 0, 1), INFINITY)
+
+        # search for closest triangle intersection
+        if not self.hit(ray):
+            return False
+
+        # inspect the Z component of the triangle face normal to identify orientation
+        # this is an optimised version of ray.direction.dot(face_normal) as we know ray only propagating in Z
+        return self.face_normals[self._i, Z] > 0.0
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef BoundingBox bounding_box(self, AffineMatrix to_world):
         """
         Returns a bounding box that encloses the mesh.
@@ -791,8 +810,6 @@ cdef class Mesh(Primitive):
         return intersection
 
     # TODO: add an option to use an intersection count algorithm for meshes that have bad face normal orientations
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cpdef bint contains(self, Point p) except -1:
         """
         Identifies if the point lies in the volume defined by the mesh.
@@ -806,28 +823,11 @@ cdef class Mesh(Primitive):
         :return: True if the point lies in the volume, False otherwise.
         """
 
-        cdef:
-            Ray ray
-
         if not self.closed:
             return False
 
-        # fire ray along z axis, if it encounters a polygon it inspects the orientation of the face
-        # if the face is outwards, then the ray was spawned inside the mesh
-        # this assumes the mesh has all face normals facing outwards from the mesh interior
-        ray = new_ray(
-            p.transform(self.to_local()),
-            new_vector(0, 0, 1),
-            INFINITY
-        )
-
-        # search for closest triangle intersection
-        if not self._kdtree.hit(ray):
-            return False
-
-        # inspect the Z component of the triangle face normal to identify orientation
-        # this is an optimised version of ray.direction.dot(face_normal) as we know ray only propagating in Z
-        return self._kdtree.face_normals[self._kdtree._i, Z] > 0.0
+        p = p.transform(self.to_local())
+        return self._kdtree.mesh_contains(p)
 
     cpdef BoundingBox bounding_box(self):
         """
