@@ -53,7 +53,7 @@ DEF BOX_PADDING = 1e-6
 # additional ray distance to avoid re-hitting the same surface point
 DEF EPSILON = 1e-6
 
-# handy defines
+# convenience defines
 DEF X = 0
 DEF Y = 1
 DEF Z = 2
@@ -246,16 +246,42 @@ cdef class MeshKDTree(KDTreeCore):
 
         return bbox
 
-    # def __getstate__(self):
-    #     """Encodes state for pickling."""
-    #
-    #     return self.triangles, super().__getstate__()
-    #
-    # def __setstate__(self, state):
-    #     """Decodes state for pickling."""
-    #
-    #     self.triangles, base_state = state
-    #     super().__setstate__(base_state)
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        vertices = self.vertices.base.tolist()
+        triangles = self.triangles.base.tolist()
+        if self.vertex_normals is not None:
+            normals = self.vertex_normals.base.tolist()
+        else:
+            normals = None
+
+        return vertices, normals, triangles, self.smoothing, super().__getstate__()
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        vertices, normals, triangles, self.smoothing, base_state = state
+
+        # convert lists back to numpy arrays and assign to memory views
+        self.vertices = array(vertices, dtype=float32)
+        self.triangles = array(triangles, dtype=int64)
+        if normals is not None:
+            self.vertex_normals = array(normals, dtype=float32)
+        else:
+            self.vertex_normals = None
+
+        # reset hit data
+        self._u = -1.0
+        self._v = -1.0
+        self._w = -1.0
+        self._t = INFINITY
+        self._i = NO_INTERSECTION
+
+        # regenerate face normals
+        self._generate_face_normals()
+
+        super().__setstate__(base_state)
 
     cpdef bint hit(self, Ray ray):
 
@@ -679,7 +705,7 @@ cdef class Mesh(Primitive):
         double _ray_distance
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, object vertices=None, object triangles=None, object normals=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
@@ -690,6 +716,9 @@ cdef class Mesh(Primitive):
             self._kdtree = instance._kdtree
 
         else:
+
+            if vertices is None or triangles is None:
+                raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
 
             self.closed = closed
 
@@ -809,7 +838,6 @@ cdef class Mesh(Primitive):
 
         return intersection
 
-    # TODO: add an option to use an intersection count algorithm for meshes that have bad face normal orientations
     cpdef bint contains(self, Point p) except -1:
         """
         Identifies if the point lies in the volume defined by the mesh.
@@ -842,46 +870,54 @@ cdef class Mesh(Primitive):
 
         return self._kdtree.bounding_box(self.to_root())
 
+    def dump(self, object file):
+        """
+        Writes the mesh data to the specified file descriptor or filename.
 
-    # cpdef dump(self, file):
-    #     """
-    #     Writes the mesh data to the specified file descriptor or filename.
-    #
-    #     This method can be used as part of a caching system to avoid the
-    #     computational cost of building a mesh's kd-tree. The kd-tree is stored
-    #     with the mesh data and is restored when the mesh is loaded.
-    #
-    #     This method may be supplied with a file object or a string path.
-    #
-    #     :param file: File object or string path.
-    #     """
-    #
-    #     state = (self._kdtree, self.smoothing, self.closed)
-    #
-    #     if isinstance(file, io.BytesIO):
-    #          pickle.dump(state, file)
-    #     else:
-    #         with open(file, mode="wb") as f:
-    #             pickle.dump(state, f)
-    #
-    # cpdef load(self, file):
-    #     """
-    #     Reads the mesh data from the specified file descriptor or filename.
-    #
-    #     This method can be used as part of a caching system to avoid the
-    #     computational cost of building a mesh's kd-tree. The kd-tree is stored
-    #     with the mesh data and is restored when the mesh is loaded.
-    #
-    #     This method may be supplied with a file object or a string path.
-    #
-    #     :param file: File object or string path.
-    #     """
-    #
-    #     if isinstance(file, io.BytesIO):
-    #          state = pickle.load(file)
-    #     else:
-    #         with open(file, mode="rb") as f:
-    #             state = pickle.load(f)
-    #
-    #     self._kdtree, self.smoothing, self.closed = state
-    #     self._seek_next_intersection = False
+        This method can be used as part of a caching system to avoid the
+        computational cost of building a mesh's kd-tree. The kd-tree is stored
+        with the mesh data and is restored when the mesh is loaded.
+
+        This method may be supplied with a file object or a string path.
+
+        :param file: File object or string path.
+        """
+
+        state = (self._kdtree, self.closed)
+
+        if isinstance(file, io.BytesIO):
+             pickle.dump(state, file)
+        else:
+            with open(file, mode="wb") as f:
+                pickle.dump(state, f)
+
+    @classmethod
+    def load(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
+        """
+        Reads the mesh data from the specified file descriptor or filename.
+
+        This method can be used as part of a caching system to avoid the
+        computational cost of building a mesh's kd-tree. The kd-tree is stored
+        with the mesh data and is restored when the mesh is loaded.
+
+        This method may be supplied with a file object or a string path.
+
+        :param file: File object or string path.
+        """
+
+        cdef Mesh m
+
+        if isinstance(file, io.BytesIO):
+             state = pickle.load(file)
+        else:
+            with open(file, mode="rb") as f:
+                state = pickle.load(f)
+
+        m = Mesh.__new__(Mesh)
+        m._kdtree, m.closed = state
+        m._seek_next_intersection = False
+        m._next_world_ray = None
+        m._next_local_ray = None
+        m._ray_distance = 0
+        super(Mesh, m).__init__(parent, transform, material, name)
+        return m
