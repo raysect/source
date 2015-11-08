@@ -44,6 +44,11 @@ import io
 import pickle
 cimport cython
 
+"""
+The ray-triangle intersection used for the Mesh primitive is an implementation of the algorithm described in:
+    "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald, Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
+"""
+
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
 
@@ -72,15 +77,6 @@ DEF N3 = 5
 
 DEF NO_INTERSECTION = -1
 
-"""
-Notes:
-The ray-triangle intersection is a partial implementation of the algorithm described in:
-    "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald, Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
-
-As implemented, the algorithm is not fully watertight due to the use of double precision throughout. At present, there is no appeal to
-higher precision to resolve cases when the edge tests result in a degenerate solution. This should only occur when a mesh contains
-extremely small triangles that are being tested against a ray with an origin far from the mesh.
-"""
 
 cdef class MeshKDTree(KDTreeCore):
 
@@ -649,7 +645,28 @@ cdef class Mesh(Primitive):
     """
     This primitive defines a polyhedral surface with triangular faces.
 
-    To define a mesh, a list of Triangle objects must be supplied.
+    To define a new mesh, a list of vertices and triangles must be supplied.
+    A set of vertex normals, used for smoothing calculations may also be
+    provided.
+
+    The mesh vertices are supplied as an Nx3 list/array of floating point
+    values. For each Vertex, x, y and z coordinates must be supplied. e.g.
+
+        vertices = [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0], ...]
+
+    Vertex normals are similarly defined. Note that vertex normals must be
+    correctly normalised.
+
+    The triangle array is either Mx3 or Mx6 - Mx3 if only vertices are defined
+    or Mx6 if both vertices and vertex normals are defined. Triangles are
+    defined by indexing into the vertex and vertex normal arrays. i.e:
+
+        triangles = [[v1, v2, v3, n1, n2, n3], ...]
+
+    where v1, v2, v3 are the vertex array indices specifying the triangle's
+    vertices and n1, n2, n3 are the normal array indices specifying the
+    triangle's surface normals at each vertex location. Where normals are
+    not defined, n1, n2 and n3 are omitted.
 
     The mesh may be an open surface (which does not enclose a volume) or a
     closed surface (which defines a volume). The nature of the mesh must be
@@ -679,9 +696,9 @@ cdef class Mesh(Primitive):
     used by the kd-tree must be controlled. This may occur if very large meshes
     are used.
 
-    # :param triangles: A list of Triangles defining the mesh.
-    #
-    #
+    :param vertices: An N x 3 list of vertices.
+    :param triangles: An M x 3 or N x 6 list of vertex/normal indicies defining the mesh triangles.
+    :param normals: An K x 3 list of vertex normals or None.
     :param smoothing: True to enable normal interpolation, False to disable.
     :param closed: True is the mesh defines a closed volume, False otherwise.
     :param instance: The Mesh to become an instance of.
@@ -897,12 +914,16 @@ cdef class Mesh(Primitive):
         Reads the mesh data from the specified file descriptor or filename.
 
         This method can be used as part of a caching system to avoid the
-        computational cost of building a mesh's kd-tree. The kd-tree is stored
-        with the mesh data and is restored when the mesh is loaded.
+        computational cost of rebuilding a mesh's kd-tree. The kd-tree is
+        stored with the mesh data and is restored when the mesh is loaded.
 
         This method may be supplied with a file object or a string path.
 
         :param file: File object or string path.
+        :param parent: Attaches the mesh to the specified scene-graph node.
+        :param transform: The co-ordinate transform between the mesh and its parent.
+        :param material: The surface/volume material.
+        :param name: A human friendly name to identity the mesh in the scene-graph.
         """
 
         cdef Mesh m
