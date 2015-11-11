@@ -77,6 +77,7 @@ DEF N3 = 5
 
 DEF NO_INTERSECTION = -1
 
+# TODO: fire exceptions if degenerate triangles are found and tolerant mode is not enabled (the face normal call will fail @ normalisation)
 
 cdef class MeshKDTree(KDTreeCore):
 
@@ -735,6 +736,14 @@ cdef class Mesh(Primitive):
     creating a new mesh from scratch. If instance is set, it takes precedence
     over any other mesh creation settings.
 
+    If a mesh contains degenerate triangles (common for meshes generated from
+    CAD models), enable tolerant mode to automatically remove them during mesh
+    initialisation. A degenerate triangle is one where two or more vertices are
+    coincident or all the vertices lie on the same line. Degenerate triangles
+    will produce rendering error if encountered even though they are
+    "infinitesimally" thin. A ray can still intersect them if they perfectly
+    align as the triangle edges are treated as part of the triangle surface).
+
     The kdtree_* arguments are tuning parameters for the kd-tree construction.
     For more information see the documentation of KDTree. The default values
     should result in efficient construction of the mesh's internal kd-tree.
@@ -747,6 +756,7 @@ cdef class Mesh(Primitive):
     :param normals: An K x 3 list of vertex normals or None.
     :param smoothing: True to enable normal interpolation, False to disable.
     :param closed: True is the mesh defines a closed volume, False otherwise.
+    :param tolerant: Mesh will automatically correct meshes with degenerate triangles if set to True (default).
     :param instance: The Mesh to become an instance of.
     :param kdtree_max_depth: The maximum tree depth (automatic if set to 0, default is 0).
     :param kdtree_min_items: The item count threshold for forcing creation of a new leaf node (default 1).
