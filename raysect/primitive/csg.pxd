@@ -51,7 +51,7 @@ cdef class CSGPrimitive(Primitive):
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest)
 
-    cdef void _modify_intersection(self, Intersection intersection, Intersection a, Intersection b)
+    cdef Intersection _modify_intersection(self, Intersection closest, Intersection a, Intersection b)
 
     cdef void rebuild(self)
 

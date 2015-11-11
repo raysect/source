@@ -1,5 +1,4 @@
 # cython: language_level=3
-# cython: profile=False
 
 # Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -35,77 +34,133 @@ from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport Normal, new_normal
 from raysect.core.math.point cimport Point, new_point
 from raysect.core.math.vector cimport Vector, new_vector
-from raysect.core.math.kdtree cimport KDTreeCore, Item, kdnode
+from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
+from numpy import array, float32, int64, zeros
+from numpy cimport ndarray, float32_t, int64_t
 import io
 import pickle
 cimport cython
+
+"""
+The ray-triangle intersection used for the Mesh primitive is an implementation of the algorithm described in:
+    "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald, Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
+"""
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-9
+DEF BOX_PADDING = 1e-6
 
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-9
+DEF EPSILON = 1e-6
 
-"""
-Notes:
-The ray-triangle intersection is a partial implementation of the algorithm described in:
-    "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald, Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
+# convenience defines
+DEF X = 0
+DEF Y = 1
+DEF Z = 2
 
-As implemented, the algorithm is not fully watertight due to the use of double precision throughout. At present, there is no appeal to
-higher precision to resolve cases when the edge tests result in a degenerate solution. This should only occur when a mesh contains
-extremely small triangles that are being tested against a ray with an origin far from the mesh.
-"""
+DEF U = 0
+DEF V = 1
+DEF W = 2
+DEF T = 3
 
-cdef class Triangle:
+DEF V1 = 0
+DEF V2 = 1
+DEF V3 = 2
+DEF N1 = 3
+DEF N2 = 4
+DEF N3 = 5
+
+DEF NO_INTERSECTION = -1
+
+
+cdef class MeshKDTree(KDTreeCore):
 
     cdef:
-        readonly Point v1, v2, v3
-        readonly Normal n1, n2, n3
-        readonly Normal face_normal
-        bint _smoothing_enabled
+        float32_t[:, ::1] vertices
+        float32_t[:, ::1] vertex_normals
+        float32_t[:, ::1] face_normals
+        int64_t[:, ::1] triangles
+        public bint smoothing
+        int _ix, _iy, _iz
+        float _sx, _sy, _sz
+        float _u, _v, _w, _t
+        int _i
 
-    def __init__(self, Point v1 not None, Point v2 not None, Point v3 not None,
-                 Normal n1=None, Normal n2=None, Normal n3=None):
+    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
-        self.v1 = v1
-        self.v2 = v2
-        self.v3 = v3
-        self._calc_face_normal()
+        self.smoothing = smoothing
 
-        # if any of the vertex normals is missing, disable interpolation
-        if n1 is None or n2 is None or n3 is None:
+        # convert to numpy arrays for internal use
+        vertices = array(vertices, dtype=float32)
+        triangles = array(triangles, dtype=int64)
+        if normals is not None:
+            vertex_normals = array(normals, dtype=float32)
+        else:
+            vertex_normals = None
 
-            self._smoothing_enabled = False
-            self.n1 = None
-            self.n2 = None
-            self.n3 = None
+        # check dimensions are correct
+        if len(vertices.shape) != 2 or vertices.shape[1] != 3:
+            raise ValueError("The vertex array must have dimensions Nx3.")
+
+        if vertex_normals is not None:
+
+            if len(vertex_normals.shape) != 2 or vertex_normals.shape[1] != 3:
+                raise ValueError("The normal array must have dimensions Nx3.")
+
+            if len(triangles.shape) != 2 or triangles.shape[1] != 6:
+                raise ValueError("The triangle array must have dimensions Nx6.")
 
         else:
 
-            self._smoothing_enabled = True
-            self.n1 = n1.normalise()
-            self.n2 = n2.normalise()
-            self.n3 = n3.normalise()
+            if len(triangles.shape) != 2 or triangles.shape[1] != 3:
+                raise ValueError("The triangle array must have dimensions Nx3.")
 
-    def __getstate__(self):
-        """Encodes state for pickling."""
+        # check triangles contains only valid indices
+        invalid = (triangles[:, 0:3] < 0) | (triangles[:, 0:3] >= vertices.shape[0])
+        if invalid.any():
+            raise ValueError("The triangle array references non-existent vertices.")
 
-        return self.v1, self.v2, self.v3, self.n1, self.n2, self.n3, self.face_normal, self._smoothing_enabled
+        if vertex_normals is not None:
+            invalid = (triangles[:, 3:6] < 0) | (triangles[:, 3:6] >= vertex_normals.shape[0])
+            if invalid.any():
+                raise ValueError("The triangle array references non-existent normals.")
 
-    def __setstate__(self, state):
-        """Decodes state for pickling."""
+        # ensure vertex normals are normalised
+        #if vertex_normals is not None:
+            # TODO: write me
 
-        self.v1, self.v2, self.v3, self.n1, self.n2, self.n3, self.face_normal, self._smoothing_enabled = state
+        # assign to memory views
+        self.vertices = vertices
+        self.vertex_normals = vertex_normals
+        self.triangles = triangles
 
-    cdef Normal _calc_face_normal(self):
+        # initial hit data
+        self._u = -1.0
+        self._v = -1.0
+        self._w = -1.0
+        self._t = INFINITY
+        self._i = NO_INTERSECTION
+
+        # generate face normals
+        self._generate_face_normals()
+
+        # kd-Tree init requires the triangle's id (it's index here) and bounding box
+        items = []
+        for i in range(self.triangles.shape[0]):
+            items.append(Item(i, self._generate_bounding_box(i)))
+
+        super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef void _generate_face_normals(self):
         """
-        Calculate the triangles face normal from the vertices.
+        Calculate the triangles face normals from the vertices.
 
         The triangle face normal direction is defined by the right hand screw
         rule. When looking at the triangle from the back face, the vertices
@@ -114,127 +169,125 @@ cdef class Triangle:
         """
 
         cdef:
-            Vector a, b, c
+            float32_t[:, ::1] vertices
+            int64_t[:, ::1] triangles
+            int i
+            int i1, i2, i3
+            Point p1, p2, p3
+            Vector v1, v2, v3
 
-        a = self.v1.vector_to(self.v2)
-        b = self.v1.vector_to(self.v3)
-        c = a.cross(b).normalise()
-        self.face_normal = new_normal(c.x, c.y, c.z)
+        # assign locally to avoid repeated memory view validity checks
+        vertices = self.vertices
+        triangles = self.triangles
 
-    @cython.cdivision(True)
-    cpdef Point centre_point(self):
+        self.face_normals = zeros((self.triangles.shape[0], 3), dtype=float32)
+        for i in range(self.face_normals.shape[0]):
+
+            i1 = triangles[i, V1]
+            i2 = triangles[i, V2]
+            i3 = triangles[i, V3]
+
+            p1 = new_point(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
+            p2 = new_point(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
+            p3 = new_point(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
+
+            v1 = p1.vector_to(p2)
+            v2 = p1.vector_to(p3)
+            v3 = v1.cross(v2).normalise()
+
+            self.face_normals[i, X] = v3.x
+            self.face_normals[i, Y] = v3.y
+            self.face_normals[i, Z] = v3.z
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef BoundingBox _generate_bounding_box(self, int i):
         """
-        Returns the centre point (centroid) of the triangle.
-        :return: Point object.
-        """
+        Generates a bounding box for the specified triangle.
 
-        return new_point(
-            (self.v1.x + self.v2.x + self.n3.x) / 3,
-            (self.v1.y + self.v2.y + self.n3.y) / 3,
-            (self.v1.z + self.v2.z + self.n3.z) / 3
-        )
+        A small degree of padding is added to the bounding box to provide the
+        conservative bounds required by the watertight mesh algorithm.
 
-    cpdef Normal interpolate_normal(self, double u, double v, double w, bint smoothing=True):
-        """
-        Returns the surface normal for the specified barycentric coordinate.
-
-        The result is undefined if u, v or w are outside the range [0, 1].
-        If smoothing is disabled the result will be the face normal.
-
-        :param u: Barycentric U coordinate.
-        :param v: Barycentric V coordinate.
-        :param w: Barycentric W coordinate.
-        :return: The surface normal at the specified coordinate.
-        """
-
-        if smoothing and self._smoothing_enabled:
-            return new_normal(
-                u * self.n1.x + v * self.n2.x + w * self.n3.x,
-                u * self.n1.y + v * self.n2.y + w * self.n3.y,
-                u * self.n1.z + v * self.n2.z + w * self.n3.z,
-            )
-        else:
-            return self.face_normal
-
-    cpdef double lower_extent(self, int axis):
-        """
-        Returns the lowest extent of the triangle along the specified axis.
-        """
-
-        return min(self.v1.get_index(axis),
-                   self.v2.get_index(axis),
-                   self.v3.get_index(axis))
-
-    cpdef double upper_extent(self, int axis):
-        """
-        Returns the upper extent of the triangle along the specified axis.
-        """
-
-        return max(self.v1.get_index(axis),
-                   self.v2.get_index(axis),
-                   self.v3.get_index(axis))
-
-    cpdef BoundingBox bounding_box(self):
-        """
-        Returns a bounding box enclosing the triangle.
-
-        The box is defined in the triangle's coordinate system. A small degree
-        of padding is added to the bounding box to provide the conservative
-        bounds required by the watertight mesh algorithm.
-
+        :param i: Triangle array index.
         :return: A BoundingBox object.
         """
 
+        cdef:
+            float32_t[:, ::1] vertices
+            int64_t[:, ::1] triangles
+            int i1, i2, i3
+            BoundingBox bbox
+
+        # assign locally to avoid repeated memory view validity checks
+        vertices = self.vertices
+        triangles = self.triangles
+
+        i1 = triangles[i, V1]
+        i2 = triangles[i, V2]
+        i3 = triangles[i, V3]
+
         bbox = new_boundingbox(
-            Point(
-                min(self.v1.x, self.v2.x, self.v3.x),
-                min(self.v1.y, self.v2.y, self.v3.y),
-                min(self.v1.z, self.v2.z, self.v3.z),
+            new_point(
+                min(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
+                min(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
+                min(vertices[i1, Z], vertices[i2, Z], vertices[i3, Z]),
             ),
-            Point(
-                max(self.v1.x, self.v2.x, self.v3.x),
-                max(self.v1.y, self.v2.y, self.v3.y),
-                max(self.v1.z, self.v2.z, self.v3.z),
+            new_point(
+                max(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
+                max(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
+                max(vertices[i1, Z], vertices[i2, Z], vertices[i3, Z]),
             ),
         )
-        bbox.pad(bbox.largest_extent() * BOX_PADDING)
+        bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
+
         return bbox
-
-
-cdef class MeshKDTree(KDTreeCore):
-
-    cdef:
-        list triangles
-        tuple _hit_ray_transform
-        readonly tuple hit_intersection
-
-    def __init__(self, list triangles, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
-
-        self.triangles = triangles
-        self._hit_ray_transform = None
-        self.hit_intersection = None
-
-        # kd-Tree init requires the triangle's id (it's index here) and bounding box
-        items = []
-        for id, triangle in enumerate(triangles):
-            items.append(Item(id, triangle.bounding_box()))
-
-        super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
 
     def __getstate__(self):
         """Encodes state for pickling."""
 
-        return self.triangles, super().__getstate__()
+        vertices = self.vertices.base.tolist()
+        triangles = self.triangles.base.tolist()
+        if self.vertex_normals is not None:
+            normals = self.vertex_normals.base.tolist()
+        else:
+            normals = None
+
+        return vertices, normals, triangles, self.smoothing, super().__getstate__()
 
     def __setstate__(self, state):
         """Decodes state for pickling."""
 
-        self.triangles, base_state = state
+        vertices, normals, triangles, self.smoothing, base_state = state
+
+        # convert lists back to numpy arrays and assign to memory views
+        self.vertices = array(vertices, dtype=float32)
+        self.triangles = array(triangles, dtype=int64)
+        if normals is not None:
+            self.vertex_normals = array(normals, dtype=float32)
+        else:
+            self.vertex_normals = None
+
+        # reset hit data
+        self._u = -1.0
+        self._v = -1.0
+        self._w = -1.0
+        self._t = INFINITY
+        self._i = NO_INTERSECTION
+
+        # regenerate face normals
+        self._generate_face_normals()
+
         super().__setstate__(base_state)
 
     cpdef bint hit(self, Ray ray):
 
-        self.hit_intersection = None
+        # reset hit data
+        self._u = -1.0
+        self._v = -1.0
+        self._w = -1.0
+        self._t = INFINITY
+        self._i = NO_INTERSECTION
+
         self._calc_rayspace_transform(ray)
         return self._hit(ray)
 
@@ -243,37 +296,46 @@ cdef class MeshKDTree(KDTreeCore):
     cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
 
         cdef:
+            float hit_data[4]
             int count, item, index
             double distance
-            double t, u, v, w
-            Triangle triangle, closest_triangle
-            tuple intersection, closest_intersection
+            double u, v, w, t
+            int triangle, closest_triangle
 
         # unpack leaf data
         count = self._nodes[id].count
 
         # find the closest triangle-ray intersection with initial search distance limited by node and ray limits
+        # closest_triangle is initialised with an illegal value so a non-intersection can be detected
         distance = min(ray.max_distance, max_range)
-        closest_intersection = None
-        closest_triangle = None
+        closest_triangle = NO_INTERSECTION
         for item in range(count):
 
             # dereference the triangle
-            index = self._nodes[id].items[item]
-            triangle = self.triangles[index]
+            triangle = self._nodes[id].items[item]
 
             # test for intersection
-            intersection = self._hit_triangle(triangle, ray)
-            if intersection is not None and intersection[0] < distance:
-                distance = intersection[0]
-                closest_triangle = triangle
-                closest_intersection = intersection
+            if self._hit_triangle(triangle, ray, hit_data):
 
-        if closest_intersection is None:
+                t = hit_data[T]
+                if t < distance:
+
+                    distance = t
+                    closest_triangle = triangle
+                    u = hit_data[U]
+                    v = hit_data[V]
+                    w = hit_data[W]
+
+        if closest_triangle == NO_INTERSECTION:
             return False
 
-        t, u, v, w = closest_intersection
-        self.hit_intersection = closest_triangle, t, u, v, w
+        # update intersection data
+        self._u = u
+        self._v = v
+        self._w = w
+        self._t = distance
+        self._i = closest_triangle
+
         return True
 
     @cython.cdivision(True)
@@ -285,24 +347,24 @@ cdef class MeshKDTree(KDTreeCore):
 
         cdef:
             int ix, iy, iz
-            double rdz
-            double sx, sy, sz
+            float rdz
+            float sx, sy, sz
 
         # to minimise numerical error cycle the direction components so the largest becomes the z-component
         if fabs(ray.direction.x) > fabs(ray.direction.y) and fabs(ray.direction.x) > fabs(ray.direction.z):
 
             # x dimension largest
-            ix, iy, iz = 1, 2, 0
+            ix, iy, iz = Y, Z, X
 
         elif fabs(ray.direction.y) > fabs(ray.direction.x) and fabs(ray.direction.y) > fabs(ray.direction.z):
 
             # y dimension largest
-            ix, iy, iz = 2, 0, 1
+            ix, iy, iz = Z, X, Y
 
         else:
 
             # z dimension largest
-            ix, iy, iz = 0, 1, 2
+            ix, iy, iz = X, Y, Z
 
         # if the z component is negative, swap x and y to restore the handedness of the space
         rdz = ray.direction.get_index(iz)
@@ -315,96 +377,296 @@ cdef class MeshKDTree(KDTreeCore):
         sy = ray.direction.get_index(iy) * sz
 
         # store ray transform
-        self._hit_ray_transform = ix, iy, iz, sx, sy, sz
+        self._ix = ix
+        self._iy = iy
+        self._iz = iz
+
+        self._sx = sx
+        self._sy = sy
+        self._sz = sz
 
     @cython.cdivision(True)
-    cdef tuple _hit_triangle(self, Triangle triangle, Ray ray):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef bint _hit_triangle(self, int i, Ray ray, float[4] hit_data):
 
         # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
         #  Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
 
         cdef:
+            float32_t[:, ::1] vertices
+            int64_t[:, ::1] triangles
+            int i1, i2, i3
             int ix, iy, iz
-            double sx, sy, sz
-            Point v1, v2, v3
-            double v1z, v2z, v3z
-            double x1, x2, x3, y1, y2, y3
-            double t, u, v, w
-            double det, det_reciprocal
+            float sx, sy, sz
+            float[3] v1, v2, v3
+            float x1, x2, x3
+            float y1, y2, y3
+            float z1, z2, z3
+            float t, u, v, w
+            float det, det_reciprocal
 
-        # unpack ray transform
-        ix, iy, iz, sx, sy, sz = self._hit_ray_transform
+        # assign locally to avoid repeated memory view validity checks
+        vertices = self.vertices
+        triangles = self.triangles
+
+        # obtain vertex ids
+        i1 = triangles[i, V1]
+        i2 = triangles[i, V2]
+        i3 = triangles[i, V3]
 
         # center coordinate space on ray origin
-        v1 = new_point(triangle.v1.x - ray.origin.x, triangle.v1.y - ray.origin.y, triangle.v1.z - ray.origin.z)
-        v2 = new_point(triangle.v2.x - ray.origin.x, triangle.v2.y - ray.origin.y, triangle.v2.z - ray.origin.z)
-        v3 = new_point(triangle.v3.x - ray.origin.x, triangle.v3.y - ray.origin.y, triangle.v3.z - ray.origin.z)
+        v1[X] = vertices[i1, X] - ray.origin.x
+        v1[Y] = vertices[i1, Y] - ray.origin.y
+        v1[Z] = vertices[i1, Z] - ray.origin.z
 
-        # cache z components to avoid repeated lookups
-        v1z = v1.get_index(iz)
-        v2z = v2.get_index(iz)
-        v3z = v3.get_index(iz)
+        v2[X] = vertices[i2, X] - ray.origin.x
+        v2[Y] = vertices[i2, Y] - ray.origin.y
+        v2[Z] = vertices[i2, Z] - ray.origin.z
+
+        v3[X] = vertices[i3, X] - ray.origin.x
+        v3[Y] = vertices[i3, Y] - ray.origin.y
+        v3[Z] = vertices[i3, Z] - ray.origin.z
+
+        # obtain ray transform
+        ix = self._ix
+        iy = self._iy
+        iz = self._iz
+
+        sx = self._sx
+        sy = self._sy
+        sz = self._sz
 
         # transform vertices by shearing and scaling space so the ray points along the +ve z axis
         # we can now discard the z-axis and work with the 2D projection of the triangle in x and y
-        x1 = v1.get_index(ix) - sx * v1z
-        x2 = v2.get_index(ix) - sx * v2z
-        x3 = v3.get_index(ix) - sx * v3z
+        x1 = v1[ix] - sx * v1[iz]
+        x2 = v2[ix] - sx * v2[iz]
+        x3 = v3[ix] - sx * v3[iz]
 
-        y1 = v1.get_index(iy) - sy * v1z
-        y2 = v2.get_index(iy) - sy * v2z
-        y3 = v3.get_index(iy) - sy * v3z
+        y1 = v1[iy] - sy * v1[iz]
+        y2 = v2[iy] - sy * v2[iz]
+        y3 = v3[iy] - sy * v3[iz]
 
         # calculate scaled barycentric coordinates
         u = x3 * y2 - y3 * x2
         v = x1 * y3 - y1 * x3
         w = x2 * y1 - y2 * x1
 
-        # # catch cases where there is insufficient numerical accuracy to resolve the subsequent edge tests
-        # if u == 0.0 or v == 0.0 or w == 0.0:
-        #     # TODO: add a higher precision (128bit) fallback calculation to make this watertight
+        # catch cases where there is insufficient numerical accuracy to resolve the subsequent edge tests
+        if u == 0.0 or v == 0.0 or w == 0.0:
+            u = <float> (<double> x3 * <double> y2 - <double> y3 * <double> x2)
+            v = <float> (<double> x1 * <double> y3 - <double> y1 * <double> x3)
+            w = <float> (<double> x2 * <double> y1 - <double> y2 * <double> x1)
 
         # perform edge tests
         if (u < 0.0 or v < 0.0 or w < 0.0) and (u > 0.0 or v > 0.0 or w > 0.0):
-            return None
+            return False
 
         # calculate determinant
         det = u + v + w
 
         # if determinant is zero the ray is parallel to the face
         if det == 0.0:
-            return None
+            return False
 
         # calculate z coordinates for the transform vertices, we need the z component to calculate the hit distance
-        z1 = sz * v1z
-        z2 = sz * v2z
-        z3 = sz * v3z
+        z1 = sz * v1[iz]
+        z2 = sz * v2[iz]
+        z3 = sz * v3[iz]
         t = u * z1 + v * z2 + w * z3
 
         # is hit distance within ray limits
         if det > 0.0:
             if t < 0.0 or t > ray.max_distance * det:
-                return None
+                return False
         else:
             if t > 0.0 or t < ray.max_distance * det:
-                return None
+                return False
 
         # normalise barycentric coordinates and hit distance
         det_reciprocal = 1.0 / det
-        u *= det_reciprocal
-        v *= det_reciprocal
-        w *= det_reciprocal
-        t *= det_reciprocal
+        hit_data[U] = u * det_reciprocal
+        hit_data[V] = v * det_reciprocal
+        hit_data[W] = w * det_reciprocal
+        hit_data[T] = t * det_reciprocal
 
-        return t, u, v, w
+        return True
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef Intersection calc_intersection(self, Ray ray):
+
+        cdef:
+            double t
+            int triangle
+            Point hit_point, inside_point, outside_point
+            Normal face_normal, normal
+            bint exiting
+
+        # on a hit the kd-tree populates attributes containing the intersection data
+        t = self._t
+        triangle = self._i
+
+        if triangle == NO_INTERSECTION:
+            return None
+
+        # generate intersection description
+        face_normal = new_normal(
+            self.face_normals[triangle, X],
+            self.face_normals[triangle, Y],
+            self.face_normals[triangle, Z]
+        )
+        hit_point = new_point(
+            ray.origin.x + ray.direction.x * t,
+            ray.origin.y + ray.direction.y * t,
+            ray.origin.z + ray.direction.z * t
+        )
+        inside_point = new_point(
+            hit_point.x - face_normal.x * EPSILON,
+            hit_point.y - face_normal.y * EPSILON,
+            hit_point.z - face_normal.z * EPSILON
+        )
+        outside_point = new_point(
+            hit_point.x + face_normal.x * EPSILON,
+            hit_point.y + face_normal.y * EPSILON,
+            hit_point.z + face_normal.z * EPSILON
+        )
+        normal = self._intersection_normal()
+        exiting = ray.direction.dot(face_normal) > 0.0
+
+        return new_intersection(
+            ray, t, None,
+            hit_point, inside_point, outside_point,
+            normal, exiting, None, None
+        )
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef Normal _intersection_normal(self):
+        """
+        Returns the surface normal for the last triangle hit.
+
+        The result is undefined if this method is called when a triangle has
+        not been hit (u, v or w are outside the range [0, 1]). If smoothing is
+        disabled the result will be the face normal.
+
+        :return: The surface normal at the specified coordinate.
+        """
+
+        cdef:
+            int64_t[:, ::1] triangles
+            float32_t[:, ::1] vertex_normals
+            float32_t[:, ::1] face_normals
+            int n1, n2, n3
+
+        # assign locally to avoid repeated memory view validity checks
+        vertex_normals = self.vertex_normals
+
+        if self.smoothing and vertex_normals is not None:
+
+            # assign locally to avoid repeated memory view validity checks
+            triangles = self.triangles
+
+            n1 = triangles[self._i, N1]
+            n2 = triangles[self._i, N2]
+            n3 = triangles[self._i, N3]
+
+            return new_normal(
+                self._u * vertex_normals[n1, X] + self._v * vertex_normals[n2, X] + self._w * vertex_normals[n3, X],
+                self._u * vertex_normals[n1, Y] + self._v * vertex_normals[n2, Y] + self._w * vertex_normals[n3, Y],
+                self._u * vertex_normals[n1, Z] + self._v * vertex_normals[n2, Z] + self._w * vertex_normals[n3, Z]
+            )
+
+        else:
+
+            # assign locally to avoid repeated memory view validity checks
+            face_normals = self.face_normals
+
+            return new_normal(
+                face_normals[self._i, X],
+                face_normals[self._i, Y],
+                face_normals[self._i, Z]
+            )
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef bint mesh_contains(self, Point p):
+
+        cdef Ray ray
+
+        # fire ray along z axis, if it encounters a polygon it inspects the orientation of the face
+        # if the face is outwards, then the ray was spawned inside the mesh
+        # this assumes the mesh has all face normals facing outwards from the mesh interior
+        ray = new_ray(p, new_vector(0, 0, 1), INFINITY)
+
+        # search for closest triangle intersection
+        if not self.hit(ray):
+            return False
+
+        # inspect the Z component of the triangle face normal to identify orientation
+        # this is an optimised version of ray.direction.dot(face_normal) as we know ray only propagating in Z
+        return self.face_normals[self._i, Z] > 0.0
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef BoundingBox bounding_box(self, AffineMatrix to_world):
+        """
+        Returns a bounding box that encloses the mesh.
+
+        The box is padded by a small margin to reduce the risk of numerical
+        accuracy problems between the mesh and box representations following
+        coordinate transforms.
+
+        :param to_world: Local to world space transform matrix.
+        :return: A BoundingBox object.
+        """
+
+        cdef:
+            float32_t[:, ::1] vertices
+            int i
+            BoundingBox bbox
+            Point vertex
+
+        # assign locally to avoid repeated memory view validity checks
+        vertices = self.vertices
+
+        # TODO: padding should really be a function of mesh extent
+        # convert vertices to world space and grow a bounding box around them
+        bbox = BoundingBox()
+        for i in range(vertices.shape[0]):
+            vertex = new_point(vertices[i, X], vertices[i, Y], vertices[i, Z])
+            bbox.extend(vertex.transform(to_world), BOX_PADDING)
+
+        return bbox
 
 
 cdef class Mesh(Primitive):
     """
     This primitive defines a polyhedral surface with triangular faces.
 
-    To define a mesh, a list of Triangle objects must be supplied.
+    To define a new mesh, a list of vertices and triangles must be supplied.
+    A set of vertex normals, used for smoothing calculations may also be
+    provided.
+
+    The mesh vertices are supplied as an Nx3 list/array of floating point
+    values. For each Vertex, x, y and z coordinates must be supplied. e.g.
+
+        vertices = [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0], ...]
+
+    Vertex normals are similarly defined. Note that vertex normals must be
+    correctly normalised.
+
+    The triangle array is either Mx3 or Mx6 - Mx3 if only vertices are defined
+    or Mx6 if both vertices and vertex normals are defined. Triangles are
+    defined by indexing into the vertex and vertex normal arrays. i.e:
+
+        triangles = [[v1, v2, v3, n1, n2, n3], ...]
+
+    where v1, v2, v3 are the vertex array indices specifying the triangle's
+    vertices and n1, n2, n3 are the normal array indices specifying the
+    triangle's surface normals at each vertex location. Where normals are
+    not defined, n1, n2 and n3 are omitted.
 
     The mesh may be an open surface (which does not enclose a volume) or a
     closed surface (which defines a volume). The nature of the mesh must be
@@ -434,7 +696,9 @@ cdef class Mesh(Primitive):
     used by the kd-tree must be controlled. This may occur if very large meshes
     are used.
 
-    :param triangles: A list of Triangles defining the mesh.
+    :param vertices: An N x 3 list of vertices.
+    :param triangles: An M x 3 or N x 6 list of vertex/normal indicies defining the mesh triangles.
+    :param normals: An K x 3 list of vertex normals or None.
     :param smoothing: True to enable normal interpolation, False to disable.
     :param closed: True is the mesh defines a closed volume, False otherwise.
     :param instance: The Mesh to become an instance of.
@@ -451,46 +715,46 @@ cdef class Mesh(Primitive):
 
     cdef:
         MeshKDTree _kdtree
-        readonly bint smoothing
-        readonly bint closed
+        bint closed
         bint _seek_next_intersection
         Ray _next_world_ray
         Ray _next_local_ray
+        double _ray_distance
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, list triangles=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, object vertices=None, object triangles=None, object normals=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
         if instance:
+
             # hold references to internal data of the specified mesh
-            self.smoothing = instance.smoothing
             self.closed = instance.closed
             self._kdtree = instance._kdtree
 
         else:
 
-            if triangles is None:
-                triangles = []
+            if vertices is None or triangles is None:
+                raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
 
-            self.smoothing = smoothing
             self.closed = closed
 
             # build the kd-Tree
-            self._kdtree = MeshKDTree(triangles, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
+            self._kdtree = MeshKDTree(vertices, triangles, normals, smoothing, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
         self._next_world_ray = None
         self._next_local_ray = None
+        self._ray_distance = 0
 
-    property triangles:
-
-        def __get__(self):
-
-            # return a copy to prevent users altering the list
-            # if the list size is altered it could cause a segfault
-            return self._kdtree.triangles.copy()
+    # property triangles:
+    #
+    #     def __get__(self):
+    #
+    #         # return a copy to prevent users altering the list
+    #         # if the list size is altered it could cause a segfault
+    #         return self._kdtree.triangles.copy()
 
     cpdef Intersection hit(self, Ray ray):
         """
@@ -498,7 +762,7 @@ cdef class Mesh(Primitive):
 
         If an intersection occurs this method will return an Intersection
         object. The Intersection object will contain the details of the
-        ray-surface intersection, sucah as the surface normal and intersection
+        ray-surface intersection, such as the surface normal and intersection
         point.
 
         If no intersection occurs None is returned.
@@ -514,6 +778,9 @@ cdef class Mesh(Primitive):
             ray.direction.transform(self.to_local()),
             ray.max_distance
         )
+
+        # reset accumulated ray distance (used by next_intersection)
+        self._ray_distance = 0
 
         # do we hit the mesh?
         if self._kdtree.hit(local_ray):
@@ -554,39 +821,40 @@ cdef class Mesh(Primitive):
     cdef Intersection _process_intersection(self, Ray world_ray, Ray local_ray):
 
         cdef:
-            Triangle triangle
-            double t, u, v, w
-            Point hit_point, inside_point, outside_point
-            Normal normal
-            bint exiting
+            Intersection intersection
 
-        # on a hit the kd-tree populates an attribute containing the intersection data, unpack it
-        triangle, t, u, v, w = self._kdtree.hit_intersection
-
-        # generate intersection description
-        hit_point = local_ray.origin + local_ray.direction * t
-        inside_point = hit_point - triangle.face_normal * EPSILON
-        outside_point = hit_point + triangle.face_normal * EPSILON
-        normal = triangle.interpolate_normal(u, v, w, self.smoothing)
-        exiting = local_ray.direction.dot(triangle.face_normal) > 0.0
+        # obtain intersection details from the kd-tree
+        intersection = self._kdtree.calc_intersection(local_ray)
 
         # enable next intersection search and cache the local ray for the next intersection calculation
         # we must shift the new origin past the last intersection
         self._seek_next_intersection = True
         self._next_world_ray = world_ray
         self._next_local_ray = new_ray(
-            hit_point + local_ray.direction * EPSILON,
+            new_point(
+                intersection.hit_point.x + local_ray.direction.x * EPSILON,
+                intersection.hit_point.y + local_ray.direction.y * EPSILON,
+                intersection.hit_point.z + local_ray.direction.z * EPSILON
+            ),
             local_ray.direction,
-            local_ray.max_distance - t - EPSILON
+            local_ray.max_distance - intersection.ray_distance - EPSILON
         )
 
-        return new_intersection(
-            world_ray, t, self,
-            hit_point, inside_point, outside_point,
-            normal, exiting, self.to_local(), self.to_root()
-        )
+        # for next intersection calculations the ray local origin is moved past the last intersection point so
+        # we therefore need to add the additional distance between the local ray origin and the original ray origin.
+        intersection.ray_distance += self._ray_distance
 
-    # TODO: add an option to use an intersection count algorithm for meshes that have bad face normal orientations
+        # ray origin is shifted to avoid self intersection, account for this in subsequent intersections
+        self._ray_distance = intersection.ray_distance + EPSILON
+
+        # fill in missing intersection information
+        intersection.primitive = self
+        intersection.ray = world_ray
+        intersection.to_local = self.to_local()
+        intersection.to_world = self.to_root()
+
+        return intersection
+
     cpdef bint contains(self, Point p) except -1:
         """
         Identifies if the point lies in the volume defined by the mesh.
@@ -598,34 +866,13 @@ cdef class Mesh(Primitive):
 
         :param p: The point to test.
         :return: True if the point lies in the volume, False otherwise.
-
         """
-
-        cdef:
-            Ray ray
-            bint hit
-            double min_range, max_range
-            Triangle triangle
-            double t, u, v, w
 
         if not self.closed:
             return False
 
-        # fire ray along z axis, if it encounters a polygon it inspects the orientation of the face
-        # if the face is outwards, then the ray was spawned inside the mesh
-        # this assumes the mesh has all face normals facing outwards from the mesh interior
-        ray = new_ray(
-            p.transform(self.to_local()),
-            new_vector(0, 0, 1),
-            INFINITY
-        )
-
-        # search for closest triangle intersection
-        if not self._kdtree.hit(ray):
-            return False
-
-        triangle, t, u, v, w = self._kdtree.hit_intersection
-        return triangle.face_normal.dot(ray.direction) > 0.0
+        p = p.transform(self.to_local())
+        return self._kdtree.mesh_contains(p)
 
     cpdef BoundingBox bounding_box(self):
         """
@@ -638,19 +885,9 @@ cdef class Mesh(Primitive):
         :return: A BoundingBox object.
         """
 
-        cdef:
-            BoundingBox bbox
-            Triangle triangle
+        return self._kdtree.bounding_box(self.to_root())
 
-        # TODO: reconsider the padding - the padding should a multiple of max extent, not a fixed value
-        bbox = BoundingBox()
-        for triangle in self._kdtree.triangles:
-            bbox.extend(triangle.v1.transform(self.to_root()), BOX_PADDING)
-            bbox.extend(triangle.v2.transform(self.to_root()), BOX_PADDING)
-            bbox.extend(triangle.v3.transform(self.to_root()), BOX_PADDING)
-        return bbox
-
-    cpdef dump(self, file):
+    def dump(self, object file):
         """
         Writes the mesh data to the specified file descriptor or filename.
 
@@ -663,7 +900,7 @@ cdef class Mesh(Primitive):
         :param file: File object or string path.
         """
 
-        state = (self._kdtree, self.smoothing, self.closed)
+        state = (self._kdtree, self.closed)
 
         if isinstance(file, io.BytesIO):
              pickle.dump(state, file)
@@ -671,18 +908,25 @@ cdef class Mesh(Primitive):
             with open(file, mode="wb") as f:
                 pickle.dump(state, f)
 
-    cpdef load(self, file):
+    @classmethod
+    def load(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
         """
         Reads the mesh data from the specified file descriptor or filename.
 
         This method can be used as part of a caching system to avoid the
-        computational cost of building a mesh's kd-tree. The kd-tree is stored
-        with the mesh data and is restored when the mesh is loaded.
+        computational cost of rebuilding a mesh's kd-tree. The kd-tree is
+        stored with the mesh data and is restored when the mesh is loaded.
 
         This method may be supplied with a file object or a string path.
 
         :param file: File object or string path.
+        :param parent: Attaches the mesh to the specified scene-graph node.
+        :param transform: The co-ordinate transform between the mesh and its parent.
+        :param material: The surface/volume material.
+        :param name: A human friendly name to identity the mesh in the scene-graph.
         """
+
+        cdef Mesh m
 
         if isinstance(file, io.BytesIO):
              state = pickle.load(file)
@@ -690,6 +934,11 @@ cdef class Mesh(Primitive):
             with open(file, mode="rb") as f:
                 state = pickle.load(f)
 
-        self._kdtree, self.smoothing, self.closed = state
-        self._seek_next_intersection = False
-
+        m = Mesh.__new__(Mesh)
+        m._kdtree, m.closed = state
+        m._seek_next_intersection = False
+        m._next_world_ray = None
+        m._next_local_ray = None
+        m._ray_distance = 0
+        super(Mesh, m).__init__(parent, transform, material, name)
+        return m

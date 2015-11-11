@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .mesh import Mesh, Triangle
+from .mesh import Mesh
 from raysect.core import Point
 import struct
 import os
@@ -38,27 +38,22 @@ STL_AUTOMATIC = 0
 STL_ASCII = 1
 STL_BINARY = 2
 
-#: Amount of bytes to read while using buffered reading
-BUFFER_SIZE = 4096
-#: The amount of bytes in the header field
-HEADER_SIZE = 80
-#: The amount of bytes in the count field
-COUNT_SIZE = 4
-
-
 class STLHandler:
 
     @classmethod
     def import_stl(cls, filename, scaling=1.0, mode=STL_AUTOMATIC, **kwargs):
 
-        if mode == STL_AUTOMATIC:
-            pass
-        elif mode == STL_ASCII:
-            triangles = cls._load_ascii(filename, scaling)
+        if mode == STL_ASCII:
+            vertices, triangles = cls._load_ascii(filename, scaling)
         elif mode == STL_BINARY:
-            triangles = cls._load_binary(filename, scaling)
+            vertices, triangles = cls._load_binary(filename, scaling)
+        else:
+            try:
+                vertices, triangles = cls._load_ascii(filename, scaling)
+            except ValueError:
+                vertices, triangles = cls._load_binary(filename, scaling)
 
-        return Mesh(triangles, smoothing=False, **kwargs)
+        return Mesh(vertices, triangles, smoothing=False, **kwargs)
 
     @classmethod
     def _load_ascii(cls, filename, scaling):
@@ -66,31 +61,39 @@ class STLHandler:
         with open(filename, 'r') as fh:
             line = cls._get_ascii_line(fh)
             if not line.startswith('solid'):
-                raise ValueError('ASCII STL files should start with solid <space>. The application that produced this STL '
+                raise ValueError('ASCII STL files should start with a solid definition. The application that produced this STL '
                                  'file may be faulty, please report this error. The erroneous line: {}'.format(line))
-            return list(cls._ascii_read_triangle(fh, scaling))
+            return cls._ascii_read_triangle(fh, scaling)
 
     @classmethod
     def _ascii_read_triangle(cls, fh, scaling):
 
+        vertices = []
+        triangles = []
+
         while True:
             try:
+                # read
                 _ = cls._get_ascii_line(fh, 'facet normal')
                 assert cls._get_ascii_line(fh) == 'outer loop'
-                v0 = cls._get_ascii_line(fh, 'vertex')
                 v1 = cls._get_ascii_line(fh, 'vertex')
                 v2 = cls._get_ascii_line(fh, 'vertex')
+                v3 = cls._get_ascii_line(fh, 'vertex')
                 assert cls._get_ascii_line(fh) == 'endloop'
                 assert cls._get_ascii_line(fh) == 'endfacet'
-                yield Triangle(
-                    Point(scaling * v0[0], scaling * v0[1], scaling * v0[2]),
-                    Point(scaling * v1[0], scaling * v1[1], scaling * v1[2]),
-                    Point(scaling * v2[0], scaling * v2[1], scaling * v2[2])
-                )
+
+                # store
+                vertices.append([scaling * v1[0], scaling * v1[1], scaling * v1[2]])
+                vertices.append([scaling * v2[0], scaling * v2[1], scaling * v2[2]])
+                vertices.append([scaling * v3[0], scaling * v3[1], scaling * v3[2]])
+                triangles.append([len(vertices) - 3, len(vertices) - 2, len(vertices) - 1])
+
             except AssertionError as e:
                 raise RuntimeError(e)
             except StopIteration:
                 break
+
+        return vertices, triangles
 
     @classmethod
     def _get_ascii_line(cls, fh, prefix=''):
@@ -112,32 +115,61 @@ class STLHandler:
         else:
             return line
 
-    # @classmethod
-    # def _load_binary(cls, filename, check_size=True, scaling):
-    #
-    #     with open(filename, 'rb') as fh:
-    #         header = fh.read(HEADER_SIZE).lower()
-    #         solid_name = header[5:].strip()
-    #
-    #         count, = struct.unpack('@i', fh.read(COUNT_SIZE))
-    #         assert count < MAX_COUNT, ('File too large, got {} triangles which exceeds the maximum of {}'
-    #                                    ''.format(count, MAX_COUNT))
-    #
-    #         if check_size:
-    #             # Check the size of the file
-    #             fh.seek(0, os.SEEK_END)
-    #             raw_size = fh.tell() - HEADER_SIZE - COUNT_SIZE
-    #             expected_count = raw_size / cls.dtype.itemsize
-    #             if expected_count != count:
-    #                 raise ValueError('Expected {} vectors but header indicates {}. '
-    #                                  'Is file invalid?'.format(expected_count, count))
-    #             #
-    #             fh.seek(HEADER_SIZE + COUNT_SIZE)
-    #
-    #         # Read the rest of the binary data
-    #         meshdata = numpy.fromfile(fh, dtype=cls.dtype, count=count)
-    #
-    #         return solid_name, meshdata
+    @classmethod
+    def _load_binary(cls, filename, scaling):
+
+        #: Amount of bytes to read while using buffered reading
+        BUFFER_SIZE = 4096
+
+        #: The amount of bytes in the header field
+        HEADER_SIZE = 80
+
+        #: The amount of bytes in the count field
+        COUNT_SIZE = 4
+
+        triangles = []
+
+        with open(filename, 'rb') as fh:
+
+            header = fh.read(HEADER_SIZE).lower()
+            count, = struct.unpack('@i', fh.read(COUNT_SIZE))
+
+            # if check_size:
+            #     # Check the size of the file
+            #     fh.seek(0, os.SEEK_END)
+            #     raw_size = fh.tell() - HEADER_SIZE - COUNT_SIZE
+            #     expected_count = raw_size / cls.dtype.itemsize
+            #     if expected_count != count:
+            #         raise ValueError('Expected {} vectors but header indicates {}. '
+            #                          'Is file invalid?'.format(expected_count, count))
+            #     #
+            #     fh.seek(HEADER_SIZE + COUNT_SIZE)
+
+            vertices = []
+            triangles = []
+
+            # Read the rest of the binary data
+            while count > 0:
+
+                # stored normal is not used, recalculated in Triangle
+                nx, ny, nz, = struct.unpack('<3f', fh.read(12))
+
+                # triangle vertices
+                v1x, v1y, v1z, = struct.unpack('<3f', fh.read(12))
+                v2x, v2y, v2z, = struct.unpack('<3f', fh.read(12))
+                v3x, v3y, v3z, = struct.unpack('<3f', fh.read(12))
+
+                # unused attribute
+                attrib = struct.unpack('<H', fh.read(2))
+
+                # store
+                vertices.append([scaling * v1x, scaling * v1y, scaling * v1z])
+                vertices.append([scaling * v2x, scaling * v2y, scaling * v2z])
+                vertices.append([scaling * v3x, scaling * v3y, scaling * v3z])
+                triangles.append([len(vertices) - 3, len(vertices) - 2, len(vertices) - 1])
+                count -= 1
+
+            return vertices, triangles
 
 
 import_stl = STLHandler.import_stl
