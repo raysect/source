@@ -91,7 +91,7 @@ cdef class MeshKDTree(KDTreeCore):
         float _u, _v, _w, _t
         int _i
 
-    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
+    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, bint tolerant=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         self.smoothing = smoothing
 
@@ -130,10 +130,6 @@ cdef class MeshKDTree(KDTreeCore):
             if invalid.any():
                 raise ValueError("The triangle array references non-existent normals.")
 
-        # ensure vertex normals are normalised
-        #if vertex_normals is not None:
-            # TODO: write me
-
         # assign to memory views
         self.vertices = vertices
         self.vertex_normals = vertex_normals
@@ -146,6 +142,10 @@ cdef class MeshKDTree(KDTreeCore):
         self._t = INFINITY
         self._i = NO_INTERSECTION
 
+        # filter out degenerate triangles if we are being tolerant
+        if tolerant:
+            self._filter_triangles()
+
         # generate face normals
         self._generate_face_normals()
 
@@ -155,6 +155,52 @@ cdef class MeshKDTree(KDTreeCore):
             items.append(Item(i, self._generate_bounding_box(i)))
 
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef void _filter_triangles(self):
+
+        cdef:
+            float32_t[:, ::1] vertices
+            int64_t[:, ::1] triangles
+            int i, valid
+            int i1, i2, i3
+            Point p1, p2, p3
+            Vector v1, v2, v3
+
+        # assign locally to avoid repeated memory view validity checks
+        vertices = self.vertices
+        triangles = self.triangles
+
+        # scan triangles and make valid triangles contiguous
+        valid = 0
+        for i in range(self.triangles.shape[0]):
+
+            i1 = triangles[i, V1]
+            i2 = triangles[i, V2]
+            i3 = triangles[i, V3]
+
+            p1 = new_point(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
+            p2 = new_point(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
+            p3 = new_point(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
+
+            # the cross product of two edge vectors of a degenerate triangle
+            # (where 2 or more vertices are coincident or lie on the same line)
+            # is zero
+            v1 = p1.vector_to(p2)
+            v2 = p1.vector_to(p3)
+            v3 = v1.cross(v2)
+            if v3.get_length() == 0.0:
+
+                # triangle is degenerate, skip
+                continue
+
+            # shift triangles
+            triangles[valid, :] = triangles[i, :]
+            valid += 1
+
+        # reslice array to contain only valid triangles
+        self.triangles = triangles[:valid, :]
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -722,7 +768,7 @@ cdef class Mesh(Primitive):
         double _ray_distance
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, object vertices=None, object triangles=None, object normals=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, object vertices=None, object triangles=None, object normals=None, bint smoothing=True, bint closed=True, tolerant=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
@@ -740,7 +786,7 @@ cdef class Mesh(Primitive):
             self.closed = closed
 
             # build the kd-Tree
-            self._kdtree = MeshKDTree(vertices, triangles, normals, smoothing, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
+            self._kdtree = MeshKDTree(vertices, triangles, normals, smoothing, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
