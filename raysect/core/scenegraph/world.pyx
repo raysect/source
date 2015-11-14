@@ -45,15 +45,10 @@ cdef class World(_NodeBase):
     :param name: A string defining the node name.
     """
 
-    def __init__(self, unicode name=None):
+    def __init__(self, str name=None):
 
-        super().__init__()
+        super().__init__(name)
 
-        # TODO - this code should move to _NodeBase since it appears in Node as well.
-        if name is None:
-            name = ""
-
-        self._name = name
         self. _primitives = list()
         self. _observers = list()
         self. _rebuild_accelerator = True
@@ -89,10 +84,10 @@ cdef class World(_NodeBase):
     def __str__(self):
         """String representation."""
 
-        if self._name == "":
-            return "<World at " + str(hex(id(self))) + ">"
-        else:
+        if self._name:
             return self._name + " <World at " + str(hex(id(self))) + ">"
+        else:
+            return "<World at " + str(hex(id(self))) + ">"
 
     cpdef AffineMatrix to(self, _NodeBase node):
         """

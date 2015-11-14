@@ -37,10 +37,10 @@ cdef class _NodeBase:
     node objects.
     """
 
-    def __init__(self):
+    def __init__(self, str name=None):
         """Base class constructor."""
 
-        self._name = ""
+        self._name = name
         self._parent = None
         self.children = []
         self.root = self
@@ -59,11 +59,9 @@ cdef class _NodeBase:
         """
 
         if parent is self:
-
             raise ValueError("A node cannot be parented to itself or one of it's descendants.")
 
         for child in self.children:
-
             child._check_parent(parent)
 
     def _update(self):
