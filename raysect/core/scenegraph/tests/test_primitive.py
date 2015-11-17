@@ -65,7 +65,7 @@ class TestPrimitive(unittest.TestCase):
         self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
         self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
         self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
-        self.assertEqual(n.name, "", "Primitive name should be an empty string")
+        self.assertEqual(n.name, None, "Primitive name should be None.")
         self.assertTrue(isinstance(n.material, Material), "Primitive material is not a Material object.")
 
     def test_initialise_with_material(self):
@@ -80,7 +80,7 @@ class TestPrimitive(unittest.TestCase):
         self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
         self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
         self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
-        self.assertEqual(n.name, "", "Primitive name should be an empty string")
+        self.assertEqual(n.name, None, "Primitive name should be None.")
         self.assertTrue(n.material is m, "Primitive material was not correctly initialised.")
 
     def test_initialise_with_all_arguments(self):
@@ -97,7 +97,7 @@ class TestPrimitive(unittest.TestCase):
         self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
         self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
         self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
-        self.assertEqual(a.name, "", "Node a's name should be an empty string")
+        self.assertEqual(a.name, None, "Node a's name should be None.")
 
         # node b
         self.assertEqual(b.parent, a, "Primitive b's parent should be Node a.")

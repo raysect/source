@@ -47,7 +47,6 @@ cdef class Primitive(Node):
     :param name: A string defining the node name.
     """
 
-    # TODO - fix - this should be _NodeBase instead of object???
     def __init__(self, object parent=None, AffineMatrix transform=None, Material material=None, unicode name=None):
 
         super().__init__(parent, transform, name)
@@ -60,10 +59,10 @@ cdef class Primitive(Node):
     def __str__(self):
         """String representation."""
 
-        if self.name == "":
-            return "<Primitive at " + str(hex(id(self))) + ">"
+        if self._name:
+            return self._name + " <Primitive at " + str(hex(id(self))) + ">"
         else:
-            return self.name + " <Primitive at " + str(hex(id(self))) + ">"
+            return "<Primitive at " + str(hex(id(self))) + ">"
 
     property material:
 

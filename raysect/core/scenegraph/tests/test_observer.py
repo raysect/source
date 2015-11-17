@@ -60,7 +60,7 @@ class TestObserver(unittest.TestCase):
         self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
         self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
         self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
-        self.assertEqual(n.name, "", "Observer name should be an empty string")
+        self.assertEqual(n.name, None, "Observer name should be None.")
 
     def test_initialise_with_all_arguments(self):
         """Initialisation with all arguments."""

@@ -48,15 +48,12 @@ cdef class Node(_NodeBase):
     :param name: A string defining the node name.
     """
 
-    def __init__(self, object parent=None, AffineMatrix transform=None, unicode name=None):
+    def __init__(self, object parent=None, AffineMatrix transform=None, str name=None):
 
-        super().__init__()
+        super().__init__(name)
 
         if transform is None:
             transform = AffineMatrix()
-
-        if name is None:
-            name = ""
 
         # prevent _modified() being called during initialisation
         self._track_modifications = False
@@ -71,10 +68,10 @@ cdef class Node(_NodeBase):
     def __str__(self):
         """String representation."""
 
-        if self._name == "":
-            return "<Node at " + str(hex(id(self))) + ">"
-        else:
+        if self._name:
             return self._name + " <Node at " + str(hex(id(self))) + ">"
+        else:
+            return "<Node at " + str(hex(id(self))) + ">"
 
     property parent:
 

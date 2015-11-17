@@ -41,10 +41,10 @@ cdef class Observer(Node):
     def __str__(self):
         """String representation."""
 
-        if self.name == "":
-            return "<Observer at " + str(hex(id(self))) + ">"
+        if self._name:
+            return self._name + " <Observer at " + str(hex(id(self))) + ">"
         else:
-            return self.name + " <Observer at " + str(hex(id(self))) + ">"
+            return "<Observer at " + str(hex(id(self))) + ">"
 
     cpdef observe(self):
         """
