@@ -479,8 +479,8 @@ class VectorCamera(Camera):
 
     def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
         # TODO - support sub_sample?
-        origin = self.pixel_origins[x, y]
-        direction = self.pixel_directions[x, y]
+        origin = self.pixel_origins[x, y].transform(self.to_root())
+        direction = self.pixel_directions[x, y].transform(self.to_root())
 
         return [
             Ray(origin, direction,
