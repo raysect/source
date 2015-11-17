@@ -31,7 +31,6 @@
 
 # TODO: add more advanced material handling
 # TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
-# TODO: currently only works with objects that present just two intersections - fails with meshes
 
 from raysect.core.classes cimport Material, new_ray, new_intersection
 from raysect.core.math.point cimport Point
@@ -52,7 +51,7 @@ cdef class CSGPrimitive(Primitive):
     This is an abstract base class and can not be used directly.
     """
 
-    def __init__(self, Primitive primitive_a not None = NullPrimitive(), Primitive primitive_b not None = NullPrimitive(), object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+    def __init__(self, Primitive primitive_a not None = NullPrimitive(), Primitive primitive_b not None = NullPrimitive(), object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), str name=None):
         """
         Initialisation method.
         """

@@ -66,7 +66,7 @@ cdef class Box(Primitive):
     system.
     """
 
-    def __init__(self, Point lower=None, Point upper=None, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+    def __init__(self, Point lower=None, Point upper=None, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), str name=None):
         """
         :param lower: Lower point of the box (default = Point(-0.5, -0.5, -0.5)).
         :param upper: Upper point of the box (default = Point(0.5, 0.5, 0.5)).

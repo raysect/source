@@ -50,7 +50,7 @@ cdef class Sphere(Primitive):
     The sphere is centered at the origin of the local co-ordinate system.
     """
 
-    def __init__(self, double radius=0.5, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, double radius=0.5, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), str name=None):
         """
         :param radius: Radius of the sphere in meters (default = 0.5).
         :param parent: Scene-graph parent node or None (default = None).

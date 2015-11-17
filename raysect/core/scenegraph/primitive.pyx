@@ -47,7 +47,7 @@ cdef class Primitive(Node):
     :param name: A string defining the node name.
     """
 
-    def __init__(self, object parent=None, AffineMatrix transform=None, Material material=None, unicode name=None):
+    def __init__(self, object parent=None, AffineMatrix transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, name)
 

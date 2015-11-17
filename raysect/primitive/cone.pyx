@@ -64,7 +64,7 @@ cdef class Cone(Primitive):
 
     def __init__(self, double radius=0.5, double height=1.0, object parent = None,
                  AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(),
-                 unicode name not None= ""):
+                 str name=None):
         """
         Radius is radius of the cone in x-y plane.
         Height of cone is the extent along z-axis [0, height].

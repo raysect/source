@@ -67,7 +67,7 @@ cdef class Cylinder(Primitive):
     capped with disks forming a closed surface.
     """
 
-    def __init__(self, double radius=0.5, double height=1.0, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+    def __init__(self, double radius=0.5, double height=1.0, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), str name=None):
         """
         Radius is radius of the cylinder in x-y plane.
         Height of cylinder is defines extent along z-axis [0, height].
