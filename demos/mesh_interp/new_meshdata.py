@@ -90,19 +90,21 @@ for i, key in enumerate(vertices_dict):
 datamesh = TriangularDataMesh2D(vertices, vertex_data, triangles, DATA_NAMES)
 
 
-# # Begin testing
-# ###############
-#
-# # Sample our mesh for imshow test
-# samples = np.zeros((100, 50))
-# xrange = list(np.arange(0, 1, 1/50))
-# yrange = list(np.arange(-2, 0, 2/100))
-#
-# for i, x in enumerate(xrange):
-#     for j, y in enumerate(yrange):
-#         samples[j, i] = datamesh(x, y, "linerad")
-#
-# plt.ion()
-# # imshow(samples, extent=[minr, maxr, minz, maxz], origin='lower')
-# plt.imshow(samples, extent=[0, 1, -2, 0], origin='lower')
-# plt.show()
+# Begin testing
+###############
+
+linerad = datamesh.get_data_function('linerad')
+
+# Sample our mesh for imshow test
+samples = np.zeros((100, 50))
+xrange = list(np.arange(0, 1, 1/50))
+yrange = list(np.arange(-2, 0, 2/100))
+
+for i, x in enumerate(xrange):
+    for j, y in enumerate(yrange):
+        samples[j, i] = linerad(x, y)
+
+plt.ion()
+# imshow(samples, extent=[minr, maxr, minz, maxz], origin='lower')
+plt.imshow(samples, extent=[0, 1, -2, 0], origin='lower')
+plt.show()

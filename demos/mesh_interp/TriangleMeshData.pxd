@@ -33,5 +33,8 @@ cdef class _TriangleMeshTriangle:
 cdef class InterpolatedMeshFunction(Function2D):
 
     cdef:
-        public TriangularDataMesh2D data
+        public TriangularDataMesh2D mesh
         public int axis
+
+    cdef double evaluate(self, double x, double y) except *
+

@@ -3,6 +3,7 @@ from scipy.spatial import KDTree
 import numpy as np
 cimport numpy as cnp
 
+
 cdef class TriangularDataMesh2D:
     """
     An abstract data structure for interpolating data points lying on a triangular mesh.
@@ -17,15 +18,11 @@ cdef class TriangularDataMesh2D:
         :return:
         """
 
-        input("Making Vertices")
-
         self.vertices = np.zeros((vertices.shape[0]), dtype=object)
         for i, vertex in enumerate(vertices):
             self.vertices[i] = _TriangleMeshVertex(vertex[0], vertex[1], i)
 
         self.vertex_data = vertex_data.copy()
-
-        input("Making Triangles from vertices")
 
         self.triangles = np.zeros((triangles.shape[0]), dtype=object)
         for i, triangle in enumerate(triangles):
@@ -43,18 +40,15 @@ cdef class TriangularDataMesh2D:
 
             self.triangles[i] = triangle
 
-        input("Making Data names")
-
         self.data_names = {}
         for i, name in enumerate(data_names):
             self.data_names[name] = i
 
-        print(vertices.shape)
-        input("Making KDTree")
+        unique_vertices = [(vertex.u, vertex.v) for vertex in _TriangleMeshVertex.all_verticies()]
 
         # TODO - implement KD-tree here
         # construct KD-tree from vertices
-        self.kdtree = KDTree(vertices)
+        self.kdtree = KDTree(unique_vertices)
 
     def get_data_function(self, name):
         data_axis = self.data_names[name]
@@ -79,6 +73,10 @@ cdef class _TriangleMeshVertex:
     def __iter__(self):
         for tri in self.triangles:
             yield(tri)
+
+    @classmethod
+    def all_verticies(cls):
+        return cls._all_vertices.values()
 
 
 cdef class _TriangleMeshTriangle:
@@ -167,7 +165,7 @@ cdef class InterpolatedMeshFunction(Function2D):
     cdef double evaluate(self, double x, double y) except *:
         cdef:
             int i_closest
-            float dist
+            double dist
             _TriangleMeshVertex closest_vertex
             _TriangleMeshTriangle triangle
 
@@ -178,11 +176,15 @@ cdef class InterpolatedMeshFunction(Function2D):
         # cycle through all triangles connected to this vertex
         for triangle in closest_vertex.triangles:
 
-            # if triangle contains point, then evaluate at point.
             if triangle.contains(x, y):
+
+                print("##############################")
+                print("THIS BIT RUNS")
+                print("##############################")
 
                 # get memory view of vertex data for this parameter and evaluate
                 vertexdata = self.mesh.vertex_data[self.axis, :]
+                print(triangle.evaluate(x, y, vertexdata))
                 return triangle.evaluate(x, y, vertexdata)
 
         return 0.0
