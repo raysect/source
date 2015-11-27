@@ -4,7 +4,7 @@ from scipy.io import loadmat
 from scipy.interpolate import CloughTocher2DInterpolator
 import numpy as np
 import matplotlib.pylab as plt
-
+from demos.mesh_interp.TriangleMeshData import TriangularDataMesh2D
 
 DATA_NAMES = ['linerad']
 
@@ -12,7 +12,7 @@ DATA_NAMES = ['linerad']
 # Loading SOLPS data
 ####################
 
-solps_pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), '/solps_39625.mat')
+solps_pth = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'solps_39625.mat')
 solps_output = loadmat(solps_pth)
 
 # temporary variable for all the r's and z's
@@ -53,9 +53,12 @@ vertices_dict = {}
 triangles = np.zeros((mesh_shape[0]*mesh_shape[1]*2, 3, 2))
 # triangles shape => [number of boxes * 2, 3 vertices, 2 values per vertex]
 
+
+print("triangle shape - {}".format(triangles.shape))
+print("mesh shape - {}".format(mesh_shape))
 # Generate the triangle mesh
-for i in range(0, mesh_shape[0]):
-    for j in range(0, mesh_shape[1]):
+for i in range(mesh_shape[0]):
+    for j in range(mesh_shape[1]):
         # Get vertices of cells
         u, v = r[i, j, 0], z[i, j, 0]
         vertices_dict[(u, v)] = [tot_linerad((u, v))]
@@ -74,8 +77,8 @@ for i in range(0, mesh_shape[0]):
         v4 = (u, v)
 
         # Create mesh triangles associated with these vertices.
-        triangles[i*mesh_shape[0]+j, :, :] = (v1, v2, v3)
-        triangles[i*mesh_shape[0]+j+1, :, :] = (v3, v4, v1)
+        triangles[i*mesh_shape[1]+j*2, :, :] = (v1, v2, v3)
+        triangles[i*mesh_shape[1]+j*2+1, :, :] = (v3, v4, v1)
 
 vertices = np.zeros((len(triangles), 2))
 vertex_data = np.zeros((len(triangles), len(DATA_NAMES)))
@@ -87,20 +90,19 @@ for i, key in enumerate(vertices_dict):
 datamesh = TriangularDataMesh2D(vertices, vertex_data, triangles, DATA_NAMES)
 
 
-
-# Begin testing
-###############
-
-# Sample our mesh for imshow test
-samples = np.zeros((100, 50))
-xrange = list(np.arange(0, 1, 1/50))
-yrange = list(np.arange(-2, 0, 2/100))
-
-for i, x in enumerate(xrange):
-    for j, y in enumerate(yrange):
-        samples[j, i] = datamesh(x, y, "linerad")
-
-plt.ion()
-# imshow(samples, extent=[minr, maxr, minz, maxz], origin='lower')
-plt.imshow(samples, extent=[0, 1, -2, 0], origin='lower')
-plt.show()
+# # Begin testing
+# ###############
+#
+# # Sample our mesh for imshow test
+# samples = np.zeros((100, 50))
+# xrange = list(np.arange(0, 1, 1/50))
+# yrange = list(np.arange(-2, 0, 2/100))
+#
+# for i, x in enumerate(xrange):
+#     for j, y in enumerate(yrange):
+#         samples[j, i] = datamesh(x, y, "linerad")
+#
+# plt.ion()
+# # imshow(samples, extent=[minr, maxr, minz, maxz], origin='lower')
+# plt.imshow(samples, extent=[0, 1, -2, 0], origin='lower')
+# plt.show()

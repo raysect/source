@@ -1,6 +1,4 @@
 
-from raysect.core.math.function import Function2D
-from raysect.core.math.function cimport Function2D
 from scipy.spatial import KDTree
 import numpy as np
 cimport numpy as cnp
@@ -19,18 +17,22 @@ cdef class TriangularDataMesh2D:
         :return:
         """
 
+        input("Making Vertices")
+
         self.vertices = np.zeros((vertices.shape[0]), dtype=object)
         for i, vertex in enumerate(vertices):
             self.vertices[i] = _TriangleMeshVertex(vertex[0], vertex[1], i)
 
         self.vertex_data = vertex_data.copy()
 
+        input("Making Triangles from vertices")
+
         self.triangles = np.zeros((triangles.shape[0]), dtype=object)
         for i, triangle in enumerate(triangles):
             try:
-                v1 = _TriangleMeshVertex._all_verticies[tuple(triangle[0])]
-                v2 = _TriangleMeshVertex._all_verticies[tuple(triangle[1])]
-                v3 = _TriangleMeshVertex._all_verticies[tuple(triangle[2])]
+                v1 = _TriangleMeshVertex._all_vertices[tuple(triangle[0])]
+                v2 = _TriangleMeshVertex._all_vertices[tuple(triangle[1])]
+                v3 = _TriangleMeshVertex._all_vertices[tuple(triangle[2])]
             except IndexError:
                 raise ValueError("vertex could not be found in vertex list")
 
@@ -41,9 +43,14 @@ cdef class TriangularDataMesh2D:
 
             self.triangles[i] = triangle
 
+        input("Making Data names")
+
         self.data_names = {}
         for i, name in enumerate(data_names):
             self.data_names[name] = i
+
+        print(vertices.shape)
+        input("Making KDTree")
 
         # TODO - implement KD-tree here
         # construct KD-tree from vertices
@@ -58,7 +65,7 @@ cdef class _TriangleMeshVertex:
     """
     An individual vertex of the mesh.
     """
-    _all_verticies = {}
+    _all_vertices = {}
 
     def __init__(self, u, v, index):
 
@@ -67,7 +74,7 @@ cdef class _TriangleMeshVertex:
         self.index = index
         self.triangles = []
 
-        _TriangleMeshVertex._all_verticies[(u, v)] = self
+        _TriangleMeshVertex._all_vertices[(u, v)] = self
 
     def __iter__(self):
         for tri in self.triangles:
@@ -157,7 +164,7 @@ cdef class InterpolatedMeshFunction(Function2D):
     def __call__(self, double x, double y):
         return self.evaluate(x, y)
 
-    cdef double evaluate(self, double x, double y):
+    cdef double evaluate(self, double x, double y) except *:
         cdef:
             int i_closest
             float dist
