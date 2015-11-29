@@ -461,6 +461,99 @@ class PinholeCamera(Camera):
         return rays
 
 
+class OrthographicCamera(Camera):
+    """ A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
+
+    :param pixels: tuple containing the number of pixels along horizontal and vertical axis
+    :param width: width of the area to observe in meters, the height is deduced from the 'pixels' attribute
+    :param spectral_samples: number of spectral samples by ray
+    :param rays: number of rays. The total spectrum will be divided over all the rays. The number of rays must be >1 for
+     dispersive effects.
+    :param parent: the scenegraph node which will be the parent of this observer.
+    :param transform: AffineMatrix describing the relative position/rotation of this node to the parent.
+    :param name: a printable name.
+    """
+
+    def __init__(self, pixels=(512, 512), width = 10, sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
+                 sub_sample=False, process_count=cpu_count(), parent=None, transform=AffineMatrix(), name=None):
+
+        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples, rays=rays,
+                         pixel_samples=pixel_samples, process_count=process_count, parent=parent,
+                         transform=transform, name=name)
+
+        self.sub_sample = sub_sample
+        self.width = width
+
+    @property
+    def width(self):
+        return self._width
+
+    @width.setter
+    def width(self, width):
+        if width <= 0:
+            raise ValueError("width can not be less than or equal to 0 meters.")
+        self._width = width
+
+    def _setup_pixel_config(self):
+
+        max_pixels = max(self._pixels)
+
+        if max_pixels > 1:
+
+            # max width of image plane at 1 meter
+            image_max_width = self._width
+
+            # pixel step and start point in image plane
+            image_delta = image_max_width / (max_pixels - 1)
+
+            # start point of scan in image plane
+            image_start_x = 0.5 * self._pixels[0] * image_delta
+            image_start_y = 0.5 * self._pixels[1] * image_delta
+
+        else:
+            # single ray on axis
+            image_delta = 0
+            image_start_x = 0
+            image_start_y = 0
+
+        origin = Point(0, 0, 0).transform(self.to_root())
+
+        return origin, image_delta, image_start_x, image_start_y
+
+    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
+
+        origin, image_delta, image_start_x, image_start_y = pixel_configuration
+
+        rays = []
+        for _ in range(self.pixel_samples):
+
+            if self.sub_sample:
+                # uniform sample (stupid, but it will do for now)
+                dx = random.random() - 0.5
+                dy = random.random() - 0.5
+            else:
+                dx = 0
+                dy = 0
+
+            # calculate ray parameters
+            origin = Point(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 0)
+            direction = Vector(0., 0., 1.0).normalise()
+
+            # generate ray and add to array to return
+            rays.append(
+                Ray(origin, direction,
+                    min_wavelength=min_wavelength,
+                    max_wavelength=max_wavelength,
+                    num_samples=spectral_samples,
+                    extinction_prob=self.ray_extinction_prob,
+                    min_depth=self.ray_min_depth,
+                    max_depth=self.ray_max_depth
+                )
+            )
+
+        return rays
+
+
 class VectorCamera(Camera):
 
     def __init__(self, pixel_origins, pixel_directions, name=None, sensitivity=1.0, spectral_samples=20, rays=1,
