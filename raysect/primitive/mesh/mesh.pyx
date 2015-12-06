@@ -78,8 +78,16 @@ DEF N3 = 5
 DEF NO_INTERSECTION = -1
 
 # TODO: fire exceptions if degenerate triangles are found and tolerant mode is not enabled (the face normal call will fail @ normalisation)
+# TODO: tidy up the internal storage of triangles - separate the triangle reference arrays for vertices, normals etc...
+# TODO: the following code really is a bit opaque, needs a general tidy up
 
-cdef class MeshKDTree(KDTreeCore):
+cdef class MeshData(KDTreeCore):
+    """
+    Holds the mesh data and acceleration structures.
+
+    The Mesh primitive is a thin wrapper around a MeshData object. This
+    arrangement simplifies mesh instancing and the load/dump methods.
+    """
 
     cdef:
         float32_t[:, ::1] vertices
@@ -87,14 +95,16 @@ cdef class MeshKDTree(KDTreeCore):
         float32_t[:, ::1] face_normals
         int64_t[:, ::1] triangles
         public bint smoothing
+        public bint closed
         int _ix, _iy, _iz
         float _sx, _sy, _sz
         float _u, _v, _w, _t
         int _i
 
-    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, bint tolerant=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
+    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, bint closed=True, bint tolerant=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         self.smoothing = smoothing
+        self.closed = closed
 
         # convert to numpy arrays for internal use
         vertices = array(vertices, dtype=float32)
@@ -299,12 +309,12 @@ cdef class MeshKDTree(KDTreeCore):
         else:
             normals = None
 
-        return vertices, normals, triangles, self.smoothing, super().__getstate__()
+        return vertices, normals, triangles, self.smoothing, self.closed, super().__getstate__()
 
     def __setstate__(self, state):
         """Decodes state for pickling."""
 
-        vertices, normals, triangles, self.smoothing, base_state = state
+        vertices, normals, triangles, self.smoothing, self.closed, base_state = state
 
         # convert lists back to numpy arrays and assign to memory views
         self.vertices = array(vertices, dtype=float32)
@@ -639,6 +649,16 @@ cdef class MeshKDTree(KDTreeCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef bint mesh_contains(self, Point p):
+        """
+        Tests if a point is contained by the mesh.
+
+        Note, this method assumes the mesh is closed. Any open/closed mesh test
+        must be performed externally (this is generally quicker as coordinate
+        transforms etc... can be skipped if the mesh is open).
+
+        :param p: Local space Point.
+        :return: True if mesh contains point, False otherwise.
+        """
 
         cdef Ray ray
 
@@ -770,8 +790,7 @@ cdef class Mesh(Primitive):
     """
 
     cdef:
-        MeshKDTree _kdtree
-        bint closed
+        MeshData _data
         bint _seek_next_intersection
         Ray _next_world_ray
         Ray _next_local_ray
@@ -785,18 +804,15 @@ cdef class Mesh(Primitive):
         if instance:
 
             # hold references to internal data of the specified mesh
-            self.closed = instance.closed
-            self._kdtree = instance._kdtree
+            self._data = instance._data
 
         else:
 
             if vertices is None or triangles is None:
                 raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
 
-            self.closed = closed
-
             # build the kd-Tree
-            self._kdtree = MeshKDTree(vertices, triangles, normals, smoothing, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
+            self._data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
@@ -839,7 +855,7 @@ cdef class Mesh(Primitive):
         self._ray_distance = 0
 
         # do we hit the mesh?
-        if self._kdtree.hit(local_ray):
+        if self._data.hit(local_ray):
             return self._process_intersection(ray, local_ray)
 
         # there was no intersection so disable next intersection search
@@ -866,7 +882,7 @@ cdef class Mesh(Primitive):
         if self._seek_next_intersection:
 
             # do we hit the mesh again?
-            if self._kdtree.hit(self._next_local_ray):
+            if self._data.hit(self._next_local_ray):
                 return self._process_intersection(self._next_world_ray, self._next_local_ray)
 
             # there was no intersection so disable further searching
@@ -880,7 +896,7 @@ cdef class Mesh(Primitive):
             Intersection intersection
 
         # obtain intersection details from the kd-tree
-        intersection = self._kdtree.calc_intersection(local_ray)
+        intersection = self._data.calc_intersection(local_ray)
 
         # enable next intersection search and cache the local ray for the next intersection calculation
         # we must shift the new origin past the last intersection
@@ -924,11 +940,12 @@ cdef class Mesh(Primitive):
         :return: True if the point lies in the volume, False otherwise.
         """
 
-        if not self.closed:
+        # avoid unnecessary transform by checking closed state early
+        if not self._data.closed:
             return False
 
         p = p.transform(self.to_local())
-        return self._kdtree.mesh_contains(p)
+        return self._data.mesh_contains(p)
 
     cpdef BoundingBox bounding_box(self):
         """
@@ -941,9 +958,9 @@ cdef class Mesh(Primitive):
         :return: A BoundingBox object.
         """
 
-        return self._kdtree.bounding_box(self.to_root())
+        return self._data.bounding_box(self.to_root())
 
-    def dump(self, object file):
+    def old_dump(self, object file):
         """
         Writes the mesh data to the specified file descriptor or filename.
 
@@ -956,7 +973,7 @@ cdef class Mesh(Primitive):
         :param file: File object or string path.
         """
 
-        state = (self._kdtree, self.closed)
+        state = (self._data, self.closed)
 
         if isinstance(file, io.BytesIO):
              pickle.dump(state, file)
@@ -965,7 +982,7 @@ cdef class Mesh(Primitive):
                 pickle.dump(state, f)
 
     @classmethod
-    def load(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
+    def old_load(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
         """
         Reads the mesh data from the specified file descriptor or filename.
 
@@ -991,10 +1008,56 @@ cdef class Mesh(Primitive):
                 state = pickle.load(f)
 
         m = Mesh.__new__(Mesh)
-        m._kdtree, m.closed = state
+        m._data, m.closed = state
         m._seek_next_intersection = False
         m._next_world_ray = None
         m._next_local_ray = None
         m._ray_distance = 0
         super(Mesh, m).__init__(parent, transform, material, name)
         return m
+
+    def dump(self, object file):
+        """
+        Writes the mesh data to the specified file descriptor or filename.
+
+        This method can be used as part of a caching system to avoid the
+        computational cost of building a mesh's kd-tree. The kd-tree is stored
+        with the mesh data and is restored when the mesh is loaded.
+
+        This method may be supplied with a file object or a string path.
+
+        :param file: File object or string path.
+        """
+
+        if not isinstance(file, io.BytesIO):
+            file = open(file, mode="wb")
+
+        # header
+
+        # write meta data
+
+        # hand over to mesh data object
+
+
+
+    @classmethod
+    def load(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
+        """
+        Reads the mesh data from the specified file descriptor or filename.
+
+        This method can be used as part of a caching system to avoid the
+        computational cost of rebuilding a mesh's kd-tree. The kd-tree is
+        stored with the mesh data and is restored when the mesh is loaded.
+
+        This method may be supplied with a file object or a string path.
+
+        :param file: File object or string path.
+        :param parent: Attaches the mesh to the specified scene-graph node.
+        :param transform: The co-ordinate transform between the mesh and its parent.
+        :param material: The surface/volume material.
+        :param name: A human friendly name to identity the mesh in the scene-graph.
+        """
+
+        if not isinstance(file, io.BytesIO):
+            file = open(file, mode="rb")
+
