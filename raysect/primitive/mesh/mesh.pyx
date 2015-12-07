@@ -29,6 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import io
+import pickle
+import struct
+from numpy import array, float32, uint32, zeros
+
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport Normal, new_normal
@@ -38,10 +43,7 @@ from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
-from numpy import array, float32, int64, zeros
-from numpy cimport ndarray, float32_t, int64_t
-import io
-import pickle
+from numpy cimport ndarray, float32_t, uint32_t
 cimport cython
 
 """
@@ -77,6 +79,11 @@ DEF N3 = 5
 
 DEF NO_INTERSECTION = -1
 
+# raysect mesh format constants
+DEF RSM_IDENTIFIER = b"RSM"
+DEF RSM_VERSION_MAJOR = 1
+DEF RSM_VERSION_MINOR = 0
+
 # TODO: fire exceptions if degenerate triangles are found and tolerant mode is not enabled (the face normal call will fail @ normalisation)
 # TODO: tidy up the internal storage of triangles - separate the triangle reference arrays for vertices, normals etc...
 # TODO: the following code really is a bit opaque, needs a general tidy up
@@ -93,7 +100,7 @@ cdef class MeshData(KDTreeCore):
         float32_t[:, ::1] vertices
         float32_t[:, ::1] vertex_normals
         float32_t[:, ::1] face_normals
-        int64_t[:, ::1] triangles
+        uint32_t[:, ::1] triangles
         public bint smoothing
         public bint closed
         int _ix, _iy, _iz
@@ -108,7 +115,7 @@ cdef class MeshData(KDTreeCore):
 
         # convert to numpy arrays for internal use
         vertices = array(vertices, dtype=float32)
-        triangles = array(triangles, dtype=int64)
+        triangles = array(triangles, dtype=uint32)
         if normals is not None:
             vertex_normals = array(normals, dtype=float32)
         else:
@@ -173,7 +180,7 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            int64_t[:, ::1] triangles
+            uint32_t[:, ::1] triangles
             int i, valid
             int i1, i2, i3
             Point p1, p2, p3
@@ -227,7 +234,7 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            int64_t[:, ::1] triangles
+            uint32_t[:, ::1] triangles
             int i
             int i1, i2, i3
             Point p1, p2, p3
@@ -271,7 +278,7 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            int64_t[:, ::1] triangles
+            uint32_t[:, ::1] triangles
             int i1, i2, i3
             BoundingBox bbox
 
@@ -318,7 +325,7 @@ cdef class MeshData(KDTreeCore):
 
         # convert lists back to numpy arrays and assign to memory views
         self.vertices = array(vertices, dtype=float32)
-        self.triangles = array(triangles, dtype=int64)
+        self.triangles = array(triangles, dtype=uint32)
         if normals is not None:
             self.vertex_normals = array(normals, dtype=float32)
         else:
@@ -453,7 +460,7 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            int64_t[:, ::1] triangles
+            uint32_t[:, ::1] triangles
             int i1, i2, i3
             int ix, iy, iz
             float sx, sy, sz
@@ -612,7 +619,7 @@ cdef class MeshData(KDTreeCore):
         """
 
         cdef:
-            int64_t[:, ::1] triangles
+            uint32_t[:, ::1] triangles
             float32_t[:, ::1] vertex_normals
             float32_t[:, ::1] face_normals
             int n1, n2, n3
@@ -706,6 +713,154 @@ cdef class MeshData(KDTreeCore):
             bbox.extend(vertex.transform(to_world), BOX_PADDING)
 
         return bbox
+
+    # TODO: this code is forking horrible - need to split the triangle array into separate components (for a start!)
+    def save(self, object file):
+
+        cdef uint32_t i, j
+
+        close = False
+
+        # treat as a filename if a stream is not supplied
+        if not isinstance(file, io.BytesIO):
+            file = open(file, mode="wb")
+            close = True
+
+        # write header
+        file.write(RSM_IDENTIFIER)
+        file.write(struct.pack("<B", RSM_VERSION_MAJOR))
+        file.write(struct.pack("<B", RSM_VERSION_MINOR))
+
+        # mesh setting flags
+        file.write(struct.pack("<?", self.smoothing))
+        file.write(struct.pack("<?", self.closed))
+        file.write(struct.pack("<?", True))    # kdtree in file (hardcoded for now, will be an option)
+
+        # item counts
+        file.write(struct.pack("<I", self.vertices.shape[0]))
+
+        if self.vertex_normals is not None:
+            file.write(struct.pack("<I", self.vertex_normals.shape[0]))
+        else:
+            file.write(struct.pack("<I", 0))
+
+        file.write(struct.pack("<I", self.triangles.shape[0]))
+
+        # write vertices
+        for i in range(self.vertices.shape[0]):
+            for j in range(3):
+                file.write(struct.pack("<f", self.vertices[i, j]))
+
+        # write normals
+        if self.vertex_normals is not None:
+            for i in range(self.vertex_normals.shape[0]):
+                for j in range(3):
+                    file.write(struct.pack("<f", self.vertex_normals[i, j]))
+
+        # triangles
+        width = 3
+        if self.vertex_normals is not None:
+            # we have vertex normals for each triangle
+            width += 3
+
+        for i in range(self.triangles.shape[0]):
+            for j in range(width):
+                file.write(struct.pack("<I", self.triangles[i, j]))
+
+        # write kd-tree
+        #super().save(file)
+
+        # if we opened a file, we should close it
+        if close:
+            file.close()
+
+    def load(self, object file):
+
+        cdef:
+            uint32_t i, j
+            MeshData m
+
+        close = False
+
+        # treat as a filename if a stream is not supplied
+        if not isinstance(file, io.BytesIO):
+            file = open(file, mode="rb")
+            close = True
+
+        # read and check header
+        identifier = file.read(3)
+        major_version = struct.unpack("<B", file.read(1))[0]
+        minor_version = struct.unpack("<B", file.read(1))[0]
+
+        # validate
+        if identifier != RSM_IDENTIFIER:
+            raise ValueError("Specified file is not a Raysect mesh file.")
+
+        if major_version != RSM_VERSION_MAJOR or minor_version != RSM_VERSION_MINOR:
+            raise ValueError("Unsupported Raysect mesh version.")
+
+        # create mesh instance
+        m = MeshData.__new__(MeshData)
+
+        # mesh setting flags
+        m.smoothing = struct.unpack("<?", file.read(1))[0]
+        m.closed = struct.unpack("<?", file.read(1))[0]
+        _ = struct.unpack("<?", file.read(1))[0]    # kdtree option, ignore for now (to be implemented)
+
+        # item counts
+        num_vertices = struct.unpack("<I", file.read(4))[0]
+        num_vertex_normals = struct.unpack("<I", file.read(4))[0]
+        num_triangles = struct.unpack("<I", file.read(4))[0]
+
+        # read vertices
+        m.vertices = zeros((num_vertices, 3), dtype=float32)
+        for i in range(num_vertices):
+            for j in range(3):
+                m.vertices[i, j] = struct.unpack("<f", file.read(4))[0]
+
+        # read vertex normals
+        if num_vertex_normals > 0:
+            m.vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
+            for i in range(num_vertex_normals):
+                for j in range(3):
+                    m.vertex_normals[i, j] = struct.unpack("<f", file.read(4))[0]
+        else:
+            m.vertex_normals = None
+
+        # read triangles
+        width = 3
+        if num_vertex_normals > 0:
+            # we have vertex normals for each triangle
+            width += 3
+
+        m.triangles = zeros((num_triangles, width), dtype=uint32)
+        for i in range(num_triangles):
+            for j in range(width):
+                m.triangles[i, j] = struct.unpack("<I", file.read(4))[0]
+
+        # read kdtree
+        #super().load(file)
+
+        # generate face normals
+        m._generate_face_normals()
+
+        # initial hit data
+        m._u = -1.0
+        m._v = -1.0
+        m._w = -1.0
+        m._t = INFINITY
+        m._i = NO_INTERSECTION
+
+        # if we opened a file, we should close it
+        if close:
+            file.close()
+
+    @classmethod
+    def from_file(cls, file):
+
+        m = MeshData.__new__(MeshData)
+        m.load(file)
+        return m
 
 
 cdef class Mesh(Primitive):
@@ -819,14 +974,6 @@ cdef class Mesh(Primitive):
         self._next_world_ray = None
         self._next_local_ray = None
         self._ray_distance = 0
-
-    # property triangles:
-    #
-    #     def __get__(self):
-    #
-    #         # return a copy to prevent users altering the list
-    #         # if the list size is altered it could cause a segfault
-    #         return self._kdtree.triangles.copy()
 
     cpdef Intersection hit(self, Ray ray):
         """
@@ -960,104 +1107,65 @@ cdef class Mesh(Primitive):
 
         return self._data.bounding_box(self.to_root())
 
-    def old_dump(self, object file):
+    def save(self, object file):
         """
-        Writes the mesh data to the specified file descriptor or filename.
+        Saves the mesh to the specified file object or filename.
 
-        This method can be used as part of a caching system to avoid the
-        computational cost of building a mesh's kd-tree. The kd-tree is stored
-        with the mesh data and is restored when the mesh is loaded.
-
-        This method may be supplied with a file object or a string path.
+        The mesh in written in RaySect Mesh (RSM) format. The RSM format
+        contains the mesh geometry and the mesh acceleration structures.
 
         :param file: File object or string path.
         """
 
-        state = (self._data, self.closed)
+        # todo: keeping this here until I re add the kdtree parameter
+        # """
+        # Saves the mesh to the specified file object or filename.
+        #
+        # The mesh in written in RaySect Mesh (RSM) format. The RSM format
+        # contains the mesh geometry and (optionally) the mesh acceleration
+        # structures.
+        #
+        # By default, the mesh kdtree acceleration structure is stored alongside
+        # the mesh geometry. If this is not desired, for instance if storage
+        # space is a premium, the kdtree can be omitted by setting the kdtree
+        # argument to False. The kdtree will be recalculated when the mesh is
+        # next loaded (as is performed when other mesh formats are imported).
+        #
+        # :param file: File object or string path.
+        # """
 
-        if isinstance(file, io.BytesIO):
-             pickle.dump(state, file)
-        else:
-            with open(file, mode="wb") as f:
-                pickle.dump(state, f)
+        # hand over to the mesh data object
+        self._data.save(file)
+
+    def load(self, object file):
+
+        # rebuild internal state
+        self._data = MeshData.from_file(file)
+        self._seek_next_intersection = False
+        self._next_world_ray = None
+        self._next_local_ray = None
+        self._ray_distance = 0
 
     @classmethod
-    def old_load(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
-        """
-        Reads the mesh data from the specified file descriptor or filename.
-
-        This method can be used as part of a caching system to avoid the
-        computational cost of rebuilding a mesh's kd-tree. The kd-tree is
-        stored with the mesh data and is restored when the mesh is loaded.
-
-        This method may be supplied with a file object or a string path.
-
-        :param file: File object or string path.
-        :param parent: Attaches the mesh to the specified scene-graph node.
-        :param transform: The co-ordinate transform between the mesh and its parent.
-        :param material: The surface/volume material.
-        :param name: A human friendly name to identity the mesh in the scene-graph.
-        """
-
-        cdef Mesh m
-
-        if isinstance(file, io.BytesIO):
-             state = pickle.load(file)
-        else:
-            with open(file, mode="rb") as f:
-                state = pickle.load(f)
+    def from_file(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
+        # """
+        # Reads the mesh data from the specified file descriptor or filename.
+        #
+        # This method can be used as part of a caching system to avoid the
+        # computational cost of rebuilding a mesh's kd-tree. The kd-tree is
+        # stored with the mesh data and is restored when the mesh is loaded.
+        #
+        # This method may be supplied with a file object or a string path.
+        #
+        # :param file: File object or string path.
+        # :param parent: Attaches the mesh to the specified scene-graph node.
+        # :param transform: The co-ordinate transform between the mesh and its parent.
+        # :param material: The surface/volume material.
+        # :param name: A human friendly name to identity the mesh in the scene-graph.
+        # """
 
         m = Mesh.__new__(Mesh)
-        m._data, m.closed = state
-        m._seek_next_intersection = False
-        m._next_world_ray = None
-        m._next_local_ray = None
-        m._ray_distance = 0
         super(Mesh, m).__init__(parent, transform, material, name)
+        m.load(file)
         return m
-
-    def dump(self, object file):
-        """
-        Writes the mesh data to the specified file descriptor or filename.
-
-        This method can be used as part of a caching system to avoid the
-        computational cost of building a mesh's kd-tree. The kd-tree is stored
-        with the mesh data and is restored when the mesh is loaded.
-
-        This method may be supplied with a file object or a string path.
-
-        :param file: File object or string path.
-        """
-
-        if not isinstance(file, io.BytesIO):
-            file = open(file, mode="wb")
-
-        # header
-
-        # write meta data
-
-        # hand over to mesh data object
-
-
-
-    @classmethod
-    def load(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
-        """
-        Reads the mesh data from the specified file descriptor or filename.
-
-        This method can be used as part of a caching system to avoid the
-        computational cost of rebuilding a mesh's kd-tree. The kd-tree is
-        stored with the mesh data and is restored when the mesh is loaded.
-
-        This method may be supplied with a file object or a string path.
-
-        :param file: File object or string path.
-        :param parent: Attaches the mesh to the specified scene-graph node.
-        :param transform: The co-ordinate transform between the mesh and its parent.
-        :param material: The surface/volume material.
-        :param name: A human friendly name to identity the mesh in the scene-graph.
-        """
-
-        if not isinstance(file, io.BytesIO):
-            file = open(file, mode="rb")
 
