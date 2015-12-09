@@ -68,21 +68,21 @@ cdef class KDTreeCore:
         double _hit_cost
         double _empty_bonus
 
-    cdef int32_t _build(self, list items, BoundingBox bounds, int depth=*)
+    cdef int32_t _build(self, list items, BoundingBox bounds, int32_t depth=*)
 
     cdef tuple _split(self, list items, BoundingBox bounds)
 
-    cdef void _get_edges(self, list items, int axis, int32_t *num_edges, edge **edges_ptr)
+    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr)
 
     cdef void _free_edges(self, edge **edges_ptr)
 
-    cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int axis)
+    cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int32_t axis)
 
-    cdef BoundingBox _get_upper_bounds(self, BoundingBox bounds, double split, int axis)
+    cdef BoundingBox _get_upper_bounds(self, BoundingBox bounds, double split, int32_t axis)
 
     cdef int32_t _new_leaf(self, list ids)
 
-    cdef int32_t _new_branch(self, tuple split_solution, int depth)
+    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth)
 
     cdef int32_t _new_node(self)
 
@@ -107,6 +107,10 @@ cdef class KDTreeCore:
     cdef list _contains_leaf(self, int32_t id, Point point)
 
     cdef void _reset(self)
+
+    cdef inline double _read_double(self, object file)
+
+    cdef inline int32_t _read_int32(self, object file)
 
 
 cdef class KDTree(KDTreeCore):

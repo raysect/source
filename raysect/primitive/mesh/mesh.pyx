@@ -43,7 +43,7 @@ from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
-from numpy cimport ndarray, float32_t, int32_t
+from numpy cimport ndarray, float32_t, int32_t, uint8_t
 from cpython.bytes cimport PyBytes_AsString
 cimport cython
 
@@ -308,42 +308,42 @@ cdef class MeshData(KDTreeCore):
 
         return bbox
 
-    def __getstate__(self):
-        """Encodes state for pickling."""
-
-        vertices = self.vertices.base.tolist()
-        triangles = self.triangles.base.tolist()
-        if self.vertex_normals is not None:
-            normals = self.vertex_normals.base.tolist()
-        else:
-            normals = None
-
-        return vertices, normals, triangles, self.smoothing, self.closed, super().__getstate__()
-
-    def __setstate__(self, state):
-        """Decodes state for pickling."""
-
-        vertices, normals, triangles, self.smoothing, self.closed, base_state = state
-
-        # convert lists back to numpy arrays and assign to memory views
-        self.vertices = array(vertices, dtype=float32)
-        self.triangles = array(triangles, dtype=int32)
-        if normals is not None:
-            self.vertex_normals = array(normals, dtype=float32)
-        else:
-            self.vertex_normals = None
-
-        # reset hit data
-        self._u = -1.0
-        self._v = -1.0
-        self._w = -1.0
-        self._t = INFINITY
-        self._i = NO_INTERSECTION
-
-        # regenerate face normals
-        self._generate_face_normals()
-
-        super().__setstate__(base_state)
+    # def __getstate__(self):
+    #     """Encodes state for pickling."""
+    #
+    #     vertices = self.vertices.base.tolist()
+    #     triangles = self.triangles.base.tolist()
+    #     if self.vertex_normals is not None:
+    #         normals = self.vertex_normals.base.tolist()
+    #     else:
+    #         normals = None
+    #
+    #     return vertices, normals, triangles, self.smoothing, self.closed, super().__getstate__()
+    #
+    # def __setstate__(self, state):
+    #     """Decodes state for pickling."""
+    #
+    #     vertices, normals, triangles, self.smoothing, self.closed, base_state = state
+    #
+    #     # convert lists back to numpy arrays and assign to memory views
+    #     self.vertices = array(vertices, dtype=float32)
+    #     self.triangles = array(triangles, dtype=int32)
+    #     if normals is not None:
+    #         self.vertex_normals = array(normals, dtype=float32)
+    #     else:
+    #         self.vertex_normals = None
+    #
+    #     # reset hit data
+    #     self._u = -1.0
+    #     self._v = -1.0
+    #     self._w = -1.0
+    #     self._t = INFINITY
+    #     self._i = NO_INTERSECTION
+    #
+    #     # regenerate face normals
+    #     self._generate_face_normals()
+    #
+    #     super().__setstate__(base_state)
 
     cpdef bint hit(self, Ray ray):
 
@@ -717,7 +717,6 @@ cdef class MeshData(KDTreeCore):
         return bbox
 
     # TODO: this code is forking horrible - need to split the triangle array into separate components (for a start!)
-    # todo: use numpy array to and from file to speed this up
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def save(self, object file):
@@ -751,14 +750,14 @@ cdef class MeshData(KDTreeCore):
         file.write(struct.pack("<?", True))    # kdtree in file (hardcoded for now, will be an option)
 
         # item counts
-        file.write(struct.pack("<I", vertices.shape[0]))
+        file.write(struct.pack("<i", vertices.shape[0]))
 
         if self.vertex_normals is not None:
-            file.write(struct.pack("<I", vertex_normals.shape[0]))
+            file.write(struct.pack("<i", vertex_normals.shape[0]))
         else:
-            file.write(struct.pack("<I", 0))
+            file.write(struct.pack("<i", 0))
 
-        file.write(struct.pack("<I", triangles.shape[0]))
+        file.write(struct.pack("<i", triangles.shape[0]))
 
         # write vertices
         for i in range(vertices.shape[0]):
@@ -779,7 +778,7 @@ cdef class MeshData(KDTreeCore):
 
         for i in range(triangles.shape[0]):
             for j in range(width):
-                file.write(struct.pack("<I", triangles[i, j]))
+                file.write(struct.pack("<i", triangles[i, j]))
 
         # write kd-tree
         super().save(file)
@@ -807,8 +806,8 @@ cdef class MeshData(KDTreeCore):
 
         # read and check header
         identifier = file.read(3)
-        major_version = struct.unpack("<B", file.read(1))[0]
-        minor_version = struct.unpack("<B", file.read(1))[0]
+        major_version = self._read_uint8(file)
+        minor_version = self._read_uint8(file)
 
         # validate
         if identifier != RSM_IDENTIFIER:
@@ -818,20 +817,20 @@ cdef class MeshData(KDTreeCore):
             raise ValueError("Unsupported Raysect mesh version.")
 
         # mesh setting flags
-        self.smoothing = struct.unpack("<?", file.read(1))[0]
-        self.closed = struct.unpack("<?", file.read(1))[0]
-        _ = struct.unpack("<?", file.read(1))[0]    # kdtree option, ignore for now (to be implemented)
+        self.smoothing = self._read_bool(file)
+        self.closed = self._read_bool(file)
+        _ = self._read_bool(file)    # kdtree option, ignore for now (to be implemented)
 
         # item counts
-        num_vertices = struct.unpack("<I", file.read(4))[0]
-        num_vertex_normals = struct.unpack("<I", file.read(4))[0]
-        num_triangles = struct.unpack("<I", file.read(4))[0]
+        num_vertices = self._read_int32(file)
+        num_vertex_normals = self._read_int32(file)
+        num_triangles = self._read_int32(file)
 
         # read vertices
         vertices = zeros((num_vertices, 3), dtype=float32)
         for i in range(num_vertices):
             for j in range(3):
-                vertices[i, j] = (<float32_t *> PyBytes_AsString(file.read(sizeof(float32_t))))[0]
+                vertices[i, j] = self._read_float(file)
         self.vertices = vertices
 
         # read vertex normals
@@ -839,7 +838,7 @@ cdef class MeshData(KDTreeCore):
             vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
             for i in range(num_vertex_normals):
                 for j in range(3):
-                    vertex_normals[i, j] = (<float32_t *> PyBytes_AsString(file.read(sizeof(float32_t))))[0]
+                    vertex_normals[i, j] = self._read_float(file)
             self.vertex_normals = vertex_normals
         else:
             self.vertex_normals = None
@@ -853,7 +852,7 @@ cdef class MeshData(KDTreeCore):
         triangles = zeros((num_triangles, width), dtype=int32)
         for i in range(num_triangles):
             for j in range(width):
-                triangles[i, j] = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
+                triangles[i, j] = self._read_int32(file)
         self.triangles = triangles
 
         # read kdtree
@@ -879,6 +878,15 @@ cdef class MeshData(KDTreeCore):
         m = MeshData.__new__(MeshData)
         m.load(file)
         return m
+
+    cdef inline uint8_t _read_uint8(self, object file):
+        return (<uint8_t *> PyBytes_AsString(file.read(sizeof(uint8_t))))[0]
+
+    cdef inline bint _read_bool(self, object file):
+        return self._read_uint8(file) != 0
+
+    cdef inline double _read_float(self, object file):
+        return (<float *> PyBytes_AsString(file.read(sizeof(float))))[0]
 
 
 cdef class Mesh(Primitive):

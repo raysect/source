@@ -119,7 +119,7 @@ cdef class KDTreeCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __init__(self, list items, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
+    def __init__(self, list items, int32_t max_depth=0, int32_t min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         cdef:
             Item item
@@ -138,7 +138,7 @@ cdef class KDTreeCore:
         # tree depth is set to the value suggested in "Physically Based Rendering From Theory to
         # Implementation 2nd Edition", Matt Phar and Greg Humphreys, Morgan Kaufmann 2010, p232
         if self._max_depth == 0:
-            self._max_depth = <int> ceil(8 + 1.3 * log(len(items)))
+            self._max_depth = <int32_t> ceil(8 + 1.3 * log(len(items)))
 
         # calculate kd-tree bounds
         self.bounds = BoundingBox()
@@ -148,52 +148,52 @@ cdef class KDTreeCore:
         # start build
         self._build(items, self.bounds)
 
-    def __getstate__(self):
-        """Encodes state for pickling."""
+    # def __getstate__(self):
+    #     """Encodes state for pickling."""
+    #
+    #     # encode nodes
+    #     nodes = []
+    #     for id in range(self._next_node):
+    #         if self._nodes[id].type == LEAF:
+    #             items = []
+    #             for item in range(self._nodes[id].count):
+    #                 items.append(self._nodes[id].items[item])
+    #             node = (self._nodes[id].type, items)
+    #         else:
+    #             node = (self._nodes[id].type, (self._nodes[id].split, self._nodes[id].count))
+    #         nodes.append(node)
+    #
+    #     # encode settings
+    #     settings = (self._max_depth, self._min_items, self._hit_cost, self._empty_bonus)
+    #
+    #     state = (self.bounds, tuple(nodes), settings)
+    #     return state
+    #
+    # def __setstate__(self, tuple state):
+    #     """Decodes state for pickling."""
+    #
+    #     self.bounds, nodes, settings = state
+    #
+    #     # reset the object
+    #     self._reset()
+    #
+    #     # decode nodes
+    #     for node in nodes:
+    #         type, data = node
+    #         if type == LEAF:
+    #             items = [Item(id, None) for id in data]
+    #             self._new_leaf(items)
+    #         else:
+    #             split, count = data
+    #             id = self._new_node()
+    #             self._nodes[id].type = type
+    #             self._nodes[id].split = split
+    #             self._nodes[id].count = count
+    #
+    #     # decode settings
+    #     self._max_depth, self._min_items, self._hit_cost, self._empty_bonus = settings
 
-        # encode nodes
-        nodes = []
-        for id in range(self._next_node):
-            if self._nodes[id].type == LEAF:
-                items = []
-                for item in range(self._nodes[id].count):
-                    items.append(self._nodes[id].items[item])
-                node = (self._nodes[id].type, items)
-            else:
-                node = (self._nodes[id].type, (self._nodes[id].split, self._nodes[id].count))
-            nodes.append(node)
-
-        # encode settings
-        settings = (self._max_depth, self._min_items, self._hit_cost, self._empty_bonus)
-
-        state = (self.bounds, tuple(nodes), settings)
-        return state
-
-    def __setstate__(self, tuple state):
-        """Decodes state for pickling."""
-
-        self.bounds, nodes, settings = state
-
-        # reset the object
-        self._reset()
-
-        # decode nodes
-        for node in nodes:
-            type, data = node
-            if type == LEAF:
-                items = [Item(id, None) for id in data]
-                self._new_leaf(items)
-            else:
-                split, count = data
-                id = self._new_node()
-                self._nodes[id].type = type
-                self._nodes[id].split = split
-                self._nodes[id].count = count
-
-        # decode settings
-        self._max_depth, self._min_items, self._hit_cost, self._empty_bonus = settings
-
-    cdef int32_t _build(self, list items, BoundingBox bounds, int depth=0):
+    cdef int32_t _build(self, list items, BoundingBox bounds, int32_t depth=0):
         """
         Extends the kd-Tree by creating a new node.
 
@@ -234,9 +234,9 @@ cdef class KDTreeCore:
         cdef:
             double split, bonus, cost
             bint is_leaf
-            int longest_axis, axis,
+            int32_t longest_axis, axis,
             double best_cost, best_split
-            int best_axis
+            int32_t best_axis
             edge *edges = NULL
             int32_t index, num_edges
             int32_t lower_count, upper_count
@@ -339,7 +339,7 @@ cdef class KDTreeCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _get_edges(self, list items, int axis, int32_t *num_edges, edge **edges_ptr):
+    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr):
         """
         Generates a sorted list of edges along the specified axis.
 
@@ -390,7 +390,7 @@ cdef class KDTreeCore:
 
         PyMem_Free(edges_ptr[0])
 
-    cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int axis):
+    cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int32_t axis):
         """
         Returns the lower box generated when the node bounding box is split.
 
@@ -405,7 +405,7 @@ cdef class KDTreeCore:
         upper.set_index(axis, split)
         return new_boundingbox(bounds.lower.copy(), upper)
 
-    cdef BoundingBox _get_upper_bounds(self, BoundingBox bounds, double split, int axis):
+    cdef BoundingBox _get_upper_bounds(self, BoundingBox bounds, double split, int32_t axis):
         """
         Returns the upper box generated when the node bounding box is split.
 
@@ -449,7 +449,7 @@ cdef class KDTreeCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int32_t _new_branch(self, tuple split_solution, int depth):
+    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth):
         """
         Adds a new branch node to the kd-Tree and populates it.
 
@@ -460,7 +460,7 @@ cdef class KDTreeCore:
 
         cdef:
             int32_t id, upper_id
-            int axis
+            int32_t axis
             double split
             list lower_items, upper_items
             BoundingBox lower_bounds,  upper_bounds
@@ -576,7 +576,7 @@ cdef class KDTreeCore:
         """
 
         cdef:
-            int axis
+            int32_t axis
             double split
             bint below_split
             int32_t lower_id, upper_id
@@ -713,7 +713,7 @@ cdef class KDTreeCore:
         """
 
         cdef:
-            int axis
+            int32_t axis
             double split
             int32_t lower_id, upper_id
 
@@ -814,29 +814,38 @@ cdef class KDTreeCore:
             close = True
 
         # write header
-        file.write(struct.pack("<I", self._max_depth))
-        file.write(struct.pack("<I", self._min_items))
+        file.write(struct.pack("<i", self._max_depth))
+        file.write(struct.pack("<i", self._min_items))
         file.write(struct.pack("<d", self._hit_cost))
         file.write(struct.pack("<d", self._empty_bonus))
-        file.write(struct.pack("<I", self._next_node))  # number of nodes
 
-        # loop over nodes
+        # write bounds
+        file.write(struct.pack("<d", self.bounds.lower.x))
+        file.write(struct.pack("<d", self.bounds.lower.y))
+        file.write(struct.pack("<d", self.bounds.lower.z))
+
+        file.write(struct.pack("<d", self.bounds.upper.x))
+        file.write(struct.pack("<d", self.bounds.upper.y))
+        file.write(struct.pack("<d", self.bounds.upper.z))
+
+        # write nodes
+        file.write(struct.pack("<i", self._next_node))  # number of nodes
         for id in range(self._next_node):
 
             if self._nodes[id].type == LEAF:
 
                 # leaf node
-                file.write(struct.pack("<I", self._nodes[id].type))
-                file.write(struct.pack("<I", self._nodes[id].count))
+                file.write(struct.pack("<i", self._nodes[id].type))
+                file.write(struct.pack("<i", self._nodes[id].count))
                 for item in range(self._nodes[id].count):
-                    file.write(struct.pack("<I", self._nodes[id].items[item]))
+                    file.write(struct.pack("<i", self._nodes[id].items[item]))
 
             else:
 
                 # branch node
-                file.write(struct.pack("<I", self._nodes[id].type))
+                file.write(struct.pack("<i", self._nodes[id].type))
                 file.write(struct.pack("<d", self._nodes[id].split))
-                file.write(struct.pack("<I", self._nodes[id].count))
+                file.write(struct.pack("<i", self._nodes[id].count))
 
         # if we opened a file, we should close it
         if close:
@@ -857,26 +866,42 @@ cdef class KDTreeCore:
             close = True
 
         # read header
-        self._max_depth = struct.unpack("<I", file.read(4))[0]
-        self._min_items = struct.unpack("<I", file.read(4))[0]
-        self._hit_cost = struct.unpack("<d", file.read(8))[0]
-        self._empty_bonus = struct.unpack("<d", file.read(8))[0]
-        self._next_node = struct.unpack("<I", file.read(4))[0]    # number of nodes
+        self._max_depth = self._read_int32(file)
+        self._min_items = self._read_int32(file)
+        self._hit_cost = self._read_double(file)
+        self._empty_bonus = self._read_double(file)
+
+        # read bounds
+        self.bounds = BoundingBox(
+            Point(
+                self._read_double(file),
+                self._read_double(file),
+                self._read_double(file)
+            ),
+            Point(
+                self._read_double(file),
+                self._read_double(file),
+                self._read_double(file)
+            )
+        )
+
+        # read nodes
+        self._next_node = self._read_int32(file)
         self._allocated_nodes = self._next_node
 
         # allocate nodes
-        self._nodes = <kdnode *> PyMem_Realloc(self._nodes, sizeof(kdnode) * self._allocated_nodes)
+        self._nodes = <kdnode *> PyMem_Malloc(sizeof(kdnode) * self._allocated_nodes)
         if not self._nodes:
             raise MemoryError()
 
         # load nodes
         for id in range(self._next_node):
 
-            self._nodes[id].type = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
+            self._nodes[id].type = self._read_int32(file)
             if self._nodes[id].type == LEAF:
 
                 # leaf node
-                self._nodes[id].count = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
+                self._nodes[id].count = self._read_int32(file)
                 if self._nodes[id].count > 0:
 
                     # allocate items
@@ -886,17 +911,23 @@ cdef class KDTreeCore:
 
                     # read items
                     for item in range(self._nodes[id].count):
-                        self._nodes[id].items[item] = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
+                        self._nodes[id].items[item] = self._read_int32(file)
 
             else:
 
                 # branch node
-                self._nodes[id].split = (<double *> PyBytes_AsString(file.read(sizeof(double))))[0]
-                self._nodes[id].count = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
+                self._nodes[id].split = self._read_double(file)
+                self._nodes[id].count = self._read_int32(file)
 
         # if we opened a file, we should close it
         if close:
             file.close()
+
+    cdef inline int32_t _read_int32(self, object file):
+        return (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
+
+    cdef inline double _read_double(self, object file):
+        return (<double *> PyBytes_AsString(file.read(sizeof(double))))[0]
 
 
 cdef class KDTree(KDTreeCore):
