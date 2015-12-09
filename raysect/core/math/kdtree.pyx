@@ -29,6 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: switch to explicit types uint32_t etc...
+
+import io
+import struct
+
 from raysect.core.acceleration.boundingbox cimport new_boundingbox
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from libc.stdlib cimport qsort
@@ -796,6 +801,102 @@ cdef class KDTreeCore:
     #         else:
     #             print("id={} BRANCH: axis {}, split {}, lower_id {}, upper_id {}".format(id, self._nodes[id].type, self._nodes[id].split, id+1, self._nodes[id].count))
 
+    def save(self, file):
+
+        cdef:
+            int id, item
+
+        close = False
+
+        # treat as a filename if a stream is not supplied
+        if not isinstance(file, io.IOBase):
+            file = open(file, mode="wb")
+            close = True
+
+        # write header
+        file.write(struct.pack("<i", self._max_depth))
+        file.write(struct.pack("<i", self._min_items))
+        file.write(struct.pack("<d", self._hit_cost))
+        file.write(struct.pack("<d", self._empty_bonus))
+        file.write(struct.pack("<i", self._next_node))  # number of nodes
+
+        # loop over nodes
+        for id in range(self._next_node):
+
+            if self._nodes[id].type == LEAF:
+
+                # leaf node
+                file.write(struct.pack("<i", self._nodes[id].type))
+                file.write(struct.pack("<i", self._nodes[id].count))
+                for item in range(self._nodes[id].count):
+                    file.write(struct.pack("<i", self._nodes[id].items[item]))
+
+            else:
+
+                # branch node
+                file.write(struct.pack("<i", self._nodes[id].type))
+                file.write(struct.pack("<d", self._nodes[id].split))
+                file.write(struct.pack("<i", self._nodes[id].count))
+
+        # if we opened a file, we should close it
+        if close:
+            file.close()
+
+    def load(self, file):
+
+        cdef:
+            int id, item
+
+        # free existing nodes
+        self._reset()
+
+        # treat as a filename if a stream is not supplied
+        close = False
+        if not isinstance(file, io.IOBase):
+            file = open(file, mode="rb")
+            close = True
+
+        # read header
+        self._max_depth = struct.unpack("<i", file.read(4))[0]
+        self._min_items = struct.unpack("<i", file.read(4))[0]
+        self._hit_cost = struct.unpack("<d", file.read(8))[0]
+        self._empty_bonus = struct.unpack("<d", file.read(8))[0]
+        self._next_node = struct.unpack("<i", file.read(4))[0]    # number of nodes
+        self._allocated_nodes = self._next_node
+
+        # allocate nodes
+        self._nodes = <kdnode *> PyMem_Realloc(self._nodes, sizeof(kdnode) * self._allocated_nodes)
+        if not self._nodes:
+            raise MemoryError()
+
+        # load nodes
+        for id in range(self._next_node):
+
+            self._nodes[id].type = struct.unpack("<i", file.read(4))[0]
+            if self._nodes[id].type == LEAF:
+
+                # leaf node
+                self._nodes[id].count = struct.unpack("<i", file.read(4))[0]
+                if self._nodes[id].count > 0:
+
+                    # allocate items
+                    self._nodes[id].items = <int *> PyMem_Malloc(sizeof(int) * self._nodes[id].count)
+                    if not self._nodes[id].items:
+                        raise MemoryError()
+
+                    # read items
+                    for item in range(self._nodes[id].count):
+                        self._nodes[id].items[item] = struct.unpack("<i", file.read(4))[0]
+
+            else:
+
+                # branch node
+                self._nodes[id].split = struct.unpack("<d", file.read(8))[0]
+                self._nodes[id].count = struct.unpack("<i", file.read(4))[0]
+
+        # if we opened a file, we should close it
+        if close:
+            file.close()
 
 
 cdef class KDTree(KDTreeCore):

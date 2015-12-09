@@ -715,6 +715,9 @@ cdef class MeshData(KDTreeCore):
         return bbox
 
     # TODO: this code is forking horrible - need to split the triangle array into separate components (for a start!)
+    # todo: use numpy array to and from file to speed this up
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def save(self, object file):
 
         cdef uint32_t i, j
@@ -722,7 +725,7 @@ cdef class MeshData(KDTreeCore):
         close = False
 
         # treat as a filename if a stream is not supplied
-        if not isinstance(file, io.BytesIO):
+        if not isinstance(file, io.IOBase):
             file = open(file, mode="wb")
             close = True
 
@@ -768,22 +771,23 @@ cdef class MeshData(KDTreeCore):
                 file.write(struct.pack("<I", self.triangles[i, j]))
 
         # write kd-tree
-        #super().save(file)
+        super().save(file)
 
         # if we opened a file, we should close it
         if close:
             file.close()
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def load(self, object file):
 
         cdef:
             uint32_t i, j
-            MeshData m
 
         close = False
 
         # treat as a filename if a stream is not supplied
-        if not isinstance(file, io.BytesIO):
+        if not isinstance(file, io.IOBase):
             file = open(file, mode="rb")
             close = True
 
@@ -799,12 +803,9 @@ cdef class MeshData(KDTreeCore):
         if major_version != RSM_VERSION_MAJOR or minor_version != RSM_VERSION_MINOR:
             raise ValueError("Unsupported Raysect mesh version.")
 
-        # create mesh instance
-        m = MeshData.__new__(MeshData)
-
         # mesh setting flags
-        m.smoothing = struct.unpack("<?", file.read(1))[0]
-        m.closed = struct.unpack("<?", file.read(1))[0]
+        self.smoothing = struct.unpack("<?", file.read(1))[0]
+        self.closed = struct.unpack("<?", file.read(1))[0]
         _ = struct.unpack("<?", file.read(1))[0]    # kdtree option, ignore for now (to be implemented)
 
         # item counts
@@ -813,19 +814,19 @@ cdef class MeshData(KDTreeCore):
         num_triangles = struct.unpack("<I", file.read(4))[0]
 
         # read vertices
-        m.vertices = zeros((num_vertices, 3), dtype=float32)
+        self.vertices = zeros((num_vertices, 3), dtype=float32)
         for i in range(num_vertices):
             for j in range(3):
-                m.vertices[i, j] = struct.unpack("<f", file.read(4))[0]
+                self.vertices[i, j] = struct.unpack("<f", file.read(4))[0]
 
         # read vertex normals
         if num_vertex_normals > 0:
-            m.vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
+            self.vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
             for i in range(num_vertex_normals):
                 for j in range(3):
-                    m.vertex_normals[i, j] = struct.unpack("<f", file.read(4))[0]
+                    self.vertex_normals[i, j] = struct.unpack("<f", file.read(4))[0]
         else:
-            m.vertex_normals = None
+            self.vertex_normals = None
 
         # read triangles
         width = 3
@@ -833,23 +834,23 @@ cdef class MeshData(KDTreeCore):
             # we have vertex normals for each triangle
             width += 3
 
-        m.triangles = zeros((num_triangles, width), dtype=uint32)
+        self.triangles = zeros((num_triangles, width), dtype=uint32)
         for i in range(num_triangles):
             for j in range(width):
-                m.triangles[i, j] = struct.unpack("<I", file.read(4))[0]
+                self.triangles[i, j] = struct.unpack("<I", file.read(4))[0]
 
         # read kdtree
-        #super().load(file)
+        super().load(file)
 
         # generate face normals
-        m._generate_face_normals()
+        self._generate_face_normals()
 
         # initial hit data
-        m._u = -1.0
-        m._v = -1.0
-        m._w = -1.0
-        m._t = INFINITY
-        m._i = NO_INTERSECTION
+        self._u = -1.0
+        self._v = -1.0
+        self._w = -1.0
+        self._t = INFINITY
+        self._i = NO_INTERSECTION
 
         # if we opened a file, we should close it
         if close:
