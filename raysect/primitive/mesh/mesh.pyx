@@ -32,7 +32,7 @@
 import io
 import pickle
 import struct
-from numpy import array, float32, uint32, zeros
+from numpy import array, float32, int32, zeros
 
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.affinematrix cimport AffineMatrix
@@ -43,7 +43,8 @@ from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
 from libc.math cimport fabs, log, ceil
-from numpy cimport ndarray, float32_t, uint32_t
+from numpy cimport ndarray, float32_t, int32_t
+from cpython.bytes cimport PyBytes_AsString
 cimport cython
 
 """
@@ -87,6 +88,7 @@ DEF RSM_VERSION_MINOR = 0
 # TODO: fire exceptions if degenerate triangles are found and tolerant mode is not enabled (the face normal call will fail @ normalisation)
 # TODO: tidy up the internal storage of triangles - separate the triangle reference arrays for vertices, normals etc...
 # TODO: the following code really is a bit opaque, needs a general tidy up
+# TODO: move load/save code to C?
 
 cdef class MeshData(KDTreeCore):
     """
@@ -100,13 +102,13 @@ cdef class MeshData(KDTreeCore):
         float32_t[:, ::1] vertices
         float32_t[:, ::1] vertex_normals
         float32_t[:, ::1] face_normals
-        uint32_t[:, ::1] triangles
+        int32_t[:, ::1] triangles
         public bint smoothing
         public bint closed
-        int _ix, _iy, _iz
+        int32_t _ix, _iy, _iz
         float _sx, _sy, _sz
         float _u, _v, _w, _t
-        int _i
+        int32_t _i
 
     def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, bint closed=True, bint tolerant=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
@@ -115,7 +117,7 @@ cdef class MeshData(KDTreeCore):
 
         # convert to numpy arrays for internal use
         vertices = array(vertices, dtype=float32)
-        triangles = array(triangles, dtype=uint32)
+        triangles = array(triangles, dtype=int32)
         if normals is not None:
             vertex_normals = array(normals, dtype=float32)
         else:
@@ -180,9 +182,9 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            uint32_t[:, ::1] triangles
-            int i, valid
-            int i1, i2, i3
+            int32_t[:, ::1] triangles
+            int32_t i, valid
+            int32_t i1, i2, i3
             Point p1, p2, p3
             Vector v1, v2, v3
 
@@ -234,9 +236,9 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            uint32_t[:, ::1] triangles
-            int i
-            int i1, i2, i3
+            int32_t[:, ::1] triangles
+            int32_t i
+            int32_t i1, i2, i3
             Point p1, p2, p3
             Vector v1, v2, v3
 
@@ -265,7 +267,7 @@ cdef class MeshData(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef BoundingBox _generate_bounding_box(self, int i):
+    cdef BoundingBox _generate_bounding_box(self, int32_t i):
         """
         Generates a bounding box for the specified triangle.
 
@@ -278,8 +280,8 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            uint32_t[:, ::1] triangles
-            int i1, i2, i3
+            int32_t[:, ::1] triangles
+            int32_t i1, i2, i3
             BoundingBox bbox
 
         # assign locally to avoid repeated memory view validity checks
@@ -325,7 +327,7 @@ cdef class MeshData(KDTreeCore):
 
         # convert lists back to numpy arrays and assign to memory views
         self.vertices = array(vertices, dtype=float32)
-        self.triangles = array(triangles, dtype=uint32)
+        self.triangles = array(triangles, dtype=int32)
         if normals is not None:
             self.vertex_normals = array(normals, dtype=float32)
         else:
@@ -357,14 +359,14 @@ cdef class MeshData(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
+    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
 
         cdef:
             float hit_data[4]
-            int count, item, index
+            int32_t count, item, index
             double distance
             double u, v, w, t
-            int triangle, closest_triangle
+            int32_t triangle, closest_triangle
 
         # unpack leaf data
         count = self._nodes[id].count
@@ -410,7 +412,7 @@ cdef class MeshData(KDTreeCore):
         #  Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
 
         cdef:
-            int ix, iy, iz
+            int32_t ix, iy, iz
             float rdz
             float sx, sy, sz
 
@@ -452,7 +454,7 @@ cdef class MeshData(KDTreeCore):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _hit_triangle(self, int i, Ray ray, float[4] hit_data):
+    cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data):
 
         # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
@@ -460,9 +462,9 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            uint32_t[:, ::1] triangles
-            int i1, i2, i3
-            int ix, iy, iz
+            int32_t[:, ::1] triangles
+            int32_t i1, i2, i3
+            int32_t ix, iy, iz
             float sx, sy, sz
             float[3] v1, v2, v3
             float x1, x2, x3
@@ -563,7 +565,7 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             double t
-            int triangle
+            int32_t triangle
             Point hit_point, inside_point, outside_point
             Normal face_normal, normal
             bint exiting
@@ -619,10 +621,10 @@ cdef class MeshData(KDTreeCore):
         """
 
         cdef:
-            uint32_t[:, ::1] triangles
+            int32_t[:, ::1] triangles
             float32_t[:, ::1] vertex_normals
             float32_t[:, ::1] face_normals
-            int n1, n2, n3
+            int32_t n1, n2, n3
 
         # assign locally to avoid repeated memory view validity checks
         vertex_normals = self.vertex_normals
@@ -698,7 +700,7 @@ cdef class MeshData(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            int i
+            int32_t i
             BoundingBox bbox
             Point vertex
 
@@ -720,7 +722,11 @@ cdef class MeshData(KDTreeCore):
     @cython.wraparound(False)
     def save(self, object file):
 
-        cdef uint32_t i, j
+        cdef:
+            int32_t i, j
+            float32_t[:, ::1] vertices
+            float32_t[:, ::1] vertex_normals
+            int32_t[:, ::1] triangles
 
         close = False
 
@@ -728,6 +734,11 @@ cdef class MeshData(KDTreeCore):
         if not isinstance(file, io.IOBase):
             file = open(file, mode="wb")
             close = True
+
+        # hold local references to avoid repeated memory view object checks
+        vertices = self.vertices
+        vertex_normals = self.vertex_normals
+        triangles = self.triangles
 
         # write header
         file.write(RSM_IDENTIFIER)
@@ -740,35 +751,35 @@ cdef class MeshData(KDTreeCore):
         file.write(struct.pack("<?", True))    # kdtree in file (hardcoded for now, will be an option)
 
         # item counts
-        file.write(struct.pack("<I", self.vertices.shape[0]))
+        file.write(struct.pack("<I", vertices.shape[0]))
 
         if self.vertex_normals is not None:
-            file.write(struct.pack("<I", self.vertex_normals.shape[0]))
+            file.write(struct.pack("<I", vertex_normals.shape[0]))
         else:
             file.write(struct.pack("<I", 0))
 
-        file.write(struct.pack("<I", self.triangles.shape[0]))
+        file.write(struct.pack("<I", triangles.shape[0]))
 
         # write vertices
-        for i in range(self.vertices.shape[0]):
+        for i in range(vertices.shape[0]):
             for j in range(3):
-                file.write(struct.pack("<f", self.vertices[i, j]))
+                file.write(struct.pack("<f", vertices[i, j]))
 
         # write normals
-        if self.vertex_normals is not None:
-            for i in range(self.vertex_normals.shape[0]):
+        if vertex_normals is not None:
+            for i in range(vertex_normals.shape[0]):
                 for j in range(3):
-                    file.write(struct.pack("<f", self.vertex_normals[i, j]))
+                    file.write(struct.pack("<f", vertex_normals[i, j]))
 
         # triangles
         width = 3
-        if self.vertex_normals is not None:
+        if vertex_normals is not None:
             # we have vertex normals for each triangle
             width += 3
 
-        for i in range(self.triangles.shape[0]):
+        for i in range(triangles.shape[0]):
             for j in range(width):
-                file.write(struct.pack("<I", self.triangles[i, j]))
+                file.write(struct.pack("<I", triangles[i, j]))
 
         # write kd-tree
         super().save(file)
@@ -782,7 +793,10 @@ cdef class MeshData(KDTreeCore):
     def load(self, object file):
 
         cdef:
-            uint32_t i, j
+            int32_t i, j
+            float32_t[:, ::1] vertices
+            float32_t[:, ::1] vertex_normals
+            int32_t[:, ::1] triangles
 
         close = False
 
@@ -814,17 +828,19 @@ cdef class MeshData(KDTreeCore):
         num_triangles = struct.unpack("<I", file.read(4))[0]
 
         # read vertices
-        self.vertices = zeros((num_vertices, 3), dtype=float32)
+        vertices = zeros((num_vertices, 3), dtype=float32)
         for i in range(num_vertices):
             for j in range(3):
-                self.vertices[i, j] = struct.unpack("<f", file.read(4))[0]
+                vertices[i, j] = (<float32_t *> PyBytes_AsString(file.read(sizeof(float32_t))))[0]
+        self.vertices = vertices
 
         # read vertex normals
         if num_vertex_normals > 0:
-            self.vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
+            vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
             for i in range(num_vertex_normals):
                 for j in range(3):
-                    self.vertex_normals[i, j] = struct.unpack("<f", file.read(4))[0]
+                    vertex_normals[i, j] = (<float32_t *> PyBytes_AsString(file.read(sizeof(float32_t))))[0]
+            self.vertex_normals = vertex_normals
         else:
             self.vertex_normals = None
 
@@ -834,10 +850,11 @@ cdef class MeshData(KDTreeCore):
             # we have vertex normals for each triangle
             width += 3
 
-        self.triangles = zeros((num_triangles, width), dtype=uint32)
+        triangles = zeros((num_triangles, width), dtype=int32)
         for i in range(num_triangles):
             for j in range(width):
-                self.triangles[i, j] = struct.unpack("<I", file.read(4))[0]
+                triangles[i, j] = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
+        self.triangles = triangles
 
         # read kdtree
         super().load(file)

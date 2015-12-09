@@ -32,26 +32,27 @@
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.classes cimport Ray
 from raysect.core.math.point cimport Point
+from libc.stdint cimport int32_t
 
 # c-structure that represent a kd-tree node
 cdef struct kdnode:
 
-    int type        # LEAF, X_AXIS, Y_AXIS, Z_AXIS
+    int32_t type        # LEAF, X_AXIS, Y_AXIS, Z_AXIS
     double split    # split position
-    int count       # upper index (BRANCH), item count (LEAF)
-    int *items      # array of item ids
+    int32_t count       # upper index (BRANCH), item count (LEAF)
+    int32_t *items      # array of item ids
 
 
 cdef struct edge:
 
-        bint is_upper_edge
-        double value
+    bint is_upper_edge
+    double value
 
 
 cdef class Item:
 
     cdef:
-        readonly int id
+        readonly int32_t id
         readonly BoundingBox box
 
 
@@ -59,19 +60,19 @@ cdef class KDTreeCore:
 
     cdef:
         kdnode *_nodes
-        int _allocated_nodes
-        int _next_node
+        int32_t _allocated_nodes
+        int32_t _next_node
         readonly BoundingBox bounds
-        int _max_depth
-        int _min_items
+        int32_t _max_depth
+        int32_t _min_items
         double _hit_cost
         double _empty_bonus
 
-    cdef int _build(self, list items, BoundingBox bounds, int depth=*)
+    cdef int32_t _build(self, list items, BoundingBox bounds, int depth=*)
 
     cdef tuple _split(self, list items, BoundingBox bounds)
 
-    cdef void _get_edges(self, list items, int axis, int *num_edges, edge **edges_ptr)
+    cdef void _get_edges(self, list items, int axis, int32_t *num_edges, edge **edges_ptr)
 
     cdef void _free_edges(self, edge **edges_ptr)
 
@@ -79,41 +80,41 @@ cdef class KDTreeCore:
 
     cdef BoundingBox _get_upper_bounds(self, BoundingBox bounds, double split, int axis)
 
-    cdef int _new_leaf(self, list ids)
+    cdef int32_t _new_leaf(self, list ids)
 
-    cdef int _new_branch(self, tuple split_solution, int depth)
+    cdef int32_t _new_branch(self, tuple split_solution, int depth)
 
-    cdef int _new_node(self)
+    cdef int32_t _new_node(self)
 
     cpdef bint hit(self, Ray ray)
 
     cdef inline bint _hit(self, Ray ray)
 
-    cdef inline bint _hit_node(self, int id, Ray ray, double min_range, double max_range)
+    cdef inline bint _hit_node(self, int32_t id, Ray ray, double min_range, double max_range)
 
-    cdef inline bint _hit_branch(self, int id, Ray ray, double min_range, double max_range)
+    cdef inline bint _hit_branch(self, int32_t id, Ray ray, double min_range, double max_range)
 
-    cdef bint _hit_leaf(self, int id, Ray ray, double max_range)
+    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range)
 
     cpdef list contains(self, Point point)
 
     cdef inline list _contains(self, Point point)
 
-    cdef inline list _contains_node(self, int id, Point point)
+    cdef inline list _contains_node(self, int32_t id, Point point)
 
-    cdef inline list _contains_branch(self, int id, Point point)
+    cdef inline list _contains_branch(self, int32_t id, Point point)
 
-    cdef list _contains_leaf(self, int id, Point point)
+    cdef list _contains_leaf(self, int32_t id, Point point)
 
     cdef void _reset(self)
 
 
 cdef class KDTree(KDTreeCore):
 
-    cdef bint _hit_leaf(self, int id, Ray ray, double max_range)
+    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range)
 
     cpdef bint _hit_items(self, list items, Ray ray, double max_range)
 
-    cdef list _contains_leaf(self, int id, Point point)
+    cdef list _contains_leaf(self, int32_t id, Point point)
 
     cpdef list _contains_items(self, list items, Point point)

@@ -29,14 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: switch to explicit types uint32_t etc...
-
 import io
 import struct
 
 from raysect.core.acceleration.boundingbox cimport new_boundingbox
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+from cpython.bytes cimport PyBytes_AsString
 from libc.stdlib cimport qsort
+from libc.stdint cimport int32_t
 from libc.math cimport log, ceil
 cimport cython
 
@@ -47,7 +47,7 @@ DEF INITIAL_NODE_COUNT = 128
 DEF ROOT_NODE = 0
 
 # node types
-DEF LEAF = -1
+DEF LEAF = -1    # leaf node
 DEF X_AXIS = 0  # branch, x-axis split
 DEF Y_AXIS = 1  # branch, y-axis split
 DEF Z_AXIS = 2  # branch, z-axis split
@@ -69,7 +69,7 @@ cdef class Item:
     :param box: A BoundingBox object defining the item's spatial extent.
     """
 
-    def __init__(self, int id, BoundingBox box):
+    def __init__(self, int32_t id, BoundingBox box):
 
         self.id = id
         self.box = box
@@ -193,7 +193,7 @@ cdef class KDTreeCore:
         # decode settings
         self._max_depth, self._min_items, self._hit_cost, self._empty_bonus = settings
 
-    cdef int _build(self, list items, BoundingBox bounds, int depth=0):
+    cdef int32_t _build(self, list items, BoundingBox bounds, int depth=0):
         """
         Extends the kd-Tree by creating a new node.
 
@@ -238,8 +238,8 @@ cdef class KDTreeCore:
             double best_cost, best_split
             int best_axis
             edge *edges = NULL
-            int index, num_edges
-            int lower_count, upper_count
+            int32_t index, num_edges
+            int32_t lower_count, upper_count
             double recip_total_sa, lower_sa, upper_sa
             list lower_items, upper_items
             Item item
@@ -339,7 +339,7 @@ cdef class KDTreeCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _get_edges(self, list items, int axis, int *num_edges, edge **edges_ptr):
+    cdef void _get_edges(self, list items, int axis, int32_t *num_edges, edge **edges_ptr):
         """
         Generates a sorted list of edges along the specified axis.
 
@@ -350,7 +350,7 @@ cdef class KDTreeCore:
         """
 
         cdef:
-            int count, index, lower_index, upper_index
+            int32_t count, index, lower_index, upper_index
             Item item
             edge *edges
 
@@ -422,7 +422,7 @@ cdef class KDTreeCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int _new_leaf(self, list items):
+    cdef int32_t _new_leaf(self, list items):
         """
         Adds a new leaf node to the kd-Tree and populates it.
 
@@ -430,7 +430,7 @@ cdef class KDTreeCore:
         :return: The id (index) of the generated node.
         """
 
-        cdef int id, count, index
+        cdef int32_t id, count, index
 
         count = len(items)
 
@@ -438,7 +438,7 @@ cdef class KDTreeCore:
         self._nodes[id].type = LEAF
         self._nodes[id].count = count
         if count > 0:
-            self._nodes[id].items = <int *> PyMem_Malloc(sizeof(int) * count)
+            self._nodes[id].items = <int32_t *> PyMem_Malloc(sizeof(int32_t) * count)
             if not self._nodes[id].items:
                 raise MemoryError()
 
@@ -449,7 +449,7 @@ cdef class KDTreeCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int _new_branch(self, tuple split_solution, int depth):
+    cdef int32_t _new_branch(self, tuple split_solution, int depth):
         """
         Adds a new branch node to the kd-Tree and populates it.
 
@@ -459,7 +459,7 @@ cdef class KDTreeCore:
         """
 
         cdef:
-            int id, upper_id
+            int32_t id, upper_id
             int axis
             double split
             list lower_items, upper_items
@@ -488,7 +488,7 @@ cdef class KDTreeCore:
 
         return id
 
-    cdef int _new_node(self):
+    cdef int32_t _new_node(self):
         """
         Adds a new, empty node to the kd-Tree.
 
@@ -497,7 +497,7 @@ cdef class KDTreeCore:
 
         cdef:
             kdnode *new_nodes = NULL
-            int id, new_size
+            int32_t id, new_size
 
         # have we exhausted the allocated memory?
         if self._next_node == self._allocated_nodes:
@@ -547,7 +547,7 @@ cdef class KDTreeCore:
         # start exploration of kd-Tree
         return self._hit_node(ROOT_NODE, ray, min_range, max_range)
 
-    cdef inline bint _hit_node(self, int id, Ray ray, double min_range, double max_range):
+    cdef inline bint _hit_node(self, int32_t id, Ray ray, double min_range, double max_range):
         """
         Dispatches hit calculation to the relevant node handler.
 
@@ -564,7 +564,7 @@ cdef class KDTreeCore:
             return self._hit_branch(id, ray, min_range, max_range)
 
     @cython.cdivision(True)
-    cdef inline bint _hit_branch(self, int id, Ray ray, double min_range, double max_range):
+    cdef inline bint _hit_branch(self, int32_t id, Ray ray, double min_range, double max_range):
         """
         Traverses a kd-Tree branch node along the ray path.
 
@@ -579,10 +579,10 @@ cdef class KDTreeCore:
             int axis
             double split
             bint below_split
-            int lower_id, upper_id
+            int32_t lower_id, upper_id
             double origin, direction
             double plane_distance
-            int near_id, far_id
+            int32_t near_id, far_id
             bint hit
 
         # unpack branch kdnode
@@ -640,7 +640,7 @@ cdef class KDTreeCore:
             else:
                 return self._hit_node(far_id, ray, plane_distance, max_range)
 
-    cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
+    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
         """
         Tests each item in the kd-Tree leaf node to identify if an intersection occurs.
 
@@ -689,7 +689,7 @@ cdef class KDTreeCore:
         # start search
         return self._contains_node(ROOT_NODE, point)
 
-    cdef inline list _contains_node(self, int id, Point point):
+    cdef inline list _contains_node(self, int32_t id, Point point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -703,7 +703,7 @@ cdef class KDTreeCore:
         else:
             return self._contains_branch(id, point)
 
-    cdef inline list _contains_branch(self, int id, Point point):
+    cdef inline list _contains_branch(self, int32_t id, Point point):
         """
         Locates the kd-Tree node containing the point.
 
@@ -715,7 +715,7 @@ cdef class KDTreeCore:
         cdef:
             int axis
             double split
-            int lower_id, upper_id
+            int32_t lower_id, upper_id
 
         # unpack branch kdnode
         # notes:
@@ -732,7 +732,7 @@ cdef class KDTreeCore:
         else:
             return self._contains_node(upper_id, point)
 
-    cdef list _contains_leaf(self, int id, Point point):
+    cdef list _contains_leaf(self, int32_t id, Point point):
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -760,7 +760,7 @@ cdef class KDTreeCore:
         """
 
         cdef:
-            int index
+            int32_t index
             kdnode *node
 
         # free all leaf node item arrays
@@ -804,7 +804,7 @@ cdef class KDTreeCore:
     def save(self, file):
 
         cdef:
-            int id, item
+            int32_t id, item
 
         close = False
 
@@ -814,11 +814,11 @@ cdef class KDTreeCore:
             close = True
 
         # write header
-        file.write(struct.pack("<i", self._max_depth))
-        file.write(struct.pack("<i", self._min_items))
+        file.write(struct.pack("<I", self._max_depth))
+        file.write(struct.pack("<I", self._min_items))
         file.write(struct.pack("<d", self._hit_cost))
         file.write(struct.pack("<d", self._empty_bonus))
-        file.write(struct.pack("<i", self._next_node))  # number of nodes
+        file.write(struct.pack("<I", self._next_node))  # number of nodes
 
         # loop over nodes
         for id in range(self._next_node):
@@ -826,17 +826,17 @@ cdef class KDTreeCore:
             if self._nodes[id].type == LEAF:
 
                 # leaf node
-                file.write(struct.pack("<i", self._nodes[id].type))
-                file.write(struct.pack("<i", self._nodes[id].count))
+                file.write(struct.pack("<I", self._nodes[id].type))
+                file.write(struct.pack("<I", self._nodes[id].count))
                 for item in range(self._nodes[id].count):
-                    file.write(struct.pack("<i", self._nodes[id].items[item]))
+                    file.write(struct.pack("<I", self._nodes[id].items[item]))
 
             else:
 
                 # branch node
-                file.write(struct.pack("<i", self._nodes[id].type))
+                file.write(struct.pack("<I", self._nodes[id].type))
                 file.write(struct.pack("<d", self._nodes[id].split))
-                file.write(struct.pack("<i", self._nodes[id].count))
+                file.write(struct.pack("<I", self._nodes[id].count))
 
         # if we opened a file, we should close it
         if close:
@@ -845,7 +845,7 @@ cdef class KDTreeCore:
     def load(self, file):
 
         cdef:
-            int id, item
+            int32_t id, item
 
         # free existing nodes
         self._reset()
@@ -857,11 +857,11 @@ cdef class KDTreeCore:
             close = True
 
         # read header
-        self._max_depth = struct.unpack("<i", file.read(4))[0]
-        self._min_items = struct.unpack("<i", file.read(4))[0]
+        self._max_depth = struct.unpack("<I", file.read(4))[0]
+        self._min_items = struct.unpack("<I", file.read(4))[0]
         self._hit_cost = struct.unpack("<d", file.read(8))[0]
         self._empty_bonus = struct.unpack("<d", file.read(8))[0]
-        self._next_node = struct.unpack("<i", file.read(4))[0]    # number of nodes
+        self._next_node = struct.unpack("<I", file.read(4))[0]    # number of nodes
         self._allocated_nodes = self._next_node
 
         # allocate nodes
@@ -872,27 +872,27 @@ cdef class KDTreeCore:
         # load nodes
         for id in range(self._next_node):
 
-            self._nodes[id].type = struct.unpack("<i", file.read(4))[0]
+            self._nodes[id].type = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
             if self._nodes[id].type == LEAF:
 
                 # leaf node
-                self._nodes[id].count = struct.unpack("<i", file.read(4))[0]
+                self._nodes[id].count = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
                 if self._nodes[id].count > 0:
 
                     # allocate items
-                    self._nodes[id].items = <int *> PyMem_Malloc(sizeof(int) * self._nodes[id].count)
+                    self._nodes[id].items = <int32_t *> PyMem_Malloc(sizeof(int32_t) * self._nodes[id].count)
                     if not self._nodes[id].items:
                         raise MemoryError()
 
                     # read items
                     for item in range(self._nodes[id].count):
-                        self._nodes[id].items[item] = struct.unpack("<i", file.read(4))[0]
+                        self._nodes[id].items[item] = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
 
             else:
 
                 # branch node
-                self._nodes[id].split = struct.unpack("<d", file.read(8))[0]
-                self._nodes[id].count = struct.unpack("<i", file.read(4))[0]
+                self._nodes[id].split = (<double *> PyBytes_AsString(file.read(sizeof(double))))[0]
+                self._nodes[id].count = (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
 
         # if we opened a file, we should close it
         if close:
@@ -913,7 +913,7 @@ cdef class KDTree(KDTreeCore):
     :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
     """
 
-    cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
+    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
         """
         Wraps the C-level API so users can derive a class from KDTree using Python.
 
@@ -956,7 +956,7 @@ cdef class KDTree(KDTreeCore):
         raise NotImplementedError("KDTree Virtual function _hit_items() has not been implemented.")
 
 
-    cdef list _contains_leaf(self, int id, Point point):
+    cdef list _contains_leaf(self, int32_t id, Point point):
         """
         Wraps the C-level API so users can derive a class from KDTree using Python.
 
