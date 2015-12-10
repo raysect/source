@@ -81,7 +81,6 @@ DEF N3 = 5
 DEF NO_INTERSECTION = -1
 
 # raysect mesh format constants
-DEF RSM_IDENTIFIER = b"RSM"
 DEF RSM_VERSION_MAJOR = 1
 DEF RSM_VERSION_MINOR = 0
 
@@ -740,7 +739,7 @@ cdef class MeshData(KDTreeCore):
         triangles = self.triangles
 
         # write header
-        file.write(RSM_IDENTIFIER)
+        file.write(b"RSM")
         file.write(struct.pack("<B", RSM_VERSION_MAJOR))
         file.write(struct.pack("<B", RSM_VERSION_MINOR))
 
@@ -810,7 +809,7 @@ cdef class MeshData(KDTreeCore):
         minor_version = self._read_uint8(file)
 
         # validate
-        if identifier != RSM_IDENTIFIER:
+        if identifier != b"RSM":
             raise ValueError("Specified file is not a Raysect mesh file.")
 
         if major_version != RSM_VERSION_MAJOR or minor_version != RSM_VERSION_MINOR:
