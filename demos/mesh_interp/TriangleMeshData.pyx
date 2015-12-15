@@ -2,6 +2,7 @@
 from scipy.spatial import KDTree
 import numpy as np
 cimport numpy as cnp
+import matplotlib.pyplot as plt
 
 
 cdef class TriangularDataMesh2D:
@@ -9,27 +10,30 @@ cdef class TriangularDataMesh2D:
     An abstract data structure for interpolating data points lying on a triangular mesh.
     """
 
-    def __init__(self, vertices, vertex_data, triangles, data_names):
+    def __init__(self, vertex_coords, vertex_data, triangles, data_names, kdtree_search=True):
         """
-        :param vertices:
-        :param vertex_data:
-        :param triangles:
-        :param data_names:
-        :return:
+        :param ndarray vertex_coords: An array of vertex coordinates with shape (num of vertices, 2). For each vertex
+        there must be a (u, v) coordinate.
+        :param ndarray vertex_data: An array of data points at each vertex with shape (num of vertices, num of
+        data points).
+        :param ndarray triangles: An array of triangles with shape (num of triangles, 3). For each triangle, there must
+        be three indicies that identify the three corresponding vertices in vertex_coords that make up this triangle.
+        :param list data_names: A list of strings that identify the data names for each data type in vertex_data.
         """
 
-        self.vertices = np.zeros((vertices.shape[0]), dtype=object)
-        for i, vertex in enumerate(vertices):
-            self.vertices[i] = _TriangleMeshVertex(vertex[0], vertex[1], i)
+        self.vertices = np.zeros((vertex_coords.shape[0]), dtype=object)
+        for index, vertex in enumerate(vertex_coords):
+            self.vertices[index] = _TriangleMeshVertex(vertex[0], vertex[1], index)
 
         self.vertex_data = vertex_data.copy()
 
         self.triangles = np.zeros((triangles.shape[0]), dtype=object)
         for i, triangle in enumerate(triangles):
             try:
-                v1 = _TriangleMeshVertex._all_vertices[tuple(triangle[0])]
-                v2 = _TriangleMeshVertex._all_vertices[tuple(triangle[1])]
-                v3 = _TriangleMeshVertex._all_vertices[tuple(triangle[2])]
+                print("triangle - {}".format(triangle))
+                v1 = _TriangleMeshVertex.all_vertices[triangle[0]]
+                v2 = _TriangleMeshVertex.all_vertices[triangle[1]]
+                v3 = _TriangleMeshVertex.all_vertices[triangle[2]]
             except IndexError:
                 raise ValueError("vertex could not be found in vertex list")
 
@@ -44,22 +48,64 @@ cdef class TriangularDataMesh2D:
         for i, name in enumerate(data_names):
             self.data_names[name] = i
 
-        unique_vertices = [(vertex.u, vertex.v) for vertex in _TriangleMeshVertex.all_verticies()]
+        unique_vertices = [(vertex.u, vertex.v) for vertex in _TriangleMeshVertex.all_vertices]
 
         # TODO - implement KD-tree here
         # construct KD-tree from vertices
         self.kdtree = KDTree(unique_vertices)
+        self.kdtree_search = kdtree_search
 
     def get_data_function(self, name):
         data_axis = self.data_names[name]
         return InterpolatedMeshFunction(self, data_axis)
+
+    cpdef _TriangleMeshTriangle find_triangle_containing(self, double u, double v):
+        if self.kdtree_search:
+            return self.kdtree_method(u, v)
+        else:
+            return self.brute_force_method(u, v)
+
+    cdef _TriangleMeshTriangle brute_force_method(self, double u, double v):
+        cdef _TriangleMeshTriangle triangle
+        for triangle in self.triangles:
+            if triangle.contains(u, v):
+                return triangle
+        return None
+
+    cdef _TriangleMeshTriangle kdtree_method(self, double u, double v):
+        cdef:
+            long[:] i_closest
+            double[:] dist
+            _TriangleMeshVertex closest_vertex
+            _TriangleMeshTriangle triangle
+
+        # Find closest vertex through KD-tree
+        dist, i_closest = self.kdtree.query((u, v), k=10)
+        closest_vertex = self.vertices[i_closest[0]]
+
+        # cycle through all triangles connected to this vertex
+        for triangle in closest_vertex.triangles:
+            if triangle.contains(u, v):
+                return triangle
+        return None
+
+    def plot_mesh(self):
+        plt.figure()
+        for triangle in self.triangles:
+            v1 = triangle.v1
+            v2 = triangle.v2
+            v3 = triangle.v3
+            plt.plot([v1.u, v2.u, v3.u, v1.u], [v1.v, v2.v, v3.v, v1.v], color='b')
+
+        plt.axis('equal')
+        plt.show()
 
 
 cdef class _TriangleMeshVertex:
     """
     An individual vertex of the mesh.
     """
-    _all_vertices = {}
+    all_vertices = []
 
     def __init__(self, u, v, index):
 
@@ -68,15 +114,15 @@ cdef class _TriangleMeshVertex:
         self.index = index
         self.triangles = []
 
-        _TriangleMeshVertex._all_vertices[(u, v)] = self
+        _TriangleMeshVertex.all_vertices.append(self)
 
     def __iter__(self):
         for tri in self.triangles:
             yield(tri)
 
-    @classmethod
-    def all_verticies(cls):
-        return cls._all_vertices.values()
+    def __repr__(self):
+        repr_str = "_TriangleMeshVertex => ({}, {})".format(self.u, self.v)
+        return repr_str
 
 
 cdef class _TriangleMeshTriangle:
@@ -97,10 +143,7 @@ cdef class _TriangleMeshTriangle:
         repr_str += "v3 => ({}, {})".format(self.v3.u, self.v3.v)
         return repr_str
 
-    def __call__(self, double x, double y, vertexdata):
-        return self.evaluate(x, y, vertexdata)
-
-    cdef double evaluate(self, double x, double y, cnp.float64_t[:] vertexdata):
+    cdef double evaluate(self, double x, double y, TriangularDataMesh2D mesh, int data_axis):
 
         cdef:
             double alpha, beta, gamma, alpha_data, beta_data, gamma_data
@@ -110,15 +153,19 @@ cdef class _TriangleMeshTriangle:
         v2 = self.v2
         v3 = self.v3
 
-        alpha_data = vertexdata[v1.index]
-        beta_data = vertexdata[v2.index]
-        gamma_data = vertexdata[v3.index]
+        alpha_data = mesh.vertex_data[v1.index, data_axis]
+        beta_data = mesh.vertex_data[v2.index, data_axis]
+        gamma_data = mesh.vertex_data[v3.index, data_axis]
 
         alpha = ((v2.v - v3.v)*(x - v3.u) + (v3.u - v2.u)*(y - v3.v)) / \
                 ((v2.v - v3.v)*(v1.u - v3.u) + (v3.u - v2.u)*(v1.v - v3.v))
         beta = ((v3.v - v1.v)*(x - v3.u) + (v1.u - v3.u)*(y - v3.v)) /\
                ((v2.v - v3.v)*(v1.u - v3.u) + (v3.u - v2.u)*(v1.v - v3.v))
         gamma = 1.0 - alpha - beta
+
+        print("{} - {} - {}".format(v1, v1.index, alpha_data, alpha))
+        print("{} - {} - {}".format(v2, v2.index, beta_data, beta))
+        print("{} - {} - {}".format(v3, v3.index, gamma_data, gamma))
 
         return alpha * alpha_data + beta * beta_data + gamma * gamma_data
 
@@ -133,9 +180,12 @@ cdef class _TriangleMeshTriangle:
         :return True or False.
         """
         cdef:
-            double v1, v2, v3, alpha, beta, gamma
+            double alpha, beta, gamma
+            _TriangleMeshVertex v1, v2, v3
 
-        v1, v2, v3 = self
+        v1 = self.v1
+        v2 = self.v2
+        v3 = self.v3
 
         # Compute barycentric coordinates
         alpha = ((v2.v - v3.v)*(px - v3.u) + (v3.u - v2.u)*(py - v3.v)) / \
@@ -156,35 +206,23 @@ cdef class InterpolatedMeshFunction(Function2D):
 
     def __init__(self, mesh, data_axis):
         self.mesh = mesh
-        self.axis = data_axis
-
+        self.data_axis = data_axis
 
     def __call__(self, double x, double y):
         return self.evaluate(x, y)
 
     cdef double evaluate(self, double x, double y) except *:
+
         cdef:
-            int i_closest
-            double dist
-            _TriangleMeshVertex closest_vertex
             _TriangleMeshTriangle triangle
 
-        # Find closest vertex through KD-tree
-        dist, i_closest = self.mesh.kdtree.query((x, y))
-        closest_vertex = self.mesh.vertices[i_closest]
+        triangle = self.mesh.find_triangle_containing(x, y)
 
-        # cycle through all triangles connected to this vertex
-        for triangle in closest_vertex.triangles:
-
-            if triangle.contains(x, y):
-
-                print("##############################")
-                print("THIS BIT RUNS")
-                print("##############################")
-
-                # get memory view of vertex data for this parameter and evaluate
-                vertexdata = self.mesh.vertex_data[self.axis, :]
-                print(triangle.evaluate(x, y, vertexdata))
-                return triangle.evaluate(x, y, vertexdata)
+        if triangle:
+            print("##############################")
+            print("THIS BIT RUNS")
+            print("##############################")
+            print(triangle.evaluate(x, y, self.mesh, self.data_axis))
+            return triangle.evaluate(x, y, self.mesh, self.data_axis)
 
         return 0.0
