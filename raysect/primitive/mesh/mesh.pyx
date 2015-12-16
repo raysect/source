@@ -176,7 +176,7 @@ cdef class MeshData(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _filter_triangles(self):
+    cdef object _filter_triangles(self):
 
         cdef:
             float32_t[:, ::1] vertices
@@ -222,7 +222,7 @@ cdef class MeshData(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _generate_face_normals(self):
+    cdef object _generate_face_normals(self):
         """
         Calculate the triangles face normals from the vertices.
 

@@ -31,8 +31,11 @@ diamond = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0), 
 world = World()
 
 # BUNNY
-mesh = import_obj("./resources/stanford_bunny.obj", scaling=1, parent=world,
-                  transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)  # material=schott("LF5G19")
+# mesh = import_obj("./resources/stanford_bunny.obj", scaling=1, parent=world,
+#                   transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)  # material=schott("LF5G19")
+
+mesh = Mesh.from_file("./resources/stanford_bunny.rsm", parent=world,
+                  transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)
 
 # LIGHT BOX
 padding = 1e-5
