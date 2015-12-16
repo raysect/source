@@ -30,7 +30,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import io
-import pickle
 import struct
 from numpy import array, float32, int32, zeros
 
@@ -1163,6 +1162,14 @@ cdef class Mesh(Primitive):
         self._data.save(file)
 
     def load(self, object file):
+        """
+        Loads the mesh specified by a file object or filename.
+
+        The mesh must be stored in a RaySect Mesh (RSM) format file. RSM files
+        are created with the Mesh save() method.
+
+        :param file: File object or string path.
+        """
 
         # rebuild internal state
         self._data = MeshData.from_file(file)
@@ -1173,21 +1180,18 @@ cdef class Mesh(Primitive):
 
     @classmethod
     def from_file(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
-        # """
-        # Reads the mesh data from the specified file descriptor or filename.
-        #
-        # This method can be used as part of a caching system to avoid the
-        # computational cost of rebuilding a mesh's kd-tree. The kd-tree is
-        # stored with the mesh data and is restored when the mesh is loaded.
-        #
-        # This method may be supplied with a file object or a string path.
-        #
-        # :param file: File object or string path.
-        # :param parent: Attaches the mesh to the specified scene-graph node.
-        # :param transform: The co-ordinate transform between the mesh and its parent.
-        # :param material: The surface/volume material.
-        # :param name: A human friendly name to identity the mesh in the scene-graph.
-        # """
+        """
+        Instances a new Mesh using data from a file object or filename.
+
+        The mesh must be stored in a RaySect Mesh (RSM) format file. RSM files
+        are created with the Mesh save() method.
+
+        :param file: File object or string path.
+        :param parent: Attaches the mesh to the specified scene-graph node.
+        :param transform: The co-ordinate transform between the mesh and its parent.
+        :param material: The surface/volume material.
+        :param name: A human friendly name to identity the mesh in the scene-graph.
+        """
 
         m = Mesh.__new__(Mesh)
         super(Mesh, m).__init__(parent, transform, material, name)
