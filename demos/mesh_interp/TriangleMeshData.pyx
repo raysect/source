@@ -21,22 +21,25 @@ cdef class TriangularDataMesh2D:
         :param list data_names: A list of strings that identify the data names for each data type in vertex_data.
         """
 
+        # Alex says this is slow because it moves into py objects.
+        # Vertex coords should be in array directly
         self.vertices = np.zeros((vertex_coords.shape[0]), dtype=object)
         for index, vertex in enumerate(vertex_coords):
             self.vertices[index] = _TriangleMeshVertex(vertex[0], vertex[1], index)
 
+        # See mesh example => vertices = array(vertices, dtype=float64)
         self.vertex_data = vertex_data.copy()
 
         self.triangles = np.zeros((triangles.shape[0]), dtype=object)
         for i, triangle in enumerate(triangles):
             try:
-                print("triangle - {}".format(triangle))
                 v1 = _TriangleMeshVertex.all_vertices[triangle[0]]
                 v2 = _TriangleMeshVertex.all_vertices[triangle[1]]
                 v3 = _TriangleMeshVertex.all_vertices[triangle[2]]
             except IndexError:
                 raise ValueError("vertex could not be found in vertex list")
 
+            # proper kd-tree for triangles will make this unnecessary, vertices don't need to store triangle refs.
             triangle = _TriangleMeshTriangle(v1, v2, v3)
             v1.triangles.append(triangle)
             v2.triangles.append(triangle)
@@ -163,10 +166,6 @@ cdef class _TriangleMeshTriangle:
                ((v2.v - v3.v)*(v1.u - v3.u) + (v3.u - v2.u)*(v1.v - v3.v))
         gamma = 1.0 - alpha - beta
 
-        print("{} - {} - {}".format(v1, v1.index, alpha_data, alpha))
-        print("{} - {} - {}".format(v2, v2.index, beta_data, beta))
-        print("{} - {} - {}".format(v3, v3.index, gamma_data, gamma))
-
         return alpha * alpha_data + beta * beta_data + gamma * gamma_data
 
 
@@ -219,10 +218,6 @@ cdef class InterpolatedMeshFunction(Function2D):
         triangle = self.mesh.find_triangle_containing(x, y)
 
         if triangle:
-            print("##############################")
-            print("THIS BIT RUNS")
-            print("##############################")
-            print(triangle.evaluate(x, y, self.mesh, self.data_axis))
             return triangle.evaluate(x, y, self.mesh, self.data_axis)
 
         return 0.0
