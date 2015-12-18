@@ -4,7 +4,7 @@ cimport numpy as cnp
 from raysect.core.math.function.function2d cimport Function2D
 
 
-cdef class TriangularMeshInterpolator2D(Function2D):
+cdef class TriangleMeshInterpolator(Function2D):
 
     cdef:
         public object[:] vertices, triangles
@@ -36,6 +36,6 @@ cdef class _TriangleMeshTriangle:
     cdef:
         public _TriangleMeshVertex v1, v2, v3
 
-    cdef double evaluate(self, double x, double y, TriangularMeshInterpolator2D mesh)
+    cdef double evaluate(self, double x, double y, TriangleMeshInterpolator mesh)
 
     cdef bint contains(self, double px, double py)

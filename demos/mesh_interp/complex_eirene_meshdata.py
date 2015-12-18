@@ -3,20 +3,19 @@ import os
 import pickle
 import numpy as np
 import matplotlib.pylab as plt
-from demos.mesh_interp.TriangleMeshData import TriangularMeshInterpolator2D
-
+from raysect.core.math.interpolators import TriangleMeshInterpolator
 
 vertex_coords, vertex_data, triangles, data_names = pickle.load(open('demos/mesh_interp/eirene_mesh_data.pickle', 'rb'))
 
 # Units correction, distances need to be in metres.
-vertex_coords = vertex_coords/1000
+vertex_coords = vertex_coords / 1000
 
 ion_dens_data = np.array(vertex_data[:, 0])
 atom_dens_data = np.array(vertex_data[:, 1])
 edens_data = np.array(vertex_data[:, 2])
 etemp_data = np.array(vertex_data[:, 3])
 
-ion_dens = TriangularMeshInterpolator2D(vertex_coords, ion_dens_data, triangles, kdtree_search=True)
+ion_dens = TriangleMeshInterpolator(vertex_coords, ion_dens_data, triangles, kdtree_search=True)
 atom_dens = ion_dens.copy_mesh_with_new_data(atom_dens_data)
 electron_dens = ion_dens.copy_mesh_with_new_data(edens_data)
 electron_temp = ion_dens.copy_mesh_with_new_data(etemp_data)
@@ -24,10 +23,9 @@ electron_temp = ion_dens.copy_mesh_with_new_data(etemp_data)
 plt.ion()
 ion_dens.plot_mesh()
 
-# Begin testing
-###############
+# Begin test output
+###################
 
-# Sample our mesh for imshow test
 te_samples = np.zeros((200, 200))
 ne_samples = np.zeros((200, 200))
 na_samples = np.zeros((200, 200))

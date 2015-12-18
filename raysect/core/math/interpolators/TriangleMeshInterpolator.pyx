@@ -5,7 +5,7 @@ cimport numpy as cnp
 import matplotlib.pyplot as plt
 
 
-cdef class TriangularMeshInterpolator2D(Function2D):
+cdef class TriangleMeshInterpolator(Function2D):
     """
     An abstract data structure for interpolating data points lying on a triangular mesh.
     """
@@ -111,7 +111,7 @@ cdef class TriangularMeshInterpolator2D(Function2D):
         """
 
         # Make a new mesh object without invoking __init__()
-        new_mesh = TriangularMeshInterpolator2D.__new__(TriangularMeshInterpolator2D)
+        new_mesh = TriangleMeshInterpolator.__new__(TriangleMeshInterpolator)
 
         # Copy over vertex data
         new_mesh.vertex_data = np.array(vertex_data, dtype=np.float64)
@@ -166,7 +166,7 @@ cdef class _TriangleMeshTriangle:
         repr_str += "v3 => ({}, {})".format(self.v3.u, self.v3.v)
         return repr_str
 
-    cdef double evaluate(self, double x, double y, TriangularMeshInterpolator2D mesh):
+    cdef double evaluate(self, double x, double y, TriangleMeshInterpolator mesh):
 
         cdef:
             double alpha, beta, gamma, alpha_data, beta_data, gamma_data
