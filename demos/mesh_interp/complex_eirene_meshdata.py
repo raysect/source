@@ -3,25 +3,29 @@ import os
 import pickle
 import numpy as np
 import matplotlib.pylab as plt
-from demos.mesh_interp.TriangleMeshData import TriangularDataMesh2D
+from demos.mesh_interp.TriangleMeshData import TriangularMeshInterpolator2D
 
 
 vertex_coords, vertex_data, triangles, data_names = pickle.load(open('demos/mesh_interp/eirene_mesh_data.pickle', 'rb'))
 
+# Units correction, distances need to be in metres.
 vertex_coords = vertex_coords/1000
 
-datamesh = TriangularDataMesh2D(vertex_coords, vertex_data, triangles, data_names, kdtree_search=True)
+ion_dens_data = np.array(vertex_data[:, 0])
+atom_dens_data = np.array(vertex_data[:, 1])
+edens_data = np.array(vertex_data[:, 2])
+etemp_data = np.array(vertex_data[:, 3])
+
+ion_dens = TriangularMeshInterpolator2D(vertex_coords, ion_dens_data, triangles, kdtree_search=True)
+atom_dens = ion_dens.copy_mesh_with_new_data(atom_dens_data)
+electron_dens = ion_dens.copy_mesh_with_new_data(edens_data)
+electron_temp = ion_dens.copy_mesh_with_new_data(etemp_data)
 
 plt.ion()
-datamesh.plot_mesh()
+ion_dens.plot_mesh()
 
 # Begin testing
 ###############
-
-electron_temp = datamesh.get_data_function('electron_temp')
-electron_dens = datamesh.get_data_function('electron_dens')
-atom_dens = datamesh.get_data_function('atom_density')
-ion_dens = datamesh.get_data_function('ion_density')
 
 # Sample our mesh for imshow test
 te_samples = np.zeros((200, 200))
@@ -30,8 +34,6 @@ na_samples = np.zeros((200, 200))
 ni_samples = np.zeros((200, 200))
 xrange = np.linspace(0.15, 0.45, 200)
 yrange = np.linspace(-0.2, 0.2, 200)
-# xrange = list(np.arange(0.15, 0.45, 0.3/200))
-# yrange = list(np.arange(-0.2, 0.2, 0.4/200))
 
 for i, x in enumerate(xrange):
     for j, y in enumerate(yrange):
@@ -55,3 +57,4 @@ plt.colorbar()
 plt.show()
 
 print(vertex_data[:, 0].min(), vertex_data[:, 0].mean(), vertex_data[:, 0].max())
+print(data_names)
