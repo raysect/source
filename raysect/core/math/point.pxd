@@ -68,3 +68,39 @@ cdef inline Point new_point(double x, double y, double z):
     v.y = y
     v.z = z
     return v
+
+
+cdef class Point2D:
+
+    cdef public double x, y, z
+
+    # cpdef Vector vector_to(self, Point p)
+
+    cpdef double distance_to(self, Point2D p)
+
+    # cpdef Point transform(self, AffineMatrix m)
+
+    # cdef inline Point add(self, _Vec3 v)
+    #
+    # cdef inline Point sub(self, _Vec3 v)
+
+    cpdef Point2D copy(self)
+
+    cdef inline double get_index(self, int index)
+
+    cdef inline void set_index(self, int index, double value)
+
+
+cdef inline Point2D new_point2d(double u, double v):
+    """
+    Point2D factory function.
+
+    Creates a new Point2D object with less overhead than the equivalent Python
+    call. This function is callable from cython only.
+    """
+
+    cdef Point2D a
+    a = Point2D.__new__(Point2D)
+    a.u = u
+    a.v = v
+    return a
