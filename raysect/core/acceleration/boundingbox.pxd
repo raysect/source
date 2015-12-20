@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point, Point2D
 from raysect.core.classes cimport Ray
 
 cdef class BoundingBox:
@@ -79,3 +79,44 @@ cdef inline BoundingBox new_boundingbox(Point lower, Point upper):
     v.lower = lower
     v.upper = upper
     return v
+
+
+cdef class BoundingBox2D:
+
+    cdef Point2D lower
+    cdef Point2D upper
+
+    cpdef bint contains(self, Point2D point)
+
+    cpdef object union(self, BoundingBox2D box)
+
+    cpdef object extend(self, Point2D point, double padding=*)
+
+    cpdef double surface_area(self)
+
+    cpdef double volume(self)
+
+    cpdef list vertices(self)
+
+    cpdef double extent(self, axis) except *
+
+    cpdef int largest_axis(self)
+
+    cpdef double largest_extent(self)
+
+    cpdef object pad(self, double padding)
+
+
+cdef inline BoundingBox2D new_boundingbox2d(Point2D lower, Point2D upper):
+    """
+    BoundingBox2D factory function.
+
+    Creates a new BoundingBox2D object with less overhead than the equivalent
+    Python call. This function is callable from cython only.
+    """
+
+    cdef BoundingBox2D b
+    b = BoundingBox2D.__new__(BoundingBox2D)
+    b.lower = lower
+    b.upper = upper
+    return b

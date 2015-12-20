@@ -32,7 +32,7 @@
 # TODO: add docstrings
 
 cimport cython
-from raysect.core.math.point cimport new_point
+from raysect.core.math.point cimport new_point, new_point2d
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
@@ -41,6 +41,9 @@ DEF INFINITY = 1e999
 DEF X_AXIS = 0
 DEF Y_AXIS = 1
 DEF Z_AXIS = 2
+
+DEF U_AXIS = 0
+DEF V_AXIS = 1
 
 
 cdef class BoundingBox:
@@ -292,3 +295,136 @@ cdef class BoundingBox:
         self.upper.x = self.upper.x + padding
         self.upper.y = self.upper.y + padding
         self.upper.z = self.upper.z + padding
+
+
+cdef class BoundingBox2D:
+    """
+    Axis aligned 2D bounding box.
+
+    Represents a 2D bounding box around a primitive's surface. The points defining
+    the lower and upper corners of the box must be specified in world space.
+
+    Axis aligned bounding box ray intersections are extremely fast to evaluate
+    compared to intersections with more general geometry. Combined with a spatial
+    subdivision acceleration structure, the cost of ray-primitive evaluations
+    can be heavily reduced (O(n) -> O(log n)).
+
+    For optimal speed the bounding box is aligned with the world space axes.
+    """
+
+    def __init__(self, Point2D lower=None, Point2D upper=None):
+
+        # initialise to a null box if called without both initial points
+        if lower is None or upper is None:
+            self.lower = new_point2d(INFINITY, INFINITY)
+            self.upper = new_point2d(-INFINITY, -INFINITY)
+        else:
+            if lower.u > upper.u or lower.v > upper.v:
+                raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
+            self.lower = lower
+            self.upper = upper
+
+    def __repr__(self):
+
+        return "BoundingBox({}, {})".format(self.lower, self.upper)
+
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return self.lower, self.upper
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.lower, self.upper = state
+
+    property lower:
+
+        def __get__(self):
+            return self.lower
+
+        def __set__(self, Point2D value not None):
+            self.lower = value
+
+    property upper:
+
+        def __get__(self):
+            return self.upper
+
+        def __set__(self, Point2D value not None):
+            self.upper = value
+
+    cpdef bint contains(self, Point2D point):
+
+        # point is inside box if it is inside all slabs
+        if (point.u < self.lower.u) or (point.u > self.upper.u):
+            return False
+        if (point.v < self.lower.v) or (point.v > self.upper.v):
+            return False
+        return True
+
+    cpdef object union(self, BoundingBox2D box):
+
+        self.lower.u = min(self.lower.u, box.lower.u)
+        self.lower.v = min(self.lower.v, box.lower.v)
+
+        self.upper.u = max(self.upper.u, box.upper.v)
+        self.upper.v = max(self.upper.u, box.upper.v)
+
+    cpdef object extend(self, Point2D point, double padding=0.0):
+
+        self.lower.u = min(self.lower.u, point.u - padding)
+        self.lower.v = min(self.lower.v, point.v - padding)
+
+        self.upper.u = max(self.upper.u, point.u + padding)
+        self.upper.v = max(self.upper.v, point.v + padding)
+
+    cpdef double surface_area(self):
+
+        return (self.upper.u - self.lower.u) * (self.upper.v - self.lower.v)
+
+    cpdef list vertices(self):
+
+        return [
+            new_point2d(self.lower.u, self.lower.v),
+            new_point2d(self.lower.u, self.upper.v),
+            new_point2d(self.upper.u, self.lower.v),
+            new_point2d(self.upper.u, self.upper.v),
+        ]
+
+    cpdef double extent(self, axis) except *:
+
+        if axis == U_AXIS:
+            return max(0.0, self.upper.u - self.lower.u)
+        elif axis == V_AXIS:
+            return max(0.0, self.upper.v - self.lower.v)
+        else:
+            raise ValueError("Axis must be in the range [0, 1].")
+
+    cpdef int largest_axis(self):
+
+        cdef:
+            int largest_axis
+            double largest_extent, extent
+
+        largest_axis = U_AXIS
+        largest_extent = self.extent(U_AXIS)
+
+        extent = self.extent(V_AXIS)
+        if extent > largest_extent:
+            largest_axis = V_AXIS
+            largest_extent = extent
+
+        return largest_axis
+
+    cpdef double largest_extent(self):
+
+        return max(self.extent(U_AXIS), self.extent(V_AXIS))
+
+    cpdef object pad(self, double padding):
+
+        self.lower.u = self.lower.u - padding
+        self.lower.v = self.lower.v - padding
+
+        self.upper.u = self.upper.u + padding
+        self.upper.v = self.upper.v + padding
