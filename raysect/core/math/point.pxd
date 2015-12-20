@@ -72,7 +72,7 @@ cdef inline Point new_point(double x, double y, double z):
 
 cdef class Point2D:
 
-    cdef public double x, y, z
+    cdef public double u, v
 
     # cpdef Vector vector_to(self, Point p)
 
