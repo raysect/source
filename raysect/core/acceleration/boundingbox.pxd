@@ -94,8 +94,6 @@ cdef class BoundingBox2D:
 
     cpdef double surface_area(self)
 
-    cpdef double volume(self)
-
     cpdef list vertices(self)
 
     cpdef double extent(self, axis) except *
