@@ -1,3 +1,33 @@
+# cython: language_level=3
+
+# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     1. Redistributions of source code must retain the above copyright notice,
+#        this list of conditions and the following disclaimer.
+#
+#     2. Redistributions in binary form must reproduce the above copyright
+#        notice, this list of conditions and the following disclaimer in the
+#        documentation and/or other materials provided with the distribution.
+#
+#     3. Neither the name of the Raysect Project nor the names of its
+#        contributors may be used to endorse or promote products derived from
+#        this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 
 from scipy.spatial import KDTree
 import numpy as np
@@ -5,7 +35,7 @@ cimport numpy as cnp
 import matplotlib.pyplot as plt
 
 
-cdef class TriangleMeshInterpolator(Function2D):
+cdef class Interpolator2DMesh(Function2D):
     """
     An abstract data structure for interpolating data points lying on a triangular mesh.
     """
@@ -21,28 +51,28 @@ cdef class TriangleMeshInterpolator(Function2D):
 
         self.vertices = np.zeros((vertex_coords.shape[0]), dtype=object)
         for index, vertex in enumerate(vertex_coords):
-            self.vertices[index] = _TriangleMeshVertex(vertex[0], vertex[1], index)
+            self.vertices[index] = _Vertex2D(vertex[0], vertex[1], index)
 
         self.vertex_data = np.array(vertex_data, dtype=np.float64)
 
         self.triangles = np.zeros((triangles.shape[0]), dtype=object)
         for i, triangle in enumerate(triangles):
             try:
-                v1 = _TriangleMeshVertex.all_vertices[triangle[0]]
-                v2 = _TriangleMeshVertex.all_vertices[triangle[1]]
-                v3 = _TriangleMeshVertex.all_vertices[triangle[2]]
+                v1 = _Vertex2D.all_vertices[triangle[0]]
+                v2 = _Vertex2D.all_vertices[triangle[1]]
+                v3 = _Vertex2D.all_vertices[triangle[2]]
             except IndexError:
                 raise ValueError("vertex could not be found in vertex list")
 
             # proper kd-tree for triangles will make this unnecessary, vertices don't need to store triangle refs.
-            triangle = _TriangleMeshTriangle(v1, v2, v3)
+            triangle = _Triangle2D(v1, v2, v3)
             v1.triangles.append(triangle)
             v2.triangles.append(triangle)
             v3.triangles.append(triangle)
 
             self.triangles[i] = triangle
 
-        unique_vertices = [(vertex.u, vertex.v) for vertex in _TriangleMeshVertex.all_vertices]
+        unique_vertices = [(vertex.u, vertex.v) for vertex in _Vertex2D.all_vertices]
 
         # TODO - implement KD-tree here
         # construct KD-tree from vertices
@@ -53,31 +83,31 @@ cdef class TriangleMeshInterpolator(Function2D):
         return self.evaluate(x, y)
 
     cdef double evaluate(self, double x, double y) except *:
-        cdef _TriangleMeshTriangle triangle
+        cdef _Triangle2D triangle
         triangle = self.find_triangle_containing(x, y)
         if triangle:
             return triangle.evaluate(x, y, self)
         return 0.0
 
-    cpdef _TriangleMeshTriangle find_triangle_containing(self, double u, double v):
+    cpdef _Triangle2D find_triangle_containing(self, double u, double v):
         if self.kdtree_search:
             return self.kdtree_method(u, v)
         else:
             return self.brute_force_method(u, v)
 
-    cdef _TriangleMeshTriangle brute_force_method(self, double u, double v):
-        cdef _TriangleMeshTriangle triangle
+    cdef _Triangle2D brute_force_method(self, double u, double v):
+        cdef _Triangle2D triangle
         for triangle in self.triangles:
             if triangle.contains(u, v):
                 return triangle
         return None
 
-    cdef _TriangleMeshTriangle kdtree_method(self, double u, double v):
+    cdef _Triangle2D kdtree_method(self, double u, double v):
         cdef:
             long[:] i_closest
             double[:] dist
-            _TriangleMeshVertex closest_vertex
-            _TriangleMeshTriangle triangle
+            _Vertex2D closest_vertex
+            _Triangle2D triangle
 
         # Find closest vertex through KD-tree
         dist, i_closest = self.kdtree.query((u, v), k=10)
@@ -111,7 +141,7 @@ cdef class TriangleMeshInterpolator(Function2D):
         """
 
         # Make a new mesh object without invoking __init__()
-        new_mesh = TriangleMeshInterpolator.__new__(TriangleMeshInterpolator)
+        new_mesh = Interpolator2DMesh.__new__(Interpolator2DMesh)
 
         # Copy over vertex data
         new_mesh.vertex_data = np.array(vertex_data, dtype=np.float64)
@@ -124,11 +154,11 @@ cdef class TriangleMeshInterpolator(Function2D):
         return new_mesh
 
 
-cdef class _TriangleMeshVertex:
+cdef class _Vertex2D:
     """
     An individual vertex of the mesh.
     """
-    all_vertices = []
+    all_vertices = [] # TODO: THIS IS BAD - GLOBAL STATE - FIX THIS - LIST OF VERTICES SHOULD BE IN INTERPOLATOR, NOT VERTEX
 
     def __init__(self, u, v, index):
 
@@ -137,18 +167,18 @@ cdef class _TriangleMeshVertex:
         self.index = index
         self.triangles = []
 
-        _TriangleMeshVertex.all_vertices.append(self)
+        _Vertex2D.all_vertices.append(self)
 
     def __iter__(self):
         for tri in self.triangles:
             yield(tri)
 
     def __repr__(self):
-        repr_str = "_TriangleMeshVertex => ({}, {})".format(self.u, self.v)
+        repr_str = "_Vertex2D => ({}, {})".format(self.u, self.v)
         return repr_str
 
 
-cdef class _TriangleMeshTriangle:
+cdef class _Triangle2D:
 
     def __init__(self, v1, v2, v3):
         self.v1 = v1
@@ -166,11 +196,11 @@ cdef class _TriangleMeshTriangle:
         repr_str += "v3 => ({}, {})".format(self.v3.u, self.v3.v)
         return repr_str
 
-    cdef double evaluate(self, double x, double y, TriangleMeshInterpolator mesh):
+    cdef double evaluate(self, double x, double y, Interpolator2DMesh mesh):
 
         cdef:
             double alpha, beta, gamma, alpha_data, beta_data, gamma_data
-            _TriangleMeshVertex v1, v2, v3
+            _Vertex2D v1, v2, v3
 
         v1 = self.v1
         v2 = self.v2
@@ -199,7 +229,7 @@ cdef class _TriangleMeshTriangle:
         """
         cdef:
             double alpha, beta, gamma
-            _TriangleMeshVertex v1, v2, v3
+            _Vertex2D v1, v2, v3
 
         v1 = self.v1
         v2 = self.v2

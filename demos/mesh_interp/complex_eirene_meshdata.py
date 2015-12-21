@@ -3,7 +3,7 @@ import os
 import pickle
 import numpy as np
 import matplotlib.pylab as plt
-from raysect.core.math.interpolators import TriangleMeshInterpolator
+from raysect.core.math.interpolators import Interpolator2DMesh
 
 vertex_coords, vertex_data, triangles, data_names = pickle.load(open('demos/mesh_interp/eirene_mesh_data.pickle', 'rb'))
 
@@ -15,7 +15,7 @@ atom_dens_data = np.array(vertex_data[:, 1])
 edens_data = np.array(vertex_data[:, 2])
 etemp_data = np.array(vertex_data[:, 3])
 
-ion_dens = TriangleMeshInterpolator(vertex_coords, ion_dens_data, triangles, kdtree_search=True)
+ion_dens = Interpolator2DMesh(vertex_coords, ion_dens_data, triangles, kdtree_search=True)
 atom_dens = ion_dens.copy_mesh_with_new_data(atom_dens_data)
 electron_dens = ion_dens.copy_mesh_with_new_data(edens_data)
 electron_temp = ion_dens.copy_mesh_with_new_data(etemp_data)

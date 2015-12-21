@@ -1,2 +1,2 @@
 
-from .TriangleMeshInterpolator import TriangleMeshInterpolator
+from .Interpolator2DMesh import Interpolator2DMesh

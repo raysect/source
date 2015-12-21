@@ -1,7 +1,7 @@
 
 import numpy as np
 import matplotlib.pylab as plt
-from raysect.core.math.interpolators import TriangleMeshInterpolator
+from raysect.core.math.interpolators import Interpolator2DMesh
 
 vertices = np.array([[267.709991, -89.156998], [266.410004, -93.556999], [266.739990, -93.650002],
                      [268.000000, -89.250000], [267.850006, -93.960999], [268.980011, -89.514999],
@@ -13,18 +13,18 @@ vertex_data = np.array([1, 2, 3, 4, 25, 6, 7, 8, 9, 10], dtype=np.float64)
 triangles = np.array([[1, 2, 4], [2, 3, 4], [4, 3, 6], [3, 5, 6], [6, 5, 8], [5, 7, 8], [8, 7, 10], [7, 9, 10]],
                      dtype=np.int32) - 1
 
-linerad = TriangleMeshInterpolator(vertices, vertex_data, triangles, kdtree_search=True)
+linerad = Interpolator2DMesh(vertices, vertex_data, triangles, kdtree_search=True)
 linerad.plot_mesh()
 
 # Sample mesh for imshow test
-samples = np.zeros((30, 20))
-xrange = list(np.arange(265, 275, 10/20))
-yrange = list(np.arange(-95, -85, 10/30))
+samples = np.zeros((300, 200))
+xrange = list(np.arange(265, 275, 10/200))
+yrange = list(np.arange(-95, -85, 10/300))
 
 for i, x in enumerate(xrange):
     for j, y in enumerate(yrange):
         samples[j, i] = linerad(x, y)
 
-plt.ion()
+plt.ioff()
 plt.imshow(samples, extent=[265, 275, -95, -85], origin='lower')
 plt.show()
