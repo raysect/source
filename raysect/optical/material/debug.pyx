@@ -33,10 +33,10 @@
 This module contains materials to aid with debugging.
 """
 
-from raysect.core.math.point cimport Point
-from raysect.core.math.normal cimport Normal
+from raysect.core.math.point cimport Point3D
+from raysect.core.math.normal cimport Normal3D
 from raysect.optical.spectrum cimport Spectrum
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
@@ -52,12 +52,12 @@ cdef class Light(NullVolume):
     and emission spectrum may be supplied. By default the light spectrum is the
     D65 white point spectrum.
 
-    :param light_direction: A world space Vector defining the light direction.
+    :param light_direction: A world space Vector3D defining the light direction.
     :param intensity: The light intensity (default is 1.0).
     :param spectrum: A SpectralFunction defining the light spectrum (default is D65 white).
     """
 
-    def __init__(self, Vector light_direction, double intensity=1.0, SpectralFunction spectrum=None):
+    def __init__(self, Vector3D light_direction, double intensity=1.0, SpectralFunction spectrum=None):
 
         self.light_direction = light_direction.normalise()
         self.intensity = max(0, intensity)
@@ -67,9 +67,9 @@ cdef class Light(NullVolume):
         else:
             self.spectrum = spectrum
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                bint exiting, Point inside_point, Point outside_point,
-                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef Spectrum spectrum
 

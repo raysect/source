@@ -30,39 +30,39 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math._vec3 cimport _Vec3
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
-cdef class Vector(_Vec3):
+cdef class Vector3D(_Vec3):
 
-    cpdef Vector cross(self, _Vec3 v)
+    cpdef Vector3D cross(self, _Vec3 v)
 
-    cpdef Vector normalise(self)
+    cpdef Vector3D normalise(self)
 
-    cpdef Vector transform(self, AffineMatrix m)
+    cpdef Vector3D transform(self, AffineMatrix3D m)
 
-    cdef inline Vector neg(self)
+    cdef inline Vector3D neg(self)
 
-    cdef inline Vector add(self, _Vec3 v)
+    cdef inline Vector3D add(self, _Vec3 v)
 
-    cdef inline Vector sub(self, _Vec3 v)
+    cdef inline Vector3D sub(self, _Vec3 v)
 
-    cdef inline Vector mul(self, double m)
+    cdef inline Vector3D mul(self, double m)
 
-    cdef inline Vector div(self, double m)
+    cdef inline Vector3D div(self, double m)
 
-    cpdef Vector copy(self)
+    cpdef Vector3D copy(self)
 
 
-cdef inline Vector new_vector(double x, double y, double z):
+cdef inline Vector3D new_vector3d(double x, double y, double z):
     """
-    Vector factory function.
+    Vector3D factory function.
 
-    Creates a new Vector object with less overhead than the equivalent Python
+    Creates a new Vector3D object with less overhead than the equivalent Python
     call. This function is callable from cython only.
     """
 
-    cdef Vector v
-    v = Vector.__new__(Vector)
+    cdef Vector3D v
+    v = Vector3D.__new__(Vector3D)
     v.x = x
     v.y = y
     v.z = z

@@ -29,11 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.math.kdtree cimport Item
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.classes cimport Ray
 from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
+from libc.stdint cimport int32_t
 cimport cython
 
 
@@ -44,7 +45,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
         cdef:
             Primitive primitive
             BoundPrimitive bound_primitive
-            int id
+            int32_t id
             list items
 
         # wrap each primitive with its bounding box
@@ -56,7 +57,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
+    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
         """
         Tests each item in the kd-Tree leaf node to identify if an intersection occurs.
 
@@ -77,7 +78,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
         """
 
         cdef:
-            int count, item, index
+            int32_t count, item, index
             double distance
             Intersection intersection, closest_intersection
             BoundPrimitive primitive
@@ -109,7 +110,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef list _contains_leaf(self, int id, Point point):
+    cdef list _contains_leaf(self, int32_t id, Point3D point):
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -124,12 +125,12 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
         returns are guaranteed not to be further modified.
 
         :param id: Index of node in node array.
-        :param point: Point to evaluate.
+        :param point: Point3D to evaluate.
         :return: List of items containing the point.
         """
 
         cdef:
-            int count, item
+            int32_t count, item
             list enclosing_primitives
             BoundPrimitive primitive
 
@@ -161,7 +162,7 @@ cdef class KDTree(_Accelerator):
             return self._kdtree.hit_intersection
         return None
 
-    cpdef list contains(self, Point point):
+    cpdef list contains(self, Point3D point):
 
         # we explicitly use _contains() rather than contains() as _contains() is cdef, rather than cpdef
         return self._kdtree._contains(point)

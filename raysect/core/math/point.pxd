@@ -30,41 +30,77 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math._vec3 cimport _Vec3
-from raysect.core.math.vector cimport Vector
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
-cdef class Point:
+cdef class Point3D:
 
     cdef public double x, y, z
 
-    cpdef Vector vector_to(self, Point p)
+    cpdef Vector3D vector_to(self, Point3D p)
 
-    cpdef double distance_to(self, Point p)
+    cpdef double distance_to(self, Point3D p)
 
-    cpdef Point transform(self, AffineMatrix m)
+    cpdef Point3D transform(self, AffineMatrix3D m)
 
-    cdef inline Point add(self, _Vec3 v)
+    cdef inline Point3D add(self, _Vec3 v)
 
-    cdef inline Point sub(self, _Vec3 v)
+    cdef inline Point3D sub(self, _Vec3 v)
 
-    cpdef Point copy(self)
+    cpdef Point3D copy(self)
 
     cdef inline double get_index(self, int index)
 
     cdef inline void set_index(self, int index, double value)
 
 
-cdef inline Point new_point(double x, double y, double z):
+cdef inline Point3D new_point3d(double x, double y, double z):
     """
-    Point factory function.
+    Point3D factory function.
 
-    Creates a new Point object with less overhead than the equivalent Python
+    Creates a new Point3D object with less overhead than the equivalent Python
     call. This function is callable from cython only.
     """
 
-    cdef Point v
-    v = Point.__new__(Point)
+    cdef Point3D v
+    v = Point3D.__new__(Point3D)
     v.x = x
     v.y = y
     v.z = z
     return v
+
+
+cdef class Point2D:
+
+    cdef public double x, y
+
+    # cpdef Vector3D vector_to(self, Point3D p)
+
+    cpdef double distance_to(self, Point2D p)
+
+    # cpdef Point3D transform(self, AffineMatrix3D m)
+
+    # cdef inline Point3D add(self, _Vec3 v)
+    #
+    # cdef inline Point3D sub(self, _Vec3 v)
+
+    cpdef Point2D copy(self)
+
+    cdef inline double get_index(self, int index)
+
+    cdef inline void set_index(self, int index, double value)
+
+
+cdef inline Point2D new_point2d(double x, double y):
+    """
+    Point2D factory function.
+
+    Creates a new Point2D object with less overhead than the equivalent Python
+    call. This function is callable from cython only.
+    """
+
+    cdef Point2D a
+    a = Point2D.__new__(Point2D)
+    a.x = x
+    a.y = y
+    return a

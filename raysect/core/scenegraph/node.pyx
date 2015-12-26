@@ -44,19 +44,16 @@ cdef class Node(_NodeBase):
     transform vectors and points between the two co-ordinate systems.
 
     :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
-    :param AffineMatrix transform: Sets the affine transform associated with the Node.
+    :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
     :param name: A string defining the node name.
     """
 
-    def __init__(self, object parent=None, AffineMatrix transform=None, unicode name=None):
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None):
 
-        super().__init__()
+        super().__init__(name)
 
         if transform is None:
-            transform = AffineMatrix()
-
-        if name is None:
-            name = ""
+            transform = AffineMatrix3D()
 
         # prevent _modified() being called during initialisation
         self._track_modifications = False
@@ -71,10 +68,10 @@ cdef class Node(_NodeBase):
     def __str__(self):
         """String representation."""
 
-        if self._name == "":
-            return "<Node at " + str(hex(id(self))) + ">"
-        else:
+        if self._name:
             return self._name + " <Node at " + str(hex(id(self))) + ">"
+        else:
+            return "<Node at " + str(hex(id(self))) + ">"
 
     property parent:
 
@@ -128,7 +125,7 @@ cdef class Node(_NodeBase):
         def __get__(self):
             return self._transform
 
-        def __set__(self, AffineMatrix value not None):
+        def __set__(self, AffineMatrix3D value not None):
             self._transform = value
             self._update()
 
@@ -140,7 +137,7 @@ cdef class Node(_NodeBase):
         def __set__(self, unicode value not None):
             self._name = value
 
-    cpdef AffineMatrix to(self, _NodeBase node):
+    cpdef AffineMatrix3D to(self, _NodeBase node):
         """
         Returns an affine transform that, when applied to a vector or point,
         transforms the vector or point from the co-ordinate space of the calling
@@ -152,7 +149,7 @@ cdef class Node(_NodeBase):
         point (-100,0,0) in B as B is translated +100 in x compared to A.
 
         :param _NodeBase node: The target node.
-        :return: An AffineMatrix describing the coordinate transform.
+        :return: An AffineMatrix3D describing the coordinate transform.
         """
 
         if self.root is node.root:
@@ -160,8 +157,8 @@ cdef class Node(_NodeBase):
         else:
             raise ValueError("The target node must be in the same scene-graph.")
 
-    cpdef AffineMatrix to_local(self):
+    cpdef AffineMatrix3D to_local(self):
         return self._root_transform_inverse
 
-    cpdef AffineMatrix to_root(self):
+    cpdef AffineMatrix3D to_root(self):
         return self._root_transform

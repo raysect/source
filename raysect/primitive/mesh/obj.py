@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core import Point, Normal
+from raysect.core import Point3D, Normal3D
 from raysect.primitive.mesh import Mesh
 
 class OBJHandler:
@@ -85,7 +85,7 @@ class OBJHandler:
     def _to_normal(cls, tokens):
 
         x, y, z = tokens
-        n = Normal(float(x), float(y), float(z)).normalise()
+        n = Normal3D(float(x), float(y), float(z)).normalise()
         return [n.x, n.y, n.z]
 
     @classmethod

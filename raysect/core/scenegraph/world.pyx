@@ -45,15 +45,10 @@ cdef class World(_NodeBase):
     :param name: A string defining the node name.
     """
 
-    def __init__(self, unicode name=None):
+    def __init__(self, str name=None):
 
-        super().__init__()
+        super().__init__(name)
 
-        # TODO - this code should move to _NodeBase since it appears in Node as well.
-        if name is None:
-            name = ""
-
-        self._name = name
         self. _primitives = list()
         self. _observers = list()
         self. _rebuild_accelerator = True
@@ -89,12 +84,12 @@ cdef class World(_NodeBase):
     def __str__(self):
         """String representation."""
 
-        if self._name == "":
-            return "<World at " + str(hex(id(self))) + ">"
-        else:
+        if self._name:
             return self._name + " <World at " + str(hex(id(self))) + ">"
+        else:
+            return "<World at " + str(hex(id(self))) + ">"
 
-    cpdef AffineMatrix to(self, _NodeBase node):
+    cpdef AffineMatrix3D to(self, _NodeBase node):
         """
         Returns an affine transform that, when applied to a vector or point,
         transforms the vector or point from the co-ordinate space of the calling
@@ -106,7 +101,7 @@ cdef class World(_NodeBase):
         point (-100,0,0) in B as B is translated +100 in x compared to A.
 
         :param _NodeBase node: The target node.
-        :return: An AffineMatrix describing the coordinate transform.
+        :return: An AffineMatrix3D describing the coordinate transform.
         """
 
         if self.root is node.root:
@@ -138,12 +133,12 @@ cdef class World(_NodeBase):
         return self._accelerator.hit(ray)
 
     # TODO - better name - world.primitives_containing(point)
-    cpdef list contains(self, Point point):
+    cpdef list contains(self, Point3D point):
         """
         Returns a list of Primitives that contain the specified point within
         their surface.
 
-        An empty list is returned if no Primitives contain the Point.
+        An empty list is returned if no Primitives contain the Point3D.
 
         This method automatically rebuilds the Acceleration object that is used
         to optimise the contains calculation - if a Primitive's geometry or a
@@ -151,8 +146,8 @@ cdef class World(_NodeBase):
         or contains(), the Acceleration structure used to optimise the contains
         calculation is rebuilt to represent the new scene-graph state.
 
-        :param Point point: The point to test.
-        :return: A list containing all Primitives that enclose the Point.
+        :param Point3D point: The point to test.
+        :return: A list containing all Primitives that enclose the Point3D.
         """
 
         self.build_accelerator()

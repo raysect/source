@@ -33,8 +33,8 @@ cimport cython
 from numpy cimport ndarray
 from libc.math cimport round
 
-from raysect.core.math.normal cimport Normal
-from raysect.core.math.point cimport new_point
+from raysect.core.math.normal cimport Normal3D
+from raysect.core.math.point cimport new_point3d
 from raysect.optical.spectrum cimport new_spectrum
 from raysect.optical.spectralfunction cimport ConstantSF
 from raysect.optical.colour import d65_white
@@ -45,12 +45,12 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
-            Point start, end
-            Vector direction
+            Point3D start, end
+            Vector3D direction
             double length
             Spectrum emission
             double[::1] e_view, s_view
@@ -96,9 +96,9 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum,
+    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
-                                     AffineMatrix to_local, AffineMatrix to_world):
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
@@ -127,12 +127,12 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
-            Point start, end
-            Vector integration_direction, ray_direction
+            Point3D start, end
+            Vector3D integration_direction, ray_direction
             double length, t, c
             Spectrum emission, emission_previous
             double[::1] e1_view, e2_view, s_view
@@ -174,9 +174,9 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         c = 0.5 * self._step
         while t <= length:
 
-            sample_point = new_point(start.x + t * integration_direction.x,
-                                     start.y + t * integration_direction.y,
-                                     start.z + t * integration_direction.z)
+            sample_point = new_point3d(start.x + t * integration_direction.x,
+                                       start.y + t * integration_direction.y,
+                                       start.z + t * integration_direction.z)
 
             emission = new_spectrum(spectrum.min_wavelength,
                                     spectrum.max_wavelength,
@@ -229,9 +229,9 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum,
+    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
-                                     AffineMatrix to_local, AffineMatrix to_world):
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
@@ -249,9 +249,9 @@ cdef class UniformSurfaceEmitter(NullVolume):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                bint exiting, Point inside_point, Point outside_point,
-                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                bint exiting, Point3D inside_point, Point3D outside_point,
+                                Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
             Spectrum spectrum
@@ -289,9 +289,9 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum,
+    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
-                                     AffineMatrix to_local, AffineMatrix to_world):
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
             ndarray emission
@@ -344,9 +344,9 @@ cdef class Checkerboard(NullVolume):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                bint exiting, Point inside_point, Point outside_point,
-                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                bint exiting, Point3D inside_point, Point3D outside_point,
+                                Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
             Spectrum spectrum

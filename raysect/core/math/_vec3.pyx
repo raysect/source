@@ -71,6 +71,11 @@ cdef class _Vec3:
         else:
             raise IndexError("Index out of range [0, 2].")
 
+    def __iter__(self):
+        yield self.x
+        yield self.y
+        yield self.z
+
     def __getstate__(self):
         """Encodes state for pickling."""
 

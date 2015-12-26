@@ -37,16 +37,16 @@ cdef class _NodeBase:
     node objects.
     """
 
-    def __init__(self):
+    def __init__(self, str name=None):
         """Base class constructor."""
 
-        self._name = ""
+        self._name = name
         self._parent = None
         self.children = []
         self.root = self
-        self._transform = AffineMatrix()
-        self._root_transform = AffineMatrix()
-        self._root_transform_inverse = AffineMatrix()
+        self._transform = AffineMatrix3D()
+        self._root_transform = AffineMatrix3D()
+        self._root_transform_inverse = AffineMatrix3D()
         self._track_modifications = True
 
     def _check_parent(self, _NodeBase parent):
@@ -59,11 +59,9 @@ cdef class _NodeBase:
         """
 
         if parent is self:
-
             raise ValueError("A node cannot be parented to itself or one of it's descendants.")
 
         for child in self.children:
-
             child._check_parent(parent)
 
     def _update(self):
@@ -87,8 +85,8 @@ cdef class _NodeBase:
                 self.root = self
 
             # this node is now a root node
-            self._root_transform = AffineMatrix()
-            self._root_transform_inverse = AffineMatrix()
+            self._root_transform = AffineMatrix3D()
+            self._root_transform_inverse = AffineMatrix3D()
 
             # report root transforms have changed
             if self._track_modifications:

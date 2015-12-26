@@ -31,28 +31,28 @@
 
 cdef class Material(CoreMaterial):
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                    bint exiting, Point inside_point, Point outside_point,
-                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         raise NotImplementedError("Material virtual method evaluate_volume() has not been implemented.")
 
 
 cdef class NullSurface(Material):
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                bint exiting, Point inside_point, Point outside_point,
-                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
-            Point origin
+            Point3D origin
             Ray daughter_ray
 
         # are we entering or leaving surface?
@@ -79,8 +79,8 @@ cdef class NullVolume(Material):
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         # do nothing!
         return spectrum

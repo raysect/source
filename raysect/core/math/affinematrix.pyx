@@ -30,10 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 from libc.math cimport fabs, sin, cos, M_PI as pi
 
-cdef class AffineMatrix(_Mat4):
+cdef class AffineMatrix3D(_Mat4):
     """Represents a 4x4 affine matrix."""
 
     def __repr__(self):
@@ -41,7 +41,7 @@ cdef class AffineMatrix(_Mat4):
 
         cdef int i, j
 
-        s = "AffineMatrix(["
+        s = "AffineMatrix3D(["
         for i in range(0, 4):
             s += "["
             for j in range(0, 4):
@@ -56,37 +56,37 @@ cdef class AffineMatrix(_Mat4):
     def __mul__(object x, object y):
         """Multiplication operator."""
 
-        cdef AffineMatrix mx, my
+        cdef AffineMatrix3D mx, my
 
-        if isinstance(x, AffineMatrix) and isinstance(y, AffineMatrix):
+        if isinstance(x, AffineMatrix3D) and isinstance(y, AffineMatrix3D):
 
-            mx = <AffineMatrix>x
-            my = <AffineMatrix>y
-            return new_affinematrix(mx.m[0][0] * my.m[0][0] + mx.m[0][1] * my.m[1][0] + mx.m[0][2] * my.m[2][0] + mx.m[0][3] * my.m[3][0],
-                                    mx.m[0][0] * my.m[0][1] + mx.m[0][1] * my.m[1][1] + mx.m[0][2] * my.m[2][1] + mx.m[0][3] * my.m[3][1],
-                                    mx.m[0][0] * my.m[0][2] + mx.m[0][1] * my.m[1][2] + mx.m[0][2] * my.m[2][2] + mx.m[0][3] * my.m[3][2],
-                                    mx.m[0][0] * my.m[0][3] + mx.m[0][1] * my.m[1][3] + mx.m[0][2] * my.m[2][3] + mx.m[0][3] * my.m[3][3],
-                                    mx.m[1][0] * my.m[0][0] + mx.m[1][1] * my.m[1][0] + mx.m[1][2] * my.m[2][0] + mx.m[1][3] * my.m[3][0],
-                                    mx.m[1][0] * my.m[0][1] + mx.m[1][1] * my.m[1][1] + mx.m[1][2] * my.m[2][1] + mx.m[1][3] * my.m[3][1],
-                                    mx.m[1][0] * my.m[0][2] + mx.m[1][1] * my.m[1][2] + mx.m[1][2] * my.m[2][2] + mx.m[1][3] * my.m[3][2],
-                                    mx.m[1][0] * my.m[0][3] + mx.m[1][1] * my.m[1][3] + mx.m[1][2] * my.m[2][3] + mx.m[1][3] * my.m[3][3],
-                                    mx.m[2][0] * my.m[0][0] + mx.m[2][1] * my.m[1][0] + mx.m[2][2] * my.m[2][0] + mx.m[2][3] * my.m[3][0],
-                                    mx.m[2][0] * my.m[0][1] + mx.m[2][1] * my.m[1][1] + mx.m[2][2] * my.m[2][1] + mx.m[2][3] * my.m[3][1],
-                                    mx.m[2][0] * my.m[0][2] + mx.m[2][1] * my.m[1][2] + mx.m[2][2] * my.m[2][2] + mx.m[2][3] * my.m[3][2],
-                                    mx.m[2][0] * my.m[0][3] + mx.m[2][1] * my.m[1][3] + mx.m[2][2] * my.m[2][3] + mx.m[2][3] * my.m[3][3],
-                                    mx.m[3][0] * my.m[0][0] + mx.m[3][1] * my.m[1][0] + mx.m[3][2] * my.m[2][0] + mx.m[3][3] * my.m[3][0],
-                                    mx.m[3][0] * my.m[0][1] + mx.m[3][1] * my.m[1][1] + mx.m[3][2] * my.m[2][1] + mx.m[3][3] * my.m[3][1],
-                                    mx.m[3][0] * my.m[0][2] + mx.m[3][1] * my.m[1][2] + mx.m[3][2] * my.m[2][2] + mx.m[3][3] * my.m[3][2],
-                                    mx.m[3][0] * my.m[0][3] + mx.m[3][1] * my.m[1][3] + mx.m[3][2] * my.m[2][3] + mx.m[3][3] * my.m[3][3])
+            mx = <AffineMatrix3D>x
+            my = <AffineMatrix3D>y
+            return new_affinematrix3d(mx.m[0][0] * my.m[0][0] + mx.m[0][1] * my.m[1][0] + mx.m[0][2] * my.m[2][0] + mx.m[0][3] * my.m[3][0],
+                                      mx.m[0][0] * my.m[0][1] + mx.m[0][1] * my.m[1][1] + mx.m[0][2] * my.m[2][1] + mx.m[0][3] * my.m[3][1],
+                                      mx.m[0][0] * my.m[0][2] + mx.m[0][1] * my.m[1][2] + mx.m[0][2] * my.m[2][2] + mx.m[0][3] * my.m[3][2],
+                                      mx.m[0][0] * my.m[0][3] + mx.m[0][1] * my.m[1][3] + mx.m[0][2] * my.m[2][3] + mx.m[0][3] * my.m[3][3],
+                                      mx.m[1][0] * my.m[0][0] + mx.m[1][1] * my.m[1][0] + mx.m[1][2] * my.m[2][0] + mx.m[1][3] * my.m[3][0],
+                                      mx.m[1][0] * my.m[0][1] + mx.m[1][1] * my.m[1][1] + mx.m[1][2] * my.m[2][1] + mx.m[1][3] * my.m[3][1],
+                                      mx.m[1][0] * my.m[0][2] + mx.m[1][1] * my.m[1][2] + mx.m[1][2] * my.m[2][2] + mx.m[1][3] * my.m[3][2],
+                                      mx.m[1][0] * my.m[0][3] + mx.m[1][1] * my.m[1][3] + mx.m[1][2] * my.m[2][3] + mx.m[1][3] * my.m[3][3],
+                                      mx.m[2][0] * my.m[0][0] + mx.m[2][1] * my.m[1][0] + mx.m[2][2] * my.m[2][0] + mx.m[2][3] * my.m[3][0],
+                                      mx.m[2][0] * my.m[0][1] + mx.m[2][1] * my.m[1][1] + mx.m[2][2] * my.m[2][1] + mx.m[2][3] * my.m[3][1],
+                                      mx.m[2][0] * my.m[0][2] + mx.m[2][1] * my.m[1][2] + mx.m[2][2] * my.m[2][2] + mx.m[2][3] * my.m[3][2],
+                                      mx.m[2][0] * my.m[0][3] + mx.m[2][1] * my.m[1][3] + mx.m[2][2] * my.m[2][3] + mx.m[2][3] * my.m[3][3],
+                                      mx.m[3][0] * my.m[0][0] + mx.m[3][1] * my.m[1][0] + mx.m[3][2] * my.m[2][0] + mx.m[3][3] * my.m[3][0],
+                                      mx.m[3][0] * my.m[0][1] + mx.m[3][1] * my.m[1][1] + mx.m[3][2] * my.m[2][1] + mx.m[3][3] * my.m[3][1],
+                                      mx.m[3][0] * my.m[0][2] + mx.m[3][1] * my.m[1][2] + mx.m[3][2] * my.m[2][2] + mx.m[3][3] * my.m[3][2],
+                                      mx.m[3][0] * my.m[0][3] + mx.m[3][1] * my.m[1][3] + mx.m[3][2] * my.m[2][3] + mx.m[3][3] * my.m[3][3])
 
         return NotImplemented
 
     @cython.cdivision(True)
-    cpdef AffineMatrix inverse(self):
+    cpdef AffineMatrix3D inverse(self):
         """
         Calculates the inverse of the affine matrix.
 
-        Returns an AffineMatrix containing the inverse.
+        Returns an AffineMatrix3D containing the inverse.
 
         Raises a ValueError if the matrix is singular and the inverse can not be
         calculated. All valid affine transforms should be invertable.
@@ -132,56 +132,56 @@ cdef class AffineMatrix(_Mat4):
         t[16] = self.m[1][1] * self.m[3][3] - self.m[1][3] * self.m[3][1]
         t[17] = self.m[1][2] * self.m[3][3] - self.m[1][3] * self.m[3][2]
 
-        return new_affinematrix((self.m[2][2] * t[16] - self.m[2][1] * t[17] - self.m[2][3] * t[15]) * idet,
-                                (self.m[2][1] * t[11] - self.m[2][2] * t[10] + self.m[2][3] * t[ 9]) * idet,
-                                (self.m[3][1] * t[ 5] - self.m[3][2] * t[ 4] + self.m[3][3] * t[ 3]) * idet,
-                                -t[21] * idet,
-                                (self.m[2][0] * t[17] - self.m[2][2] * t[14] + self.m[2][3] * t[13]) * idet,
-                                (self.m[2][2] * t[ 8] - self.m[2][0] * t[11] - self.m[2][3] * t[ 7]) * idet,
-                                (self.m[3][2] * t[ 2] - self.m[3][0] * t[ 5] - self.m[3][3] * t[ 1]) * idet,
-                                t[20] * idet,
-                                (self.m[2][1] * t[14] - self.m[2][0] * t[16] - self.m[2][3] * t[12]) * idet,
-                                (self.m[2][0] * t[10] - self.m[2][1] * t[ 8] + self.m[2][3] * t[ 6]) * idet,
-                                (self.m[3][0] * t[ 4] - self.m[3][1] * t[ 2] + self.m[3][3] * t[ 0]) * idet,
-                                -t[19] * idet,
-                                (self.m[2][0] * t[15] - self.m[2][1] * t[13] + self.m[2][2] * t[12]) * idet,
-                                (self.m[2][1] * t[ 7] - self.m[2][0] * t[ 9] - self.m[2][2] * t[ 6]) * idet,
-                                (self.m[3][1] * t[ 1] - self.m[3][0] * t[ 3] - self.m[3][2] * t[ 0]) * idet,
-                                t[18] * idet)
+        return new_affinematrix3d((self.m[2][2] * t[16] - self.m[2][1] * t[17] - self.m[2][3] * t[15]) * idet,
+                                  (self.m[2][1] * t[11] - self.m[2][2] * t[10] + self.m[2][3] * t[ 9]) * idet,
+                                  (self.m[3][1] * t[ 5] - self.m[3][2] * t[ 4] + self.m[3][3] * t[ 3]) * idet,
+                                  -t[21] * idet,
+                                  (self.m[2][0] * t[17] - self.m[2][2] * t[14] + self.m[2][3] * t[13]) * idet,
+                                  (self.m[2][2] * t[ 8] - self.m[2][0] * t[11] - self.m[2][3] * t[ 7]) * idet,
+                                  (self.m[3][2] * t[ 2] - self.m[3][0] * t[ 5] - self.m[3][3] * t[ 1]) * idet,
+                                  t[20] * idet,
+                                  (self.m[2][1] * t[14] - self.m[2][0] * t[16] - self.m[2][3] * t[12]) * idet,
+                                  (self.m[2][0] * t[10] - self.m[2][1] * t[ 8] + self.m[2][3] * t[ 6]) * idet,
+                                  (self.m[3][0] * t[ 4] - self.m[3][1] * t[ 2] + self.m[3][3] * t[ 0]) * idet,
+                                  -t[19] * idet,
+                                  (self.m[2][0] * t[15] - self.m[2][1] * t[13] + self.m[2][2] * t[12]) * idet,
+                                  (self.m[2][1] * t[ 7] - self.m[2][0] * t[ 9] - self.m[2][2] * t[ 6]) * idet,
+                                  (self.m[3][1] * t[ 1] - self.m[3][0] * t[ 3] - self.m[3][2] * t[ 0]) * idet,
+                                  t[18] * idet)
 
-    cdef inline AffineMatrix mul(self, AffineMatrix m):
+    cdef inline AffineMatrix3D mul(self, AffineMatrix3D m):
 
-        return new_affinematrix(self.m[0][0] * m.m[0][0] + self.m[0][1] * m.m[1][0] + self.m[0][2] * m.m[2][0] + self.m[0][3] * m.m[3][0],
-                                self.m[0][0] * m.m[0][1] + self.m[0][1] * m.m[1][1] + self.m[0][2] * m.m[2][1] + self.m[0][3] * m.m[3][1],
-                                self.m[0][0] * m.m[0][2] + self.m[0][1] * m.m[1][2] + self.m[0][2] * m.m[2][2] + self.m[0][3] * m.m[3][2],
-                                self.m[0][0] * m.m[0][3] + self.m[0][1] * m.m[1][3] + self.m[0][2] * m.m[2][3] + self.m[0][3] * m.m[3][3],
-                                self.m[1][0] * m.m[0][0] + self.m[1][1] * m.m[1][0] + self.m[1][2] * m.m[2][0] + self.m[1][3] * m.m[3][0],
-                                self.m[1][0] * m.m[0][1] + self.m[1][1] * m.m[1][1] + self.m[1][2] * m.m[2][1] + self.m[1][3] * m.m[3][1],
-                                self.m[1][0] * m.m[0][2] + self.m[1][1] * m.m[1][2] + self.m[1][2] * m.m[2][2] + self.m[1][3] * m.m[3][2],
-                                self.m[1][0] * m.m[0][3] + self.m[1][1] * m.m[1][3] + self.m[1][2] * m.m[2][3] + self.m[1][3] * m.m[3][3],
-                                self.m[2][0] * m.m[0][0] + self.m[2][1] * m.m[1][0] + self.m[2][2] * m.m[2][0] + self.m[2][3] * m.m[3][0],
-                                self.m[2][0] * m.m[0][1] + self.m[2][1] * m.m[1][1] + self.m[2][2] * m.m[2][1] + self.m[2][3] * m.m[3][1],
-                                self.m[2][0] * m.m[0][2] + self.m[2][1] * m.m[1][2] + self.m[2][2] * m.m[2][2] + self.m[2][3] * m.m[3][2],
-                                self.m[2][0] * m.m[0][3] + self.m[2][1] * m.m[1][3] + self.m[2][2] * m.m[2][3] + self.m[2][3] * m.m[3][3],
-                                self.m[3][0] * m.m[0][0] + self.m[3][1] * m.m[1][0] + self.m[3][2] * m.m[2][0] + self.m[3][3] * m.m[3][0],
-                                self.m[3][0] * m.m[0][1] + self.m[3][1] * m.m[1][1] + self.m[3][2] * m.m[2][1] + self.m[3][3] * m.m[3][1],
-                                self.m[3][0] * m.m[0][2] + self.m[3][1] * m.m[1][2] + self.m[3][2] * m.m[2][2] + self.m[3][3] * m.m[3][2],
-                                self.m[3][0] * m.m[0][3] + self.m[3][1] * m.m[1][3] + self.m[3][2] * m.m[2][3] + self.m[3][3] * m.m[3][3])
+        return new_affinematrix3d(self.m[0][0] * m.m[0][0] + self.m[0][1] * m.m[1][0] + self.m[0][2] * m.m[2][0] + self.m[0][3] * m.m[3][0],
+                                  self.m[0][0] * m.m[0][1] + self.m[0][1] * m.m[1][1] + self.m[0][2] * m.m[2][1] + self.m[0][3] * m.m[3][1],
+                                  self.m[0][0] * m.m[0][2] + self.m[0][1] * m.m[1][2] + self.m[0][2] * m.m[2][2] + self.m[0][3] * m.m[3][2],
+                                  self.m[0][0] * m.m[0][3] + self.m[0][1] * m.m[1][3] + self.m[0][2] * m.m[2][3] + self.m[0][3] * m.m[3][3],
+                                  self.m[1][0] * m.m[0][0] + self.m[1][1] * m.m[1][0] + self.m[1][2] * m.m[2][0] + self.m[1][3] * m.m[3][0],
+                                  self.m[1][0] * m.m[0][1] + self.m[1][1] * m.m[1][1] + self.m[1][2] * m.m[2][1] + self.m[1][3] * m.m[3][1],
+                                  self.m[1][0] * m.m[0][2] + self.m[1][1] * m.m[1][2] + self.m[1][2] * m.m[2][2] + self.m[1][3] * m.m[3][2],
+                                  self.m[1][0] * m.m[0][3] + self.m[1][1] * m.m[1][3] + self.m[1][2] * m.m[2][3] + self.m[1][3] * m.m[3][3],
+                                  self.m[2][0] * m.m[0][0] + self.m[2][1] * m.m[1][0] + self.m[2][2] * m.m[2][0] + self.m[2][3] * m.m[3][0],
+                                  self.m[2][0] * m.m[0][1] + self.m[2][1] * m.m[1][1] + self.m[2][2] * m.m[2][1] + self.m[2][3] * m.m[3][1],
+                                  self.m[2][0] * m.m[0][2] + self.m[2][1] * m.m[1][2] + self.m[2][2] * m.m[2][2] + self.m[2][3] * m.m[3][2],
+                                  self.m[2][0] * m.m[0][3] + self.m[2][1] * m.m[1][3] + self.m[2][2] * m.m[2][3] + self.m[2][3] * m.m[3][3],
+                                  self.m[3][0] * m.m[0][0] + self.m[3][1] * m.m[1][0] + self.m[3][2] * m.m[2][0] + self.m[3][3] * m.m[3][0],
+                                  self.m[3][0] * m.m[0][1] + self.m[3][1] * m.m[1][1] + self.m[3][2] * m.m[2][1] + self.m[3][3] * m.m[3][1],
+                                  self.m[3][0] * m.m[0][2] + self.m[3][1] * m.m[1][2] + self.m[3][2] * m.m[2][2] + self.m[3][3] * m.m[3][2],
+                                  self.m[3][0] * m.m[0][3] + self.m[3][1] * m.m[1][3] + self.m[3][2] * m.m[2][3] + self.m[3][3] * m.m[3][3])
 
 
-cpdef AffineMatrix translate(double x, double y, double z):
+cpdef AffineMatrix3D translate(double x, double y, double z):
     """
     Returns an affine matrix representing a translation of the coordinate space.
     """
 
-    return new_affinematrix(1, 0, 0, x,
-                            0, 1, 0, y,
-                            0, 0, 1, z,
-                            0, 0, 0, 1)
+    return new_affinematrix3d(1, 0, 0, x,
+                              0, 1, 0, y,
+                              0, 0, 1, z,
+                              0, 0, 0, 1)
 
 
 @cython.cdivision(True)
-cpdef AffineMatrix rotate_x(double angle):
+cpdef AffineMatrix3D rotate_x(double angle):
     """
     Returns an affine matrix representing the rotation of the coordinate space
     about the X axis by the supplied angle.
@@ -192,14 +192,14 @@ cpdef AffineMatrix rotate_x(double angle):
     cdef double r
 
     r = pi * angle / 180.0
-    return new_affinematrix(1, 0, 0, 0,
-                            0, cos(r), -sin(r), 0,
-                            0, sin(r), cos(r), 0,
-                            0, 0, 0, 1)
+    return new_affinematrix3d(1, 0, 0, 0,
+                              0, cos(r), -sin(r), 0,
+                              0, sin(r), cos(r), 0,
+                              0, 0, 0, 1)
 
 
 @cython.cdivision(True)
-cpdef AffineMatrix rotate_y(double angle):
+cpdef AffineMatrix3D rotate_y(double angle):
     """
     Returns an affine matrix representing the rotation of the coordinate space
     about the Y axis by the supplied angle.
@@ -210,14 +210,14 @@ cpdef AffineMatrix rotate_y(double angle):
     cdef double r
 
     r = pi * angle / 180.0
-    return new_affinematrix(cos(r), 0, sin(r), 0,
-                            0, 1, 0, 0,
-                            -sin(r), 0, cos(r), 0,
-                            0, 0, 0, 1)
+    return new_affinematrix3d(cos(r), 0, sin(r), 0,
+                              0, 1, 0, 0,
+                              -sin(r), 0, cos(r), 0,
+                              0, 0, 0, 1)
 
 
 @cython.cdivision(True)
-cpdef AffineMatrix rotate_z(double angle):
+cpdef AffineMatrix3D rotate_z(double angle):
     """
     Returns an affine matrix representing the rotation of the coordinate space
     about the Z axis by the supplied angle.
@@ -228,14 +228,14 @@ cpdef AffineMatrix rotate_z(double angle):
     cdef double r
 
     r = pi * angle / 180.0
-    return new_affinematrix(cos(r), -sin(r), 0, 0,
-                            sin(r), cos(r), 0, 0,
-                            0, 0, 1, 0,
-                            0, 0, 0, 1)
+    return new_affinematrix3d(cos(r), -sin(r), 0, 0,
+                              sin(r), cos(r), 0, 0,
+                              0, 0, 1, 0,
+                              0, 0, 0, 1)
 
 
 @cython.cdivision(True)
-cpdef AffineMatrix rotate_vector(double angle, Vector v):
+cpdef AffineMatrix3D rotate_vector(double angle, Vector3D v):
     """
     Returns an affine matrix representing the rotation of the coordinate space
     about the supplied vector by the specified angle.
@@ -243,7 +243,7 @@ cpdef AffineMatrix rotate_vector(double angle, Vector v):
     The angle is specified in degrees.
     """
 
-    cdef Vector vn
+    cdef Vector3D vn
     cdef double r, s, c, ci
 
     vn = v.normalise()
@@ -251,25 +251,25 @@ cpdef AffineMatrix rotate_vector(double angle, Vector v):
     s = sin(r)
     c = cos(r)
     ci = 1.0 - c
-    return new_affinematrix(vn.x * vn.x + (1.0 - vn.x * vn.x) * c,
-                            vn.x * vn.y * ci - vn.z * s,
-                            vn.x * vn.z * ci + vn.y * s,
-                            0,
-                            vn.x * vn.y * ci + vn.z * s,
-                            vn.y * vn.y + (1.0 - vn.y * vn.y) * c,
-                            vn.y * vn.z * ci - vn.x * s,
-                            0,
-                            vn.x * vn.z * ci - vn.y * s,
-                            vn.y * vn.z * ci + vn.x * s,
-                            vn.z * vn.z + (1.0 - vn.z * vn.z) * c,
-                            0,
-                            0,
-                            0,
-                            0,
-                            1)
+    return new_affinematrix3d(vn.x * vn.x + (1.0 - vn.x * vn.x) * c,
+                              vn.x * vn.y * ci - vn.z * s,
+                              vn.x * vn.z * ci + vn.y * s,
+                              0,
+                              vn.x * vn.y * ci + vn.z * s,
+                              vn.y * vn.y + (1.0 - vn.y * vn.y) * c,
+                              vn.y * vn.z * ci - vn.x * s,
+                              0,
+                              vn.x * vn.z * ci - vn.y * s,
+                              vn.y * vn.z * ci + vn.x * s,
+                              vn.z * vn.z + (1.0 - vn.z * vn.z) * c,
+                              0,
+                              0,
+                              0,
+                              0,
+                              1)
 
 
-cpdef AffineMatrix rotate(double yaw, double pitch, double roll):
+cpdef AffineMatrix3D rotate(double yaw, double pitch, double roll):
     """
     Returns an affine transform matrix representing an intrinsic rotation with
     an axis order (-Y)(-X)'Z''.
@@ -281,13 +281,13 @@ cpdef AffineMatrix rotate(double yaw, double pitch, double roll):
     :param yaw: Yaw angle in degrees.
     :param pitch: Pitch angle in degrees.
     :param roll: Roll angle in degrees.
-    :return: An AffineMatrix object.
+    :return: An AffineMatrix3D object.
     """
 
     return rotate_y(-yaw) * rotate_x(-pitch) * rotate_z(roll)
 
 
-cpdef AffineMatrix rotate_basis(Vector forward, Vector up):
+cpdef AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up):
     """
     Returns a rotation matrix defined by forward and up vectors.
 
@@ -300,12 +300,12 @@ cpdef AffineMatrix rotate_basis(Vector forward, Vector up):
     The forward and upwards vectors need not be orthogonal. The up vector will
     be rotated in the plane defined by the two vectors until it is orthogonal.
 
-    :param forward: A Vector object defining the forward direction.
-    :param up: A Vector object defining the up direction.
-    :return: An AffineMatrix object.
+    :param forward: A Vector3D object defining the forward direction.
+    :param up: A Vector3D object defining the up direction.
+    :return: An AffineMatrix3D object.
     """
 
-    cdef Vector x, y, z
+    cdef Vector3D x, y, z
 
     if forward is None:
         raise ValueError("Forward vector must not be None.")
@@ -327,9 +327,9 @@ cpdef AffineMatrix rotate_basis(Vector forward, Vector up):
     # generate remaining basis vector
     x = y.cross(z)
 
-    return new_affinematrix(x.x, y.x, z.x, 0.0,
-                            x.y, y.y, z.y, 0.0,
-                            x.z, y.z, z.z, 0.0,
-                            0.0, 0.0, 0.0, 1.0)
+    return new_affinematrix3d(x.x, y.x, z.x, 0.0,
+                              x.y, y.y, z.y, 0.0,
+                              x.z, y.z, z.z, 0.0,
+                              0.0, 0.0, 0.0, 1.0)
 
 

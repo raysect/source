@@ -62,7 +62,7 @@ cdef class BoundPrimitive:
 
         return None
 
-    cdef inline bint contains(self, Point point):
+    cdef inline bint contains(self, Point3D point):
 
         if self.box.contains(point):
 

@@ -29,19 +29,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import io
+import struct
+
+from numpy import array, float32, int32, zeros
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.normal cimport Normal, new_normal
-from raysect.core.math.point cimport Point, new_point
-from raysect.core.math.vector cimport Vector, new_vector
+from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.math.normal cimport Normal3D, new_normal3d
+from raysect.core.math.point cimport Point3D, new_point3d
+from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
-from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
-from libc.math cimport fabs, log, ceil
-from numpy import array, float32, int64, zeros
-from numpy cimport ndarray, float32_t, int64_t
-import io
-import pickle
+from raysect.core.boundingbox cimport BoundingBox3D, new_boundingbox3d
+from libc.math cimport fabs
+from numpy cimport float32_t, int32_t, uint8_t
+from cpython.bytes cimport PyBytes_AsString
 cimport cython
 
 """
@@ -77,27 +79,43 @@ DEF N3 = 5
 
 DEF NO_INTERSECTION = -1
 
+# raysect mesh format constants
+DEF RSM_VERSION_MAJOR = 1
+DEF RSM_VERSION_MINOR = 0
 
-cdef class MeshKDTree(KDTreeCore):
+# TODO: fire exceptions if degenerate triangles are found and tolerant mode is not enabled (the face normal call will fail @ normalisation)
+# TODO: tidy up the internal storage of triangles - separate the triangle reference arrays for vertices, normals etc...
+# TODO: the following code really is a bit opaque, needs a general tidy up
+# TODO: move load/save code to C?
+
+cdef class MeshData(KDTreeCore):
+    """
+    Holds the mesh data and acceleration structures.
+
+    The Mesh primitive is a thin wrapper around a MeshData object. This
+    arrangement simplifies mesh instancing and the load/dump methods.
+    """
 
     cdef:
         float32_t[:, ::1] vertices
         float32_t[:, ::1] vertex_normals
         float32_t[:, ::1] face_normals
-        int64_t[:, ::1] triangles
+        int32_t[:, ::1] triangles
         public bint smoothing
-        int _ix, _iy, _iz
+        public bint closed
+        int32_t _ix, _iy, _iz
         float _sx, _sy, _sz
         float _u, _v, _w, _t
-        int _i
+        int32_t _i
 
-    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
+    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, bint closed=True, bint tolerant=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         self.smoothing = smoothing
+        self.closed = closed
 
         # convert to numpy arrays for internal use
         vertices = array(vertices, dtype=float32)
-        triangles = array(triangles, dtype=int64)
+        triangles = array(triangles, dtype=int32)
         if normals is not None:
             vertex_normals = array(normals, dtype=float32)
         else:
@@ -130,10 +148,6 @@ cdef class MeshKDTree(KDTreeCore):
             if invalid.any():
                 raise ValueError("The triangle array references non-existent normals.")
 
-        # ensure vertex normals are normalised
-        #if vertex_normals is not None:
-            # TODO: write me
-
         # assign to memory views
         self.vertices = vertices
         self.vertex_normals = vertex_normals
@@ -145,6 +159,10 @@ cdef class MeshKDTree(KDTreeCore):
         self._w = -1.0
         self._t = INFINITY
         self._i = NO_INTERSECTION
+
+        # filter out degenerate triangles if we are being tolerant
+        if tolerant:
+            self._filter_triangles()
 
         # generate face normals
         self._generate_face_normals()
@@ -158,7 +176,53 @@ cdef class MeshKDTree(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _generate_face_normals(self):
+    cdef object _filter_triangles(self):
+
+        cdef:
+            float32_t[:, ::1] vertices
+            int32_t[:, ::1] triangles
+            int32_t i, valid
+            int32_t i1, i2, i3
+            Point3D p1, p2, p3
+            Vector3D v1, v2, v3
+
+        # assign locally to avoid repeated memory view validity checks
+        vertices = self.vertices
+        triangles = self.triangles
+
+        # scan triangles and make valid triangles contiguous
+        valid = 0
+        for i in range(self.triangles.shape[0]):
+
+            i1 = triangles[i, V1]
+            i2 = triangles[i, V2]
+            i3 = triangles[i, V3]
+
+            p1 = new_point3d(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
+            p2 = new_point3d(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
+            p3 = new_point3d(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
+
+            # the cross product of two edge vectors of a degenerate triangle
+            # (where 2 or more vertices are coincident or lie on the same line)
+            # is zero
+            v1 = p1.vector_to(p2)
+            v2 = p1.vector_to(p3)
+            v3 = v1.cross(v2)
+            if v3.get_length() == 0.0:
+
+                # triangle is degenerate, skip
+                continue
+
+            # shift triangles
+            triangles[valid, :] = triangles[i, :]
+            valid += 1
+
+        # reslice array to contain only valid triangles
+        self.triangles = triangles[:valid, :]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef object _generate_face_normals(self):
         """
         Calculate the triangles face normals from the vertices.
 
@@ -170,11 +234,11 @@ cdef class MeshKDTree(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            int64_t[:, ::1] triangles
-            int i
-            int i1, i2, i3
-            Point p1, p2, p3
-            Vector v1, v2, v3
+            int32_t[:, ::1] triangles
+            int32_t i
+            int32_t i1, i2, i3
+            Point3D p1, p2, p3
+            Vector3D v1, v2, v3
 
         # assign locally to avoid repeated memory view validity checks
         vertices = self.vertices
@@ -187,9 +251,9 @@ cdef class MeshKDTree(KDTreeCore):
             i2 = triangles[i, V2]
             i3 = triangles[i, V3]
 
-            p1 = new_point(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
-            p2 = new_point(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
-            p3 = new_point(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
+            p1 = new_point3d(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
+            p2 = new_point3d(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
+            p3 = new_point3d(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
 
             v1 = p1.vector_to(p2)
             v2 = p1.vector_to(p3)
@@ -201,7 +265,7 @@ cdef class MeshKDTree(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef BoundingBox _generate_bounding_box(self, int i):
+    cdef BoundingBox3D _generate_bounding_box(self, int32_t i):
         """
         Generates a bounding box for the specified triangle.
 
@@ -209,14 +273,14 @@ cdef class MeshKDTree(KDTreeCore):
         conservative bounds required by the watertight mesh algorithm.
 
         :param i: Triangle array index.
-        :return: A BoundingBox object.
+        :return: A BoundingBox3D object.
         """
 
         cdef:
             float32_t[:, ::1] vertices
-            int64_t[:, ::1] triangles
-            int i1, i2, i3
-            BoundingBox bbox
+            int32_t[:, ::1] triangles
+            int32_t i1, i2, i3
+            BoundingBox3D bbox
 
         # assign locally to avoid repeated memory view validity checks
         vertices = self.vertices
@@ -226,13 +290,13 @@ cdef class MeshKDTree(KDTreeCore):
         i2 = triangles[i, V2]
         i3 = triangles[i, V3]
 
-        bbox = new_boundingbox(
-            new_point(
+        bbox = new_boundingbox3d(
+            new_point3d(
                 min(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
                 min(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
                 min(vertices[i1, Z], vertices[i2, Z], vertices[i3, Z]),
             ),
-            new_point(
+            new_point3d(
                 max(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
                 max(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
                 max(vertices[i1, Z], vertices[i2, Z], vertices[i3, Z]),
@@ -242,42 +306,42 @@ cdef class MeshKDTree(KDTreeCore):
 
         return bbox
 
-    def __getstate__(self):
-        """Encodes state for pickling."""
-
-        vertices = self.vertices.base.tolist()
-        triangles = self.triangles.base.tolist()
-        if self.vertex_normals is not None:
-            normals = self.vertex_normals.base.tolist()
-        else:
-            normals = None
-
-        return vertices, normals, triangles, self.smoothing, super().__getstate__()
-
-    def __setstate__(self, state):
-        """Decodes state for pickling."""
-
-        vertices, normals, triangles, self.smoothing, base_state = state
-
-        # convert lists back to numpy arrays and assign to memory views
-        self.vertices = array(vertices, dtype=float32)
-        self.triangles = array(triangles, dtype=int64)
-        if normals is not None:
-            self.vertex_normals = array(normals, dtype=float32)
-        else:
-            self.vertex_normals = None
-
-        # reset hit data
-        self._u = -1.0
-        self._v = -1.0
-        self._w = -1.0
-        self._t = INFINITY
-        self._i = NO_INTERSECTION
-
-        # regenerate face normals
-        self._generate_face_normals()
-
-        super().__setstate__(base_state)
+    # def __getstate__(self):
+    #     """Encodes state for pickling."""
+    #
+    #     vertices = self.vertices.base.tolist()
+    #     triangles = self.triangles.base.tolist()
+    #     if self.vertex_normals is not None:
+    #         normals = self.vertex_normals.base.tolist()
+    #     else:
+    #         normals = None
+    #
+    #     return vertices, normals, triangles, self.smoothing, self.closed, super().__getstate__()
+    #
+    # def __setstate__(self, state):
+    #     """Decodes state for pickling."""
+    #
+    #     vertices, normals, triangles, self.smoothing, self.closed, base_state = state
+    #
+    #     # convert lists back to numpy arrays and assign to memory views
+    #     self.vertices = array(vertices, dtype=float32)
+    #     self.triangles = array(triangles, dtype=int32)
+    #     if normals is not None:
+    #         self.vertex_normals = array(normals, dtype=float32)
+    #     else:
+    #         self.vertex_normals = None
+    #
+    #     # reset hit data
+    #     self._u = -1.0
+    #     self._v = -1.0
+    #     self._w = -1.0
+    #     self._t = INFINITY
+    #     self._i = NO_INTERSECTION
+    #
+    #     # regenerate face normals
+    #     self._generate_face_normals()
+    #
+    #     super().__setstate__(base_state)
 
     cpdef bint hit(self, Ray ray):
 
@@ -293,14 +357,14 @@ cdef class MeshKDTree(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _hit_leaf(self, int id, Ray ray, double max_range):
+    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
 
         cdef:
             float hit_data[4]
-            int count, item, index
+            int32_t count, item, index
             double distance
             double u, v, w, t
-            int triangle, closest_triangle
+            int32_t triangle, closest_triangle
 
         # unpack leaf data
         count = self._nodes[id].count
@@ -346,7 +410,7 @@ cdef class MeshKDTree(KDTreeCore):
         #  Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
 
         cdef:
-            int ix, iy, iz
+            int32_t ix, iy, iz
             float rdz
             float sx, sy, sz
 
@@ -388,7 +452,7 @@ cdef class MeshKDTree(KDTreeCore):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _hit_triangle(self, int i, Ray ray, float[4] hit_data):
+    cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data):
 
         # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
@@ -396,9 +460,9 @@ cdef class MeshKDTree(KDTreeCore):
 
         cdef:
             float32_t[:, ::1] vertices
-            int64_t[:, ::1] triangles
-            int i1, i2, i3
-            int ix, iy, iz
+            int32_t[:, ::1] triangles
+            int32_t i1, i2, i3
+            int32_t ix, iy, iz
             float sx, sy, sz
             float[3] v1, v2, v3
             float x1, x2, x3
@@ -499,9 +563,9 @@ cdef class MeshKDTree(KDTreeCore):
 
         cdef:
             double t
-            int triangle
-            Point hit_point, inside_point, outside_point
-            Normal face_normal, normal
+            int32_t triangle
+            Point3D hit_point, inside_point, outside_point
+            Normal3D face_normal, normal
             bint exiting
 
         # on a hit the kd-tree populates attributes containing the intersection data
@@ -512,22 +576,22 @@ cdef class MeshKDTree(KDTreeCore):
             return None
 
         # generate intersection description
-        face_normal = new_normal(
+        face_normal = new_normal3d(
             self.face_normals[triangle, X],
             self.face_normals[triangle, Y],
             self.face_normals[triangle, Z]
         )
-        hit_point = new_point(
+        hit_point = new_point3d(
             ray.origin.x + ray.direction.x * t,
             ray.origin.y + ray.direction.y * t,
             ray.origin.z + ray.direction.z * t
         )
-        inside_point = new_point(
+        inside_point = new_point3d(
             hit_point.x - face_normal.x * EPSILON,
             hit_point.y - face_normal.y * EPSILON,
             hit_point.z - face_normal.z * EPSILON
         )
-        outside_point = new_point(
+        outside_point = new_point3d(
             hit_point.x + face_normal.x * EPSILON,
             hit_point.y + face_normal.y * EPSILON,
             hit_point.z + face_normal.z * EPSILON
@@ -543,7 +607,7 @@ cdef class MeshKDTree(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef Normal _intersection_normal(self):
+    cdef Normal3D _intersection_normal(self):
         """
         Returns the surface normal for the last triangle hit.
 
@@ -555,10 +619,10 @@ cdef class MeshKDTree(KDTreeCore):
         """
 
         cdef:
-            int64_t[:, ::1] triangles
+            int32_t[:, ::1] triangles
             float32_t[:, ::1] vertex_normals
             float32_t[:, ::1] face_normals
-            int n1, n2, n3
+            int32_t n1, n2, n3
 
         # assign locally to avoid repeated memory view validity checks
         vertex_normals = self.vertex_normals
@@ -572,7 +636,7 @@ cdef class MeshKDTree(KDTreeCore):
             n2 = triangles[self._i, N2]
             n3 = triangles[self._i, N3]
 
-            return new_normal(
+            return new_normal3d(
                 self._u * vertex_normals[n1, X] + self._v * vertex_normals[n2, X] + self._w * vertex_normals[n3, X],
                 self._u * vertex_normals[n1, Y] + self._v * vertex_normals[n2, Y] + self._w * vertex_normals[n3, Y],
                 self._u * vertex_normals[n1, Z] + self._v * vertex_normals[n2, Z] + self._w * vertex_normals[n3, Z]
@@ -583,7 +647,7 @@ cdef class MeshKDTree(KDTreeCore):
             # assign locally to avoid repeated memory view validity checks
             face_normals = self.face_normals
 
-            return new_normal(
+            return new_normal3d(
                 face_normals[self._i, X],
                 face_normals[self._i, Y],
                 face_normals[self._i, Z]
@@ -591,14 +655,24 @@ cdef class MeshKDTree(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef bint mesh_contains(self, Point p):
+    cpdef bint mesh_contains(self, Point3D p):
+        """
+        Tests if a point is contained by the mesh.
+
+        Note, this method assumes the mesh is closed. Any open/closed mesh test
+        must be performed externally (this is generally quicker as coordinate
+        transforms etc... can be skipped if the mesh is open).
+
+        :param p: Local space Point3D.
+        :return: True if mesh contains point, False otherwise.
+        """
 
         cdef Ray ray
 
         # fire ray along z axis, if it encounters a polygon it inspects the orientation of the face
         # if the face is outwards, then the ray was spawned inside the mesh
         # this assumes the mesh has all face normals facing outwards from the mesh interior
-        ray = new_ray(p, new_vector(0, 0, 1), INFINITY)
+        ray = new_ray(p, new_vector3d(0, 0, 1), INFINITY)
 
         # search for closest triangle intersection
         if not self.hit(ray):
@@ -610,7 +684,7 @@ cdef class MeshKDTree(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef BoundingBox bounding_box(self, AffineMatrix to_world):
+    cpdef BoundingBox3D bounding_box(self, AffineMatrix3D to_world):
         """
         Returns a bounding box that encloses the mesh.
 
@@ -619,26 +693,198 @@ cdef class MeshKDTree(KDTreeCore):
         coordinate transforms.
 
         :param to_world: Local to world space transform matrix.
-        :return: A BoundingBox object.
+        :return: A BoundingBox3D object.
         """
 
         cdef:
             float32_t[:, ::1] vertices
-            int i
-            BoundingBox bbox
-            Point vertex
+            int32_t i
+            BoundingBox3D bbox
+            Point3D vertex
 
         # assign locally to avoid repeated memory view validity checks
         vertices = self.vertices
 
         # TODO: padding should really be a function of mesh extent
         # convert vertices to world space and grow a bounding box around them
-        bbox = BoundingBox()
+        bbox = BoundingBox3D()
         for i in range(vertices.shape[0]):
-            vertex = new_point(vertices[i, X], vertices[i, Y], vertices[i, Z])
+            vertex = new_point3d(vertices[i, X], vertices[i, Y], vertices[i, Z])
             bbox.extend(vertex.transform(to_world), BOX_PADDING)
 
         return bbox
+
+    # TODO: this code is forking horrible - need to split the triangle array into separate components (for a start!)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def save(self, object file):
+
+        cdef:
+            int32_t i, j
+            float32_t[:, ::1] vertices
+            float32_t[:, ::1] vertex_normals
+            int32_t[:, ::1] triangles
+
+        close = False
+
+        # treat as a filename if a stream is not supplied
+        if not isinstance(file, io.IOBase):
+            file = open(file, mode="wb")
+            close = True
+
+        # hold local references to avoid repeated memory view object checks
+        vertices = self.vertices
+        vertex_normals = self.vertex_normals
+        triangles = self.triangles
+
+        # write header
+        file.write(b"RSM")
+        file.write(struct.pack("<B", RSM_VERSION_MAJOR))
+        file.write(struct.pack("<B", RSM_VERSION_MINOR))
+
+        # mesh setting flags
+        file.write(struct.pack("<?", self.smoothing))
+        file.write(struct.pack("<?", self.closed))
+        file.write(struct.pack("<?", True))    # kdtree in file (hardcoded for now, will be an option)
+
+        # item counts
+        file.write(struct.pack("<i", vertices.shape[0]))
+
+        if self.vertex_normals is not None:
+            file.write(struct.pack("<i", vertex_normals.shape[0]))
+        else:
+            file.write(struct.pack("<i", 0))
+
+        file.write(struct.pack("<i", triangles.shape[0]))
+
+        # write vertices
+        for i in range(vertices.shape[0]):
+            for j in range(3):
+                file.write(struct.pack("<f", vertices[i, j]))
+
+        # write normals
+        if vertex_normals is not None:
+            for i in range(vertex_normals.shape[0]):
+                for j in range(3):
+                    file.write(struct.pack("<f", vertex_normals[i, j]))
+
+        # triangles
+        width = 3
+        if vertex_normals is not None:
+            # we have vertex normals for each triangle
+            width += 3
+
+        for i in range(triangles.shape[0]):
+            for j in range(width):
+                file.write(struct.pack("<i", triangles[i, j]))
+
+        # write kd-tree
+        super().save(file)
+
+        # if we opened a file, we should close it
+        if close:
+            file.close()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def load(self, object file):
+
+        cdef:
+            int32_t i, j
+            float32_t[:, ::1] vertices
+            float32_t[:, ::1] vertex_normals
+            int32_t[:, ::1] triangles
+
+        close = False
+
+        # treat as a filename if a stream is not supplied
+        if not isinstance(file, io.IOBase):
+            file = open(file, mode="rb")
+            close = True
+
+        # read and check header
+        identifier = file.read(3)
+        major_version = self._read_uint8(file)
+        minor_version = self._read_uint8(file)
+
+        # validate
+        if identifier != b"RSM":
+            raise ValueError("Specified file is not a Raysect mesh file.")
+
+        if major_version != RSM_VERSION_MAJOR or minor_version != RSM_VERSION_MINOR:
+            raise ValueError("Unsupported Raysect mesh version.")
+
+        # mesh setting flags
+        self.smoothing = self._read_bool(file)
+        self.closed = self._read_bool(file)
+        _ = self._read_bool(file)    # kdtree option, ignore for now (to be implemented)
+
+        # item counts
+        num_vertices = self._read_int32(file)
+        num_vertex_normals = self._read_int32(file)
+        num_triangles = self._read_int32(file)
+
+        # read vertices
+        vertices = zeros((num_vertices, 3), dtype=float32)
+        for i in range(num_vertices):
+            for j in range(3):
+                vertices[i, j] = self._read_float(file)
+        self.vertices = vertices
+
+        # read vertex normals
+        if num_vertex_normals > 0:
+            vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
+            for i in range(num_vertex_normals):
+                for j in range(3):
+                    vertex_normals[i, j] = self._read_float(file)
+            self.vertex_normals = vertex_normals
+        else:
+            self.vertex_normals = None
+
+        # read triangles
+        width = 3
+        if num_vertex_normals > 0:
+            # we have vertex normals for each triangle
+            width += 3
+
+        triangles = zeros((num_triangles, width), dtype=int32)
+        for i in range(num_triangles):
+            for j in range(width):
+                triangles[i, j] = self._read_int32(file)
+        self.triangles = triangles
+
+        # read kdtree
+        super().load(file)
+
+        # generate face normals
+        self._generate_face_normals()
+
+        # initial hit data
+        self._u = -1.0
+        self._v = -1.0
+        self._w = -1.0
+        self._t = INFINITY
+        self._i = NO_INTERSECTION
+
+        # if we opened a file, we should close it
+        if close:
+            file.close()
+
+    @classmethod
+    def from_file(cls, file):
+
+        m = MeshData.__new__(MeshData)
+        m.load(file)
+        return m
+
+    cdef inline uint8_t _read_uint8(self, object file):
+        return (<uint8_t *> PyBytes_AsString(file.read(sizeof(uint8_t))))[0]
+
+    cdef inline bint _read_bool(self, object file):
+        return self._read_uint8(file) != 0
+
+    cdef inline double _read_float(self, object file):
+        return (<float *> PyBytes_AsString(file.read(sizeof(float))))[0]
 
 
 cdef class Mesh(Primitive):
@@ -689,6 +935,14 @@ cdef class Mesh(Primitive):
     creating a new mesh from scratch. If instance is set, it takes precedence
     over any other mesh creation settings.
 
+    If a mesh contains degenerate triangles (common for meshes generated from
+    CAD models), enable tolerant mode to automatically remove them during mesh
+    initialisation. A degenerate triangle is one where two or more vertices are
+    coincident or all the vertices lie on the same line. Degenerate triangles
+    will produce rendering error if encountered even though they are
+    "infinitesimally" thin. A ray can still intersect them if they perfectly
+    align as the triangle edges are treated as part of the triangle surface).
+
     The kdtree_* arguments are tuning parameters for the kd-tree construction.
     For more information see the documentation of KDTree. The default values
     should result in efficient construction of the mesh's internal kd-tree.
@@ -701,6 +955,7 @@ cdef class Mesh(Primitive):
     :param normals: An K x 3 list of vertex normals or None.
     :param smoothing: True to enable normal interpolation, False to disable.
     :param closed: True is the mesh defines a closed volume, False otherwise.
+    :param tolerant: Mesh will automatically correct meshes with degenerate triangles if set to True (default).
     :param instance: The Mesh to become an instance of.
     :param kdtree_max_depth: The maximum tree depth (automatic if set to 0, default is 0).
     :param kdtree_min_items: The item count threshold for forcing creation of a new leaf node (default 1).
@@ -714,47 +969,35 @@ cdef class Mesh(Primitive):
     """
 
     cdef:
-        MeshKDTree _kdtree
-        bint closed
+        MeshData _data
         bint _seek_next_intersection
         Ray _next_world_ray
         Ray _next_local_ray
         double _ray_distance
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, object vertices=None, object triangles=None, object normals=None, bint smoothing=True, bint closed=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, object vertices=None, object triangles=None, object normals=None, bint smoothing=True, bint closed=True, tolerant=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix3D transform not None=AffineMatrix3D(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
         if instance:
 
             # hold references to internal data of the specified mesh
-            self.closed = instance.closed
-            self._kdtree = instance._kdtree
+            self._data = instance._data
 
         else:
 
             if vertices is None or triangles is None:
                 raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
 
-            self.closed = closed
-
             # build the kd-Tree
-            self._kdtree = MeshKDTree(vertices, triangles, normals, smoothing, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
+            self._data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
         self._next_world_ray = None
         self._next_local_ray = None
         self._ray_distance = 0
-
-    # property triangles:
-    #
-    #     def __get__(self):
-    #
-    #         # return a copy to prevent users altering the list
-    #         # if the list size is altered it could cause a segfault
-    #         return self._kdtree.triangles.copy()
 
     cpdef Intersection hit(self, Ray ray):
         """
@@ -783,7 +1026,7 @@ cdef class Mesh(Primitive):
         self._ray_distance = 0
 
         # do we hit the mesh?
-        if self._kdtree.hit(local_ray):
+        if self._data.hit(local_ray):
             return self._process_intersection(ray, local_ray)
 
         # there was no intersection so disable next intersection search
@@ -810,7 +1053,7 @@ cdef class Mesh(Primitive):
         if self._seek_next_intersection:
 
             # do we hit the mesh again?
-            if self._kdtree.hit(self._next_local_ray):
+            if self._data.hit(self._next_local_ray):
                 return self._process_intersection(self._next_world_ray, self._next_local_ray)
 
             # there was no intersection so disable further searching
@@ -824,14 +1067,14 @@ cdef class Mesh(Primitive):
             Intersection intersection
 
         # obtain intersection details from the kd-tree
-        intersection = self._kdtree.calc_intersection(local_ray)
+        intersection = self._data.calc_intersection(local_ray)
 
         # enable next intersection search and cache the local ray for the next intersection calculation
         # we must shift the new origin past the last intersection
         self._seek_next_intersection = True
         self._next_world_ray = world_ray
         self._next_local_ray = new_ray(
-            new_point(
+            new_point3d(
                 intersection.hit_point.x + local_ray.direction.x * EPSILON,
                 intersection.hit_point.y + local_ray.direction.y * EPSILON,
                 intersection.hit_point.z + local_ray.direction.z * EPSILON
@@ -855,7 +1098,7 @@ cdef class Mesh(Primitive):
 
         return intersection
 
-    cpdef bint contains(self, Point p) except -1:
+    cpdef bint contains(self, Point3D p) except -1:
         """
         Identifies if the point lies in the volume defined by the mesh.
 
@@ -868,13 +1111,14 @@ cdef class Mesh(Primitive):
         :return: True if the point lies in the volume, False otherwise.
         """
 
-        if not self.closed:
+        # avoid unnecessary transform by checking closed state early
+        if not self._data.closed:
             return False
 
         p = p.transform(self.to_local())
-        return self._kdtree.mesh_contains(p)
+        return self._data.mesh_contains(p)
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
         """
         Returns a world space bounding box that encloses the mesh.
 
@@ -882,42 +1126,65 @@ cdef class Mesh(Primitive):
         accuracy problems between the mesh and box representations following
         coordinate transforms.
 
-        :return: A BoundingBox object.
+        :return: A BoundingBox3D object.
         """
 
-        return self._kdtree.bounding_box(self.to_root())
+        return self._data.bounding_box(self.to_root())
 
-    def dump(self, object file):
+    def save(self, object file):
         """
-        Writes the mesh data to the specified file descriptor or filename.
+        Saves the mesh to the specified file object or filename.
 
-        This method can be used as part of a caching system to avoid the
-        computational cost of building a mesh's kd-tree. The kd-tree is stored
-        with the mesh data and is restored when the mesh is loaded.
-
-        This method may be supplied with a file object or a string path.
+        The mesh in written in RaySect Mesh (RSM) format. The RSM format
+        contains the mesh geometry and the mesh acceleration structures.
 
         :param file: File object or string path.
         """
 
-        state = (self._kdtree, self.closed)
+        # todo: keeping this here until I re add the kdtree parameter
+        # """
+        # Saves the mesh to the specified file object or filename.
+        #
+        # The mesh in written in RaySect Mesh (RSM) format. The RSM format
+        # contains the mesh geometry and (optionally) the mesh acceleration
+        # structures.
+        #
+        # By default, the mesh kdtree acceleration structure is stored alongside
+        # the mesh geometry. If this is not desired, for instance if storage
+        # space is a premium, the kdtree can be omitted by setting the kdtree
+        # argument to False. The kdtree will be recalculated when the mesh is
+        # next loaded (as is performed when other mesh formats are imported).
+        #
+        # :param file: File object or string path.
+        # """
 
-        if isinstance(file, io.BytesIO):
-             pickle.dump(state, file)
-        else:
-            with open(file, mode="wb") as f:
-                pickle.dump(state, f)
+        # hand over to the mesh data object
+        self._data.save(file)
+
+    def load(self, object file):
+        """
+        Loads the mesh specified by a file object or filename.
+
+        The mesh must be stored in a RaySect Mesh (RSM) format file. RSM files
+        are created with the Mesh save() method.
+
+        :param file: File object or string path.
+        """
+
+        # rebuild internal state
+        self._data = MeshData.from_file(file)
+        self._seek_next_intersection = False
+        self._next_world_ray = None
+        self._next_local_ray = None
+        self._ray_distance = 0
 
     @classmethod
-    def load(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
+    def from_file(cls, object file, object parent=None, AffineMatrix3D transform=AffineMatrix3D(), Material material=Material(), unicode name=""):
         """
-        Reads the mesh data from the specified file descriptor or filename.
+        Instances a new Mesh using data from a file object or filename.
 
-        This method can be used as part of a caching system to avoid the
-        computational cost of rebuilding a mesh's kd-tree. The kd-tree is
-        stored with the mesh data and is restored when the mesh is loaded.
-
-        This method may be supplied with a file object or a string path.
+        The mesh must be stored in a RaySect Mesh (RSM) format file. RSM files
+        are created with the Mesh save() method.
 
         :param file: File object or string path.
         :param parent: Attaches the mesh to the specified scene-graph node.
@@ -926,19 +1193,8 @@ cdef class Mesh(Primitive):
         :param name: A human friendly name to identity the mesh in the scene-graph.
         """
 
-        cdef Mesh m
-
-        if isinstance(file, io.BytesIO):
-             state = pickle.load(file)
-        else:
-            with open(file, mode="rb") as f:
-                state = pickle.load(f)
-
         m = Mesh.__new__(Mesh)
-        m._kdtree, m.closed = state
-        m._seek_next_intersection = False
-        m._next_world_ray = None
-        m._next_local_ray = None
-        m._ray_distance = 0
         super(Mesh, m).__init__(parent, transform, material, name)
+        m.load(file)
         return m
+

@@ -13,10 +13,10 @@ Create Primitives
 Set-up your primitives by defining materials, meshes, etc::
 
     # Box defining the ground plane
-    ground = Box(lower=Point(-50, -1.51, -50), upper=Point(50, -1.5, 50), material=Lambert())
+    ground = Box(lower=Point3D(-50, -1.51, -50), upper=Point3D(50, -1.5, 50), material=Lambert())
 
     # checker board wall that acts as emitter
-    emitter = Box(lower=Point(-10, -10, 10), upper=Point(10, 10, 10.1),
+    emitter = Box(lower=Point3D(-10, -10, 10), upper=Point3D(10, 10, 10.1),
                   material=Checkerboard(4, d65_white, d65_white, 0.1, 2.0), transform=rotate(45, 0, 0))
 
     # Sphere
@@ -94,8 +94,8 @@ Simulated Spectrum
 
 Lets simulate measuring a spectrum by launching a single ray::
 
-    ray = Ray(origin=Point(0, 0, -5),
-              direction=Vector(0, 0, 1),
+    ray = Ray(origin=Point3D(0, 0, -5),
+              direction=Vector3D(0, 0, 1),
               min_wavelength=375,
               max_wavelength=785,
               num_samples=100)

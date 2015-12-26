@@ -1,4 +1,4 @@
-from raysect.optical import World, Node, translate, rotate, Point, d65_white, ConstantSF, InterpolatedSF
+from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.material.lambert import Lambert
@@ -62,42 +62,42 @@ world = World()
 # enclosing box
 enclosure = Node(world)
 
-e_back = Box(Point(-1, -1, 0), Point(1, 1, 0),
-    parent=enclosure,
-    transform=translate(0, 0, 1) * rotate(0, 0, 0),
-    material=Lambert(white_reflectivity))
+e_back = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
+             parent=enclosure,
+             transform=translate(0, 0, 1) * rotate(0, 0, 0),
+             material=Lambert(white_reflectivity))
 
-e_bottom = Box(Point(-1, -1, 0), Point(1, 1, 0),
-    parent=enclosure,
-    transform=translate(0, -1, 0) * rotate(0, -90, 0),
-    material=Lambert(white_reflectivity))
+e_bottom = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
+               parent=enclosure,
+               transform=translate(0, -1, 0) * rotate(0, -90, 0),
+               material=Lambert(white_reflectivity))
 
-e_top = Box(Point(-1, -1, 0), Point(1, 1, 0),
-    parent=enclosure,
-    transform=translate(0, 1, 0) * rotate(0, 90, 0),
-    material=Lambert(white_reflectivity))
+e_top = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
+            parent=enclosure,
+            transform=translate(0, 1, 0) * rotate(0, 90, 0),
+            material=Lambert(white_reflectivity))
 
-e_left = Box(Point(-1, -1, 0), Point(1, 1, 0),
-    parent=enclosure,
-    transform=translate(1, 0, 0) * rotate(-90, 0, 0),
-    material=Lambert(red_reflectivity))
+e_left = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
+             parent=enclosure,
+             transform=translate(1, 0, 0) * rotate(-90, 0, 0),
+             material=Lambert(red_reflectivity))
 
-e_right = Box(Point(-1, -1, 0), Point(1, 1, 0),
-    parent=enclosure,
-    transform=translate(-1, 0, 0) * rotate(90, 0, 0),
-    material=Lambert(green_reflectivity))
+e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
+              parent=enclosure,
+              transform=translate(-1, 0, 0) * rotate(90, 0, 0),
+              material=Lambert(green_reflectivity))
 
 # ceiling light
-light = Box(Point(-0.4, -0.4, -0.01), Point(0.4, 0.4, 0.0),
-    parent=enclosure,
-    transform=translate(0, 1, 0) * rotate(0, 90, 0),
-    material=UniformSurfaceEmitter(light_spectrum, 2.0))
+light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+            parent=enclosure,
+            transform=translate(0, 1, 0) * rotate(0, 90, 0),
+            material=UniformSurfaceEmitter(light_spectrum, 2.0))
 
 # objects in enclosure
-box = Box(Point(-0.4, 0, -0.4), Point(0.3, 1.4, 0.3),
-    parent=world,
-    transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
-    material=schott("N-BK7"))
+box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
+          parent=world,
+          transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
+          material=schott("N-BK7"))
 
 sphere = Sphere(0.4,
     parent=world,

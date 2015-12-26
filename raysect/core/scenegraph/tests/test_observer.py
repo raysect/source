@@ -29,7 +29,7 @@
 
 import unittest
 from raysect.core.scenegraph import Node, Observer
-from raysect.core.math import AffineMatrix, translate
+from raysect.core.math import AffineMatrix3D, translate
 
 # TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures
 # TODO: Add tests for functionality inherited from Node.
@@ -57,10 +57,10 @@ class TestObserver(unittest.TestCase):
         self.assertEqual(n.parent, None, "Parent should be None.")
         self.assertEqual(n.root, n, "Observer should be it's own root as it is not attached to a parent.")
         self.assertEqual(len(n.children), 0, "Child list should be empty.")
-        self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
-        self.assertEqual(n.name, "", "Observer name should be an empty string")
+        self.assertTransformAlmostEqual(n.transform, AffineMatrix3D(), delta = 1e-14, msg ="Transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Inverse root transform should be an identity matrix.")
+        self.assertEqual(n.name, None, "Observer name should be None.")
 
     def test_initialise_with_all_arguments(self):
         """Initialisation with all arguments."""
@@ -72,9 +72,9 @@ class TestObserver(unittest.TestCase):
         self.assertEqual(a.parent, None, "Node a's parent should be None.")
         self.assertEqual(a.root, a, "Node a's root should be Node a.")
         self.assertEqual(a.children.count(b), 1, "Node a's child list should contain Observer b.")
-        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a.transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Node a's inverse root transform should be an identity matrix.")
 
         # node b
         self.assertEqual(b.parent, a, "Observer b's parent should be Node a.")
