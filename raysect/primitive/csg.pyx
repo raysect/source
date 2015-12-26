@@ -33,7 +33,7 @@
 # TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
 
 from raysect.core.classes cimport Material, new_ray, new_intersection
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.scenegraph._nodebase cimport _NodeBase
@@ -302,7 +302,7 @@ cdef class Union(CSGPrimitive):
         # all other intersections are occurring inside unioned object and are therefore invalid
         return False
 
-    cpdef bint contains(self, Point p) except -1:
+    cpdef bint contains(self, Point3D p) except -1:
 
         p = p.transform(self.to_local())
         return self._primitive_a.contains(p) or self._primitive_b.contains(p)
@@ -311,7 +311,7 @@ cdef class Union(CSGPrimitive):
 
         cdef:
             list points
-            Point point
+            Point3D point
             BoundingBox box
 
         box = BoundingBox()
@@ -368,7 +368,7 @@ cdef class Intersect(CSGPrimitive):
         # all other intersections are invalid
         return False
 
-    cpdef bint contains(self, Point p) except -1:
+    cpdef bint contains(self, Point3D p) except -1:
 
         p = p.transform(self.to_local())
         return self._primitive_a.contains(p) and self._primitive_b.contains(p)
@@ -377,7 +377,7 @@ cdef class Intersect(CSGPrimitive):
 
         cdef:
             list points
-            Point point
+            Point3D point
             BoundingBox box
 
         box = BoundingBox()
@@ -461,7 +461,7 @@ cdef class Subtract(CSGPrimitive):
 
         return closest
 
-    cpdef bint contains(self, Point p) except -1:
+    cpdef bint contains(self, Point3D p) except -1:
 
         p = p.transform(self.to_local())
         return self._primitive_a.contains(p) and not self._primitive_b.contains(p)
@@ -470,7 +470,7 @@ cdef class Subtract(CSGPrimitive):
 
         cdef:
             list points
-            Point point
+            Point3D point
             BoundingBox box
 
         # a subtracted object (A - B) will only ever occupy the same or less space than the original primitive (A)

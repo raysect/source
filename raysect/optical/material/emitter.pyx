@@ -34,7 +34,7 @@ from numpy cimport ndarray
 from libc.math cimport round
 
 from raysect.core.math.normal cimport Normal
-from raysect.core.math.point cimport new_point
+from raysect.core.math.point cimport new_point3d
 from raysect.optical.spectrum cimport new_spectrum
 from raysect.optical.spectralfunction cimport ConstantSF
 from raysect.optical.colour import d65_white
@@ -45,11 +45,11 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
+                                   Point3D start_point, Point3D end_point,
                                    AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
-            Point start, end
+            Point3D start, end
             Vector3D direction
             double length
             Spectrum emission
@@ -127,11 +127,11 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
+                                   Point3D start_point, Point3D end_point,
                                    AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
-            Point start, end
+            Point3D start, end
             Vector3D integration_direction, ray_direction
             double length, t, c
             Spectrum emission, emission_previous
@@ -174,9 +174,9 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         c = 0.5 * self._step
         while t <= length:
 
-            sample_point = new_point(start.x + t * integration_direction.x,
-                                     start.y + t * integration_direction.y,
-                                     start.z + t * integration_direction.z)
+            sample_point = new_point3d(start.x + t * integration_direction.x,
+                                       start.y + t * integration_direction.y,
+                                       start.z + t * integration_direction.z)
 
             emission = new_spectrum(spectrum.min_wavelength,
                                     spectrum.max_wavelength,
@@ -229,7 +229,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Point point, Vector3D direction, Spectrum spectrum,
+    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix to_local, AffineMatrix to_world):
 
@@ -249,8 +249,8 @@ cdef class UniformSurfaceEmitter(NullVolume):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                bint exiting, Point inside_point, Point outside_point,
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                bint exiting, Point3D inside_point, Point3D outside_point,
                                 Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
@@ -344,8 +344,8 @@ cdef class Checkerboard(NullVolume):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                bint exiting, Point inside_point, Point outside_point,
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                bint exiting, Point3D inside_point, Point3D outside_point,
                                 Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:

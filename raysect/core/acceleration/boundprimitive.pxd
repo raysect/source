@@ -31,7 +31,7 @@
 
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.classes cimport Ray
 from raysect.core.classes cimport Intersection
 
@@ -45,4 +45,4 @@ cdef class BoundPrimitive:
 
     cdef inline Intersection next_intersection(self)
 
-    cdef inline bint contains(self, Point point)
+    cdef inline bint contains(self, Point3D point)

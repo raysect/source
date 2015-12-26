@@ -34,7 +34,7 @@ from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.affinematrix cimport new_affinematrix
 from raysect.optical.spectrum cimport Spectrum
@@ -81,8 +81,8 @@ cdef class Roughen(Material):
         self.roughness = roughness
         self.material = material
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                    bint exiting, Point inside_point, Point outside_point,
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal normal, AffineMatrix world_to_local, AffineMatrix local_to_world):
 
         cdef:
@@ -139,7 +139,7 @@ cdef class Roughen(Material):
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
+                                   Point3D start_point, Point3D end_point,
                                    AffineMatrix to_local, AffineMatrix to_world):
 
         return self.material.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)

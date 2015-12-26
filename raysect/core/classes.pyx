@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport new_point
+from raysect.core.math.point cimport new_point3d
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
@@ -38,21 +38,21 @@ cdef class Ray:
     """
     Describes a line in space with an origin and direction.
 
-    :param Point origin: Point defining origin (default is Point(0, 0, 0)).
+    :param Point3D origin: Point3D defining origin (default is Point3D(0, 0, 0)).
     :param Vector3D direction: Vector defining direction (default is Vector3D(0, 0, 1)).
     :param double max_distance: The terminating distance of the ray.
     """
 
-    def __init__(self, Point origin=None, Vector3D direction=None, double max_distance=INFINITY):
+    def __init__(self, Point3D origin=None, Vector3D direction=None, double max_distance=INFINITY):
 
         if origin is None:
-            origin = Point(0, 0, 0)
+            origin = Point3D(0, 0, 0)
 
         if direction is None:
             direction = Vector3D(0, 0, 1)
 
         self.origin = origin
-        """Point defining origin (default is Point(0, 0, 0))."""
+        """Point3D defining origin (default is Point3D(0, 0, 0))."""
         self.direction = direction
         """Vector3D defining direction (default is Vector3D(0, 0, 1))."""
         self.max_distance = max_distance
@@ -72,7 +72,7 @@ cdef class Ray:
 
         self.origin, self.direction, self.max_distance = state
 
-    cpdef Point point_on(self, double t):
+    cpdef Point3D point_on(self, double t):
         """
         Returns the point on the ray at the specified parametric distance from the ray origin.
 
@@ -82,12 +82,12 @@ cdef class Ray:
         :return: A point at distance t along the ray direction measured from its origin.
         """
         cdef:
-            Point origin = self.origin
+            Point3D origin = self.origin
             Vector3D direction = self.direction
 
-        return new_point(origin.x + t * direction.x,
-                         origin.y + t * direction.y,
-                         origin.z + t * direction.z)
+        return new_point3d(origin.x + t * direction.x,
+                           origin.y + t * direction.y,
+                           origin.z + t * direction.z)
 
 
 cdef class Intersection:
@@ -104,9 +104,9 @@ cdef class Intersection:
     :param Ray ray: The incident ray object (world space).
     :param double ray_distance: The distance of the intersection along the ray path.
     :param Primitive primitive: The intersected primitive object.
-    :param Point hit_point: The point of intersection between the ray and the primitive (primitive local space).
-    :param Point inside_point: The interior ray launch point (primitive local space).
-    :param Point outside_point: The exterior ray launch point (primitive local space).
+    :param Point3D hit_point: The point of intersection between the ray and the primitive (primitive local space).
+    :param Point3D inside_point: The interior ray launch point (primitive local space).
+    :param Point3D outside_point: The exterior ray launch point (primitive local space).
     :param Normal normal: The surface normal (primitive local space)
     :param bint exiting: True if the ray is exiting the surface, False otherwise.
     :param AffineMatrix to_local: A world to primitive local transform matrix.
@@ -114,7 +114,7 @@ cdef class Intersection:
     """
 
     def __init__(self, Ray ray, double ray_distance, Primitive primitive,
-                 Point hit_point, Point inside_point, Point outside_point,
+                 Point3D hit_point, Point3D inside_point, Point3D outside_point,
                  Normal normal, bint exiting, AffineMatrix to_local, AffineMatrix to_world):
 
         self.ray = ray

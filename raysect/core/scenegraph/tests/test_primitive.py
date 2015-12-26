@@ -29,7 +29,7 @@
 
 import unittest
 from raysect.core.scenegraph import Primitive, Node
-from raysect.core.math import Point, AffineMatrix, translate
+from raysect.core.math import Point3D, AffineMatrix, translate
 from raysect.core.acceleration import BoundingBox
 from raysect.core.classes import Material, Ray
 
@@ -123,7 +123,7 @@ class TestPrimitive(unittest.TestCase):
         n = Primitive()
 
         with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
-            n.contains(Point())
+            n.contains(Point3D())
 
     def test_bounding_box(self):
         """Method bounding_box() is virtual and should raise an exception if called."""

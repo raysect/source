@@ -31,7 +31,7 @@
 
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport new_normal
-from raysect.core.math.point cimport new_point
+from raysect.core.math.point cimport new_point3d
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
@@ -314,18 +314,18 @@ cdef class Cylinder(Primitive):
 
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_type)
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector3D direction, double ray_distance, int face, int type):
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int type):
 
         cdef:
-            Point hit_point, inside_point, outside_point
+            Point3D hit_point, inside_point, outside_point
             Vector3D interior_offset
             Normal normal
             bint exiting
 
         # point of surface intersection in local space
-        hit_point = new_point(origin.x + ray_distance * direction.x,
-                              origin.y + ray_distance * direction.y,
-                              origin.z + ray_distance * direction.z)
+        hit_point = new_point3d(origin.x + ray_distance * direction.x,
+                                origin.y + ray_distance * direction.y,
+                                origin.z + ray_distance * direction.z)
 
         # calculate surface normal in local space
         if type == CYLINDER:
@@ -346,13 +346,13 @@ cdef class Cylinder(Primitive):
         # displace hit_point away from surface to generate inner and outer points
         interior_offset = self._interior_offset(hit_point, normal, type)
 
-        inside_point = new_point(hit_point.x + interior_offset.x,
-                                 hit_point.y + interior_offset.y,
-                                 hit_point.z + interior_offset.z)
+        inside_point = new_point3d(hit_point.x + interior_offset.x,
+                                   hit_point.y + interior_offset.y,
+                                   hit_point.z + interior_offset.z)
 
-        outside_point = new_point(hit_point.x + EPSILON * normal.x,
-                                  hit_point.y + EPSILON * normal.y,
-                                  hit_point.z + EPSILON * normal.z)
+        outside_point = new_point3d(hit_point.x + EPSILON * normal.x,
+                                    hit_point.y + EPSILON * normal.y,
+                                    hit_point.z + EPSILON * normal.z)
 
         # is ray exiting surface
         if direction.dot(normal) >= 0.0:
@@ -367,7 +367,7 @@ cdef class Cylinder(Primitive):
                                 normal, exiting, self.to_local(), self.to_root())
 
     @cython.cdivision(True)
-    cdef inline Vector3D _interior_offset(self, Point hit_point, Normal normal, int type):
+    cdef inline Vector3D _interior_offset(self, Point3D hit_point, Normal normal, int type):
 
         cdef double x, y, z, length
 
@@ -407,19 +407,19 @@ cdef class Cylinder(Primitive):
 
         return new_vector3d(x, y, z)
 
-    cpdef bint contains(self, Point point) except -1:
+    cpdef bint contains(self, Point3D point) except -1:
 
         # convert point to local object space
         point = point.transform(self.to_local())
 
         return self._inside_slab(point) and self._inside_cylinder(point)
 
-    cdef inline bint _inside_cylinder(self, Point point):
+    cdef inline bint _inside_cylinder(self, Point3D point):
 
         # is the point inside the cylinder radius
         return (point.x * point.x + point.y * point.y) <= (self._radius * self._radius)
 
-    cdef inline bint _inside_slab(self, Point point):
+    cdef inline bint _inside_slab(self, Point3D point):
 
         # first check point is within the cylinder upper and lower bounds
         return 0.0 <= point.z <= self._height
@@ -428,14 +428,14 @@ cdef class Cylinder(Primitive):
 
         cdef:
             list points
-            Point point
+            Point3D point
             BoundingBox box
 
         box = BoundingBox()
 
         # calculate local bounds
-        box.lower = new_point(-self._radius, -self._radius, 0.0)
-        box.upper = new_point(self._radius, self._radius, self._height)
+        box.lower = new_point3d(-self._radius, -self._radius, 0.0)
+        box.upper = new_point3d(self._radius, self._radius, self._height)
 
         # obtain local space vertices
         points = box.vertices()

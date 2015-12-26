@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.math.kdtree cimport Item
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.classes cimport Ray
@@ -110,7 +110,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef list _contains_leaf(self, int32_t id, Point point):
+    cdef list _contains_leaf(self, int32_t id, Point3D point):
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -125,7 +125,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
         returns are guaranteed not to be further modified.
 
         :param id: Index of node in node array.
-        :param point: Point to evaluate.
+        :param point: Point3D to evaluate.
         :return: List of items containing the point.
         """
 
@@ -162,7 +162,7 @@ cdef class KDTree(_Accelerator):
             return self._kdtree.hit_intersection
         return None
 
-    cpdef list contains(self, Point point):
+    cpdef list contains(self, Point3D point):
 
         # we explicitly use _contains() rather than contains() as _contains() is cdef, rather than cpdef
         return self._kdtree._contains(point)

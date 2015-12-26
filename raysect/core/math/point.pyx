@@ -34,21 +34,21 @@ from libc.math cimport sqrt
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math._vec3 cimport _Vec3
 
-cdef class Point:
+cdef class Point3D:
     """
     Represents a point in 3D affine space.
 
     A point is a location in 3D space which is defined by its x, y and z coordinates in a given coordinate system.
     Vectors can be added/subtracted from Points yielding another Vector3D. You can also find the Vector3D and distance
-    between two Points, and transform a Point from one coordinate system to another.
+    between two Points, and transform a Point3D from one coordinate system to another.
     """
 
     def __init__(self, double x=0.0, double y=0.0, double z=0.0):
         """
-        Point constructor.
+        Point3D constructor.
 
-        If no initial values are passed, Point defaults to the origin:
-        Point(0.0, 0.0, 0.0)
+        If no initial values are passed, Point3D defaults to the origin:
+        Point3D(0.0, 0.0, 0.0)
         """
 
         self.x = x
@@ -56,16 +56,16 @@ cdef class Point:
         self.z = z
 
     def __repr__(self):
-        """Returns a string representation of the Point object."""
+        """Returns a string representation of the Point3D object."""
 
-        return "Point([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
+        return "Point3D([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
 
     def __richcmp__(self, object other, int op):
         """Provides basic point comparison operations."""
 
-        cdef Point p
+        cdef Point3D p
 
-        if not isinstance(other, Point):
+        if not isinstance(other, Point3D):
             return NotImplemented
 
         p = <Vector3D> other
@@ -103,36 +103,36 @@ cdef class Point:
     def __add__(object x, object y):
         """Addition operator."""
 
-        cdef Point p
+        cdef Point3D p
         cdef _Vec3 v
 
-        if isinstance(x, Point) and isinstance(y, _Vec3):
+        if isinstance(x, Point3D) and isinstance(y, _Vec3):
 
-            p = <Point>x
+            p = <Point3D>x
             v = <_Vec3>y
 
         else:
 
             return NotImplemented
 
-        return new_point(p.x + v.x,
-                         p.y + v.y,
-                         p.z + v.z)
+        return new_point3d(p.x + v.x,
+                           p.y + v.y,
+                           p.z + v.z)
 
     def __sub__(object x, object y):
         """Subtraction operator."""
 
-        cdef Point p
+        cdef Point3D p
         cdef _Vec3 v
 
-        if isinstance(x, Point) and isinstance(y, _Vec3):
+        if isinstance(x, Point3D) and isinstance(y, _Vec3):
 
-            p = <Point>x
+            p = <Point3D>x
             v = <_Vec3>y
 
-            return new_point(p.x - v.x,
-                             p.y - v.y,
-                             p.z - v.z)
+            return new_point3d(p.x - v.x,
+                               p.y - v.y,
+                               p.z - v.z)
 
         else:
 
@@ -143,13 +143,13 @@ cdef class Point:
         """Multiply operator."""
 
         cdef AffineMatrix m
-        cdef Point v
+        cdef Point3D v
         cdef double w
 
-        if isinstance(x, AffineMatrix) and isinstance(y, Point):
+        if isinstance(x, AffineMatrix) and isinstance(y, Point3D):
 
             m = <AffineMatrix>x
-            v = <Point>y
+            v = <Point3D>y
 
             # 4th element of homogeneous coordinate
             w = m.m[3][0] * v.x + m.m[3][1] * v.y + m.m[3][2] * v.z + m.m[3][3]
@@ -160,9 +160,9 @@ cdef class Point:
             # pre divide for speed (dividing is much slower than multiplying)
             w = 1.0 / w
 
-            return new_point((m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3]) * w,
-                             (m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z + m.m[1][3]) * w,
-                             (m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z + m.m[2][3]) * w)
+            return new_point3d((m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3]) * w,
+                               (m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z + m.m[1][3]) * w,
+                               (m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z + m.m[2][3]) * w)
 
         return NotImplemented
 
@@ -178,7 +178,7 @@ cdef class Point:
         self.y = state[1]
         self.z = state[2]
 
-    cpdef Vector3D vector_to(self, Point p):
+    cpdef Vector3D vector_to(self, Point3D p):
         """
         Returns a vector from this point to the passed point.
         """
@@ -187,7 +187,7 @@ cdef class Point:
                             p.y - self.y,
                             p.z - self.z)
 
-    cpdef double distance_to(self, Point p):
+    cpdef double distance_to(self, Point3D p):
         """
         Returns the distance between this point and the passed point.
         """
@@ -199,7 +199,7 @@ cdef class Point:
         return sqrt(x*x + y*y + z*z)
 
     @cython.cdivision(True)
-    cpdef Point transform(self, AffineMatrix m):
+    cpdef Point3D transform(self, AffineMatrix m):
         """
         Transforms the point with the supplied Affine Matrix.
 
@@ -224,11 +224,11 @@ cdef class Point:
         # pre divide for speed (dividing is much slower than multiplying)
         w = 1.0 / w
 
-        return new_point((m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z + m.m[0][3]) * w,
-                         (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
-                         (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
+        return new_point3d((m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z + m.m[0][3]) * w,
+                           (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
+                           (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
 
-    cdef inline Point add(self, _Vec3 v):
+    cdef inline Point3D add(self, _Vec3 v):
         """
         Fast addition operator.
 
@@ -236,11 +236,11 @@ cdef class Point:
         to the equivalent python operator.
         """
 
-        return new_point(self.x + v.x,
-                         self.y + v.y,
-                         self.z + v.z)
+        return new_point3d(self.x + v.x,
+                           self.y + v.y,
+                           self.z + v.z)
 
-    cdef inline Point sub(self, _Vec3 v):
+    cdef inline Point3D sub(self, _Vec3 v):
         """
         Fast subtraction operator.
 
@@ -248,18 +248,18 @@ cdef class Point:
         to the equivalent python operator.
         """
 
-        return new_point(self.x - v.x,
-                         self.y - v.y,
-                         self.z - v.z)
+        return new_point3d(self.x - v.x,
+                           self.y - v.y,
+                           self.z - v.z)
 
-    cpdef Point copy(self):
+    cpdef Point3D copy(self):
         """
         Returns a copy of the point.
         """
 
-        return new_point(self.x,
-                         self.y,
-                         self.z)
+        return new_point3d(self.x,
+                           self.y,
+                           self.z)
 
     cdef inline double get_index(self, int index):
         """
@@ -303,7 +303,7 @@ cdef class Point2D:
 
     A 2D point is a location in 2D space which is defined by its u and v coordinates in a given coordinate system.
     Vectors can be added/subtracted from Points yielding another 2D Vector3D. You can also find the 2D Vector3D and distance
-    between two Points, and transform a Point from one coordinate system to another.
+    between two Points, and transform a Point3D from one coordinate system to another.
     """
 
     def __init__(self, double u=0.0, double v=0.0):
@@ -364,19 +364,19 @@ cdef class Point2D:
         """Addition operator."""
         raise NotImplemented
 
-        # cdef Point p
+        # cdef Point3D p
         # cdef _Vec3 v
         #
-        # if isinstance(x, Point) and isinstance(y, _Vec3):
+        # if isinstance(x, Point3D) and isinstance(y, _Vec3):
         #
-        #     p = <Point>x
+        #     p = <Point3D>x
         #     v = <_Vec3>y
         #
         # else:
         #
         #     return NotImplemented
         #
-        # return new_point(p.x + v.x,
+        # return new_point3d(p.x + v.x,
         #                  p.y + v.y,
         #                  p.z + v.z)
 
@@ -384,15 +384,15 @@ cdef class Point2D:
         """Subtraction operator."""
         raise NotImplemented
 
-        # cdef Point p
+        # cdef Point3D p
         # cdef _Vec3 v
         #
-        # if isinstance(x, Point) and isinstance(y, _Vec3):
+        # if isinstance(x, Point3D) and isinstance(y, _Vec3):
         #
-        #     p = <Point>x
+        #     p = <Point3D>x
         #     v = <_Vec3>y
         #
-        #     return new_point(p.x - v.x,
+        #     return new_point3d(p.x - v.x,
         #                      p.y - v.y,
         #                      p.z - v.z)
         #
@@ -406,13 +406,13 @@ cdef class Point2D:
         raise NotImplemented
 
         # cdef AffineMatrix m
-        # cdef Point v
+        # cdef Point3D v
         # cdef double w
         #
-        # if isinstance(x, AffineMatrix) and isinstance(y, Point):
+        # if isinstance(x, AffineMatrix) and isinstance(y, Point3D):
         #
         #     m = <AffineMatrix>x
-        #     v = <Point>y
+        #     v = <Point3D>y
         #
         #     # 4th element of homogeneous coordinate
         #     w = m.m[3][0] * v.x + m.m[3][1] * v.y + m.m[3][2] * v.z + m.m[3][3]
@@ -423,7 +423,7 @@ cdef class Point2D:
         #     # pre divide for speed (dividing is much slower than multiplying)
         #     w = 1.0 / w
         #
-        #     return new_point((m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3]) * w,
+        #     return new_point3d((m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3]) * w,
         #                      (m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z + m.m[1][3]) * w,
         #                      (m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z + m.m[2][3]) * w)
         #
@@ -440,7 +440,7 @@ cdef class Point2D:
         self.u = state[0]
         self.v = state[1]
 
-    # cpdef Vector3D vector_to(self, Point p):
+    # cpdef Vector3D vector_to(self, Point3D p):
     #     """
     #     Returns a vector from this point to the passed point.
     #     """
@@ -460,7 +460,7 @@ cdef class Point2D:
         return sqrt(u*u + v*v)
 
     # @cython.cdivision(True)
-    # cpdef Point transform(self, AffineMatrix m):
+    # cpdef Point3D transform(self, AffineMatrix m):
     #     """
     #     Transforms the point with the supplied Affine Matrix.
     #
@@ -485,11 +485,11 @@ cdef class Point2D:
     #     # pre divide for speed (dividing is much slower than multiplying)
     #     w = 1.0 / w
     #
-    #     return new_point((m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z + m.m[0][3]) * w,
+    #     return new_point3d((m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z + m.m[0][3]) * w,
     #                      (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
     #                      (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
 
-    # cdef inline Point add(self, _Vec3 v):
+    # cdef inline Point3D add(self, _Vec3 v):
     #     """
     #     Fast addition operator.
     #
@@ -497,11 +497,11 @@ cdef class Point2D:
     #     to the equivalent python operator.
     #     """
     #
-    #     return new_point(self.x + v.x,
+    #     return new_point3d(self.x + v.x,
     #                      self.y + v.y,
     #                      self.z + v.z)
 
-    # cdef inline Point sub(self, _Vec3 v):
+    # cdef inline Point3D sub(self, _Vec3 v):
     #     """
     #     Fast subtraction operator.
     #
@@ -509,7 +509,7 @@ cdef class Point2D:
     #     to the equivalent python operator.
     #     """
     #
-    #     return new_point(self.x - v.x,
+    #     return new_point3d(self.x - v.x,
     #                      self.y - v.y,
     #                      self.z - v.z)
 

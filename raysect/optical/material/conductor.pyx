@@ -34,7 +34,7 @@ from numpy import array
 from numpy cimport ndarray
 from libc.math cimport fabs
 from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
@@ -66,8 +66,8 @@ cdef class Conductor(Material):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                    bint exiting, Point inside_point, Point outside_point,
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
@@ -144,7 +144,7 @@ cdef class Conductor(Material):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
+                                   Point3D start_point, Point3D end_point,
                                    AffineMatrix to_local, AffineMatrix to_world):
 
         # do nothing!

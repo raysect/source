@@ -116,15 +116,15 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method next_intersection() has not been implemented.")
 
-    cpdef bint contains(self, Point p) except -1:
+    cpdef bint contains(self, Point3D p) except -1:
         """
         Virtual method - to be implemented by derived classes.
 
-        Must returns True if the Point lies within the boundary of the surface
+        Must returns True if the Point3D lies within the boundary of the surface
         defined by the Primitive. False is returned otherwise.
 
-        :param Point p: The Point to test.
-        :return: True if the Point is enclosed by the primitive surface, False otherwise.
+        :param Point3D p: The Point3D to test.
+        :return: True if the Point3D is enclosed by the primitive surface, False otherwise.
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method inside() has not been implemented.")

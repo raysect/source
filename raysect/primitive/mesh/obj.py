@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core import Point, Normal
+from raysect.core import Point3D, Normal
 from raysect.primitive.mesh import Mesh
 
 class OBJHandler:

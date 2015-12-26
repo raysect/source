@@ -1,4 +1,4 @@
-from raysect.optical import World, Node, translate, rotate, Point, d65_white, ConstantSF, InterpolatedSF
+from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.material.dielectric import Dielectric
@@ -26,12 +26,12 @@ purple_glass = Dielectric(index=ConstantSF(1.4), transmission=InterpolatedSF(wav
 Sphere(1000, world, material=UniformSurfaceEmitter(d65_white, 1.0))
 
 node = Node(parent=world, transform=rotate(0, 0, 90))
-Box(Point(-0.5, 0, -2.5), Point(0.5, 0.25, 0.5), node, rotate(0, 0, 0) * translate(0, 1, -0.500001), red_glass)
-Box(Point(-0.5, 0, -2.5), Point(0.5, 0.25, 0.5), node, rotate(0, 0, 60) * translate(0, 1, -0.500001), yellow_glass)
-Box(Point(-0.5, 0, -2.5), Point(0.5, 0.25, 0.5), node, rotate(0, 0, 120) * translate(0, 1, -0.500001), green_glass)
-Box(Point(-0.5, 0, -2.5), Point(0.5, 0.25, 0.5), node, rotate(0, 0, 180) * translate(0, 1, -0.500001), cyan_glass)
-Box(Point(-0.5, 0, -2.5), Point(0.5, 0.25, 0.5), node, rotate(0, 0, 240) * translate(0, 1, -0.500001), blue_glass)
-Box(Point(-0.5, 0, -2.5), Point(0.5, 0.25, 0.5), node, rotate(0, 0, 300) * translate(0, 1, -0.500001), purple_glass)
+Box(Point3D(-0.5, 0, -2.5), Point3D(0.5, 0.25, 0.5), node, rotate(0, 0, 0) * translate(0, 1, -0.500001), red_glass)
+Box(Point3D(-0.5, 0, -2.5), Point3D(0.5, 0.25, 0.5), node, rotate(0, 0, 60) * translate(0, 1, -0.500001), yellow_glass)
+Box(Point3D(-0.5, 0, -2.5), Point3D(0.5, 0.25, 0.5), node, rotate(0, 0, 120) * translate(0, 1, -0.500001), green_glass)
+Box(Point3D(-0.5, 0, -2.5), Point3D(0.5, 0.25, 0.5), node, rotate(0, 0, 180) * translate(0, 1, -0.500001), cyan_glass)
+Box(Point3D(-0.5, 0, -2.5), Point3D(0.5, 0.25, 0.5), node, rotate(0, 0, 240) * translate(0, 1, -0.500001), blue_glass)
+Box(Point3D(-0.5, 0, -2.5), Point3D(0.5, 0.25, 0.5), node, rotate(0, 0, 300) * translate(0, 1, -0.500001), purple_glass)
 
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -6.5) * rotate(0, 0, 0))
 

@@ -36,7 +36,7 @@ from numpy import array, float32, int32, zeros
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport Normal, new_normal
-from raysect.core.math.point cimport Point, new_point
+from raysect.core.math.point cimport Point3D, new_point3d
 from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
@@ -183,7 +183,7 @@ cdef class MeshData(KDTreeCore):
             int32_t[:, ::1] triangles
             int32_t i, valid
             int32_t i1, i2, i3
-            Point p1, p2, p3
+            Point3D p1, p2, p3
             Vector3D v1, v2, v3
 
         # assign locally to avoid repeated memory view validity checks
@@ -198,9 +198,9 @@ cdef class MeshData(KDTreeCore):
             i2 = triangles[i, V2]
             i3 = triangles[i, V3]
 
-            p1 = new_point(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
-            p2 = new_point(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
-            p3 = new_point(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
+            p1 = new_point3d(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
+            p2 = new_point3d(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
+            p3 = new_point3d(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
 
             # the cross product of two edge vectors of a degenerate triangle
             # (where 2 or more vertices are coincident or lie on the same line)
@@ -237,7 +237,7 @@ cdef class MeshData(KDTreeCore):
             int32_t[:, ::1] triangles
             int32_t i
             int32_t i1, i2, i3
-            Point p1, p2, p3
+            Point3D p1, p2, p3
             Vector3D v1, v2, v3
 
         # assign locally to avoid repeated memory view validity checks
@@ -251,9 +251,9 @@ cdef class MeshData(KDTreeCore):
             i2 = triangles[i, V2]
             i3 = triangles[i, V3]
 
-            p1 = new_point(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
-            p2 = new_point(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
-            p3 = new_point(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
+            p1 = new_point3d(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
+            p2 = new_point3d(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
+            p3 = new_point3d(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
 
             v1 = p1.vector_to(p2)
             v2 = p1.vector_to(p3)
@@ -291,12 +291,12 @@ cdef class MeshData(KDTreeCore):
         i3 = triangles[i, V3]
 
         bbox = new_boundingbox(
-            new_point(
+            new_point3d(
                 min(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
                 min(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
                 min(vertices[i1, Z], vertices[i2, Z], vertices[i3, Z]),
             ),
-            new_point(
+            new_point3d(
                 max(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
                 max(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
                 max(vertices[i1, Z], vertices[i2, Z], vertices[i3, Z]),
@@ -564,7 +564,7 @@ cdef class MeshData(KDTreeCore):
         cdef:
             double t
             int32_t triangle
-            Point hit_point, inside_point, outside_point
+            Point3D hit_point, inside_point, outside_point
             Normal face_normal, normal
             bint exiting
 
@@ -581,17 +581,17 @@ cdef class MeshData(KDTreeCore):
             self.face_normals[triangle, Y],
             self.face_normals[triangle, Z]
         )
-        hit_point = new_point(
+        hit_point = new_point3d(
             ray.origin.x + ray.direction.x * t,
             ray.origin.y + ray.direction.y * t,
             ray.origin.z + ray.direction.z * t
         )
-        inside_point = new_point(
+        inside_point = new_point3d(
             hit_point.x - face_normal.x * EPSILON,
             hit_point.y - face_normal.y * EPSILON,
             hit_point.z - face_normal.z * EPSILON
         )
-        outside_point = new_point(
+        outside_point = new_point3d(
             hit_point.x + face_normal.x * EPSILON,
             hit_point.y + face_normal.y * EPSILON,
             hit_point.z + face_normal.z * EPSILON
@@ -655,7 +655,7 @@ cdef class MeshData(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef bint mesh_contains(self, Point p):
+    cpdef bint mesh_contains(self, Point3D p):
         """
         Tests if a point is contained by the mesh.
 
@@ -663,7 +663,7 @@ cdef class MeshData(KDTreeCore):
         must be performed externally (this is generally quicker as coordinate
         transforms etc... can be skipped if the mesh is open).
 
-        :param p: Local space Point.
+        :param p: Local space Point3D.
         :return: True if mesh contains point, False otherwise.
         """
 
@@ -700,7 +700,7 @@ cdef class MeshData(KDTreeCore):
             float32_t[:, ::1] vertices
             int32_t i
             BoundingBox bbox
-            Point vertex
+            Point3D vertex
 
         # assign locally to avoid repeated memory view validity checks
         vertices = self.vertices
@@ -709,7 +709,7 @@ cdef class MeshData(KDTreeCore):
         # convert vertices to world space and grow a bounding box around them
         bbox = BoundingBox()
         for i in range(vertices.shape[0]):
-            vertex = new_point(vertices[i, X], vertices[i, Y], vertices[i, Z])
+            vertex = new_point3d(vertices[i, X], vertices[i, Y], vertices[i, Z])
             bbox.extend(vertex.transform(to_world), BOX_PADDING)
 
         return bbox
@@ -1074,7 +1074,7 @@ cdef class Mesh(Primitive):
         self._seek_next_intersection = True
         self._next_world_ray = world_ray
         self._next_local_ray = new_ray(
-            new_point(
+            new_point3d(
                 intersection.hit_point.x + local_ray.direction.x * EPSILON,
                 intersection.hit_point.y + local_ray.direction.y * EPSILON,
                 intersection.hit_point.z + local_ray.direction.z * EPSILON
@@ -1098,7 +1098,7 @@ cdef class Mesh(Primitive):
 
         return intersection
 
-    cpdef bint contains(self, Point p) except -1:
+    cpdef bint contains(self, Point3D p) except -1:
         """
         Identifies if the point lies in the volume defined by the mesh.
 

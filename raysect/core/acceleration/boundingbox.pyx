@@ -32,7 +32,7 @@
 # TODO: add docstrings
 
 cimport cython
-from raysect.core.math.point cimport new_point, new_point2d
+from raysect.core.math.point cimport new_point3d, new_point2d
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
@@ -66,12 +66,12 @@ cdef class BoundingBox:
     rays are propagated in world space, co-ordinate transforms can be avoided.
     """
 
-    def __init__(self, Point lower=None, Point upper=None):
+    def __init__(self, Point3D lower=None, Point3D upper=None):
 
         # initialise to a null box if called without both initial points
         if lower is None or upper is None:
-            self.lower = new_point(INFINITY, INFINITY, INFINITY)
-            self.upper = new_point(-INFINITY, -INFINITY, -INFINITY)
+            self.lower = new_point3d(INFINITY, INFINITY, INFINITY)
+            self.upper = new_point3d(-INFINITY, -INFINITY, -INFINITY)
         else:
             if lower.x > upper.x or lower.y > upper.y or lower.z > upper.z:
                 raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
@@ -97,7 +97,7 @@ cdef class BoundingBox:
         def __get__(self):
             return self.lower
 
-        def __set__(self, Point value not None):
+        def __set__(self, Point3D value not None):
             self.lower = value
 
     property upper:
@@ -105,7 +105,7 @@ cdef class BoundingBox:
         def __get__(self):
             return self.upper
 
-        def __set__(self, Point value not None):
+        def __set__(self, Point3D value not None):
             self.upper = value
 
     cpdef bint hit(self, Ray ray):
@@ -192,7 +192,7 @@ cdef class BoundingBox:
         if tmax < back_intersection[0]:
             back_intersection[0] = tmax
 
-    cpdef bint contains(self, Point point):
+    cpdef bint contains(self, Point3D point):
 
         # point is inside box if it is inside all slabs
         if (point.x < self.lower.x) or (point.x > self.upper.x):
@@ -213,7 +213,7 @@ cdef class BoundingBox:
         self.upper.y = max(self.upper.y, box.upper.y)
         self.upper.z = max(self.upper.z, box.upper.z)
 
-    cpdef object extend(self, Point point, double padding=0.0):
+    cpdef object extend(self, Point3D point, double padding=0.0):
 
         self.lower.x = min(self.lower.x, point.x - padding)
         self.lower.y = min(self.lower.y, point.y - padding)
@@ -240,14 +240,14 @@ cdef class BoundingBox:
     cpdef list vertices(self):
 
         return [
-            new_point(self.lower.x, self.lower.y, self.lower.z),
-            new_point(self.lower.x, self.lower.y, self.upper.z),
-            new_point(self.lower.x, self.upper.y, self.lower.z),
-            new_point(self.lower.x, self.upper.y, self.upper.z),
-            new_point(self.upper.x, self.lower.y, self.lower.z),
-            new_point(self.upper.x, self.lower.y, self.upper.z),
-            new_point(self.upper.x, self.upper.y, self.lower.z),
-            new_point(self.upper.x, self.upper.y, self.upper.z),
+            new_point3d(self.lower.x, self.lower.y, self.lower.z),
+            new_point3d(self.lower.x, self.lower.y, self.upper.z),
+            new_point3d(self.lower.x, self.upper.y, self.lower.z),
+            new_point3d(self.lower.x, self.upper.y, self.upper.z),
+            new_point3d(self.upper.x, self.lower.y, self.lower.z),
+            new_point3d(self.upper.x, self.lower.y, self.upper.z),
+            new_point3d(self.upper.x, self.upper.y, self.lower.z),
+            new_point3d(self.upper.x, self.upper.y, self.upper.z),
         ]
 
     cpdef double extent(self, axis) except *:

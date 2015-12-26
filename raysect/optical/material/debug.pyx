@@ -33,7 +33,7 @@
 This module contains materials to aid with debugging.
 """
 
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.math.normal cimport Normal
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.affinematrix cimport AffineMatrix
@@ -67,9 +67,9 @@ cdef class Light(NullVolume):
         else:
             self.spectrum = spectrum
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                bint exiting, Point inside_point, Point outside_point,
-                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef Spectrum spectrum
 

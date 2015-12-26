@@ -32,7 +32,7 @@
 cimport cython
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
-from raysect.core.math.point cimport new_point
+from raysect.core.math.point cimport new_point3d
 from raysect.core.math.normal cimport new_normal, Normal
 from raysect.core.math.affinematrix cimport AffineMatrix
 from libc.math cimport sqrt
@@ -111,7 +111,7 @@ cdef class Sphere(Primitive):
 
     cpdef Intersection hit(self, Ray ray):
 
-        cdef Point origin
+        cdef Point3D origin
         cdef Vector3D direction
         cdef double a, b, c, d, q, t0, t1, temp, t_closest
 
@@ -204,17 +204,17 @@ cdef class Sphere(Primitive):
 
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t)
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector3D direction, double ray_distance):
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance):
 
-        cdef Point hit_point, inside_point, outside_point
+        cdef Point3D hit_point, inside_point, outside_point
         cdef Normal normal
         cdef double delta_x, delta_y, delta_z
         cdef bint exiting
 
         # point of surface intersection in local space
-        hit_point = new_point(origin.x + ray_distance * direction.x,
-                              origin.y + ray_distance * direction.y,
-                              origin.z + ray_distance * direction.z)
+        hit_point = new_point3d(origin.x + ray_distance * direction.x,
+                                origin.y + ray_distance * direction.y,
+                                origin.z + ray_distance * direction.z)
 
         # normal is normalised vector from sphere origin to hit_point
         normal = new_normal(hit_point.x, hit_point.y, hit_point.z)
@@ -227,13 +227,13 @@ cdef class Sphere(Primitive):
         delta_y = EPSILON * normal.y
         delta_z = EPSILON * normal.z
 
-        inside_point = new_point(hit_point.x - delta_x,
-                                 hit_point.y - delta_y,
-                                 hit_point.z - delta_z)
+        inside_point = new_point3d(hit_point.x - delta_x,
+                                   hit_point.y - delta_y,
+                                   hit_point.z - delta_z)
 
-        outside_point = new_point(hit_point.x + delta_x,
-                                  hit_point.y + delta_y,
-                                  hit_point.z + delta_z)
+        outside_point = new_point3d(hit_point.x + delta_x,
+                                    hit_point.y + delta_y,
+                                    hit_point.z + delta_z)
 
         # is ray exiting surface
         if direction.dot(normal) >= 0.0:
@@ -247,9 +247,9 @@ cdef class Sphere(Primitive):
         return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
                                 normal, exiting, self.to_local(), self.to_root())
 
-    cpdef bint contains(self, Point p) except -1:
+    cpdef bint contains(self, Point3D p) except -1:
 
-        cdef Point local_point
+        cdef Point3D local_point
         cdef double distance_sqr
 
         # convert world space point to local space
@@ -271,14 +271,14 @@ cdef class Sphere(Primitive):
     cpdef BoundingBox bounding_box(self):
 
         cdef double extent
-        cdef Point origin, lower, upper
+        cdef Point3D origin, lower, upper
 
         # obtain sphere origin in world space
-        origin = new_point(0, 0, 0).transform(self.to_root())
+        origin = new_point3d(0, 0, 0).transform(self.to_root())
 
         # calculate upper and lower corners of box
         extent = self._radius + BOX_PADDING
-        lower = new_point(origin.x - extent, origin.y - extent, origin.z - extent)
-        upper = new_point(origin.x + extent, origin.y + extent, origin.z + extent)
+        lower = new_point3d(origin.x - extent, origin.y - extent, origin.z - extent)
+        upper = new_point3d(origin.x + extent, origin.y + extent, origin.z + extent)
 
         return BoundingBox(lower, upper)

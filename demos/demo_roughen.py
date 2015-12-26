@@ -1,4 +1,4 @@
-from raysect.optical import World, translate, rotate, Point, d65_white
+from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.primitive import Sphere, Box, Cylinder
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material import Roughen, Gold, Silver, Copper, Titanium, Aluminium, Lambert, UniformSurfaceEmitter
@@ -40,7 +40,7 @@ Sphere(radius, world, transform=rotate(3 * angle, 0, 0) * translate(0, radius + 
 Sphere(radius, world, transform=rotate(4 * angle, 0, 0) * translate(0, radius + 0.00001, distance), material=Roughen(Aluminium(), 1.0 * rough_max))
 
 # rough titanium ground plane
-Box(Point(-100, -0.1, -100), Point(100, 0, 100), world, material=Roughen(Titanium(), 0.1))
+Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=Roughen(Titanium(), 0.1))
 
 # four strip lights
 Cylinder(0.5, 30.0, world, transform=translate(15, 5, 8) * rotate(90, 0, 0), material=UniformSurfaceEmitter(d65_white, 1.0))

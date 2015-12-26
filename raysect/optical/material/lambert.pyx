@@ -33,7 +33,7 @@ from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.affinematrix cimport new_affinematrix
 from raysect.optical.spectrum cimport Spectrum
@@ -51,8 +51,8 @@ cdef class Lambert(NullVolume):
 
         self.reflectivity = reflectivity
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                    bint exiting, Point inside_point, Point outside_point,
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal normal, AffineMatrix world_to_local, AffineMatrix local_to_world):
 
         cdef:

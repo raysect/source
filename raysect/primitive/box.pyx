@@ -31,7 +31,7 @@
 
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport Normal, new_normal
-from raysect.core.math.point cimport new_point
+from raysect.core.math.point cimport new_point3d
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from libc.math cimport fabs
@@ -66,10 +66,10 @@ cdef class Box(Primitive):
     system.
     """
 
-    def __init__(self, Point lower=None, Point upper=None, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), str name=None):
+    def __init__(self, Point3D lower=None, Point3D upper=None, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), str name=None):
         """
-        :param lower: Lower point of the box (default = Point(-0.5, -0.5, -0.5)).
-        :param upper: Upper point of the box (default = Point(0.5, 0.5, 0.5)).
+        :param lower: Lower point of the box (default = Point3D(-0.5, -0.5, -0.5)).
+        :param upper: Upper point of the box (default = Point3D(0.5, 0.5, 0.5)).
         :param parent: Scene-graph parent node or None (default = None).
         :param transform: An AffineMatrix defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
         :param material: A Material object defining the box's material (default = None).
@@ -90,8 +90,8 @@ cdef class Box(Primitive):
         elif lower is None and upper is None:
 
             # default to unit box centred on the axis
-            self._lower = new_point(-0.5, -0.5, -0.5)
-            self._upper = new_point(0.5, 0.5, 0.5)
+            self._lower = new_point3d(-0.5, -0.5, -0.5)
+            self._upper = new_point3d(0.5, 0.5, 0.5)
 
         else:
 
@@ -112,7 +112,7 @@ cdef class Box(Primitive):
 
             return self._lower
 
-        def __set__(self, Point value not None):
+        def __set__(self, Point3D value not None):
 
             if value.x > self._upper.x or value.y > self._upper.y or value.z > self._upper.z:
 
@@ -132,7 +132,7 @@ cdef class Box(Primitive):
 
             return self._upper
 
-        def __set__(self, Point value not None):
+        def __set__(self, Point3D value not None):
 
             if self._lower.x > value.x or self._lower.y > value.y or self._lower.z > value.z:
 
@@ -160,7 +160,7 @@ cdef class Box(Primitive):
     cpdef Intersection hit(self, Ray ray):
 
         cdef:
-            Point origin
+            Point3D origin
             Vector3D direction
             double near_intersection, far_intersection, closest_intersection
             int near_face, far_face, closest_face
@@ -303,17 +303,17 @@ cdef class Box(Primitive):
             far_face[0] = fmax
             far_axis[0] = axis
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector3D direction, double ray_distance, int face, int axis):
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int axis):
 
-        cdef Point hit_point, inside_point, outside_point
+        cdef Point3D hit_point, inside_point, outside_point
         cdef Normal normal
         cdef Intersection intersection
         cdef bint exiting
 
         # point of surface intersection in local space
-        hit_point = new_point(origin.x + ray_distance * direction.x,
-                              origin.y + ray_distance * direction.y,
-                              origin.z + ray_distance * direction.z)
+        hit_point = new_point3d(origin.x + ray_distance * direction.x,
+                                origin.y + ray_distance * direction.y,
+                                origin.z + ray_distance * direction.z)
 
         # calculate surface normal in local space
         normal = new_normal(0, 0, 0)
@@ -326,13 +326,13 @@ cdef class Box(Primitive):
             normal.set_index(axis, 1.0)
 
         # displace hit_point away from surface to generate inner and outer points
-        inside_point = new_point(hit_point.x + self._interior_offset(hit_point.x, self._lower.x, self._upper.x),
-                                 hit_point.y + self._interior_offset(hit_point.y, self._lower.y, self._upper.y),
-                                 hit_point.z + self._interior_offset(hit_point.z, self._lower.z, self._upper.z))
+        inside_point = new_point3d(hit_point.x + self._interior_offset(hit_point.x, self._lower.x, self._upper.x),
+                                   hit_point.y + self._interior_offset(hit_point.y, self._lower.y, self._upper.y),
+                                   hit_point.z + self._interior_offset(hit_point.z, self._lower.z, self._upper.z))
 
-        outside_point = new_point(hit_point.x + EPSILON * normal.x,
-                                  hit_point.y + EPSILON * normal.y,
-                                  hit_point.z + EPSILON * normal.z)
+        outside_point = new_point3d(hit_point.x + EPSILON * normal.x,
+                                    hit_point.y + EPSILON * normal.y,
+                                    hit_point.z + EPSILON * normal.z)
 
         # is ray exiting surface
         if direction.dot(normal) >= 0.0:
@@ -365,7 +365,7 @@ cdef class Box(Primitive):
 
         return 0.0
 
-    cpdef bint contains(self, Point point) except -1:
+    cpdef bint contains(self, Point3D point) except -1:
 
         # convert point to local object space
         point = point.transform(self.to_local())
@@ -389,18 +389,18 @@ cdef class Box(Primitive):
 
         cdef:
             list points
-            Point point
+            Point3D point
             BoundingBox box
 
         # generate box vertices
         points = [
             self._lower,
-            new_point(self._lower.x, self._lower.y, self._upper.z),
-            new_point(self._lower.x, self._upper.y, self._lower.z),
-            new_point(self._lower.x, self._upper.y, self._upper.z),
-            new_point(self._upper.x, self._lower.y, self._lower.z),
-            new_point(self._upper.x, self._lower.y, self._upper.z),
-            new_point(self._upper.x, self._upper.y, self._lower.z),
+            new_point3d(self._lower.x, self._lower.y, self._upper.z),
+            new_point3d(self._lower.x, self._upper.y, self._lower.z),
+            new_point3d(self._lower.x, self._upper.y, self._upper.z),
+            new_point3d(self._upper.x, self._lower.y, self._lower.z),
+            new_point3d(self._upper.x, self._lower.y, self._upper.z),
+            new_point3d(self._upper.x, self._upper.y, self._lower.z),
             self._upper
             ]
 

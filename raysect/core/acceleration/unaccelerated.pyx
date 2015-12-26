@@ -91,7 +91,7 @@ cdef class Unaccelerated(Accelerator):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef list contains(self, Point point):
+    cpdef list contains(self, Point3D point):
 
         cdef:
             list enclosing_primitives

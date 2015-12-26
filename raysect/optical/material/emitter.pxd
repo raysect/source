@@ -35,7 +35,7 @@ from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.spectralfunction cimport SpectralFunction
 
@@ -50,7 +50,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
     cdef double _step
 
-    cpdef Spectrum emission_function(self, Point point, Vector3D direction, Spectrum spectrum,
+    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix to_local, AffineMatrix to_world)
 

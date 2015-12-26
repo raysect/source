@@ -31,7 +31,7 @@
 
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.classes cimport Ray
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from libc.stdint cimport int32_t
 
 # c-structure that represent a kd-tree node
@@ -96,15 +96,15 @@ cdef class KDTreeCore:
 
     cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range)
 
-    cpdef list contains(self, Point point)
+    cpdef list contains(self, Point3D point)
 
-    cdef inline list _contains(self, Point point)
+    cdef inline list _contains(self, Point3D point)
 
-    cdef inline list _contains_node(self, int32_t id, Point point)
+    cdef inline list _contains_node(self, int32_t id, Point3D point)
 
-    cdef inline list _contains_branch(self, int32_t id, Point point)
+    cdef inline list _contains_branch(self, int32_t id, Point3D point)
 
-    cdef list _contains_leaf(self, int32_t id, Point point)
+    cdef list _contains_leaf(self, int32_t id, Point3D point)
 
     cdef void _reset(self)
 
@@ -119,6 +119,6 @@ cdef class KDTree(KDTreeCore):
 
     cpdef bint _hit_items(self, list items, Ray ray, double max_range)
 
-    cdef list _contains_leaf(self, int32_t id, Point point)
+    cdef list _contains_leaf(self, int32_t id, Point3D point)
 
-    cpdef list _contains_items(self, list items, Point point)
+    cpdef list _contains_items(self, list items, Point3D point)

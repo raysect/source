@@ -4,7 +4,7 @@ from matplotlib.pyplot import *
 import time
 
 # Internal imports
-from raysect.optical import World, translate, rotate, Point, Vector3D, Normal, Ray, d65_white, ConstantSF, InterpolatedSF, Node
+from raysect.optical import World, translate, rotate, Point3D, Vector3D, Normal, Ray, d65_white, ConstantSF, InterpolatedSF, Node
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.dielectric import Sellmeier, Dielectric
 from raysect.optical.material.emitter import UniformVolumeEmitter
@@ -44,20 +44,20 @@ glass_thickness = 0.003
 
 light_box = Node(parent=world)
 
-enclosure_outer = Box(Point(-0.10 - enclosure_thickness, -0.02 - enclosure_thickness, -0.10 - enclosure_thickness),
-                      Point(0.10 + enclosure_thickness, 0.0, 0.10 + enclosure_thickness))
-enclosure_inner = Box(Point(-0.10 - padding, -0.02 - padding, -0.10 - padding),
-                      Point(0.10 + padding, 0.001, 0.10 + padding))
+enclosure_outer = Box(Point3D(-0.10 - enclosure_thickness, -0.02 - enclosure_thickness, -0.10 - enclosure_thickness),
+                      Point3D(0.10 + enclosure_thickness, 0.0, 0.10 + enclosure_thickness))
+enclosure_inner = Box(Point3D(-0.10 - padding, -0.02 - padding, -0.10 - padding),
+                      Point3D(0.10 + padding, 0.001, 0.10 + padding))
 enclosure = Subtract(enclosure_outer, enclosure_inner, material=AbsorbingSurface(), parent=light_box)
 
-glass_outer = Box(Point(-0.10, -0.02, -0.10),
-                  Point(0.10, 0.0, 0.10))
-glass_inner = Box(Point(-0.10 + glass_thickness, -0.02 + glass_thickness, -0.10 + glass_thickness),
-                  Point(0.10 - glass_thickness, 0.0 - glass_thickness, 0.10 - glass_thickness))
+glass_outer = Box(Point3D(-0.10, -0.02, -0.10),
+                  Point3D(0.10, 0.0, 0.10))
+glass_inner = Box(Point3D(-0.10 + glass_thickness, -0.02 + glass_thickness, -0.10 + glass_thickness),
+                  Point3D(0.10 - glass_thickness, 0.0 - glass_thickness, 0.10 - glass_thickness))
 glass = Subtract(glass_outer, glass_inner, material=schott("N-BK7"), parent=light_box)
 
-emitter = Box(Point(-0.10 + glass_thickness + padding, -0.02 + glass_thickness + padding, -0.10 + glass_thickness + padding),
-              Point(0.10 - glass_thickness - padding, 0.0 - glass_thickness - padding, 0.10 - glass_thickness - padding),
+emitter = Box(Point3D(-0.10 + glass_thickness + padding, -0.02 + glass_thickness + padding, -0.10 + glass_thickness + padding),
+              Point3D(0.10 - glass_thickness - padding, 0.0 - glass_thickness - padding, 0.10 - glass_thickness - padding),
               material=UniformVolumeEmitter(d65_white, 50), parent=light_box)
 
 # CAMERA

@@ -400,7 +400,7 @@ cdef class KDTreeCore:
         :return: A bounding box defining the lower bounds.
         """
 
-        cdef Point upper
+        cdef Point3D upper
         upper = bounds.upper.copy()
         upper.set_index(axis, split)
         return new_boundingbox(bounds.lower.copy(), upper)
@@ -415,7 +415,7 @@ cdef class KDTreeCore:
         :return: A bounding box defining the upper bounds.
         """
 
-        cdef Point lower
+        cdef Point3D lower
         lower = bounds.lower.copy()
         lower.set_index(axis, split)
         return new_boundingbox(lower, bounds.upper.copy())
@@ -663,22 +663,22 @@ cdef class KDTreeCore:
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTreeCore _hit_leaf() method not implemented.")
 
-    cpdef list contains(self, Point point):
+    cpdef list contains(self, Point3D point):
         """
         Starts contains traversal of the kd-Tree.
         Traverses the kd-Tree to find the items that contain the specified point.
 
-        :param point: A Point object.
+        :param point: A Point3D object.
         :return: A list of ids (indices) of the items containing the point
         """
 
         return self._contains(point)
 
-    cdef inline list _contains(self, Point point):
+    cdef inline list _contains(self, Point3D point):
         """
         Starts contains traversal of the kd-Tree.
 
-        :param point: A Point object.
+        :param point: A Point3D object.
         :return: A list of ids (indices) of the items containing the point
         """
 
@@ -689,12 +689,12 @@ cdef class KDTreeCore:
         # start search
         return self._contains_node(ROOT_NODE, point)
 
-    cdef inline list _contains_node(self, int32_t id, Point point):
+    cdef inline list _contains_node(self, int32_t id, Point3D point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
         :param id: Index of node in node array.
-        :param point: Point to evaluate.
+        :param point: Point3D to evaluate.
         :return: List of items containing the point.
         """
 
@@ -703,12 +703,12 @@ cdef class KDTreeCore:
         else:
             return self._contains_branch(id, point)
 
-    cdef inline list _contains_branch(self, int32_t id, Point point):
+    cdef inline list _contains_branch(self, int32_t id, Point3D point):
         """
         Locates the kd-Tree node containing the point.
 
         :param id: Index of node in node array.
-        :param point: Point to evaluate.
+        :param point: Point3D to evaluate.
         :return: List of items containing the point.
         """
 
@@ -732,7 +732,7 @@ cdef class KDTreeCore:
         else:
             return self._contains_node(upper_id, point)
 
-    cdef list _contains_leaf(self, int32_t id, Point point):
+    cdef list _contains_leaf(self, int32_t id, Point3D point):
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -747,7 +747,7 @@ cdef class KDTreeCore:
         returns are guaranteed not to be further modified.
 
         :param id: Index of node in node array.
-        :param point: Point to evaluate.
+        :param point: Point3D to evaluate.
         :return: List of items containing the point.
         """
 
@@ -873,12 +873,12 @@ cdef class KDTreeCore:
 
         # read bounds
         self.bounds = BoundingBox(
-            Point(
+            Point3D(
                 self._read_double(file),
                 self._read_double(file),
                 self._read_double(file)
             ),
-            Point(
+            Point3D(
                 self._read_double(file),
                 self._read_double(file),
                 self._read_double(file)
@@ -987,7 +987,7 @@ cdef class KDTree(KDTreeCore):
         raise NotImplementedError("KDTree Virtual function _hit_items() has not been implemented.")
 
 
-    cdef list _contains_leaf(self, int32_t id, Point point):
+    cdef list _contains_leaf(self, int32_t id, Point3D point):
         """
         Wraps the C-level API so users can derive a class from KDTree using Python.
 
@@ -995,7 +995,7 @@ cdef class KDTree(KDTreeCore):
         _contains_leaf() as the Python accessible method _contains_items().
 
         :param id: Index of node in node array.
-        :param point: Point to evaluate.
+        :param point: Point3D to evaluate.
         :return: List of nodes containing the point.
         """
 
@@ -1006,7 +1006,7 @@ cdef class KDTree(KDTreeCore):
 
         return self._contains_items(items, point)
 
-    cpdef list _contains_items(self, list item_ids, Point point):
+    cpdef list _contains_items(self, list item_ids, Point3D point):
         """
         Tests each item in the list to identify if they enclose the point.
 
@@ -1021,7 +1021,7 @@ cdef class KDTree(KDTreeCore):
         returns are guaranteed not to be further modified.
 
         :param item_ids: List of item ids.
-        :param point: Point to evaluate.
+        :param point: Point3D to evaluate.
         :return: List of ids of the items containing the point.
         """
 

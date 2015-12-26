@@ -133,12 +133,12 @@ cdef class World(_NodeBase):
         return self._accelerator.hit(ray)
 
     # TODO - better name - world.primitives_containing(point)
-    cpdef list contains(self, Point point):
+    cpdef list contains(self, Point3D point):
         """
         Returns a list of Primitives that contain the specified point within
         their surface.
 
-        An empty list is returned if no Primitives contain the Point.
+        An empty list is returned if no Primitives contain the Point3D.
 
         This method automatically rebuilds the Acceleration object that is used
         to optimise the contains calculation - if a Primitive's geometry or a
@@ -146,8 +146,8 @@ cdef class World(_NodeBase):
         or contains(), the Acceleration structure used to optimise the contains
         calculation is rebuilt to represent the new scene-graph state.
 
-        :param Point point: The point to test.
-        :return: A list containing all Primitives that enclose the Point.
+        :param Point3D point: The point to test.
+        :return: A list containing all Primitives that enclose the Point3D.
         """
 
         self.build_accelerator()

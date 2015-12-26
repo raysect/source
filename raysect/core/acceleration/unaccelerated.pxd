@@ -33,7 +33,7 @@ from raysect.core.acceleration.accelerator cimport Accelerator
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.classes cimport Ray
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.classes cimport Intersection
 
 
