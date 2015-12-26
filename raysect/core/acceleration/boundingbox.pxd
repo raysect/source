@@ -32,7 +32,7 @@
 from raysect.core.math.point cimport Point3D, Point2D
 from raysect.core.classes cimport Ray
 
-cdef class BoundingBox:
+cdef class BoundingBox3D:
 
     cdef Point3D lower
     cdef Point3D upper
@@ -47,7 +47,7 @@ cdef class BoundingBox:
 
     cpdef bint contains(self, Point3D point)
 
-    cpdef object union(self, BoundingBox box)
+    cpdef object union(self, BoundingBox3D box)
 
     cpdef object extend(self, Point3D point, double padding=*)
 
@@ -66,16 +66,16 @@ cdef class BoundingBox:
     cpdef object pad(self, double padding)
 
 
-cdef inline BoundingBox new_boundingbox(Point3D lower, Point3D upper):
+cdef inline BoundingBox3D new_boundingbox3d(Point3D lower, Point3D upper):
     """
-    BoundingBox factory function.
+    BoundingBox3D factory function.
 
-    Creates a new BoundingBox object with less overhead than the equivalent
+    Creates a new BoundingBox3D object with less overhead than the equivalent
     Python call. This function is callable from cython only.
     """
 
-    cdef BoundingBox v
-    v = BoundingBox.__new__(BoundingBox)
+    cdef BoundingBox3D v
+    v = BoundingBox3D.__new__(BoundingBox3D)
     v.lower = lower
     v.upper = upper
     return v

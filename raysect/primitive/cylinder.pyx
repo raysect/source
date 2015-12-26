@@ -34,7 +34,7 @@ from raysect.core.math.normal cimport new_normal3d
 from raysect.core.math.point cimport new_point3d
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.classes cimport Material, new_intersection
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.acceleration.boundingbox cimport BoundingBox3D
 from libc.math cimport sqrt, fabs
 cimport cython
 
@@ -424,14 +424,14 @@ cdef class Cylinder(Primitive):
         # first check point is within the cylinder upper and lower bounds
         return 0.0 <= point.z <= self._height
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
 
         cdef:
             list points
             Point3D point
-            BoundingBox box
+            BoundingBox3D box
 
-        box = BoundingBox()
+        box = BoundingBox3D()
 
         # calculate local bounds
         box.lower = new_point3d(-self._radius, -self._radius, 0.0)
@@ -442,7 +442,7 @@ cdef class Cylinder(Primitive):
 
         # convert points to world space and build an enclosing world space bounding box
         # a small degree of padding is added to avoid potential numerical accuracy issues
-        box = BoundingBox()
+        box = BoundingBox3D()
         for point in points:
 
             box.extend(point.transform(self.to_root()), BOX_PADDING)

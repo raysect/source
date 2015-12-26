@@ -32,7 +32,7 @@
 import io
 import struct
 
-from raysect.core.acceleration.boundingbox cimport new_boundingbox
+from raysect.core.acceleration.boundingbox cimport new_boundingbox3d
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from cpython.bytes cimport PyBytes_AsString
 from libc.stdlib cimport qsort
@@ -66,10 +66,10 @@ cdef class Item:
     item along each axis. This data is used to place the items in the tree.
 
     :param id: An integer item id.
-    :param box: A BoundingBox object defining the item's spatial extent.
+    :param box: A BoundingBox3D object defining the item's spatial extent.
     """
 
-    def __init__(self, int32_t id, BoundingBox box):
+    def __init__(self, int32_t id, BoundingBox3D box):
 
         self.id = id
         self.box = box
@@ -141,7 +141,7 @@ cdef class KDTreeCore:
             self._max_depth = <int32_t> ceil(8 + 1.3 * log(len(items)))
 
         # calculate kd-tree bounds
-        self.bounds = BoundingBox()
+        self.bounds = BoundingBox3D()
         for item in items:
             self.bounds.union(item.box)
 
@@ -193,14 +193,14 @@ cdef class KDTreeCore:
     #     # decode settings
     #     self._max_depth, self._min_items, self._hit_cost, self._empty_bonus = settings
 
-    cdef int32_t _build(self, list items, BoundingBox bounds, int32_t depth=0):
+    cdef int32_t _build(self, list items, BoundingBox3D bounds, int32_t depth=0):
         """
         Extends the kd-Tree by creating a new node.
 
         Attempts to partition space for efficient traversal.
 
         :param items: A list of items.
-        :param bounds: A BoundingBox defining the node bounds.
+        :param bounds: A BoundingBox3D defining the node bounds.
         :param depth: The current tree depth.
         :return: The id (index) of the generated node.
         """
@@ -220,14 +220,14 @@ cdef class KDTreeCore:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef tuple _split(self, list items, BoundingBox bounds):
+    cdef tuple _split(self, list items, BoundingBox3D bounds):
         """
         Attempts to locate a split solution that minimises the cost of traversing the node.
 
         The cost of the node traversal is evaluated using the Surface Area Heuristic (SAH) method.
 
         :param items: A list of items.
-        :param bounds: A BoundingBox defining the node bounds.
+        :param bounds: A BoundingBox3D defining the node bounds.
         :return: A tuple containing the split solution or None if a split solution is not found.
         """
 
@@ -390,11 +390,11 @@ cdef class KDTreeCore:
 
         PyMem_Free(edges_ptr[0])
 
-    cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int32_t axis):
+    cdef BoundingBox3D _get_lower_bounds(self, BoundingBox3D bounds, double split, int32_t axis):
         """
         Returns the lower box generated when the node bounding box is split.
 
-        :param bounds: A BoundingBox defining the node bounds.
+        :param bounds: A BoundingBox3D defining the node bounds.
         :param split: The value along the axis at which to split.
         :param axis: The axis to split along.
         :return: A bounding box defining the lower bounds.
@@ -403,13 +403,13 @@ cdef class KDTreeCore:
         cdef Point3D upper
         upper = bounds.upper.copy()
         upper.set_index(axis, split)
-        return new_boundingbox(bounds.lower.copy(), upper)
+        return new_boundingbox3d(bounds.lower.copy(), upper)
 
-    cdef BoundingBox _get_upper_bounds(self, BoundingBox bounds, double split, int32_t axis):
+    cdef BoundingBox3D _get_upper_bounds(self, BoundingBox3D bounds, double split, int32_t axis):
         """
         Returns the upper box generated when the node bounding box is split.
 
-        :param bounds: A BoundingBox defining the node bounds.
+        :param bounds: A BoundingBox3D defining the node bounds.
         :param split: The value along the axis at which to split.
         :param axis: The axis to split along.
         :return: A bounding box defining the upper bounds.
@@ -418,7 +418,7 @@ cdef class KDTreeCore:
         cdef Point3D lower
         lower = bounds.lower.copy()
         lower.set_index(axis, split)
-        return new_boundingbox(lower, bounds.upper.copy())
+        return new_boundingbox3d(lower, bounds.upper.copy())
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -463,7 +463,7 @@ cdef class KDTreeCore:
             int32_t axis
             double split
             list lower_items, upper_items
-            BoundingBox lower_bounds,  upper_bounds
+            BoundingBox3D lower_bounds,  upper_bounds
 
         id = self._new_node()
 
@@ -872,7 +872,7 @@ cdef class KDTreeCore:
         self._empty_bonus = self._read_double(file)
 
         # read bounds
-        self.bounds = BoundingBox(
+        self.bounds = BoundingBox3D(
             Point3D(
                 self._read_double(file),
                 self._read_double(file),

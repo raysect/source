@@ -40,7 +40,7 @@ from raysect.core.math.point cimport Point3D, new_point3d
 from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
-from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
+from raysect.core.acceleration.boundingbox cimport BoundingBox3D, new_boundingbox3d
 from libc.math cimport fabs, log, ceil
 from numpy cimport ndarray, float32_t, int32_t, uint8_t
 from cpython.bytes cimport PyBytes_AsString
@@ -265,7 +265,7 @@ cdef class MeshData(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef BoundingBox _generate_bounding_box(self, int32_t i):
+    cdef BoundingBox3D _generate_bounding_box(self, int32_t i):
         """
         Generates a bounding box for the specified triangle.
 
@@ -273,14 +273,14 @@ cdef class MeshData(KDTreeCore):
         conservative bounds required by the watertight mesh algorithm.
 
         :param i: Triangle array index.
-        :return: A BoundingBox object.
+        :return: A BoundingBox3D object.
         """
 
         cdef:
             float32_t[:, ::1] vertices
             int32_t[:, ::1] triangles
             int32_t i1, i2, i3
-            BoundingBox bbox
+            BoundingBox3D bbox
 
         # assign locally to avoid repeated memory view validity checks
         vertices = self.vertices
@@ -290,7 +290,7 @@ cdef class MeshData(KDTreeCore):
         i2 = triangles[i, V2]
         i3 = triangles[i, V3]
 
-        bbox = new_boundingbox(
+        bbox = new_boundingbox3d(
             new_point3d(
                 min(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
                 min(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
@@ -684,7 +684,7 @@ cdef class MeshData(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef BoundingBox bounding_box(self, AffineMatrix3D to_world):
+    cpdef BoundingBox3D bounding_box(self, AffineMatrix3D to_world):
         """
         Returns a bounding box that encloses the mesh.
 
@@ -693,13 +693,13 @@ cdef class MeshData(KDTreeCore):
         coordinate transforms.
 
         :param to_world: Local to world space transform matrix.
-        :return: A BoundingBox object.
+        :return: A BoundingBox3D object.
         """
 
         cdef:
             float32_t[:, ::1] vertices
             int32_t i
-            BoundingBox bbox
+            BoundingBox3D bbox
             Point3D vertex
 
         # assign locally to avoid repeated memory view validity checks
@@ -707,7 +707,7 @@ cdef class MeshData(KDTreeCore):
 
         # TODO: padding should really be a function of mesh extent
         # convert vertices to world space and grow a bounding box around them
-        bbox = BoundingBox()
+        bbox = BoundingBox3D()
         for i in range(vertices.shape[0]):
             vertex = new_point3d(vertices[i, X], vertices[i, Y], vertices[i, Z])
             bbox.extend(vertex.transform(to_world), BOX_PADDING)
@@ -1118,7 +1118,7 @@ cdef class Mesh(Primitive):
         p = p.transform(self.to_local())
         return self._data.mesh_contains(p)
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
         """
         Returns a world space bounding box that encloses the mesh.
 
@@ -1126,7 +1126,7 @@ cdef class Mesh(Primitive):
         accuracy problems between the mesh and box representations following
         coordinate transforms.
 
-        :return: A BoundingBox object.
+        :return: A BoundingBox3D object.
         """
 
         return self._data.bounding_box(self.to_root())

@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.acceleration.boundingbox cimport BoundingBox3D
 from raysect.core.classes cimport Ray
 from raysect.core.math.point cimport Point3D
 from libc.stdint cimport int32_t
@@ -53,7 +53,7 @@ cdef class Item:
 
     cdef:
         readonly int32_t id
-        readonly BoundingBox box
+        readonly BoundingBox3D box
 
 
 cdef class KDTreeCore:
@@ -62,23 +62,23 @@ cdef class KDTreeCore:
         kdnode *_nodes
         int32_t _allocated_nodes
         int32_t _next_node
-        readonly BoundingBox bounds
+        readonly BoundingBox3D bounds
         int32_t _max_depth
         int32_t _min_items
         double _hit_cost
         double _empty_bonus
 
-    cdef int32_t _build(self, list items, BoundingBox bounds, int32_t depth=*)
+    cdef int32_t _build(self, list items, BoundingBox3D bounds, int32_t depth=*)
 
-    cdef tuple _split(self, list items, BoundingBox bounds)
+    cdef tuple _split(self, list items, BoundingBox3D bounds)
 
     cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr)
 
     cdef void _free_edges(self, edge **edges_ptr)
 
-    cdef BoundingBox _get_lower_bounds(self, BoundingBox bounds, double split, int32_t axis)
+    cdef BoundingBox3D _get_lower_bounds(self, BoundingBox3D bounds, double split, int32_t axis)
 
-    cdef BoundingBox _get_upper_bounds(self, BoundingBox bounds, double split, int32_t axis)
+    cdef BoundingBox3D _get_upper_bounds(self, BoundingBox3D bounds, double split, int32_t axis)
 
     cdef int32_t _new_leaf(self, list ids)
 

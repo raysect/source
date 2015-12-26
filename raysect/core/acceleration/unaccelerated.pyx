@@ -39,7 +39,7 @@ cdef class Unaccelerated(Accelerator):
     def __init__(self):
 
         self.primitives = []
-        self.world_box = BoundingBox()
+        self.world_box = BoundingBox3D()
 
     cpdef build(self, list primitives):
 
@@ -48,7 +48,7 @@ cdef class Unaccelerated(Accelerator):
             BoundPrimitive accel_primitive
 
         self.primitives = []
-        self.world_box = BoundingBox()
+        self.world_box = BoundingBox3D()
 
         for primitive in primitives:
 

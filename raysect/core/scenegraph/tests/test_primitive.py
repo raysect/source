@@ -30,7 +30,7 @@
 import unittest
 from raysect.core.scenegraph import Primitive, Node
 from raysect.core.math import Point3D, AffineMatrix3D, translate
-from raysect.core.acceleration import BoundingBox
+from raysect.core.acceleration import BoundingBox3D
 from raysect.core.classes import Material, Ray
 
 # TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures

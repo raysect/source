@@ -129,7 +129,7 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method inside() has not been implemented.")
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
         """
         Virtual method - to be implemented by derived classes.
 
@@ -143,7 +143,7 @@ cdef class Primitive(Node):
         scene-graph with a World object at its root, it must throw a TypeError
         exception.
 
-        :return: A world space BoundingBox object.
+        :return: A world space BoundingBox3D object.
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")

@@ -33,7 +33,7 @@ from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.normal cimport new_normal3d
 from raysect.core.math.point cimport new_point3d, Point3D
 from raysect.core.classes cimport Material, new_intersection
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.acceleration.boundingbox cimport BoundingBox3D
 from libc.math cimport sqrt
 cimport cython
 
@@ -389,14 +389,14 @@ cdef class Cone(Primitive):
         # Points distance from axis must be less than cone radius at that height
         return point_radius <= cone_radius
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
 
         cdef:
             list points
             Point3D point
-            BoundingBox box
+            BoundingBox3D box
 
-        box = BoundingBox()
+        box = BoundingBox3D()
 
         # calculate local bounds
         box.lower = new_point3d(-self._radius, -self._radius, 0.0)
@@ -407,7 +407,7 @@ cdef class Cone(Primitive):
 
         # convert points to world space and build an enclosing world space bounding box
         # a small degree of padding is added to avoid potential numerical accuracy issues
-        box = BoundingBox()
+        box = BoundingBox3D()
         for point in points:
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 

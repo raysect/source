@@ -42,13 +42,10 @@ DEF X_AXIS = 0
 DEF Y_AXIS = 1
 DEF Z_AXIS = 2
 
-DEF U_AXIS = 0
-DEF V_AXIS = 1
 
-
-cdef class BoundingBox:
+cdef class BoundingBox3D:
     """
-    Axis aligned bounding box.
+    Axis-aligned bounding box.
 
     Represents a bounding box around a primitive's surface. The points defining
     the lower and upper corners of the box must be specified in world space.
@@ -80,7 +77,7 @@ cdef class BoundingBox:
 
     def __repr__(self):
 
-        return "BoundingBox({}, {})".format(self.lower, self.upper)
+        return "BoundingBox3D({}, {})".format(self.lower, self.upper)
 
     def __getstate__(self):
         """Encodes state for pickling."""
@@ -203,7 +200,7 @@ cdef class BoundingBox:
             return False
         return True
 
-    cpdef object union(self, BoundingBox box):
+    cpdef object union(self, BoundingBox3D box):
 
         self.lower.x = min(self.lower.x, box.lower.x)
         self.lower.y = min(self.lower.y, box.lower.y)
@@ -299,17 +296,7 @@ cdef class BoundingBox:
 
 cdef class BoundingBox2D:
     """
-    Axis aligned 2D bounding box.
-
-    Represents a 2D bounding box around a primitive's surface. The points defining
-    the lower and upper corners of the box must be specified in world space.
-
-    Axis aligned bounding box ray intersections are extremely fast to evaluate
-    compared to intersections with more general geometry. Combined with a spatial
-    subdivision acceleration structure, the cost of ray-primitive evaluations
-    can be heavily reduced (O(n) -> O(log n)).
-
-    For optimal speed the bounding box is aligned with the world space axes.
+    Axis-aligned 2D bounding box.
     """
 
     def __init__(self, Point2D lower=None, Point2D upper=None):
@@ -319,14 +306,14 @@ cdef class BoundingBox2D:
             self.lower = new_point2d(INFINITY, INFINITY)
             self.upper = new_point2d(-INFINITY, -INFINITY)
         else:
-            if lower.u > upper.u or lower.v > upper.v:
+            if lower.x > upper.x or lower.y > upper.y:
                 raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
             self.lower = lower
             self.upper = upper
 
     def __repr__(self):
 
-        return "BoundingBox({}, {})".format(self.lower, self.upper)
+        return "BoundingBox2D({}, {})".format(self.lower, self.upper)
 
     def __getstate__(self):
         """Encodes state for pickling."""
@@ -357,47 +344,47 @@ cdef class BoundingBox2D:
     cpdef bint contains(self, Point2D point):
 
         # point is inside box if it is inside all slabs
-        if (point.u < self.lower.u) or (point.u > self.upper.u):
+        if (point.x < self.lower.x) or (point.x > self.upper.x):
             return False
-        if (point.v < self.lower.v) or (point.v > self.upper.v):
+        if (point.y < self.lower.y) or (point.y > self.upper.y):
             return False
         return True
 
     cpdef object union(self, BoundingBox2D box):
 
-        self.lower.u = min(self.lower.u, box.lower.u)
-        self.lower.v = min(self.lower.v, box.lower.v)
+        self.lower.x = min(self.lower.x, box.lower.x)
+        self.lower.y = min(self.lower.y, box.lower.y)
 
-        self.upper.u = max(self.upper.u, box.upper.v)
-        self.upper.v = max(self.upper.u, box.upper.v)
+        self.upper.x = max(self.upper.x, box.upper.y)
+        self.upper.y = max(self.upper.x, box.upper.y)
 
     cpdef object extend(self, Point2D point, double padding=0.0):
 
-        self.lower.u = min(self.lower.u, point.u - padding)
-        self.lower.v = min(self.lower.v, point.v - padding)
+        self.lower.x = min(self.lower.x, point.x - padding)
+        self.lower.y = min(self.lower.y, point.y - padding)
 
-        self.upper.u = max(self.upper.u, point.u + padding)
-        self.upper.v = max(self.upper.v, point.v + padding)
+        self.upper.x = max(self.upper.x, point.x + padding)
+        self.upper.y = max(self.upper.y, point.y + padding)
 
     cpdef double surface_area(self):
 
-        return (self.upper.u - self.lower.u) * (self.upper.v - self.lower.v)
+        return (self.upper.x - self.lower.x) * (self.upper.y - self.lower.y)
 
     cpdef list vertices(self):
 
         return [
-            new_point2d(self.lower.u, self.lower.v),
-            new_point2d(self.lower.u, self.upper.v),
-            new_point2d(self.upper.u, self.lower.v),
-            new_point2d(self.upper.u, self.upper.v),
+            new_point2d(self.lower.x, self.lower.y),
+            new_point2d(self.lower.x, self.upper.y),
+            new_point2d(self.upper.x, self.lower.y),
+            new_point2d(self.upper.x, self.upper.y),
         ]
 
     cpdef double extent(self, axis) except *:
 
-        if axis == U_AXIS:
-            return max(0.0, self.upper.u - self.lower.u)
-        elif axis == V_AXIS:
-            return max(0.0, self.upper.v - self.lower.v)
+        if axis == X_AXIS:
+            return max(0.0, self.upper.x - self.lower.x)
+        elif axis == Y_AXIS:
+            return max(0.0, self.upper.y - self.lower.y)
         else:
             raise ValueError("Axis must be in the range [0, 1].")
 
@@ -407,24 +394,24 @@ cdef class BoundingBox2D:
             int largest_axis
             double largest_extent, extent
 
-        largest_axis = U_AXIS
-        largest_extent = self.extent(U_AXIS)
+        largest_axis = X_AXIS
+        largest_extent = self.extent(X_AXIS)
 
-        extent = self.extent(V_AXIS)
+        extent = self.extent(Y_AXIS)
         if extent > largest_extent:
-            largest_axis = V_AXIS
+            largest_axis = Y_AXIS
             largest_extent = extent
 
         return largest_axis
 
     cpdef double largest_extent(self):
 
-        return max(self.extent(U_AXIS), self.extent(V_AXIS))
+        return max(self.extent(X_AXIS), self.extent(Y_AXIS))
 
     cpdef object pad(self, double padding):
 
-        self.lower.u = self.lower.u - padding
-        self.lower.v = self.lower.v - padding
+        self.lower.x = self.lower.x - padding
+        self.lower.y = self.lower.y - padding
 
-        self.upper.u = self.upper.u + padding
-        self.upper.v = self.upper.v + padding
+        self.upper.x = self.upper.x + padding
+        self.upper.y = self.upper.y + padding

@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.acceleration.accelerator cimport Accelerator
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.acceleration.boundingbox cimport BoundingBox3D
 from raysect.core.classes cimport Ray
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.point cimport Point3D
@@ -40,4 +40,4 @@ from raysect.core.classes cimport Intersection
 cdef class Unaccelerated(Accelerator):
 
     cdef list primitives
-    cdef BoundingBox world_box
+    cdef BoundingBox3D world_box

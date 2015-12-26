@@ -35,7 +35,7 @@
 from raysect.core.classes cimport Material, new_ray, new_intersection
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.acceleration.boundingbox cimport BoundingBox3D
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
@@ -233,8 +233,8 @@ cdef class NullPrimitive(Primitive):
     This class is intended to act as a place holder until a user sets a valid primitive.
     """
 
-    cpdef BoundingBox bounding_box(self):
-        return BoundingBox()
+    cpdef BoundingBox3D bounding_box(self):
+        return BoundingBox3D()
 
 
 cdef class CSGRoot(Node):
@@ -307,14 +307,14 @@ cdef class Union(CSGPrimitive):
         p = p.transform(self.to_local())
         return self._primitive_a.contains(p) or self._primitive_b.contains(p)
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
 
         cdef:
             list points
             Point3D point
-            BoundingBox box
+            BoundingBox3D box
 
-        box = BoundingBox()
+        box = BoundingBox3D()
 
         # union local space bounding boxes
         box.union(self._primitive_a.box)
@@ -325,7 +325,7 @@ cdef class Union(CSGPrimitive):
 
         # convert points to world space and build an enclosing world space bounding box
         # a small degree of padding is added to avoid potential numerical accuracy issues
-        box = BoundingBox()
+        box = BoundingBox3D()
         for point in points:
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
@@ -373,14 +373,14 @@ cdef class Intersect(CSGPrimitive):
         p = p.transform(self.to_local())
         return self._primitive_a.contains(p) and self._primitive_b.contains(p)
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
 
         cdef:
             list points
             Point3D point
-            BoundingBox box
+            BoundingBox3D box
 
-        box = BoundingBox()
+        box = BoundingBox3D()
 
         # find the intersection of the bounding boxes (this will always surround the intersected primitives)
         box.lower.x = max(self._primitive_a.box.lower.x, self._primitive_b.box.lower.x)
@@ -396,7 +396,7 @@ cdef class Intersect(CSGPrimitive):
 
         # convert points to world space and build an enclosing world space bounding box
         # a small degree of padding is added to avoid potential numerical accuracy issues
-        box = BoundingBox()
+        box = BoundingBox3D()
         for point in points:
 
             box.extend(point.transform(self.to_root()), BOX_PADDING)
@@ -466,12 +466,12 @@ cdef class Subtract(CSGPrimitive):
         p = p.transform(self.to_local())
         return self._primitive_a.contains(p) and not self._primitive_b.contains(p)
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
 
         cdef:
             list points
             Point3D point
-            BoundingBox box
+            BoundingBox3D box
 
         # a subtracted object (A - B) will only ever occupy the same or less space than the original primitive (A)
         # for simplicity just use the original primitive bounding box (A)
@@ -479,7 +479,7 @@ cdef class Subtract(CSGPrimitive):
 
         # convert points to world space and build an enclosing world space bounding box
         # a small degree of padding is added to avoid potential numerical accuracy issues
-        box = BoundingBox()
+        box = BoundingBox3D()
         for point in points:
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 

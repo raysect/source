@@ -31,7 +31,7 @@
 
 cimport cython
 from raysect.core.classes cimport Material, new_intersection
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.acceleration.boundingbox cimport BoundingBox3D
 from raysect.core.math.point cimport new_point3d
 from raysect.core.math.normal cimport new_normal3d, Normal3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
@@ -268,7 +268,7 @@ cdef class Sphere(Primitive):
 
         return True
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
 
         cdef double extent
         cdef Point3D origin, lower, upper
@@ -281,4 +281,4 @@ cdef class Sphere(Primitive):
         lower = new_point3d(origin.x - extent, origin.y - extent, origin.z - extent)
         upper = new_point3d(origin.x + extent, origin.y + extent, origin.z + extent)
 
-        return BoundingBox(lower, upper)
+        return BoundingBox3D(lower, upper)
