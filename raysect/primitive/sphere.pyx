@@ -112,7 +112,7 @@ cdef class Sphere(Primitive):
     cpdef Intersection hit(self, Ray ray):
 
         cdef Point origin
-        cdef Vector direction
+        cdef Vector3D direction
         cdef double a, b, c, d, q, t0, t1, temp, t_closest
 
         # reset further intersection state
@@ -204,7 +204,7 @@ cdef class Sphere(Primitive):
 
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t)
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance):
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector3D direction, double ray_distance):
 
         cdef Point hit_point, inside_point, outside_point
         cdef Normal normal

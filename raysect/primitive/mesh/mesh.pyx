@@ -37,7 +37,7 @@ from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport Normal, new_normal
 from raysect.core.math.point cimport Point, new_point
-from raysect.core.math.vector cimport Vector, new_vector
+from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.acceleration.boundingbox cimport BoundingBox, new_boundingbox
@@ -184,7 +184,7 @@ cdef class MeshData(KDTreeCore):
             int32_t i, valid
             int32_t i1, i2, i3
             Point p1, p2, p3
-            Vector v1, v2, v3
+            Vector3D v1, v2, v3
 
         # assign locally to avoid repeated memory view validity checks
         vertices = self.vertices
@@ -238,7 +238,7 @@ cdef class MeshData(KDTreeCore):
             int32_t i
             int32_t i1, i2, i3
             Point p1, p2, p3
-            Vector v1, v2, v3
+            Vector3D v1, v2, v3
 
         # assign locally to avoid repeated memory view validity checks
         vertices = self.vertices
@@ -672,7 +672,7 @@ cdef class MeshData(KDTreeCore):
         # fire ray along z axis, if it encounters a polygon it inspects the orientation of the face
         # if the face is outwards, then the ray was spawned inside the mesh
         # this assumes the mesh has all face normals facing outwards from the mesh interior
-        ray = new_ray(p, new_vector(0, 0, 1), INFINITY)
+        ray = new_ray(p, new_vector3d(0, 0, 1), INFINITY)
 
         # search for closest triangle intersection
         if not self.hit(ray):

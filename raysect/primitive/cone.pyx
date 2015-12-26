@@ -137,7 +137,7 @@ cdef class Cone(Primitive):
 
         cdef:
             Point origin
-            Vector direction
+            Vector3D direction
             double radius, height
             double a, b, c, d, k, t0, t1, t0_z, t1_z, temp_d
             int t0_type, t1_type, temp_i
@@ -273,7 +273,7 @@ cdef class Cone(Primitive):
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_type)
 
     @cython.cdivision(True)
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int type):
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector3D direction, double ray_distance, int type):
 
         cdef:
             Point hit_point, inside_point, outside_point

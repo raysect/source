@@ -30,12 +30,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math._vec3 cimport _Vec3
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.affinematrix cimport AffineMatrix
 
 cdef class Normal(_Vec3):
 
-    cpdef Vector cross(self, _Vec3 v)
+    cpdef Vector3D cross(self, _Vec3 v)
 
     cpdef Normal normalise(self)
 
@@ -55,9 +55,9 @@ cdef class Normal(_Vec3):
 
     cpdef Normal copy(self)
 
-    cpdef Vector as_vector(self)
+    cpdef Vector3D as_vector(self)
 
-    cpdef Vector orthogonal(self)
+    cpdef Vector3D orthogonal(self)
 
 
 cdef inline Normal new_normal(double x, double y, double z):

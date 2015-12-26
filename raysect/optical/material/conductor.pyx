@@ -35,7 +35,7 @@ from numpy cimport ndarray
 from libc.math cimport fabs
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector, new_vector
+from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
@@ -71,7 +71,7 @@ cdef class Conductor(Material):
                                     Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
-            Vector incident, reflected
+            Vector3D incident, reflected
             double temp, ci
             ndarray n, k, reflection_coefficient
             Ray reflected_ray
@@ -95,9 +95,9 @@ cdef class Conductor(Material):
 
         # reflection
         temp = 2 * ci
-        reflected = new_vector(incident.x - temp * normal.x,
-                               incident.y - temp * normal.y,
-                               incident.z - temp * normal.z)
+        reflected = new_vector3d(incident.x - temp * normal.x,
+                                 incident.y - temp * normal.y,
+                                 incident.z - temp * normal.z)
 
         # convert reflected ray direction to world space
         reflected = reflected.transform(to_world)

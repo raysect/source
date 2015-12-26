@@ -95,7 +95,7 @@ Simulated Spectrum
 Lets simulate measuring a spectrum by launching a single ray::
 
     ray = Ray(origin=Point(0, 0, -5),
-              direction=Vector(0, 0, 1),
+              direction=Vector3D(0, 0, 1),
               min_wavelength=375,
               max_wavelength=785,
               num_samples=100)

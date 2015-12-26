@@ -28,11 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Unit tests for the Vector object.
+Unit tests for the Vector3D object.
 """
 
 import unittest
-from raysect.core.math import Vector, AffineMatrix
+from raysect.core.math import Vector3D, AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -42,7 +42,7 @@ class TestVector(unittest.TestCase):
     def test_initialise_default(self):
         """Default initialisation, unit vector pointing along z-axis."""
 
-        v = Vector()
+        v = Vector3D()
         self.assertEqual(v.x, 0.0, "Default initialisation is not (0,0,1) [X].")
         self.assertEqual(v.y, 0.0, "Default initialisation is not (0,0,1) [Y].")
         self.assertEqual(v.z, 1.0, "Default initialisation is not (0,0,1) [Z].")
@@ -50,7 +50,7 @@ class TestVector(unittest.TestCase):
     def test_initialise_indexable(self):
         """Initialisation with an indexable object."""
 
-        v = Vector(1.0, 2.0, 3.0)
+        v = Vector3D(1.0, 2.0, 3.0)
         self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
         self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
         self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
@@ -59,12 +59,12 @@ class TestVector(unittest.TestCase):
         """Initialisation with an invalid type should raise a TypeError."""
 
         with self.assertRaises(TypeError, msg="Initialised with a string."):
-            Vector("spoon")
+            Vector3D("spoon")
 
     def test_x(self):
         """Get/set x co-ordinate."""
 
-        v = Vector(2.5, 6.7, -4.6)
+        v = Vector3D(2.5, 6.7, -4.6)
 
         # get x attribute
         self.assertEqual(v.x, 2.5, "Getting x attribute failed.")
@@ -76,7 +76,7 @@ class TestVector(unittest.TestCase):
     def test_y(self):
         """Get/set y co-ordinate."""
 
-        v = Vector(2.5, 6.7, -4.6)
+        v = Vector3D(2.5, 6.7, -4.6)
 
         # get y attribute
         self.assertEqual(v.y, 6.7, "Getting y attribute failed.")
@@ -88,7 +88,7 @@ class TestVector(unittest.TestCase):
     def test_z(self):
         """Get/set z co-ordinate."""
 
-        v = Vector(2.5, 6.7, -4.6)
+        v = Vector3D(2.5, 6.7, -4.6)
 
         # get z attribute
         self.assertEqual(v.z, -4.6, "Getting z attribute failed.")
@@ -100,7 +100,7 @@ class TestVector(unittest.TestCase):
     def test_indexing(self):
         """Getting/setting components by indexing."""
 
-        v = Vector(2.5, 6.7, -4.6)
+        v = Vector3D(2.5, 6.7, -4.6)
 
         v[0] = 1.0
         v[1] = 2.0
@@ -123,23 +123,23 @@ class TestVector(unittest.TestCase):
     def test_length(self):
         """Get/set the vector length."""
 
-        v = Vector(1.2, -3, 9.8)
+        v = Vector3D(1.2, -3, 9.8)
 
         # get length
         r = sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8)
-        self.assertAlmostEqual(v.length, r, places = 14, msg="Vector returned incorrect length.")
+        self.assertAlmostEqual(v.length, r, places = 14, msg="Vector3D returned incorrect length.")
 
         # set length
         v.length = 10.0
         rx = 1.2 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
         ry = -3 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
         rz = 9.8 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
-        self.assertAlmostEqual(v.x, rx, 14, "Vector length was not set correctly [X].")
-        self.assertAlmostEqual(v.y, ry, 14, "Vector length was not set correctly [Y].")
-        self.assertAlmostEqual(v.z, rz, 14, "Vector length was not set correctly [Z].")
+        self.assertAlmostEqual(v.x, rx, 14, "Vector3D length was not set correctly [X].")
+        self.assertAlmostEqual(v.y, ry, 14, "Vector3D length was not set correctly [Y].")
+        self.assertAlmostEqual(v.z, rz, 14, "Vector3D length was not set correctly [Z].")
 
         # trying to rescale a zero length vector should raise a ZeroDivisionError
-        v = Vector(0,0,0)
+        v = Vector3D(0, 0, 0)
         with self.assertRaises(ZeroDivisionError, msg="Adjusting length of zero length vector did not raise a ZeroDivisionError."):
 
             v.length = 10.0
@@ -147,23 +147,23 @@ class TestVector(unittest.TestCase):
     def test_equal(self):
         """Equality operator."""
 
-        self.assertTrue(Vector(1, 2, 3) == Vector(1, 2, 3), "Equality operator returned false for equal vectors.")
-        self.assertFalse(Vector(5, 2, 3) == Vector(1, 2, 3), "Equality operator returned true for a vector with non-equal x components.")
-        self.assertFalse(Vector(1, 5, 3) == Vector(1, 2, 3), "Equality operator returned true for a vector with non-equal y components.")
-        self.assertFalse(Vector(1, 2, 5) == Vector(1, 2, 3), "Equality operator returned true for a vector with non-equal z components.")
+        self.assertTrue(Vector3D(1, 2, 3) == Vector3D(1, 2, 3), "Equality operator returned false for equal vectors.")
+        self.assertFalse(Vector3D(5, 2, 3) == Vector3D(1, 2, 3), "Equality operator returned true for a vector with non-equal x components.")
+        self.assertFalse(Vector3D(1, 5, 3) == Vector3D(1, 2, 3), "Equality operator returned true for a vector with non-equal y components.")
+        self.assertFalse(Vector3D(1, 2, 5) == Vector3D(1, 2, 3), "Equality operator returned true for a vector with non-equal z components.")
 
     def test_not_equal(self):
         """Inequality operator."""
 
-        self.assertFalse(Vector(1, 2, 3) != Vector(1, 2, 3), "Inequality operator returned true for equal vectors.")
-        self.assertTrue(Vector(5, 2, 3) != Vector(1, 2, 3), "Inequality operator returned false for a vector with non-equal x components.")
-        self.assertTrue(Vector(1, 5, 3) != Vector(1, 2, 3), "Inequality operator returned false for a vector with non-equal y components.")
-        self.assertTrue(Vector(1, 2, 5) != Vector(1, 2, 3), "Inequality operator returned false for a vector with non-equal z components.")
+        self.assertFalse(Vector3D(1, 2, 3) != Vector3D(1, 2, 3), "Inequality operator returned true for equal vectors.")
+        self.assertTrue(Vector3D(5, 2, 3) != Vector3D(1, 2, 3), "Inequality operator returned false for a vector with non-equal x components.")
+        self.assertTrue(Vector3D(1, 5, 3) != Vector3D(1, 2, 3), "Inequality operator returned false for a vector with non-equal y components.")
+        self.assertTrue(Vector3D(1, 2, 5) != Vector3D(1, 2, 3), "Inequality operator returned false for a vector with non-equal z components.")
 
     def test_negate(self):
         """Negate operator."""
 
-        r = -Vector(2.5, 6.7, -4.6)
+        r = -Vector3D(2.5, 6.7, -4.6)
         self.assertEqual(r.x, -2.5, "Negation failed [X].")
         self.assertEqual(r.y, -6.7, "Negation failed [Y].")
         self.assertEqual(r.z, 4.60, "Negation failed [Z].")
@@ -171,57 +171,57 @@ class TestVector(unittest.TestCase):
     def test_add(self):
         """Add operator."""
 
-        # Vector + Vector, returns Vector
-        a = Vector(-1.4, 0.2, 99.1)
-        b = Vector(0.7, -64.0, -0.1)
+        # Vector3D + Vector3D, returns Vector3D
+        a = Vector3D(-1.4, 0.2, 99.1)
+        b = Vector3D(0.7, -64.0, -0.1)
         r = a + b
-        self.assertTrue(isinstance(r, Vector), "Vector + Vector did not return a Vector.")
-        self.assertEqual(r.x, -1.4 + 0.7, "Vector + Vector failed [X].")
-        self.assertEqual(r.y, 0.2 - 64.0, "Vector + Vector failed [Y].")
-        self.assertEqual(r.z, 99.1 - 0.1, "Vector + Vector failed [Z].")
+        self.assertTrue(isinstance(r, Vector3D), "Vector3D + Vector3D did not return a Vector3D.")
+        self.assertEqual(r.x, -1.4 + 0.7, "Vector3D + Vector3D failed [X].")
+        self.assertEqual(r.y, 0.2 - 64.0, "Vector3D + Vector3D failed [Y].")
+        self.assertEqual(r.z, 99.1 - 0.1, "Vector3D + Vector3D failed [Z].")
 
     def test_subtract(self):
         """Subtract operator."""
 
-        # Vector - Vector, returns Vector
-        a = Vector(-1.4, 0.2, 99.1)
-        b = Vector(0.7, -64.0, -0.1)
+        # Vector3D - Vector3D, returns Vector3D
+        a = Vector3D(-1.4, 0.2, 99.1)
+        b = Vector3D(0.7, -64.0, -0.1)
         r = a - b
-        self.assertTrue(isinstance(r, Vector), "Vector - Vector did not return a Vector.")
-        self.assertEqual(r.x, -1.4 - 0.7, "Vector - Vector failed [X].")
-        self.assertEqual(r.y, 0.2 + 64.0, "Vector - Vector failed [Y].")
-        self.assertEqual(r.z, 99.1 + 0.1, "Vector - Vector failed [Z].")
+        self.assertTrue(isinstance(r, Vector3D), "Vector3D - Vector3D did not return a Vector3D.")
+        self.assertEqual(r.x, -1.4 - 0.7, "Vector3D - Vector3D failed [X].")
+        self.assertEqual(r.y, 0.2 + 64.0, "Vector3D - Vector3D failed [Y].")
+        self.assertEqual(r.z, 99.1 + 0.1, "Vector3D - Vector3D failed [Z].")
 
     def test_multiply(self):
         """Multiply operator."""
 
-        v = Vector(-1.4, 0.2, 99.1)
+        v = Vector3D(-1.4, 0.2, 99.1)
 
-        # c * Vector, returns Vector
+        # c * Vector3D, returns Vector3D
         r = 0.23 * v
-        self.assertTrue(isinstance(r, Vector), "c * Vector did not return a Vector.")
-        self.assertEqual(r.x, 0.23 * -1.4, "c * Vector failed [X].")
-        self.assertEqual(r.y, 0.23 * 0.20, "c * Vector failed [Y].")
-        self.assertEqual(r.z, 0.23 * 99.1, "c * Vector failed [Z].")
+        self.assertTrue(isinstance(r, Vector3D), "c * Vector3D did not return a Vector3D.")
+        self.assertEqual(r.x, 0.23 * -1.4, "c * Vector3D failed [X].")
+        self.assertEqual(r.y, 0.23 * 0.20, "c * Vector3D failed [Y].")
+        self.assertEqual(r.z, 0.23 * 99.1, "c * Vector3D failed [Z].")
 
-        # Vector * c, returns Vector
+        # Vector3D * c, returns Vector3D
         r = v * -2.6
-        self.assertTrue(isinstance(r, Vector), "Vector * c did not return a Vector.")
-        self.assertEqual(r.x, -2.6 * -1.4, "Vector * c failed [X].")
-        self.assertEqual(r.y, -2.6 * 0.20, "Vector * c failed [Y].")
-        self.assertEqual(r.z, -2.6 * 99.1, "Vector * c failed [Z].")
+        self.assertTrue(isinstance(r, Vector3D), "Vector3D * c did not return a Vector3D.")
+        self.assertEqual(r.x, -2.6 * -1.4, "Vector3D * c failed [X].")
+        self.assertEqual(r.y, -2.6 * 0.20, "Vector3D * c failed [Y].")
+        self.assertEqual(r.z, -2.6 * 99.1, "Vector3D * c failed [Z].")
 
     def test_divide(self):
         """Division operator."""
 
-        v = Vector(-1.4, 0.2, 99.1)
+        v = Vector3D(-1.4, 0.2, 99.1)
 
-        # Vector / c, returns Vector
+        # Vector3D / c, returns Vector3D
         r = v / 5.3
-        self.assertTrue(isinstance(r, Vector), "Vector * c did not return a Vector.")
-        self.assertEqual(r.x, -1.4 / 5.3, "Vector * c failed [X].")
-        self.assertEqual(r.y, 0.20 / 5.3, "Vector * c failed [Y].")
-        self.assertEqual(r.z, 99.1 / 5.3, "Vector * c failed [Z].")
+        self.assertTrue(isinstance(r, Vector3D), "Vector3D * c did not return a Vector3D.")
+        self.assertEqual(r.x, -1.4 / 5.3, "Vector3D * c failed [X].")
+        self.assertEqual(r.y, 0.20 / 5.3, "Vector3D * c failed [Y].")
+        self.assertEqual(r.z, 99.1 / 5.3, "Vector3D * c failed [Z].")
 
         # dividing by zero should raise a ZeroDivisionError
         with self.assertRaises(ZeroDivisionError, msg="Dividing by zero did not raise a ZeroDivisionError."):
@@ -241,16 +241,16 @@ class TestVector(unittest.TestCase):
         """Testing normalise() method."""
 
         # normalise
-        v = Vector(23.2, 0.12, -5.0)
+        v = Vector3D(23.2, 0.12, -5.0)
         r = v.normalise()
         l = v.length
-        self.assertTrue(isinstance(r, Vector), "Normalise did not return a Vector.")
+        self.assertTrue(isinstance(r, Vector3D), "Normalise did not return a Vector3D.")
         self.assertAlmostEqual(r.x, 23.2 / l, 14, "Normalise failed [X].")
         self.assertAlmostEqual(r.y, 0.12 / l, 14, "Normalise failed [Y].")
         self.assertAlmostEqual(r.z, -5.0 / l, 14, "Normalise failed [Z].")
 
         # attempting to normalise a zero length vector should raise a ZeroDivisionError
-        v = Vector(0.0, 0.0, 0.0)
+        v = Vector3D(0.0, 0.0, 0.0)
         with self.assertRaises(ZeroDivisionError, msg="Normalising a zero length vector did not raise a ZeroDivisionError."):
 
             r = v.normalise()
@@ -258,9 +258,9 @@ class TestVector(unittest.TestCase):
     def test_dot_product(self):
         """Testing dot product."""
 
-        x = Vector(1,0,0)
-        y = Vector(0,1,0)
-        z = Vector(0,0,1)
+        x = Vector3D(1, 0, 0)
+        y = Vector3D(0, 1, 0)
+        z = Vector3D(0, 0, 1)
 
         # orthogonal
         self.assertEqual(x.dot(y), 0.0, "Dot product of orthogonal vectors does not equal 0.0.")
@@ -273,8 +273,8 @@ class TestVector(unittest.TestCase):
         self.assertEqual(z.dot(z), 1.0, "Dot product of orthonormal vectors does not equal 1.0.")
 
         # arbitrary
-        a = Vector(4, 2, 3)
-        b = Vector(-1, 2, 6)
+        a = Vector3D(4, 2, 3)
+        b = Vector3D(-1, 2, 6)
         self.assertEqual(a.dot(b), 4*-1 + 2*2 + 3*6, "Dot product of two arbitrary vectors gives the wrong value.")
         self.assertEqual(a.dot(b), b.dot(a), "a.b does not equal b.a.")
 
@@ -282,9 +282,9 @@ class TestVector(unittest.TestCase):
         """Testing cross product."""
 
         # raysect uses a right handed coordinate system
-        x = Vector(1,0,0)
-        y = Vector(0,1,0)
-        z = Vector(0,0,1)
+        x = Vector3D(1, 0, 0)
+        y = Vector3D(0, 1, 0)
+        z = Vector3D(0, 0, 1)
 
         # orthogonal
         r = x.cross(y)
@@ -318,14 +318,14 @@ class TestVector(unittest.TestCase):
         self.assertEqual(r.y, 0.0, "Cross product failed [Y].")
         self.assertEqual(r.z, 0.0, "Cross product failed [Z].")
 
-        # arbitrary Vector x Vector
-        a = Vector(4, 2, 3)
-        b = Vector(-1, 2, 6)
+        # arbitrary Vector3D x Vector3D
+        a = Vector3D(4, 2, 3)
+        b = Vector3D(-1, 2, 6)
 
         r1 = a.cross(b)
         r2 = b.cross(a)
 
-        self.assertTrue(isinstance(r, Vector), "Cross did not return a Vector.")
+        self.assertTrue(isinstance(r, Vector3D), "Cross did not return a Vector3D.")
 
         self.assertEqual(r1.x, a.y * b.z - b.y * a.z, "Cross product failed [X].")
         self.assertEqual(r1.y, b.x * a.z - a.x * b.z, "Cross product failed [Y].")
@@ -343,11 +343,11 @@ class TestVector(unittest.TestCase):
                           [9,10,4,9],
                           [4,14,15,16]])
 
-        v = Vector(-1, 2, 6)
+        v = Vector3D(-1, 2, 6)
 
         r = v.transform(m)
 
-        self.assertTrue(isinstance(r, Vector), "Transform did not return a Vector.")
+        self.assertTrue(isinstance(r, Vector3D), "Transform did not return a Vector3D.")
         self.assertEqual(r.x, 1 * -1 +  2 * 2 + 3 * 6, "Transform failed [X].")
         self.assertEqual(r.y, 5 * -1 +  6 * 2 + 2 * 6, "Transform failed [Y].")
         self.assertEqual(r.z, 9 * -1 + 10 * 2 + 4 * 6, "Transform failed [Z].")
@@ -355,7 +355,7 @@ class TestVector(unittest.TestCase):
     def test_copy(self):
         """Testing method copy()."""
 
-        v = Vector(1.0, 2.0, 3.0)
+        v = Vector3D(1.0, 2.0, 3.0)
         r = v.copy()
 
         # check a new instance has been created by modifying the original

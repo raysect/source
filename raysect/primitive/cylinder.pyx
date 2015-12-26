@@ -32,7 +32,7 @@
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.normal cimport new_normal
 from raysect.core.math.point cimport new_point
-from raysect.core.math.vector cimport new_vector
+from raysect.core.math.vector cimport new_vector3d
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from libc.math cimport sqrt, fabs
@@ -314,11 +314,11 @@ cdef class Cylinder(Primitive):
 
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_type)
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int face, int type):
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector3D direction, double ray_distance, int face, int type):
 
         cdef:
             Point hit_point, inside_point, outside_point
-            Vector interior_offset
+            Vector3D interior_offset
             Normal normal
             bint exiting
 
@@ -367,7 +367,7 @@ cdef class Cylinder(Primitive):
                                 normal, exiting, self.to_local(), self.to_root())
 
     @cython.cdivision(True)
-    cdef inline Vector _interior_offset(self, Point hit_point, Normal normal, int type):
+    cdef inline Vector3D _interior_offset(self, Point hit_point, Normal normal, int type):
 
         cdef double x, y, z, length
 
@@ -405,7 +405,7 @@ cdef class Cylinder(Primitive):
 
             z = 0
 
-        return new_vector(x, y, z)
+        return new_vector3d(x, y, z)
 
     cpdef bint contains(self, Point point) except -1:
 

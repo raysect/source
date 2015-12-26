@@ -32,7 +32,7 @@ Unit tests for the Normal object.
 """
 
 import unittest
-from raysect.core.math import Normal, Vector, AffineMatrix
+from raysect.core.math import Normal, Vector3D, AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -326,7 +326,7 @@ class TestNormal(unittest.TestCase):
         r1 = a.cross(b)
         r2 = b.cross(a)
 
-        self.assertTrue(isinstance(r, Vector), "Cross did not return a Vector.")
+        self.assertTrue(isinstance(r, Vector3D), "Cross did not return a Vector3D.")
 
         self.assertEqual(r1.x, a.y * b.z - b.y * a.z, "Cross product failed [X].")
         self.assertEqual(r1.y, b.x * a.z - a.x * b.z, "Cross product failed [Y].")
@@ -395,7 +395,7 @@ class TestNormal(unittest.TestCase):
         v.y = 6.0
         v.z = 7.0
 
-        self.assertTrue(isinstance(r, Vector), "As_vector did not return a Normal.")
+        self.assertTrue(isinstance(r, Vector3D), "As_vector did not return a Normal.")
         self.assertEqual(r.x, 1.0, "As_vector failed [X].")
         self.assertEqual(r.y, 2.0, "As_vector failed [Y].")
         self.assertEqual(r.z, 3.0, "As_vector failed [Z].")

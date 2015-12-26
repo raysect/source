@@ -31,7 +31,7 @@
 
 from raysect.core.classes cimport Ray as CoreRay
 from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.spectrum cimport Spectrum
 
@@ -55,7 +55,7 @@ cdef class Ray(CoreRay):
 
     cpdef Spectrum sample(self, World world, int samples)
 
-    cpdef Ray spawn_daughter(self, Point origin, Vector direction)
+    cpdef Ray spawn_daughter(self, Point origin, Vector3D direction)
 
     cdef inline int get_num_samples(self)
 

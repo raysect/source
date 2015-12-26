@@ -45,7 +45,7 @@ cdef class Ray(CoreRay):
 
     def __init__(self,
                  Point origin = Point(0,0,0),
-                 Vector direction = Vector(0,0,1),
+                 Vector3D direction = Vector3D(0, 0, 1),
                  double min_wavelength = 375,
                  double max_wavelength = 785,
                  int num_samples = 40,
@@ -312,7 +312,7 @@ cdef class Ray(CoreRay):
 
         return spectrum
 
-    cpdef Ray spawn_daughter(self, Point origin, Vector direction):
+    cpdef Ray spawn_daughter(self, Point origin, Vector3D direction):
         """
         Spawns a new daughter of the ray.
 

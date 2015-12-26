@@ -35,7 +35,7 @@ from numpy cimport ndarray
 from libc.math cimport sqrt, pow as cpow
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector, new_vector
+from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.normal cimport Normal
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
@@ -148,7 +148,7 @@ cdef class Dielectric(Material):
                                     Normal normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
-            Vector incident, reflected, transmitted
+            Vector3D incident, reflected, transmitted
             double internal_index, external_index, n1, n2
             double c1, c2s, gamma, reflectivity, transmission, temp
             Ray reflected_ray, transmitted_ray
@@ -197,9 +197,9 @@ cdef class Dielectric(Material):
 
             # total internal reflection
             temp = 2 * c1
-            reflected = new_vector(incident.x + temp * normal.x,
-                                   incident.y + temp * normal.y,
-                                   incident.z + temp * normal.z)
+            reflected = new_vector3d(incident.x + temp * normal.x,
+                                     incident.y + temp * normal.y,
+                                     incident.z + temp * normal.z)
 
             # convert reflected ray direction to world space
             reflected = reflected.transform(to_world)
@@ -229,9 +229,9 @@ cdef class Dielectric(Material):
             else:
                 temp = gamma * c1 - sqrt(c2s)
 
-            transmitted = new_vector(gamma * incident.x + temp * normal.x,
-                                     gamma * incident.y + temp * normal.y,
-                                     gamma * incident.z + temp * normal.z)
+            transmitted = new_vector3d(gamma * incident.x + temp * normal.x,
+                                       gamma * incident.y + temp * normal.y,
+                                       gamma * incident.z + temp * normal.z)
 
             # calculate fresnel reflection and transmission coefficients
             self._fresnel(c1, -normal.dot(transmitted), n1, n2, &reflectivity, &transmission)
@@ -267,9 +267,9 @@ cdef class Dielectric(Material):
 
                 # calculate ray normal
                 temp = 2 * c1
-                reflected = new_vector(incident.x + temp * normal.x,
-                                       incident.y + temp * normal.y,
-                                       incident.z + temp * normal.z)
+                reflected = new_vector3d(incident.x + temp * normal.x,
+                                         incident.y + temp * normal.y,
+                                         incident.z + temp * normal.z)
                 reflected = reflected.transform(to_world)
 
                 # spawn ray on correct side of surface

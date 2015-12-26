@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from raysect.core.math import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, Vector
+from raysect.core.math import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, Vector3D
 from math import sin, cos, pi, sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -258,7 +258,7 @@ class TestAffineMatrix(unittest.TestCase):
     def test_factory_rotate_vector(self):
         """Rotation about vector matrix factory function."""
 
-        m = rotate_vector(54, Vector(1.0, 0.22, 0.34))
+        m = rotate_vector(54, Vector3D(1.0, 0.22, 0.34))
 
         s = sin(pi*54/180)
         c = cos(pi*54/180)
@@ -296,7 +296,7 @@ class TestAffineMatrix(unittest.TestCase):
         """Rotation specified by a pair of basis vectors."""
 
         # valid vectors
-        m = rotate_basis(Vector(1.0, 0.0, 0.0), Vector(0.0, -1.0, 0.0))
+        m = rotate_basis(Vector3D(1.0, 0.0, 0.0), Vector3D(0.0, -1.0, 0.0))
         r = [[0, 0, 1, 0],
              [0, -1, 0, 0],
              [1, 0, 0, 0],
@@ -308,7 +308,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         # invalid, coincident vectors
         with self.assertRaises(ValueError, msg="Coincident forward and up vectors did not raise a ValueError."):
-            rotate_basis(Vector(1, 2, 3), Vector(1, 2, 3))
+            rotate_basis(Vector3D(1, 2, 3), Vector3D(1, 2, 3))
 
 
 if __name__ == "__main__":

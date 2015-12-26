@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from raysect.optical import World, translate, rotate, Point, d65_white, Ray
 from raysect.optical.material import Lambert, schott, Checkerboard
 from raysect.primitive import Sphere, Box
-from raysect.core.math import Vector
+from raysect.core.math import Vector3D
 
 
 # 1. Create Primitives
@@ -29,7 +29,7 @@ sphere = Sphere(radius=1.5, transform=translate(0, 0.0001, 0), material=schott("
 # ---------------
 
 ray = Ray(origin=Point(0, 0, -5),
-          direction=Vector(0, 0, 1),
+          direction=Vector3D(0, 0, 1),
           min_wavelength=375.0,
           max_wavelength=785.0,
           num_samples=100)

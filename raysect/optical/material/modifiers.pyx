@@ -35,7 +35,7 @@ from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.affinematrix cimport new_affinematrix
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.normal cimport Normal, new_normal
@@ -87,8 +87,8 @@ cdef class Roughen(Material):
 
         cdef:
             Ray reflected
-            Vector l_normal, l_tangent, l_bitangent
-            Vector s_incident, s_random
+            Vector3D l_normal, l_tangent, l_bitangent
+            Vector3D s_incident, s_random
             Normal s_normal
             AffineMatrix surface_to_local
             int attempt

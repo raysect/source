@@ -1,5 +1,5 @@
 from raysect.core.acceleration import Unaccelerated
-from raysect.optical import World, translate, rotate, Point, Vector, Ray, d65_white, ConstantSF, InterpolatedSF
+from raysect.optical import World, translate, rotate, Point, Vector3D, Ray, d65_white, ConstantSF, InterpolatedSF
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier

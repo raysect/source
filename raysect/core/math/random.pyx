@@ -90,7 +90,7 @@
 # -----------------------------------------------------------------------------
 
 from os import urandom as _urandom
-from raysect.core.math.vector cimport new_vector
+from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.point cimport new_point
 from libc.math cimport cos, sin, sqrt, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
@@ -281,26 +281,26 @@ cpdef Point point_disk():
     return new_point(r * cos(theta), r * sin(theta), 0)
 
 
-# cpdef Vector vector_sphere():
+# cpdef Vector3D vector_sphere():
 #     pass
 
 
-# cpdef Vector vector_hemisphere_uniform():
+# cpdef Vector3D vector_hemisphere_uniform():
 #     pass
 
 
-cpdef Vector vector_hemisphere_cosine():
+cpdef Vector3D vector_hemisphere_cosine():
     """
     Generates a cosine-weighted random vector on a unit hemisphere.
 
     The hemisphere is aligned along the z-axis - the plane that forms the
     hemisphere based lies in the x-y plane.
 
-    :return: A unit Vector.
+    :return: A unit Vector3D.
     """
 
     cdef Point p = point_disk()
-    return new_vector(p.x, p.y, sqrt(max(0, 1 - p.x*p.x - p.y*p.y)))
+    return new_vector3d(p.x, p.y, sqrt(max(0, 1 - p.x * p.x - p.y * p.y)))
 
 
 # initialise random number generator

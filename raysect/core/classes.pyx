@@ -39,22 +39,22 @@ cdef class Ray:
     Describes a line in space with an origin and direction.
 
     :param Point origin: Point defining origin (default is Point(0, 0, 0)).
-    :param Vector direction: Vector defining direction (default is Vector(0, 0, 1)).
+    :param Vector3D direction: Vector defining direction (default is Vector3D(0, 0, 1)).
     :param double max_distance: The terminating distance of the ray.
     """
 
-    def __init__(self, Point origin=None, Vector direction=None, double max_distance=INFINITY):
+    def __init__(self, Point origin=None, Vector3D direction=None, double max_distance=INFINITY):
 
         if origin is None:
             origin = Point(0, 0, 0)
 
         if direction is None:
-            direction = Vector(0, 0, 1)
+            direction = Vector3D(0, 0, 1)
 
         self.origin = origin
         """Point defining origin (default is Point(0, 0, 0))."""
         self.direction = direction
-        """Vector defining direction (default is Vector(0, 0, 1))."""
+        """Vector3D defining direction (default is Vector3D(0, 0, 1))."""
         self.max_distance = max_distance
         """The terminating distance of the ray."""
 
@@ -83,7 +83,7 @@ cdef class Ray:
         """
         cdef:
             Point origin = self.origin
-            Vector direction = self.direction
+            Vector3D direction = self.direction
 
         return new_point(origin.x + t * direction.x,
                          origin.y + t * direction.y,

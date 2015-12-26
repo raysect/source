@@ -31,7 +31,7 @@
 
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 from raysect.core.classes cimport Ray, Intersection
 
 cdef class Sphere(Primitive):
@@ -40,7 +40,7 @@ cdef class Sphere(Primitive):
     cdef bint _further_intersection
     cdef double _next_t
     cdef Point _cached_origin
-    cdef Vector _cached_direction
+    cdef Vector3D _cached_direction
     cdef Ray _cached_ray
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance)
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector3D direction, double ray_distance)

@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.normal cimport Normal
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.scenegraph.primitive cimport Primitive
@@ -38,13 +38,13 @@ from raysect.core.scenegraph.primitive cimport Primitive
 cdef class Ray:
 
     cdef public Point origin
-    cdef public Vector direction
+    cdef public Vector3D direction
     cdef public double max_distance
 
     cpdef Point point_on(self, double t)
 
 
-cdef inline new_ray(Point origin, Vector direction, double max_distance):
+cdef inline new_ray(Point origin, Vector3D direction, double max_distance):
 
     cdef Ray ray
 

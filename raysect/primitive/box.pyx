@@ -161,7 +161,7 @@ cdef class Box(Primitive):
 
         cdef:
             Point origin
-            Vector direction
+            Vector3D direction
             double near_intersection, far_intersection, closest_intersection
             int near_face, far_face, closest_face
             int near_axis, far_axis, closest_axis
@@ -303,7 +303,7 @@ cdef class Box(Primitive):
             far_face[0] = fmax
             far_axis[0] = axis
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int face, int axis):
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector3D direction, double ray_distance, int face, int axis):
 
         cdef Point hit_point, inside_point, outside_point
         cdef Normal normal

@@ -31,7 +31,7 @@
 
 cimport cython
 from libc.math cimport sqrt
-from raysect.core.math.vector cimport new_vector
+from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math._vec3 cimport _Vec3
 
 cdef class Point:
@@ -39,7 +39,7 @@ cdef class Point:
     Represents a point in 3D affine space.
 
     A point is a location in 3D space which is defined by its x, y and z coordinates in a given coordinate system.
-    Vectors can be added/subtracted from Points yielding another Vector. You can also find the Vector and distance
+    Vectors can be added/subtracted from Points yielding another Vector3D. You can also find the Vector3D and distance
     between two Points, and transform a Point from one coordinate system to another.
     """
 
@@ -68,7 +68,7 @@ cdef class Point:
         if not isinstance(other, Point):
             return NotImplemented
 
-        p = <Vector> other
+        p = <Vector3D> other
         if op == 2:     # __eq__()
             return self.x == p.x and self.y == p.y and self.z == p.z
         elif op == 3:   # __ne__()
@@ -178,14 +178,14 @@ cdef class Point:
         self.y = state[1]
         self.z = state[2]
 
-    cpdef Vector vector_to(self, Point p):
+    cpdef Vector3D vector_to(self, Point p):
         """
         Returns a vector from this point to the passed point.
         """
 
-        return new_vector(p.x - self.x,
-                          p.y - self.y,
-                          p.z - self.z)
+        return new_vector3d(p.x - self.x,
+                            p.y - self.y,
+                            p.z - self.z)
 
     cpdef double distance_to(self, Point p):
         """
@@ -302,7 +302,7 @@ cdef class Point2D:
     Represents a point in 2D affine space.
 
     A 2D point is a location in 2D space which is defined by its u and v coordinates in a given coordinate system.
-    Vectors can be added/subtracted from Points yielding another 2D Vector. You can also find the 2D Vector and distance
+    Vectors can be added/subtracted from Points yielding another 2D Vector3D. You can also find the 2D Vector3D and distance
     between two Points, and transform a Point from one coordinate system to another.
     """
 
@@ -332,7 +332,7 @@ cdef class Point2D:
         # if not isinstance(other, Point2D):
         #     return NotImplemented
         #
-        # p = <Vector> other
+        # p = <Vector3D> other
         # if op == 2:     # __eq__()
         #     return self.x == p.x and self.y == p.y and self.z == p.z
         # elif op == 3:   # __ne__()
@@ -440,12 +440,12 @@ cdef class Point2D:
         self.u = state[0]
         self.v = state[1]
 
-    # cpdef Vector vector_to(self, Point p):
+    # cpdef Vector3D vector_to(self, Point p):
     #     """
     #     Returns a vector from this point to the passed point.
     #     """
     #
-    #     return new_vector(p.x - self.x,
+    #     return new_vector3d(p.x - self.x,
     #                       p.y - self.y,
     #                       p.z - self.z)
 

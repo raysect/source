@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 from libc.math cimport fabs, sin, cos, M_PI as pi
 
 cdef class AffineMatrix(_Mat4):
@@ -235,7 +235,7 @@ cpdef AffineMatrix rotate_z(double angle):
 
 
 @cython.cdivision(True)
-cpdef AffineMatrix rotate_vector(double angle, Vector v):
+cpdef AffineMatrix rotate_vector(double angle, Vector3D v):
     """
     Returns an affine matrix representing the rotation of the coordinate space
     about the supplied vector by the specified angle.
@@ -243,7 +243,7 @@ cpdef AffineMatrix rotate_vector(double angle, Vector v):
     The angle is specified in degrees.
     """
 
-    cdef Vector vn
+    cdef Vector3D vn
     cdef double r, s, c, ci
 
     vn = v.normalise()
@@ -287,7 +287,7 @@ cpdef AffineMatrix rotate(double yaw, double pitch, double roll):
     return rotate_y(-yaw) * rotate_x(-pitch) * rotate_z(roll)
 
 
-cpdef AffineMatrix rotate_basis(Vector forward, Vector up):
+cpdef AffineMatrix rotate_basis(Vector3D forward, Vector3D up):
     """
     Returns a rotation matrix defined by forward and up vectors.
 
@@ -300,12 +300,12 @@ cpdef AffineMatrix rotate_basis(Vector forward, Vector up):
     The forward and upwards vectors need not be orthogonal. The up vector will
     be rotated in the plane defined by the two vectors until it is orthogonal.
 
-    :param forward: A Vector object defining the forward direction.
-    :param up: A Vector object defining the up direction.
+    :param forward: A Vector3D object defining the forward direction.
+    :param up: A Vector3D object defining the up direction.
     :return: An AffineMatrix object.
     """
 
-    cdef Vector x, y, z
+    cdef Vector3D x, y, z
 
     if forward is None:
         raise ValueError("Forward vector must not be None.")

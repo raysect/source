@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math._mat4 cimport _Mat4
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 
 cdef class AffineMatrix(_Mat4):
 
@@ -47,11 +47,11 @@ cpdef AffineMatrix rotate_y(double angle)
 
 cpdef AffineMatrix rotate_z(double angle)
 
-cpdef AffineMatrix rotate_vector(double angle, Vector v)
+cpdef AffineMatrix rotate_vector(double angle, Vector3D v)
 
 cpdef AffineMatrix rotate(double yaw, double pitch, double roll)
 
-cpdef AffineMatrix rotate_basis(Vector forward, Vector up)
+cpdef AffineMatrix rotate_basis(Vector3D forward, Vector3D up)
 
 cdef inline AffineMatrix new_affinematrix(double m00, double m01, double m02, double m03,
                                           double m10, double m11, double m12, double m13,

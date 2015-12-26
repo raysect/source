@@ -50,7 +50,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
         cdef:
             Point start, end
-            Vector direction
+            Vector3D direction
             double length
             Spectrum emission
             double[::1] e_view, s_view
@@ -96,7 +96,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum,
+    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix to_local, AffineMatrix to_world):
 
@@ -132,7 +132,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         cdef:
             Point start, end
-            Vector integration_direction, ray_direction
+            Vector3D integration_direction, ray_direction
             double length, t, c
             Spectrum emission, emission_previous
             double[::1] e1_view, e2_view, s_view
@@ -229,7 +229,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum,
+    cpdef Spectrum emission_function(self, Point point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix to_local, AffineMatrix to_world):
 
@@ -289,7 +289,7 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum,
+    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix to_local, AffineMatrix to_world):
 

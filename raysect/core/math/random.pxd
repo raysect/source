@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.point cimport Point
 
 cpdef seed(object d=*)
@@ -40,5 +40,5 @@ cpdef bint probability(double prob)
 
 cpdef Point point_disk()
 
-cpdef Vector vector_hemisphere_cosine()
+cpdef Vector3D vector_hemisphere_cosine()
 

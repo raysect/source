@@ -7,7 +7,7 @@ from matplotlib.pyplot import imshow, imsave, show, clf, draw, pause
 
 from raysect.optical.ray import Ray
 from raysect.optical import Spectrum
-from raysect.core import World, AffineMatrix, Point, Vector, Observer
+from raysect.core import World, AffineMatrix, Point, Vector3D, Observer
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.core.math import random
 
@@ -443,7 +443,7 @@ class PinholeCamera(Camera):
                 dy = 0
 
             # calculate ray parameters
-            direction = Vector(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
+            direction = Vector3D(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
             direction = direction.transform(self.to_root())
 
             # generate ray and add to array to return

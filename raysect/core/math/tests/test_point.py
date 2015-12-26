@@ -32,7 +32,7 @@ Unit tests for the Point object.
 """
 
 import unittest
-from raysect.core.math import Point, Vector, AffineMatrix
+from raysect.core.math import Point, Vector3D, AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -167,7 +167,7 @@ class TestPoint(unittest.TestCase):
         a = Point(-1, 5, 26)
         b = Point(9, 4, -1)
         v = a.vector_to(b)
-        self.assertTrue(isinstance(v, Vector), "Vector_to did not return a Vector.")
+        self.assertTrue(isinstance(v, Vector3D), "Vector_to did not return a Vector3D.")
         self.assertEqual(v.x, 9 + 1, "Vector_to failed [X].")
         self.assertEqual(v.y, 4 - 5, "Vector_to failed [Y].")
         self.assertEqual(v.z, -1 - 26, "Vector_to failed [Z].")
