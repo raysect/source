@@ -37,7 +37,7 @@ from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
 
-class TestVector(unittest.TestCase):
+class TestVector3D(unittest.TestCase):
 
     def test_initialise_default(self):
         """Default initialisation, unit vector pointing along z-axis."""

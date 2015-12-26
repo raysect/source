@@ -33,7 +33,7 @@ from math import sin, cos, pi, sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
 
-class TestAffineMatrix(unittest.TestCase):
+class TestAffineMatrix3D(unittest.TestCase):
 
     def test_initialise_default(self):
         """Default initialisation should be an identity matrix."""

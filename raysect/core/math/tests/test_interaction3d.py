@@ -39,7 +39,7 @@ from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
 
-class TestInteraction(unittest.TestCase):
+class TestInteraction3D(unittest.TestCase):
 
     def test_vector_initialise(self):
         """Initialisation."""
