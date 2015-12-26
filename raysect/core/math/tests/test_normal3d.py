@@ -160,6 +160,16 @@ class TestNormal(unittest.TestCase):
         self.assertTrue(Normal(1, 5, 3) != Normal(1, 2, 3), "Inequality operator returned false for a normal with non-equal y components.")
         self.assertTrue(Normal(1, 2, 5) != Normal(1, 2, 3), "Inequality operator returned false for a normal with non-equal z components.")
 
+    def test_iter(self):
+        """Obtain values by iteration."""
+
+        n = Normal(2.5, 6.7, -4.6)
+        l = list(n)
+        self.assertEqual(len(l), 3, "Iteration failed to return the correct number of items.")
+        self.assertEqual(l[0], 2.5, "Iteration failed [X].")
+        self.assertEqual(l[1], 6.7, "Iteration failed [Y].")
+        self.assertEqual(l[2], -4.6, "Iteration failed [Z].")
+
     def test_negate(self):
         """Negate operator."""
 

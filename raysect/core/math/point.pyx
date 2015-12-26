@@ -100,6 +100,11 @@ cdef class Point3D:
         else:
             raise IndexError("Index out of range [0, 2].")
 
+    def __iter__(self):
+        yield self.x
+        yield self.y
+        yield self.z
+
     def __add__(object x, object y):
         """Addition operator."""
 
