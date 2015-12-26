@@ -35,7 +35,7 @@
 from raysect.core.classes cimport Material, new_ray, new_intersection
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.acceleration.boundingbox cimport BoundingBox3D
+from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues

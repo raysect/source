@@ -31,7 +31,7 @@
 
 cimport cython
 from raysect.core.classes cimport Material, new_intersection
-from raysect.core.acceleration.boundingbox cimport BoundingBox3D
+from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.math.point cimport new_point3d
 from raysect.core.math.normal cimport new_normal3d, Normal3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D

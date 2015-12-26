@@ -30,8 +30,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # TODO: add docstrings
-
 cimport cython
+from raysect.core.classes cimport Ray
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.math.point cimport Point3D
+from raysect.core.classes cimport Intersection
 from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
 
 cdef class Unaccelerated(Accelerator):

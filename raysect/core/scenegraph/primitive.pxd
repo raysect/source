@@ -32,7 +32,7 @@
 from raysect.core.classes cimport Ray, Material, Intersection
 from raysect.core.math.point cimport Point3D
 from raysect.core.scenegraph.node cimport Node
-from raysect.core.acceleration.boundingbox cimport BoundingBox3D
+from raysect.core.boundingbox cimport BoundingBox3D
 
 cdef class Primitive(Node):
 

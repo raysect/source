@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.acceleration.boundingbox cimport BoundingBox3D
+from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.classes cimport Ray
 from raysect.core.math.point cimport Point3D
 from libc.stdint cimport int32_t

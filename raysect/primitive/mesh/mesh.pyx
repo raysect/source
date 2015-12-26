@@ -31,8 +31,8 @@
 
 import io
 import struct
-from numpy import array, float32, int32, zeros
 
+from numpy import array, float32, int32, zeros
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.normal cimport Normal3D, new_normal3d
@@ -40,9 +40,9 @@ from raysect.core.math.point cimport Point3D, new_point3d
 from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.kdtree cimport KDTreeCore, Item
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
-from raysect.core.acceleration.boundingbox cimport BoundingBox3D, new_boundingbox3d
-from libc.math cimport fabs, log, ceil
-from numpy cimport ndarray, float32_t, int32_t, uint8_t
+from raysect.core.boundingbox cimport BoundingBox3D, new_boundingbox3d
+from libc.math cimport fabs
+from numpy cimport float32_t, int32_t, uint8_t
 from cpython.bytes cimport PyBytes_AsString
 cimport cython
 

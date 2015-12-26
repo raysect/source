@@ -38,7 +38,7 @@ cdef class Ray:
     """
     Describes a line in space with an origin and direction.
 
-    :param Point3D origin: Point3D defining origin (default is Point3D(0, 0, 0)).
+    :param Point3D origin: Point defining origin (default is Point3D(0, 0, 0)).
     :param Vector3D direction: Vector defining direction (default is Vector3D(0, 0, 1)).
     :param double max_distance: The terminating distance of the ray.
     """

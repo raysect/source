@@ -32,7 +32,7 @@
 import io
 import struct
 
-from raysect.core.acceleration.boundingbox cimport new_boundingbox3d
+from raysect.core.boundingbox cimport new_boundingbox3d
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from cpython.bytes cimport PyBytes_AsString
 from libc.stdlib cimport qsort
