@@ -28,11 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Unit tests for the Normal object.
+Unit tests for the Normal3D object.
 """
 
 import unittest
-from raysect.core.math import Normal, Vector3D, AffineMatrix
+from raysect.core.math import Normal3D, Vector3D, AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -42,7 +42,7 @@ class TestNormal(unittest.TestCase):
     def test_initialise_default(self):
         """Default initialisation, unit normal pointing along z-axis."""
 
-        v = Normal()
+        v = Normal3D()
         self.assertEqual(v.x, 0.0, "Default initialisation is not (0,0,1) [X].")
         self.assertEqual(v.y, 0.0, "Default initialisation is not (0,0,1) [Y].")
         self.assertEqual(v.z, 1.0, "Default initialisation is not (0,0,1) [Z].")
@@ -50,7 +50,7 @@ class TestNormal(unittest.TestCase):
     def test_initialise_indexable(self):
         """Initialisation with an indexable object."""
 
-        v = Normal(1.0, 2.0, 3.0)
+        v = Normal3D(1.0, 2.0, 3.0)
         self.assertEqual(v.x, 1.0, "Initialisation with indexable failed [X].")
         self.assertEqual(v.y, 2.0, "Initialisation with indexable failed [Y].")
         self.assertEqual(v.z, 3.0, "Initialisation with indexable failed [Z].")
@@ -59,12 +59,12 @@ class TestNormal(unittest.TestCase):
         """Initialisation with an invalid type should raise a TypeError."""
 
         with self.assertRaises(TypeError, msg="Initialised with a string."):
-            Normal("spoon")
+            Normal3D("spoon")
 
     def test_x(self):
         """Get/set x co-ordinate."""
 
-        v = Normal(2.5, 6.7, -4.6)
+        v = Normal3D(2.5, 6.7, -4.6)
 
         # get x attribute
         self.assertEqual(v.x, 2.5, "Getting x attribute failed.")
@@ -76,7 +76,7 @@ class TestNormal(unittest.TestCase):
     def test_y(self):
         """Get/set y co-ordinate."""
 
-        v = Normal(2.5, 6.7, -4.6)
+        v = Normal3D(2.5, 6.7, -4.6)
 
         # get y attribute
         self.assertEqual(v.y, 6.7, "Getting y attribute failed.")
@@ -88,7 +88,7 @@ class TestNormal(unittest.TestCase):
     def test_z(self):
         """Get/set z co-ordinate."""
 
-        v = Normal(2.5, 6.7, -4.6)
+        v = Normal3D(2.5, 6.7, -4.6)
 
         # get z attribute
         self.assertEqual(v.z, -4.6, "Getting z attribute failed.")
@@ -100,7 +100,7 @@ class TestNormal(unittest.TestCase):
     def test_indexing(self):
         """Getting/setting components by indexing."""
 
-        v = Normal(2.5, 6.7, -4.6)
+        v = Normal3D(2.5, 6.7, -4.6)
 
         v[0] = 1.0
         v[1] = 2.0
@@ -123,23 +123,23 @@ class TestNormal(unittest.TestCase):
     def test_length(self):
         """Get/set the normal length."""
 
-        v = Normal(1.2, -3, 9.8)
+        v = Normal3D(1.2, -3, 9.8)
 
         # get length
         r = sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8)
-        self.assertAlmostEqual(v.length, r, places = 14, msg = "Normal returned incorrect length.")
+        self.assertAlmostEqual(v.length, r, places = 14, msg = "Normal3D returned incorrect length.")
 
         # set length
         v.length = 10.0
         rx = 1.2 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
         ry = -3 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
         rz = 9.8 / sqrt(1.2 * 1.2 + 3 * 3 + 9.8 * 9.8) * 10
-        self.assertAlmostEqual(v.x, rx, 14, "Normal length was not set correctly [X].")
-        self.assertAlmostEqual(v.y, ry, 14, "Normal length was not set correctly [Y].")
-        self.assertAlmostEqual(v.z, rz, 14, "Normal length was not set correctly [Z].")
+        self.assertAlmostEqual(v.x, rx, 14, "Normal3D length was not set correctly [X].")
+        self.assertAlmostEqual(v.y, ry, 14, "Normal3D length was not set correctly [Y].")
+        self.assertAlmostEqual(v.z, rz, 14, "Normal3D length was not set correctly [Z].")
 
         # trying to rescale a zero length normal should raise a ZeroDivisionError
-        v = Normal(0,0,0)
+        v = Normal3D(0, 0, 0)
         with self.assertRaises(ZeroDivisionError, msg="Adjusting length of zero length normal did not raise a ZeroDivisionError."):
 
             v.length = 10.0
@@ -147,23 +147,23 @@ class TestNormal(unittest.TestCase):
     def test_equal(self):
         """Equality operator."""
 
-        self.assertTrue(Normal(1, 2, 3) == Normal(1, 2, 3), "Equality operator returned false for equal normals.")
-        self.assertFalse(Normal(5, 2, 3) == Normal(1, 2, 3), "Equality operator returned true for a normal with non-equal x components.")
-        self.assertFalse(Normal(1, 5, 3) == Normal(1, 2, 3), "Equality operator returned true for a normal with non-equal y components.")
-        self.assertFalse(Normal(1, 2, 5) == Normal(1, 2, 3), "Equality operator returned true for a normal with non-equal z components.")
+        self.assertTrue(Normal3D(1, 2, 3) == Normal3D(1, 2, 3), "Equality operator returned false for equal normals.")
+        self.assertFalse(Normal3D(5, 2, 3) == Normal3D(1, 2, 3), "Equality operator returned true for a normal with non-equal x components.")
+        self.assertFalse(Normal3D(1, 5, 3) == Normal3D(1, 2, 3), "Equality operator returned true for a normal with non-equal y components.")
+        self.assertFalse(Normal3D(1, 2, 5) == Normal3D(1, 2, 3), "Equality operator returned true for a normal with non-equal z components.")
 
     def test_not_equal(self):
         """Inequality operator."""
 
-        self.assertFalse(Normal(1, 2, 3) != Normal(1, 2, 3), "Inequality operator returned true for equal normals.")
-        self.assertTrue(Normal(5, 2, 3) != Normal(1, 2, 3), "Inequality operator returned false for a normal with non-equal x components.")
-        self.assertTrue(Normal(1, 5, 3) != Normal(1, 2, 3), "Inequality operator returned false for a normal with non-equal y components.")
-        self.assertTrue(Normal(1, 2, 5) != Normal(1, 2, 3), "Inequality operator returned false for a normal with non-equal z components.")
+        self.assertFalse(Normal3D(1, 2, 3) != Normal3D(1, 2, 3), "Inequality operator returned true for equal normals.")
+        self.assertTrue(Normal3D(5, 2, 3) != Normal3D(1, 2, 3), "Inequality operator returned false for a normal with non-equal x components.")
+        self.assertTrue(Normal3D(1, 5, 3) != Normal3D(1, 2, 3), "Inequality operator returned false for a normal with non-equal y components.")
+        self.assertTrue(Normal3D(1, 2, 5) != Normal3D(1, 2, 3), "Inequality operator returned false for a normal with non-equal z components.")
 
     def test_iter(self):
         """Obtain values by iteration."""
 
-        n = Normal(2.5, 6.7, -4.6)
+        n = Normal3D(2.5, 6.7, -4.6)
         l = list(n)
         self.assertEqual(len(l), 3, "Iteration failed to return the correct number of items.")
         self.assertEqual(l[0], 2.5, "Iteration failed [X].")
@@ -173,8 +173,8 @@ class TestNormal(unittest.TestCase):
     def test_negate(self):
         """Negate operator."""
 
-        r = -Normal(2.5, 6.7, -4.6)
-        self.assertTrue(isinstance(r, Normal), "Normal negation did not return a Normal.")
+        r = -Normal3D(2.5, 6.7, -4.6)
+        self.assertTrue(isinstance(r, Normal3D), "Normal3D negation did not return a Normal3D.")
         self.assertEqual(r.x, -2.5, "Negation failed [X].")
         self.assertEqual(r.y, -6.7, "Negation failed [Y].")
         self.assertEqual(r.z, 4.60, "Negation failed [Z].")
@@ -182,57 +182,57 @@ class TestNormal(unittest.TestCase):
     def test_add(self):
         """Add operator."""
 
-        # Normal + Normal, returns Normal
-        a = Normal(-1.4, 0.2, 99.1)
-        b = Normal(0.7, -64.0, -0.1)
+        # Normal3D + Normal3D, returns Normal3D
+        a = Normal3D(-1.4, 0.2, 99.1)
+        b = Normal3D(0.7, -64.0, -0.1)
         r = a + b
-        self.assertTrue(isinstance(r, Normal), "Normal + Normal did not return a Normal.")
-        self.assertEqual(r.x, -1.4 + 0.7, "Normal + Normal failed [X].")
-        self.assertEqual(r.y, 0.2 - 64.0, "Normal + Normal failed [Y].")
-        self.assertEqual(r.z, 99.1 - 0.1, "Normal + Normal failed [Z].")
+        self.assertTrue(isinstance(r, Normal3D), "Normal3D + Normal3D did not return a Normal3D.")
+        self.assertEqual(r.x, -1.4 + 0.7, "Normal3D + Normal3D failed [X].")
+        self.assertEqual(r.y, 0.2 - 64.0, "Normal3D + Normal3D failed [Y].")
+        self.assertEqual(r.z, 99.1 - 0.1, "Normal3D + Normal3D failed [Z].")
 
     def test_subtract(self):
         """Subtract operator."""
 
-        # Normal - Normal, returns Normal
-        a = Normal(-1.4, 0.2, 99.1)
-        b = Normal(0.7, -64.0, -0.1)
+        # Normal3D - Normal3D, returns Normal3D
+        a = Normal3D(-1.4, 0.2, 99.1)
+        b = Normal3D(0.7, -64.0, -0.1)
         r = a - b
-        self.assertTrue(isinstance(r, Normal), "Normal - Normal did not return a Normal.")
-        self.assertEqual(r.x, -1.4 - 0.7, "Normal - Normal failed [X].")
-        self.assertEqual(r.y, 0.2 + 64.0, "Normal - Normal failed [Y].")
-        self.assertEqual(r.z, 99.1 + 0.1, "Normal - Normal failed [Z].")
+        self.assertTrue(isinstance(r, Normal3D), "Normal3D - Normal3D did not return a Normal3D.")
+        self.assertEqual(r.x, -1.4 - 0.7, "Normal3D - Normal3D failed [X].")
+        self.assertEqual(r.y, 0.2 + 64.0, "Normal3D - Normal3D failed [Y].")
+        self.assertEqual(r.z, 99.1 + 0.1, "Normal3D - Normal3D failed [Z].")
 
     def test_multiply(self):
         """Multiply operator."""
 
-        v = Normal(-1.4, 0.2, 99.1)
+        v = Normal3D(-1.4, 0.2, 99.1)
 
-        # c * Normal, returns Normal
+        # c * Normal3D, returns Normal3D
         r = 0.23 * v
-        self.assertTrue(isinstance(r, Normal), "c * Normal did not return a Normal.")
-        self.assertEqual(r.x, 0.23 * -1.4, "c * Normal failed [X].")
-        self.assertEqual(r.y, 0.23 * 0.20, "c * Normal failed [Y].")
-        self.assertEqual(r.z, 0.23 * 99.1, "c * Normal failed [Z].")
+        self.assertTrue(isinstance(r, Normal3D), "c * Normal3D did not return a Normal3D.")
+        self.assertEqual(r.x, 0.23 * -1.4, "c * Normal3D failed [X].")
+        self.assertEqual(r.y, 0.23 * 0.20, "c * Normal3D failed [Y].")
+        self.assertEqual(r.z, 0.23 * 99.1, "c * Normal3D failed [Z].")
 
-        # Normal * c, returns Normal
+        # Normal3D * c, returns Normal3D
         r = v * -2.6
-        self.assertTrue(isinstance(r, Normal), "Normal * c did not return a Normal.")
-        self.assertEqual(r.x, -2.6 * -1.4, "Normal * c failed [X].")
-        self.assertEqual(r.y, -2.6 * 0.20, "Normal * c failed [Y].")
-        self.assertEqual(r.z, -2.6 * 99.1, "Normal * c failed [Z].")
+        self.assertTrue(isinstance(r, Normal3D), "Normal3D * c did not return a Normal3D.")
+        self.assertEqual(r.x, -2.6 * -1.4, "Normal3D * c failed [X].")
+        self.assertEqual(r.y, -2.6 * 0.20, "Normal3D * c failed [Y].")
+        self.assertEqual(r.z, -2.6 * 99.1, "Normal3D * c failed [Z].")
 
     def test_divide(self):
         """Division operator."""
 
-        v = Normal(-1.4, 0.2, 99.1)
+        v = Normal3D(-1.4, 0.2, 99.1)
 
-        # Normal / c, returns Normal
+        # Normal3D / c, returns Normal3D
         r = v / 5.3
-        self.assertTrue(isinstance(r, Normal), "Normal * c did not return a Normal.")
-        self.assertEqual(r.x, -1.4 / 5.3, "Normal * c failed [X].")
-        self.assertEqual(r.y, 0.20 / 5.3, "Normal * c failed [Y].")
-        self.assertEqual(r.z, 99.1 / 5.3, "Normal * c failed [Z].")
+        self.assertTrue(isinstance(r, Normal3D), "Normal3D * c did not return a Normal3D.")
+        self.assertEqual(r.x, -1.4 / 5.3, "Normal3D * c failed [X].")
+        self.assertEqual(r.y, 0.20 / 5.3, "Normal3D * c failed [Y].")
+        self.assertEqual(r.z, 99.1 / 5.3, "Normal3D * c failed [Z].")
 
         # dividing by zero should raise a ZeroDivisionError
         with self.assertRaises(ZeroDivisionError, msg="Dividing by zero did not raise a ZeroDivisionError."):
@@ -252,16 +252,16 @@ class TestNormal(unittest.TestCase):
         """Testing normalise() method."""
 
         # normalise
-        v = Normal(23.2, 0.12, -5.0)
+        v = Normal3D(23.2, 0.12, -5.0)
         r = v.normalise()
         l = v.length
-        self.assertTrue(isinstance(r, Normal), "Normalise did not return a Normal.")
+        self.assertTrue(isinstance(r, Normal3D), "Normalise did not return a Normal3D.")
         self.assertAlmostEqual(r.x, 23.2 / l, 14, "Normalise failed [X].")
         self.assertAlmostEqual(r.y, 0.12 / l, 14, "Normalise failed [Y].")
         self.assertAlmostEqual(r.z, -5.0 / l, 14, "Normalise failed [Z].")
 
         # attempting to normalise a zero length normal should raise a ZeroDivisionError
-        v = Normal(0.0, 0.0, 0.0)
+        v = Normal3D(0.0, 0.0, 0.0)
         with self.assertRaises(ZeroDivisionError, msg="Normalising a zero length normal did not raise a ZeroDivisionError."):
 
             r = v.normalise()
@@ -269,9 +269,9 @@ class TestNormal(unittest.TestCase):
     def test_dot_product(self):
         """Testing dot product."""
 
-        x = Normal(1,0,0)
-        y = Normal(0,1,0)
-        z = Normal(0,0,1)
+        x = Normal3D(1, 0, 0)
+        y = Normal3D(0, 1, 0)
+        z = Normal3D(0, 0, 1)
 
         # orthogonal
         self.assertEqual(x.dot(y), 0.0, "Dot product of orthogonal normals does not equal 0.0.")
@@ -284,8 +284,8 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(z.dot(z), 1.0, "Dot product of orthonormal normals does not equal 1.0.")
 
         # arbitrary
-        a = Normal(4, 2, 3)
-        b = Normal(-1, 2, 6)
+        a = Normal3D(4, 2, 3)
+        b = Normal3D(-1, 2, 6)
         self.assertEqual(a.dot(b), 4*-1 + 2*2 + 3*6, "Dot product of two arbitrary normals gives the wrong value.")
         self.assertEqual(a.dot(b), b.dot(a), "a.b does not equal b.a.")
 
@@ -293,9 +293,9 @@ class TestNormal(unittest.TestCase):
         """Testing cross product."""
 
         # raysect uses a right handed coordinate system
-        x = Normal(1,0,0)
-        y = Normal(0,1,0)
-        z = Normal(0,0,1)
+        x = Normal3D(1, 0, 0)
+        y = Normal3D(0, 1, 0)
+        z = Normal3D(0, 0, 1)
 
         # orthogonal
         r = x.cross(y)
@@ -329,9 +329,9 @@ class TestNormal(unittest.TestCase):
         self.assertEqual(r.y, 0.0, "Cross product failed [Y].")
         self.assertEqual(r.z, 0.0, "Cross product failed [Z].")
 
-        # arbitrary Normal x Normal
-        a = Normal(4, 2, 3)
-        b = Normal(-1, 2, 6)
+        # arbitrary Normal3D x Normal3D
+        a = Normal3D(4, 2, 3)
+        b = Normal3D(-1, 2, 6)
 
         r1 = a.cross(b)
         r2 = b.cross(a)
@@ -354,10 +354,10 @@ class TestNormal(unittest.TestCase):
                           [9,10,4,9],
                           [4,14,15,16]])
 
-        v = Normal(-1, 2, 6)
+        v = Normal3D(-1, 2, 6)
 
         r = v.transform(m)
-        self.assertTrue(isinstance(r, Normal), "Transform did not return a Normal.")
+        self.assertTrue(isinstance(r, Normal3D), "Transform did not return a Normal3D.")
         self.assertAlmostEqual(r.x,  258/414 * -1 +  -381/414 * 2 +  210/414 * 6, places = 14, msg = "Transform failed [X].")
         self.assertAlmostEqual(r.y, -132/414 * -1 +    81/414 * 2 + -162/414 * 6, places = 14, msg = "Transform failed [Y].")
         self.assertAlmostEqual(r.z,  120/414 * -1 +   -36/414 * 2 +   72/414 * 6, places = 14, msg = "Transform failed [Z].")
@@ -370,10 +370,10 @@ class TestNormal(unittest.TestCase):
                              [210/414, -162/414, 72/414, -12/414],
                              [72/414, 114/414, -66/414, -12/414]])
 
-        v = Normal(-1, 2, 6)
+        v = Normal3D(-1, 2, 6)
 
         r = v.transform_with_inverse(minv)
-        self.assertTrue(isinstance(r, Normal), "Transform did not return a Normal.")
+        self.assertTrue(isinstance(r, Normal3D), "Transform did not return a Normal3D.")
         self.assertAlmostEqual(r.x,  258/414 * -1 +  -381/414 * 2 +  210/414 * 6, places = 14, msg = "Transform failed [X].")
         self.assertAlmostEqual(r.y, -132/414 * -1 +    81/414 * 2 + -162/414 * 6, places = 14, msg = "Transform failed [Y].")
         self.assertAlmostEqual(r.z,  120/414 * -1 +   -36/414 * 2 +   72/414 * 6, places = 14, msg = "Transform failed [Z].")
@@ -381,7 +381,7 @@ class TestNormal(unittest.TestCase):
     def test_copy(self):
         """Testing method copy()."""
 
-        v = Normal(1.0, 2.0, 3.0)
+        v = Normal3D(1.0, 2.0, 3.0)
         r = v.copy()
 
         # check a new instance has been created by modifying the original
@@ -389,7 +389,7 @@ class TestNormal(unittest.TestCase):
         v.y = 6.0
         v.z = 7.0
 
-        self.assertTrue(isinstance(r, Normal), "Copy did not return a Normal.")
+        self.assertTrue(isinstance(r, Normal3D), "Copy did not return a Normal3D.")
         self.assertEqual(r.x, 1.0, "Copy failed [X].")
         self.assertEqual(r.y, 2.0, "Copy failed [Y].")
         self.assertEqual(r.z, 3.0, "Copy failed [Z].")
@@ -397,7 +397,7 @@ class TestNormal(unittest.TestCase):
     def test_as_vector(self):
         """Testing method as_vector()."""
 
-        v = Normal(1.0, 2.0, 3.0)
+        v = Normal3D(1.0, 2.0, 3.0)
         r = v.as_vector()
 
         # check a new instance has been created by modifying the original
@@ -405,14 +405,14 @@ class TestNormal(unittest.TestCase):
         v.y = 6.0
         v.z = 7.0
 
-        self.assertTrue(isinstance(r, Vector3D), "As_vector did not return a Normal.")
+        self.assertTrue(isinstance(r, Vector3D), "As_vector did not return a Normal3D.")
         self.assertEqual(r.x, 1.0, "As_vector failed [X].")
         self.assertEqual(r.y, 2.0, "As_vector failed [Y].")
         self.assertEqual(r.z, 3.0, "As_vector failed [Z].")
 
     def test_orthogonal(self):
 
-        v = Normal(1.0, 2.0, 3.0)
+        v = Normal3D(1.0, 2.0, 3.0)
         r = v.orthogonal()
 
         self.assertAlmostEqual(v.dot(r), 0.0, delta=1e-10, msg="Orthogonal did not return an orthogonal vector.")

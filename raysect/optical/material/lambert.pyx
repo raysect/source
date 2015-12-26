@@ -37,7 +37,7 @@ from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.affinematrix cimport new_affinematrix
 from raysect.optical.spectrum cimport Spectrum
-from raysect.core.math.normal cimport Normal
+from raysect.core.math.normal cimport Normal3D
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.core.math.random cimport vector_hemisphere_cosine
 from numpy cimport ndarray
@@ -53,7 +53,7 @@ cdef class Lambert(NullVolume):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal normal, AffineMatrix world_to_local, AffineMatrix local_to_world):
+                                    Normal3D normal, AffineMatrix world_to_local, AffineMatrix local_to_world):
 
         cdef:
             Ray reflected

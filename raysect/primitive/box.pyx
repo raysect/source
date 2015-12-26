@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.normal cimport Normal, new_normal
+from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.point cimport new_point3d
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
@@ -306,7 +306,7 @@ cdef class Box(Primitive):
     cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int axis):
 
         cdef Point3D hit_point, inside_point, outside_point
-        cdef Normal normal
+        cdef Normal3D normal
         cdef Intersection intersection
         cdef bint exiting
 
@@ -316,7 +316,7 @@ cdef class Box(Primitive):
                                 origin.z + ray_distance * direction.z)
 
         # calculate surface normal in local space
-        normal = new_normal(0, 0, 0)
+        normal = new_normal3d(0, 0, 0)
         if face == LOWER_FACE:
 
             normal.set_index(axis, -1.0)

@@ -34,7 +34,7 @@ Checks that the mathematical classes interact correctly.
 """
 
 import unittest
-from raysect.core.math import Vector3D, Normal, Point3D, AffineMatrix
+from raysect.core.math import Vector3D, Normal3D, Point3D, AffineMatrix
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -45,7 +45,7 @@ class TestInteraction(unittest.TestCase):
         """Initialisation."""
 
         v = Vector3D(3, -4, 5)
-        n = Normal(6, 3, -9)
+        n = Normal3D(6, 3, -9)
         p = Point3D(-5, -2, 10)
 
         # check Vector3D can be initialise by other vector objects
@@ -59,16 +59,16 @@ class TestInteraction(unittest.TestCase):
         self.assertEqual(r.y, -2, "Vector3D initialisation failed [Y].")
         self.assertEqual(r.z, 10, "Vector3D initialisation failed [Z].")
 
-        # check Normal can be initialise by other vector objects
-        r = Normal(*v)
-        self.assertEqual(r.x, 3, "Normal initialisation failed [X].")
-        self.assertEqual(r.y, -4, "Normal initialisation failed [Y].")
-        self.assertEqual(r.z, 5, "Normal initialisation failed [Z].")
+        # check Normal3D can be initialise by other vector objects
+        r = Normal3D(*v)
+        self.assertEqual(r.x, 3, "Normal3D initialisation failed [X].")
+        self.assertEqual(r.y, -4, "Normal3D initialisation failed [Y].")
+        self.assertEqual(r.z, 5, "Normal3D initialisation failed [Z].")
 
-        r = Normal(*p)
-        self.assertEqual(r.x, -5, "Normal initialisation failed [X].")
-        self.assertEqual(r.y, -2, "Normal initialisation failed [Y].")
-        self.assertEqual(r.z, 10, "Normal initialisation failed [Z].")
+        r = Normal3D(*p)
+        self.assertEqual(r.x, -5, "Normal3D initialisation failed [X].")
+        self.assertEqual(r.y, -2, "Normal3D initialisation failed [Y].")
+        self.assertEqual(r.z, 10, "Normal3D initialisation failed [Z].")
 
         # check Point3D can be initialise by other vector objects
         r = Point3D(*v)
@@ -85,21 +85,21 @@ class TestInteraction(unittest.TestCase):
         """Add operator."""
 
         v = Vector3D(3, -4, 5)
-        n = Normal(6, 3, -9)
+        n = Normal3D(6, 3, -9)
         p = Point3D(-5, -2, 10)
 
-        # Vector3D and Normal
+        # Vector3D and Normal3D
         r = v + n
         self.assertTrue(isinstance(r, Vector3D), "Vector3D addition did not return a Vector3D.")
-        self.assertEqual(r.x, 3 + 6, "Vector3D + Normal failed [X].")
-        self.assertEqual(r.y, -4 + 3, "Vector3D + Normal failed [X].")
-        self.assertEqual(r.z, 5 - 9, "Vector3D + Normal failed [X].")
+        self.assertEqual(r.x, 3 + 6, "Vector3D + Normal3D failed [X].")
+        self.assertEqual(r.y, -4 + 3, "Vector3D + Normal3D failed [X].")
+        self.assertEqual(r.z, 5 - 9, "Vector3D + Normal3D failed [X].")
 
         r = n + v
-        self.assertTrue(isinstance(r, Normal), "Vector3D addition did not return a Normal.")
-        self.assertEqual(r.x, 3 + 6, "Normal + Vector3D failed [X].")
-        self.assertEqual(r.y, -4 + 3, "Normal + Vector3D failed [X].")
-        self.assertEqual(r.z, 5 - 9, "Normal + Vector3D failed [X].")
+        self.assertTrue(isinstance(r, Normal3D), "Vector3D addition did not return a Normal3D.")
+        self.assertEqual(r.x, 3 + 6, "Normal3D + Vector3D failed [X].")
+        self.assertEqual(r.y, -4 + 3, "Normal3D + Vector3D failed [X].")
+        self.assertEqual(r.z, 5 - 9, "Normal3D + Vector3D failed [X].")
 
         # Point3D and Vector3D
         r = p + v
@@ -112,14 +112,14 @@ class TestInteraction(unittest.TestCase):
 
             r = v + p
 
-        # Point3D and Normal
+        # Point3D and Normal3D
         r = p + n
         self.assertTrue(isinstance(r, Point3D), "Vector3D addition did not return a Point3D.")
-        self.assertEqual(r.x, -5 + 6 , "Point3D + Normal failed [X].")
-        self.assertEqual(r.y, -2 + 3 , "Point3D + Normal failed [X].")
-        self.assertEqual(r.z, 10 - 9, "Point3D + Normal failed [X].")
+        self.assertEqual(r.x, -5 + 6 , "Point3D + Normal3D failed [X].")
+        self.assertEqual(r.y, -2 + 3 , "Point3D + Normal3D failed [X].")
+        self.assertEqual(r.z, 10 - 9, "Point3D + Normal3D failed [X].")
 
-        with self.assertRaises(TypeError, msg = "Normal + Point3D should have raise a TypeError."):
+        with self.assertRaises(TypeError, msg = "Normal3D + Point3D should have raise a TypeError."):
 
             r = n + p
 
@@ -127,21 +127,21 @@ class TestInteraction(unittest.TestCase):
         """Subtract operator."""
 
         v = Vector3D(3, -4, 5)
-        n = Normal(6, 3, -9)
+        n = Normal3D(6, 3, -9)
         p = Point3D(-5, -2, 10)
 
-        # Vector3D and Normal
+        # Vector3D and Normal3D
         r = v - n
         self.assertTrue(isinstance(r, Vector3D), "Vector3D addition did not return a Vector3D.")
-        self.assertEqual(r.x, 3 - 6, "Vector3D - Normal failed [X].")
-        self.assertEqual(r.y, -4 - 3, "Vector3D - Normal failed [X].")
-        self.assertEqual(r.z, 5 + 9, "Vector3D - Normal failed [X].")
+        self.assertEqual(r.x, 3 - 6, "Vector3D - Normal3D failed [X].")
+        self.assertEqual(r.y, -4 - 3, "Vector3D - Normal3D failed [X].")
+        self.assertEqual(r.z, 5 + 9, "Vector3D - Normal3D failed [X].")
 
         r = n - v
-        self.assertTrue(isinstance(r, Normal), "Vector3D addition did not return a Normal.")
-        self.assertEqual(r.x, -3 + 6, "Normal - Vector3D failed [X].")
-        self.assertEqual(r.y, 4 + 3, "Normal - Vector3D failed [X].")
-        self.assertEqual(r.z, -5 - 9, "Normal - Vector3D failed [X].")
+        self.assertTrue(isinstance(r, Normal3D), "Vector3D addition did not return a Normal3D.")
+        self.assertEqual(r.x, -3 + 6, "Normal3D - Vector3D failed [X].")
+        self.assertEqual(r.y, 4 + 3, "Normal3D - Vector3D failed [X].")
+        self.assertEqual(r.z, -5 - 9, "Normal3D - Vector3D failed [X].")
 
         # Point3D and Vector3D
         r = p - v
@@ -154,14 +154,14 @@ class TestInteraction(unittest.TestCase):
 
             r = v - p
 
-        # Point3D and Normal
+        # Point3D and Normal3D
         r = p - n
         self.assertTrue(isinstance(r, Point3D), "Vector3D addition did not return a Point3D.")
-        self.assertEqual(r.x, -5 - 6 , "Point3D - Normal failed [X].")
-        self.assertEqual(r.y, -2 - 3 , "Point3D - Normal failed [X].")
-        self.assertEqual(r.z, 10 + 9, "Point3D - Normal failed [X].")
+        self.assertEqual(r.x, -5 - 6 , "Point3D - Normal3D failed [X].")
+        self.assertEqual(r.y, -2 - 3 , "Point3D - Normal3D failed [X].")
+        self.assertEqual(r.z, 10 + 9, "Point3D - Normal3D failed [X].")
 
-        with self.assertRaises(TypeError, msg = "Normal - Point3D should have raise a TypeError."):
+        with self.assertRaises(TypeError, msg = "Normal3D - Point3D should have raise a TypeError."):
 
             r = n - p
 
@@ -169,16 +169,16 @@ class TestInteraction(unittest.TestCase):
         """Cross product."""
 
         a = Vector3D(3, -4, 5)
-        b = Normal(6, 3, -9)
+        b = Normal3D(6, 3, -9)
 
-        # Vector3D x Normal
+        # Vector3D x Normal3D
         r = a.cross(b)
         self.assertTrue(isinstance(r, Vector3D), "Cross did not return a Vector3D.")
         self.assertEqual(r.x, a.y * b.z - b.y * a.z, "Cross product failed [X].")
         self.assertEqual(r.y, b.x * a.z - a.x * b.z, "Cross product failed [Y].")
         self.assertEqual(r.z, a.x * b.y - b.x * a.y, "Cross product failed [Z].")
 
-        # Normal x Vector3D
+        # Normal3D x Vector3D
         r = b.cross(a)
         self.assertTrue(isinstance(r, Vector3D), "Cross did not return a Vector3D.")
         self.assertEqual(r.x, b.y * a.z - a.y * b.z, "Cross product failed [X].")
@@ -194,7 +194,7 @@ class TestInteraction(unittest.TestCase):
                           [4,14,15,16]])
 
         v = Vector3D(-1, 2, 6)
-        n = Normal(-1, 2, 6)
+        n = Normal3D(-1, 2, 6)
         p = Point3D(-1, 2, 6)
 
         # AffineMatrix * Vector3D
@@ -209,15 +209,15 @@ class TestInteraction(unittest.TestCase):
 
             r = v * m
 
-        # AffineMatrix * Normal
+        # AffineMatrix * Normal3D
         r = m * n
-        self.assertTrue(isinstance(r, Normal), "AffineMatrix * Normal did not return a Normal.")
-        self.assertAlmostEqual(r.x,  258/414 * -1 +  -381/414 * 2 +  210/414 * 6, places = 14, msg = "AffineMatrix * Normal failed [X].")
-        self.assertAlmostEqual(r.y, -132/414 * -1 +    81/414 * 2 + -162/414 * 6, places = 14, msg = "AffineMatrix * Normal failed [Y].")
-        self.assertAlmostEqual(r.z,  120/414 * -1 +   -36/414 * 2 +   72/414 * 6, places = 14, msg = "AffineMatrix * Normal failed [Z].")
+        self.assertTrue(isinstance(r, Normal3D), "AffineMatrix * Normal3D did not return a Normal3D.")
+        self.assertAlmostEqual(r.x,  258/414 * -1 +  -381/414 * 2 +  210/414 * 6, places = 14, msg = "AffineMatrix * Normal3D failed [X].")
+        self.assertAlmostEqual(r.y, -132/414 * -1 +    81/414 * 2 + -162/414 * 6, places = 14, msg = "AffineMatrix * Normal3D failed [Y].")
+        self.assertAlmostEqual(r.z,  120/414 * -1 +   -36/414 * 2 +   72/414 * 6, places = 14, msg = "AffineMatrix * Normal3D failed [Z].")
 
-        # Normal * AffineMatrix
-        with self.assertRaises(TypeError, msg = "Normal * AffineMatrix should have raise a TypeError."):
+        # Normal3D * AffineMatrix
+        with self.assertRaises(TypeError, msg = "Normal3D * AffineMatrix should have raise a TypeError."):
 
             r = n * m
 

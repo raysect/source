@@ -36,7 +36,7 @@ from libc.math cimport sqrt, pow as cpow
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D, new_vector3d
-from raysect.core.math.normal cimport Normal
+from raysect.core.math.normal cimport Normal3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.spectralfunction cimport ConstantSF
@@ -145,7 +145,7 @@ cdef class Dielectric(Material):
     @cython.cdivision(True)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+                                    Normal3D normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
             Vector3D incident, reflected, transmitted

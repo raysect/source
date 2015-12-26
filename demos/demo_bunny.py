@@ -4,7 +4,7 @@ from matplotlib.pyplot import *
 import time
 
 # Internal imports
-from raysect.optical import World, translate, rotate, Point3D, Vector3D, Normal, Ray, d65_white, ConstantSF, InterpolatedSF, Node
+from raysect.optical import World, translate, rotate, Point3D, Vector3D, Normal3D, Ray, d65_white, ConstantSF, InterpolatedSF, Node
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.dielectric import Sellmeier, Dielectric
 from raysect.optical.material.emitter import UniformVolumeEmitter

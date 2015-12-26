@@ -33,7 +33,7 @@ cimport cython
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.math.point cimport new_point3d
-from raysect.core.math.normal cimport new_normal, Normal
+from raysect.core.math.normal cimport new_normal3d, Normal3D
 from raysect.core.math.affinematrix cimport AffineMatrix
 from libc.math cimport sqrt
 
@@ -207,7 +207,7 @@ cdef class Sphere(Primitive):
     cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance):
 
         cdef Point3D hit_point, inside_point, outside_point
-        cdef Normal normal
+        cdef Normal3D normal
         cdef double delta_x, delta_y, delta_z
         cdef bint exiting
 
@@ -217,7 +217,7 @@ cdef class Sphere(Primitive):
                                 origin.z + ray_distance * direction.z)
 
         # normal is normalised vector from sphere origin to hit_point
-        normal = new_normal(hit_point.x, hit_point.y, hit_point.z)
+        normal = new_normal3d(hit_point.x, hit_point.y, hit_point.z)
         normal = normal.normalise()
 
         # calculate points inside and outside of surface for daughter rays to

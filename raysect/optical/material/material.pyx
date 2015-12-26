@@ -33,7 +33,7 @@ cdef class Material(CoreMaterial):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+                                    Normal3D normal, AffineMatrix to_local, AffineMatrix to_world):
 
         raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
 
@@ -49,7 +49,7 @@ cdef class NullSurface(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+                                    Normal3D normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
             Point3D origin

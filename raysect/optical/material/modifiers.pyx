@@ -38,7 +38,7 @@ from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.affinematrix cimport new_affinematrix
 from raysect.optical.spectrum cimport Spectrum
-from raysect.core.math.normal cimport Normal, new_normal
+from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.random cimport vector_hemisphere_cosine
 
 # sets the maximum number of attempts to find a valid perturbed normal
@@ -83,13 +83,13 @@ cdef class Roughen(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal normal, AffineMatrix world_to_local, AffineMatrix local_to_world):
+                                    Normal3D normal, AffineMatrix world_to_local, AffineMatrix local_to_world):
 
         cdef:
             Ray reflected
             Vector3D l_normal, l_tangent, l_bitangent
             Vector3D s_incident, s_random
-            Normal s_normal
+            Normal3D s_normal
             AffineMatrix surface_to_local
             int attempt
 
@@ -113,7 +113,7 @@ cdef class Roughen(Material):
         s_incident = ray.direction.transform(world_to_local).transform(local_to_surface)
 
         # attempt to find a valid (intersectable by ray) surface perturbation
-        s_normal = new_normal(0, 0, 1)
+        s_normal = new_normal3d(0, 0, 1)
         for attempt in range(SAMPLE_ATTEMPTS):
 
             # Generate a new normal about the original normal by lerping between a random vector and the original normal.
@@ -127,7 +127,7 @@ cdef class Roughen(Material):
             # Only accept the new normal if it does not change the side of the surface the incident ray is on.
             # An incident ray could not hit a surface facet that is facing away from it.
             # If (incident.normal) * (incident.perturbed_normal) < 0 the ray has swapped sides.
-            # Note: normal in surface space is Normal(0, 0, 1), therefore incident.normal is just incident.z.
+            # Note: normal in surface space is Normal3D(0, 0, 1), therefore incident.normal is just incident.z.
             if (s_incident.z * s_incident.dot(s_normal)) > 0:
 
                 # we have found a valid perturbation, re-assign normal

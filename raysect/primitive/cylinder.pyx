@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.normal cimport new_normal
+from raysect.core.math.normal cimport new_normal3d
 from raysect.core.math.point cimport new_point3d
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.classes cimport Material, new_intersection
@@ -319,7 +319,7 @@ cdef class Cylinder(Primitive):
         cdef:
             Point3D hit_point, inside_point, outside_point
             Vector3D interior_offset
-            Normal normal
+            Normal3D normal
             bint exiting
 
         # point of surface intersection in local space
@@ -330,18 +330,18 @@ cdef class Cylinder(Primitive):
         # calculate surface normal in local space
         if type == CYLINDER:
 
-            normal = new_normal(hit_point.x, hit_point.y, 0)
+            normal = new_normal3d(hit_point.x, hit_point.y, 0)
             normal = normal.normalise()
 
         else:
 
             if face == LOWER_FACE:
 
-                normal = new_normal(0, 0, -1)
+                normal = new_normal3d(0, 0, -1)
 
             else:
 
-                normal = new_normal(0, 0, 1)
+                normal = new_normal3d(0, 0, 1)
 
         # displace hit_point away from surface to generate inner and outer points
         interior_offset = self._interior_offset(hit_point, normal, type)
@@ -367,7 +367,7 @@ cdef class Cylinder(Primitive):
                                 normal, exiting, self.to_local(), self.to_root())
 
     @cython.cdivision(True)
-    cdef inline Vector3D _interior_offset(self, Point3D hit_point, Normal normal, int type):
+    cdef inline Vector3D _interior_offset(self, Point3D hit_point, Normal3D normal, int type):
 
         cdef double x, y, z, length
 

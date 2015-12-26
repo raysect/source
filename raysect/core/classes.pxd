@@ -31,7 +31,7 @@
 
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.normal cimport Normal
+from raysect.core.math.normal cimport Normal3D
 from raysect.core.math.affinematrix cimport AffineMatrix
 from raysect.core.scenegraph.primitive cimport Primitive
 
@@ -64,14 +64,14 @@ cdef class Intersection:
     cdef public Point3D hit_point
     cdef public Point3D inside_point
     cdef public Point3D outside_point
-    cdef public Normal normal
+    cdef public Normal3D normal
     cdef public AffineMatrix to_local
     cdef public AffineMatrix to_world
 
 
 cdef inline Intersection new_intersection(Ray ray, double ray_distance, Primitive primitive,
                                           Point3D hit_point, Point3D inside_point, Point3D outside_point,
-                                          Normal normal, bint exiting, AffineMatrix to_local, AffineMatrix to_world):
+                                          Normal3D normal, bint exiting, AffineMatrix to_local, AffineMatrix to_world):
 
     cdef Intersection intersection
 

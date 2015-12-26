@@ -32,7 +32,7 @@
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.normal cimport Normal
+from raysect.core.math.normal cimport Normal3D
 from raysect.core.classes cimport Ray, Intersection
 
 cdef class Cylinder(Primitive):
@@ -49,7 +49,7 @@ cdef class Cylinder(Primitive):
 
     cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int type)
 
-    cdef inline Vector3D _interior_offset(self, Point3D hit_point, Normal normal, int type)
+    cdef inline Vector3D _interior_offset(self, Point3D hit_point, Normal3D normal, int type)
 
     cdef inline bint _inside_cylinder(self, Point3D point)
 

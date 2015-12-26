@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.normal cimport new_normal
+from raysect.core.math.normal cimport new_normal3d
 from raysect.core.math.point cimport new_point3d, Point3D
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
@@ -277,7 +277,7 @@ cdef class Cone(Primitive):
 
         cdef:
             Point3D hit_point, inside_point, outside_point
-            Normal normal
+            Normal3D normal
             double a, b
             bint exiting
 
@@ -290,12 +290,12 @@ cdef class Cone(Primitive):
         if type == BASE:
 
             # cone base
-            normal = new_normal(0, 0, -1)
+            normal = new_normal3d(0, 0, -1)
 
         elif type == CONE and hit_point.z == self._height:
 
             # cone tip
-            normal = new_normal(0, 0, 1)
+            normal = new_normal3d(0, 0, 1)
 
         else:
 
@@ -304,7 +304,7 @@ cdef class Cone(Primitive):
             # plane at the base of the cone and rotate perpendicular to cone surface
             a = self._radius / self._height
             b = 1 / (a * sqrt(hit_point.x**2 + hit_point.y**2))
-            normal = new_normal(b * hit_point.x , b * hit_point.y, a)
+            normal = new_normal3d(b * hit_point.x, b * hit_point.y, a)
             normal = normal.normalise()
 
         # displace hit_point away from surface to generate inner and outer points
@@ -321,7 +321,7 @@ cdef class Cone(Primitive):
                                 normal, exiting, self.to_local(), self.to_root())
 
     @cython.cdivision(True)
-    cdef inline Point3D _interior_point(self, Point3D hit_point, Normal normal, int type):
+    cdef inline Point3D _interior_point(self, Point3D hit_point, Normal3D normal, int type):
 
         cdef:
             double x, y, z

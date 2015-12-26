@@ -35,7 +35,7 @@ from numpy import array, float32, int32, zeros
 
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.normal cimport Normal, new_normal
+from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.point cimport Point3D, new_point3d
 from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.kdtree cimport KDTreeCore, Item
@@ -565,7 +565,7 @@ cdef class MeshData(KDTreeCore):
             double t
             int32_t triangle
             Point3D hit_point, inside_point, outside_point
-            Normal face_normal, normal
+            Normal3D face_normal, normal
             bint exiting
 
         # on a hit the kd-tree populates attributes containing the intersection data
@@ -576,7 +576,7 @@ cdef class MeshData(KDTreeCore):
             return None
 
         # generate intersection description
-        face_normal = new_normal(
+        face_normal = new_normal3d(
             self.face_normals[triangle, X],
             self.face_normals[triangle, Y],
             self.face_normals[triangle, Z]
@@ -607,7 +607,7 @@ cdef class MeshData(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef Normal _intersection_normal(self):
+    cdef Normal3D _intersection_normal(self):
         """
         Returns the surface normal for the last triangle hit.
 
@@ -636,7 +636,7 @@ cdef class MeshData(KDTreeCore):
             n2 = triangles[self._i, N2]
             n3 = triangles[self._i, N3]
 
-            return new_normal(
+            return new_normal3d(
                 self._u * vertex_normals[n1, X] + self._v * vertex_normals[n2, X] + self._w * vertex_normals[n3, X],
                 self._u * vertex_normals[n1, Y] + self._v * vertex_normals[n2, Y] + self._w * vertex_normals[n3, Y],
                 self._u * vertex_normals[n1, Z] + self._v * vertex_normals[n2, Z] + self._w * vertex_normals[n3, Z]
@@ -647,7 +647,7 @@ cdef class MeshData(KDTreeCore):
             # assign locally to avoid repeated memory view validity checks
             face_normals = self.face_normals
 
-            return new_normal(
+            return new_normal3d(
                 face_normals[self._i, X],
                 face_normals[self._i, Y],
                 face_normals[self._i, Z]

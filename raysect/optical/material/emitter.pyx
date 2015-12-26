@@ -33,7 +33,7 @@ cimport cython
 from numpy cimport ndarray
 from libc.math cimport round
 
-from raysect.core.math.normal cimport Normal
+from raysect.core.math.normal cimport Normal3D
 from raysect.core.math.point cimport new_point3d
 from raysect.optical.spectrum cimport new_spectrum
 from raysect.optical.spectralfunction cimport ConstantSF
@@ -251,7 +251,7 @@ cdef class UniformSurfaceEmitter(NullVolume):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                 bint exiting, Point3D inside_point, Point3D outside_point,
-                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+                                Normal3D normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
             Spectrum spectrum
@@ -346,7 +346,7 @@ cdef class Checkerboard(NullVolume):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                 bint exiting, Point3D inside_point, Point3D outside_point,
-                                Normal normal, AffineMatrix to_local, AffineMatrix to_world):
+                                Normal3D normal, AffineMatrix to_local, AffineMatrix to_world):
 
         cdef:
             Spectrum spectrum

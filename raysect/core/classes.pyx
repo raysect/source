@@ -107,7 +107,7 @@ cdef class Intersection:
     :param Point3D hit_point: The point of intersection between the ray and the primitive (primitive local space).
     :param Point3D inside_point: The interior ray launch point (primitive local space).
     :param Point3D outside_point: The exterior ray launch point (primitive local space).
-    :param Normal normal: The surface normal (primitive local space)
+    :param Normal3D normal: The surface normal (primitive local space)
     :param bint exiting: True if the ray is exiting the surface, False otherwise.
     :param AffineMatrix to_local: A world to primitive local transform matrix.
     :param AffineMatrix to_world: A primitive local to world transform matrix.
@@ -115,7 +115,7 @@ cdef class Intersection:
 
     def __init__(self, Ray ray, double ray_distance, Primitive primitive,
                  Point3D hit_point, Point3D inside_point, Point3D outside_point,
-                 Normal normal, bint exiting, AffineMatrix to_local, AffineMatrix to_world):
+                 Normal3D normal, bint exiting, AffineMatrix to_local, AffineMatrix to_world):
 
         self.ray = ray
         """The incident ray object (world space)."""
