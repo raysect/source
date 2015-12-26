@@ -123,7 +123,7 @@ cdef class Vector3D(_Vec3):
 
         cdef double s
         cdef Vector3D v
-        cdef AffineMatrix m
+        cdef AffineMatrix3D m
 
         if isinstance(x, numbers.Real) and isinstance(y, Vector3D):
 
@@ -143,9 +143,9 @@ cdef class Vector3D(_Vec3):
                                 s * v.y,
                                 s * v.z)
 
-        elif isinstance(x, AffineMatrix) and isinstance(y, Vector3D):
+        elif isinstance(x, AffineMatrix3D) and isinstance(y, Vector3D):
 
-            m = <AffineMatrix>x
+            m = <AffineMatrix3D>x
             v = <Vector3D>y
 
             return new_vector3d(m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z,
@@ -220,15 +220,15 @@ cdef class Vector3D(_Vec3):
                             self.y * t,
                             self.z * t)
 
-    cpdef Vector3D transform(self, AffineMatrix m):
+    cpdef Vector3D transform(self, AffineMatrix3D m):
         """
-        Transforms the vector with the supplied AffineMatrix.
+        Transforms the vector with the supplied AffineMatrix3D.
 
         The vector is transformed by pre-multiplying the vector by the affine
         matrix.
 
         This method is substantially faster than using the multiplication
-        operator of AffineMatrix when called from cython code.
+        operator of AffineMatrix3D when called from cython code.
         """
 
         return new_vector3d(m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,

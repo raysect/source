@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math._vec3 cimport _Vec3
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 cdef class Vector3D(_Vec3):
 
@@ -38,7 +38,7 @@ cdef class Vector3D(_Vec3):
 
     cpdef Vector3D normalise(self)
 
-    cpdef Vector3D transform(self, AffineMatrix m)
+    cpdef Vector3D transform(self, AffineMatrix3D m)
 
     cdef inline Vector3D neg(self)
 

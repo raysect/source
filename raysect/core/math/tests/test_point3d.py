@@ -32,7 +32,7 @@ Unit tests for the Point3D object.
 """
 
 import unittest
-from raysect.core.math import Point3D, Vector3D, AffineMatrix
+from raysect.core.math import Point3D, Vector3D, AffineMatrix3D
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -185,10 +185,10 @@ class TestPoint(unittest.TestCase):
     def test_transform(self):
         """Testing method transform()."""
 
-        m = AffineMatrix([[1,2,3,4],
-                          [5,6,2,8],
-                          [9,10,4,9],
-                          [4,14,15,16]])
+        m = AffineMatrix3D([[1, 2, 3, 4],
+                            [5,6,2,8],
+                            [9,10,4,9],
+                            [4,14,15,16]])
 
         v = Point3D(-1, 2, 6)
 

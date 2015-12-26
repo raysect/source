@@ -147,13 +147,13 @@ cdef class Point3D:
     def __mul__(object x, object y):
         """Multiply operator."""
 
-        cdef AffineMatrix m
+        cdef AffineMatrix3D m
         cdef Point3D v
         cdef double w
 
-        if isinstance(x, AffineMatrix) and isinstance(y, Point3D):
+        if isinstance(x, AffineMatrix3D) and isinstance(y, Point3D):
 
-            m = <AffineMatrix>x
+            m = <AffineMatrix3D>x
             v = <Point3D>y
 
             # 4th element of homogeneous coordinate
@@ -204,7 +204,7 @@ cdef class Point3D:
         return sqrt(x*x + y*y + z*z)
 
     @cython.cdivision(True)
-    cpdef Point3D transform(self, AffineMatrix m):
+    cpdef Point3D transform(self, AffineMatrix3D m):
         """
         Transforms the point with the supplied Affine Matrix.
 
@@ -410,13 +410,13 @@ cdef class Point2D:
         """Multiply operator."""
         raise NotImplemented
 
-        # cdef AffineMatrix m
+        # cdef AffineMatrix3D m
         # cdef Point3D v
         # cdef double w
         #
-        # if isinstance(x, AffineMatrix) and isinstance(y, Point3D):
+        # if isinstance(x, AffineMatrix3D) and isinstance(y, Point3D):
         #
-        #     m = <AffineMatrix>x
+        #     m = <AffineMatrix3D>x
         #     v = <Point3D>y
         #
         #     # 4th element of homogeneous coordinate
@@ -465,7 +465,7 @@ cdef class Point2D:
         return sqrt(u*u + v*v)
 
     # @cython.cdivision(True)
-    # cpdef Point3D transform(self, AffineMatrix m):
+    # cpdef Point3D transform(self, AffineMatrix3D m):
     #     """
     #     Transforms the point with the supplied Affine Matrix.
     #

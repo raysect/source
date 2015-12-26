@@ -34,7 +34,7 @@ from raysect.core.classes cimport Material, new_intersection
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.math.point cimport new_point3d
 from raysect.core.math.normal cimport new_normal3d, Normal3D
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from libc.math cimport sqrt
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
@@ -50,11 +50,11 @@ cdef class Sphere(Primitive):
     The sphere is centered at the origin of the local co-ordinate system.
     """
 
-    def __init__(self, double radius=0.5, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), str name=None):
+    def __init__(self, double radius=0.5, object parent=None, AffineMatrix3D transform not None=AffineMatrix3D(), Material material not None=Material(), str name=None):
         """
         :param radius: Radius of the sphere in meters (default = 0.5).
         :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
         :param material: A Material object defining the sphere's material (default = None).
         :param name: A string specifying a user-friendly name for the sphere (default = "").
         """

@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .math import Vector3D, Point3D, AffineMatrix
+from .math import Vector3D, Point3D, AffineMatrix3D
 
 # coordinate system vectors
 UP = Vector3D(0, 1, 0)
@@ -41,5 +41,5 @@ BACK = Vector3D(0, 0, -1)
 ORIGIN = Point3D()
 
 # affine matrix representing no transform
-NULL_TRANSFORM = AffineMatrix()
+NULL_TRANSFORM = AffineMatrix3D()
 

@@ -32,7 +32,7 @@ Unit tests for the Vector3D object.
 """
 
 import unittest
-from raysect.core.math import Vector3D, AffineMatrix
+from raysect.core.math import Vector3D, AffineMatrix3D
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -348,10 +348,10 @@ class TestVector(unittest.TestCase):
     def test_transform(self):
         """Testing transform() method."""
 
-        m = AffineMatrix([[1,2,3,4],
-                          [5,6,2,8],
-                          [9,10,4,9],
-                          [4,14,15,16]])
+        m = AffineMatrix3D([[1, 2, 3, 4],
+                            [5,6,2,8],
+                            [9,10,4,9],
+                            [4,14,15,16]])
 
         v = Vector3D(-1, 2, 6)
 

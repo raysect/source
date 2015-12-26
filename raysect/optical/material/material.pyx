@@ -33,14 +33,14 @@ cdef class Material(CoreMaterial):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix to_local, AffineMatrix to_world):
+                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         raise NotImplementedError("Material virtual method evaluate_volume() has not been implemented.")
 
@@ -49,7 +49,7 @@ cdef class NullSurface(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix to_local, AffineMatrix to_world):
+                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
             Point3D origin
@@ -80,7 +80,7 @@ cdef class NullVolume(Material):
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         # do nothing!
         return spectrum

@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from raysect.core.math import AffineMatrix, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, Vector3D
+from raysect.core.math import AffineMatrix3D, translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, Vector3D
 from math import sin, cos, pi, sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -38,7 +38,7 @@ class TestAffineMatrix(unittest.TestCase):
     def test_initialise_default(self):
         """Default initialisation should be an identity matrix."""
 
-        m = AffineMatrix()
+        m = AffineMatrix3D()
 
         r = [[1,0,0,0],
              [0,1,0,0],
@@ -57,7 +57,7 @@ class TestAffineMatrix(unittest.TestCase):
              [4.2, 3.3, -9.0, 23.0],
              [1.7, 3.1, 6.6, -9.8]]
 
-        m = AffineMatrix(r)
+        m = AffineMatrix3D(r)
 
         for i, row in enumerate(r):
             for j, v in enumerate(row):
@@ -71,7 +71,7 @@ class TestAffineMatrix(unittest.TestCase):
              4.2, 3.3, -9.0, 23.0,
              1.7, 3.1, 6.6, -9.8]
 
-        m = AffineMatrix(r)
+        m = AffineMatrix3D(r)
 
         for i in range(0, 4):
             for j in range(0, 4):
@@ -80,12 +80,12 @@ class TestAffineMatrix(unittest.TestCase):
     def test_initialise_affine_matrix(self):
         """Initialisation with a _Mat4 matrix."""
 
-        r = AffineMatrix([1.5, 2.1, -3.2, 1.8,
-                          5, 10, -4.1, 1.2,
-                          4.2, 3.3, -9.0, 23.0,
-                          1.7, 3.1, 6.6, -9.8])
+        r = AffineMatrix3D([1.5, 2.1, -3.2, 1.8,
+                            5, 10, -4.1, 1.2,
+                            4.2, 3.3, -9.0, 23.0,
+                            1.7, 3.1, 6.6, -9.8])
 
-        m = AffineMatrix(r)
+        m = AffineMatrix3D(r)
 
         for i in range(0, 4):
             for j in range(0, 4):
@@ -95,15 +95,15 @@ class TestAffineMatrix(unittest.TestCase):
         """Invalid initialisation should raise a TypeError."""
 
         with self.assertRaises(TypeError, msg="Initialised with a string did not raise a TypeError."):
-            AffineMatrix("spoon")
+            AffineMatrix3D("spoon")
 
         with self.assertRaises(TypeError, msg="Initialised with a list containing too few items did not raise a TypeError."):
-            AffineMatrix([[1.0, 2.0], [3.0, 4.0]])
+            AffineMatrix3D([[1.0, 2.0], [3.0, 4.0]])
 
     def test_indexing(self):
         """Getting/setting matrix elements via indexing."""
 
-        m = AffineMatrix()
+        m = AffineMatrix3D()
 
         for row in range(0, 4):
             for column in range(0, 4):
@@ -152,15 +152,15 @@ class TestAffineMatrix(unittest.TestCase):
     def test_multiply(self):
         """Matrix multiply operator."""
 
-        m = AffineMatrix([[1,2,3,4],
-                          [5,6,2,8],
-                          [9,10,4,9],
-                          [4,14,15,16]])
+        m = AffineMatrix3D([[1, 2, 3, 4],
+                            [5,6,2,8],
+                            [9,10,4,9],
+                            [4,14,15,16]])
 
-        minv = AffineMatrix([[258/414, -132/414, 120/414, -66/414],
-                             [-381/414, 81/414, -36/414, 75/414],
-                             [210/414, -162/414, 72/414, -12/414],
-                             [72/414, 114/414, -66/414, -12/414]])
+        minv = AffineMatrix3D([[258 / 414, -132 / 414, 120 / 414, -66 / 414],
+                               [-381/414, 81/414, -36/414, 75/414],
+                               [210/414, -162/414, 72/414, -12/414],
+                               [72/414, 114/414, -66/414, -12/414]])
 
         r = [[1,0,0,0],
              [0,1,0,0],
@@ -169,7 +169,7 @@ class TestAffineMatrix(unittest.TestCase):
 
         # matrix multiplied by its inverse should equal the identity matrix
         t = m * minv
-        self.assertTrue(isinstance(t, AffineMatrix), "AffineMatrix * AffineMatrix did not return an AffineMatrix.")
+        self.assertTrue(isinstance(t, AffineMatrix3D), "AffineMatrix3D * AffineMatrix3D did not return an AffineMatrix3D.")
         for i, row in enumerate(r):
             for j, v in enumerate(row):
                 self.assertAlmostEqual(t[i, j], v, places=14, msg="Matrix multiplication failed (R"+str(i)+", C"+str(j)+").")
@@ -177,10 +177,10 @@ class TestAffineMatrix(unittest.TestCase):
     def test_inverse(self):
         """Matrix inverse."""
 
-        m = AffineMatrix([[1,2,3,4],
-                          [5,6,2,8],
-                          [9,10,4,9],
-                          [4,14,15,16]])
+        m = AffineMatrix3D([[1, 2, 3, 4],
+                            [5,6,2,8],
+                            [9,10,4,9],
+                            [4,14,15,16]])
 
         r = [[258/414, -132/414, 120/414, -66/414],
              [-381/414, 81/414, -36/414, 75/414],

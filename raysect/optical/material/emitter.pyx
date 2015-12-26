@@ -46,7 +46,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
             Point3D start, end
@@ -98,7 +98,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
     cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
-                                     AffineMatrix to_local, AffineMatrix to_world):
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
@@ -128,7 +128,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
             Point3D start, end
@@ -231,7 +231,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
-                                     AffineMatrix to_local, AffineMatrix to_world):
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
@@ -251,7 +251,7 @@ cdef class UniformSurfaceEmitter(NullVolume):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                 bint exiting, Point3D inside_point, Point3D outside_point,
-                                Normal3D normal, AffineMatrix to_local, AffineMatrix to_world):
+                                Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
             Spectrum spectrum
@@ -291,7 +291,7 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
     @cython.wraparound(False)
     cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
-                                     AffineMatrix to_local, AffineMatrix to_world):
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
             ndarray emission
@@ -346,7 +346,7 @@ cdef class Checkerboard(NullVolume):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                 bint exiting, Point3D inside_point, Point3D outside_point,
-                                Normal3D normal, AffineMatrix to_local, AffineMatrix to_world):
+                                Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         cdef:
             Spectrum spectrum

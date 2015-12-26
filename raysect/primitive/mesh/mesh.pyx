@@ -34,7 +34,7 @@ import struct
 from numpy import array, float32, int32, zeros
 
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.point cimport Point3D, new_point3d
 from raysect.core.math.vector cimport Vector3D, new_vector3d
@@ -684,7 +684,7 @@ cdef class MeshData(KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef BoundingBox bounding_box(self, AffineMatrix to_world):
+    cpdef BoundingBox bounding_box(self, AffineMatrix3D to_world):
         """
         Returns a bounding box that encloses the mesh.
 
@@ -976,7 +976,7 @@ cdef class Mesh(Primitive):
         double _ray_distance
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, object vertices=None, object triangles=None, object normals=None, bint smoothing=True, bint closed=True, tolerant=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix transform not None=AffineMatrix(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, object vertices=None, object triangles=None, object normals=None, bint smoothing=True, bint closed=True, tolerant=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix3D transform not None=AffineMatrix3D(), Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
@@ -1179,7 +1179,7 @@ cdef class Mesh(Primitive):
         self._ray_distance = 0
 
     @classmethod
-    def from_file(cls, object file, object parent=None, AffineMatrix transform=AffineMatrix(), Material material=Material(), unicode name=""):
+    def from_file(cls, object file, object parent=None, AffineMatrix3D transform=AffineMatrix3D(), Material material=Material(), unicode name=""):
         """
         Instances a new Mesh using data from a file object or filename.
 

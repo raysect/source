@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 cdef class Primitive(Node):
     """
@@ -42,12 +42,12 @@ cdef class Primitive(Node):
     This is a base class, its functionality must be implemented fully by the deriving class.
 
     :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
-    :param AffineMatrix transform: Sets the affine transform associated with the Node.
+    :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
     :param material: An object representing the material properties of the primitive.
     :param name: A string defining the node name.
     """
 
-    def __init__(self, object parent=None, AffineMatrix transform=None, Material material=None, str name=None):
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, name)
 

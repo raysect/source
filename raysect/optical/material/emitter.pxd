@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.material.material cimport NullSurface, NullVolume
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
@@ -43,7 +43,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
     cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
-                                     AffineMatrix to_local, AffineMatrix to_world)
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world)
 
 
 cdef class VolumeEmitterInhomogeneous(NullSurface):
@@ -52,7 +52,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
-                                     AffineMatrix to_local, AffineMatrix to_world)
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world)
 
 cdef class UniformSurfaceEmitter(NullVolume):
 

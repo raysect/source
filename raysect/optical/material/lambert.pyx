@@ -29,13 +29,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.affinematrix cimport new_affinematrix
+from raysect.core.math.affinematrix cimport new_affinematrix3d
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.normal cimport Normal3D
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
@@ -53,12 +53,12 @@ cdef class Lambert(NullVolume):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix world_to_local, AffineMatrix local_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_local, AffineMatrix3D local_to_world):
 
         cdef:
             Ray reflected
             Vector3D v_normal, v_tangent, v_bitangent, direction
-            AffineMatrix surface_to_local
+            AffineMatrix3D surface_to_local
             Spectrum spectrum
             ndarray reflectivity
 
@@ -69,13 +69,13 @@ cdef class Lambert(NullVolume):
 
         # generate inverse surface transform matrix
         # TODO: MOVE THIS TO A UTILITY FUNCTION AND TEST - math.cython.transforms <- high performance but no safety
-        surface_to_local = new_affinematrix(v_tangent.x, v_bitangent.x, v_normal.x, 0.0,
-                                            v_tangent.y, v_bitangent.y, v_normal.y, 0.0,
-                                            v_tangent.z, v_bitangent.z, v_normal.z, 0.0,
-                                            0.0, 0.0, 0.0, 1.0)
+        surface_to_local = new_affinematrix3d(v_tangent.x, v_bitangent.x, v_normal.x, 0.0,
+                                              v_tangent.y, v_bitangent.y, v_normal.y, 0.0,
+                                              v_tangent.z, v_bitangent.z, v_normal.z, 0.0,
+                                              0.0, 0.0, 0.0, 1.0)
 
         # TODO: MOVE THIS TO A UTILITY FUNCTION AND TEST - math.cython.transforms <- high performance but no safety
-        # local_to_surface = new_affinematrix(v_tangent.x, v_tangent.y, v_tangent.z, 0.0,
+        # local_to_surface = new_affinematrix3d(v_tangent.x, v_tangent.y, v_tangent.z, 0.0,
         #                                     v_bitangent.x, v_bitangent.y, v_bitangent.z, 0.0,
         #                                     v_normal.x, v_normal.y, v_normal.z, 0.0,
         #                                     0.0, 0.0, 0.0, 1.0)

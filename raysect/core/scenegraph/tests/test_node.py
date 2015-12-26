@@ -29,7 +29,7 @@
 
 import unittest
 from raysect.core.scenegraph.node import Node
-from raysect.core.math import AffineMatrix, translate
+from raysect.core.math import AffineMatrix3D, translate
 
 # TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures
 
@@ -56,9 +56,9 @@ class TestNode(unittest.TestCase):
         self.assertEqual(n.parent, None, "Parent should be None.")
         self.assertEqual(n.root, n, "Node should be it's own root as it is not attached to a parent.")
         self.assertEqual(len(n.children), 0, "Child list should be empty.")
-        self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n.transform, AffineMatrix3D(), delta = 1e-14, msg ="Transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Inverse root transform should be an identity matrix.")
         self.assertEqual(n.name, None, "Node name should be None.")
 
     def test_initialise_with_parent(self):
@@ -71,18 +71,18 @@ class TestNode(unittest.TestCase):
         self.assertEqual(a.parent, None, "Node a's parent should be None.")
         self.assertEqual(a.root, a, "Node a's root should be Node a.")
         self.assertEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
-        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a.transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Node a's inverse root transform should be an identity matrix.")
         self.assertEqual(a.name, None, "Node name should be None.")
 
         # node b
         self.assertEqual(b.parent, a, "Node b's parent should be Node a.")
         self.assertEqual(b.root, a, "Node b's root should be Node a.")
         self.assertEqual(len(b.children), 0, "Node b's child list should be empty.")
-        self.assertTransformAlmostEqual(b.transform, AffineMatrix(), delta = 1e-14, msg = "Node b's transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(b._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node b's root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(b._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node b's inverse root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(b.transform, AffineMatrix3D(), delta = 1e-14, msg ="Node b's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(b._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Node b's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(b._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Node b's inverse root transform should be an identity matrix.")
         self.assertEqual(b.name, None, "Node name should be None.")
 
     def test_initialise_with_transform(self):
@@ -94,8 +94,8 @@ class TestNode(unittest.TestCase):
         self.assertEqual(n.root, n, "Node should be it's own root as it is not attached to a parent.")
         self.assertEqual(len(n.children), 0, "Child list should be empty.")
         self.assertTransformAlmostEqual(n.transform, translate(1,2,3), delta = 1e-14, msg = "Transform was not set correctly.")
-        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform is incorrect.")
-        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root is incorrect.")
+        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root transform is incorrect.")
+        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Inverse root is incorrect.")
         self.assertEqual(n.name, None, "Node name should be None.")
 
     def test_initialise_with_parent_and_transform(self):
@@ -108,9 +108,9 @@ class TestNode(unittest.TestCase):
         self.assertEqual(a.parent, None, "Node a's parent should be None.")
         self.assertEqual(a.root, a, "Node a's root should be Node a.")
         self.assertEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
-        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a.transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Node a's inverse root transform should be an identity matrix.")
         self.assertEqual(a.name, None, "Node name should be None.")
 
         # node b
@@ -138,9 +138,9 @@ class TestNode(unittest.TestCase):
         self.assertEqual(a.parent, None, "Node a's parent should be None.")
         self.assertEqual(a.root, a, "Node a's root should be Node a.")
         self.assertEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
-        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a.transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Node a's inverse root transform should be an identity matrix.")
 
         # node b
         self.assertEqual(b.parent, a, "Node b's parent should be Node a.")
@@ -187,8 +187,8 @@ class TestNode(unittest.TestCase):
         self.assertEqual(c.root, a, "Root node is incorrect.")
 
         # has the root transform been correctly propagated to the re-parented node and its children?
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root node's root transform should not have been modified by change of parent.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Root node's inverse root transform should not have been modified by change of parent.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root node's root transform should not have been modified by change of parent.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Root node's inverse root transform should not have been modified by change of parent.")
 
         self.assertTransformAlmostEqual(b._root_transform, translate(1,2,3), delta = 1e-14, msg = "Parent's root transform should not have been modified by change of parent.")
         self.assertTransformAlmostEqual(b._root_transform_inverse, translate(1,2,3).inverse(), delta = 1e-14, msg = "Parent's inverse root transform should not have been modified by change of parent.")
@@ -236,8 +236,8 @@ class TestNode(unittest.TestCase):
         self.assertEqual(c.root, a, "Root node is incorrect.")
 
         # has the root transform been correctly propagated to the re-parented node and its children?
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root node's root transform should not have been modified by change of parent.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Root node's inverse root transform should not have been modified by change of parent.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root node's root transform should not have been modified by change of parent.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Root node's inverse root transform should not have been modified by change of parent.")
 
         self.assertTransformAlmostEqual(b1._root_transform, translate(1,2,3), delta = 1e-14, msg = "Previous parent's root transform should not have been modified by change of parent.")
         self.assertTransformAlmostEqual(b1._root_transform_inverse, translate(1,2,3).inverse(), delta = 1e-14, msg = "Previous parent's inverse root transform should not have been modified by change of parent.")
@@ -284,14 +284,14 @@ class TestNode(unittest.TestCase):
         self.assertEqual(c.root, c, "Root node is incorrect.")
 
         # has the root transform been correctly propagated to the re-parented node and its children?
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root node's root transform should not have been modified by change of parent.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Root node's inverse root transform should not have been modified by change of parent.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root node's root transform should not have been modified by change of parent.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Root node's inverse root transform should not have been modified by change of parent.")
 
         self.assertTransformAlmostEqual(b._root_transform, translate(1,2,3), delta = 1e-14, msg = "Previous parent's root transform should not have been modified by change of parent.")
         self.assertTransformAlmostEqual(b._root_transform_inverse, translate(1,2,3).inverse(), delta = 1e-14, msg = "Previous parent's inverse root transform should not have been modified by change of parent.")
 
-        self.assertTransformAlmostEqual(c._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform is not correct for unparented node.")
-        self.assertTransformAlmostEqual(c._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform is not correct for unparented node.")
+        self.assertTransformAlmostEqual(c._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root transform is not correct for unparented node.")
+        self.assertTransformAlmostEqual(c._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Inverse root transform is not correct for unparented node.")
 
         self.assertTransformAlmostEqual(d1._root_transform, translate(100,200,300), delta = 1e-14, msg = "Root transform has not correctly propagated to re-parented node's 1st immediate child.")
         self.assertTransformAlmostEqual(d1._root_transform_inverse, translate(100,200,300).inverse(), delta = 1e-14, msg = "Inverse root transform has not correctly propagated to re-parented node's 1st immediate child.")
@@ -349,8 +349,8 @@ class TestNode(unittest.TestCase):
         self.assertTransformAlmostEqual(c.transform, translate(20,40,60), delta = 1e-14, msg = "Transform matrix was set correctly.")
 
         # have the root transforms been correctly propagated to this nodes children, parent nodes should be unaffected
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root node's root transform should not have been modified by change of transform.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Root node's inverse root transform should not have been modified by change of transform.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root node's root transform should not have been modified by change of transform.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Root node's inverse root transform should not have been modified by change of transform.")
 
         self.assertTransformAlmostEqual(b._root_transform, translate(1,2,3), delta = 1e-14, msg = "Parent's root transform should not have been modified by change of transform.")
         self.assertTransformAlmostEqual(b._root_transform_inverse, translate(1,2,3).inverse(), delta = 1e-14, msg = "Parent's inverse root transform should not have been modified by change of transform.")

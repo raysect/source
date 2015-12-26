@@ -34,7 +34,7 @@
 
 from raysect.core.classes cimport Material, new_ray, new_intersection
 from raysect.core.math.point cimport Point3D
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.acceleration.boundingbox cimport BoundingBox
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 
@@ -51,7 +51,7 @@ cdef class CSGPrimitive(Primitive):
     This is an abstract base class and can not be used directly.
     """
 
-    def __init__(self, Primitive primitive_a not None = NullPrimitive(), Primitive primitive_b not None = NullPrimitive(), object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), str name=None):
+    def __init__(self, Primitive primitive_a not None = NullPrimitive(), Primitive primitive_b not None = NullPrimitive(), object parent = None, AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(), str name=None):
         """
         Initialisation method.
         """

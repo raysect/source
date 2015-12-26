@@ -31,7 +31,7 @@
 
 from raysect.core.math._vec3 cimport _Vec3
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 cdef class Normal3D(_Vec3):
 
@@ -39,9 +39,9 @@ cdef class Normal3D(_Vec3):
 
     cpdef Normal3D normalise(self)
 
-    cpdef Normal3D transform(self, AffineMatrix m)
+    cpdef Normal3D transform(self, AffineMatrix3D m)
 
-    cpdef Normal3D transform_with_inverse(self, AffineMatrix m)
+    cpdef Normal3D transform_with_inverse(self, AffineMatrix3D m)
 
     cdef inline Normal3D neg(self)
 

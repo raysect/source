@@ -30,13 +30,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.material.material cimport Material
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.affinematrix cimport new_affinematrix
+from raysect.core.math.affinematrix cimport new_affinematrix3d
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.random cimport vector_hemisphere_cosine
@@ -83,14 +83,14 @@ cdef class Roughen(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix world_to_local, AffineMatrix local_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_local, AffineMatrix3D local_to_world):
 
         cdef:
             Ray reflected
             Vector3D l_normal, l_tangent, l_bitangent
             Vector3D s_incident, s_random
             Normal3D s_normal
-            AffineMatrix surface_to_local
+            AffineMatrix3D surface_to_local
             int attempt
 
         # generate an orthogonal basis about surface normal
@@ -99,15 +99,15 @@ cdef class Roughen(Material):
         l_bitangent = l_normal.cross(l_tangent)
 
         # generate inverse surface transform matrix
-        surface_to_local = new_affinematrix(l_tangent.x, l_bitangent.x, l_normal.x, 0.0,
-                                            l_tangent.y, l_bitangent.y, l_normal.y, 0.0,
-                                            l_tangent.z, l_bitangent.z, l_normal.z, 0.0,
-                                            0.0, 0.0, 0.0, 1.0)
+        surface_to_local = new_affinematrix3d(l_tangent.x, l_bitangent.x, l_normal.x, 0.0,
+                                              l_tangent.y, l_bitangent.y, l_normal.y, 0.0,
+                                              l_tangent.z, l_bitangent.z, l_normal.z, 0.0,
+                                              0.0, 0.0, 0.0, 1.0)
 
-        local_to_surface = new_affinematrix(l_tangent.x, l_tangent.y, l_tangent.z, 0.0,
-                                            l_bitangent.x, l_bitangent.y, l_bitangent.z, 0.0,
-                                            l_normal.x, l_normal.y, l_normal.z, 0.0,
-                                            0.0, 0.0, 0.0, 1.0)
+        local_to_surface = new_affinematrix3d(l_tangent.x, l_tangent.y, l_tangent.z, 0.0,
+                                              l_bitangent.x, l_bitangent.y, l_bitangent.z, 0.0,
+                                              l_normal.x, l_normal.y, l_normal.z, 0.0,
+                                              0.0, 0.0, 0.0, 1.0)
 
         # convert ray direction to surface space
         s_incident = ray.direction.transform(world_to_local).transform(local_to_surface)
@@ -140,7 +140,7 @@ cdef class Roughen(Material):
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world):
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         return self.material.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
 

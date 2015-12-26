@@ -32,7 +32,7 @@ Unit tests for the Normal3D object.
 """
 
 import unittest
-from raysect.core.math import Normal3D, Vector3D, AffineMatrix
+from raysect.core.math import Normal3D, Vector3D, AffineMatrix3D
 from math import sqrt
 
 # TODO: Port to Cython to allow testing of the Cython API
@@ -349,10 +349,10 @@ class TestNormal(unittest.TestCase):
     def test_transform(self):
         """Testing transform() method."""
 
-        m = AffineMatrix([[1,2,3,4],
-                          [5,6,2,8],
-                          [9,10,4,9],
-                          [4,14,15,16]])
+        m = AffineMatrix3D([[1, 2, 3, 4],
+                            [5,6,2,8],
+                            [9,10,4,9],
+                            [4,14,15,16]])
 
         v = Normal3D(-1, 2, 6)
 
@@ -365,10 +365,10 @@ class TestNormal(unittest.TestCase):
     def test_transform_with_inverse(self):
         """Testing transform_with_inverse() method."""
 
-        minv = AffineMatrix([[258/414, -132/414, 120/414, -66/414],
-                             [-381/414, 81/414, -36/414, 75/414],
-                             [210/414, -162/414, 72/414, -12/414],
-                             [72/414, 114/414, -66/414, -12/414]])
+        minv = AffineMatrix3D([[258 / 414, -132 / 414, 120 / 414, -66 / 414],
+                               [-381/414, 81/414, -36/414, 75/414],
+                               [210/414, -162/414, 72/414, -12/414],
+                               [72/414, 114/414, -66/414, -12/414]])
 
         v = Normal3D(-1, 2, 6)
 

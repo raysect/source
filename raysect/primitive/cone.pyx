@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.normal cimport new_normal3d
 from raysect.core.math.point cimport new_point3d, Point3D
 from raysect.core.classes cimport Material, new_intersection
@@ -63,7 +63,7 @@ cdef class Cone(Primitive):
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent = None,
-                 AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(),
+                 AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(),
                  str name=None):
         """
         Radius is radius of the cone in x-y plane.
@@ -72,7 +72,7 @@ cdef class Cone(Primitive):
         :param radius: Radius of the cone in meters (default = 0.5).
         :param height: Height of the cone in meters (default = 1.0).
         :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
         :param material: A Material object defining the cone's material (default = None).
         :param name: A string specifying a user-friendly name for the cylinder (default = "").
         """

@@ -124,7 +124,7 @@ cdef class Normal3D(_Vec3):
 
         cdef double s
         cdef Normal3D v
-        cdef AffineMatrix m, minv
+        cdef AffineMatrix3D m, minv
 
         if isinstance(x, numbers.Real) and isinstance(y, Normal3D):
 
@@ -144,9 +144,9 @@ cdef class Normal3D(_Vec3):
                                 s * v.y,
                                 s * v.z)
 
-        elif isinstance(x, AffineMatrix) and isinstance(y, Normal3D):
+        elif isinstance(x, AffineMatrix3D) and isinstance(y, Normal3D):
 
-            m = <AffineMatrix>x
+            m = <AffineMatrix3D>x
             v = <Normal3D>y
 
             minv = m.inverse()
@@ -222,7 +222,7 @@ cdef class Normal3D(_Vec3):
                             self.y * t,
                             self.z * t)
 
-    cpdef Normal3D transform(self, AffineMatrix m):
+    cpdef Normal3D transform(self, AffineMatrix3D m):
         """
         Transforms the normal with the supplied Affine Matrix.
 
@@ -238,13 +238,13 @@ cdef class Normal3D(_Vec3):
         multiplication operator of the affine matrix.
         """
 
-        cdef AffineMatrix minv
+        cdef AffineMatrix3D minv
         minv = m.inverse()
         return new_normal3d(minv.m[0][0] * self.x + minv.m[1][0] * self.y + minv.m[2][0] * self.z,
                             minv.m[0][1] * self.x + minv.m[1][1] * self.y + minv.m[2][1] * self.z,
                             minv.m[0][2] * self.x + minv.m[1][2] * self.y + minv.m[2][2] * self.z)
 
-    cpdef Normal3D transform_with_inverse(self, AffineMatrix m):
+    cpdef Normal3D transform_with_inverse(self, AffineMatrix3D m):
         """
         Transforms the normal with the supplied inverse Affine Matrix.
 

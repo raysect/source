@@ -89,7 +89,7 @@ cdef class World(_NodeBase):
         else:
             return "<World at " + str(hex(id(self))) + ">"
 
-    cpdef AffineMatrix to(self, _NodeBase node):
+    cpdef AffineMatrix3D to(self, _NodeBase node):
         """
         Returns an affine transform that, when applied to a vector or point,
         transforms the vector or point from the co-ordinate space of the calling
@@ -101,7 +101,7 @@ cdef class World(_NodeBase):
         point (-100,0,0) in B as B is translated +100 in x compared to A.
 
         :param _NodeBase node: The target node.
-        :return: An AffineMatrix describing the coordinate transform.
+        :return: An AffineMatrix3D describing the coordinate transform.
         """
 
         if self.root is node.root:

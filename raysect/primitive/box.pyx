@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.point cimport new_point3d
 from raysect.core.classes cimport Material, new_intersection
@@ -66,12 +66,12 @@ cdef class Box(Primitive):
     system.
     """
 
-    def __init__(self, Point3D lower=None, Point3D upper=None, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), str name=None):
+    def __init__(self, Point3D lower=None, Point3D upper=None, object parent = None, AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(), str name=None):
         """
         :param lower: Lower point of the box (default = Point3D(-0.5, -0.5, -0.5)).
         :param upper: Upper point of the box (default = Point3D(0.5, 0.5, 0.5)).
         :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
         :param material: A Material object defining the box's material (default = None).
         :param name: A string specifying a user-friendly name for the box (default = "").
         """
