@@ -72,7 +72,7 @@ cdef inline Point3D new_point3d(double x, double y, double z):
 
 cdef class Point2D:
 
-    cdef public double u, v
+    cdef public double x, y
 
     # cpdef Vector3D vector_to(self, Point3D p)
 
@@ -91,7 +91,7 @@ cdef class Point2D:
     cdef inline void set_index(self, int index, double value)
 
 
-cdef inline Point2D new_point2d(double u, double v):
+cdef inline Point2D new_point2d(double x, double y):
     """
     Point2D factory function.
 
@@ -101,6 +101,6 @@ cdef inline Point2D new_point2d(double u, double v):
 
     cdef Point2D a
     a = Point2D.__new__(Point2D)
-    a.u = u
-    a.v = v
+    a.x = x
+    a.y = y
     return a

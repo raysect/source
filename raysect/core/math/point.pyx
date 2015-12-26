@@ -58,7 +58,7 @@ cdef class Point3D:
     def __repr__(self):
         """Returns a string representation of the Point3D object."""
 
-        return "Point3D([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
+        return "Point3D(" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ")"
 
     def __richcmp__(self, object other, int op):
         """Provides basic point comparison operations."""
@@ -68,7 +68,7 @@ cdef class Point3D:
         if not isinstance(other, Point3D):
             return NotImplemented
 
-        p = <Vector3D> other
+        p = <Point3D> other
         if op == 2:     # __eq__()
             return self.x == p.x and self.y == p.y and self.z == p.z
         elif op == 3:   # __ne__()
@@ -301,17 +301,17 @@ cdef class Point3D:
             self.z = value
 
 
-
+# TODO: rewrite docstring
 cdef class Point2D:
     """
     Represents a point in 2D affine space.
 
-    A 2D point is a location in 2D space which is defined by its u and v coordinates in a given coordinate system.
-    Vectors can be added/subtracted from Points yielding another 2D Vector3D. You can also find the 2D Vector3D and distance
-    between two Points, and transform a Point3D from one coordinate system to another.
+    A 2D point is a location in 2D space which is defined by its x and y coordinates in a given coordinate system.
+    Vector2D objects can be added/subtracted from Point2D yielding another Vector2D. You can also find the Vector2D and distance
+    between two Point2Ds, and transform a Point2D from one coordinate system to another.
     """
 
-    def __init__(self, double u=0.0, double v=0.0):
+    def __init__(self, double x=0.0, double y=0.0):
         """
         Point2D constructor.
 
@@ -319,49 +319,47 @@ cdef class Point2D:
         Point2D(0.0, 0.0)
         """
 
-        self.u = u
-        self.v = v
+        self.x = x
+        self.y = y
 
     def __repr__(self):
         """Returns a string representation of the Point2D object."""
 
-        return "Point2D([" + str(self.u) + ", " + str(self.v) + "])"
+        return "Point2D(" + str(self.x) + ", " + str(self.y) + ")"
 
     def __richcmp__(self, object other, int op):
         """Provides basic point comparison operations."""
 
-        raise NotImplemented
+        cdef Point2D p
 
-        # cdef Point2D p
-        #
-        # if not isinstance(other, Point2D):
-        #     return NotImplemented
-        #
-        # p = <Vector3D> other
-        # if op == 2:     # __eq__()
-        #     return self.x == p.x and self.y == p.y and self.z == p.z
-        # elif op == 3:   # __ne__()
-        #     return self.x != p.x or self.y != p.y or self.z != p.z
-        # else:
-        #     return NotImplemented
+        if not isinstance(other, Point2D):
+            return NotImplemented
+
+        p = <Point2D> other
+        if op == 2:     # __eq__()
+            return self.x == p.x and self.y == p.y
+        elif op == 3:   # __ne__()
+            return self.x != p.x or self.y != p.y
+        else:
+            return NotImplemented
 
     def __getitem__(self, int i):
-        """Returns the point coordinates by index ([0,1] -> [u,v])."""
+        """Returns the point coordinates by index ([0,1] -> [x,y])."""
 
         if i == 0:
-            return self.u
+            return self.x
         elif i == 1:
-            return self.v
+            return self.y
         else:
             raise IndexError("Index out of range [0, 1].")
 
     def __setitem__(self, int i, double value):
-        """Sets the point coordinates by index ([0,1] -> [u,v])."""
+        """Sets the point coordinates by index ([0,1] -> [x,y])."""
 
         if i == 0:
-            self.u = value
+            self.x = value
         elif i == 1:
-            self.v = value
+            self.y = value
         else:
             raise IndexError("Index out of range [0, 1].")
 
@@ -437,13 +435,13 @@ cdef class Point2D:
     def __getstate__(self):
         """Encodes state for pickling."""
 
-        return self.u, self.v
+        return self.x, self.y
 
     def __setstate__(self, state):
         """Decodes state for pickling."""
 
-        self.u = state[0]
-        self.v = state[1]
+        self.x = state[0]
+        self.y = state[1]
 
     # cpdef Vector3D vector_to(self, Point3D p):
     #     """
@@ -459,10 +457,10 @@ cdef class Point2D:
         Returns the distance between this point and the passed point.
         """
 
-        cdef double u, v
-        u = p.u - self.u
-        v = p.v - self.v
-        return sqrt(u*u + v*v)
+        cdef double x, y
+        x = p.x - self.x
+        y = p.y - self.y
+        return sqrt(x*x + y*y)
 
     # @cython.cdivision(True)
     # cpdef Point3D transform(self, AffineMatrix3D m):
@@ -522,7 +520,7 @@ cdef class Point2D:
         """
         Returns a copy of the point.
         """
-        return new_point2d(self.u, self.v)
+        return new_point2d(self.x, self.y)
 
     cdef inline double get_index(self, int index):
         """
@@ -533,9 +531,9 @@ cdef class Point2D:
         If an invalid index is passed this function return NaN.
         """
         if index == 0:
-            return self.u
+            return self.x
         elif index == 1:
-            return self.v
+            return self.y
         else:
             return float("NaN")
 
@@ -548,6 +546,6 @@ cdef class Point2D:
         If an invalid index is passed this function does nothing.
         """
         if index == 0:
-            self.u = value
+            self.x = value
         elif index == 1:
-            self.v = value
+            self.y = value

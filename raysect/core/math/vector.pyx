@@ -57,7 +57,7 @@ cdef class Vector3D(_Vec3):
     def __repr__(self):
         """Returns a string representation of the Vector3D object."""
 
-        return "Vector3D([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
+        return "Vector3D(" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ")"
 
     def __richcmp__(self, object other, int op):
         """Provides basic vector comparison operations."""

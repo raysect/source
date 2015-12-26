@@ -58,7 +58,7 @@ cdef class Normal3D(_Vec3):
     def __repr__(self):
         """Returns a string representation of the Normal3D object."""
 
-        return "Normal3D([" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + "])"
+        return "Normal3D(" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ")"
 
     def __richcmp__(self, object other, int op):
         """Provides basic normal comparison operations."""
