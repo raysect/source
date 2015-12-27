@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.function.function2d cimport Function2D
+from raysect.core.math.point cimport Point2D
 
 
 cdef class Interpolator2DMesh(Function2D):
@@ -40,30 +41,28 @@ cdef class Interpolator2DMesh(Function2D):
         public object kdtree
         public bint kdtree_search
 
-    cdef double evaluate(self, double x, double y) except *
+    # cdef double evaluate(self, double x, double y) except *
+    #
+    # cpdef _Triangle2D find_triangle_containing(self, double u, double v)
+    #
+    # cdef _Triangle2D brute_force_method(self, double u, double v)
+    #
+    # cdef _Triangle2D kdtree_method(self, double u, double v)
+    #
+    # cdef double get_vertex_data(self, int vertex_index)
 
-    cpdef _Triangle2D find_triangle_containing(self, double u, double v)
 
-    cdef _Triangle2D brute_force_method(self, double u, double v)
+cdef class _Vertex2D(Point2D):
 
-    cdef _Triangle2D kdtree_method(self, double u, double v)
-
-    cdef double get_vertex_data(self, int vertex_index)
-
-
-cdef class _Vertex2D:
-
-    cdef:
-        public double u, v
-        public int index
-        public list triangles
+    cdef readonly double value
 
 
 cdef class _Triangle2D:
 
-    cdef:
-        public _Vertex2D v1, v2, v3
+    cdef readonly _Vertex2D v1, v2, v3
 
-    cdef double evaluate(self, double x, double y, Interpolator2DMesh mesh)
+    cdef double interpolate(self, double px, double py)
 
     cdef bint contains(self, double px, double py)
+
+    cdef inline void _calc_barycentric_coords(self, double px, double py, double *alpha, double *beta, double *gamma)
