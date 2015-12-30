@@ -46,6 +46,7 @@ DEF X = 0
 DEF Y = 1
 
 # todo: add docstrings
+# todo: add validation
 
 cdef class Interpolator2DMesh(Function2D):
     """
@@ -60,13 +61,13 @@ cdef class Interpolator2DMesh(Function2D):
         double _default_value
 
     def __init__(self, object vertex_coords not None, object vertex_data not None, object triangles not None, bint limit=True, double default_value=0.0):
-        """
-        :param ndarray vertex_coords: An array of vertex coordinates with shape (num of vertices, 2). For each vertex
-        there must be a (u, v) coordinate.
-        :param ndarray vertex_data: An array of data points at each vertex with shape (num of vertices).
-        :param ndarray triangles: An array of triangles with shape (num of triangles, 3). For each triangle, there must
-        be three indices that identify the three corresponding vertices in vertex_coords that make up this triangle.
-        """
+        # """
+        # :param ndarray vertex_coords: An array of vertex coordinates with shape (num of vertices, 2). For each vertex
+        # there must be a (u, v) coordinate.
+        # :param ndarray vertex_data: An array of data points at each vertex with shape (num of vertices).
+        # :param ndarray triangles: An array of triangles with shape (num of triangles, 3). For each triangle, there must
+        # be three indices that identify the three corresponding vertices in vertex_coords that make up this triangle.
+        # """
 
         # convert to ndarrays for processing
         self._vertex_coords = np.array(vertex_coords, dtype=np.float64)
@@ -121,9 +122,13 @@ cdef class Interpolator2DMesh(Function2D):
 
         return m
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cdef double evaluate(self, double x, double y) except *:
 
-        cdef double alpha, beta, gamma
+        cdef:
+            np.int64_t triangle
+            double alpha, beta, gamma
 
         # TODO: replace this with the kdtree, this is brute force and slow
         # check if point lies in any triangle and interpolate data inside the triangle it lies inside, if it does
@@ -193,7 +198,7 @@ cdef class Interpolator2DMesh(Function2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _interpolate(self, int triangle, double px, double py, double alpha, double beta, double gamma):
+    cdef inline double _interpolate(self, np.int64_t triangle, double px, double py, double alpha, double beta, double gamma):
 
         cdef:
             np.int64_t[:, ::1] triangles
