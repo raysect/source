@@ -90,7 +90,9 @@ cdef class Interpolator2DMesh(Function2D):
     @classmethod
     def instance(cls, Interpolator2DMesh instance not None, object vertex_data=None, object limit=None, object default_value=None):
 
-        m = cls.__new__(cls)
+        cdef Interpolator2DMesh m
+
+        m = Interpolator2DMesh.__new__(Interpolator2DMesh)
 
         # todo: update when kdtree added
         # copy source data
