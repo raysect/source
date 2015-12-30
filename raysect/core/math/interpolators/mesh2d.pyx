@@ -46,6 +46,8 @@ DEF V3 = 2
 DEF X = 0
 DEF Y = 1
 
+# TODO: split instance into its own method (e.g. mymesh.instance(vertex_data=...)), current init interface is messy
+
 
 cdef class Interpolator2DMesh(Function2D):
     """
