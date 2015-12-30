@@ -33,7 +33,18 @@ from scipy.spatial import KDTree
 import numpy as np
 cimport numpy as np
 import matplotlib.pyplot as plt
+
+from raysect.core.math.function.function2d cimport Function2D
+from raysect.core.math.point cimport Point2D
 cimport cython
+
+# convenience defines
+DEF V1 = 0
+DEF V2 = 1
+DEF V3 = 2
+
+DEF X = 0
+DEF Y = 1
 
 
 cdef class Interpolator2DMesh(Function2D):
@@ -41,7 +52,14 @@ cdef class Interpolator2DMesh(Function2D):
     An abstract data structure for interpolating data points lying on a triangular mesh.
     """
 
-    def __init__(self, vertex_coords, vertex_data, triangles, kdtree_search=True):
+    cdef:
+        double[:, ::1] _vertex_coords
+        double[::1] _vertex_data
+        int[:, ::1] _triangles
+        bint _default_enabled
+        double _default_value
+
+    def __init__(self, object vertex_coords not None, object vertex_data not None, object triangles not None, object default_value=None):
         """
         :param ndarray vertex_coords: An array of vertex coordinates with shape (num of vertices, 2). For each vertex
         there must be a (u, v) coordinate.
@@ -50,7 +68,129 @@ cdef class Interpolator2DMesh(Function2D):
         be three indices that identify the three corresponding vertices in vertex_coords that make up this triangle.
         """
 
-        pass
+        # convert to ndarrays for processing
+        self._vertex_coords = np.array(vertex_coords, dtype=np.float64)
+        self._vertex_data = np.array(vertex_data, dtype=np.float64)
+        self._triangles = np.array(triangles, dtype=int)
+
+        # validate data
+        # check sizes
+        # check indices are in valid ranges
+
+        # convert value to cython type for speed
+        if default_value:
+            self._default_enabled = True
+            self._default_value = default_value
+        else:
+            self._default_enabled = False
+
+        # build kdtree
+        # TODO: write me
+
+        # check if triangles are overlapping
+        # (any non-owned vertex lying inside another triangle)
+        # TODO: write me (needs kdtree to be efficient)
+
+    cdef double evaluate(self, double x, double y) except *:
+
+        cdef double alpha, beta, gamma
+
+        # TODO: replace this with the kdtree, this is brute force and slow
+        # check if point lies in any triangle and interpolate data inside the triangle it lies inside, if it does
+        for triangle in range(self._triangles.shape[0]):
+            self._calc_barycentric_coords(triangle, x, y, &alpha, &beta, &gamma)
+            if self._contains(alpha, beta, gamma):
+                return self._interpolate(triangle, x, y, alpha, beta, gamma)
+
+        if self._default_enabled:
+            return self._default_value
+
+        raise ValueError("Requested value outside mesh bounds.")
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef inline void _calc_barycentric_coords(self, int triangle, double px, double py, double *alpha, double *beta, double *gamma):
+
+        cdef:
+            int[:, ::1] triangles
+            double[:, ::1] vertex_coords
+            int i1, i2, i3
+            double v1x, v2x, v3x, v1y, v2y, v3y
+            double x1, x2, x3, y1, y2, y3
+            double norm
+
+        # cache locally to avoid pointless memory view checks
+        triangles = self._triangles
+        vertex_coords = self._vertex_coords
+
+        # obtain vertex indices
+        i1 = triangles[triangle, V1]
+        i2 = triangles[triangle, V2]
+        i3 = triangles[triangle, V3]
+
+        # obtain the vertex coords
+        v1x = vertex_coords[i1, X]
+        v1y = vertex_coords[i1, Y]
+
+        v2x = vertex_coords[i2, X]
+        v2y = vertex_coords[i2, Y]
+
+        v3x = vertex_coords[i3, X]
+        v3y = vertex_coords[i3, Y]
+
+        # compute common values
+        x1 = v1x - v3x
+        x2 = v3x - v2x
+        x3 = px - v3x
+
+        y1 = v1y - v3y
+        y2 = v2y - v3y
+        y3 = py - v3y
+
+        norm = 1 / (x1 * y2 + y1 * x2)
+
+        # compute barycentric coordinates
+        alpha[0] = norm * (x2 * y3 + y2 * x3)
+        beta[0] = norm * (x1 * y3 - y1 * x3)
+        gamma[0] = 1.0 - alpha[0] - beta[0]
+
+    cdef inline bint _contains(self, double alpha, double beta, double gamma):
+
+        # Point is inside triangle if all coordinates lie in range [0, 1]
+        # if all are > 0 then none can be > 1 from definition of barycentric coordinates
+        return alpha >= 0 and beta >= 0 and gamma >= 0
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline double _interpolate(self, int triangle, double px, double py, double alpha, double beta, double gamma):
+
+        cdef:
+            int[:, ::1] triangles
+            double[::1] vertex_data
+            int i1, i2, i3
+            double v1, v2, v3
+
+        # cache locally to avoid pointless memory view checks
+        triangles = self._triangles
+        vertex_data = self._vertex_data
+
+        # obtain the vertex indices
+        i1 = triangles[triangle, V1]
+        i2 = triangles[triangle, V2]
+        i3 = triangles[triangle, V3]
+
+        # obtain the vertex data
+        v1 = vertex_data[i1]
+        v2 = vertex_data[i2]
+        v3 = vertex_data[i3]
+
+        # barycentric interpolation
+        return alpha * v1 + beta * v2 + gamma * v3
+
+
+
+
 
     #     self.vertices = np.zeros((vertex_coords.shape[0]), dtype=object)
     #     for index, vertex in enumerate(vertex_coords):
@@ -153,70 +293,3 @@ cdef class Interpolator2DMesh(Function2D):
     #     new_mesh.kdtree_search = self.kdtree_search
     #     return new_mesh
 
-
-cdef class _Vertex2D(Point2D):
-    """
-    An individual vertex of the mesh.
-    """
-
-    def __init__(self, x, y, value):
-        super().__init__(x, y)
-        self.value = value
-
-    def __repr__(self):
-        return "_Vertex2D({}, {}, {})".format(self.x, self.y, self.value)
-
-
-cdef class _Triangle2D:
-
-    def __init__(self, v1, v2, v3):
-        self.v1 = v1
-        self.v2 = v2
-        self.v3 = v3
-
-    def __iter__(self):
-        yield(self.v1)
-        yield(self.v2)
-        yield(self.v3)
-
-    def __repr__(self):
-        return "_Triangle2D({}, {}, {})".format(self.v1, self.v2, self.v3)
-
-    cdef double interpolate(self, double px, double py):
-
-        cdef double alpha, beta, gamma
-        self._calc_barycentric_coords(px, py, &alpha, &beta, &gamma)
-        return alpha * self.v1.value + beta * self.v2.value + gamma * self.v3.value
-
-    cdef bint contains(self, double px, double py):
-        """
-        Test if a 2D point lies inside this triangle.
-        """
-
-        cdef double alpha, beta, gamma
-        self._calc_barycentric_coords(px, py, &alpha, &beta, &gamma)
-
-        # Point is inside triangle if all coordinates lie in range [0, 1]
-        # if all are > 0 then none can be > 1 from definition of barycentric coordinates
-        return alpha > 0 and beta > 0 and gamma > 0
-
-    @cython.cdivision(True)
-    cdef inline void _calc_barycentric_coords(self, double px, double py, double *alpha, double *beta, double *gamma):
-
-        cdef:
-            double x1, x2, x3, y1, y2, y3, norm
-
-        x1 = self.v1.x - self.v3.x
-        x2 = self.v3.x - self.v2.x
-        x3 = px - self.v3.x
-
-        y1 = self.v1.y - self.v3.y
-        y2 = self.v2.y - self.v3.y
-        y3 = py - self.v3.y
-
-        norm = 1 / (x1 * y2 + y1 * x2)
-
-        # compute barycentric coordinates
-        alpha[0] = norm * (x2 * y3 + y2 * x3)
-        beta[0] = norm * (x1 * y3 - y1 * x3)
-        gamma[0] = 1.0 - alpha[0] - beta[0]
