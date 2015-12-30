@@ -35,7 +35,6 @@ cimport numpy as np
 import matplotlib.pyplot as plt
 
 from raysect.core.math.function.function2d cimport Function2D
-from raysect.core.math.point cimport Point2D
 cimport cython
 
 # convenience defines
@@ -46,8 +45,7 @@ DEF V3 = 2
 DEF X = 0
 DEF Y = 1
 
-# TODO: split instance into its own class method (e.g. Interpolator2DMesh.instance(vertex_data=...)), current init interface is messy
-
+# todo: add docstrings
 
 cdef class Interpolator2DMesh(Function2D):
     """
@@ -61,7 +59,7 @@ cdef class Interpolator2DMesh(Function2D):
         bint _limit
         double _default_value
 
-    def __init__(self, object vertex_coords=None, object vertex_data=None, object triangles=None, object limit=None, object default_value=None, Interpolator2DMesh instance=None):
+    def __init__(self, object vertex_coords not None, object vertex_data not None, object triangles not None, bint limit=True, double default_value=0.0):
         """
         :param ndarray vertex_coords: An array of vertex coordinates with shape (num of vertices, 2). For each vertex
         there must be a (u, v) coordinate.
@@ -70,64 +68,56 @@ cdef class Interpolator2DMesh(Function2D):
         be three indices that identify the three corresponding vertices in vertex_coords that make up this triangle.
         """
 
-        if instance is None:
+        # convert to ndarrays for processing
+        self._vertex_coords = np.array(vertex_coords, dtype=np.float64)
+        self._vertex_data = np.array(vertex_data, dtype=np.float64)
+        self._triangles = np.array(triangles, dtype=np.int64)
 
-            if vertex_coords is None or vertex_data is None or triangles is None:
-                raise ValueError("At least vertex_coords, vertex_data and triangles or instance must be specified.")
+        # validate data
+        # check sizes
+        # check indices are in valid ranges
 
-            # convert to ndarrays for processing
-            self._vertex_coords = np.array(vertex_coords, dtype=np.float64)
-            self._vertex_data = np.array(vertex_data, dtype=np.float64)
-            self._triangles = np.array(triangles, dtype=np.int64)
+        # build kdtree
+        # TODO: write me
 
-            # validate data
-            # check sizes
-            # check indices are in valid ranges
+        # check if triangles are overlapping
+        # (any non-owned vertex lying inside another triangle)
+        # TODO: write me (needs kdtree to be efficient)
 
-            # build kdtree
-            # TODO: write me
+        self._default_value = default_value
+        self._limit = limit
 
-            # check if triangles are overlapping
-            # (any non-owned vertex lying inside another triangle)
-            # TODO: write me (needs kdtree to be efficient)
+    @classmethod
+    def instance(cls, Interpolator2DMesh instance not None, object vertex_data=None, object limit=None, object default_value=None):
 
-            # None is used to identify when instances are permitted to pass through their default_value
-            if default_value is None:
-                self._default_value = 0.0
-            else:
-                self._default_value = default_value
+        m = cls.__new__(cls)
 
-            # None is used to identify when instances are permitted to pass through their limit setting
-            if limit is None:
-                self._limit = True
-            else:
-                self._limit = limit
+        # todo: update when kdtree added
+        # copy source data
+        m._vertex_coords = instance._vertex_coords
+        m._triangles = instance._triangles
+        # m._kdtree = instance._kdtree
 
+        # do we have replacement vertex data?
+        if vertex_data is None:
+            m._vertex_data = instance._vertex_data
         else:
+            m._vertex_data = np.array(vertex_data, dtype=np.float64)
+            # TODO: validate
 
-            # todo: update when kdtree added
-            # copy source data
-            self._vertex_coords = instance._vertex_coords
-            self._triangles = instance._triangles
-            # self._kdtree = instance._kdtree
+        # do we have a replacement limit check setting?
+        if limit is None:
+            m._limit = instance._limit
+        else:
+            m._limit = limit
 
-            # do we have replacement vertex data?
-            if vertex_data is None:
-                self._vertex_data = instance._vertex_data
-            else:
-                self._vertex_data = np.array(vertex_data, dtype=np.float64)
+        # do we have a replacement default value?
+        if default_value is None:
+            m._default_value = instance._default_value
+        else:
+            m._default_value = default_value
 
-            # do we have a replacement default value?
-            if default_value is None:
-                self._default_value = instance._default_value
-            else:
-                self._default_value = default_value
-
-            # do w have a replacement limit check setting?
-            if limit is None:
-                self._limit = instance._limit
-            else:
-                self._limit = limit
+        return m
 
     cdef double evaluate(self, double x, double y) except *:
 
