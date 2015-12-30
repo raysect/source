@@ -17,9 +17,16 @@ edens_data = np.array(vertex_data[:, 2])
 etemp_data = np.array(vertex_data[:, 3])
 
 ion_dens = Interpolator2DMesh(vertex_coords, ion_dens_data, triangles, limit=False, default_value=0)
-atom_dens = Interpolator2DMesh(instance=ion_dens, vertex_data=atom_dens_data, limit=False, default_value=0)
-electron_dens = Interpolator2DMesh(instance=ion_dens, vertex_data=edens_data, limit=False, default_value=0)
-electron_temp = Interpolator2DMesh(instance=ion_dens, vertex_data=etemp_data, limit=False, default_value=0)
+
+atom_dens = Interpolator2DMesh(instance=ion_dens, vertex_data=atom_dens_data)
+electron_dens = Interpolator2DMesh(instance=ion_dens, vertex_data=edens_data)
+electron_temp = Interpolator2DMesh(instance=ion_dens, vertex_data=etemp_data)
+
+# future api?
+# atom_dens = Interpolator2DMesh.instance(ion_dens, vertex_data=atom_dens_data)
+# electron_dens = Interpolator2DMesh.instance(ion_dens, vertex_data=edens_data)
+# electron_temp = Interpolator2DMesh.instance(ion_dens, vertex_data=etemp_data)
+
 
 plt.ioff()
 # ion_dens.plot_mesh()
