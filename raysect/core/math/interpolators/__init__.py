@@ -1,2 +1,1 @@
-
-from .Interpolator2DMesh import Interpolator2DMesh
+from .mesh2d import Interpolator2DMesh

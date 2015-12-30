@@ -55,11 +55,11 @@ cdef class Interpolator2DMesh(Function2D):
     cdef:
         double[:, ::1] _vertex_coords
         double[::1] _vertex_data
-        int[:, ::1] _triangles
-        bint _default_enabled
+        np.int64_t[:, ::1] _triangles
+        bint _limit
         double _default_value
 
-    def __init__(self, object vertex_coords not None, object vertex_data not None, object triangles not None, object default_value=None):
+    def __init__(self, object vertex_coords=None, object vertex_data=None, object triangles=None, object limit=None, object default_value=None, Interpolator2DMesh instance=None):
         """
         :param ndarray vertex_coords: An array of vertex coordinates with shape (num of vertices, 2). For each vertex
         there must be a (u, v) coordinate.
@@ -68,28 +68,64 @@ cdef class Interpolator2DMesh(Function2D):
         be three indices that identify the three corresponding vertices in vertex_coords that make up this triangle.
         """
 
-        # convert to ndarrays for processing
-        self._vertex_coords = np.array(vertex_coords, dtype=np.float64)
-        self._vertex_data = np.array(vertex_data, dtype=np.float64)
-        self._triangles = np.array(triangles, dtype=int)
+        if instance is None:
 
-        # validate data
-        # check sizes
-        # check indices are in valid ranges
+            if vertex_coords is None or vertex_data is None or triangles is None:
+                raise ValueError("At least vertex_coords, vertex_data and triangles or instance must be specified.")
 
-        # convert value to cython type for speed
-        if default_value:
-            self._default_enabled = True
-            self._default_value = default_value
+            # convert to ndarrays for processing
+            self._vertex_coords = np.array(vertex_coords, dtype=np.float64)
+            self._vertex_data = np.array(vertex_data, dtype=np.float64)
+            self._triangles = np.array(triangles, dtype=np.int64)
+
+            # validate data
+            # check sizes
+            # check indices are in valid ranges
+
+            # build kdtree
+            # TODO: write me
+
+            # check if triangles are overlapping
+            # (any non-owned vertex lying inside another triangle)
+            # TODO: write me (needs kdtree to be efficient)
+
+            # None is used to identify when instances are permitted to pass through their default_value
+            if default_value is None:
+                self._default_value = 0.0
+            else:
+                self._default_value = default_value
+
+            # None is used to identify when instances are permitted to pass through their limit setting
+            if limit is None:
+                self._limit = True
+            else:
+                self._limit = limit
+
         else:
-            self._default_enabled = False
 
-        # build kdtree
-        # TODO: write me
+            # todo: update when kdtree added
+            # copy source data
+            self._vertex_coords = instance._vertex_coords
+            self._triangles = instance._triangles
+            # self._kdtree = instance._kdtree
 
-        # check if triangles are overlapping
-        # (any non-owned vertex lying inside another triangle)
-        # TODO: write me (needs kdtree to be efficient)
+            # do we have replacement vertex data?
+            if vertex_data is None:
+                self._vertex_data = instance._vertex_data
+            else:
+                self._vertex_data = np.array(vertex_data, dtype=np.float64)
+
+            # do we have a replacement default value?
+            if default_value is None:
+                self._default_value = instance._default_value
+            else:
+                self._default_value = default_value
+
+            # do w have a replacement limit check setting?
+            if limit is None:
+                self._limit = instance._limit
+            else:
+                self._limit = limit
 
     cdef double evaluate(self, double x, double y) except *:
 
@@ -102,7 +138,7 @@ cdef class Interpolator2DMesh(Function2D):
             if self._contains(alpha, beta, gamma):
                 return self._interpolate(triangle, x, y, alpha, beta, gamma)
 
-        if self._default_enabled:
+        if not self._limit:
             return self._default_value
 
         raise ValueError("Requested value outside mesh bounds.")
@@ -110,10 +146,10 @@ cdef class Interpolator2DMesh(Function2D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef inline void _calc_barycentric_coords(self, int triangle, double px, double py, double *alpha, double *beta, double *gamma):
+    cdef inline void _calc_barycentric_coords(self, np.int64_t triangle, double px, double py, double *alpha, double *beta, double *gamma):
 
         cdef:
-            int[:, ::1] triangles
+            np.int64_t[:, ::1] triangles
             double[:, ::1] vertex_coords
             int i1, i2, i3
             double v1x, v2x, v3x, v1y, v2y, v3y
@@ -166,7 +202,7 @@ cdef class Interpolator2DMesh(Function2D):
     cdef inline double _interpolate(self, int triangle, double px, double py, double alpha, double beta, double gamma):
 
         cdef:
-            int[:, ::1] triangles
+            np.int64_t[:, ::1] triangles
             double[::1] vertex_data
             int i1, i2, i3
             double v1, v2, v3

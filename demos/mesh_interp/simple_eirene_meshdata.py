@@ -10,11 +10,10 @@ vertices = np.array([[267.709991, -89.156998], [266.410004, -93.556999], [266.73
 
 vertex_data = np.array([1, 2, 3, 4, 25, 6, 7, 8, 9, 10], dtype=np.float64)
 
-triangles = np.array([[1, 2, 4], [2, 3, 4], [4, 3, 6], [3, 5, 6], [6, 5, 8], [5, 7, 8], [8, 7, 10], [7, 9, 10]],
-                     dtype=np.int32) - 1
+triangles = np.array([[1, 2, 4], [2, 3, 4], [4, 3, 6], [3, 5, 6], [6, 5, 8], [5, 7, 8], [8, 7, 10], [7, 9, 10]]) - 1
 
-linerad = Interpolator2DMesh(vertices, vertex_data, triangles, kdtree_search=True)
-linerad.plot_mesh()
+linerad = Interpolator2DMesh(vertices, vertex_data, triangles, limit=False, default_value=0)
+# linerad.plot_mesh()
 
 # Sample mesh for imshow test
 samples = np.zeros((300, 200))
