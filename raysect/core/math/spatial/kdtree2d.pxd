@@ -86,6 +86,16 @@ cdef class KDTree2DCore:
 
     cdef int32_t _new_node(self)
 
+    cpdef bint hit(self, Point2D point)
+
+    cdef inline bint _hit(self, Point2D point)
+
+    cdef inline bint _hit_node(self, int32_t id, Point2D point)
+
+    cdef inline bint _hit_branch(self, int32_t id, Point2D point)
+
+    cdef bint _hit_leaf(self, int32_t id, Point2D point)
+
     cpdef list contains(self, Point2D point)
 
     cdef inline list _contains(self, Point2D point)
@@ -100,6 +110,10 @@ cdef class KDTree2DCore:
 
 
 cdef class KDTree2D(KDTree2DCore):
+
+    cdef bint _hit_leaf(self, int32_t id, Point2D point)
+
+    cpdef bint _hit_items(self, list items, Point2D point)
 
     cdef list _contains_leaf(self, int32_t id, Point2D point)
 

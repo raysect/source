@@ -957,6 +957,10 @@ cdef class KDTree3D(KDTree3DCore):
         :return: True is a hit occurs, false otherwise.
         """
 
+        cdef:
+            int32_t index
+            list items
+
         # convert list of items in C-array into a list
         items = []
         for index in range(self._nodes[id].count):
@@ -998,6 +1002,10 @@ cdef class KDTree3D(KDTree3DCore):
         :param point: Point3D to evaluate.
         :return: List of nodes containing the point.
         """
+
+        cdef:
+            int32_t index
+            list items
 
         # convert list of items in C-array into a list
         items = []

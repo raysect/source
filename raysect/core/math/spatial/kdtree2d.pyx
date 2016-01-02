@@ -469,6 +469,95 @@ cdef class KDTree2DCore:
         self._next_node += 1
         return id
 
+    cpdef bint hit(self, Point2D point):
+        """
+        Traverses the kd-Tree to identify if the point is contained by an item.
+
+        :param point: A Point2D object.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        return self._hit(point)
+
+    cdef inline bint _hit(self, Point2D point):
+        """
+        Starts contains traversal of the kd-Tree.
+
+        :param point: A Point2D object.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        # exit early if point is not inside bounds of the kd-Tree
+        if not self.bounds.contains(point):
+            return False
+
+        # start search
+        return self._hit_node(ROOT_NODE, point)
+
+    cdef inline bint _hit_node(self, int32_t id, Point2D point):
+        """
+        Dispatches contains point look-ups to the relevant node handler.
+
+        :param id: Index of node in node array.
+        :param point: Point2D to evaluate.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        if self._nodes[id].type == LEAF:
+            return self._hit_leaf(id, point)
+        else:
+            return self._hit_branch(id, point)
+
+    cdef inline bint _hit_branch(self, int32_t id, Point2D point):
+        """
+        Locates the kd-Tree node containing the point.
+
+        :param id: Index of node in node array.
+        :param point: Point2D to evaluate.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        cdef:
+            int32_t axis
+            double split
+            int32_t lower_id, upper_id
+
+        # unpack branch kdnode
+        # notes:
+        #  * the branch type enumeration is the same as axis index
+        #  * the lower_id is always the next node in the array
+        #  * the upper_id is stored in the count attribute
+        axis = self._nodes[id].type
+        split = self._nodes[id].split
+        lower_id = id + 1
+        upper_id = self._nodes[id].count
+
+        if point.get_index(axis) < split:
+            return self._hit_node(lower_id, point)
+        else:
+            return self._hit_node(upper_id, point)
+
+    cdef bint _hit_leaf(self, int32_t id, Point2D point):
+        """
+        Tests each item in the node to identify if they enclose the point.
+
+        This is a virtual method and must be implemented in a derived class if
+        the identification of an item enclosing a point is required. This method
+        must return True is the point lies inside an item or False otherwise.
+
+        Derived classes may need to wish to return additional information about
+        the enclosing item(s). This can be done by setting object attributes
+        prior to returning. Any attributes set when _hit_leaf() returns are
+        guaranteed not to be further modified.
+
+        :param id: Index of node in node array.
+        :param point: Point2D to evaluate.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        # virtual function that must be implemented by derived classes
+        raise NotImplementedError("KDTree2DCore _hit_leaf() method not implemented.")
+
     cpdef list contains(self, Point2D point):
         """
         Traverses the kd-Tree to find the items that contain the specified point.
@@ -621,6 +710,49 @@ cdef class KDTree2D(KDTree2DCore):
     :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
     """
 
+    cdef bint _hit_leaf(self, int32_t id, Point2D point):
+        """
+        Wraps the C-level API so users can derive a class from KDTree2D using Python.
+
+        Converts the arguments to types accessible from Python and re-exposes
+        _hit_leaf() as the Python accessible method _hit_items().
+
+        :param id: Index of node in node array.
+        :param point: Point2D to evaluate.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        cdef:
+            int32_t index
+            list items
+
+        # convert list of items in C-array into a list
+        items = []
+        for index in range(self._nodes[id].count):
+            items.append(self._nodes[id].items[index])
+
+        return self._hit_items(items, point)
+
+    cpdef bint _hit_items(self, list item_ids, Point2D point):
+        """
+        Tests each item in the list to identify if any enclose the point.
+
+        This is a virtual method and must be implemented in a derived class if
+        the identification of an item enclosing a point is required. This method
+        must return True is the point lies inside an item or False otherwise.
+
+        Derived classes may need to wish to return additional information about
+        the enclosing item(s). This can be done by setting object attributes
+        prior to returning. Any attributes set when _hit_items() returns are
+        guaranteed not to be further modified.
+
+        :param item_ids: List of item ids.
+        :param point: Point2D to evaluate.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        raise NotImplementedError("KDTree2D Virtual function _hit_items() has not been implemented.")
+
     cdef list _contains_leaf(self, int32_t id, Point2D point):
         """
         Wraps the C-level API so users can derive a class from KDTree2D using Python.
@@ -632,6 +764,10 @@ cdef class KDTree2D(KDTree2DCore):
         :param point: Point2D to evaluate.
         :return: List of nodes containing the point.
         """
+
+        cdef:
+            int32_t index
+            list items
 
         # convert list of items in C-array into a list
         items = []
@@ -658,6 +794,5 @@ cdef class KDTree2D(KDTree2DCore):
         :param point: Point2D to evaluate.
         :return: List of ids of the items containing the point.
         """
-
 
         raise NotImplementedError("KDTree2D Virtual function _contains_items() has not been implemented.")
