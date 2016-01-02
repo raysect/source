@@ -92,7 +92,7 @@
 from os import urandom as _urandom
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.point cimport new_point3d
-from libc.math cimport cos, sin, sqrt, M_PI as PI
+from libc.math cimport cos, sin, sqrt, log, fabs, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
 cimport cython
 
@@ -250,6 +250,32 @@ cpdef double random():
     return (_rand_uint64() >> 11) * (1.0 / 9007199254740992.0)
 
 
+# State variables used by the Box-Muller transform method
+cdef public bint generate_new_pair = True
+cdef public double spare_random_number
+
+
+cpdef double normally_distributed_random():
+    """
+    Generate a normally distributed random number.
+
+    This method uses the Box–Muller transform.
+
+    :return: Random double.
+    """
+    cdef double u1, u2
+    global generate_new_pair, spare_random_number
+
+    # toggle state of pair generation flag
+    generate_new_pair = not generate_new_pair
+
+    if not generate_new_pair:
+        return spare_random_number
+    else:
+        spare_random_number = sqrt(-2*log(u1))*sin(2*PI*u2)
+        return sqrt(-2*log(u1))*cos(2*PI*u2)
+
+
 cpdef bint probability(double prob):
     """
     Samples from the Bernoulli distribution where P(True) = prob.
@@ -281,12 +307,36 @@ cpdef Point3D point_disk():
     return new_point3d(r * cos(theta), r * sin(theta), 0)
 
 
-# cpdef Vector3D vector_sphere():
-#     pass
+cpdef Vector3D vector_sphere():
+    """
+    Generate a randomly distributed unit vector.
+
+    If called N times, this function will generate N vectors on the unit sphere with an isotropic distribution.
+
+    :return: A random Vector3D on the unit sphere.
+    """
+
+    cdef double x, y, z
+
+    x = normally_distributed_random()
+    y = normally_distributed_random()
+    z = normally_distributed_random()
+
+    return new_vector3d(x, y, z).normalise()
 
 
-# cpdef Vector3D vector_hemisphere_uniform():
-#     pass
+cpdef Vector3D vector_hemisphere_uniform():
+    """
+    Generate a randomly distributed unit vector on a hemisphere defined by z>0 centred on the origin.
+
+    If called N times, this function will generate N vectors on the unit hemisphere with an isotropic distribution.
+
+    :return: A random Vector3D on the unit hemisphere.
+    """
+    cdef Vector3D v
+
+    v = vector_sphere()
+    return new_vector3d(v.x, v.y, fabs(v.z))
 
 
 cpdef Vector3D vector_hemisphere_cosine():

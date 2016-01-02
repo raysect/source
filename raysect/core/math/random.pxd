@@ -36,9 +36,15 @@ cpdef seed(object d=*)
 
 cpdef double random()
 
+cpdef double normally_distributed_random()
+
 cpdef bint probability(double prob)
 
 cpdef Point3D point_disk()
+
+cpdef Vector3D vector_sphere()
+
+cpdef Vector3D vector_hemisphere_uniform()
 
 cpdef Vector3D vector_hemisphere_cosine()
 
