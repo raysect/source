@@ -40,7 +40,7 @@ from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.point cimport Point3D, new_point3d
 from raysect.core.math.vector cimport Vector3D, new_vector3d
-from raysect.core.math.kdtree cimport KDTreeCore, Item
+from raysect.core.math.spatial.kdtree3d cimport KDTree3DCore, Item3D
 from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
 from raysect.core.boundingbox cimport BoundingBox3D, new_boundingbox3d
 from libc.math cimport fabs
@@ -90,7 +90,7 @@ DEF RSM_VERSION_MINOR = 0
 # TODO: the following code really is a bit opaque, needs a general tidy up
 # TODO: move load/save code to C?
 
-cdef class MeshData(KDTreeCore):
+cdef class MeshData(KDTree3DCore):
     """
     Holds the mesh data and acceleration structures.
 
@@ -172,7 +172,7 @@ cdef class MeshData(KDTreeCore):
         # kd-Tree init requires the triangle's id (it's index here) and bounding box
         items = []
         for i in range(self.triangles.shape[0]):
-            items.append(Item(i, self._generate_bounding_box(i)))
+            items.append(Item3D(i, self._generate_bounding_box(i)))
 
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
 
@@ -946,7 +946,7 @@ cdef class Mesh(Primitive):
     align as the triangle edges are treated as part of the triangle surface).
 
     The kdtree_* arguments are tuning parameters for the kd-tree construction.
-    For more information see the documentation of KDTree. The default values
+    For more information see the documentation of KDTree3D. The default values
     should result in efficient construction of the mesh's internal kd-tree.
     Generally there is no need to modify these parameters unless the memory
     used by the kd-tree must be controlled. This may occur if very large meshes

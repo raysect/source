@@ -32,7 +32,7 @@
 import io
 import struct
 
-from raysect.core.boundingbox cimport new_boundingbox3d
+from raysect.core.boundingbox cimport new_boundingbox2d
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from cpython.bytes cimport PyBytes_AsString
 from libc.stdlib cimport qsort
@@ -50,12 +50,11 @@ DEF ROOT_NODE = 0
 DEF LEAF = -1    # leaf node
 DEF X_AXIS = 0  # branch, x-axis split
 DEF Y_AXIS = 1  # branch, y-axis split
-DEF Z_AXIS = 2  # branch, z-axis split
 
 
-cdef class Item:
+cdef class Item2D:
     """
-    Item class. Represents an item to place into the kd-tree.
+    Item2D class. Represents an item to place into the kd-tree.
 
     The id should be a unique integer value identifying an external object.
     For example the id could be the index into an array of polygon objects.
@@ -66,10 +65,10 @@ cdef class Item:
     item along each axis. This data is used to place the items in the tree.
 
     :param id: An integer item id.
-    :param box: A BoundingBox3D object defining the item's spatial extent.
+    :param box: A BoundingBox2D object defining the item's spatial extent.
     """
 
-    def __init__(self, int32_t id, BoundingBox3D box):
+    def __init__(self, int32_t id, BoundingBox2D box):
 
         self.id = id
         self.box = box
@@ -96,13 +95,13 @@ cdef int _edge_compare(const void *p1, const void *p2) nogil:
         return 1
 
 
-cdef class KDTreeCore:
+cdef class KDTree2DCore:
     """
-    Implements a 3D kd-tree for items with finite extents.
+    Implements a 2D kd-tree for items with finite extents.
 
     This is a Cython abstract base class. It cannot be directly extended in
     Python due to the need to implement cdef methods _contains_leaf() and
-     _hit_leaf(). Use the KDTree wrapper class if extending from Python.
+     _hit_leaf(). Use the KDTree2D wrapper class if extending from Python.
 
     :param items: A list of Items.
     :param max_depth: The maximum tree depth (automatic if set to 0, default is 0).
@@ -122,7 +121,7 @@ cdef class KDTreeCore:
     def __init__(self, list items, int32_t max_depth=0, int32_t min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         cdef:
-            Item item
+            Item2D item
 
         # sanity check
         if empty_bonus < 0.0 or empty_bonus > 1.0:
@@ -141,66 +140,21 @@ cdef class KDTreeCore:
             self._max_depth = <int32_t> ceil(8 + 1.3 * log(len(items)))
 
         # calculate kd-tree bounds
-        self.bounds = BoundingBox3D()
+        self.bounds = BoundingBox2D()
         for item in items:
             self.bounds.union(item.box)
 
         # start build
         self._build(items, self.bounds)
 
-    # def __getstate__(self):
-    #     """Encodes state for pickling."""
-    #
-    #     # encode nodes
-    #     nodes = []
-    #     for id in range(self._next_node):
-    #         if self._nodes[id].type == LEAF:
-    #             items = []
-    #             for item in range(self._nodes[id].count):
-    #                 items.append(self._nodes[id].items[item])
-    #             node = (self._nodes[id].type, items)
-    #         else:
-    #             node = (self._nodes[id].type, (self._nodes[id].split, self._nodes[id].count))
-    #         nodes.append(node)
-    #
-    #     # encode settings
-    #     settings = (self._max_depth, self._min_items, self._hit_cost, self._empty_bonus)
-    #
-    #     state = (self.bounds, tuple(nodes), settings)
-    #     return state
-    #
-    # def __setstate__(self, tuple state):
-    #     """Decodes state for pickling."""
-    #
-    #     self.bounds, nodes, settings = state
-    #
-    #     # reset the object
-    #     self._reset()
-    #
-    #     # decode nodes
-    #     for node in nodes:
-    #         type, data = node
-    #         if type == LEAF:
-    #             items = [Item(id, None) for id in data]
-    #             self._new_leaf(items)
-    #         else:
-    #             split, count = data
-    #             id = self._new_node()
-    #             self._nodes[id].type = type
-    #             self._nodes[id].split = split
-    #             self._nodes[id].count = count
-    #
-    #     # decode settings
-    #     self._max_depth, self._min_items, self._hit_cost, self._empty_bonus = settings
-
-    cdef int32_t _build(self, list items, BoundingBox3D bounds, int32_t depth=0):
+    cdef int32_t _build(self, list items, BoundingBox2D bounds, int32_t depth=0):
         """
         Extends the kd-Tree by creating a new node.
 
         Attempts to partition space for efficient traversal.
 
         :param items: A list of items.
-        :param bounds: A BoundingBox3D defining the node bounds.
+        :param bounds: A BoundingBox2D defining the node bounds.
         :param depth: The current tree depth.
         :return: The id (index) of the generated node.
         """
@@ -220,14 +174,14 @@ cdef class KDTreeCore:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef tuple _split(self, list items, BoundingBox3D bounds):
+    cdef tuple _split(self, list items, BoundingBox2D bounds):
         """
         Attempts to locate a split solution that minimises the cost of traversing the node.
 
         The cost of the node traversal is evaluated using the Surface Area Heuristic (SAH) method.
 
         :param items: A list of items.
-        :param bounds: A BoundingBox3D defining the node bounds.
+        :param bounds: A BoundingBox2D defining the node bounds.
         :return: A tuple containing the split solution or None if a split solution is not found.
         """
 
@@ -242,7 +196,7 @@ cdef class KDTreeCore:
             int32_t lower_count, upper_count
             double recip_total_sa, lower_sa, upper_sa
             list lower_items, upper_items
-            Item item
+            Item2D item
 
         # store cost of leaf as current best solution
         best_cost = len(items) * self._hit_cost
@@ -256,7 +210,7 @@ cdef class KDTreeCore:
         # search for a solution along the longest axis first
         # if a split isn't found, then try the other axes
         longest_axis = bounds.largest_axis()
-        for axis in [longest_axis, (longest_axis + 1) % 3, (longest_axis +2) % 3]:
+        for axis in [longest_axis, (longest_axis + 1) % 2]:
 
             # obtain sorted list of candidate edges along chosen axis
             self._get_edges(items, axis, &num_edges, &edges)
@@ -281,7 +235,7 @@ cdef class KDTreeCore:
                 split = edges[index].value
                 if bounds.lower.get_index(axis) < split < bounds.upper.get_index(axis):
 
-                    # calculate surface area of split volumes
+                    # calculate surface area of split surfaces
                     lower_sa = self._get_lower_bounds(bounds, split, axis).surface_area()
                     upper_sa = self._get_upper_bounds(bounds, split, axis).surface_area()
 
@@ -351,7 +305,7 @@ cdef class KDTreeCore:
 
         cdef:
             int32_t count, index, lower_index, upper_index
-            Item item
+            Item2D item
             edge *edges
 
         # allocate edge array
@@ -390,35 +344,35 @@ cdef class KDTreeCore:
 
         PyMem_Free(edges_ptr[0])
 
-    cdef BoundingBox3D _get_lower_bounds(self, BoundingBox3D bounds, double split, int32_t axis):
+    cdef BoundingBox2D _get_lower_bounds(self, BoundingBox2D bounds, double split, int32_t axis):
         """
         Returns the lower box generated when the node bounding box is split.
 
-        :param bounds: A BoundingBox3D defining the node bounds.
+        :param bounds: A BoundingBox2D defining the node bounds.
         :param split: The value along the axis at which to split.
         :param axis: The axis to split along.
         :return: A bounding box defining the lower bounds.
         """
 
-        cdef Point3D upper
+        cdef Point2D upper
         upper = bounds.upper.copy()
         upper.set_index(axis, split)
-        return new_boundingbox3d(bounds.lower.copy(), upper)
+        return new_boundingbox2d(bounds.lower.copy(), upper)
 
-    cdef BoundingBox3D _get_upper_bounds(self, BoundingBox3D bounds, double split, int32_t axis):
+    cdef BoundingBox2D _get_upper_bounds(self, BoundingBox2D bounds, double split, int32_t axis):
         """
         Returns the upper box generated when the node bounding box is split.
 
-        :param bounds: A BoundingBox3D defining the node bounds.
+        :param bounds: A BoundingBox2D defining the node bounds.
         :param split: The value along the axis at which to split.
         :param axis: The axis to split along.
         :return: A bounding box defining the upper bounds.
         """
 
-        cdef Point3D lower
+        cdef Point2D lower
         lower = bounds.lower.copy()
         lower.set_index(axis, split)
-        return new_boundingbox3d(lower, bounds.upper.copy())
+        return new_boundingbox2d(lower, bounds.upper.copy())
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -443,7 +397,7 @@ cdef class KDTreeCore:
                 raise MemoryError()
 
             for index in range(count):
-                self._nodes[id].items[index] = (<Item> items[index]).id
+                self._nodes[id].items[index] = (<Item2D> items[index]).id
 
         return id
 
@@ -463,7 +417,7 @@ cdef class KDTreeCore:
             int32_t axis
             double split
             list lower_items, upper_items
-            BoundingBox3D lower_bounds,  upper_bounds
+            BoundingBox2D lower_bounds,  upper_bounds
 
         id = self._new_node()
 
@@ -515,170 +469,21 @@ cdef class KDTreeCore:
         self._next_node += 1
         return id
 
-    cpdef bint hit(self, Ray ray):
+    cpdef list contains(self, Point2D point):
         """
-        Traverses the kd-Tree to find the first intersection with an item stored in the tree.
-
-        This method returns True is an item is hit and False otherwise.
-
-        :param ray: A Ray object.
-        :return: True is a hit occurs, false otherwise.
-        """
-
-        return self._hit(ray)
-
-    cdef inline bint _hit(self, Ray ray):
-        """
-        Starts the hit traversal of the kd tree.
-
-        :param ray: A Ray object.
-        :return: True is a hit occurs, false otherwise.
-        """
-
-        cdef:
-            bint hit
-            double min_range, max_range
-
-        # check tree bounds
-        hit, min_range, max_range = self.bounds.full_intersection(ray)
-        if not hit:
-            return None
-
-        # start exploration of kd-Tree
-        return self._hit_node(ROOT_NODE, ray, min_range, max_range)
-
-    cdef inline bint _hit_node(self, int32_t id, Ray ray, double min_range, double max_range):
-        """
-        Dispatches hit calculation to the relevant node handler.
-
-        :param id: Index of node in node array.
-        :param ray: Ray object.
-        :param min_range: The minimum intersection search range.
-        :param max_range: The maximum intersection search range.
-        :return: True is a hit occurs, false otherwise.
-        """
-
-        if self._nodes[id].type == LEAF:
-            return self._hit_leaf(id, ray, max_range)
-        else:
-            return self._hit_branch(id, ray, min_range, max_range)
-
-    @cython.cdivision(True)
-    cdef inline bint _hit_branch(self, int32_t id, Ray ray, double min_range, double max_range):
-        """
-        Traverses a kd-Tree branch node along the ray path.
-
-        :param id: Index of node in node array.
-        :param ray: Ray object.
-        :param min_range: The minimum intersection search range.
-        :param max_range: The maximum intersection search range.
-        :return: True is a hit occurs, false otherwise.
-        """
-
-        cdef:
-            int32_t axis
-            double split
-            bint below_split
-            int32_t lower_id, upper_id
-            double origin, direction
-            double plane_distance
-            int32_t near_id, far_id
-            bint hit
-
-        # unpack branch kdnode
-        # notes:
-        #  * the branch type enumeration is the same as axis index
-        #  * the lower_id is always the next node in the array
-        #  * the upper_id is store in the count attribute
-        axis = self._nodes[id].type
-        split = self._nodes[id].split
-        lower_id = id + 1
-        upper_id = self._nodes[id].count
-
-        origin = ray.origin.get_index(axis)
-        direction = ray.direction.get_index(axis)
-
-        # is the ray propagating parallel to the split plane?
-        if direction == 0:
-
-            # a ray propagating parallel to the split plane
-            if origin < split:
-                return self._hit_node(lower_id, ray, min_range, max_range)
-            else:
-                return self._hit_node(upper_id, ray, min_range, max_range)
-
-        else:
-
-            # ray propagation is not parallel to split plane
-            plane_distance = (split - origin) / direction
-
-            # does the ray origin sit below the split
-            below_split = origin < split or (origin == split and direction < 0)
-
-            # identify the order in which the ray will interact with the nodes
-            if below_split:
-                near_id = lower_id
-                far_id = upper_id
-            else:
-                near_id = upper_id
-                far_id = lower_id
-
-            # does ray only intersect with the near node?
-            if plane_distance > max_range or plane_distance <= 0:
-                return self._hit_node(near_id, ray, min_range, max_range)
-
-            # does ray only intersect with the far node?
-            if plane_distance < min_range:
-                return self._hit_node(far_id, ray, min_range, max_range)
-
-            # ray must intersect both nodes, try nearest node first
-            # note: this could theoretically be an OR operation, but we don't
-            # want to risk an optimiser inverting the logic (paranoia!)
-            hit = self._hit_node(near_id, ray, min_range, plane_distance)
-            if hit:
-                return True
-            else:
-                return self._hit_node(far_id, ray, plane_distance, max_range)
-
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
-        """
-        Tests each item in the kd-Tree leaf node to identify if an intersection occurs.
-
-        This is a virtual method and must be implemented in a derived class if
-        ray intersections are to be identified. This method must return True
-        if an intersection is found and False otherwise.
-
-        Derived classes may need to return information about the intersection.
-        This can be done by setting object attributes prior to returning True.
-        The kd-Tree search algorithm stops as soon as the first leaf is
-        identified that contains an intersection. Any attributes set when
-        _hit_leaf() returns True are guaranteed not to be further modified.
-
-        :param id: Index of node in node array.
-        :param ray: Ray object.
-        :param max_range: The maximum intersection search range.
-        :return: True is a hit occurs, false otherwise.
-        """
-
-        # virtual function that must be implemented by derived classes
-        raise NotImplementedError("KDTreeCore _hit_leaf() method not implemented.")
-
-    cpdef list contains(self, Point3D point):
-        """
-        Starts contains traversal of the kd-Tree.
         Traverses the kd-Tree to find the items that contain the specified point.
 
-        :param point: A Point3D object.
+        :param point: A Point2D object.
         :return: A list of ids (indices) of the items containing the point
         """
 
         return self._contains(point)
 
-    cdef inline list _contains(self, Point3D point):
+    cdef inline list _contains(self, Point2D point):
         """
         Starts contains traversal of the kd-Tree.
 
-        :param point: A Point3D object.
+        :param point: A Point2D object.
         :return: A list of ids (indices) of the items containing the point
         """
 
@@ -689,12 +494,12 @@ cdef class KDTreeCore:
         # start search
         return self._contains_node(ROOT_NODE, point)
 
-    cdef inline list _contains_node(self, int32_t id, Point3D point):
+    cdef inline list _contains_node(self, int32_t id, Point2D point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
         :param id: Index of node in node array.
-        :param point: Point3D to evaluate.
+        :param point: Point2D to evaluate.
         :return: List of items containing the point.
         """
 
@@ -703,12 +508,12 @@ cdef class KDTreeCore:
         else:
             return self._contains_branch(id, point)
 
-    cdef inline list _contains_branch(self, int32_t id, Point3D point):
+    cdef inline list _contains_branch(self, int32_t id, Point2D point):
         """
         Locates the kd-Tree node containing the point.
 
         :param id: Index of node in node array.
-        :param point: Point3D to evaluate.
+        :param point: Point2D to evaluate.
         :return: List of items containing the point.
         """
 
@@ -732,7 +537,7 @@ cdef class KDTreeCore:
         else:
             return self._contains_node(upper_id, point)
 
-    cdef list _contains_leaf(self, int32_t id, Point3D point):
+    cdef list _contains_leaf(self, int32_t id, Point2D point):
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -747,12 +552,12 @@ cdef class KDTreeCore:
         returns are guaranteed not to be further modified.
 
         :param id: Index of node in node array.
-        :param point: Point3D to evaluate.
+        :param point: Point2D to evaluate.
         :return: List of items containing the point.
         """
 
         # virtual function that must be implemented by derived classes
-        raise NotImplementedError("KDTreeCore _contains_leaf() method not implemented.")
+        raise NotImplementedError("KDTree2DCore _contains_leaf() method not implemented.")
 
     cdef inline void _reset(self):
         """
@@ -801,138 +606,10 @@ cdef class KDTreeCore:
     #         else:
     #             print("id={} BRANCH: axis {}, split {}, lower_id {}, upper_id {}".format(id, self._nodes[id].type, self._nodes[id].split, id+1, self._nodes[id].count))
 
-    def save(self, file):
 
-        cdef:
-            int32_t id, item
-
-        close = False
-
-        # treat as a filename if a stream is not supplied
-        if not isinstance(file, io.IOBase):
-            file = open(file, mode="wb")
-            close = True
-
-        # write header
-        file.write(struct.pack("<i", self._max_depth))
-        file.write(struct.pack("<i", self._min_items))
-        file.write(struct.pack("<d", self._hit_cost))
-        file.write(struct.pack("<d", self._empty_bonus))
-
-        # write bounds
-        file.write(struct.pack("<d", self.bounds.lower.x))
-        file.write(struct.pack("<d", self.bounds.lower.y))
-        file.write(struct.pack("<d", self.bounds.lower.z))
-
-        file.write(struct.pack("<d", self.bounds.upper.x))
-        file.write(struct.pack("<d", self.bounds.upper.y))
-        file.write(struct.pack("<d", self.bounds.upper.z))
-
-        # write nodes
-        file.write(struct.pack("<i", self._next_node))  # number of nodes
-        for id in range(self._next_node):
-
-            if self._nodes[id].type == LEAF:
-
-                # leaf node
-                file.write(struct.pack("<i", self._nodes[id].type))
-                file.write(struct.pack("<i", self._nodes[id].count))
-                for item in range(self._nodes[id].count):
-                    file.write(struct.pack("<i", self._nodes[id].items[item]))
-
-            else:
-
-                # branch node
-                file.write(struct.pack("<i", self._nodes[id].type))
-                file.write(struct.pack("<d", self._nodes[id].split))
-                file.write(struct.pack("<i", self._nodes[id].count))
-
-        # if we opened a file, we should close it
-        if close:
-            file.close()
-
-    def load(self, file):
-
-        cdef:
-            int32_t id, item
-
-        # free existing nodes
-        self._reset()
-
-        # treat as a filename if a stream is not supplied
-        close = False
-        if not isinstance(file, io.IOBase):
-            file = open(file, mode="rb")
-            close = True
-
-        # read header
-        self._max_depth = self._read_int32(file)
-        self._min_items = self._read_int32(file)
-        self._hit_cost = self._read_double(file)
-        self._empty_bonus = self._read_double(file)
-
-        # read bounds
-        self.bounds = BoundingBox3D(
-            Point3D(
-                self._read_double(file),
-                self._read_double(file),
-                self._read_double(file)
-            ),
-            Point3D(
-                self._read_double(file),
-                self._read_double(file),
-                self._read_double(file)
-            )
-        )
-
-        # read nodes
-        self._next_node = self._read_int32(file)
-        self._allocated_nodes = self._next_node
-
-        # allocate nodes
-        self._nodes = <kdnode *> PyMem_Malloc(sizeof(kdnode) * self._allocated_nodes)
-        if not self._nodes:
-            raise MemoryError()
-
-        # load nodes
-        for id in range(self._next_node):
-
-            self._nodes[id].type = self._read_int32(file)
-            if self._nodes[id].type == LEAF:
-
-                # leaf node
-                self._nodes[id].count = self._read_int32(file)
-                if self._nodes[id].count > 0:
-
-                    # allocate items
-                    self._nodes[id].items = <int32_t *> PyMem_Malloc(sizeof(int32_t) * self._nodes[id].count)
-                    if not self._nodes[id].items:
-                        raise MemoryError()
-
-                    # read items
-                    for item in range(self._nodes[id].count):
-                        self._nodes[id].items[item] = self._read_int32(file)
-
-            else:
-
-                # branch node
-                self._nodes[id].split = self._read_double(file)
-                self._nodes[id].count = self._read_int32(file)
-
-        # if we opened a file, we should close it
-        if close:
-            file.close()
-
-    cdef inline int32_t _read_int32(self, object file):
-        return (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
-
-    cdef inline double _read_double(self, object file):
-        return (<double *> PyBytes_AsString(file.read(sizeof(double))))[0]
-
-
-cdef class KDTree(KDTreeCore):
+cdef class KDTree2D(KDTree2DCore):
     """
-    Implements a 3D kd-tree for items with finite extents.
+    Implements a 2D kd-tree for items with finite extents.
 
     This class cannot be used directly, it must be sub-classed. One or both of
     _hit_item() and _contains_item() must be implemented.
@@ -944,58 +621,15 @@ cdef class KDTree(KDTreeCore):
     :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
     """
 
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef list _contains_leaf(self, int32_t id, Point2D point):
         """
-        Wraps the C-level API so users can derive a class from KDTree using Python.
-
-        Converts the arguments to types accessible from Python and re-exposes
-        _hit_leaf() as the Python accessible method _hit_items().
-
-        :param id: Index of node in node array.
-        :param ray: Ray object.
-        :param max_range: The maximum intersection search range.
-        :return: True is a hit occurs, false otherwise.
-        """
-
-        # convert list of items in C-array into a list
-        items = []
-        for index in range(self._nodes[id].count):
-            items.append(self._nodes[id].items[index])
-
-        return self._hit_items(items, ray, max_range)
-
-    cpdef bint _hit_items(self, list item_ids, Ray ray, double max_range):
-        """
-        Tests each item to identify if an intersection occurs.
-
-        This is a virtual method and must be implemented in a derived class if
-        ray intersections are to be identified. This method must return True
-        if an intersection is found and False otherwise.
-
-        Derived classes may need to return information about the intersection.
-        This can be done by setting object attributes prior to returning True.
-        The kd-Tree search algorithm stops as soon as the first leaf is
-        identified that contains an intersection. Any attributes set when
-        _hit_items() returns True are guaranteed not to be further modified.
-
-        :param item_ids: List of item ids.
-        :param ray: Ray object.
-        :param max_range: The maximum intersection search range.
-        :return: True is a hit occurs, false otherwise.
-        """
-
-        raise NotImplementedError("KDTree Virtual function _hit_items() has not been implemented.")
-
-
-    cdef list _contains_leaf(self, int32_t id, Point3D point):
-        """
-        Wraps the C-level API so users can derive a class from KDTree using Python.
+        Wraps the C-level API so users can derive a class from KDTree2D using Python.
 
         Converts the arguments to types accessible from Python and re-exposes
         _contains_leaf() as the Python accessible method _contains_items().
 
         :param id: Index of node in node array.
-        :param point: Point3D to evaluate.
+        :param point: Point2D to evaluate.
         :return: List of nodes containing the point.
         """
 
@@ -1006,7 +640,7 @@ cdef class KDTree(KDTreeCore):
 
         return self._contains_items(items, point)
 
-    cpdef list _contains_items(self, list item_ids, Point3D point):
+    cpdef list _contains_items(self, list item_ids, Point2D point):
         """
         Tests each item in the list to identify if they enclose the point.
 
@@ -1021,9 +655,9 @@ cdef class KDTree(KDTreeCore):
         returns are guaranteed not to be further modified.
 
         :param item_ids: List of item ids.
-        :param point: Point3D to evaluate.
+        :param point: Point2D to evaluate.
         :return: List of ids of the items containing the point.
         """
 
 
-        raise NotImplementedError("KDTree Virtual function _contains_items() has not been implemented.")
+        raise NotImplementedError("KDTree2D Virtual function _contains_items() has not been implemented.")

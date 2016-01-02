@@ -38,7 +38,7 @@ from libc.stdint cimport int32_t
 cdef struct kdnode:
 
     int32_t type        # LEAF, X_AXIS, Y_AXIS, Z_AXIS
-    double split    # split position
+    double split        # split position
     int32_t count       # upper index (BRANCH), item count (LEAF)
     int32_t *items      # array of item ids
 
@@ -49,14 +49,14 @@ cdef struct edge:
     double value
 
 
-cdef class Item:
+cdef class Item3D:
 
     cdef:
         readonly int32_t id
         readonly BoundingBox3D box
 
 
-cdef class KDTreeCore:
+cdef class KDTree3DCore:
 
     cdef:
         kdnode *_nodes
@@ -113,7 +113,7 @@ cdef class KDTreeCore:
     cdef inline int32_t _read_int32(self, object file)
 
 
-cdef class KDTree(KDTreeCore):
+cdef class KDTree3D(KDTree3DCore):
 
     cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range)
 
