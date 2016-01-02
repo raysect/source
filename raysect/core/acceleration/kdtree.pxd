@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.acceleration.accelerator cimport Accelerator as _Accelerator
-from raysect.core.math.kdtree cimport KDTreeCore as _KDTreeCore
+from raysect.core.math.spatial.kdtree3d cimport KDTree3DCore as _KDTreeCore
 from raysect.core.classes cimport Intersection
 
 cdef class _PrimitiveKDTree(_KDTreeCore):

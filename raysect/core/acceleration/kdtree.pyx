@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.point cimport Point3D
-from raysect.core.math.kdtree cimport Item
+from raysect.core.math.spatial.kdtree3d cimport Item3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.classes cimport Ray
 from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
@@ -52,7 +52,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
         self.primitives = [BoundPrimitive(primitive) for primitive in primitives]
 
         # kd-Tree init requires the primitives's id (it's index here) and bounding box
-        items = [Item(id, bound_primitive.box) for id, bound_primitive in enumerate(self.primitives)]
+        items = [Item3D(id, bound_primitive.box) for id, bound_primitive in enumerate(self.primitives)]
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
 
     @cython.boundscheck(False)

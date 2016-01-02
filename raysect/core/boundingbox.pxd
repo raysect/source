@@ -57,7 +57,7 @@ cdef class BoundingBox3D:
 
     cpdef list vertices(self)
 
-    cpdef double extent(self, axis) except *
+    cpdef double extent(self, int axis) except *
 
     cpdef int largest_axis(self)
 
@@ -96,7 +96,7 @@ cdef class BoundingBox2D:
 
     cpdef list vertices(self)
 
-    cpdef double extent(self, axis) except *
+    cpdef double extent(self, int axis) except *
 
     cpdef int largest_axis(self)
 

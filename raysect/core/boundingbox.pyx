@@ -247,7 +247,7 @@ cdef class BoundingBox3D:
             new_point3d(self.upper.x, self.upper.y, self.upper.z),
         ]
 
-    cpdef double extent(self, axis) except *:
+    cpdef double extent(self, int axis) except *:
 
         if axis == X_AXIS:
             return max(0.0, self.upper.x - self.lower.x)
@@ -355,8 +355,8 @@ cdef class BoundingBox2D:
         self.lower.x = min(self.lower.x, box.lower.x)
         self.lower.y = min(self.lower.y, box.lower.y)
 
-        self.upper.x = max(self.upper.x, box.upper.y)
-        self.upper.y = max(self.upper.x, box.upper.y)
+        self.upper.x = max(self.upper.x, box.upper.x)
+        self.upper.y = max(self.upper.y, box.upper.y)
 
     cpdef object extend(self, Point2D point, double padding=0.0):
 
@@ -379,7 +379,7 @@ cdef class BoundingBox2D:
             new_point2d(self.upper.x, self.upper.y),
         ]
 
-    cpdef double extent(self, axis) except *:
+    cpdef double extent(self, int axis) except *:
 
         if axis == X_AXIS:
             return max(0.0, self.upper.x - self.lower.x)
