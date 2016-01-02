@@ -50,9 +50,6 @@ DEF Y = 1
 
 
 # todo: add docstrings
-# todo: add validation
-
-
 cdef class MeshKDTree(KDTree2DCore):
 
     cdef:
@@ -61,14 +58,22 @@ cdef class MeshKDTree(KDTree2DCore):
         np.int32_t i1, i2, i3
         double alpha, beta, gamma
 
-    def __init__(self, double[:, ::1] vertices not None, np.int32_t[:, ::1] triangles not None):
+    def __init__(self, object vertices not None, object triangles not None):
 
         self._vertices = vertices
         self._triangles = triangles
 
-        # validate data
-        # check sizes
-        # check indices are in valid ranges
+        # check dimensions are correct
+        if vertices.ndim != 2 or vertices.shape[1] != 2:
+            raise ValueError("The vertex array must have dimensions Nx2.")
+
+        if triangles.ndim != 2 or triangles.shape[1] != 3:
+            raise ValueError("The triangle array must have dimensions Mx3.")
+
+        # check triangles contains only valid indices
+        invalid = (triangles[:, 0:3] < 0) | (triangles[:, 0:3] >= vertices.shape[0])
+        if invalid.any():
+            raise ValueError("The triangle array references non-existent vertices.")
 
         # kd-Tree init
         items = []
@@ -76,9 +81,8 @@ cdef class MeshKDTree(KDTree2DCore):
             items.append(Item2D(triangle, self._generate_bounding_box(triangle)))
         super().__init__(items, max_depth=0, min_items=1, hit_cost=50.0, empty_bonus=0.2)
 
-        # check if triangles are overlapping
+        # todo: check if triangles are overlapping?
         # (any non-owned vertex lying inside another triangle)
-        # TODO: write me (needs kdtree to be efficient)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -232,7 +236,9 @@ cdef class Interpolator2DMesh(Function2D):
         vertex_coords = np.array(vertex_coords, dtype=np.float64)
         triangles = np.array(triangles, dtype=np.int32)
 
-        # todo: validate vertex_data
+        # validate vertex_data
+        if vertex_data.ndim != 1 or vertex_data.shape[0] != vertex_coords.shape[0]:
+            raise ValueError("Vertex_data dimensions are incompatible with the number of vertices ({} vertices).".format(vertex_coords.shape[0]))
 
         # build kdtree
         self._kdtree = MeshKDTree(vertex_coords, triangles)
@@ -255,7 +261,8 @@ cdef class Interpolator2DMesh(Function2D):
             m._vertex_data = instance._vertex_data
         else:
             m._vertex_data = np.array(vertex_data, dtype=np.float64)
-            # TODO: VALIDATE -  check size vs instance size
+            if m._vertex_data.ndim != 1 or m._vertex_data.shape[0] != instance._vertex_data.shape[0]:
+                raise ValueError("Vertex_data dimensions are incompatible with the number of vertices in the instance ({} vertices).".format(instance._vertex_data.shape[0]))
 
         # do we have a replacement limit check setting?
         if limit is None:
