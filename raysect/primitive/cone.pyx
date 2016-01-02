@@ -29,11 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.normal cimport new_normal
-from raysect.core.math.point cimport new_point, Point
+from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.math.normal cimport new_normal3d
+from raysect.core.math.point cimport new_point3d, Point3D
 from raysect.core.classes cimport Material, new_intersection
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.boundingbox cimport BoundingBox3D
 from libc.math cimport sqrt
 cimport cython
 
@@ -63,7 +63,7 @@ cdef class Cone(Primitive):
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent = None,
-                 AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(),
+                 AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(),
                  str name=None):
         """
         Radius is radius of the cone in x-y plane.
@@ -72,7 +72,7 @@ cdef class Cone(Primitive):
         :param radius: Radius of the cone in meters (default = 0.5).
         :param height: Height of the cone in meters (default = 1.0).
         :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
         :param material: A Material object defining the cone's material (default = None).
         :param name: A string specifying a user-friendly name for the cylinder (default = "").
         """
@@ -136,8 +136,8 @@ cdef class Cone(Primitive):
     cpdef Intersection hit(self, Ray ray):
 
         cdef:
-            Point origin
-            Vector direction
+            Point3D origin
+            Vector3D direction
             double radius, height
             double a, b, c, d, k, t0, t1, t0_z, t1_z, temp_d
             int t0_type, t1_type, temp_i
@@ -273,29 +273,29 @@ cdef class Cone(Primitive):
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_type)
 
     @cython.cdivision(True)
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int type):
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int type):
 
         cdef:
-            Point hit_point, inside_point, outside_point
-            Normal normal
+            Point3D hit_point, inside_point, outside_point
+            Normal3D normal
             double a, b
             bint exiting
 
         # point of surface intersection in local space
-        hit_point = new_point(origin.x + ray_distance * direction.x,
-                              origin.y + ray_distance * direction.y,
-                              origin.z + ray_distance * direction.z)
+        hit_point = new_point3d(origin.x + ray_distance * direction.x,
+                                origin.y + ray_distance * direction.y,
+                                origin.z + ray_distance * direction.z)
 
         # calculate surface normal in local space
         if type == BASE:
 
             # cone base
-            normal = new_normal(0, 0, -1)
+            normal = new_normal3d(0, 0, -1)
 
         elif type == CONE and hit_point.z == self._height:
 
             # cone tip
-            normal = new_normal(0, 0, 1)
+            normal = new_normal3d(0, 0, 1)
 
         else:
 
@@ -304,15 +304,15 @@ cdef class Cone(Primitive):
             # plane at the base of the cone and rotate perpendicular to cone surface
             a = self._radius / self._height
             b = 1 / (a * sqrt(hit_point.x**2 + hit_point.y**2))
-            normal = new_normal(b * hit_point.x , b * hit_point.y, a)
+            normal = new_normal3d(b * hit_point.x, b * hit_point.y, a)
             normal = normal.normalise()
 
         # displace hit_point away from surface to generate inner and outer points
         inside_point = self._interior_point(hit_point, normal, type)
 
-        outside_point = new_point(hit_point.x + EPSILON * normal.x,
-                                  hit_point.y + EPSILON * normal.y,
-                                  hit_point.z + EPSILON * normal.z)
+        outside_point = new_point3d(hit_point.x + EPSILON * normal.x,
+                                    hit_point.y + EPSILON * normal.y,
+                                    hit_point.z + EPSILON * normal.z)
 
         # is ray exiting surface
         exiting = direction.dot(normal) >= 0.0
@@ -321,7 +321,7 @@ cdef class Cone(Primitive):
                                 normal, exiting, self.to_local(), self.to_root())
 
     @cython.cdivision(True)
-    cdef inline Point _interior_point(self, Point hit_point, Normal normal, int type):
+    cdef inline Point3D _interior_point(self, Point3D hit_point, Normal3D normal, int type):
 
         cdef:
             double x, y, z
@@ -365,10 +365,10 @@ cdef class Cone(Primitive):
             y = scale * hit_point.y
             z = hit_point.z
 
-        return new_point(x, y, z)
+        return new_point3d(x, y, z)
 
     @cython.cdivision(True)
-    cpdef bint contains(self, Point point) except -1:
+    cpdef bint contains(self, Point3D point) except -1:
 
         cdef:
             double cone_radius, point_radius
@@ -389,25 +389,25 @@ cdef class Cone(Primitive):
         # Points distance from axis must be less than cone radius at that height
         return point_radius <= cone_radius
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
 
         cdef:
             list points
-            Point point
-            BoundingBox box
+            Point3D point
+            BoundingBox3D box
 
-        box = BoundingBox()
+        box = BoundingBox3D()
 
         # calculate local bounds
-        box.lower = new_point(-self._radius, -self._radius, 0.0)
-        box.upper = new_point(self._radius, self._radius, self._height)
+        box.lower = new_point3d(-self._radius, -self._radius, 0.0)
+        box.upper = new_point3d(self._radius, self._radius, self._height)
 
         # obtain local space vertices
         points = box.vertices()
 
         # convert points to world space and build an enclosing world space bounding box
         # a small degree of padding is added to avoid potential numerical accuracy issues
-        box = BoundingBox()
+        box = BoundingBox3D()
         for point in points:
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 

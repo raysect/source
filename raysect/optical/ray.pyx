@@ -44,8 +44,8 @@ DEF INFINITY = 1e999
 cdef class Ray(CoreRay):
 
     def __init__(self,
-                 Point origin = Point(0,0,0),
-                 Vector direction = Vector(0,0,1),
+                 Point3D origin = Point3D(0, 0, 0),
+                 Vector3D direction = Vector3D(0, 0, 1),
                  double min_wavelength = 375,
                  double max_wavelength = 785,
                  int num_samples = 40,
@@ -211,7 +211,7 @@ cdef class Ray(CoreRay):
             Intersection intersection
             list primitives
             Primitive primitive
-            Point start_point, end_point
+            Point3D start_point, end_point
             Material material
             double normalisation
 
@@ -312,14 +312,14 @@ cdef class Ray(CoreRay):
 
         return spectrum
 
-    cpdef Ray spawn_daughter(self, Point origin, Vector direction):
+    cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction):
         """
         Spawns a new daughter of the ray.
 
         A daughter ray has the same spectral configuration as the source ray,
         however the ray depth is increased by 1.
 
-        :param origin: A Point defining the ray origin.
+        :param origin: A Point3D defining the ray origin.
         :param direction: A vector defining the ray direction.
         :return: A Ray object.
         """

@@ -7,7 +7,7 @@ from matplotlib.pyplot import imshow, imsave, show, clf, draw, pause
 
 from raysect.optical.ray import Ray
 from raysect.optical import Spectrum
-from raysect.core import World, AffineMatrix, Point, Vector, Observer
+from raysect.core import World, AffineMatrix3D, Point3D, Vector3D, Observer
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.core.math import random
 
@@ -17,7 +17,7 @@ from raysect.core.math import random
 class Camera(Observer):
 
     def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
-                 process_count=cpu_count(), parent=None, transform=AffineMatrix(), name=None):
+                 process_count=cpu_count(), parent=None, transform=AffineMatrix3D(), name=None):
 
         super().__init__(parent, transform, name)
 
@@ -381,7 +381,7 @@ class Camera(Observer):
 class PinholeCamera(Camera):
 
     def __init__(self, pixels=(512, 512), fov=45, sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
-                 sub_sample=False, process_count=cpu_count(), parent=None, transform=AffineMatrix(), name=None):
+                 sub_sample=False, process_count=cpu_count(), parent=None, transform=AffineMatrix3D(), name=None):
 
         super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples, rays=rays,
                          pixel_samples=pixel_samples, process_count=process_count, parent=parent,
@@ -422,7 +422,7 @@ class PinholeCamera(Camera):
             image_start_x = 0
             image_start_y = 0
 
-        origin = Point(0, 0, 0).transform(self.to_root())
+        origin = Point3D(0, 0, 0).transform(self.to_root())
 
         return origin, image_delta, image_start_x, image_start_y
 
@@ -443,7 +443,7 @@ class PinholeCamera(Camera):
                 dy = 0
 
             # calculate ray parameters
-            direction = Vector(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
+            direction = Vector3D(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
             direction = direction.transform(self.to_root())
 
             # generate ray and add to array to return
@@ -557,7 +557,7 @@ class OrthographicCamera(Camera):
 class VectorCamera(Camera):
 
     def __init__(self, pixel_origins, pixel_directions, name=None, sensitivity=1.0, spectral_samples=20, rays=1,
-                 pixel_samples=100, process_count=cpu_count(), parent=None, transform=AffineMatrix()):
+                 pixel_samples=100, process_count=cpu_count(), parent=None, transform=AffineMatrix3D()):
 
         super().__init__(pixels=pixel_directions.shape, sensitivity=sensitivity, spectral_samples=spectral_samples,
                          rays=rays, pixel_samples=pixel_samples, process_count=process_count, parent=parent,

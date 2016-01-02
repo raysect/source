@@ -29,20 +29,20 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.classes cimport Ray
 from raysect.core.classes cimport Intersection
 
 cdef class BoundPrimitive:
 
     cdef readonly Primitive primitive
-    cdef readonly BoundingBox box
+    cdef readonly BoundingBox3D box
     cdef bint _primitive_tested
 
     cdef inline Intersection hit(self, Ray ray)
 
     cdef inline Intersection next_intersection(self)
 
-    cdef inline bint contains(self, Point point)
+    cdef inline bint contains(self, Point3D point)

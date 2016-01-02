@@ -44,9 +44,9 @@ cdef class _NodeBase:
         self._parent = None
         self.children = []
         self.root = self
-        self._transform = AffineMatrix()
-        self._root_transform = AffineMatrix()
-        self._root_transform_inverse = AffineMatrix()
+        self._transform = AffineMatrix3D()
+        self._root_transform = AffineMatrix3D()
+        self._root_transform_inverse = AffineMatrix3D()
         self._track_modifications = True
 
     def _check_parent(self, _NodeBase parent):
@@ -85,8 +85,8 @@ cdef class _NodeBase:
                 self.root = self
 
             # this node is now a root node
-            self._root_transform = AffineMatrix()
-            self._root_transform_inverse = AffineMatrix()
+            self._root_transform = AffineMatrix3D()
+            self._root_transform_inverse = AffineMatrix3D()
 
             # report root transforms have changed
             if self._track_modifications:

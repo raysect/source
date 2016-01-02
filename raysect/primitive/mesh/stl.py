@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .mesh import Mesh
-from raysect.core import Point
+from raysect.core import Point3D
 import struct
 import os
 

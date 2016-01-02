@@ -29,8 +29,8 @@
 
 import unittest
 from raysect.core.scenegraph import Primitive, Node
-from raysect.core.math import Point, AffineMatrix, translate
-from raysect.core.acceleration import BoundingBox
+from raysect.core.math import Point3D, AffineMatrix3D, translate
+from raysect.core import BoundingBox3D
 from raysect.core.classes import Material, Ray
 
 # TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures
@@ -62,9 +62,9 @@ class TestPrimitive(unittest.TestCase):
         self.assertEqual(n.parent, None, "Parent should be None.")
         self.assertEqual(n.root, n, "Primitive should be it's own root as it is not attached to a parent.")
         self.assertEqual(len(n.children), 0, "Child list should be empty.")
-        self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n.transform, AffineMatrix3D(), delta = 1e-14, msg ="Transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Inverse root transform should be an identity matrix.")
         self.assertEqual(n.name, None, "Primitive name should be None.")
         self.assertTrue(isinstance(n.material, Material), "Primitive material is not a Material object.")
 
@@ -77,9 +77,9 @@ class TestPrimitive(unittest.TestCase):
         self.assertEqual(n.parent, None, "Parent should be None.")
         self.assertEqual(n.root, n, "Primitive should be it's own root as it is not attached to a parent.")
         self.assertEqual(len(n.children), 0, "Child list should be empty.")
-        self.assertTransformAlmostEqual(n.transform, AffineMatrix(), delta = 1e-14, msg = "Transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix(), delta = 1e-14, msg = "Root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Inverse root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n.transform, AffineMatrix3D(), delta = 1e-14, msg ="Transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(n._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Inverse root transform should be an identity matrix.")
         self.assertEqual(n.name, None, "Primitive name should be None.")
         self.assertTrue(n.material is m, "Primitive material was not correctly initialised.")
 
@@ -94,9 +94,9 @@ class TestPrimitive(unittest.TestCase):
         self.assertEqual(a.parent, None, "Node a's parent should be None.")
         self.assertEqual(a.root, a, "Node a's root should be Node a.")
         self.assertEqual(a.children.count(b), 1, "Node a's child list should contain Node b.")
-        self.assertTransformAlmostEqual(a.transform, AffineMatrix(), delta = 1e-14, msg = "Node a's transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix(), delta = 1e-14, msg = "Node a's root transform should be an identity matrix.")
-        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix(), delta = 1e-14, msg = "Node a's inverse root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a.transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform, AffineMatrix3D(), delta = 1e-14, msg ="Node a's root transform should be an identity matrix.")
+        self.assertTransformAlmostEqual(a._root_transform_inverse, AffineMatrix3D(), delta = 1e-14, msg ="Node a's inverse root transform should be an identity matrix.")
         self.assertEqual(a.name, None, "Node a's name should be None.")
 
         # node b
@@ -123,7 +123,7 @@ class TestPrimitive(unittest.TestCase):
         n = Primitive()
 
         with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
-            n.contains(Point())
+            n.contains(Point3D())
 
     def test_bounding_box(self):
         """Method bounding_box() is virtual and should raise an exception if called."""

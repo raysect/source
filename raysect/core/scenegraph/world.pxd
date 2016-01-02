@@ -32,8 +32,8 @@
 from raysect.core.classes cimport Ray
 from raysect.core.classes cimport Intersection
 from raysect.core.acceleration.accelerator cimport Accelerator
-from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.point cimport Point
+from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.math.point cimport Point3D
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 
 cdef class World(_NodeBase):
@@ -43,11 +43,11 @@ cdef class World(_NodeBase):
     cdef list _primitives
     cdef list _observers
 
-    cpdef AffineMatrix to(self, _NodeBase node)
+    cpdef AffineMatrix3D to(self, _NodeBase node)
 
     cpdef Intersection hit(self, Ray ray)
 
-    cpdef list contains(self, Point point)
+    cpdef list contains(self, Point3D point)
 
     cpdef build_accelerator(self, bint force=*)
 

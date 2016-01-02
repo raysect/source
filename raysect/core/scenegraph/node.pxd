@@ -30,12 +30,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.scenegraph._nodebase cimport _NodeBase
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 cdef class Node(_NodeBase):
 
-    cpdef AffineMatrix to(self, _NodeBase node)
+    cpdef AffineMatrix3D to(self, _NodeBase node)
 
-    cpdef AffineMatrix to_local(self)
+    cpdef AffineMatrix3D to_local(self)
 
-    cpdef AffineMatrix to_root(self)
+    cpdef AffineMatrix3D to_root(self)

@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 cdef class Primitive(Node):
     """
@@ -42,12 +42,12 @@ cdef class Primitive(Node):
     This is a base class, its functionality must be implemented fully by the deriving class.
 
     :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
-    :param AffineMatrix transform: Sets the affine transform associated with the Node.
+    :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
     :param material: An object representing the material properties of the primitive.
     :param name: A string defining the node name.
     """
 
-    def __init__(self, object parent=None, AffineMatrix transform=None, Material material=None, str name=None):
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, name)
 
@@ -116,20 +116,20 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method next_intersection() has not been implemented.")
 
-    cpdef bint contains(self, Point p) except -1:
+    cpdef bint contains(self, Point3D p) except -1:
         """
         Virtual method - to be implemented by derived classes.
 
-        Must returns True if the Point lies within the boundary of the surface
+        Must returns True if the Point3D lies within the boundary of the surface
         defined by the Primitive. False is returned otherwise.
 
-        :param Point p: The Point to test.
-        :return: True if the Point is enclosed by the primitive surface, False otherwise.
+        :param Point3D p: The Point3D to test.
+        :return: True if the Point3D is enclosed by the primitive surface, False otherwise.
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method inside() has not been implemented.")
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
         """
         Virtual method - to be implemented by derived classes.
 
@@ -143,7 +143,7 @@ cdef class Primitive(Node):
         scene-graph with a World object at its root, it must throw a TypeError
         exception.
 
-        :return: A world space BoundingBox object.
+        :return: A world space BoundingBox3D object.
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
