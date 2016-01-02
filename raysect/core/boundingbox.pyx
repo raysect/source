@@ -355,7 +355,7 @@ cdef class BoundingBox2D:
         self.lower.x = min(self.lower.x, box.lower.x)
         self.lower.y = min(self.lower.y, box.lower.y)
 
-        self.upper.x = max(self.upper.x, box.upper.y)
+        self.upper.x = max(self.upper.x, box.upper.x)
         self.upper.y = max(self.upper.y, box.upper.y)
 
     cpdef object extend(self, Point2D point, double padding=0.0):
