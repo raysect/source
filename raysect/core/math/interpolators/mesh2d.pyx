@@ -49,7 +49,6 @@ DEF X = 0
 DEF Y = 1
 
 
-# todo: add docstrings
 cdef class MeshKDTree(KDTree2DCore):
 
     def __init__(self, object vertices not None, object triangles not None):
@@ -75,7 +74,7 @@ cdef class MeshKDTree(KDTree2DCore):
             items.append(Item2D(triangle, self._generate_bounding_box(triangle)))
         super().__init__(items, max_depth=0, min_items=1, hit_cost=50.0, empty_bonus=0.2)
 
-        # todo: check if triangles are overlapping?
+        # todo: (possible enhancement) check if triangles are overlapping?
         # (any non-owned vertex lying inside another triangle)
 
     @cython.boundscheck(False)
@@ -88,7 +87,7 @@ cdef class MeshKDTree(KDTree2DCore):
         conservative bounds required by the watertight mesh algorithm.
 
         :param triangle: Triangle array index.
-        :return: A BoundingBox3D object.
+        :return: A BoundingBox2D object.
         """
 
         cdef:
@@ -127,10 +126,6 @@ cdef class MeshKDTree(KDTree2DCore):
             np.int32_t index, triangle, i1, i2, i3
             double alpha, beta, gamma
 
-        # to avoid passing data via python objects (which is slow) we are
-        # performing the interpolation inside this method and storing the
-        # results in cython attributes
-
         # cache locally to avoid pointless memory view checks
         triangles = self._triangles
 
@@ -161,7 +156,7 @@ cdef class MeshKDTree(KDTree2DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef inline void _calc_barycentric_coords(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double *alpha, double *beta, double *gamma):
+    cdef inline void _calc_barycentric_coords(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double *alpha, double *beta, double *gamma) nogil:
 
         cdef:
             np.int32_t[:, ::1] triangles
@@ -199,7 +194,7 @@ cdef class MeshKDTree(KDTree2DCore):
         beta[0] = norm * (x1 * y3 - y1 * x3)
         gamma[0] = 1.0 - alpha[0] - beta[0]
 
-    cdef inline bint _hit_triangle(self, double alpha, double beta, double gamma):
+    cdef inline bint _hit_triangle(self, double alpha, double beta, double gamma) nogil:
 
         # Point is inside triangle if all coordinates lie in range [0, 1]
         # if all are > 0 then none can be > 1 from definition of barycentric coordinates
@@ -208,18 +203,55 @@ cdef class MeshKDTree(KDTree2DCore):
 
 cdef class Interpolator2DMesh(Function2D):
     """
-    An abstract data structure for interpolating data points lying on a triangular mesh.
-    """
+    Linear interpolator for data on a 2d ungridded tri-poly mesh.
 
-    def __init__(self, object vertex_coords not None, object vertex_data not None, object triangles not None, bint limit=True, double default_value=0.0):
-        # """
-        # :param ndarray vertex_coords: An array of vertex coordinates with shape (num of vertices, 2). For each vertex
+    The mesh is specified as a set of 2D vertices supplied as an Nx2 numpy
+    array or a suitably sized sequence that can be converted to a numpy array.
+
+    A data array of length N, containing a value for each vertex, holds the
+    data to be interpolated across the mesh.
+
+    The mesh triangles are defined with a Mx3 array where the three values are
+    indices into the vertex array that specify the triangle vertices. The
+    mesh must not contain overlapping triangles. Supplying a mesh with
+    overlapping triangles will result in undefined behaviour.
+
+    By default, requesting a point outside the bounds of the mesh will cause
+    a ValueError exception to be raised. If this is not desired the limit
+    attribute (default True) can be set to False. When set to False, a default
+    value will be returned for any point lying outside the mesh. The value
+    return can be specified by setting the default_value attribute (default is
+    0.0).
+
+    To optimise the lookup of triangles, the interpolator builds an
+    acceleration structure (a KD-Tree) from the specified mesh data. Depending
+    on the size of the mesh, this can be quite slow to construct. If the user
+    wishes to interpolate a number of different data sets across the same mesh
+    - for example: temperature and density data that are both defined on the
+    same mesh - then the user can use the instance() method on an existing
+    interpolator to create a new interpolator. The new interpolator will shares
+    a copy of the internal acceleration data. The vertex_data, limit and
+    default_value can be customised for the new instance. See instance(). This
+    will avoid the cost in memory and time of rebuilding an identical
+    acceleration structure.
+
+        An array of vertex coordinates with shape (num of vertices, 2). For each vertex
         # there must be a (u, v) coordinate.
         # :param ndarray vertex_data: An array of data points at each vertex with shape (num of vertices).
         # :param ndarray triangles: An array of triangles with shape (num of triangles, 3). For each triangle, there must
         # be three indices that identify the three corresponding vertices in vertex_coords that make up this triangle.
-        # """
 
+
+    :param vertex_coords: An array of vertex coordinates (x, y) with shape Nx2.
+    :param vertex_data: An array containing data for each vertex of shape Nx1.
+    :param triangles: An array of vertex indices defining the mesh triangles, with shape Mx3.
+    :param limit: Raise an exception outside mesh limits - True (default) or False.
+    :param default_value: The value to return outside the mesh limits if limit is set to False.
+    """
+
+    def __init__(self, object vertex_coords not None, object vertex_data not None, object triangles not None, bint limit=True, double default_value=0.0):
+
+        # use numpy arrays to store data internally
         vertex_data = np.array(vertex_data, dtype=np.float64)
         vertex_coords = np.array(vertex_coords, dtype=np.float64)
         triangles = np.array(triangles, dtype=np.int32)
@@ -237,6 +269,26 @@ cdef class Interpolator2DMesh(Function2D):
 
     @classmethod
     def instance(cls, Interpolator2DMesh instance not None, object vertex_data=None, object limit=None, object default_value=None):
+        """
+        Creates a new interpolator instance from an existing interpolator instance.
+
+        The new interpolator instance will share the same internal acceleration
+        data as the original interpolator. The vertex_data, limit and default_value
+        settings of the new instance can be redefined by setting the appropriate
+        attributes. If any of the attributes are set to None (default) then the
+        value from the original interpolator will be copied.
+
+        This method should be used if the user has multiple sets of vertex_data
+        that lie on the same mesh geometry. Using this methods avoids the
+        repeated rebuilding of the mesh acceleration structures by sharing the
+        geometry data between multiple interpolator objects.
+
+        :param instance: Interpolator2DMesh object.
+        :param vertex_data: An array containing data for each vertex of shape Nx1 (default None).
+        :param limit: Raise an exception outside mesh limits - True (default) or False (default None).
+        :param default_value: The value to return outside the mesh limits if limit is set to False (default None).
+        :return: An Interpolator2DMesh object.
+        """
 
         cdef Interpolator2DMesh m
 
@@ -293,7 +345,7 @@ cdef class Interpolator2DMesh(Function2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline double _interpolate_triangle(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double alpha, double beta, double gamma):
+    cdef inline double _interpolate_triangle(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double alpha, double beta, double gamma) nogil:
 
         cdef:
             double[::1] vertex_data

@@ -48,9 +48,9 @@ cdef class MeshKDTree(KDTree2DCore):
 
     cdef bint _hit_leaf(self, np.int32_t id, Point2D point)
 
-    cdef inline void _calc_barycentric_coords(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double *alpha, double *beta, double *gamma)
+    cdef inline void _calc_barycentric_coords(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double *alpha, double *beta, double *gamma) nogil
 
-    cdef inline bint _hit_triangle(self, double alpha, double beta, double gamma)
+    cdef inline bint _hit_triangle(self, double alpha, double beta, double gamma) nogil
 
 
 cdef class Interpolator2DMesh(Function2D):
@@ -63,4 +63,4 @@ cdef class Interpolator2DMesh(Function2D):
 
     cdef double evaluate(self, double x, double y) except *
 
-    cdef inline double _interpolate_triangle(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double alpha, double beta, double gamma)
+    cdef inline double _interpolate_triangle(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double alpha, double beta, double gamma) nogil
