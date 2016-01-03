@@ -52,12 +52,6 @@ DEF Y = 1
 # todo: add docstrings
 cdef class MeshKDTree(KDTree2DCore):
 
-    cdef:
-        double[:, ::1] _vertices
-        np.int32_t[:, ::1] _triangles
-        np.int32_t i1, i2, i3
-        double alpha, beta, gamma
-
     def __init__(self, object vertices not None, object triangles not None):
 
         self._vertices = vertices
@@ -216,12 +210,6 @@ cdef class Interpolator2DMesh(Function2D):
     """
     An abstract data structure for interpolating data points lying on a triangular mesh.
     """
-
-    cdef:
-        double[::1] _vertex_data
-        MeshKDTree _kdtree
-        bint _limit
-        double _default_value
 
     def __init__(self, object vertex_coords not None, object vertex_data not None, object triangles not None, bint limit=True, double default_value=0.0):
         # """
