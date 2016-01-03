@@ -15,7 +15,7 @@ cdef class PointGenerator:
         """
         return self.sample(n)
 
-    cdef list sample(self, int n):
+    cpdef list sample(self, int n):
         """
         :param int n: Generate n vectors that sample this observers acceptance solid angle.
         """
@@ -24,7 +24,7 @@ cdef class PointGenerator:
 
 cdef class SinglePointGenerator(PointGenerator):
 
-    cdef list sample(self, int n):
+    cpdef list sample(self, int n):
         cdef list results
         cdef int i
 
@@ -42,7 +42,7 @@ cdef class CircularPointGenerator(PointGenerator):
         """
         self.radius = radius
 
-    cdef list sample(self, int n):
+    cpdef list sample(self, int n):
         cdef list results
         cdef int i
         cdef double radius = self.radius
@@ -65,7 +65,7 @@ cdef class RectangularPointGenerator(PointGenerator):
         self.width = width
         self.height = height
 
-    cdef list sample(self, int n):
+    cpdef list sample(self, int n):
         cdef list results
         cdef int i
         cdef double u, v, width_offset = self.width/2, height_offset = self.height/2

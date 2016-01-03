@@ -19,7 +19,7 @@ cdef class VectorGenerator:
         """
         return self.sample(n)
 
-    cdef list sample(self, int n):
+    cpdef list sample(self, int n):
         """
         :param int n: Generate n vectors that sample this observers acceptance solid angle.
         """
@@ -31,7 +31,7 @@ cdef class SingleRayVectorGenerator(VectorGenerator):
     Fires a single ray along the observer axis N times. Effectively a delta function acceptance cone.
     """
 
-    cdef list sample(self, int n):
+    cpdef list sample(self, int n):
         cdef list results
         cdef int i
 
@@ -57,7 +57,7 @@ cdef class HemisphereVectorGenerator(VectorGenerator):
     """
     Samples rays over hemisphere in direction of surface normal.
     """
-    cdef list sample(self, int n):
+    cpdef list sample(self, int n):
         cdef list results
         cdef int i
 
@@ -71,7 +71,7 @@ cdef class CosineHemisphereVectorGenerator(VectorGenerator):
     """
     Samples rays over a cosine-weighted hemisphere in direction of surface normal.
     """
-    cdef list sample(self, int n):
+    cpdef list sample(self, int n):
         cdef list results
         cdef int i
 
