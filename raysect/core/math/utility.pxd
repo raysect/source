@@ -32,13 +32,13 @@
 from numpy cimport ndarray
 cimport cython
 
-cdef inline int find_index(ndarray x, double v)
+cdef inline int find_index(double[::1] x, double v)
 
-cdef inline double interpolate(ndarray x, ndarray y, double p)
+cdef inline double interpolate(double[::1] x, double[::1] y, double p)
 
-cdef inline double integrate(ndarray x, ndarray y, double x0, double x1)
+cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1)
 
-cdef inline double average(ndarray x, ndarray y, double x0, double x1)
+cdef inline double average(double[::1] x, double[::1] y, double x0, double x1)
 
 cdef inline double clamp(double v, double minimum, double maximum):
 

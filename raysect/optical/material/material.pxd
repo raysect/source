@@ -30,9 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.classes cimport Material as CoreMaterial
-from raysect.core.math.affinematrix cimport AffineMatrix
-from raysect.core.math.point cimport Point
-from raysect.core.math.normal cimport Normal
+from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.math.point cimport Point3D
+from raysect.core.math.normal cimport Normal3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
@@ -40,14 +40,14 @@ from raysect.optical.spectrum cimport Spectrum
 
 cdef class Material(CoreMaterial):
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point hit_point,
-                                    bint exiting, Point inside_point, Point outside_point,
-                                    Normal normal, AffineMatrix to_local, AffineMatrix to_world)
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world)
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
-                                   Point start_point, Point end_point,
-                                   AffineMatrix to_local, AffineMatrix to_world)
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D to_local, AffineMatrix3D to_world)
 
 
 cdef class NullSurface(Material):

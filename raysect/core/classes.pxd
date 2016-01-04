@@ -29,20 +29,22 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector
-from raysect.core.math.normal cimport Normal
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.point cimport Point3D
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.normal cimport Normal3D
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 
 cdef class Ray:
 
-    cdef public Point origin
-    cdef public Vector direction
+    cdef public Point3D origin
+    cdef public Vector3D direction
     cdef public double max_distance
 
+    cpdef Point3D point_on(self, double t)
 
-cdef inline new_ray(Point origin, Vector direction, double max_distance):
+
+cdef inline new_ray(Point3D origin, Vector3D direction, double max_distance):
 
     cdef Ray ray
 
@@ -59,17 +61,17 @@ cdef class Intersection:
     cdef public double ray_distance
     cdef public bint exiting
     cdef public Primitive primitive
-    cdef public Point hit_point
-    cdef public Point inside_point
-    cdef public Point outside_point
-    cdef public Normal normal
-    cdef public AffineMatrix to_local
-    cdef public AffineMatrix to_world
+    cdef public Point3D hit_point
+    cdef public Point3D inside_point
+    cdef public Point3D outside_point
+    cdef public Normal3D normal
+    cdef public AffineMatrix3D to_local
+    cdef public AffineMatrix3D to_world
 
 
 cdef inline Intersection new_intersection(Ray ray, double ray_distance, Primitive primitive,
-                                          Point hit_point, Point inside_point, Point outside_point,
-                                          Normal normal, bint exiting, AffineMatrix to_local, AffineMatrix to_world):
+                                          Point3D hit_point, Point3D inside_point, Point3D outside_point,
+                                          Normal3D normal, bint exiting, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
     cdef Intersection intersection
 

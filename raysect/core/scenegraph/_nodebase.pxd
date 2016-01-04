@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 cdef class _NodeBase:
 
@@ -37,9 +37,10 @@ cdef class _NodeBase:
     cdef object _parent
     cdef readonly object children
     cdef readonly _NodeBase root
-    cdef AffineMatrix _transform
-    cdef readonly AffineMatrix _root_transform
-    cdef readonly AffineMatrix _root_transform_inverse
+    cdef AffineMatrix3D _transform
+    cdef readonly AffineMatrix3D _root_transform
+    cdef readonly AffineMatrix3D _root_transform_inverse
+    cdef bint _track_modifications
 
 
 

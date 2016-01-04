@@ -71,6 +71,23 @@ cdef class _Vec3:
         else:
             raise IndexError("Index out of range [0, 2].")
 
+    def __iter__(self):
+        yield self.x
+        yield self.y
+        yield self.z
+
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return self.x, self.y, self.z
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        self.x = state[0]
+        self.y = state[1]
+        self.z = state[2]
+
     property length:
         """
         The vector's length.

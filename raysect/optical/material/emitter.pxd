@@ -30,22 +30,29 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.material.material cimport NullSurface, NullVolume
-from raysect.core.math.vector cimport Vector
-from raysect.core.math.point cimport Point
+from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph.world cimport World
+from raysect.optical.ray cimport Ray
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.point cimport Point3D
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.spectralfunction cimport SpectralFunction
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
 
-    cpdef Spectrum emission_function(self, Vector direction, Spectrum spectrum)
+    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world)
 
 
 cdef class VolumeEmitterInhomogeneous(NullSurface):
 
     cdef double _step
 
-    cpdef Spectrum emission_function(self, Point point, Vector direction, Spectrum spectrum)
-
+    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world)
 
 cdef class UniformSurfaceEmitter(NullVolume):
 

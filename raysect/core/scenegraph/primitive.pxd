@@ -30,9 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.classes cimport Ray, Material, Intersection
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.scenegraph.node cimport Node
-from raysect.core.acceleration.boundingbox cimport BoundingBox
+from raysect.core.boundingbox cimport BoundingBox3D
 
 cdef class Primitive(Node):
 
@@ -42,8 +42,8 @@ cdef class Primitive(Node):
 
     cpdef Intersection next_intersection(self)
 
-    cpdef bint contains(self, Point p) except -1
+    cpdef bint contains(self, Point3D p) except -1
 
-    cpdef BoundingBox bounding_box(self)
+    cpdef BoundingBox3D bounding_box(self)
 
     cpdef object notify_root(self)

@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.classes cimport Ray
-from raysect.core.math.point cimport Point
+from raysect.core.math.point cimport Point3D
 from raysect.core.classes cimport Intersection
 
 cdef class Accelerator:
@@ -39,4 +39,4 @@ cdef class Accelerator:
 
     cpdef Intersection hit(self, Ray ray)
 
-    cpdef list contains(self, Point point)
+    cpdef list contains(self, Point3D point)

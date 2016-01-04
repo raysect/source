@@ -30,40 +30,42 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math._mat4 cimport _Mat4
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.vector cimport Vector3D
 
-cdef class AffineMatrix(_Mat4):
+cdef class AffineMatrix3D(_Mat4):
 
-    cpdef AffineMatrix inverse(self)
+    cpdef AffineMatrix3D inverse(self)
 
-    cdef inline AffineMatrix mul(self, AffineMatrix m)
+    cdef inline AffineMatrix3D mul(self, AffineMatrix3D m)
 
 
-cpdef AffineMatrix translate(double x, double y, double z)
+cpdef AffineMatrix3D translate(double x, double y, double z)
 
-cpdef AffineMatrix rotate_x(double angle)
+cpdef AffineMatrix3D rotate_x(double angle)
 
-cpdef AffineMatrix rotate_y(double angle)
+cpdef AffineMatrix3D rotate_y(double angle)
 
-cpdef AffineMatrix rotate_z(double angle)
+cpdef AffineMatrix3D rotate_z(double angle)
 
-cpdef AffineMatrix rotate_vector(double angle, Vector v)
+cpdef AffineMatrix3D rotate_vector(double angle, Vector3D v)
 
-cpdef AffineMatrix rotate(double yaw, double pitch, double roll)
+cpdef AffineMatrix3D rotate(double yaw, double pitch, double roll)
 
-cdef inline AffineMatrix new_affinematrix(double m00, double m01, double m02, double m03,
-                                          double m10, double m11, double m12, double m13,
-                                          double m20, double m21, double m22, double m23,
-                                          double m30, double m31, double m32, double m33):
+cpdef AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up)
+
+cdef inline AffineMatrix3D new_affinematrix3d(double m00, double m01, double m02, double m03,
+                                              double m10, double m11, double m12, double m13,
+                                              double m20, double m21, double m22, double m23,
+                                              double m30, double m31, double m32, double m33):
     """
-    AffineMatrix factory function.
+    AffineMatrix3D factory function.
 
-    Creates a new AffineMAtrix object with less overhead than the equivalent
+    Creates a new AffineMatrix3D object with less overhead than the equivalent
     Python call. This function is callable from cython only.
     """
 
-    cdef AffineMatrix v
-    v = AffineMatrix.__new__(AffineMatrix)
+    cdef AffineMatrix3D v
+    v = AffineMatrix3D.__new__(AffineMatrix3D)
     v.m[0][0] = m00
     v.m[0][1] = m01
     v.m[0][2] = m02

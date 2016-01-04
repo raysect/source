@@ -30,17 +30,21 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class Observer(Node):
+    """
+    A scene-graph class for observing the world.
+
+    An observer class is intended to launch rays and sample the world. This is a base class and the observe function
+    must be implemented by a deriving class. This object is the fundamental abstraction for items such as cameras,
+    fibre optics and other sampling objects.
+    """
 
     def __str__(self):
         """String representation."""
 
-        if self.name == "":
-
-            return "<Observer at " + str(hex(id(self))) + ">"
-
+        if self._name:
+            return self._name + " <Observer at " + str(hex(id(self))) + ">"
         else:
-
-            return self.name + " <Observer at " + str(hex(id(self))) + ">"
+            return "<Observer at " + str(hex(id(self))) + ">"
 
     cpdef observe(self):
         """

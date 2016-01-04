@@ -29,37 +29,50 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 cdef class Primitive(Node):
+    """
+    A scene-graph object representing a ray-intersectable surface/volume.
 
-    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), Material material not None = Material(), unicode name not None= ""):
+    A primitive class defines an open surface or closed surface (volume) that can be intersected by a ray. For example,
+    this could be a geometric primitive such as a sphere, or more complicated surface such as a polyhedral mesh. The
+    primitive class is the only class in the scene-graph with which a ray can interact.
+
+    This is a base class, its functionality must be implemented fully by the deriving class.
+
+    :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
+    :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
+    :param material: An object representing the material properties of the primitive.
+    :param name: A string defining the node name.
+    """
+
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, name)
+
+        if material is None:
+            material = Material()
 
         self.material = material
 
     def __str__(self):
         """String representation."""
 
-        if self.name == "":
-
-            return "<Primitive at " + str(hex(id(self))) + ">"
-
+        if self._name:
+            return self._name + " <Primitive at " + str(hex(id(self))) + ">"
         else:
-
-            return self.name + " <Primitive at " + str(hex(id(self))) + ">"
+            return "<Primitive at " + str(hex(id(self))) + ">"
 
     property material:
 
         def __get__(self):
-
             return self.material
 
         def __set__(self, Material value not None):
-
             self.material = value
 
+    # TODO - question name - could be clearer (hits?, primitive.hit_by(ray)?, primitiive.intersects(ray)?)
     cpdef Intersection hit(self, Ray ray):
         """
         Virtual method - to be implemented by derived classes.
@@ -71,6 +84,9 @@ cdef class Primitive(Node):
         is returned. The intersection object holds the details of the
         intersection including the point of intersection, surface normal and
         the objects involved in the intersection.
+
+        :param Ray ray: The ray to test for intersection.
+        :return: An Intersection object or None if no intersection occurs.
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method hit() has not been implemented.")
@@ -90,7 +106,7 @@ cdef class Primitive(Node):
         intersections lie outside the ray parameters then next_intersection()
         will return None.
 
-        If any geometric elements of the primitive, ray and/or scenegraph are
+        If any geometric elements of the primitive, ray and/or scene-graph are
         altered between a call to hit() and calls to next_intersection() the
         data returned by next_intersection() may be invalid. Primitives may
         cache data to accelerate next_intersection() calls which will be
@@ -100,44 +116,47 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method next_intersection() has not been implemented.")
 
-    cpdef bint contains(self, Point p) except -1:
+    cpdef bint contains(self, Point3D p) except -1:
         """
         Virtual method - to be implemented by derived classes.
 
-        Must returns True if the Point lies within the boundary of the surface
+        Must returns True if the Point3D lies within the boundary of the surface
         defined by the Primitive. False is returned otherwise.
+
+        :param Point3D p: The Point3D to test.
+        :return: True if the Point3D is enclosed by the primitive surface, False otherwise.
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method inside() has not been implemented.")
 
-    cpdef BoundingBox bounding_box(self):
+    cpdef BoundingBox3D bounding_box(self):
         """
         Virtual method - to be implemented by derived classes.
 
-        When the primitive is connected to a scenegrpah containing a World
+        When the primitive is connected to a scene-graph containing a World
         object at its root, this method should return a bounding box that
         fully encloses the primitive's surface (plus a small margin to
         avoid numerical accuracy problems). The bounding box must be defined in
         the world's coordinate space.
 
         If this method is called when the primitive is not connected to a
-        scenegraph with a World object at its root, it must throw a TypeError
+        scene-graph with a World object at its root, it must throw a TypeError
         exception.
+
+        :return: A world space BoundingBox3D object.
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
 
     cpdef object notify_root(self):
         """
-        Notifies the scenegraph root that a change to the primitives geometry has occurred.
+        Notifies the scene-graph root that a change to the primitives geometry has occurred.
 
         This method must be called by primitives when their geometry changes. This method
-        informs the root node that any caching structures used to accelerate raytracing
+        informs the root node that any caching structures used to accelerate ray-tracing
         calculations are now potentially invalid and must be recalculated, taking the new
         geometry into account.
         """
 
         self.root._change(self)
-
-
 

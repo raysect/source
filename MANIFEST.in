@@ -1,0 +1,5 @@
+include README.md MANIFEST.in setup.py .gitignore
+recursive-include demos *.py *.pyx *.pxd *.csv *.obj
+recursive-include raysect *.py *.pyx *.pxd *.csv *.obj
+recursive-include docs *
+recursive-include dev *

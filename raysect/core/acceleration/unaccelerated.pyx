@@ -30,8 +30,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # TODO: add docstrings
-
 cimport cython
+from raysect.core.classes cimport Ray
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.math.point cimport Point3D
+from raysect.core.classes cimport Intersection
 from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
 
 cdef class Unaccelerated(Accelerator):
@@ -39,7 +42,7 @@ cdef class Unaccelerated(Accelerator):
     def __init__(self):
 
         self.primitives = []
-        self.world_box = BoundingBox()
+        self.world_box = BoundingBox3D()
 
     cpdef build(self, list primitives):
 
@@ -48,7 +51,7 @@ cdef class Unaccelerated(Accelerator):
             BoundPrimitive accel_primitive
 
         self.primitives = []
-        self.world_box = BoundingBox()
+        self.world_box = BoundingBox3D()
 
         for primitive in primitives:
 
@@ -91,7 +94,7 @@ cdef class Unaccelerated(Accelerator):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef list contains(self, Point point):
+    cpdef list contains(self, Point3D point):
 
         cdef:
             list enclosing_primitives

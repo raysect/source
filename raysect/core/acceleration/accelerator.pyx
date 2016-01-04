@@ -39,6 +39,6 @@ cdef class Accelerator:
 
         raise NotImplementedError("Accelerator virtual method hit() has not been implemented.")
 
-    cpdef list contains(self, Point point):
+    cpdef list contains(self, Point3D point):
 
         raise NotImplementedError("Accelerator virtual method contains() has not been implemented.")

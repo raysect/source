@@ -42,51 +42,45 @@ cdef class Node(_NodeBase):
     transform between any two arbitrary nodes, and thus their co-ordinate
     systems, can be calculated. Using this transform it is then possible to
     transform vectors and points between the two co-ordinate systems.
+
+    :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
+    :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
+    :param name: A string defining the node name.
     """
 
-    def __init__(self, object parent = None, AffineMatrix transform not None = AffineMatrix(), unicode name not None = ""):
-        """
-        Node constructor.
+    def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None):
 
-        The node constructor can take any of three optional arguements:
+        super().__init__(name)
 
-          parent
-            - assigns the Node's parent to the specified scenegraph object.
+        if transform is None:
+            transform = AffineMatrix3D()
 
-          transform
-            - sets the affine transform associated with the Node.
-
-          name
-            - a string defining the node name.
-        """
-
-        super().__init__()
+        # prevent _modified() being called during initialisation
+        self._track_modifications = False
 
         self._name = name
         self._transform = transform
         self.parent = parent
 
+        # re-enable _modified() calls
+        self._track_modifications = True
+
     def __str__(self):
         """String representation."""
 
-        if self._name == "":
-
-            return "<Node at " + str(hex(id(self))) + ">"
-
-        else:
-
+        if self._name:
             return self._name + " <Node at " + str(hex(id(self))) + ">"
+        else:
+            return "<Node at " + str(hex(id(self))) + ">"
 
     property parent:
 
         def __get__(self):
-
             return self._parent
 
         def __set__(self, object value):
 
             if self._parent is value:
-
                 # the parent is unchanged, do nothing
                 return
 
@@ -100,8 +94,7 @@ cdef class Node(_NodeBase):
             else:
 
                 if not isinstance(value, _NodeBase):
-
-                    raise TypeError("The specified parent is not a scenegraph node or None (unparented).")
+                    raise TypeError("The specified parent is not a scene-graph node or None (unparented).")
 
                 # prevent cyclic connections
                 self._check_parent(value)
@@ -130,25 +123,21 @@ cdef class Node(_NodeBase):
     property transform:
 
         def __get__(self):
-
             return self._transform
 
-        def __set__(self, AffineMatrix value not None):
-
+        def __set__(self, AffineMatrix3D value not None):
             self._transform = value
             self._update()
 
     property name:
 
         def __get__(self):
-
             return self._name
 
         def __set__(self, unicode value not None):
-
             self._name = value
 
-    cpdef AffineMatrix to(self, _NodeBase node):
+    cpdef AffineMatrix3D to(self, _NodeBase node):
         """
         Returns an affine transform that, when applied to a vector or point,
         transforms the vector or point from the co-ordinate space of the calling
@@ -158,20 +147,18 @@ cdef class Node(_NodeBase):
         A.to(B) is called then the matrix returned would represent a translation
         of -100 in x. Applied to point (0,0,0) in A, this would produce the
         point (-100,0,0) in B as B is translated +100 in x compared to A.
+
+        :param _NodeBase node: The target node.
+        :return: An AffineMatrix3D describing the coordinate transform.
         """
 
         if self.root is node.root:
-
             return node._root_transform_inverse.mul(self._root_transform)
-
         else:
+            raise ValueError("The target node must be in the same scene-graph.")
 
-            raise ValueError("The target node must be in the same scenegraph.")
-
-    cpdef AffineMatrix to_local(self):
-
+    cpdef AffineMatrix3D to_local(self):
         return self._root_transform_inverse
 
-    cpdef AffineMatrix to_root(self):
-
+    cpdef AffineMatrix3D to_root(self):
         return self._root_transform

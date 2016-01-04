@@ -32,7 +32,7 @@
 cimport cython
 from raysect.core.math.utility cimport interpolate, integrate
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
-from numpy import array, float64
+from numpy import array, float64, argsort
 
 # required by numpy c-api
 import_array()
@@ -52,7 +52,7 @@ cdef class SpectralFunction:
         return NotImplemented
 
 
-cdef class SampledSF(SpectralFunction):
+cdef class InterpolatedSF(SpectralFunction):
     """
     Linearly interpolated spectral function.
 
@@ -63,6 +63,7 @@ cdef class SampledSF(SpectralFunction):
 
     def __init__(self, object wavelengths, object samples, fast_sample=False):
         """
+        wavelengths and samples will be sorted during initialisation.
 
         :param wavelengths: 1D array of wavelengths in nanometers.
         :param samples: 1D array of spectral samples.
@@ -79,6 +80,11 @@ cdef class SampledSF(SpectralFunction):
         if self.samples.shape[0] != self.wavelengths.shape[0]:
 
             raise ValueError("Wavelength and sample arrays must be the same length.")
+
+        # sort arrays by increasing wavelength
+        indicies = argsort(self.wavelengths)
+        self.wavelengths = self.wavelengths[indicies]
+        self.samples = self.samples[indicies]
 
         # initialise cache with invalid values
         self.cache_samples = None

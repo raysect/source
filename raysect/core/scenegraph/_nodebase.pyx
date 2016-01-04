@@ -37,20 +37,21 @@ cdef class _NodeBase:
     node objects.
     """
 
-    def __init__(self):
+    def __init__(self, str name=None):
         """Base class constructor."""
 
-        self._name = ""
+        self._name = name
         self._parent = None
         self.children = []
         self.root = self
-        self._transform = AffineMatrix()
-        self._root_transform = AffineMatrix()
-        self._root_transform_inverse = AffineMatrix()
+        self._transform = AffineMatrix3D()
+        self._root_transform = AffineMatrix3D()
+        self._root_transform_inverse = AffineMatrix3D()
+        self._track_modifications = True
 
     def _check_parent(self, _NodeBase parent):
         """
-        Raises an exception if this node or its decendents are passed.
+        Raises an exception if this node or its descendants are passed.
 
         The purpose of this function is to enforce the structure of the scene-
         graph. A scene-graph is logically a tree and so cannot contain cyclic
@@ -58,11 +59,9 @@ cdef class _NodeBase:
         """
 
         if parent is self:
-
-            raise ValueError("A node cannot be parented to itself or one of it's decendants.")
+            raise ValueError("A node cannot be parented to itself or one of it's descendants.")
 
         for child in self.children:
-
             child._check_parent(parent)
 
     def _update(self):
@@ -86,8 +85,13 @@ cdef class _NodeBase:
                 self.root = self
 
             # this node is now a root node
-            self._root_transform = AffineMatrix()
-            self._root_transform_inverse = AffineMatrix()
+            self._root_transform = AffineMatrix3D()
+            self._root_transform_inverse = AffineMatrix3D()
+
+            # report root transforms have changed
+            if self._track_modifications:
+
+                self._modified()
 
         else:
 
@@ -103,6 +107,11 @@ cdef class _NodeBase:
             self._root_transform = (<_NodeBase> self._parent)._root_transform.mul(self._transform)
             self._root_transform_inverse = self._root_transform.inverse()
 
+            # report root transforms have changed
+            if self._track_modifications:
+
+                self._modified()
+
         # inform root node of change to scenegraph
         self.root._change(self)
 
@@ -114,7 +123,8 @@ cdef class _NodeBase:
     def _register(self, _NodeBase node):
         """
         When implemented by root nodes this method allows nodes in the
-        scene-graph to register themselves for special handling.
+        scene-graph to register themselves with the root node for special
+        handling.
 
         Virtual method call.
 
@@ -126,7 +136,7 @@ cdef class _NodeBase:
     def _deregister(self, _NodeBase node):
         """
         When implemented by root nodes this method allows nodes in the
-        scene-graph to deregister themselves.
+        scene-graph to deregister themselves with the root node.
 
         Virtual method call.
 
@@ -140,6 +150,18 @@ cdef class _NodeBase:
         When implemented by root nodes this method allows nodes in the
         scene-graph to inform the root node of any change to scenegraph
         structure or to the nodes themselves.
+
+        Virtual method call.
+        """
+
+        pass
+
+    def _modified(self):
+        """
+        This method is called when a scene-graph change occurs that modifies
+        the node's root transforms. This will occur if the node's transform is
+        modified, a parent node's transform is modified or if the node's
+        section of scene-graph is re-parented.
 
         Virtual method call.
         """

@@ -33,16 +33,22 @@ from raysect.core.acceleration.kdtree cimport KDTree
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.observer cimport Observer
 
+
 cdef class World(_NodeBase):
+    """
+    The root node of the scene-graph.
 
-    def __init__(self, unicode name not None = ""):
-        """
-        World constructor.
-        """
+    The world node tracks all primitives and observers in the world. It maintains acceleration structures to speed up
+    the ray-tracing calculations. The particular acceleration algorithm used is selectable. The default acceleration
+    structure is a kd-tree.
 
-        super().__init__()
+    :param name: A string defining the node name.
+    """
 
-        self._name = name
+    def __init__(self, str name=None):
+
+        super().__init__(name)
+
         self. _primitives = list()
         self. _observers = list()
         self. _rebuild_accelerator = True
@@ -51,48 +57,39 @@ cdef class World(_NodeBase):
     property accelerator:
 
         def __get__(self):
-
             return self._accelerator
 
         def __set__(self, Accelerator accelerator not None):
-
             self._accelerator = accelerator
             self._rebuild_accelerator = True
 
     property name:
 
         def __get__(self):
-
             return self._name
 
         def __set__(self, unicode value not None):
-
             self._name = value
 
     property primitives:
 
         def __get__(self):
-
             return self._primitives
 
     property observers:
 
         def __get__(self):
-
             return self._observers
 
     def __str__(self):
         """String representation."""
 
-        if self._name == "":
-
+        if self._name:
+            return self._name + " <World at " + str(hex(id(self))) + ">"
+        else:
             return "<World at " + str(hex(id(self))) + ">"
 
-        else:
-
-            return self._name + " <World at " + str(hex(id(self))) + ">"
-
-    cpdef AffineMatrix to(self, _NodeBase node):
+    cpdef AffineMatrix3D to(self, _NodeBase node):
         """
         Returns an affine transform that, when applied to a vector or point,
         transforms the vector or point from the co-ordinate space of the calling
@@ -102,20 +99,21 @@ cdef class World(_NodeBase):
         A.to(B) is called then the matrix returned would represent a translation
         of -100 in x. Applied to point (0,0,0) in A, this would produce the
         point (-100,0,0) in B as B is translated +100 in x compared to A.
+
+        :param _NodeBase node: The target node.
+        :return: An AffineMatrix3D describing the coordinate transform.
         """
 
         if self.root is node.root:
-
             return node._root_transform_inverse
-
         else:
+            raise ValueError("The target node must be in the same scene-graph.")
 
-            raise ValueError("The target node must be in the same scenegraph.")
-
+    # TODO - like hit() on primitive, is there a better name?
     cpdef Intersection hit(self, Ray ray):
         """
         Calculates the closest intersection of the Ray with the Primitives in
-        the scenegraph, if such an intersection exists.
+        the scene-graph, if such an intersection exists.
 
         If a hit occurs an Intersection object is returned which contains the
         mathematical details of the intersection. None is returned if the ray
@@ -125,24 +123,31 @@ cdef class World(_NodeBase):
         to optimise hit calculations - if a Primitive's geometry or a transform
         affecting a primitive has changed since the last call to hit() or
         contains(), the Acceleration structure used to optimise hit calculations
-        is rebuilt to represent the new scenegraph state.
+        is rebuilt to represent the new scene-graph state.
+
+        :param Ray ray: The ray to test.
+        :return: An Intersection object or None if no intersection occurs.
         """
 
         self.build_accelerator()
         return self._accelerator.hit(ray)
 
-    cpdef list contains(self, Point point):
+    # TODO - better name - world.primitives_containing(point)
+    cpdef list contains(self, Point3D point):
         """
         Returns a list of Primitives that contain the specified point within
         their surface.
 
-        An empty list is returned if no Primitives contain the Point.
+        An empty list is returned if no Primitives contain the Point3D.
 
         This method automatically rebuilds the Acceleration object that is used
         to optimise the contains calculation - if a Primitive's geometry or a
         transform affecting a primitive has changed since the last call to hit()
         or contains(), the Acceleration structure used to optimise the contains
-        calculation is rebuilt to represent the new scenegraph state.
+        calculation is rebuilt to represent the new scene-graph state.
+
+        :param Point3D point: The point to test.
+        :return: A list containing all Primitives that enclose the Point3D.
         """
 
         self.build_accelerator()
@@ -156,20 +161,21 @@ cdef class World(_NodeBase):
         will do nothing unless the force keyword option is set to True.
 
         The Acceleration object is used to accelerate hit() and contains()
-        calculations, typically using a spatial subdivsion method. If changes are
-        made to the scenegraph structure, transforms or to a primitive's
+        calculations, typically using a spatial sub-division method. If changes are
+        made to the scene-graph structure, transforms or to a primitive's
         geometry the acceleration structures may no longer represent the
         geometry of the scene and hence must be rebuilt. This process is
         usually performed automatically as part of the first call to hit() or
-        contains() following a change in the scenegraph. As calculating these
+        contains() following a change in the scene-graph. As calculating these
         structures can take some time, this method provides the option of
         triggering a rebuild outside of hit() and contains() in case the user wants
         to be able to perform a benchmark without including the overhead of the
         Acceleration object rebuild.
+
+        :param bint force: If set to True, forces rebuilding of acceleration structure.
         """
 
         if self._rebuild_accelerator or force:
-
             self._accelerator.build(self._primitives)
             self._rebuild_accelerator = False
 
@@ -177,31 +183,27 @@ cdef class World(_NodeBase):
         """Adds observers and primitives to the World's object tracking lists."""
 
         if isinstance(node, Primitive):
-
             self._primitives.append(node)
             self._rebuild_accelerator = True
 
         if isinstance(node, Observer):
-
             self._observers.append(node)
 
     def _deregister(self, _NodeBase node):
         """Removes observers and primitives from the World's object tracking lists."""
 
         if isinstance(node, Primitive):
-
             self._primitives.remove(node)
             self._rebuild_accelerator = True
 
         if isinstance(node, Observer):
-
             self._observers.remove(node)
 
     def _change(self, _NodeBase node):
         """
-        Alerts the world that a change to the scenegraph has occurred that could
+        Alerts the world that a change to the scene-graph has occurred that could
         have made the acceleration structure no longer a valid representation
-        of the scenegraph geometry.
+        of the scene-graph geometry.
         """
 
         self._rebuild_accelerator = True

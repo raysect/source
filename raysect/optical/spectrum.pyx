@@ -54,17 +54,14 @@ cdef class Spectrum(SpectralFunction):
 
     def __init__(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample=False):
 
-        if num_samples < 1:
-
-            raise("Number of samples cannot be less than 1.")
-
         if min_wavelength <= 0.0 or max_wavelength <= 0.0:
-
             raise ValueError("Wavelength cannot be less than or equal to zero.")
 
         if min_wavelength >= max_wavelength:
-
             raise ValueError("Minimum wavelength cannot be greater or equal to the maximum wavelength.")
+
+        if num_samples < 1:
+            raise ValueError("Number of samples cannot be less than 1.")
 
         self._construct(min_wavelength, max_wavelength, num_samples, fast_sample)
 
@@ -102,6 +99,30 @@ cdef class Spectrum(SpectralFunction):
 
         return self.num_samples
 
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return (
+            self.min_wavelength,
+            self.max_wavelength,
+            self.num_samples,
+            self.delta_wavelength,
+            self.samples,
+            self._wavelengths,
+            self.fast_sample
+        )
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        (self.min_wavelength,
+         self.max_wavelength,
+         self.num_samples,
+         self.delta_wavelength,
+         self.samples,
+         self._wavelengths,
+         self.fast_sample) = state
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cdef inline void _populate_wavelengths(self):
@@ -119,7 +140,6 @@ cdef class Spectrum(SpectralFunction):
             w_view = self._wavelengths
 
             for index in range(self.num_samples):
-
                 w_view[index] = self.min_wavelength + (0.5 + index) * self.delta_wavelength
 
     cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int num_samples):
@@ -145,11 +165,9 @@ cdef class Spectrum(SpectralFunction):
 
         # sanity check
         if self.samples is None:
-
             raise ValueError("Cannot generate sample as the sample array is None.")
 
         if self.samples.shape[0] != self.num_samples:
-
             raise ValueError("Sample array length is inconsistent with num_samples.")
 
         # require wavelength information for this calculation
@@ -178,11 +196,9 @@ cdef class Spectrum(SpectralFunction):
 
         # sanity check
         if self.samples is None:
-
             raise ValueError("Cannot generate samples as the sample array is None.")
 
         if self.samples.shape[0] != self.num_samples:
-
             raise ValueError("Sample array length is inconsistent with num_samples.")
 
         # create new sample object and obtain a memoryview for fast access
@@ -197,9 +213,9 @@ cdef class Spectrum(SpectralFunction):
         delta_wavelength = (max_wavelength - min_wavelength) / num_samples
         if self.fast_sample:
 
-            # sample data at bin centre by linearly interpolating
             for index in range(num_samples):
 
+                # sample data at bin centre by linearly interpolating
                 centre_wavelength = min_wavelength + (0.5 + index) * delta_wavelength
                 s_view[index] = interpolate(self._wavelengths, self.samples, centre_wavelength)
 
@@ -210,11 +226,9 @@ cdef class Spectrum(SpectralFunction):
             reciprocal = 1.0 / delta_wavelength
             for index in range(num_samples):
 
-                upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
-
                 # average value obtained by integrating linearly interpolated data and normalising
+                upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
                 s_view[index] = reciprocal * integrate(self._wavelengths, self.samples, lower_wavelength, upper_wavelength)
-
                 lower_wavelength = upper_wavelength
 
         return samples
@@ -222,6 +236,11 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef bint is_zero(self):
+        """
+        Can be used to determine if all the samples are zero.
+
+        :return: True if the spectrum is zero, False otherwise.
+        """
 
         cdef:
             int index
@@ -229,37 +248,70 @@ cdef class Spectrum(SpectralFunction):
 
         # sanity check as users can modify the sample array
         if self.samples is None:
-
             raise ValueError("Cannot generate samples as the sample array is None.")
 
         if self.samples.shape[0] != self.num_samples:
-
             raise ValueError("Sample array length is inconsistent with num_samples.")
 
         s_view = self.samples
         for index in range(self.num_samples):
-
             if s_view[index] != 0.0:
-
                 return False
-
         return True
 
     cpdef double total(self):
+        """
+        Calculates the radiance over the sampled spectral range.
+
+        :return: Radiance in W/m^2/str
+        """
 
         # sanity check as users can modify the sample array
         if self.samples is None:
-
             raise ValueError("Cannot generate samples as the sample array is None.")
 
         if self.samples.shape[0] != self.num_samples:
-
             raise ValueError("Sample array length is inconsistent with num_samples.")
 
         # this calculation requires the wavelength array
         self._populate_wavelengths()
 
         return integrate(self._wavelengths, self.samples, self.min_wavelength, self.max_wavelength)
+
+    cpdef ndarray to_photons(self):
+        """
+        Converts the spectrum sample array from W/m^2/str/nm to Photons/s/m^2/str/nm
+        and returns the data in a numpy array.
+
+        :return: A numpy array containing the spectral samples converted to ph/s/m^2/str/nm.
+        """
+
+        cdef:
+            npy_intp size
+            int index
+            ndarray photons
+            double[::1] photons_view
+
+        # sanity check as users can modify the sample array
+        if self.samples is None:
+            raise ValueError("Cannot generate samples as the sample array is None.")
+
+        if self.samples.shape[0] != self.num_samples:
+            raise ValueError("Sample array length is inconsistent with num_samples.")
+
+        # this calculation requires the wavelength array
+        self._populate_wavelengths()
+
+        # create array to hold photon samples
+        size = self.num_samples
+        photons = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
+        photons_view = photons
+
+        # convert each sample to photons
+        for index in range(self.num_samples):
+            photons_view[index] = self.samples[index] / photon_energy(self._wavelengths[index])
+
+        return photons
 
     # low level scalar maths functions
     @cython.boundscheck(False)
@@ -272,7 +324,6 @@ cdef class Spectrum(SpectralFunction):
 
         samples_view = self.samples
         for index in range(samples_view.shape[0]):
-
             samples_view[index] += value
 
     @cython.boundscheck(False)
@@ -285,7 +336,6 @@ cdef class Spectrum(SpectralFunction):
 
         samples_view = self.samples
         for index in range(samples_view.shape[0]):
-
             samples_view[index] -= value
 
     @cython.boundscheck(False)
@@ -298,7 +348,6 @@ cdef class Spectrum(SpectralFunction):
 
         samples_view = self.samples
         for index in range(samples_view.shape[0]):
-
             samples_view[index] *= value
 
     @cython.boundscheck(False)
@@ -314,7 +363,6 @@ cdef class Spectrum(SpectralFunction):
         samples_view = self.samples
         reciprocal = 1.0 / value
         for index in range(samples_view.shape[0]):
-
             samples_view[index] *= reciprocal
 
     # low level array maths functions
@@ -328,7 +376,6 @@ cdef class Spectrum(SpectralFunction):
 
         samples_view = self.samples
         for index in range(samples_view.shape[0]):
-
             samples_view[index] += array[index]
 
     @cython.boundscheck(False)
@@ -341,7 +388,6 @@ cdef class Spectrum(SpectralFunction):
 
         samples_view = self.samples
         for index in range(samples_view.shape[0]):
-
             samples_view[index] -= array[index]
 
     @cython.boundscheck(False)
@@ -354,7 +400,6 @@ cdef class Spectrum(SpectralFunction):
 
         samples_view = self.samples
         for index in range(samples_view.shape[0]):
-
             samples_view[index] *= array[index]
 
     @cython.boundscheck(False)
@@ -368,8 +413,33 @@ cdef class Spectrum(SpectralFunction):
 
         samples_view = self.samples
         for index in range(samples_view.shape[0]):
-
             samples_view[index] /= array[index]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef inline void mad_scalar(self, double scalar, double[::1] array):
+
+        cdef:
+            double[::1] samples_view
+            npy_intp index
+
+        samples_view = self.samples
+        for index in range(samples_view.shape[0]):
+            samples_view[index] += scalar * array[index]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef inline void mad_array(self, double[::1] a, double[::1] b):
+
+        cdef:
+            double[::1] samples_view
+            npy_intp index
+
+        samples_view = self.samples
+        for index in range(samples_view.shape[0]):
+            samples_view[index] += a[index] * b[index]
 
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int num_samples):
@@ -382,19 +452,18 @@ cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int num
     return v
 
 
-cpdef double photon_energy(double wavelength):
+@cython.cdivision(True)
+cpdef double photon_energy(double wavelength) except *:
     """
     Returns the energy of a photon with the specified wavelength.
 
-    Arguements:
-        wavelength: photon wavelength in nanometers
-
-    Returns:
-        photon energy in Joules
+    :param wavelength: Photon wavelength in nanometers.
+    :return: Photon energy in Joules.
     """
 
-    with cython.cdivision:
+    if wavelength <= 0.0:
+        raise ValueError("Wavelength must be greater than zero.")
 
-        # h * c / lambda
-        return CONSTANT_HC / (wavelength * 1e-9)
+    # h * c / lambda
+    return CONSTANT_HC / (wavelength * 1e-9)
 

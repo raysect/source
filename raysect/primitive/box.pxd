@@ -30,24 +30,24 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.point cimport Point
-from raysect.core.math.vector cimport Vector
+from raysect.core.math.point cimport Point3D
+from raysect.core.math.vector cimport Vector3D
 from raysect.core.classes cimport Ray, Intersection
 
 cdef class Box(Primitive):
 
-    cdef Point _lower
-    cdef Point _upper
+    cdef Point3D _lower
+    cdef Point3D _upper
     cdef bint _further_intersection
     cdef double _next_t
-    cdef Point _cached_origin
-    cdef Vector _cached_direction
+    cdef Point3D _cached_origin
+    cdef Vector3D _cached_direction
     cdef Ray _cached_ray
     cdef int _cached_face
     cdef int _cached_axis
 
     cdef inline void _slab(self, int axis, double origin, double direction, double lower, double upper, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_axis, int *far_axis)
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point origin, Vector direction, double ray_distance, int face, int axis)
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int axis)
 
     cdef inline double _interior_offset(self, double hit_point, double lower, double upper)
