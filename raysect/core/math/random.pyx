@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
 # This code is a cython port of the mt19937-64 pseudorandom number generator
 # developed by Takuji Nishimura and Makoto Matsumoto. The original license
 # follows.
@@ -91,7 +90,7 @@
 
 from os import urandom as _urandom
 from raysect.core.math.vector cimport new_vector3d
-from raysect.core.math.point cimport new_point3d
+from raysect.core.math.point cimport new_point2d
 from libc.math cimport cos, sin, sqrt, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
 cimport cython
@@ -267,18 +266,16 @@ cpdef bint probability(double prob):
     return random() < prob
 
 
-cpdef Point3D point_disk():
+cpdef Point2D point_disk():
     """
     Returns a random point on a disk of unit radius.
 
-    The disk lies in the x-y plane and is centered at the origin.
-
-    :return: A Point3D on the disk.
+    :return: A Point2D on the disk.
     """
 
     cdef double r = sqrt(random())
     cdef double theta = 2.0 * PI * random()
-    return new_point3d(r * cos(theta), r * sin(theta), 0)
+    return new_point2d(r * cos(theta), r * sin(theta))
 
 
 # cpdef Vector3D vector_sphere():
@@ -294,12 +291,12 @@ cpdef Vector3D vector_hemisphere_cosine():
     Generates a cosine-weighted random vector on a unit hemisphere.
 
     The hemisphere is aligned along the z-axis - the plane that forms the
-    hemisphere based lies in the x-y plane.
+    hemisphere base lies in the x-y plane.
 
     :return: A unit Vector3D.
     """
 
-    cdef Point3D p = point_disk()
+    cdef Point2D p = point_disk()
     return new_vector3d(p.x, p.y, sqrt(max(0, 1 - p.x * p.x - p.y * p.y)))
 
 
