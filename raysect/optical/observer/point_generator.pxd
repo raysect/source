@@ -1,7 +1,10 @@
 
+from raysect.core.math.affinematrix cimport AffineMatrix3D as AffineMatrix3D_t
+
 
 cdef class PointGenerator:
-    cdef list sample(self, int n)
+    cdef public AffineMatrix3D_t transform
+    cpdef list sample(self, int n)
 
 
 cdef class SinglePointGenerator(PointGenerator):
@@ -9,8 +12,9 @@ cdef class SinglePointGenerator(PointGenerator):
 
 
 cdef class CircularPointGenerator(PointGenerator):
-    pass
+    cdef public double radius
 
 
 cdef class RectangularPointGenerator(PointGenerator):
-    pass
+    cdef public double width, height
+

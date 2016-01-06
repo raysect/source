@@ -1,6 +1,8 @@
 
+
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.random import point_disk, random
+from raysect.core import AffineMatrix3D
 
 
 cdef class PointGenerator:
@@ -8,6 +10,9 @@ cdef class PointGenerator:
     Base class for defining the sampling area for rays launched by an observer. Observers use the
     VectorGenerator and PointGenerator classes to build N rays for sampling.
     """
+
+    def __init__(self, transform=AffineMatrix3D()):
+        self.transform = transform
 
     def __call__(self, n):
         """
@@ -36,10 +41,11 @@ cdef class SinglePointGenerator(PointGenerator):
 
 cdef class CircularPointGenerator(PointGenerator):
 
-    def __init__(self, radius):
+    def __init__(self, radius, transform=AffineMatrix3D()):
         """
         :param double radius: The radius of the circular sampling area of this observer.
         """
+        super().__init__(transform=transform)
         self.radius = radius
 
     cpdef list sample(self, int n):
@@ -57,11 +63,12 @@ cdef class CircularPointGenerator(PointGenerator):
 
 cdef class RectangularPointGenerator(PointGenerator):
 
-    def __init__(self, width, height):
+    def __init__(self, width, height, transform=AffineMatrix3D()):
         """
         :param double width: The width of the rectangular sampling area of this observer.
         :param double height: The height of the rectangular sampling area of this observer.
         """
+        super().__init__(transform=transform)
         self.width = width
         self.height = height
 

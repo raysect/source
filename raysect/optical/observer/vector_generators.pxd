@@ -1,7 +1,7 @@
 
 
 cdef class VectorGenerator:
-    cdef list sample(self, int n)
+    cpdef list sample(self, int n)
 
 
 cdef class SingleRayVectorGenerator(VectorGenerator):
