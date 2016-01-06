@@ -6,8 +6,7 @@ etc. Actual used Pixels are dived into two types:
 - VectorSamplerPixel
 """
 
-from raysect.optical import Spectrum
-from raysect.optical.ray import Ray
+from raysect.optical import Spectrum, Ray
 
 
 class Pixel:
@@ -18,9 +17,10 @@ class Pixel:
      - a pixel transform which defines their offset/location
      - a point generator which effectively defines their sampling surface area.
     """
-    def __init__(self, pixel_transform, point_generator):
-        self.pixel_transform = pixel_transform
+    def __init__(self, to_world, point_generator, manipulation_func=None):
+        self.to_world = to_world
         self.point_generator = point_generator
+        self.manipulation_func = manipulation_func
 
     def sample_pixel(self, min_wavelength, max_wavelength, spectral_samples, camera):
         """
@@ -56,41 +56,44 @@ class Pixel:
         raise NotImplementedError("Function build_rays must be implemented on this Pixel class.")
 
 
+# TODO - this name is terrible. Need to rename.
 class VectorSamplerPixel(Pixel):
 
-    def __init__(self, pixel_transform, point_generator, vector_generator):
+    def __init__(self, to_world, point_generator, vector_generator):
         """
 
-        :param AffineMatrix3D pixel_transform: Transform matrix with respect to parent.
+        :param AffineMatrix3D to_world: Transform matrix from camera space to world space.
         :param point_generator: Class that generates points on pixel surface for sampling over pixel area.
         :param vector_generator: Class that generates vectors for sampling.
         :return:
         """
 
-        super().__init__(pixel_transform, point_generator)
+        super().__init__(to_world, point_generator)
 
         self.vector_generator = vector_generator
 
     def build_rays(self, num_pixel_samples, min_wavelength, max_wavelength, spectral_samples):
 
         rays = []
-        # TODO - these need to be in the correct space
+        points = self.point_generator.sample(num_pixel_samples)
         directions = self.vector_generator.sample(num_pixel_samples)
-        origins = self.point_generator.sample(num_pixel_samples)
+
+        if self.manipulation_func:
+            points, directions = self.manipulation_func(points, directions)
 
         for i in range(num_pixel_samples):
 
+            point_in_world = points[i].transform(self.to_world)
+            direction_in_world = directions[i].transform(self.to_world)
             # generate ray and add to array to return
             rays.append(
-                Ray(origins[i], directions[i],
-                    min_wavelength=min_wavelength,
-                    max_wavelength=max_wavelength,
+                Ray(point_in_world, direction_in_world, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
                     num_samples=spectral_samples,
                     # TODO - parse in these parameters
                     # extinction_prob=self.ray_extinction_prob,
                     # min_depth=self.ray_min_depth,
                     # max_depth=self.ray_max_depth
-                )
+                    )
             )
 
         return rays

@@ -1,6 +1,6 @@
-from raysect.core.acceleration import Unaccelerated
-from raysect.optical import World, translate, rotate, Point3D, Vector3D, Ray, d65_white, ConstantSF, InterpolatedSF
-from raysect.optical.observer.camera import PinholeCamera
+
+from raysect.optical import World, translate, rotate, Point3D, d65_white, InterpolatedSF
+from raysect.optical.observer.refactored_cameras import PinholeCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
 from raysect.optical.material.glass_libraries import schott
@@ -43,9 +43,7 @@ camera.ray_min_depth = 3
 camera.ray_max_depth = 200
 camera.ray_extinction_prob = 0.01
 camera.pixel_samples = 50
-camera.rays = 1
 camera.spectral_samples = 15
-camera.pixels = (512, 512)
 camera.display_progress = True
 camera.display_update_time = 10
 camera.sub_sample = False

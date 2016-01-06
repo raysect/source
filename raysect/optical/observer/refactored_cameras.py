@@ -7,9 +7,12 @@ import numpy as np
 from numpy import zeros
 from matplotlib.pyplot import imshow, imsave, show, clf, draw, pause
 
-from raysect.core import World, AffineMatrix3D, Point3D, Vector3D, Observer
+from raysect.core import World, AffineMatrix3D, Point3D, Vector3D, Observer, translate
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.core.math import random
+from raysect.optical.observer.point_generator import RectangularPointGenerator
+from raysect.optical.observer.vector_generators import SingleRayVectorGenerator
+from raysect.optical.observer.pixel import VectorSamplerPixel
 
 
 class Camera(Observer):
@@ -68,7 +71,7 @@ class Camera(Observer):
     def pixels(self, pixels):
         raise RuntimeError("Camera attribute pixels is read only.")
 
-    def _rebuild_pixels(self):
+    def rebuild_pixels(self):
         """
         Virtual method - to be implemented by derived classes.
 
@@ -86,15 +89,16 @@ class Camera(Observer):
 
         # create intermediate and final frame-buffers
         if not self.accumulate:
-            self.xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
-            self.frame = zeros((self._pixels[1], self._pixels[0], 3))
+            pixel_shape = self._pixels.shape
+            self.xyz_frame = zeros((pixel_shape[1], pixel_shape[0], 3))
+            self.frame = zeros((pixel_shape[1], pixel_shape[0], 3))
             self.accumulated_samples = 0
 
         # generate spectral data
         wvl_channels = self._calc_wvl_channel_config()
 
         # rebuild pixels in case camera properties have changed
-        self._rebuild_pixels()
+        self.rebuild_pixels()
 
         # trace
         if self.process_count == 1:
@@ -347,15 +351,6 @@ class Camera(Observer):
         elapsed_time = time() - start_time
         print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
 
-    # def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
-    #     """
-    #     Virtual method - to be implemented by derived classes.
-    #
-    #     Called for each pixel in the _worker() observe loop. For a given pixel, this function must return a list of
-    #     vectors to ray trace.
-    #     """
-    #     raise NotImplementedError("Virtual method _get_pixel_vectors() has not been implemented for this Camera.")
-
     def display(self):
         clf()
         imshow(self.frame, aspect="equal", origin="upper")
@@ -370,12 +365,13 @@ class Camera(Observer):
 
 class PinholeCamera(Camera):
 
-    def __init__(self, pixels=(512, 512), fov=45, sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
-                 sub_sample=False, process_count=cpu_count(), parent=None, transform=AffineMatrix3D(), name=None):
+    def __init__(self, pixels=(512, 512), fov=45, sensitivity=1.0, spectral_samples=20, spectral_rays=1,
+                 pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
+                 transform=AffineMatrix3D(), name=None):
 
-        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples, rays=rays,
-                         pixel_samples=pixel_samples, process_count=process_count, parent=parent,
-                         transform=transform, name=name)
+        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
+                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
+                         parent=parent, transform=transform, name=name)
 
         self._fov = fov
         self.sub_sample = sub_sample
@@ -390,30 +386,44 @@ class PinholeCamera(Camera):
             raise ValueError("Field of view angle can not be less than or equal to 0 degrees.")
         self._fov = fov
 
-    def _setup_pixel_config(self):
+    def rebuild_pixels(self):
 
-        max_pixels = max(self._pixels)
+        pixel_shape = self._pixels.shape
+        max_pixels = max(pixel_shape)
 
         if max_pixels > 1:
-            # generate ray directions by simulating an image plane 1m from pinhole "aperture"
-            # max width of image plane at 1 meter for given field of view
+            # Get width of image plane at a distance of 1m from aperture.
             image_max_width = 2 * tan(pi / 180 * 0.5 * self._fov)
+            # pixel step size in image plane
+            # TODO - check, is this correct, originally this was (max_pixels - 1)?
+            image_delta = image_max_width / max_pixels
 
-            # pixel step and start point in image plane
-            image_delta = image_max_width / (max_pixels - 1)
+            image_start_x = 0.5 * pixel_shape[0] * image_delta
+            image_start_y = 0.5 * pixel_shape[1] * image_delta
 
-            # start point of scan in image plane
-            image_start_x = 0.5 * self._pixels[0] * image_delta
-            image_start_y = 0.5 * self._pixels[1] * image_delta
+            for j in range(self._pixels.shape[0]):
+                for i in range(self._pixels.shape[1]):
+                    pixel_x = image_start_x - image_delta * i
+                    pixel_y = image_start_y - image_delta * j
+                    point_transform = translate(pixel_x, pixel_y, 1)
+                    point_generator = RectangularPointGenerator(image_delta, image_delta, transform=point_transform)
+                    vector_generator = SingleRayVectorGenerator()
+                    self._pixels[j, i] = VectorSamplerPixel(self.to_root(), point_generator, vector_generator)
 
-        else:
-            # single ray on axis
-            image_delta = 0
-            image_start_x = 0
-            image_start_y = 0
+    @staticmethod
+    def manipulation_func(points, directions):
+        """
+        Manipulation function
 
-        origin = Point3D(0, 0, 0).transform(self.to_root())
+        :param points:
+        :param directions:
+        :return:
+        """
 
-        return origin, image_delta, image_start_x, image_start_y
+        for i in range(points):
+            px, py, pz = points[i]
+            directions[i] = Vector3D(px, py, pz)
+            points[i] = Point3D(0, 0, 0)
 
+        return points, directions
 
