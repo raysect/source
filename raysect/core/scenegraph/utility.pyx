@@ -29,12 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph._nodebase cimport _NodeBase
-from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.node cimport Node
-from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.classes cimport Material
 
 
 cdef class BridgeNode(Node):
@@ -42,94 +38,21 @@ cdef class BridgeNode(Node):
     Specialised scene-graph root node that propagates geometry notifications.
     """
 
-    def __init__(self, Primitive owner):
+    def __init__(self, _NodeBase destination):
 
         super().__init__()
-        self.owner = owner
+        self.destination = destination
 
     def _change(self, _NodeBase node):
         """
         Handles a scenegraph node change handler.
 
-        Propagates geometry change notifications to the enclosing primitive and
-        it's scenegraph.
+        Propagates geometry change notifications to the specified node and it's
+        scenegraph.
         """
 
-        # propagate geometry change notification from local scene-graph to owner's scene-graph
-        self.owner.root._change(self.owner)
-
-
-# TODO: docstrings
-# TODO: move to raysect.primitive.utility
-cdef class EncapsulatedPrimitive(Primitive):
-    """
-    allows developers to hide primitive attributes from users
-
-    where the primitive dimensions are defined by a wrapper e.g. CSG biconvex lens - two spheres and a cylinder with dimensiosn defineds by blah blah...
-
-    can only be used to encapsulate a single primitive, any attached children will be removed automatically
-    (they would be ignored anyway)
-
-    :param Primitive:
-    :return:
-    """
-
-    def __init__(self, Primitive primitive not None, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
-
-        super().__init__(parent, transform, material, name)
-
-        # a bridge node connects the internal scene-graph to the main scene-graph
-        # and forwards geometry change notifications
-        self._localroot = BridgeNode(self)
-        self._primitive = primitive
-
-        # attach the primitive to the local (encapsulated) scene-graph
-        self._primitive.parent = self._localroot
-
-        # mirror the coordinate space transforms of the main scene-graph
-        # internally so that the encapsulated primitive's transforms are
-        # passed the correct transform matrices
-        self._primitive.transform = self.to_root()
-
-        # disconnect any children attached to the primitive
-        for child in self._primitive.children:
-            child.parent = None
-
-    def __str__(self):
-        """String representation."""
-
-        if self.name:
-            return self.name + " <EncapsulatedPrimitive at {}>".format(str(hex(id(self))))
-        else:
-            return "<EncapsulatedPrimitive at {}>".format(str(hex(id(self))))
-
-    def _modified(self):
-
-        # update the local transform to mirror the transform of the main scene-graph
-        self._primitive.transform = self.to_root()
-
-    cpdef Intersection hit(self, Ray ray):
-
-        cdef Intersection intersection
-
-        # pass hit calculation on to "hidden" primitive
-        intersection = self._primitive.hit(ray)
-
-        # the intersection will reference the internal primitive it must be
-        # modified to point at the enclosing primitive
-        if intersection is not None:
-            intersection.primitive = self
-
-        return intersection
-
-    cpdef Intersection next_intersection(self):
-        return self._primitive.next_intersection()
-
-    cpdef bint contains(self, Point3D p) except -1:
-        return self._primitive.contains(p)
-
-    cpdef BoundingBox3D bounding_box(self):
-        return self._primitive.bounding_box()
+        # propagate geometry change notification from local scene-graph to target's scene-graph
+        self.destination.root._change(self.destination)
 
 
 def print_scenegraph(node):
