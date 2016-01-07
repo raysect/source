@@ -59,6 +59,8 @@ cdef class BridgeNode(Node):
         self.owner.root._change(self.owner)
 
 
+# TODO: docstrings
+# TODO: move to raysect.primitive.utility
 cdef class EncapsulatedPrimitive(Primitive):
     """
     allows developers to hide primitive attributes from users
@@ -77,15 +79,16 @@ cdef class EncapsulatedPrimitive(Primitive):
         super().__init__(parent, transform, material, name)
 
         # a bridge node connects the internal scene-graph to the main scene-graph
+        # and forwards geometry change notifications
         self._localroot = BridgeNode(self)
         self._primitive = primitive
 
-        # the primitive is attached to a local scene-graph that forward geometry change notifications
+        # attach the primitive to the local (encapsulated) scene-graph
         self._primitive.parent = self._localroot
 
         # mirror the coordinate space transforms of the main scene-graph
-        # locally so that the encapsulated primitive transform calculations
-        # are supplied with the correct transform matrices
+        # internally so that the encapsulated primitive's transforms are
+        # passed the correct transform matrices
         self._primitive.transform = self.to_root()
 
         # disconnect any children attached to the primitive
@@ -106,6 +109,8 @@ cdef class EncapsulatedPrimitive(Primitive):
         self._primitive.transform = self.to_root()
 
     cpdef Intersection hit(self, Ray ray):
+
+        cdef Intersection intersection
 
         # pass hit calculation on to "hidden" primitive
         intersection = self._primitive.hit(ray)
