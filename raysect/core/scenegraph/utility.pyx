@@ -92,9 +92,15 @@ cdef class EncapsulatedPrimitive(Primitive):
         for child in self._primitive.children:
             child.parent = None
 
-    def _modified(self):
+    def __str__(self):
+        """String representation."""
 
-        print("_modified()")
+        if self.name:
+            return self.name + " <EncapsulatedPrimitive at {}>".format(str(hex(id(self))))
+        else:
+            return "<EncapsulatedPrimitive at {}>".format(str(hex(id(self))))
+
+    def _modified(self):
 
         # update the local transform to mirror the transform of the main scene-graph
         self._primitive.transform = self.to_root()
@@ -102,14 +108,12 @@ cdef class EncapsulatedPrimitive(Primitive):
     cpdef Intersection hit(self, Ray ray):
 
         # pass hit calculation on to "hidden" primitive
-        print(self._primitive)
         intersection = self._primitive.hit(ray)
-        print(intersection)
 
         # the intersection will reference the internal primitive it must be
         # modified to point at the enclosing primitive
-        intersection.primitive = self
-        print(intersection)
+        if intersection is not None:
+            intersection.primitive = self
 
         return intersection
 
