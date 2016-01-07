@@ -1,8 +1,8 @@
 
-from ...core import AffineMatrix, translate, Point, rotate
-from ...primitive import Sphere, Box, Cylinder
+from core import AffineMatrix, translate, Point, rotate
+from primitive import Sphere, Box, Cylinder
 from ...primitive.csg import Union, Intersect, Subtract
-from ..material.glass_libraries import Schott
+from optical.material.glass_libraries import Schott
 from math import sqrt, fabs
 
 # load default_glass

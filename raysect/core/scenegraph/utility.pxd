@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-#Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,53 +29,28 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-def print_scenegraph(node):
-    """
-    Pretty-prints a scene-graph.
-    
-    This function will print the scene-graph that contains the specified node.
-    The specified node will be highlighted in the tree by post-fixing the node
-    with the string: "[referring node]".
-
-    :param _NodeBase node: The target node.
-    """
-     
-    # start from root node
-    root = node.root
-     
-    # print node
-    if root is node:
-        print(str(root) + " [referring node]")
-    else:
-        print(str(root))
-
-    # print children
-    n = len(root.children)
-    for i in range(0, n):
-        if i < (n-1):
-            _print_node(root.children[i], "", " |  ", node)    
-        else:
-            _print_node(root.children[i], "", "    ", node)
+from raysect.core.classes cimport Ray, Intersection
+from raysect.core.math.point cimport Point3D
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph.node cimport Node
+from raysect.core.boundingbox cimport BoundingBox3D
 
 
-def _print_node(node, indent, link, highlight):
-    """
-    Internal function called recursively to print a scene-graph.
-    """
+cdef class BridgeNode(Node):
 
-    # print node
-    print(indent + " |  ")
-    
-    if node is highlight:
-        print(indent + " |_ " + str(node) + " [referring node]")
-    else:
-        print(indent + " |_ " + str(node))
-    
-    # print children
-    n = len(node.children)
-    for i in range(0, n):
-        if i < (n-1):
-            _print_node(node.children[i], indent + link, " |  ", highlight)    
-        else:
-            _print_node(node.children[i], indent + link, "    ", highlight)    
+    cdef Primitive owner
+
+
+cdef class EncapsulatedPrimitive(Primitive):
+
+    cdef:
+        BridgeNode _localroot
+        Primitive _primitive
+
+    cpdef Intersection hit(self, Ray ray)
+
+    cpdef Intersection next_intersection(self)
+
+    cpdef bint contains(self, Point3D p) except -1
+
+    cpdef BoundingBox3D bounding_box(self)

@@ -1,9 +1,9 @@
-
 import csv
 from collections import namedtuple
-from ..material.glass_libraries import Schott
-from ...core import AffineMatrix
-from raysect.optical.optical_components.sphericalsinglets import generic_spherical_singlet
+
+from core import AffineMatrix
+from optical.material.glass_libraries import Schott
+from primitive.optical.old.sphericalsinglets import generic_spherical_singlet
 
 # infinity constant
 INFINITY = 1e999
