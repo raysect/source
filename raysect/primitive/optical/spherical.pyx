@@ -48,7 +48,7 @@ DEF PAD_FACTOR = 1.000001
 # todo: docstrings
 # todo: add attributes for derived lens properties, e.g. focal length
 # todo: add additional initalisation methods
-cdef class Biconvex(EncapsulatedPrimitive):
+cdef class BiConvex(EncapsulatedPrimitive):
 
     cdef:
         readonly double diameter
@@ -115,8 +115,18 @@ cdef class Biconvex(EncapsulatedPrimitive):
         # edge thickness is the length of the barrel without the curved surfaces
         self.edge_thickness = self.center_thickness - (front_thickness + back_thickness)
 
+    def __str__(self):
+        """String representation."""
 
-cdef class Biconcave(EncapsulatedPrimitive):
+        s = "<BiConvex at {}>".format(str(hex(id(self))))
+        if self.name:
+            return "{} {}".format(self.name, s)
+        else:
+            return s
+
+
+
+cdef class BiConcave(EncapsulatedPrimitive):
     pass
 
 

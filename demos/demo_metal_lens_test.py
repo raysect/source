@@ -1,10 +1,11 @@
 from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
 from raysect.primitive import Sphere, Box, Cylinder
-from raysect.primitive.optical.spherical import Biconvex
+from raysect.primitive.optical.spherical import BiConvex
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material import Gold, Silver, Copper, Titanium, Aluminium, Beryllium, Lambert, UniformSurfaceEmitter
-from matplotlib.pyplot import *
 from raysect.optical.material.glass_libraries import schott
+from raysect.core import print_scenegraph
+from matplotlib.pyplot import *
 
 world = World()
 
@@ -31,8 +32,10 @@ camera.display_update_time = 10
 camera.accumulate = True
 # camera.process_count = 1
 
-# b = Biconvex(0.0508, 0.0036, 1.0295, 1.0295, parent=camera, transform=translate(0, 0, 0.1), material=schott("N-BK7"))
-b = Biconvex(0.0508, 0.0062, 0.205, 0.205, parent=camera, transform=translate(0, 0, 0.1), material=schott("N-BK7"))
+# b = BiConvex(0.0508, 0.0036, 1.0295, 1.0295, parent=camera, transform=translate(0, 0, 0.1), material=schott("N-BK7"))
+b = BiConvex(0.0508, 0.0062, 0.205, 0.205, parent=camera, transform=translate(0, 0, 0.1), material=schott("N-BK7"))
+
+print_scenegraph(b)
 
 # start ray tracing
 ion()
