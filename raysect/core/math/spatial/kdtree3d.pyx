@@ -53,9 +53,9 @@ DEF Y_AXIS = 1  # branch, y-axis split
 DEF Z_AXIS = 2  # branch, z-axis split
 
 
-cdef class Item:
+cdef class Item3D:
     """
-    Item class. Represents an item to place into the kd-tree.
+    Item3D class. Represents an item to place into the kd-tree.
 
     The id should be a unique integer value identifying an external object.
     For example the id could be the index into an array of polygon objects.
@@ -96,13 +96,13 @@ cdef int _edge_compare(const void *p1, const void *p2) nogil:
         return 1
 
 
-cdef class KDTreeCore:
+cdef class KDTree3DCore:
     """
     Implements a 3D kd-tree for items with finite extents.
 
     This is a Cython abstract base class. It cannot be directly extended in
     Python due to the need to implement cdef methods _contains_leaf() and
-     _hit_leaf(). Use the KDTree wrapper class if extending from Python.
+     _hit_leaf(). Use the KDTree3D wrapper class if extending from Python.
 
     :param items: A list of Items.
     :param max_depth: The maximum tree depth (automatic if set to 0, default is 0).
@@ -122,7 +122,7 @@ cdef class KDTreeCore:
     def __init__(self, list items, int32_t max_depth=0, int32_t min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         cdef:
-            Item item
+            Item3D item
 
         # sanity check
         if empty_bonus < 0.0 or empty_bonus > 1.0:
@@ -181,7 +181,7 @@ cdef class KDTreeCore:
     #     for node in nodes:
     #         type, data = node
     #         if type == LEAF:
-    #             items = [Item(id, None) for id in data]
+    #             items = [Item3D(id, None) for id in data]
     #             self._new_leaf(items)
     #         else:
     #             split, count = data
@@ -242,7 +242,7 @@ cdef class KDTreeCore:
             int32_t lower_count, upper_count
             double recip_total_sa, lower_sa, upper_sa
             list lower_items, upper_items
-            Item item
+            Item3D item
 
         # store cost of leaf as current best solution
         best_cost = len(items) * self._hit_cost
@@ -351,7 +351,7 @@ cdef class KDTreeCore:
 
         cdef:
             int32_t count, index, lower_index, upper_index
-            Item item
+            Item3D item
             edge *edges
 
         # allocate edge array
@@ -443,7 +443,7 @@ cdef class KDTreeCore:
                 raise MemoryError()
 
             for index in range(count):
-                self._nodes[id].items[index] = (<Item> items[index]).id
+                self._nodes[id].items[index] = (<Item3D> items[index]).id
 
         return id
 
@@ -661,7 +661,7 @@ cdef class KDTreeCore:
         """
 
         # virtual function that must be implemented by derived classes
-        raise NotImplementedError("KDTreeCore _hit_leaf() method not implemented.")
+        raise NotImplementedError("KDTree3DCore _hit_leaf() method not implemented.")
 
     cpdef list contains(self, Point3D point):
         """
@@ -752,7 +752,7 @@ cdef class KDTreeCore:
         """
 
         # virtual function that must be implemented by derived classes
-        raise NotImplementedError("KDTreeCore _contains_leaf() method not implemented.")
+        raise NotImplementedError("KDTree3DCore _contains_leaf() method not implemented.")
 
     cdef inline void _reset(self):
         """
@@ -930,7 +930,7 @@ cdef class KDTreeCore:
         return (<double *> PyBytes_AsString(file.read(sizeof(double))))[0]
 
 
-cdef class KDTree(KDTreeCore):
+cdef class KDTree3D(KDTree3DCore):
     """
     Implements a 3D kd-tree for items with finite extents.
 
@@ -946,7 +946,7 @@ cdef class KDTree(KDTreeCore):
 
     cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
         """
-        Wraps the C-level API so users can derive a class from KDTree using Python.
+        Wraps the C-level API so users can derive a class from KDTree3D using Python.
 
         Converts the arguments to types accessible from Python and re-exposes
         _hit_leaf() as the Python accessible method _hit_items().
@@ -956,6 +956,10 @@ cdef class KDTree(KDTreeCore):
         :param max_range: The maximum intersection search range.
         :return: True is a hit occurs, false otherwise.
         """
+
+        cdef:
+            int32_t index
+            list items
 
         # convert list of items in C-array into a list
         items = []
@@ -984,12 +988,12 @@ cdef class KDTree(KDTreeCore):
         :return: True is a hit occurs, false otherwise.
         """
 
-        raise NotImplementedError("KDTree Virtual function _hit_items() has not been implemented.")
+        raise NotImplementedError("KDTree3D Virtual function _hit_items() has not been implemented.")
 
 
     cdef list _contains_leaf(self, int32_t id, Point3D point):
         """
-        Wraps the C-level API so users can derive a class from KDTree using Python.
+        Wraps the C-level API so users can derive a class from KDTree3D using Python.
 
         Converts the arguments to types accessible from Python and re-exposes
         _contains_leaf() as the Python accessible method _contains_items().
@@ -998,6 +1002,10 @@ cdef class KDTree(KDTreeCore):
         :param point: Point3D to evaluate.
         :return: List of nodes containing the point.
         """
+
+        cdef:
+            int32_t index
+            list items
 
         # convert list of items in C-array into a list
         items = []
@@ -1026,4 +1034,4 @@ cdef class KDTree(KDTreeCore):
         """
 
 
-        raise NotImplementedError("KDTree Virtual function _contains_items() has not been implemented.")
+        raise NotImplementedError("KDTree3D Virtual function _contains_items() has not been implemented.")

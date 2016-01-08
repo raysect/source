@@ -29,16 +29,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.boundingbox cimport BoundingBox3D
+from raysect.core.boundingbox cimport BoundingBox2D
 from raysect.core.classes cimport Ray
-from raysect.core.math.point cimport Point3D
+from raysect.core.math.point cimport Point2D
 from libc.stdint cimport int32_t
 
 # c-structure that represent a kd-tree node
 cdef struct kdnode:
 
-    int32_t type        # LEAF, X_AXIS, Y_AXIS, Z_AXIS
-    double split    # split position
+    int32_t type        # LEAF, X_AXIS, Y_AXIS
+    double split        # split position
     int32_t count       # upper index (BRANCH), item count (LEAF)
     int32_t *items      # array of item ids
 
@@ -49,36 +49,36 @@ cdef struct edge:
     double value
 
 
-cdef class Item:
+cdef class Item2D:
 
     cdef:
         readonly int32_t id
-        readonly BoundingBox3D box
+        readonly BoundingBox2D box
 
 
-cdef class KDTreeCore:
+cdef class KDTree2DCore:
 
     cdef:
         kdnode *_nodes
         int32_t _allocated_nodes
         int32_t _next_node
-        readonly BoundingBox3D bounds
+        readonly BoundingBox2D bounds
         int32_t _max_depth
         int32_t _min_items
         double _hit_cost
         double _empty_bonus
 
-    cdef int32_t _build(self, list items, BoundingBox3D bounds, int32_t depth=*)
+    cdef int32_t _build(self, list items, BoundingBox2D bounds, int32_t depth=*)
 
-    cdef tuple _split(self, list items, BoundingBox3D bounds)
+    cdef tuple _split(self, list items, BoundingBox2D bounds)
 
     cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr)
 
     cdef void _free_edges(self, edge **edges_ptr)
 
-    cdef BoundingBox3D _get_lower_bounds(self, BoundingBox3D bounds, double split, int32_t axis)
+    cdef BoundingBox2D _get_lower_bounds(self, BoundingBox2D bounds, double split, int32_t axis)
 
-    cdef BoundingBox3D _get_upper_bounds(self, BoundingBox3D bounds, double split, int32_t axis)
+    cdef BoundingBox2D _get_upper_bounds(self, BoundingBox2D bounds, double split, int32_t axis)
 
     cdef int32_t _new_leaf(self, list ids)
 
@@ -86,39 +86,35 @@ cdef class KDTreeCore:
 
     cdef int32_t _new_node(self)
 
-    cpdef bint hit(self, Ray ray)
+    cpdef bint hit(self, Point2D point)
 
-    cdef inline bint _hit(self, Ray ray)
+    cdef inline bint _hit(self, Point2D point)
 
-    cdef inline bint _hit_node(self, int32_t id, Ray ray, double min_range, double max_range)
+    cdef inline bint _hit_node(self, int32_t id, Point2D point)
 
-    cdef inline bint _hit_branch(self, int32_t id, Ray ray, double min_range, double max_range)
+    cdef inline bint _hit_branch(self, int32_t id, Point2D point)
 
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range)
+    cdef bint _hit_leaf(self, int32_t id, Point2D point)
 
-    cpdef list contains(self, Point3D point)
+    cpdef list contains(self, Point2D point)
 
-    cdef inline list _contains(self, Point3D point)
+    cdef inline list _contains(self, Point2D point)
 
-    cdef inline list _contains_node(self, int32_t id, Point3D point)
+    cdef inline list _contains_node(self, int32_t id, Point2D point)
 
-    cdef inline list _contains_branch(self, int32_t id, Point3D point)
+    cdef inline list _contains_branch(self, int32_t id, Point2D point)
 
-    cdef list _contains_leaf(self, int32_t id, Point3D point)
+    cdef list _contains_leaf(self, int32_t id, Point2D point)
 
     cdef void _reset(self)
 
-    cdef inline double _read_double(self, object file)
 
-    cdef inline int32_t _read_int32(self, object file)
+cdef class KDTree2D(KDTree2DCore):
 
+    cdef bint _hit_leaf(self, int32_t id, Point2D point)
 
-cdef class KDTree(KDTreeCore):
+    cpdef bint _hit_items(self, list items, Point2D point)
 
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range)
+    cdef list _contains_leaf(self, int32_t id, Point2D point)
 
-    cpdef bint _hit_items(self, list items, Ray ray, double max_range)
-
-    cdef list _contains_leaf(self, int32_t id, Point3D point)
-
-    cpdef list _contains_items(self, list items, Point3D point)
+    cpdef list _contains_items(self, list items, Point2D point)

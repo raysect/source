@@ -145,13 +145,11 @@ cdef class Cylinder(Primitive):
     def __str__(self):
         """String representation."""
 
-        if self.name == "":
-
+        if self.name:
+            return self.name + " <Cylinder at " + str(hex(id(self))) + ">"
+        else:
             return "<Cylinder at " + str(hex(id(self))) + ">"
 
-        else:
-
-            return self.name + " <Cylinder at " + str(hex(id(self))) + ">"
 
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):

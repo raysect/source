@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,22 +29,38 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.vector cimport Vector3D
+cimport numpy as np
+from raysect.core.boundingbox cimport BoundingBox2D
+from raysect.core.math.function.function2d cimport Function2D
 from raysect.core.math.point cimport Point2D
+from raysect.core.math.spatial.kdtree2d cimport KDTree2DCore
 
-cpdef seed(object d=*)
 
-cpdef double random()
+cdef class MeshKDTree(KDTree2DCore):
 
-cpdef double normally_distributed_random()
+    cdef:
+        double[:, ::1] _vertices
+        np.int32_t[:, ::1] _triangles
+        np.int32_t i1, i2, i3
+        double alpha, beta, gamma
 
-cpdef bint probability(double prob)
+    cdef inline BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)
 
-cpdef Point2D point_disk()
+    cdef bint _hit_leaf(self, np.int32_t id, Point2D point)
 
-cpdef Vector3D vector_sphere()
+    cdef inline void _calc_barycentric_coords(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double *alpha, double *beta, double *gamma) nogil
 
-cpdef Vector3D vector_hemisphere_uniform()
+    cdef inline bint _hit_triangle(self, double alpha, double beta, double gamma) nogil
 
-cpdef Vector3D vector_hemisphere_cosine()
 
+cdef class Interpolator2DMesh(Function2D):
+
+    cdef:
+        double[::1] _vertex_data
+        MeshKDTree _kdtree
+        bint _limit
+        double _default_value
+
+    cdef double evaluate(self, double x, double y) except *
+
+    cdef inline double _interpolate_triangle(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double alpha, double beta, double gamma) nogil

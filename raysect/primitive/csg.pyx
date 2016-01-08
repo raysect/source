@@ -273,10 +273,10 @@ cdef class Union(CSGPrimitive):
     def __str__(self):
         """String representation."""
 
-        if self.name == "":
-            return "<Union at " + str(hex(id(self))) + ">"
-        else:
+        if self.name:
             return self.name + " <Union at " + str(hex(id(self))) + ">"
+        else:
+            return "<Union at " + str(hex(id(self))) + ">"
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
@@ -339,10 +339,10 @@ cdef class Intersect(CSGPrimitive):
     def __str__(self):
         """String representation."""
 
-        if self.name == "":
-            return "<Intersect at " + str(hex(id(self))) + ">"
-        else:
+        if self.name:
             return self.name + " <Intersect at " + str(hex(id(self))) + ">"
+        else:
+            return "<Intersect at " + str(hex(id(self))) + ">"
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
@@ -412,10 +412,10 @@ cdef class Subtract(CSGPrimitive):
     def __str__(self):
         """String representation."""
 
-        if self.name == "":
-            return "<Subtract at " + str(hex(id(self))) + ">"
-        else:
+        if self.name:
             return self.name + " <Subtract at " + str(hex(id(self))) + ">"
+        else:
+            return "<Subtract at " + str(hex(id(self))) + ">"
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
