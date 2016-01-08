@@ -86,7 +86,7 @@ cdef class Biconvex(EncapsulatedPrimitive):
             raise ValueError("The radius of curvature of the back face cannot be less than the barrel radius.")
 
         if self.edge_thickness < 0:
-            raise ValueError("The curvatures and/or thickness are to small to produce a lens of the specified diameter.")
+            raise ValueError("The curvatures and/or thickness are too small to produce a lens of the specified diameter.")
 
         # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
         padding = center_thickness * PAD_FACTOR
