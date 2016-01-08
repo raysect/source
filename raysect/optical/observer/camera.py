@@ -492,3 +492,61 @@ class VectorCamera(Camera):
                 max_depth=self.ray_max_depth
             )
         ] * self.pixel_samples
+
+
+class CCD(Camera):
+
+    def __init__(self, pixels=(360, 240), width=0.036, forward_bias=0, sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
+                 sub_sample=False, process_count=cpu_count(), parent=None, transform=AffineMatrix3D(), name=None):
+
+        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples, rays=rays,
+                         pixel_samples=pixel_samples, process_count=process_count, parent=parent,
+                         transform=transform, name=name)
+
+        self.width = width
+        self.forward_bias = forward_bias
+        self.sub_sample = sub_sample
+
+    def _setup_pixel_config(self):
+
+        # pixel step and start point in image plane
+        image_delta = self.width / (self._pixels[0] - 1)
+
+        # start point of scan in image plane
+        image_start_x = 0.5 * self._pixels[0] * image_delta
+        image_start_y = 0.5 * self._pixels[1] * image_delta
+
+        return image_delta, image_start_x, image_start_y
+
+    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
+
+        image_delta, image_start_x, image_start_y = pixel_configuration
+
+        rays = []
+        for _ in range(self.pixel_samples):
+
+            if self.sub_sample:
+                dx = random.random() - 0.5
+                dy = random.random() - 0.5
+            else:
+                dx = 0
+                dy = 0
+
+            # calculate ray parameters
+            origin = Point3D(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 0).transform(self.to_root())
+            direction = (random.vector_hemisphere_cosine() + self.forward_bias * Vector3D(0, 0, 1)).normalise()
+            direction = direction.transform(self.to_root())
+
+            # generate ray and add to array to return
+            rays.append(
+                Ray(origin, direction,
+                    min_wavelength=min_wavelength,
+                    max_wavelength=max_wavelength,
+                    num_samples=spectral_samples,
+                    extinction_prob=self.ray_extinction_prob,
+                    min_depth=self.ray_min_depth,
+                    max_depth=self.ray_max_depth
+                )
+            )
+
+        return rays
