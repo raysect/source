@@ -35,7 +35,7 @@ cdef class SinglePointGenerator(PointGenerator):
 
         results = []
         for i in range(n):
-            results.append(Point3D(0, 0, 0))
+            results.append(Point3D(0, 0, 0).transform(self.transform))
         return results
 
 
@@ -57,7 +57,7 @@ cdef class CircularPointGenerator(PointGenerator):
         results = []
         for i in range(n):
             random_point = point_disk()
-            results.append(Point3D(random_point.x * radius, random_point.y * radius, 0))
+            results.append(Point3D(random_point.x * radius, random_point.y * radius, 0).transform(self.transform))
         return results
 
 
@@ -81,5 +81,5 @@ cdef class RectangularPointGenerator(PointGenerator):
         for i in range(n):
             u = random()*self.width - width_offset
             v = random()*self.height - height_offset
-            results.append(Point3D(u, v, 0))
+            results.append(Point3D(u, v, 0).transform(self.transform))
         return results
