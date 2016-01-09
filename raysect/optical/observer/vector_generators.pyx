@@ -26,7 +26,7 @@ cdef class VectorGenerator:
         raise NotImplemented("The method sample(n) for this vector generator needs to be implemented.")
 
 
-cdef class SingleRayVectorGenerator(VectorGenerator):
+cdef class SingleRay(VectorGenerator):
     """
     Fires a single ray along the observer axis N times. Effectively a delta function acceptance cone.
     """
@@ -41,7 +41,7 @@ cdef class SingleRayVectorGenerator(VectorGenerator):
         return results
 
 
-cdef class LightConeVectorGenerator(VectorGenerator):
+cdef class LightCone(VectorGenerator):
     """
     A conical ray acceptance volume. An example would be the light cone accepted by an optical fibre.
     """
@@ -53,7 +53,7 @@ cdef class LightConeVectorGenerator(VectorGenerator):
         self.acceptance_angle = acceptance_angle
 
 
-cdef class HemisphereVectorGenerator(VectorGenerator):
+cdef class Hemisphere(VectorGenerator):
     """
     Samples rays over hemisphere in direction of surface normal.
     """
@@ -67,7 +67,7 @@ cdef class HemisphereVectorGenerator(VectorGenerator):
         return results
 
 
-cdef class CosineHemisphereVectorGenerator(VectorGenerator):
+cdef class CosineHemisphere(VectorGenerator):
     """
     Samples rays over a cosine-weighted hemisphere in direction of surface normal.
     """
@@ -78,4 +78,21 @@ cdef class CosineHemisphereVectorGenerator(VectorGenerator):
         results = []
         for i in range(n):
             results.append(vector_hemisphere_cosine())
+        return results
+
+
+cdef class CosineHemisphereWithForwardBias(VectorGenerator):
+    """
+    Samples rays over a cosine-weighted hemisphere in direction of surface normal, with an optional forward bias.
+    """
+    def __init__(self, forward_bias=0.0):
+        self.forward_bias = forward_bias
+
+    cpdef list sample(self, int n):
+        cdef list results
+        cdef int i
+
+        results = []
+        for i in range(n):
+            results.append(vector_hemisphere_cosine() + self.forward_bias * Vector3D(0, 0, 1).normalise())
         return results

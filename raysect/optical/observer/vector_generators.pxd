@@ -4,17 +4,21 @@ cdef class VectorGenerator:
     cpdef list sample(self, int n)
 
 
-cdef class SingleRayVectorGenerator(VectorGenerator):
+cdef class SingleRay(VectorGenerator):
     pass
 
 
-cdef class LightConeVectorGenerator(VectorGenerator):
+cdef class LightCone(VectorGenerator):
     cdef public double acceptance_angle
 
 
-cdef class HemisphereVectorGenerator(VectorGenerator):
+cdef class Hemisphere(VectorGenerator):
     pass
 
 
-cdef class CosineHemisphereVectorGenerator(VectorGenerator):
+cdef class CosineHemisphere(VectorGenerator):
     pass
+
+
+cdef class CosineHemisphereWithForwardBias(VectorGenerator):
+    cpdef double forward_bias
