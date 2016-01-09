@@ -17,7 +17,10 @@ class Pixel:
      - a pixel transform which defines their offset/location
      - a point generator which effectively defines their sampling surface area.
     """
-    def __init__(self, to_world, point_generator, manipulation_func=None):
+    def __init__(self, pixel_index, pixel_origin, to_pixel_origin, to_world, point_generator, manipulation_func=None):
+        self.pixel_index = pixel_index
+        self.pixel_origin = pixel_origin
+        self.to_pixel_origin = to_pixel_origin
         self.to_world = to_world
         self.point_generator = point_generator
         self.manipulation_func = manipulation_func
@@ -33,6 +36,12 @@ class Pixel:
         sensitivity = camera.sensitivity
 
         spectrum = Spectrum(min_wavelength, max_wavelength, spectral_samples)
+
+        # print("#############")
+        # print("Building rays")
+        # print()
+        # print('ix - {}, ij - {}'.format(self.pixel_index[0], self.pixel_index[0]))
+        # print('pixel origin - {}'.format(self.pixel_origin))
 
         # obtain rays for this pixel
         rays = self.build_rays(num_pixel_samples, min_wavelength, max_wavelength, spectral_samples)
@@ -59,7 +68,7 @@ class Pixel:
 # TODO - this name is terrible. Need to rename.
 class VectorSamplerPixel(Pixel):
 
-    def __init__(self, to_world, point_generator, vector_generator):
+    def __init__(self, pixel_index, pixel_origin, to_pixel_origin, to_world, point_generator, vector_generator):
         """
 
         :param AffineMatrix3D to_world: Transform matrix from camera space to world space.
@@ -68,7 +77,7 @@ class VectorSamplerPixel(Pixel):
         :return:
         """
 
-        super().__init__(to_world, point_generator)
+        super().__init__(pixel_index, pixel_origin, to_pixel_origin, to_world, point_generator)
 
         self.vector_generator = vector_generator
 
@@ -78,13 +87,23 @@ class VectorSamplerPixel(Pixel):
         points = self.point_generator.sample(num_pixel_samples)
         directions = self.vector_generator.sample(num_pixel_samples)
 
+        # print(points)
+        # print(directions)
+
         if self.manipulation_func:
             points, directions = self.manipulation_func(points, directions)
+
+        # print(points)
+        # print(directions)
+        # input("...")
 
         for i in range(num_pixel_samples):
 
             point_in_world = points[i].transform(self.to_world)
             direction_in_world = directions[i].transform(self.to_world)
+            # print(point_in_world)
+            # print(direction_in_world)
+            # input("...")
             # generate ray and add to array to return
             rays.append(
                 Ray(point_in_world, direction_in_world, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
@@ -101,9 +120,9 @@ class VectorSamplerPixel(Pixel):
 
 class TransferFunctionPixel(Pixel):
 
-    def __init__(self, pixel_transform, point_generator, transfer_function):
+    def __init__(self, pixel_index, pixel_origin, to_pixel_origin, to_world, point_generator, transfer_function):
 
-        super().__init__(pixel_transform, point_generator)
+        super().__init__(pixel_index, pixel_origin, to_pixel_origin, to_world, point_generator)
 
         # TODO - work out logic and structure for the transfer equation
         self.vector_generator = transfer_function

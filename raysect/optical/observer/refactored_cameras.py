@@ -6,7 +6,7 @@ import numpy as np
 from numpy import zeros
 from matplotlib.pyplot import imshow, imsave, show, clf, draw, pause
 
-from raysect.core import World, AffineMatrix3D, Point3D, Vector3D, Observer, translate
+from raysect.core import World, AffineMatrix3D, Point3D, Point2D, Vector3D, Observer, translate
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.core.math import random
 from raysect.optical.observer.point_generator import RectangularPointGenerator
@@ -52,7 +52,7 @@ class Camera(Observer):
         self.process_count = process_count
 
         # camera configuration
-        self._pixels = np.empty(pixels, dtype=object)
+        self._pixels = np.empty((pixels[1], pixels[0]), dtype=object)
         self.sensitivity = sensitivity
         self.pixel_samples = pixel_samples
         self.accumulate = False
@@ -89,8 +89,8 @@ class Camera(Observer):
         # create intermediate and final frame-buffers
         if not self.accumulate:
             pixel_shape = self._pixels.shape
-            self.xyz_frame = zeros((pixel_shape[1], pixel_shape[0], 3))
-            self.frame = zeros((pixel_shape[1], pixel_shape[0], 3))
+            self.xyz_frame = zeros((pixel_shape[0], pixel_shape[1], 3))
+            self.frame = zeros((pixel_shape[0], pixel_shape[1], 3))
             self.accumulated_samples = 0
 
         # generate spectral data
@@ -130,12 +130,12 @@ class Camera(Observer):
             # generate resampled XYZ curves for channel spectral range
             resampled_xyz = resample_ciexyz(min_wavelength, max_wavelength, spectral_samples)
 
-            nx, ny = self._pixels.shape
+            ny, nx = self._pixels.shape
             for iy in range(ny):
                 for ix in range(nx):
 
                     # load selected pixel and trace rays
-                    pixel = self.pixels[ix, iy]
+                    pixel = self.pixels[iy, ix]
                     spectrum, ray_count = pixel.sample_pixel(min_wavelength, max_wavelength, spectral_samples, self)
 
                     # convert spectrum to CIE XYZ
@@ -165,7 +165,7 @@ class Camera(Observer):
         display_timer = self._start_display()
         statistics_data = self._start_statistics()
 
-        total_pixels = self._pixels[0] * self._pixels[1]
+        total_pixels = self._pixels.shape[0] * self._pixels.shape[1]
 
         # generate weightings for accumulation
         total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
@@ -228,7 +228,7 @@ class Camera(Observer):
 
     def _producer(self, task_queue):
         # task is simply the pixel location
-        nx, ny = self._pixels
+        nx, ny = self._pixels.shape
         for y in range(ny):
             for x in range(nx):
                 task_queue.put((x, y))
@@ -241,21 +241,23 @@ class Camera(Observer):
         while True:
 
             # request next pixel
-            pixel = task_queue.get()
+            pixel_id = task_queue.get()
 
             # have we been commanded to shutdown?
-            if pixel is None:
+            if pixel_id is None:
                 break
 
-            x, y = pixel
-            spectrum, ray_count = self._sample_pixel(x, y, min_wavelength, max_wavelength, spectral_samples,
-                                                     world)
+            ix, iy = pixel_id
+
+            # load selected pixel and trace rays
+            pixel = self.pixels[iy, ix]
+            spectrum, ray_count = pixel.sample_pixel(min_wavelength, max_wavelength, spectral_samples, self)
 
             # convert spectrum to CIE XYZ
             xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
 
             # encode result and send
-            result = (pixel, xyz, ray_count)
+            result = (pixel_id, xyz, ray_count)
             result_queue.put(result)
 
     def _calc_wvl_channel_config(self):
@@ -406,10 +408,15 @@ class PinholeCamera(Camera):
                 for i in range(self._pixels.shape[1]):
                     pixel_x = image_start_x - image_delta * i
                     pixel_y = image_start_y - image_delta * j
-                    point_transform = translate(pixel_x, pixel_y, 1)
-                    point_generator = RectangularPointGenerator(image_delta, image_delta, transform=point_transform)
+                    to_pixel_origin = translate(pixel_x, pixel_y, 1)
+                    point_generator = RectangularPointGenerator(image_delta, image_delta, transform=to_pixel_origin)
                     vector_generator = SingleRayVectorGenerator()
-                    self._pixels[j, i] = VectorSamplerPixel(self.to_root(), point_generator, vector_generator)
+                    pixel = VectorSamplerPixel((i, j), Point2D(pixel_x, pixel_y), to_pixel_origin, self.to_root(),
+                                               point_generator, vector_generator)
+                    pixel.manipulation_func = self.manipulation_func
+                    self._pixels[j, i] = pixel
+        else:
+            raise RuntimeError("Number of Pinhole camera Pixels must be >1.")
 
     @staticmethod
     def manipulation_func(points, directions):
@@ -421,9 +428,9 @@ class PinholeCamera(Camera):
         :return:
         """
 
-        for i in range(points):
+        for i in range(len(points)):
             px, py, pz = points[i]
-            directions[i] = Vector3D(px, py, pz)
+            directions[i] = Vector3D(px, py, 1.0).normalise()
             points[i] = Point3D(0, 0, 0)
 
         return points, directions
