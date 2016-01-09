@@ -1,4 +1,3 @@
-
 from time import time
 from math import tan, pi, ceil
 from multiprocessing import Process, cpu_count, Queue
@@ -12,7 +11,7 @@ from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_t
 from raysect.core.math import random
 from raysect.optical.observer.point_generator import RectangularPointGenerator
 from raysect.optical.observer.vector_generators import SingleRayVectorGenerator
-from raysect.optical.observer.pixel import VectorSamplerPixel
+from raysect.optical.pixel import VectorSamplerPixel
 
 
 class Camera(Observer):
@@ -150,7 +149,7 @@ class Camera(Observer):
                     self.frame[iy, ix, :] = ciexyz_to_srgb(*xyz_frame[iy, ix, :])
 
                     # update users
-                    pixel = ix + self._pixels[0] * iy
+                    pixel = ix + self._pixels.shape[0] * iy
                     statistics_data = self._update_statistics(statistics_data, i_channel, pixel, ray_count)
                     display_timer = self._update_display(display_timer)
 
@@ -169,9 +168,9 @@ class Camera(Observer):
         total_pixels = self._pixels[0] * self._pixels[1]
 
         # generate weightings for accumulation
-        total_samples = self.accumulated_samples + self.pixel_samples * self.rays
+        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
         previous_weight = self.accumulated_samples / total_samples
-        added_weight = self.rays * self.pixel_samples / total_samples
+        added_weight = self.spectral_rays * self.pixel_samples / total_samples
 
         # scale previous state to account for additional samples
         xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
@@ -315,8 +314,9 @@ class Camera(Observer):
         Initialise statistics.
         """
 
-        total_pixels = self._pixels[0] * self._pixels[1]
-        total_work = total_pixels * self.rays
+        pixel_shape = self._pixels.shape
+        total_pixels = pixel_shape[0] * pixel_shape[1]
+        total_work = total_pixels * self.spectral_rays
         ray_count = 0
         start_time = time()
         progress_timer = time()
@@ -332,11 +332,12 @@ class Camera(Observer):
 
         if (time() - progress_timer) > 1.0:
 
+            pixel_shape = self._pixels.shape
             current_work = total_pixels * index + pixel
             completion = 100 * current_work / total_work
             print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
-                completion, index + 1, self.rays,
-                ceil((pixel + 1) / self._pixels[0]), self._pixels[1],
+                completion, index + 1, self.spectral_rays,
+                ceil((pixel + 1) / pixel_shape[0]), pixel_shape[1],
                 pixel + 1, total_pixels, ray_count / 1000))
             ray_count = 0
             progress_timer = time()
