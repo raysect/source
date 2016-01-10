@@ -311,34 +311,35 @@ cpdef Point2D point_disk():
 
 cpdef Vector3D vector_sphere():
     """
-    Generate a randomly distributed unit vector.
-
-    If called N times, this function will generate N vectors on the unit sphere with an isotropic distribution.
+    Generates a random vector on a unit sphere.
 
     :return: A random Vector3D on the unit sphere.
     """
 
-    cdef double x, y, z
-
-    x = normal(0, 1)
-    y = normal(0, 1)
-    z = normal(0, 1)
-
-    return new_vector3d(x, y, z).normalise()
+    cdef double z = 1.0 - 2.0 * uniform()
+    cdef double r = sqrt(max(0, 1.0 - z*z))
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, z)
 
 
 cpdef Vector3D vector_hemisphere_uniform():
     """
-    Generate a randomly distributed unit vector on a hemisphere defined by z>0 centred on the origin.
+    Generates a random vector on a unit hemisphere.
 
-    If called N times, this function will generate N vectors on the unit hemisphere with an isotropic distribution.
+    The hemisphere is aligned along the z-axis - the plane that forms the
+    hemisphere base lies in the x-y plane.
 
     :return: A random Vector3D on the unit hemisphere.
     """
-    cdef Vector3D v
 
-    v = vector_sphere()
-    return new_vector3d(v.x, v.y, fabs(v.z))
+    cdef double z = uniform()
+    cdef double r = sqrt(max(0, 1.0 - z*z))
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, z)
 
 
 cpdef Vector3D vector_hemisphere_cosine():
@@ -355,7 +356,7 @@ cpdef Vector3D vector_hemisphere_cosine():
     cdef double theta = 2.0 * PI * uniform()
     cdef double x = r * cos(theta)
     cdef double y = r * sin(theta)
-    return new_vector3d(x, y, sqrt(max(0, 1 - x*x - y*y)))
+    return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 
 
 # initialise random number generator
