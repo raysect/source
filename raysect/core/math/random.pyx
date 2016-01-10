@@ -380,7 +380,7 @@ cpdef Vector3D vector_cone(double theta):
 
     cdef double phi = 2.0 * PI * uniform()
     cdef double cos_theta = cos(theta)
-    cdef double z = uniform()/(1 - cos_theta) + cos_theta
+    cdef double z = uniform()*(1 - cos_theta) + cos_theta
     cdef double r = sqrt(max(0, 1.0 - z*z))
     cdef double x = r * cos(phi)
     cdef double y = r * sin(phi)

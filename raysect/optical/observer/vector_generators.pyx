@@ -48,12 +48,12 @@ cdef class Cone(VectorGenerator):
     A conical ray acceptance volume. An example would be the light cone accepted by an optical fibre.
     """
 
-    def __init__(self, double acceptance_angle=PI/4):
+    def __init__(self, double acceptance_angle=PI/8):
         """
         :param double acceptance_angle: The angle defining a cone for this observers acceptance solid angle.
         """
-        if not 0 <= acceptance_angle <= PI/2:
-            raise RuntimeError("Acceptance angle {} for Cone VectorGenerator must be between 0 and pi/2."
+        if not 0 <= acceptance_angle <= PI/4:
+            raise RuntimeError("Acceptance angle {} for Cone VectorGenerator must be between 0 and pi/4."
                                "".format(acceptance_angle))
         self.acceptance_angle = acceptance_angle
 
@@ -108,5 +108,5 @@ cdef class CosineHemisphereWithForwardBias(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(vector_hemisphere_cosine() + self.forward_bias * Vector3D(0, 0, 1).normalise())
+            results.append((vector_hemisphere_cosine() + self.forward_bias * Vector3D(0, 0, 1)).normalise())
         return results

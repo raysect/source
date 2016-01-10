@@ -5,10 +5,14 @@ from raysect.optical.observer.point_generator import *
 from raysect.optical.observer.vector_generators import *
 
 
+plt.ion()
+
+
 sp = SinglePointGenerator()
 points = sp.sample(1000)
 x = [p.x for p in points]
 y = [p.y for p in points]
+plt.figure()
 plt.plot(x, y, '.')
 plt.axis('equal')
 plt.title('SinglePointGenerator')
@@ -19,6 +23,7 @@ sp = CircularPointGenerator()
 points = sp.sample(1000)
 x = [p.x for p in points]
 y = [p.y for p in points]
+plt.figure()
 plt.plot(x, y, '.')
 plt.axis('equal')
 plt.title('CircularPointGenerator')
@@ -29,6 +34,7 @@ sp = RectangularPointGenerator()
 points = sp.sample(1000)
 x = [p.x for p in points]
 y = [p.y for p in points]
+plt.figure()
 plt.plot(x, y, '.')
 plt.axis('equal')
 plt.title('RectangularPointGenerator')
@@ -42,19 +48,23 @@ vectors = sp.sample(1000)
 for i in range(1000):
     v = vectors[i]
     ax.scatter(v.x, v.y, v.z, marker='.')
-plt.axis('equal')
-plt.title('Cone')
+ax.set_xlim(-1.2, 1.2)
+ax.set_ylim(-1.2, 1.2)
+ax.set_zlim(-1.2, 1.2)
+plt.title('SingleRay')
 plt.show()
 
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-sp = Cone()
+sp = Cone(acceptance_angle=PI/8)
 vectors = sp.sample(1000)
 for i in range(1000):
     v = vectors[i]
     ax.scatter(v.x, v.y, v.z, marker='.')
-plt.axis('equal')
+ax.set_xlim(-1.2, 1.2)
+ax.set_ylim(-1.2, 1.2)
+ax.set_zlim(-1.2, 1.2)
 plt.title('Cone')
 plt.show()
 
@@ -66,7 +76,9 @@ vectors = sp.sample(1000)
 for i in range(1000):
     v = vectors[i]
     ax.scatter(v.x, v.y, v.z, marker='.')
-plt.axis('equal')
+ax.set_xlim(-1.2, 1.2)
+ax.set_ylim(-1.2, 1.2)
+ax.set_zlim(-1.2, 1.2)
 plt.title('Hemisphere')
 plt.show()
 
@@ -78,19 +90,23 @@ vectors = sp.sample(1000)
 for i in range(1000):
     v = vectors[i]
     ax.scatter(v.x, v.y, v.z, marker='.')
-plt.axis('equal')
+ax.set_xlim(-1.2, 1.2)
+ax.set_ylim(-1.2, 1.2)
+ax.set_zlim(-1.2, 1.2)
 plt.title('CosineHemisphere')
 plt.show()
 
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-sp = CosineHemisphereWithForwardBias(forward_bias=2.0)
+sp = CosineHemisphereWithForwardBias(forward_bias=0.75)
 vectors = sp.sample(1000)
 for i in range(1000):
     v = vectors[i]
     ax.scatter(v.x, v.y, v.z, marker='.')
-plt.axis('equal')
+ax.set_xlim(-1.2, 1.2)
+ax.set_ylim(-1.2, 1.2)
+ax.set_zlim(-1.2, 1.2)
 plt.title('CosineHemisphereWithForwardBias')
 plt.show()
 
