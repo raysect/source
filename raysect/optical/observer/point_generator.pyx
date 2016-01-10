@@ -1,7 +1,7 @@
 
 
 from raysect.core.math.point cimport Point3D
-from raysect.core.math.random import point_disk, random
+from raysect.core.math.random import point_disk, uniform
 from raysect.core import AffineMatrix3D
 
 
@@ -79,7 +79,7 @@ cdef class RectangularPointGenerator(PointGenerator):
 
         results = []
         for i in range(n):
-            u = random()*self.width - width_offset
-            v = random()*self.height - height_offset
+            u = uniform()*self.width - width_offset
+            v = uniform()*self.height - height_offset
             results.append(Point3D(u, v, 0).transform(self.transform))
         return results

@@ -237,7 +237,7 @@ cpdef seed(object d=None):
 
 
 @cython.cdivision(True)
-cpdef double random():
+cpdef double uniform():
     """
     Generate random doubles in range [0, 1).
 
@@ -249,30 +249,35 @@ cpdef double random():
     return (_rand_uint64() >> 11) * (1.0 / 9007199254740992.0)
 
 
-# State variables used by the Box-Muller transform method
-cdef public bint generate_new_pair = True
-cdef public double spare_random_number
+# state variables required by the Box-Muller transform
+cdef bint _normal_generate = True
+cdef double _normal_c1, _normal_c2
 
 
-cpdef double normally_distributed_random():
+cpdef double normal(double mean, double stddev):
     """
-    Generate a normally distributed random number.
+    Generates a normally distributed random number.
 
-    This method uses the Box–Muller transform.
+    The mean and standard deviation of the distribution must be specified.
 
+    :param mean: The distribution mean.
+    :param stddev: The distribution standard deviation.
     :return: Random double.
     """
-    cdef double u1, u2
-    global generate_new_pair, spare_random_number
 
-    # toggle state of pair generation flag
-    generate_new_pair = not generate_new_pair
+    global _normal_generate, _normal_c1, _normal_c2
 
-    if not generate_new_pair:
-        return spare_random_number
-    else:
-        spare_random_number = sqrt(-2*log(u1))*sin(2*PI*u2)
-        return sqrt(-2*log(u1))*cos(2*PI*u2)
+    # normals are generated with the Box–Muller transform
+    # the transform generates two solutions per evaluation
+    _normal_generate = not _normal_generate
+
+    if not _normal_generate:
+        return _normal_c1 * sin(_normal_c2) * stddev + mean
+
+    _normal_c1 = sqrt(-2.0 * log(uniform()))
+    _normal_c2 = 2.0 * PI * uniform()
+
+    return _normal_c1 * cos(_normal_c2) * stddev + mean
 
 
 cpdef bint probability(double prob):
@@ -289,7 +294,7 @@ cpdef bint probability(double prob):
     :return: True or False.
     """
 
-    return random() < prob
+    return uniform() < prob
 
 
 cpdef Point2D point_disk():
@@ -299,8 +304,8 @@ cpdef Point2D point_disk():
     :return: A Point2D on the disk.
     """
 
-    cdef double r = sqrt(random())
-    cdef double theta = 2.0 * PI * random()
+    cdef double r = sqrt(uniform())
+    cdef double theta = 2.0 * PI * uniform()
     return new_point2d(r * cos(theta), r * sin(theta))
 
 
@@ -315,9 +320,9 @@ cpdef Vector3D vector_sphere():
 
     cdef double x, y, z
 
-    x = normally_distributed_random()
-    y = normally_distributed_random()
-    z = normally_distributed_random()
+    x = normal(0, 1)
+    y = normal(0, 1)
+    z = normal(0, 1)
 
     return new_vector3d(x, y, z).normalise()
 
@@ -346,8 +351,11 @@ cpdef Vector3D vector_hemisphere_cosine():
     :return: A unit Vector3D.
     """
 
-    cdef Point2D p = point_disk()
-    return new_vector3d(p.x, p.y, sqrt(max(0, 1 - p.x * p.x - p.y * p.y)))
+    cdef double r = sqrt(uniform())
+    cdef double theta = 2.0 * PI * uniform()
+    cdef double x = r * cos(theta)
+    cdef double y = r * sin(theta)
+    return new_vector3d(x, y, sqrt(max(0, 1 - x*x - y*y)))
 
 
 # initialise random number generator

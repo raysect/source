@@ -34,9 +34,9 @@ from raysect.core.math.point cimport Point2D
 
 cpdef seed(object d=*)
 
-cpdef double random()
+cpdef double uniform()
 
-cpdef double normally_distributed_random()
+cpdef double normal(double mean, double sigma)
 
 cpdef bint probability(double prob)
 
