@@ -8,7 +8,7 @@ cdef class SingleRay(VectorGenerator):
     pass
 
 
-cdef class LightCone(VectorGenerator):
+cdef class Cone(VectorGenerator):
     cdef public double acceptance_angle
 
 

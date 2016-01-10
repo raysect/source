@@ -369,5 +369,23 @@ cpdef Vector3D vector_hemisphere_cosine():
     return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 
 
+cpdef Vector3D vector_cone(double theta):
+    """
+    Generates a random vector in the cone along the z-axis defined by angle theta.
+
+    :param theta: Theta must be an angle between 0 and pi/2. For speed this is not checked, up to user to check the
+    angle is sensible.
+    :return: A random Vector3D in the cone defined by theta.
+    """
+
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double cos_theta = cos(theta)
+    cdef double z = uniform()/(1 - cos_theta) + cos_theta
+    cdef double r = sqrt(max(0, 1.0 - z*z))
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, z)
+
+
 # initialise random number generator
 seed()

@@ -2,8 +2,10 @@
 # Classes for generating vectors and points which sample over a pixel's acceptance cone. These classes are split into
 # two categories based on the way they sample areas of the pixel surface, and solid angles.
 
+from numpy import pi as PI
+
 from raysect.core.math.vector import Vector3D
-from raysect.core.math.random import vector_hemisphere_uniform, vector_hemisphere_cosine
+from raysect.core.math.random import vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone
 
 
 cdef class VectorGenerator:
@@ -41,7 +43,7 @@ cdef class SingleRay(VectorGenerator):
         return results
 
 
-cdef class LightCone(VectorGenerator):
+cdef class Cone(VectorGenerator):
     """
     A conical ray acceptance volume. An example would be the light cone accepted by an optical fibre.
     """
@@ -50,7 +52,19 @@ cdef class LightCone(VectorGenerator):
         """
         :param double acceptance_angle: The angle defining a cone for this observers acceptance solid angle.
         """
+        if not 0 <= acceptance_angle <= PI/2:
+            raise RuntimeError("Acceptance angle {} for Cone VectorGenerator must be between 0 and pi/2."
+                               "".format(acceptance_angle))
         self.acceptance_angle = acceptance_angle
+
+    cpdef list sample(self, int n):
+        cdef list results
+        cdef int i
+
+        results = []
+        for i in range(n):
+            results.append(vector_cone(self.acceptance_angle))
+        return results
 
 
 cdef class Hemisphere(VectorGenerator):

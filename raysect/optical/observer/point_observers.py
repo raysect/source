@@ -2,10 +2,14 @@
 from multiprocessing import Process, cpu_count, Queue
 
 import matplotlib.pyplot as plt
+from numpy import pi as PI
 
+from raysect.optical.observer.pixel import VectorSamplerPixel
 from raysect.optical.ray import Ray
 from raysect.optical import Spectrum
-from raysect.core import World, AffineMatrix, Point, Vector, Observer
+from raysect.core import World, AffineMatrix3D, Point2D, Observer
+from raysect.optical.observer.point_generator import SinglePointGenerator, CircularPointGenerator
+from raysect.optical.observer.vector_generators import SingleRay, Cone
 
 
 class PointObserver(Observer):
@@ -22,13 +26,13 @@ class PointObserver(Observer):
     :param name: a printable name
     """
 
-    def __init__(self, process_count=cpu_count(), sensitivity=1.0, spectral_samples=20, rays=1, parent=None,
-                 transform=AffineMatrix(), name=""):
+    def __init__(self, sensitivity=1.0, spectral_samples=512, spectral_rays=1, pixel_samples=1, parent=None,
+                 transform=AffineMatrix3D(), name=""):
 
-        Observer.__init__(self, parent, transform, name)
+        super().__init__(parent, transform, name)
 
         # ray configuration
-        self.rays = rays
+        self.spectral_rays = spectral_rays
         self.spectral_samples = spectral_samples
         self.min_wavelength = 375.0
         self.max_wavelength = 740.0
@@ -36,10 +40,9 @@ class PointObserver(Observer):
         self.ray_min_depth = 3
         self.ray_max_depth = 15
 
-        # concurrency configuration
-        self.process_count = process_count
-
         self.sensitivity = sensitivity
+        self.pixel_samples = pixel_samples
+        self.pixel = None
 
         # accumulation settings
         self.accumulate = False
@@ -48,6 +51,16 @@ class PointObserver(Observer):
         # Output from last call to Observe()
         self.spectrum = None
         self.max_radiance = 0.
+
+    def configure_pixel(self):
+        """
+        Virtual method - to be implemented by derived classes.
+
+        Runs at the start of observe() loop to set up any data needed for calculating pixel vectors
+        and super-sampling that shouldn't be calculated at every loop iteration. The result of this
+        function should be written to self._pixel_vectors_variables.
+        """
+        raise NotImplementedError("Virtual method configure_pixel() has not been implemented for this Camera.")
 
     def observe(self):
         """ Fire a single ray and fill the 'spectrum' attribute with the
@@ -61,50 +74,50 @@ class PointObserver(Observer):
         if self.min_wavelength >= self.max_wavelength:
             raise RuntimeError("Min wavelength is superior to max wavelength!")
 
-        world = self.root
-
-        total_samples = self.rays * self.spectral_samples
-
-        rays = self._generate_rays()
+        total_samples = self.spectral_rays * self.spectral_samples
 
         if not self.accumulate:
             self.spectrum = Spectrum(self.min_wavelength, self.max_wavelength, total_samples)
             self.accumulated_samples = 0
 
-        # trace
-        if self.process_count == 1:
-            self._observe_single(world, rays)
-        else:
-            self._observe_parallel(world, rays)
+        # generate spectral data
+        wvl_channels = self._calc_wvl_channel_config()
 
-    def _observe_single(self, world, rays):
+        # rebuild pixels in case camera properties have changed
+        self.configure_pixel()
 
+        # Loop over spectral samples and trace rays
         lower_index = 0
-        for index, ray in enumerate(rays):
+        for i_channel, wvl_channel_config in enumerate(wvl_channels):
 
-            upper_index = self.spectral_samples * (index + 1)
+            upper_index = self.spectral_samples * (i_channel + 1)
 
-            # convert ray parameters to world space
-            ray.origin = Point(0, 0, 0).transform(self.to_root())
-            ray.direction = Vector(0., 0., 1.0).transform(self.to_root())
+            min_wavelength, max_wavelength, spectral_samples = wvl_channel_config
 
-            # sample world
-            sample = ray.trace(world)
-            self.spectrum.samples[lower_index:upper_index] = sample.samples
+            # trace rays on this pixel
+            spectrum, ray_count = self.pixel.sample_pixel(min_wavelength, max_wavelength, spectral_samples, self)
+
+            self.spectrum.samples[lower_index:upper_index] = spectrum.samples
 
             lower_index = upper_index
 
-    def _observe_parallel(self, world, rays):
-        pass
-
-    def _generate_rays(self):
+    def _calc_wvl_channel_config(self):
         """
-        Virtual method - to be implemented by derived classes.
+        Break the wavelength range up based on the number of required spectral rays. When simulated dispersion effects
+        or reflections for example, the overall wavelength range may be broken up into >20 sub regions for individual
+        ray sampling.
 
-        Called for each pixel in the _worker() observe loop. For a given pixel, this function must return a list of
-        vectors to ray trace.
+        :return: list[tuples (min_wavelength, max_wavelength, spectral_samples),...]
         """
-        raise NotImplementedError("Virtual method _generate_rays() has not been implemented for this Observer.")
+
+        # TODO - spectral_samples needs to be over whole wavelength range, not each sub wavelength range.
+        config = []
+        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.spectral_rays
+        for index in range(self.spectral_rays):
+            config.append((self.min_wavelength + delta_wavelength * index,
+                           self.min_wavelength + delta_wavelength * (index + 1),
+                           self.spectral_samples))
+        return config
 
     def display(self):
         """
@@ -122,24 +135,25 @@ class PointObserver(Observer):
 
 class LineOfSight(PointObserver):
 
-    def _generate_rays(self):
-
-        rays = list()
-        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.rays
-        lower_wavelength = self.min_wavelength
-        for index in range(self.rays):
-
-            upper_wavelength = self.min_wavelength + delta_wavelength * (index + 1)
-
-            rays.append(Ray(min_wavelength=lower_wavelength, max_wavelength=upper_wavelength,
-                            num_samples=self.spectral_samples, max_depth=self.ray_max_depth))
-
-            lower_wavelength = upper_wavelength
-
-        return rays
+    def configure_pixel(self):
+        self.pixel = VectorSamplerPixel((0, 0), Point2D(0.0, 0.0), AffineMatrix3D(), self.to_root(),
+                                        SinglePointGenerator(), SingleRay())
 
 
-# TODO - implement optical fibre
 class OpticalFibre(PointObserver):
-    pass
+    def __init__(self, acceptance_angle=PI/16, radius=0.001, sensitivity=1.0, spectral_samples=512,
+                 spectral_rays=1, pixel_samples=1, parent=None, transform=AffineMatrix3D(), name=""):
 
+        super().__init__(sensitivity=sensitivity, spectral_samples=spectral_samples, spectral_rays=spectral_rays,
+                         pixel_samples=pixel_samples, parent=parent, transform=transform, name=name)
+
+        if not 0 <= acceptance_angle <= PI/2:
+            raise RuntimeError("Acceptance angle {} for OpticalFibre must be between 0 and pi/2."
+                               "".format(acceptance_angle))
+
+        self.acceptance_angle = acceptance_angle
+        self.radius = radius
+
+    def configure_pixel(self):
+        self.pixel = VectorSamplerPixel((0, 0), Point2D(0.0, 0.0), AffineMatrix3D(), self.to_root(),
+                                        CircularPointGenerator(self.radius), Cone(self.acceptance_angle))

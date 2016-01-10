@@ -1,6 +1,6 @@
 
 
-from raysect.core.math.point cimport Point3D
+from raysect.core.math.point cimport Point3D, Point2D
 from raysect.core.math.random import point_disk, uniform
 from raysect.core import AffineMatrix3D
 
@@ -52,7 +52,7 @@ cdef class CircularPointGenerator(PointGenerator):
         cdef list results
         cdef int i
         cdef double radius = self.radius
-        cdef Point3D random_point
+        cdef Point2D random_point
 
         results = []
         for i in range(n):

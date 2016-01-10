@@ -78,13 +78,16 @@ class Camera(Observer):
         and super-sampling that shouldn't be calculated at every loop iteration. The result of this
         function should be written to self._pixel_vectors_variables.
         """
-        raise NotImplementedError("Virtual method _setup_pixels() has not been implemented for this Camera.")
+        raise NotImplementedError("Virtual method rebuild_pixels() has not been implemented for this Camera.")
 
     def observe(self):
 
         # must be connected to a world node to be able to perform a ray trace
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
+
+        if self.min_wavelength >= self.max_wavelength:
+            raise RuntimeError("Min wavelength is superior to max wavelength!")
 
         # create intermediate and final frame-buffers
         if not self.accumulate:
