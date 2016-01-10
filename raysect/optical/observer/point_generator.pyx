@@ -41,7 +41,7 @@ cdef class SinglePointGenerator(PointGenerator):
 
 cdef class CircularPointGenerator(PointGenerator):
 
-    def __init__(self, radius, transform=AffineMatrix3D()):
+    def __init__(self, radius=1, transform=AffineMatrix3D()):
         """
         :param double radius: The radius of the circular sampling area of this observer.
         """
@@ -63,7 +63,7 @@ cdef class CircularPointGenerator(PointGenerator):
 
 cdef class RectangularPointGenerator(PointGenerator):
 
-    def __init__(self, width, height, transform=AffineMatrix3D()):
+    def __init__(self, width=1, height=1, transform=AffineMatrix3D()):
         """
         :param double width: The width of the rectangular sampling area of this observer.
         :param double height: The height of the rectangular sampling area of this observer.

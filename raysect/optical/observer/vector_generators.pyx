@@ -48,7 +48,7 @@ cdef class Cone(VectorGenerator):
     A conical ray acceptance volume. An example would be the light cone accepted by an optical fibre.
     """
 
-    def __init__(self, double acceptance_angle):
+    def __init__(self, double acceptance_angle=PI/4):
         """
         :param double acceptance_angle: The angle defining a cone for this observers acceptance solid angle.
         """
