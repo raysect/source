@@ -1,17 +1,17 @@
-from time import time
 from math import tan, pi, ceil
 from multiprocessing import Process, cpu_count, Queue
+from time import time
 
 import numpy as np
-from numpy import zeros
 from matplotlib.pyplot import imshow, imsave, show, clf, draw, pause
+from numpy import zeros
 
+from raysect.optical.observer.pixel import VectorSamplerPixel
 from raysect.core import World, AffineMatrix3D, Point3D, Point2D, Vector3D, Observer, translate
-from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.core.math import random
+from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.optical.observer.point_generator import RectangularPointGenerator
 from raysect.optical.observer.vector_generators import SingleRay, CosineHemisphereWithForwardBias
-from raysect.optical.pixel import VectorSamplerPixel
 
 
 class Camera(Observer):
