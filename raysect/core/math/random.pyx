@@ -309,6 +309,16 @@ cpdef Point2D point_disk():
     return new_point2d(r * cos(theta), r * sin(theta))
 
 
+cpdef Point2D point_square():
+    """
+    Returns a random point on a square of unit radius.
+
+    :return: A Point2D on the square.
+    """
+
+    return new_point2d(uniform(), uniform())
+
+
 cpdef Vector3D vector_sphere():
     """
     Generates a random vector on a unit sphere.
