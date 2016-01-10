@@ -353,9 +353,9 @@ cpdef Vector3D vector_hemisphere_cosine():
     """
 
     cdef double r = sqrt(uniform())
-    cdef double theta = 2.0 * PI * uniform()
-    cdef double x = r * cos(theta)
-    cdef double y = r * sin(theta)
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
     return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 
 
