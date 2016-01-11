@@ -54,6 +54,8 @@ cdef class BiConvex(EncapsulatedPrimitive):
         readonly double diameter
         readonly double center_thickness
         readonly double edge_thickness
+        readonly double front_thickness
+        readonly double back_thickness
         readonly double front_curvature
         readonly double back_curvature
 
@@ -63,7 +65,7 @@ cdef class BiConvex(EncapsulatedPrimitive):
         self.center_thickness = center_thickness
         self.front_curvature = front_curvature
         self.back_curvature = back_curvature
-        self._calc_edge_thickness()
+        self._calc_geometry()
         radius = 0.5 * diameter
 
         # validate
@@ -100,20 +102,20 @@ cdef class BiConvex(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef inline void _calc_edge_thickness(self):
+    cdef inline void _calc_geometry(self):
 
-        cdef double radius, radius_sqr, front_thickness, back_thickness
+        cdef double radius, radius_sqr
 
         # barrel radius
         radius = 0.5 * self.diameter
         radius_sqr = radius * radius
 
         # thickness of spherical surfaces
-        front_thickness = self.front_curvature - sqrt(self.front_curvature * self.front_curvature - radius_sqr)
-        back_thickness = self.back_curvature - sqrt(self.back_curvature * self.back_curvature - radius_sqr)
+        self.front_thickness = self.front_curvature - sqrt(self.front_curvature * self.front_curvature - radius_sqr)
+        self.back_thickness = self.back_curvature - sqrt(self.back_curvature * self.back_curvature - radius_sqr)
 
         # edge thickness is the length of the barrel without the curved surfaces
-        self.edge_thickness = self.center_thickness - (front_thickness + back_thickness)
+        self.edge_thickness = self.center_thickness - (self.front_thickness + self.back_thickness)
 
     def __str__(self):
         """String representation."""
@@ -134,6 +136,8 @@ cdef class BiConcave(EncapsulatedPrimitive):
         readonly double diameter
         readonly double center_thickness
         readonly double edge_thickness
+        readonly double front_thickness
+        readonly double back_thickness
         readonly double front_curvature
         readonly double back_curvature
 
@@ -143,7 +147,7 @@ cdef class BiConcave(EncapsulatedPrimitive):
         self.center_thickness = center_thickness
         self.front_curvature = front_curvature
         self.back_curvature = back_curvature
-        self._calc_edge_thickness()
+        self._calc_geometry()
         radius = 0.5 * diameter
 
         # validate
@@ -171,26 +175,26 @@ cdef class BiConcave(EncapsulatedPrimitive):
         # construct lens using CSG
         front = Sphere(front_curvature, transform=translate(0, 0, center_thickness + front_curvature))
         back = Sphere(back_curvature, transform=translate(0, 0, -back_curvature))
-        barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding, transform=translate(0, 0, -0.5 * padding))
+        barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding, transform=translate(0, 0, -0.5 * padding + self.back_thickness))
         lens = Subtract(Subtract(barrel, front), back)
 
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef inline void _calc_edge_thickness(self):
+    cdef inline void _calc_geometry(self):
 
-        cdef double radius, radius_sqr, front_thickness, back_thickness
+        cdef double radius, radius_sqr
 
         # barrel radius
         radius = 0.5 * self.diameter
         radius_sqr = radius * radius
 
         # thickness of spherical surfaces
-        front_thickness = self.front_curvature - sqrt(self.front_curvature * self.front_curvature - radius_sqr)
-        back_thickness = self.back_curvature - sqrt(self.back_curvature * self.back_curvature - radius_sqr)
+        self.front_thickness = self.front_curvature - sqrt(self.front_curvature * self.front_curvature - radius_sqr)
+        self.back_thickness = self.back_curvature - sqrt(self.back_curvature * self.back_curvature - radius_sqr)
 
         # edge thickness is the length of the barrel without the curved surfaces
-        self.edge_thickness = self.center_thickness + front_thickness + back_thickness
+        self.edge_thickness = self.center_thickness + self.front_thickness + self.back_thickness
 
     def __str__(self):
         """String representation."""
@@ -201,150 +205,223 @@ cdef class BiConcave(EncapsulatedPrimitive):
         else:
             return s
 
-
-# todo: docstrings
-# todo: add attributes for derived lens properties, e.g. focal length
-# todo: add additional initialisation methods
-cdef class PlanoConvex(EncapsulatedPrimitive):
-
-    cdef:
-        readonly double diameter
-        readonly double center_thickness
-        readonly double edge_thickness
-        readonly double curvature
-
-    def __init__(self, double diameter, double center_thickness, double curvature, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
-
-        self.diameter = diameter
-        self.center_thickness = center_thickness
-        self.curvature = curvature
-        self._calc_edge_thickness()
-        radius = 0.5 * diameter
-
-        # validate
-        if diameter <= 0:
-            raise ValueError("The lens diameter must be greater than zero.")
-
-        if center_thickness <= 0:
-            raise ValueError("The lens thickness must be greater than zero.")
-
-        if curvature <= 0:
-            raise ValueError("The radius of curvature must be greater than zero.")
-
-        if curvature < radius:
-            raise ValueError("The radius of curvature of the face cannot be less than the barrel radius.")
-
-        if self.edge_thickness < 0:
-            raise ValueError("The curvature and/or thickness is too small to produce a lens of the specified diameter.")
-
-        # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
-        padding = self.edge_thickness * PAD_FACTOR
-
-        # construct lens using CSG
-        curve = Sphere(curvature, transform=translate(0, 0, center_thickness - curvature))
-        barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding)
-        lens = Intersect(barrel, curve)
-
-        # attach to local root (performed in EncapsulatedPrimitive init)
-        super().__init__(lens, parent, transform, material, name)
-
-    cdef inline void _calc_edge_thickness(self):
-
-        cdef double radius, radius_sqr, curve_thickness
-
-        # barrel radius
-        radius = 0.5 * self.diameter
-        radius_sqr = radius * radius
-
-        # thickness of spherical surfaces
-        curve_thickness = self.curvature - sqrt(self.curvature * self.curvature - radius_sqr)
-
-        # edge thickness is the length of the barrel without the curved surfaces
-        self.edge_thickness = self.center_thickness - curve_thickness
-
-    def __str__(self):
-        """String representation."""
-
-        s = "<PlanoConvex at {}>".format(str(hex(id(self))))
-        if self.name:
-            return "{} {}".format(self.name, s)
-        else:
-            return s
-
-
-# todo: docstrings
-# todo: add attributes for derived lens properties, e.g. focal length
-# todo: add additional initialisation methods
-cdef class PlanoConcave(EncapsulatedPrimitive):
-
-    cdef:
-        readonly double diameter
-        readonly double center_thickness
-        readonly double edge_thickness
-        readonly double curvature
-
-    def __init__(self, double diameter, double center_thickness, double curvature, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
-
-        self.diameter = diameter
-        self.center_thickness = center_thickness
-        self.curvature = curvature
-        self._calc_edge_thickness()
-        radius = 0.5 * diameter
-
-        # validate
-        if diameter <= 0:
-            raise ValueError("The lens diameter must be greater than zero.")
-
-        if center_thickness <= 0:
-            raise ValueError("The lens thickness must be greater than zero.")
-
-        if curvature <= 0:
-            raise ValueError("The radius of curvature must be greater than zero.")
-
-        if curvature < radius:
-            raise ValueError("The radius of curvature of the face cannot be less than the barrel radius.")
-
-        # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
-        padding = self.edge_thickness * PAD_FACTOR
-
-        # construct lens using CSG
-        curve = Sphere(curvature, transform=translate(0, 0, center_thickness + curvature))
-        barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding)
-        lens = Subtract(barrel, curve)
-
-        # attach to local root (performed in EncapsulatedPrimitive init)
-        super().__init__(lens, parent, transform, material, name)
-
-    cdef inline void _calc_edge_thickness(self):
-
-        cdef double radius, radius_sqr, curve_thickness
-
-        # barrel radius
-        radius = 0.5 * self.diameter
-        radius_sqr = radius * radius
-
-        # thickness of spherical surfaces
-        curve_thickness = self.curvature - sqrt(self.curvature * self.curvature - radius_sqr)
-
-        # edge thickness is the length of the barrel without the curved surfaces
-        self.edge_thickness = self.center_thickness + curve_thickness
-
-    def __str__(self):
-        """String representation."""
-
-        s = "<PlanoConcave at {}>".format(str(hex(id(self))))
-        if self.name:
-            return "{} {}".format(self.name, s)
-        else:
-            return s
-
-
-cdef class PositiveMeniscus(EncapsulatedPrimitive):
-    pass
-
-
-cdef class NegativeMeniscus(EncapsulatedPrimitive):
-    pass
+#
+# # todo: docstrings
+# # todo: add attributes for derived lens properties, e.g. focal length
+# # todo: add additional initialisation methods
+# cdef class PlanoConvex(EncapsulatedPrimitive):
+#
+#     cdef:
+#         readonly double diameter
+#         readonly double center_thickness
+#         readonly double edge_thickness
+#         readonly double curvature
+#
+#     def __init__(self, double diameter, double center_thickness, double curvature, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+#
+#         self.diameter = diameter
+#         self.center_thickness = center_thickness
+#         self.curvature = curvature
+#         self._calc_edge_thickness()
+#         radius = 0.5 * diameter
+#
+#         # validate
+#         if diameter <= 0:
+#             raise ValueError("The lens diameter must be greater than zero.")
+#
+#         if center_thickness <= 0:
+#             raise ValueError("The lens thickness must be greater than zero.")
+#
+#         if curvature <= 0:
+#             raise ValueError("The radius of curvature must be greater than zero.")
+#
+#         if curvature < radius:
+#             raise ValueError("The radius of curvature of the face cannot be less than the barrel radius.")
+#
+#         if self.edge_thickness < 0:
+#             raise ValueError("The curvature and/or thickness is too small to produce a lens of the specified diameter.")
+#
+#         # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
+#         padding = self.edge_thickness * PAD_FACTOR
+#
+#         # construct lens using CSG
+#         curve = Sphere(curvature, transform=translate(0, 0, center_thickness - curvature))
+#         barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding)
+#         lens = Intersect(barrel, curve)
+#
+#         # attach to local root (performed in EncapsulatedPrimitive init)
+#         super().__init__(lens, parent, transform, material, name)
+#
+#     cdef inline void _calc_edge_thickness(self):
+#
+#         cdef double radius, radius_sqr, curve_thickness
+#
+#         # barrel radius
+#         radius = 0.5 * self.diameter
+#         radius_sqr = radius * radius
+#
+#         # thickness of spherical surfaces
+#         curve_thickness = self.curvature - sqrt(self.curvature * self.curvature - radius_sqr)
+#
+#         # edge thickness is the length of the barrel without the curved surfaces
+#         self.edge_thickness = self.center_thickness - curve_thickness
+#
+#     def __str__(self):
+#         """String representation."""
+#
+#         s = "<PlanoConvex at {}>".format(str(hex(id(self))))
+#         if self.name:
+#             return "{} {}".format(self.name, s)
+#         else:
+#             return s
+#
+#
+# # todo: docstrings
+# # todo: add attributes for derived lens properties, e.g. focal length
+# # todo: add additional initialisation methods
+# cdef class PlanoConcave(EncapsulatedPrimitive):
+#
+#     cdef:
+#         readonly double diameter
+#         readonly double center_thickness
+#         readonly double edge_thickness
+#         readonly double curvature
+#
+#     def __init__(self, double diameter, double center_thickness, double curvature, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+#
+#         self.diameter = diameter
+#         self.center_thickness = center_thickness
+#         self.curvature = curvature
+#         self._calc_edge_thickness()
+#         radius = 0.5 * diameter
+#
+#         # validate
+#         if diameter <= 0:
+#             raise ValueError("The lens diameter must be greater than zero.")
+#
+#         if center_thickness <= 0:
+#             raise ValueError("The lens thickness must be greater than zero.")
+#
+#         if curvature <= 0:
+#             raise ValueError("The radius of curvature must be greater than zero.")
+#
+#         if curvature < radius:
+#             raise ValueError("The radius of curvature of the face cannot be less than the barrel radius.")
+#
+#         # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
+#         padding = self.edge_thickness * PAD_FACTOR
+#
+# #TODO: BARREL LOCATION WRONG
+#         # construct lens using CSG
+#         curve = Sphere(curvature, transform=translate(0, 0, center_thickness + curvature))
+#         barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding)
+#         lens = Subtract(barrel, curve)
+#
+#         # attach to local root (performed in EncapsulatedPrimitive init)
+#         super().__init__(lens, parent, transform, material, name)
+#
+#     cdef inline void _calc_edge_thickness(self):
+#
+#         cdef double radius, radius_sqr, curve_thickness
+#
+#         # barrel radius
+#         radius = 0.5 * self.diameter
+#         radius_sqr = radius * radius
+#
+#         # thickness of spherical surfaces
+#         curve_thickness = self.curvature - sqrt(self.curvature * self.curvature - radius_sqr)
+#
+#         # edge thickness is the length of the barrel without the curved surfaces
+#         self.edge_thickness = self.center_thickness + curve_thickness
+#
+#     def __str__(self):
+#         """String representation."""
+#
+#         s = "<PlanoConcave at {}>".format(str(hex(id(self))))
+#         if self.name:
+#             return "{} {}".format(self.name, s)
+#         else:
+#             return s
+#
+#
+# cdef class Meniscus(EncapsulatedPrimitive):
+#
+#     cdef:
+#         readonly double diameter
+#         readonly double center_thickness
+#         readonly double edge_thickness
+#         readonly double full_thickness
+#         readonly double front_curvature
+#         readonly double back_curvature
+#
+#     def __init__(self, double diameter, double center_thickness, double front_curvature, double back_curvature, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+#
+#         self.diameter = diameter
+#         self.center_thickness = center_thickness
+#         self.front_curvature = front_curvature
+#         self.back_curvature = back_curvature
+#         self._calc_edge_thickness()
+#         radius = 0.5 * diameter
+#
+#         # validate
+#         if diameter <= 0:
+#             raise ValueError("The lens diameter must be greater than zero.")
+#
+#         if center_thickness <= 0:
+#             raise ValueError("The lens thickness must be greater than zero.")
+#
+#         if front_curvature <= 0:
+#             raise ValueError("The front radius of curvature must be greater than zero.")
+#
+#         if back_curvature <= 0:
+#             raise ValueError("The back radius of curvature must be greater than zero.")
+#
+#         if front_curvature < radius:
+#             raise ValueError("The radius of curvature of the front face cannot be less than the barrel radius.")
+#
+#         if back_curvature < radius:
+#             raise ValueError("The radius of curvature of the back face cannot be less than the barrel radius.")
+#
+#         if self.edge_thickness < 0:
+#             raise ValueError("The curvatures and/or thickness are too incapable of producing a lens of the specified diameter.")
+#
+#         # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
+#         # padding = self.full_thickness * PAD_FACTOR
+#
+# #TODO: BARREL LOCATION WRONG
+#         # construct lens using CSG
+#         front = Sphere(front_curvature, transform=translate(0, 0, center_thickness - front_curvature))
+#         back = Sphere(back_curvature, transform=translate(0, 0, -back_curvature))
+#         # barrel = Cylinder(0.5 * diameter, self.full_thickness + padding, transform=translate(0, 0, -0.5 * padding))
+#         lens = Intersect(barrel, Subtract(front, back))
+#
+#         # attach to local root (performed in EncapsulatedPrimitive init)
+#         super().__init__(lens, parent, transform, material, name)
+#
+#     cdef inline void _calc_thicknesses(self):
+#
+#         cdef double radius, radius_sqr, front_thickness, back_thickness
+#
+#         # barrel radius
+#         radius = 0.5 * self.diameter
+#         radius_sqr = radius * radius
+#
+#         # thickness of spherical surfaces
+#         front_thickness = self.front_curvature - sqrt(self.front_curvature * self.front_curvature - radius_sqr)
+#         back_thickness = self.back_curvature - sqrt(self.back_curvature * self.back_curvature - radius_sqr)
+#
+#         # edge thickness is the length of the barrel without the curved surfaces
+#         # self.edge_thickness = self.center_thickness - (front_thickness + back_thickness)
+#         # self.full_thickness = self.center_thickness - (front_thickness + back_thickness)
+#
+#     def __str__(self):
+#         """String representation."""
+#
+#         s = "<Meniscus at {}>".format(str(hex(id(self))))
+#         if self.name:
+#             return "{} {}".format(self.name, s)
+#         else:
+#             return s
 
 
 
