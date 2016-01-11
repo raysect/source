@@ -11,31 +11,33 @@ import sys
 sys.ps1 = 'SOMETHING'
 
 # Import the new lens classes
-from raysect.primitive.optical.spherical import *
+from raysect.primitive.lens.spherical import *
+
+rotation = 0.0
 
 # Instantiate world object
 world = World()
 
-# Create a lens object
-lens = BiConcave(0.0254, 0.003, 0.0396, 0.0396, parent=world, transform=translate(0, 0, 0) * rotate(90.0, 0.0, 0.0), material=schott("N-BK7"))
-# lens = PlanoConcave(0.0254, 0.003, 0.0396, parent=world, transform=translate(0, 0, 0) * rotate(90.0, 0.0, 0.0), material=schott("N-BK7"))
-# lens = PlanoConvex(0.0254, 0.006, 0.0396, parent=world, transform=translate(0, 0, 0) * rotate(90.0, 0.0, 0.0), material=schott("N-BK7"))
-print(lens.edge_thickness)
-
+# Create lens objects
+BiConvex(0.0254, 0.0052, 0.0506, 0.0506, parent=world, transform=translate(0.02, 0.02, 0) * rotate(rotation, 0.0, 0.0), material=schott("N-BK7"))
+BiConcave(0.0254, 0.0030, 0.052, 0.052, parent=world, transform=translate(-0.02, 0.02, 0) * rotate(rotation, 0.0, 0.0), material=schott("N-BK7"))
+PlanoConvex(0.0254, 0.0053, 0.0258, parent=world, transform=translate(0.02, -0.02, 0) * rotate(rotation, 0.0, 0.0), material=schott("N-BK7"))
+PlanoConcave(0.0254, 0.0035, 0.0257, parent=world, transform=translate(-0.02, -0.02, 0) * rotate(rotation, 0.0, 0.0), material=schott("N-BK7"))
+Meniscus(0.0254, 0.0036, 0.0321, 0.0822, parent=world, transform=translate(0, 0, 0) * rotate(rotation, 0.0, 0.0), material=schott("N-BK7"))
 
 # Background Checkerboard
-Box(Point3D(-50.0, -50.0, -50.0), Point3D(50.0, 50.0, 50.0), world, material=Checkerboard(4.0, d65_white, d65_white, 0.4, 0.8))
+Box(Point3D(-50.0, -50.0, 0.1), Point3D(50.0, 50.0, 0.2), world, material=Checkerboard(0.01, d65_white, d65_white, 0.4, 0.8))
 
 # Instantiate camera object, and configure its settings.
 ion()
-camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -0.05) * rotate(0, 0, 0))
+camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -0.1) * rotate(0, 0, 0))
 camera.ray_min_depth = 3
 camera.ray_max_depth = 200
 camera.ray_extinction_prob = 0.01
 camera.pixel_samples = 50
-camera.rays = 1
-camera.spectral_samples = 15
-camera.pixels = (128, 128)
+camera.rays = 6
+camera.spectral_samples = 5
+camera.pixels = (512, 512)
 camera.display_progress = True
 camera.display_update_time = 10
 camera.sub_sample = True
@@ -44,6 +46,6 @@ camera.sub_sample = True
 camera.observe()
 
 ioff()
-camera.save("render.png")
+camera.save("lens_render.png")
 camera.display()
 show()

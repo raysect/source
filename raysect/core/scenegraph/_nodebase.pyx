@@ -49,6 +49,15 @@ cdef class _NodeBase:
         self._root_transform_inverse = AffineMatrix3D()
         self._track_modifications = True
 
+    def __str__(self):
+        """String representation."""
+
+        s = "{} at {}".format(self.__class__.__name__, str(hex(id(self))))
+        if self.name:
+            return "<{}: {}>".format(self.name, s)
+        else:
+            return "<{}>".format(s)
+
     def _check_parent(self, _NodeBase parent):
         """
         Raises an exception if this node or its descendants are passed.

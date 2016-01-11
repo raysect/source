@@ -70,14 +70,6 @@ cdef class EncapsulatedPrimitive(Primitive):
         for child in self._primitive.children:
             child.parent = None
 
-    def __str__(self):
-        """String representation."""
-
-        if self.name:
-            return self.name + " <EncapsulatedPrimitive at {}>".format(str(hex(id(self))))
-        else:
-            return "<EncapsulatedPrimitive at {}>".format(str(hex(id(self))))
-
     def _modified(self):
 
         # update the local transform to mirror the transform of the main scene-graph

@@ -65,14 +65,6 @@ cdef class Node(_NodeBase):
         # re-enable _modified() calls
         self._track_modifications = True
 
-    def __str__(self):
-        """String representation."""
-
-        if self._name:
-            return self._name + " <Node at " + str(hex(id(self))) + ">"
-        else:
-            return "<Node at " + str(hex(id(self))) + ">"
-
     property parent:
 
         def __get__(self):

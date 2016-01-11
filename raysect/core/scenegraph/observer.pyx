@@ -38,14 +38,6 @@ cdef class Observer(Node):
     fibre optics and other sampling objects.
     """
 
-    def __str__(self):
-        """String representation."""
-
-        if self._name:
-            return self._name + " <Observer at " + str(hex(id(self))) + ">"
-        else:
-            return "<Observer at " + str(hex(id(self))) + ">"
-
     cpdef observe(self):
         """
         Virtual method - to be implemented by derived classes.

@@ -81,14 +81,6 @@ cdef class World(_NodeBase):
         def __get__(self):
             return self._observers
 
-    def __str__(self):
-        """String representation."""
-
-        if self._name:
-            return self._name + " <World at " + str(hex(id(self))) + ">"
-        else:
-            return "<World at " + str(hex(id(self))) + ">"
-
     cpdef AffineMatrix3D to(self, _NodeBase node):
         """
         Returns an affine transform that, when applied to a vector or point,

@@ -125,13 +125,6 @@ cdef class Cone(Primitive):
             # any geometry caching in the root node is now invalid, inform root
             self.notify_root()
 
-    def __str__(self):
-        """String representation."""
-        if self.name:
-            return self.name + " <Cone at " + str(hex(id(self))) + ">"
-        else:
-            return "<Cone at " + str(hex(id(self))) + ">"
-
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):
 
