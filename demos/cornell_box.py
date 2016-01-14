@@ -1,5 +1,5 @@
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
-from raysect.optical.observer.camera import PinholeCamera
+from raysect.optical.observer.cameras import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.material.lambert import Lambert
 from raysect.optical.material.glass_libraries import schott

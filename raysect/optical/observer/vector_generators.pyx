@@ -1,19 +1,54 @@
+# cython: language_level=3
+
+# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     1. Redistributions of source code must retain the above copyright notice,
+#        this list of conditions and the following disclaimer.
+#
+#     2. Redistributions in binary form must reproduce the above copyright
+#        notice, this list of conditions and the following disclaimer in the
+#        documentation and/or other materials provided with the distribution.
+#
+#     3. Neither the name of the Raysect Project nor the names of its
+#        contributors may be used to endorse or promote products derived from
+#        this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 
 # Classes for generating vectors and points which sample over a pixel's acceptance cone. These classes are split into
 # two categories based on the way they sample areas of the pixel surface, and solid angles.
 
-from numpy import pi as PI
+from libc.math cimport M_PI as PI
 
+from raysect.core.math import AffineMatrix3D
 from raysect.core.math.vector import Vector3D
-from raysect.core.math.random import vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone
+from raysect.core.math.random import vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone, vector_sphere
 
 
 cdef class VectorGenerator:
     """
-    Base class for defining the solid angle (acceptance cone) for rays launched by an observer. Observers use the
-    VectorGenerator and PointGenerator classes to build N rays for sampling.
+    Base class for an object that generates a list of Vector3D objects.
     """
-    pass
+
+    def __init__(self, transform=None):
+        if transform is None:
+            transform = AffineMatrix3D()
+        self.transform = transform
 
     def __call__(self, n):
         """
@@ -39,23 +74,26 @@ cdef class SingleRay(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(Vector3D(0, 0, 1))
+            results.append(Vector3D(0, 0, 1).transform(self.transform))
         return results
 
 
-cdef class Cone(VectorGenerator):
+cdef class ConeUniform(VectorGenerator):
     """
-    A conical ray acceptance volume. An example would be the light cone accepted by an optical fibre.
+    Generates a list of random unit Vector3D objects inside a cone.
+
+    The cone is aligned along the z-axis.
     """
 
-    def __init__(self, double acceptance_angle=PI/8):
+    def __init__(self, double angle=PI/8, transform=None):
         """
-        :param double acceptance_angle: The angle defining a cone for this observers acceptance solid angle.
+        :param double angle: The cone angle from the z-axis.
         """
-        if not 0 <= acceptance_angle <= PI/4:
+        super().__init__(transform=transform)
+        if not 0 <= angle <= PI/4:
             raise RuntimeError("Acceptance angle {} for Cone VectorGenerator must be between 0 and pi/4."
-                               "".format(acceptance_angle))
-        self.acceptance_angle = acceptance_angle
+                               "".format(angle))
+        self.angle = angle
 
     cpdef list sample(self, int n):
         cdef list results
@@ -63,13 +101,13 @@ cdef class Cone(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(vector_cone(self.acceptance_angle))
+            results.append(vector_cone(self.angle).transform(self.transform))
         return results
 
 
-cdef class Hemisphere(VectorGenerator):
+cdef class SphereUniform(VectorGenerator):
     """
-    Samples rays over hemisphere in direction of surface normal.
+    Generates a random vector on a unit sphere.
     """
     cpdef list sample(self, int n):
         cdef list results
@@ -77,13 +115,16 @@ cdef class Hemisphere(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(vector_hemisphere_uniform())
+            results.append(vector_sphere().transform(self.transform))
         return results
 
 
-cdef class CosineHemisphere(VectorGenerator):
+cdef class HemisphereUniform(VectorGenerator):
     """
-    Samples rays over a cosine-weighted hemisphere in direction of surface normal.
+    Generates a random vector on a unit hemisphere.
+
+    The hemisphere is aligned along the z-axis - the plane that forms the
+    hemisphere base lies in the x-y plane.
     """
     cpdef list sample(self, int n):
         cdef list results
@@ -91,22 +132,40 @@ cdef class CosineHemisphere(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(vector_hemisphere_cosine())
+            results.append(vector_hemisphere_uniform().transform(self.transform))
         return results
 
 
-cdef class CosineHemisphereWithForwardBias(VectorGenerator):
+cdef class HemisphereCosine(VectorGenerator):
     """
-    Samples rays over a cosine-weighted hemisphere in direction of surface normal, with an optional forward bias.
-    """
-    def __init__(self, forward_bias=0.0):
-        self.forward_bias = forward_bias
+    Generates a cosine-weighted random vector on a unit hemisphere.
 
+    The hemisphere is aligned along the z-axis - the plane that forms the
+    hemisphere base lies in the x-y plane.
+    """
     cpdef list sample(self, int n):
         cdef list results
         cdef int i
 
         results = []
         for i in range(n):
-            results.append((vector_hemisphere_cosine() + self.forward_bias * Vector3D(0, 0, 1)).normalise())
+            results.append(vector_hemisphere_cosine().transform(self.transform))
         return results
+
+
+# cdef class CosineHemisphereWithForwardBias(VectorGenerator):
+#     """
+#     Samples rays over a cosine-weighted hemisphere in direction of surface normal, with an optional forward bias.
+#     """
+#     def __init__(self, forward_bias=0.0, transform=None):
+#         super().__init__(transform=transform)
+#         self.forward_bias = forward_bias
+#
+#     cpdef list sample(self, int n):
+#         cdef list results
+#         cdef int i
+#
+#         results = []
+#         for i in range(n):
+#             results.append((vector_hemisphere_cosine() + self.forward_bias * Vector3D(0, 0, 1)).normalise())
+#         return results
