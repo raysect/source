@@ -3,7 +3,6 @@ from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.emitter import Checkerboard
 from raysect.optical.material.glass_libraries import schott
-from raysect.optical.material import Gold, Silver
 
 from raysect.primitive import Box
 from matplotlib.pyplot import *
@@ -13,7 +12,7 @@ sys.ps1 = 'SOMETHING'
 # Import the new lens classes
 from raysect.primitive.lens.spherical import *
 
-rotation = 0.0
+rotation = 90.0
 
 # Instantiate world object
 world = World()
@@ -35,9 +34,9 @@ camera.ray_min_depth = 3
 camera.ray_max_depth = 200
 camera.ray_extinction_prob = 0.01
 camera.pixel_samples = 50
-camera.rays = 6
-camera.spectral_samples = 5
-camera.pixels = (512, 512)
+camera.rays = 1
+camera.spectral_samples = 20
+camera.pixels = (256, 256)
 camera.display_progress = True
 camera.display_update_time = 10
 camera.sub_sample = True

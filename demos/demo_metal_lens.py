@@ -1,6 +1,6 @@
 from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
 from raysect.primitive import Sphere, Box, Cylinder, Subtract
-from raysect.primitive.optical.spherical import BiConvex
+from raysect.primitive.lens.spherical import BiConvex
 from raysect.optical.observer import PinholeCamera, CCD
 from raysect.optical.material import Gold, Silver, Copper, Titanium, Aluminium, Beryllium, Lambert, UniformSurfaceEmitter, AbsorbingSurface
 from raysect.optical.material.glass_libraries import schott
