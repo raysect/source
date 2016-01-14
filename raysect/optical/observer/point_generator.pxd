@@ -38,14 +38,14 @@ cdef class PointGenerator:
     cpdef list sample(self, int n)
 
 
-cdef class SinglePointGenerator(PointGenerator):
+cdef class SinglePoint(PointGenerator):
     pass
 
 
-cdef class CircularPointGenerator(PointGenerator):
+cdef class Disk(PointGenerator):
     cdef public double radius
 
 
-cdef class RectangularPointGenerator(PointGenerator):
+cdef class Rectangle(PointGenerator):
     cdef public double width, height
 

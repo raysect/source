@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
 """
 All pixels have a common base class, the Pixel class, which defines common properties such as multiprocessor sampling,
 etc. Actual used Pixels are dived into two types:

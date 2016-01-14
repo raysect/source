@@ -42,8 +42,8 @@ from raysect.optical.observer.pixel import VectorSamplerPixel
 from raysect.core import World, AffineMatrix3D, Point3D, Point2D, Vector3D, Observer, translate
 from raysect.core.math import random
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
-from raysect.optical.observer.point_generator import RectangularPointGenerator
-from raysect.optical.observer.vector_generators import SingleRay, CosineHemisphereWithForwardBias
+from raysect.optical.observer.point_generator import Rectangle
+from raysect.optical.observer.vector_generators import SingleRay
 
 
 class Camera(Observer):
@@ -100,7 +100,7 @@ class Camera(Observer):
 
     @pixels.setter
     def pixels(self, pixels):
-        raise RuntimeError("Camera attribute pixels is read only.")
+        self._pixels = np.empty((pixels[1], pixels[0]), dtype=object)
 
     def rebuild_pixels(self):
         """
@@ -444,7 +444,7 @@ class PinholeCamera(Camera):
                     pixel_x = image_start_x - image_delta * i
                     pixel_y = image_start_y - image_delta * j
                     to_pixel_origin = translate(pixel_x, pixel_y, 1)
-                    point_generator = RectangularPointGenerator(image_delta, image_delta, transform=to_pixel_origin)
+                    point_generator = Rectangle(image_delta, image_delta, transform=to_pixel_origin)
                     vector_generator = SingleRay()
                     pixel = VectorSamplerPixel((i, j), Point2D(pixel_x, pixel_y), to_pixel_origin, self.to_root(),
                                                point_generator, vector_generator)
@@ -523,7 +523,7 @@ class OrthographicCamera(Camera):
                     pixel_x = image_start_x - image_delta * i
                     pixel_y = image_start_y - image_delta * j
                     to_pixel_origin = translate(pixel_x, pixel_y, 0)
-                    point_generator = RectangularPointGenerator(image_delta, image_delta, transform=to_pixel_origin)
+                    point_generator = Rectangle(image_delta, image_delta, transform=to_pixel_origin)
                     vector_generator = SingleRay()
                     self._pixels[j, i] = VectorSamplerPixel((i, j), Point2D(pixel_x, pixel_y), to_pixel_origin,
                                                             self.to_root(), point_generator, vector_generator)
@@ -532,42 +532,42 @@ class OrthographicCamera(Camera):
             raise RuntimeError("Number of camera Pixels must be >1 for OrthographicCamera.")
 
 
-class CCD(Camera):
-
-    def __init__(self, pixels=(360, 240), width=0.036, forward_bias=0, sensitivity=1.0, spectral_samples=20,
-                 spectral_rays=1, pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
-                 transform=AffineMatrix3D(), name=None):
-
-        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
-                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
-                         parent=parent, transform=transform, name=name)
-
-        self.width = width
-        self.forward_bias = forward_bias
-        self.sub_sample = sub_sample
-
-    def rebuild_pixels(self):
-
-        pixel_shape = self._pixels.shape
-        max_pixels = max(pixel_shape)
-
-        if max_pixels > 1:
-
-            # pixel step size in image plane
-            image_delta = self.width / pixel_shape[1]
-
-            image_start_x = 0.5 * pixel_shape[1] * image_delta
-            image_start_y = 0.5 * pixel_shape[0] * image_delta
-
-            for j in range(self._pixels.shape[0]):
-                for i in range(self._pixels.shape[1]):
-                    pixel_x = image_start_x - image_delta * i
-                    pixel_y = image_start_y - image_delta * j
-                    to_pixel_origin = translate(pixel_x, pixel_y, 0)
-                    point_generator = RectangularPointGenerator(image_delta, image_delta, transform=to_pixel_origin)
-                    vector_generator = CosineHemisphereWithForwardBias(forward_bias=self.forward_bias)
-                    self._pixels[j, i] = VectorSamplerPixel((i, j), Point2D(pixel_x, pixel_y), to_pixel_origin,
-                                                            self.to_root(), point_generator, vector_generator)
-
-        else:
-            raise RuntimeError("Number of camera Pixels must be >1 for OrthographicCamera.")
+# class CCD(Camera):
+#
+#     def __init__(self, pixels=(360, 240), width=0.036, forward_bias=0, sensitivity=1.0, spectral_samples=20,
+#                  spectral_rays=1, pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
+#                  transform=AffineMatrix3D(), name=None):
+#
+#         super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
+#                          spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
+#                          parent=parent, transform=transform, name=name)
+#
+#         self.width = width
+#         self.forward_bias = forward_bias
+#         self.sub_sample = sub_sample
+#
+#     def rebuild_pixels(self):
+#
+#         pixel_shape = self._pixels.shape
+#         max_pixels = max(pixel_shape)
+#
+#         if max_pixels > 1:
+#
+#             # pixel step size in image plane
+#             image_delta = self.width / pixel_shape[1]
+#
+#             image_start_x = 0.5 * pixel_shape[1] * image_delta
+#             image_start_y = 0.5 * pixel_shape[0] * image_delta
+#
+#             for j in range(self._pixels.shape[0]):
+#                 for i in range(self._pixels.shape[1]):
+#                     pixel_x = image_start_x - image_delta * i
+#                     pixel_y = image_start_y - image_delta * j
+#                     to_pixel_origin = translate(pixel_x, pixel_y, 0)
+#                     point_generator = RectangularPointGenerator(image_delta, image_delta, transform=to_pixel_origin)
+#                     vector_generator = CosineHemisphereWithForwardBias(forward_bias=self.forward_bias)
+#                     self._pixels[j, i] = VectorSamplerPixel((i, j), Point2D(pixel_x, pixel_y), to_pixel_origin,
+#                                                             self.to_root(), point_generator, vector_generator)
+#
+#         else:
+#             raise RuntimeError("Number of camera Pixels must be >1 for OrthographicCamera.")

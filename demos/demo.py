@@ -39,6 +39,7 @@ Box(Point3D(-100, -100, -100), Point3D(100, 100, 100), world, material=UniformSu
 
 ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0))
+camera.pixels = (128, 128)
 camera.ray_min_depth = 3
 camera.ray_max_depth = 200
 camera.ray_extinction_prob = 0.01
