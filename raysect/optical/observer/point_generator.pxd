@@ -30,12 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D as AffineMatrix3D_t
-
-
 cdef class PointGenerator:
-    cdef public AffineMatrix3D_t transform
-    cpdef list sample(self, int n)
+    cpdef list sample(self, int samples)
 
 
 cdef class SinglePoint(PointGenerator):

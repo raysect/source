@@ -43,22 +43,17 @@ cdef class VectorGenerator:
     Base class for an object that generates a list of Vector3D objects.
     """
 
-    def __init__(self, transform=None):
-        if transform is None:
-            transform = AffineMatrix3D()
-        self.transform = transform
+    def __call__(self, samples):
+        """
+        :param int samples: Number of vectors to generate.
+        """
+        return self.sample(samples)
 
-    def __call__(self, n):
+    cpdef list sample(self, int samples):
         """
-        :param int n: Generate n vectors that sample this observers acceptance solid angle.
+        :param int samples: Number of vectors to generate.
         """
-        return self.sample(n)
-
-    cpdef list sample(self, int n):
-        """
-        :param int n: Generate n vectors that sample this observers acceptance solid angle.
-        """
-        raise NotImplemented("The method sample(n) for this vector generator needs to be implemented.")
+        raise NotImplemented("The method sample() is not implemented for this vector generator.")
 
 
 cdef class SingleRay(VectorGenerator):
@@ -167,3 +162,6 @@ cdef class HemisphereCosine(VectorGenerator):
 #         for i in range(n):
 #             results.append((vector_hemisphere_cosine() + self.forward_bias * Vector3D(0, 0, 1)).normalise())
 #         return results
+
+#TODO: add vectorGenerator for PinholeCamera - point generator in TargettedVectorGenerator
+# above class generates vectors that target points given by a point generator

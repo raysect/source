@@ -30,51 +30,43 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from raysect.core.math.point cimport Point3D, Point2D
-from raysect.core.math.random import point_disk, uniform
-from raysect.core import AffineMatrix3D
+from raysect.core.math.point cimport Point2D, new_point3d
+from raysect.core.math.random cimport point_disk, uniform
 
 
 cdef class PointGenerator:
     """
-    Base class for defining the sampling area for rays launched by an observer. Observers use the
-    VectorGenerator and PointGenerator classes to build N rays for sampling.
-
-    :param AffineMatrix3D transform: Transform relative to the camera origin.
+    Base class for an object that generates a list of Point3D objects.
     """
 
-    def __init__(self, transform=None):
-        if transform is None:
-            transform = AffineMatrix3D()
-        self.transform = transform
+    def __call__(self, samples):
+        """
+        :param int samples: Number of points to generate.
+        """
 
-    def __call__(self, n):
-        """
-        :param int n: Generate n points that sample this observers surface area.
-        """
-        return self.sample(n)
+        return self.sample(samples)
 
-    cpdef list sample(self, int n):
+    cpdef list sample(self, int samples):
         """
-        :param int n: Generate n vectors that sample this observers acceptance solid angle.
+        :param int samples: Number of points to generate.
         """
-        raise NotImplemented("The method sample(n) for this point generator needs to be implemented.")
+        raise NotImplemented("The method sample() is not implemented for this point generator.")
 
 
 cdef class SinglePoint(PointGenerator):
     """
-    A dummy point generator that returns all samples at the origin.
-
-    :param AffineMatrix3D transform: Transform relative to the camera origin.
+    A dummy point generator that returns all samples at the origin point.
     """
 
-    cpdef list sample(self, int n):
+    cpdef list sample(self, int samples):
+
         cdef list results
         cdef int i
 
         results = []
-        for i in range(n):
-            results.append(Point3D(0, 0, 0).transform(self.transform))
+        for i in range(samples):
+            results.append(new_point3d(0, 0, 0))
+
         return results
 
 
@@ -83,23 +75,23 @@ cdef class Disk(PointGenerator):
     Generates a random Point3D on a disk.
 
     :param double radius: The radius of the disk.
-    :param AffineMatrix3D transform: Transform relative to the camera origin.
     """
 
-    def __init__(self, radius=1, transform=None):
-        super().__init__(transform=transform)
+    def __init__(self, radius=1):
+        super().__init__()
         self.radius = radius
 
-    cpdef list sample(self, int n):
+    cpdef list sample(self, int samples):
+
         cdef list results
         cdef int i
-        cdef double radius = self.radius
         cdef Point2D random_point
 
         results = []
-        for i in range(n):
+        for i in range(samples):
             random_point = point_disk()
-            results.append(Point3D(random_point.x * radius, random_point.y * radius, 0).transform(self.transform))
+            results.append(new_point3d(random_point.x * self.radius, random_point.y * self.radius, 0))
+
         return results
 
 
@@ -109,22 +101,27 @@ cdef class Rectangle(PointGenerator):
 
     :param double width: The width of the rectangular sampling area of this observer.
     :param double height: The height of the rectangular sampling area of this observer.
-    :param AffineMatrix3D transform: Transform relative to the camera origin.
     """
 
-    def __init__(self, width=1, height=1, transform=None):
-        super().__init__(transform=transform)
+    def __init__(self, width=1, height=1):
+
+        super().__init__()
         self.width = width
         self.height = height
 
-    cpdef list sample(self, int n):
+    cpdef list sample(self, int samples):
+
         cdef list results
         cdef int i
-        cdef double u, v, width_offset = self.width/2, height_offset = self.height/2
+        cdef double u, v
+        cdef double width_offset = self.width/2
+        cdef double height_offset = self.height/2
 
         results = []
-        for i in range(n):
-            u = uniform()*self.width - width_offset
-            v = uniform()*self.height - height_offset
-            results.append(Point3D(u, v, 0).transform(self.transform))
+        for i in range(samples):
+            u = uniform() * self.width - width_offset
+            v = uniform() * self.height - height_offset
+            results.append(new_point3d(u, v, 0))
+
         return results
+

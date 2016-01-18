@@ -29,13 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-
 
 cdef class VectorGenerator:
-    cdef AffineMatrix3D transform
-
-    cpdef list sample(self, int n)
+    cpdef list sample(self, int samples)
 
 
 cdef class SingleRay(VectorGenerator):
