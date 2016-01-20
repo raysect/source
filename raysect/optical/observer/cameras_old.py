@@ -472,68 +472,6 @@ class PinholeCamera(Camera):
 
         return points, directions
 
-
-class OrthographicCamera(Camera):
-    """ A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
-
-    :param pixels: tuple containing the number of pixels along horizontal and vertical axis
-    :param width: width of the area to observe in meters, the height is deduced from the 'pixels' attribute
-    :param spectral_samples: number of spectral samples by ray
-    :param rays: number of rays. The total spectrum will be divided over all the rays. The number of rays must be >1 for
-     dispersive effects.
-    :param parent: the scenegraph node which will be the parent of this observer.
-    :param transform: AffineMatrix describing the relative position/rotation of this node to the parent.
-    :param name: a printable name.
-    """
-
-    def __init__(self, pixels=(512, 512), width = 10, sensitivity=1.0, spectral_samples=20, spectral_rays=1,
-                 pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
-                 transform=AffineMatrix3D(), name=None):
-
-        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
-                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
-                         parent=parent, transform=transform, name=name)
-
-        self.sub_sample = sub_sample
-        self.width = width
-
-    @property
-    def width(self):
-        return self._width
-
-    @width.setter
-    def width(self, width):
-        if width <= 0:
-            raise ValueError("width can not be less than or equal to 0 meters.")
-        self._width = width
-
-    def rebuild_pixels(self):
-
-        pixel_shape = self._pixels.shape
-        max_pixels = max(pixel_shape)
-
-        if max_pixels > 1:
-
-            # pixel step size in image plane
-            image_delta = self._width / pixel_shape[1]
-
-            image_start_x = 0.5 * pixel_shape[1] * image_delta
-            image_start_y = 0.5 * pixel_shape[0] * image_delta
-
-            for j in range(self._pixels.shape[0]):
-                for i in range(self._pixels.shape[1]):
-                    pixel_x = image_start_x - image_delta * i
-                    pixel_y = image_start_y - image_delta * j
-                    to_pixel_origin = translate(pixel_x, pixel_y, 0)
-                    point_generator = Rectangle(image_delta, image_delta, transform=to_pixel_origin)
-                    vector_generator = SingleRay()
-                    self._pixels[j, i] = VectorSamplerPixel((i, j), Point2D(pixel_x, pixel_y), to_pixel_origin,
-                                                            self.to_root(), point_generator, vector_generator)
-
-        else:
-            raise RuntimeError("Number of camera Pixels must be >1 for OrthographicCamera.")
-
-
 # class CCD(Camera):
 #
 #     def __init__(self, pixels=(360, 240), width=0.036, forward_bias=0, sensitivity=1.0, spectral_samples=20,
