@@ -42,12 +42,12 @@ camera = OrthographicCamera(width=2.5, parent=world, transform=translate(0, 0, -
 camera.ray_min_depth = 3
 camera.ray_max_depth = 200
 camera.ray_extinction_prob = 0.01
-camera.pixel_samples = 1
+camera.pixel_samples = 100
 camera.spectral_samples = 15
 camera.display_progress = True
 camera.display_update_time = 10
 camera.sub_sample = False
-camera.process_count = 1
+# camera.process_count = 1
 camera.observe()
 
 ioff()

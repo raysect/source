@@ -114,8 +114,8 @@ cdef class Rectangle(PointGenerator):
         cdef list results
         cdef int i
         cdef double u, v
-        cdef double width_offset = self.width/2
-        cdef double height_offset = self.height/2
+        cdef double width_offset = 0.5 * self.width
+        cdef double height_offset = 0.5 * self.height
 
         results = []
         for i in range(samples):

@@ -169,7 +169,6 @@ class Camera(Observer):
                     transform = self._generate_pixel_transform(ix, iy)
 
                     # load selected pixel and trace rays
-
                     spectrum, ray_count = self._sample_pixel(self.pixel_samples, self.root, ray_template, self.to_root() * transform)
 
                     # convert spectrum to CIE XYZ
@@ -191,117 +190,114 @@ class Camera(Observer):
         self._final_statistics(statistics_data)
         self._final_display()
 
-    # def _observe_parallel(self, xyz_frame, wvl_channels):
-    #
-    #     world = self.root
-    #
-    #     # initialise user interface
-    #     display_timer = self._start_display()
-    #     statistics_data = self._start_statistics()
-    #
-    #     total_pixels = self._pixels.shape[0] * self._pixels.shape[1]
-    #
-    #     # generate weightings for accumulation
-    #     total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
-    #     previous_weight = self.accumulated_samples / total_samples
-    #     added_weight = self.spectral_rays * self.pixel_samples / total_samples
-    #
-    #     # scale previous state to account for additional samples
-    #     xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
-    #
-    #     # render
-    #     for channel, wvl_channel_config in enumerate(wvl_channels):
-    #
-    #         min_wavelength, max_wavelength, spectral_samples = wvl_channel_config
-    #
-    #         # generate resampled XYZ curves for channel spectral range
-    #         resampled_xyz = resample_ciexyz(min_wavelength, max_wavelength, spectral_samples)
-    #
-    #         # establish ipc queues using a manager process
-    #         task_queue = Queue()
-    #         result_queue = Queue()
-    #
-    #         # start process to generate image samples
-    #         producer = Process(target=self._producer, args=(task_queue, ))
-    #         producer.start()
-    #
-    #         # start worker processes
-    #         workers = []
-    #         for pid in range(self.process_count):
-    #             p = Process(target=self._worker,
-    #                         args=(world, min_wavelength, max_wavelength, spectral_samples,
-    #                               resampled_xyz, task_queue, result_queue))
-    #             p.start()
-    #             workers.append(p)
-    #
-    #         # collect results
-    #         for pixel in range(total_pixels):
-    #
-    #             # obtain result
-    #             location, xyz, sample_ray_count = result_queue.get()
-    #             x, y = location
-    #
-    #             xyz_frame[y, x, 0] += added_weight * xyz[0]
-    #             xyz_frame[y, x, 1] += added_weight * xyz[1]
-    #             xyz_frame[y, x, 2] += added_weight * xyz[2]
-    #
-    #             # convert to sRGB colour-space
-    #             self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
-    #
-    #             # update users
-    #             display_timer = self._update_display(display_timer)
-    #             statistics_data = self._update_statistics(statistics_data, channel, pixel, sample_ray_count)
-    #
-    #         # shutdown workers
-    #         for _ in workers:
-    #             task_queue.put(None)
-    #
-    #     # final update for users
-    #     self._final_statistics(statistics_data)
-    #     self._final_display()
-    #
-    # def _producer(self, task_queue):
-    #     # task is simply the pixel location
-    #     nx, ny = self._pixels.shape
-    #     for y in range(ny):
-    #         for x in range(nx):
-    #             task_queue.put((x, y))
-    #
-    # def _worker(self, world, min_wavelength, max_wavelength, spectral_samples, resampled_xyz, task_queue, result_queue):
-    #
-    #     # re-seed the random number generator to prevent all workers inheriting the same sequence
-    #     random.seed()
-    #
-    #     while True:
-    #
-    #         # request next pixel
-    #         pixel_id = task_queue.get()
-    #
-    #         # have we been commanded to shutdown?
-    #         if pixel_id is None:
-    #             break
-    #
-    #         ix, iy = pixel_id
-    #
-    #         # load selected pixel and trace rays
-    #         pixel = self.pixels[iy, ix]
-    #         spectrum, ray_count = pixel.sample(min_wavelength, max_wavelength, spectral_samples, self)
-    #
-    #         # convert spectrum to CIE XYZ
-    #         xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-    #
-    #         # encode result and send
-    #         result = (pixel_id, xyz, ray_count)
-    #         result_queue.put(result)
+    def _observe_parallel(self, xyz_frame, ray_templates):
+
+        world = self.root
+
+        # initialise user interface
+        display_timer = self._start_display()
+        statistics_data = self._start_statistics()
+
+        total_pixels = self._pixels[0] * self._pixels[1]
+
+        # generate weightings for accumulation
+        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
+        previous_weight = self.accumulated_samples / total_samples
+        added_weight = self.spectral_rays * self.pixel_samples / total_samples
+
+        # scale previous state to account for additional samples
+        xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
+
+        # render
+        for channel, ray_template in enumerate(ray_templates):
+
+            # generate resampled XYZ curves for channel spectral range
+            resampled_xyz = resample_ciexyz(
+                ray_template.min_wavelength,
+                ray_template.max_wavelength,
+                ray_template.num_samples
+            )
+
+            # establish ipc queues using a manager process
+            task_queue = Queue()
+            result_queue = Queue()
+
+            # start process to generate image samples
+            producer = Process(target=self._producer, args=(task_queue, ))
+            producer.start()
+
+            # start worker processes
+            workers = []
+            for pid in range(self.process_count):
+                p = Process(target=self._worker,
+                            args=(world, ray_template,
+                                  resampled_xyz, task_queue, result_queue))
+                p.start()
+                workers.append(p)
+
+            # collect results
+            for pixel in range(total_pixels):
+
+                # obtain result
+                location, xyz, sample_ray_count = result_queue.get()
+                x, y = location
+
+                xyz_frame[y, x, 0] += added_weight * xyz[0]
+                xyz_frame[y, x, 1] += added_weight * xyz[1]
+                xyz_frame[y, x, 2] += added_weight * xyz[2]
+
+                # convert to sRGB colour-space
+                self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
+
+                # update users
+                display_timer = self._update_display(display_timer)
+                statistics_data = self._update_statistics(statistics_data, channel, pixel, sample_ray_count)
+
+            # shutdown workers
+            for _ in workers:
+                task_queue.put(None)
+
+        # final update for users
+        self._final_statistics(statistics_data)
+        self._final_display()
+
+    def _producer(self, task_queue):
+        # task is simply the pixel location
+        nx, ny = self._pixels
+        for y in range(ny):
+            for x in range(nx):
+                task_queue.put((x, y))
+
+    def _worker(self, world, ray_template, resampled_xyz, task_queue, result_queue):
+
+        # re-seed the random number generator to prevent all workers inheriting the same sequence
+        random.seed()
+
+        while True:
+
+            # request next pixel
+            pixel_id = task_queue.get()
+
+            # have we been commanded to shutdown?
+            if pixel_id is None:
+                break
+
+            ix, iy = pixel_id
+
+            # generate pixel transform
+            transform = self._generate_pixel_transform(ix, iy)
+
+            # load selected pixel and trace rays
+            spectrum, ray_count = self._sample_pixel(self.pixel_samples, self.root, ray_template, self.to_root() * transform)
+
+            # convert spectrum to CIE XYZ
+            xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+
+            # encode result and send
+            result = (pixel_id, xyz, ray_count)
+            result_queue.put(result)
 
     def _generate_ray_templates(self):
-        # """
-        # Break the wavelength range up based on the number of required spectral rays. When simulated dispersion effects
-        # or reflections for example, the overall wavelength range may be broken up into >20 sub regions for individual
-        # ray sampling.
-        #
-        # :return: list[tuples (min_wavelength, max_wavelength, spectral_samples),...]
-        # """
 
         rays = []
         delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.spectral_rays
