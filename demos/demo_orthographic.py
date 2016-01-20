@@ -1,6 +1,6 @@
 
 from raysect.optical import World, translate, rotate, Point3D, d65_white, InterpolatedSF
-from raysect.optical.observer.cameras import PinholeCamera, OrthographicCamera
+from raysect.optical.observer.cameras import OrthographicCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
 from raysect.optical.material.glass_libraries import schott
@@ -42,11 +42,12 @@ camera = OrthographicCamera(width=2.5, parent=world, transform=translate(0, 0, -
 camera.ray_min_depth = 3
 camera.ray_max_depth = 200
 camera.ray_extinction_prob = 0.01
-camera.pixel_samples = 50
+camera.pixel_samples = 1
 camera.spectral_samples = 15
 camera.display_progress = True
 camera.display_update_time = 10
 camera.sub_sample = False
+camera.process_count = 1
 camera.observe()
 
 ioff()

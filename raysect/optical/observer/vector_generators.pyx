@@ -67,7 +67,7 @@ cdef class SingleRay(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(Vector3D(0, 0, 1).transform(self.transform))
+            results.append(Vector3D(0, 0, 1))
         return results
 
 
@@ -78,11 +78,11 @@ cdef class ConeUniform(VectorGenerator):
     The cone is aligned along the z-axis.
     """
 
-    def __init__(self, double angle=PI/8, transform=None):
+    def __init__(self, double angle=PI/8):
         """
         :param double angle: The cone angle from the z-axis.
         """
-        super().__init__(transform=transform)
+        super().__init__()
         if not 0 <= angle <= PI/4:
             raise RuntimeError("Acceptance angle {} for Cone VectorGenerator must be between 0 and pi/4."
                                "".format(angle))
@@ -94,7 +94,7 @@ cdef class ConeUniform(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(vector_cone(self.angle).transform(self.transform))
+            results.append(vector_cone(self.angle))
         return results
 
 
@@ -108,7 +108,7 @@ cdef class SphereUniform(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(vector_sphere().transform(self.transform))
+            results.append(vector_sphere())
         return results
 
 
@@ -125,7 +125,7 @@ cdef class HemisphereUniform(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(vector_hemisphere_uniform().transform(self.transform))
+            results.append(vector_hemisphere_uniform())
         return results
 
 
@@ -142,7 +142,7 @@ cdef class HemisphereCosine(VectorGenerator):
 
         results = []
         for i in range(n):
-            results.append(vector_hemisphere_cosine().transform(self.transform))
+            results.append(vector_hemisphere_cosine())
         return results
 
 
