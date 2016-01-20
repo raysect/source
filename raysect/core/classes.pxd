@@ -43,6 +43,8 @@ cdef class Ray:
 
     cpdef Point3D point_on(self, double t)
 
+    cpdef Ray copy(self, Point3D origin=*, Vector3D direction=*)
+
 
 cdef inline new_ray(Point3D origin, Vector3D direction, double max_distance):
 

@@ -63,3 +63,29 @@ cdef class Ray(CoreRay):
 
     cdef inline double get_max_wavelength(self)
 
+
+cdef inline Ray new_ray(Point3D origin, Vector3D direction,
+             double min_wavelength, double max_wavelength, int num_samples,
+             double max_distance,
+             double extinction_prob, int min_depth, int max_depth):
+
+    cdef Ray ray
+
+    ray = Ray.__new__(Ray)
+    ray.origin = origin
+    ray.direction = direction
+    ray.max_distance = max_distance
+    ray._num_samples = num_samples
+    ray._min_wavelength = min_wavelength
+    ray._max_wavelength = max_wavelength
+
+    ray._extinction_prob = extinction_prob
+    ray._min_depth = min_depth
+    ray._max_depth = max_depth
+    ray.depth = 0
+
+    ray.ray_count = 0
+    ray._primary_ray = None
+
+    return ray
+

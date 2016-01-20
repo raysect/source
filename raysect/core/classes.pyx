@@ -89,6 +89,16 @@ cdef class Ray:
                            origin.y + t * direction.y,
                            origin.z + t * direction.z)
 
+    cpdef Ray copy(self, Point3D origin=None, Vector3D direction=None):
+
+        if origin is None:
+            origin = self.origin.copy()
+
+        if direction is None:
+            direction =self.direction.copy()
+
+        return new_ray(origin, direction, self.max_distance)
+
 
 cdef class Intersection:
     """

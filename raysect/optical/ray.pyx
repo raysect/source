@@ -354,6 +354,18 @@ cdef class Ray(CoreRay):
 
         return ray
 
+    # TODO: PROFILE ME, ray--> cython new_ray for optical ray
+    cpdef Ray copy(self, Point3D origin=None, Vector3D direction=None):
 
+        if origin is None:
+            origin = self.origin.copy()
 
+        if direction is None:
+            direction =self.direction.copy()
 
+        return new_ray(
+            origin, direction,
+            self._min_wavelength, self._max_wavelength, self._num_samples,
+            self.max_distance,
+            self._extinction_prob, self._min_depth, self._max_depth
+        )
