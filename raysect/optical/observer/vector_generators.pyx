@@ -61,12 +61,12 @@ cdef class SingleRay(VectorGenerator):
     Fires a single ray along the observer axis N times. Effectively a delta function acceptance cone.
     """
 
-    cpdef list sample(self, int n):
+    cpdef list sample(self, int samples):
         cdef list results
         cdef int i
 
         results = []
-        for i in range(n):
+        for i in range(samples):
             results.append(Vector3D(0, 0, 1))
         return results
 
@@ -88,12 +88,12 @@ cdef class ConeUniform(VectorGenerator):
                                "".format(angle))
         self.angle = angle
 
-    cpdef list sample(self, int n):
+    cpdef list sample(self, int samples):
         cdef list results
         cdef int i
 
         results = []
-        for i in range(n):
+        for i in range(samples):
             results.append(vector_cone(self.angle))
         return results
 
@@ -102,12 +102,12 @@ cdef class SphereUniform(VectorGenerator):
     """
     Generates a random vector on a unit sphere.
     """
-    cpdef list sample(self, int n):
+    cpdef list sample(self, int samples):
         cdef list results
         cdef int i
 
         results = []
-        for i in range(n):
+        for i in range(samples):
             results.append(vector_sphere())
         return results
 
@@ -119,12 +119,12 @@ cdef class HemisphereUniform(VectorGenerator):
     The hemisphere is aligned along the z-axis - the plane that forms the
     hemisphere base lies in the x-y plane.
     """
-    cpdef list sample(self, int n):
+    cpdef list sample(self, int samples):
         cdef list results
         cdef int i
 
         results = []
-        for i in range(n):
+        for i in range(samples):
             results.append(vector_hemisphere_uniform())
         return results
 
@@ -136,12 +136,12 @@ cdef class HemisphereCosine(VectorGenerator):
     The hemisphere is aligned along the z-axis - the plane that forms the
     hemisphere base lies in the x-y plane.
     """
-    cpdef list sample(self, int n):
+    cpdef list sample(self, int samples):
         cdef list results
         cdef int i
 
         results = []
-        for i in range(n):
+        for i in range(samples):
             results.append(vector_hemisphere_cosine())
         return results
 

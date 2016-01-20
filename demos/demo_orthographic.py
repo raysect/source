@@ -38,11 +38,11 @@ Box(Point3D(-50, -50, 50), Point3D(50, 50, 50.1), world, material=Checkerboard(4
 Box(Point3D(-100, -100, -100), Point3D(100, 100, 100), world, material=UniformSurfaceEmitter(d65_white, 0.1))
 
 ion()
-camera = OrthographicCamera(width=2.5, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0))
+camera = OrthographicCamera(width=10.0, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0))
 camera.ray_min_depth = 3
 camera.ray_max_depth = 200
 camera.ray_extinction_prob = 0.01
-camera.pixel_samples = 100
+camera.pixel_samples = 5
 camera.spectral_samples = 15
 camera.display_progress = True
 camera.display_update_time = 10
