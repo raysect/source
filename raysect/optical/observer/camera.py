@@ -29,9 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-# TODO: add sensitivity to pixel.sample calls
-
 from math import tan, pi, ceil
 from multiprocessing import Process, cpu_count, Queue
 from time import time
@@ -48,10 +45,13 @@ from raysect.optical.observer.vector_generators import SingleRay, HemisphereCosi
 from raysect.optical import Ray
 
 
+
+
+
 # todo: add scheme to evenly subdivide spectral_samples across specified spectral_rays
 class Camera(Observer):
 
-    def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=20, spectral_rays=1, pixel_samples=100,
+    def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=21, spectral_rays=1, pixel_samples=100,
                  process_count=cpu_count(), parent=None, transform=AffineMatrix3D(), name=None):
         """
 
@@ -69,6 +69,15 @@ class Camera(Observer):
         """
 
         super().__init__(parent, transform, name)
+
+        if spectral_samples < 1:
+            raise ValueError("Number of spectral sample bins cannot be less than 1.")
+
+        if spectral_rays < 1:
+            raise ValueError("Number of rays cannot be less than 1.")
+
+        if spectral_rays > spectral_samples:
+            raise ValueError("Number of rays cannot exceed the number of spectral sample bins.")
 
         # ray configuration
         self.spectral_rays = spectral_rays
@@ -305,17 +314,31 @@ class Camera(Observer):
 
     def _generate_ray_templates(self):
 
+        # split spectral bins across rays - non-integer division is handled by
+        # rounding up or down the non-integer boundaries between the ray ranges,
+        # this means that some rays will have more samples than others
+        current = 0
+        start = 0
+        ranges = []
+        while start < self.spectral_samples:
+            current += self.spectral_samples / self.spectral_rays
+            end = round(current)
+            ranges.append((start, end))
+            start = end
+
+        # build template rays
         rays = []
-        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.spectral_rays
-        for index in range(self.spectral_rays):
+        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.spectral_samples
+        for start, end in ranges:
             rays.append(
-                Ray(min_wavelength=self.min_wavelength + delta_wavelength * index,
-                    max_wavelength=self.min_wavelength + delta_wavelength * (index + 1),
-                    num_samples=self.spectral_samples,
+                Ray(min_wavelength=self.min_wavelength + delta_wavelength * start,
+                    max_wavelength=self.min_wavelength + delta_wavelength * end,
+                    num_samples=end - start,
                     extinction_prob=self.ray_extinction_prob,
                     min_depth=self.ray_min_depth,
                     max_depth=self.ray_max_depth)
             )
+
         return rays
 
     def _generate_pixel_transform(self, x, y):
@@ -536,7 +559,6 @@ class CCD(Camera):
         self.image_delta = self._width / self._pixels[0]
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
         self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
-        print(self.image_start_x, self.image_start_y)
 
     @property
     def pixels(self):
