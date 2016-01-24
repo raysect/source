@@ -27,4 +27,4 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .camera import PinholeCamera, VectorCamera, CCD
+from .camera import OrthographicCamera, CCD

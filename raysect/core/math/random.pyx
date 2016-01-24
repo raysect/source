@@ -371,13 +371,17 @@ cpdef Vector3D vector_hemisphere_cosine():
 
 cpdef Vector3D vector_cone(double theta):
     """
-    Generates a random vector in the cone along the z-axis defined by angle theta.
+    Generates a random vector in a cone along the z-axis.
 
-    :param theta: Theta must be an angle between 0 and pi/2. For speed this is not checked, up to user to check the
+    The angle of the cone is specified with the theta parameter. For speed, no
+    checks are performs on the theta parameter, it is up to user to ensure the
     angle is sensible.
+
+    :param theta: An angle between 0 and 90 degrees.
     :return: A random Vector3D in the cone defined by theta.
     """
 
+    theta *= 0.017453292519943295 # PI / 180
     cdef double phi = 2.0 * PI * uniform()
     cdef double cos_theta = cos(theta)
     cdef double z = uniform()*(1 - cos_theta) + cos_theta

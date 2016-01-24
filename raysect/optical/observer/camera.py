@@ -1,30 +1,77 @@
-from time import time
+# cython: language_level=3
+
+# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     1. Redistributions of source code must retain the above copyright notice,
+#        this list of conditions and the following disclaimer.
+#
+#     2. Redistributions in binary form must reproduce the above copyright
+#        notice, this list of conditions and the following disclaimer in the
+#        documentation and/or other materials provided with the distribution.
+#
+#     3. Neither the name of the Raysect Project nor the names of its
+#        contributors may be used to endorse or promote products derived from
+#        this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+
+# TODO: add sensitivity to pixel.sample calls
+
 from math import tan, pi, ceil
 from multiprocessing import Process, cpu_count, Queue
+from time import time
 
-from numpy import zeros
+import numpy as np
 from matplotlib.pyplot import imshow, imsave, show, clf, draw, pause
+from numpy import zeros
 
-from raysect.optical.ray import Ray
-from raysect.optical import Spectrum
-from raysect.core import World, AffineMatrix3D, Point3D, Vector3D, Observer
-from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
+from raysect.core import World, AffineMatrix3D, Point3D, Point2D, Vector3D, Observer, translate
 from raysect.core.math import random
+from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
+from raysect.optical.observer.point_generator import Rectangle
+from raysect.optical.observer.vector_generators import SingleRay, HemisphereCosine, ConeUniform
+from raysect.optical import Ray
 
 
-# TODO: make an object called Frame?
-# TODO: clean up duplicated code in parallel and single observe methods
+# todo: add scheme to evenly subdivide spectral_samples across specified spectral_rays
 class Camera(Observer):
 
-    def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
+    def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=20, spectral_rays=1, pixel_samples=100,
                  process_count=cpu_count(), parent=None, transform=AffineMatrix3D(), name=None):
+        """
+
+        :param pixels:
+        :param sensitivity:
+        :param spectral_samples: number of wavelength bins between min/max wavelengths.
+        :param spectral_rays: number of rays to use when sub-sampling the overall spectral range. This must be ~15 or
+        greater to see dispersion effects in materials.
+        :param pixel_samples:
+        :param process_count:
+        :param parent:
+        :param transform:
+        :param name:
+        :return:
+        """
 
         super().__init__(parent, transform, name)
 
-        # TODO: Add sanity checks
-
         # ray configuration
-        self.rays = rays
+        self.spectral_rays = spectral_rays
         self.spectral_samples = spectral_samples
         self.min_wavelength = 375.0
         self.max_wavelength = 740.0
@@ -50,6 +97,9 @@ class Camera(Observer):
         self.xyz_frame = zeros((pixels[1], pixels[0], 3))
         self.frame = zeros((pixels[1], pixels[0], 3))
 
+        self._point_generator = None
+        self._vector_generator = None
+
     @property
     def pixels(self):
         return self._pixels
@@ -71,79 +121,84 @@ class Camera(Observer):
         # must be connected to a world node to be able to perform a ray trace
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
-        world = self.root
+
+        if self.min_wavelength >= self.max_wavelength:
+            raise RuntimeError("Min wavelength is superior to max wavelength!")
 
         # create intermediate and final frame-buffers
         if not self.accumulate:
-            self.xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
-            self.frame = zeros((self._pixels[1], self._pixels[0], 3))
+            self.xyz_frame = zeros((self._pixels[0], self._pixels[1], 3))
+            self.frame = zeros((self._pixels[0], self._pixels[1], 3))
             self.accumulated_samples = 0
 
         # generate spectral data
-        channel_configs = self._calc_channel_config()
-
-        # setup pixel vectors in advance of main loop
-        pixel_config = self._setup_pixel_config()
+        ray_templates = self._generate_ray_templates()
 
         # trace
         if self.process_count == 1:
-            self._observe_single(world, self.xyz_frame, channel_configs, pixel_config)
+            self._observe_single(self.xyz_frame, ray_templates)
         else:
-            self._observe_parallel(world, self.xyz_frame, channel_configs, pixel_config)
+            self._observe_parallel(self.xyz_frame, ray_templates)
 
         # update sample accumulation statistics
-        self.accumulated_samples += self.pixel_samples * self.rays
+        self.accumulated_samples += self.pixel_samples * self.spectral_rays
 
-    def _observe_single(self, world, xyz_frame, channel_configs, pixel_config):
+    def _observe_single(self, xyz_frame, ray_templates):
 
         # initialise user interface
         display_timer = self._start_display()
         statistics_data = self._start_statistics()
 
         # generate weightings for accumulation
-        total_samples = self.accumulated_samples + self.pixel_samples * self.rays
+        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
         previous_weight = self.accumulated_samples / total_samples
-        added_weight = self.rays * self.pixel_samples / total_samples
+        added_weight = self.spectral_rays * self.pixel_samples / total_samples
 
         # scale previous state to account for additional samples
         xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
 
         # render
-        for channel, channel_config in enumerate(channel_configs):
-
-            min_wavelength, max_wavelength, spectral_samples = channel_config
+        for i_channel, ray_template in enumerate(ray_templates):
 
             # generate resampled XYZ curves for channel spectral range
-            resampled_xyz = resample_ciexyz(min_wavelength, max_wavelength, spectral_samples)
+            resampled_xyz = resample_ciexyz(
+                ray_template.min_wavelength,
+                ray_template.max_wavelength,
+                ray_template.num_samples
+            )
 
-            nx, ny = self._pixels
-            for y in range(ny):
+            ny, nx = self._pixels
+            for iy in range(ny):
+                for ix in range(nx):
 
-                for x in range(nx):
+                    # generate pixel transform
+                    transform = self._generate_pixel_transform(ix, iy)
 
-                    spectrum, ray_count = self._sample_pixel(x, y, min_wavelength, max_wavelength, spectral_samples,
-                                                             pixel_config, world)
+                    # load selected pixel and trace rays
+                    spectrum, ray_count = self._sample_pixel(self.pixel_samples, self.root, ray_template, self.to_root() * transform)
 
                     # convert spectrum to CIE XYZ
                     xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
 
-                    xyz_frame[y, x, 0] += added_weight * xyz[0]
-                    xyz_frame[y, x, 1] += added_weight * xyz[1]
-                    xyz_frame[y, x, 2] += added_weight * xyz[2]
+                    xyz_frame[iy, ix, 0] += added_weight * xyz[0]
+                    xyz_frame[iy, ix, 1] += added_weight * xyz[1]
+                    xyz_frame[iy, ix, 2] += added_weight * xyz[2]
 
                     # convert to sRGB colour-space
-                    self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
+                    self.frame[iy, ix, :] = ciexyz_to_srgb(*xyz_frame[iy, ix, :])
 
                     # update users
-                    pixel = x + self._pixels[0] * y
-                    statistics_data = self._update_statistics(statistics_data, channel, pixel, ray_count)
+                    pixel = ix + self._pixels[0] * iy
+                    statistics_data = self._update_statistics(statistics_data, i_channel, pixel, ray_count)
                     display_timer = self._update_display(display_timer)
 
         # final update for users
         self._final_statistics(statistics_data)
         self._final_display()
 
-    def _observe_parallel(self, world, xyz_frame, channel_configs, pixel_config):
+    def _observe_parallel(self, xyz_frame, ray_templates):
+
+        world = self.root
 
         # initialise user interface
         display_timer = self._start_display()
@@ -152,20 +207,22 @@ class Camera(Observer):
         total_pixels = self._pixels[0] * self._pixels[1]
 
         # generate weightings for accumulation
-        total_samples = self.accumulated_samples + self.pixel_samples * self.rays
+        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
         previous_weight = self.accumulated_samples / total_samples
-        added_weight = self.rays * self.pixel_samples / total_samples
+        added_weight = self.spectral_rays * self.pixel_samples / total_samples
 
         # scale previous state to account for additional samples
         xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
 
         # render
-        for channel, channel_config in enumerate(channel_configs):
-
-            min_wavelength, max_wavelength, spectral_samples = channel_config
+        for channel, ray_template in enumerate(ray_templates):
 
             # generate resampled XYZ curves for channel spectral range
-            resampled_xyz = resample_ciexyz(min_wavelength, max_wavelength, spectral_samples)
+            resampled_xyz = resample_ciexyz(
+                ray_template.min_wavelength,
+                ray_template.max_wavelength,
+                ray_template.num_samples
+            )
 
             # establish ipc queues using a manager process
             task_queue = Queue()
@@ -179,8 +236,8 @@ class Camera(Observer):
             workers = []
             for pid in range(self.process_count):
                 p = Process(target=self._worker,
-                            args=(world, min_wavelength, max_wavelength, spectral_samples,
-                                  resampled_xyz, pixel_config, task_queue, result_queue))
+                            args=(world, ray_template,
+                                  resampled_xyz, task_queue, result_queue))
                 p.start()
                 workers.append(p)
 
@@ -217,7 +274,7 @@ class Camera(Observer):
             for x in range(nx):
                 task_queue.put((x, y))
 
-    def _worker(self, world, min_wavelength, max_wavelength, spectral_samples, resampled_xyz, pixel_config, task_queue, result_queue):
+    def _worker(self, world, ray_template, resampled_xyz, task_queue, result_queue):
 
         # re-seed the random number generator to prevent all workers inheriting the same sequence
         random.seed()
@@ -225,51 +282,74 @@ class Camera(Observer):
         while True:
 
             # request next pixel
-            pixel = task_queue.get()
+            pixel_id = task_queue.get()
 
             # have we been commanded to shutdown?
-            if pixel is None:
+            if pixel_id is None:
                 break
 
-            x, y = pixel
-            spectrum, ray_count = self._sample_pixel(x, y, min_wavelength, max_wavelength, spectral_samples,
-                                                     pixel_config, world)
+            ix, iy = pixel_id
+
+            # generate pixel transform
+            transform = self._generate_pixel_transform(ix, iy)
+
+            # load selected pixel and trace rays
+            spectrum, ray_count = self._sample_pixel(self.pixel_samples, self.root, ray_template, self.to_root() * transform)
 
             # convert spectrum to CIE XYZ
             xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
 
             # encode result and send
-            result = (pixel, xyz, ray_count)
+            result = (pixel_id, xyz, ray_count)
             result_queue.put(result)
 
-    def _calc_channel_config(self):
+    def _generate_ray_templates(self):
 
-        config = []
-        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.rays
-        for index in range(self.rays):
-            config.append((self.min_wavelength + delta_wavelength * index,
-                           self.min_wavelength + delta_wavelength * (index + 1),
-                           self.spectral_samples))
-        return config
+        rays = []
+        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.spectral_rays
+        for index in range(self.spectral_rays):
+            rays.append(
+                Ray(min_wavelength=self.min_wavelength + delta_wavelength * index,
+                    max_wavelength=self.min_wavelength + delta_wavelength * (index + 1),
+                    num_samples=self.spectral_samples,
+                    extinction_prob=self.ray_extinction_prob,
+                    min_depth=self.ray_min_depth,
+                    max_depth=self.ray_max_depth)
+            )
+        return rays
 
-    def _sample_pixel(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_config, world):
+    def _generate_pixel_transform(self, x, y):
+        raise NotImplementedError("To be defined in subclass.")
 
-        # obtain rays for this pixel
-        rays = self._get_pixel_rays(x, y, min_wavelength, max_wavelength, spectral_samples, pixel_config)
+    def _sample_pixel(self, samples, world, ray_template, transform=None):
 
-        weight = 1 / len(rays)
+        # create spectrum and calculate sample weighting
+        spectrum = ray_template.new_spectrum()
+        weight = 1 / samples
+
+        # initialise ray statistics
         ray_count = 0
-        spectrum = Spectrum(min_wavelength, max_wavelength, spectral_samples)
 
-        for ray in rays:
-            # trace
+        # generate list of ray origin point and vectors
+        origin_points = self._point_generator(samples)
+        direction_vectors = self._vector_generator(samples)
+
+        # launch rays and accumulate spectral samples
+        for origin, direction in zip(origin_points, direction_vectors):
+
+            if transform is not None:
+                origin = origin.transform(transform)
+                direction = direction.transform(transform)
+
+            ray = ray_template.copy(origin, direction)
             sample = ray.trace(world)
-
-            # camera sensitivity
-            spectrum.samples += weight * self.sensitivity * sample.samples
+            spectrum.samples += weight * sample.samples
 
             # accumulate statistics
             ray_count += ray.ray_count
+
+        # apply camera sensitivity
+        spectrum.samples *= self.sensitivity
 
         return spectrum, ray_count
 
@@ -312,7 +392,7 @@ class Camera(Observer):
         """
 
         total_pixels = self._pixels[0] * self._pixels[1]
-        total_work = total_pixels * self.rays
+        total_work = total_pixels * self.spectral_rays
         ray_count = 0
         start_time = time()
         progress_timer = time()
@@ -331,7 +411,7 @@ class Camera(Observer):
             current_work = total_pixels * index + pixel
             completion = 100 * current_work / total_work
             print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
-                completion, index + 1, self.rays,
+                completion, index + 1, self.spectral_rays,
                 ceil((pixel + 1) / self._pixels[0]), self._pixels[1],
                 pixel + 1, total_pixels, ray_count / 1000))
             ray_count = 0
@@ -347,25 +427,6 @@ class Camera(Observer):
         elapsed_time = time() - start_time
         print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
 
-    def _setup_pixel_config(self):
-        """
-        Virtual method - to be implemented by derived classes.
-
-        Runs at the start of observe() loop to set up any data needed for calculating pixel vectors
-        and super-sampling that shouldn't be calculated at every loop iteration. The result of this
-        function should be written to self._pixel_vectors_variables.
-        """
-        raise NotImplementedError("Virtual method _setup_pixel_vectors() has not been implemented for this Camera.")
-
-    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
-        """
-        Virtual method - to be implemented by derived classes.
-
-        Called for each pixel in the _worker() observe loop. For a given pixel, this function must return a list of
-        vectors to ray trace.
-        """
-        raise NotImplementedError("Virtual method _get_pixel_vectors() has not been implemented for this Camera.")
-
     def display(self):
         clf()
         imshow(self.frame, aspect="equal", origin="upper")
@@ -378,175 +439,128 @@ class Camera(Observer):
         imsave(filename, self.frame)
 
 
-class PinholeCamera(Camera):
+class OrthographicCamera(Camera):
+    """ A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
 
-    def __init__(self, pixels=(512, 512), fov=45, sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
-                 sub_sample=False, process_count=cpu_count(), parent=None, transform=AffineMatrix3D(), name=None):
+    :param pixels: tuple containing the number of pixels along horizontal and vertical axis
+    :param width: width of the area to observe in meters, the height is deduced from the 'pixels' attribute
+    :param spectral_samples: number of spectral samples by ray
+    :param rays: number of rays. The total spectrum will be divided over all the rays. The number of rays must be >1 for
+     dispersive effects.
+    :param parent: the scenegraph node which will be the parent of this observer.
+    :param transform: AffineMatrix describing the relative position/rotation of this node to the parent.
+    :param name: a printable name.
+    """
 
-        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples, rays=rays,
-                         pixel_samples=pixel_samples, process_count=process_count, parent=parent,
-                         transform=transform, name=name)
+    def __init__(self, pixels=(512, 512), width=10, sensitivity=1.0, spectral_samples=20, spectral_rays=1,
+                 pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
+                 transform=AffineMatrix3D(), name=None):
 
-        self._fov = fov
+        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
+                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
+                         parent=parent, transform=transform, name=name)
+
         self.sub_sample = sub_sample
+        self.width = width
+
+        self._update_image_geometry()
+
+        self._point_generator = Rectangle(self.image_delta, self.image_delta)
+        self._vector_generator = SingleRay()
+
+    def _update_image_geometry(self):
+
+        self.image_delta = self._width / self._pixels[0]
+        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
+        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
 
     @property
-    def fov(self):
-        return self._fov
+    def pixels(self):
+        return self._pixels
 
-    @fov.setter
-    def fov(self, fov):
-        if fov <= 0:
-            raise ValueError("Field of view angle can not be less than or equal to 0 degrees.")
-        self._fov = fov
+    @pixels.setter
+    def pixels(self, pixels):
+        # call base class pixels setter
+        self.__class__.__base__.pixels.fset(self, pixels)
+        self._update_image_geometry()
 
-    def _setup_pixel_config(self):
+    @property
+    def width(self):
+        return self._width
 
-        max_pixels = max(self._pixels)
+    @width.setter
+    def width(self, width):
+        if width <= 0:
+            raise ValueError("width can not be less than or equal to 0 meters.")
+        self._width = width
+        self._update_image_geometry()
 
-        if max_pixels > 1:
-            # generate ray directions by simulating an image plane 1m from pinhole "aperture"
-            # max width of image plane at 1 meter for given field of view
-            image_max_width = 2 * tan(pi / 180 * 0.5 * self._fov)
+    def _generate_pixel_transform(self, i, j):
 
-            # pixel step and start point in image plane
-            image_delta = image_max_width / (max_pixels - 1)
-
-            # start point of scan in image plane
-            image_start_x = 0.5 * self._pixels[0] * image_delta
-            image_start_y = 0.5 * self._pixels[1] * image_delta
-
-        else:
-            # single ray on axis
-            image_delta = 0
-            image_start_x = 0
-            image_start_y = 0
-
-        origin = Point3D(0, 0, 0).transform(self.to_root())
-
-        return origin, image_delta, image_start_x, image_start_y
-
-    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
-
-        origin, image_delta, image_start_x, image_start_y = pixel_configuration
-
-        rays = []
-        for _ in range(self.pixel_samples):
-
-            if self.sub_sample:
-                # TODO: make this LESS stupid
-                # uniform sample (stupid, but it will do for now)
-                dx = random.random() - 0.5
-                dy = random.random() - 0.5
-            else:
-                dx = 0
-                dy = 0
-
-            # calculate ray parameters
-            direction = Vector3D(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 1.0).normalise()
-            direction = direction.transform(self.to_root())
-
-            # generate ray and add to array to return
-            rays.append(
-                Ray(origin, direction,
-                    min_wavelength=min_wavelength,
-                    max_wavelength=max_wavelength,
-                    num_samples=spectral_samples,
-                    extinction_prob=self.ray_extinction_prob,
-                    min_depth=self.ray_min_depth,
-                    max_depth=self.ray_max_depth
-                )
-            )
-
-        return rays
-
-
-class VectorCamera(Camera):
-
-    def __init__(self, pixel_origins, pixel_directions, name=None, sensitivity=1.0, spectral_samples=20, rays=1,
-                 pixel_samples=100, process_count=cpu_count(), parent=None, transform=AffineMatrix3D()):
-
-        super().__init__(pixels=pixel_directions.shape, sensitivity=sensitivity, spectral_samples=spectral_samples,
-                         rays=rays, pixel_samples=pixel_samples, process_count=process_count, parent=parent,
-                         transform=transform, name=name)
-
-        # camera configuration
-        self.pixel_origins = pixel_origins
-        self.pixel_directions = pixel_directions
-
-    def _setup_pixel_config(self):
-        pass
-
-    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
-        # TODO - support sub_sample?
-        origin = self.pixel_origins[x, y].transform(self.to_root())
-        direction = self.pixel_directions[x, y].transform(self.to_root())
-
-        return [
-            Ray(origin, direction,
-                min_wavelength=min_wavelength,
-                max_wavelength=max_wavelength,
-                num_samples=spectral_samples,
-                extinction_prob=self.ray_extinction_prob,
-                min_depth=self.ray_min_depth,
-                max_depth=self.ray_max_depth
-            )
-        ] * self.pixel_samples
+        pixel_x = self.image_start_x - self.image_delta * i
+        pixel_y = self.image_start_y - self.image_delta * j
+        return translate(pixel_x, pixel_y, 0)
 
 
 class CCD(Camera):
+    # """ A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
+    #
+    # :param pixels: tuple containing the number of pixels along horizontal and vertical axis
+    # :param width: width of the area to observe in meters, the height is deduced from the 'pixels' attribute
+    # :param spectral_samples: number of spectral samples by ray
+    # :param rays: number of rays. The total spectrum will be divided over all the rays. The number of rays must be >1 for
+    #  dispersive effects.
+    # :param parent: the scenegraph node which will be the parent of this observer.
+    # :param transform: AffineMatrix describing the relative position/rotation of this node to the parent.
+    # :param name: a printable name.
+    # """
 
-    def __init__(self, pixels=(360, 240), width=0.036, forward_bias=0, sensitivity=1.0, spectral_samples=20, rays=1, pixel_samples=100,
-                 sub_sample=False, process_count=cpu_count(), parent=None, transform=AffineMatrix3D(), name=None):
+    def __init__(self, pixels=(720, 480), width=0.036, sensitivity=1.0, spectral_samples=20, spectral_rays=1,
+                 pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
+                 transform=AffineMatrix3D(), name=None):
 
-        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples, rays=rays,
-                         pixel_samples=pixel_samples, process_count=process_count, parent=parent,
-                         transform=transform, name=name)
+        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
+                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
+                         parent=parent, transform=transform, name=name)
 
-        self.width = width
-        self.forward_bias = forward_bias
         self.sub_sample = sub_sample
+        self.width = width
 
-    def _setup_pixel_config(self):
+        self._update_image_geometry()
 
-        # pixel step and start point in image plane
-        image_delta = self.width / (self._pixels[0] - 1)
+        self._point_generator = Rectangle(self.image_delta, self.image_delta)
+        self._vector_generator = HemisphereCosine()
 
-        # start point of scan in image plane
-        image_start_x = 0.5 * self._pixels[0] * image_delta
-        image_start_y = 0.5 * self._pixels[1] * image_delta
+    def _update_image_geometry(self):
 
-        return image_delta, image_start_x, image_start_y
+        self.image_delta = self._width / self._pixels[0]
+        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
+        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
+        print(self.image_start_x, self.image_start_y)
 
-    def _get_pixel_rays(self, x, y, min_wavelength, max_wavelength, spectral_samples, pixel_configuration):
+    @property
+    def pixels(self):
+        return self._pixels
 
-        image_delta, image_start_x, image_start_y = pixel_configuration
+    @pixels.setter
+    def pixels(self, pixels):
+        # call base class pixels setter
+        self.__class__.__base__.pixels.fset(self, pixels)
+        self._update_image_geometry()
 
-        rays = []
-        for _ in range(self.pixel_samples):
+    @property
+    def width(self):
+        return self._width
 
-            if self.sub_sample:
-                dx = random.random() - 0.5
-                dy = random.random() - 0.5
-            else:
-                dx = 0
-                dy = 0
+    @width.setter
+    def width(self, width):
+        if width <= 0:
+            raise ValueError("width can not be less than or equal to 0 meters.")
+        self._width = width
+        self._update_image_geometry()
 
-            # calculate ray parameters
-            origin = Point3D(image_start_x - image_delta * (x + dx), image_start_y - image_delta * (y + dy), 0).transform(self.to_root())
-            direction = (random.vector_hemisphere_cosine() + self.forward_bias * Vector3D(0, 0, 1)).normalise()
-            direction = direction.transform(self.to_root())
+    def _generate_pixel_transform(self, i, j):
 
-            # generate ray and add to array to return
-            rays.append(
-                Ray(origin, direction,
-                    min_wavelength=min_wavelength,
-                    max_wavelength=max_wavelength,
-                    num_samples=spectral_samples,
-                    extinction_prob=self.ray_extinction_prob,
-                    min_depth=self.ray_min_depth,
-                    max_depth=self.ray_max_depth
-                )
-            )
-
-        return rays
+        pixel_x = self.image_start_x - self.image_delta * i
+        pixel_y = self.image_start_y - self.image_delta * j
+        return translate(pixel_x, pixel_y, 0)

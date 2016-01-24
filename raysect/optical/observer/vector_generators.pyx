@@ -76,16 +76,15 @@ cdef class ConeUniform(VectorGenerator):
     Generates a list of random unit Vector3D objects inside a cone.
 
     The cone is aligned along the z-axis.
+
+    :param angle: Angle of te cone in degrees.
     """
 
-    def __init__(self, double angle=PI/8):
-        """
-        :param double angle: The cone angle from the z-axis.
-        """
+    def __init__(self, double angle=45):
+
         super().__init__()
-        if not 0 <= angle <= PI/4:
-            raise RuntimeError("Acceptance angle {} for Cone VectorGenerator must be between 0 and pi/4."
-                               "".format(angle))
+        if not 0 <= angle <= 90:
+            raise RuntimeError("The cone angle must be between 0 and 90 degrees.")
         self.angle = angle
 
     cpdef list sample(self, int samples):
@@ -144,24 +143,3 @@ cdef class HemisphereCosine(VectorGenerator):
         for i in range(samples):
             results.append(vector_hemisphere_cosine())
         return results
-
-
-# cdef class CosineHemisphereWithForwardBias(VectorGenerator):
-#     """
-#     Samples rays over a cosine-weighted hemisphere in direction of surface normal, with an optional forward bias.
-#     """
-#     def __init__(self, forward_bias=0.0, transform=None):
-#         super().__init__(transform=transform)
-#         self.forward_bias = forward_bias
-#
-#     cpdef list sample(self, int n):
-#         cdef list results
-#         cdef int i
-#
-#         results = []
-#         for i in range(n):
-#             results.append((vector_hemisphere_cosine() + self.forward_bias * Vector3D(0, 0, 1)).normalise())
-#         return results
-
-#TODO: add vectorGenerator for PinholeCamera - point generator in TargettedVectorGenerator
-# above class generates vectors that target points given by a point generator
