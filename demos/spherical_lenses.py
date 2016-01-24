@@ -2,7 +2,7 @@
 from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.emitter import Checkerboard
-from raysect.optical.material.glass_libraries import schott
+from raysect.optical.library import schott
 
 from raysect.primitive import Box
 from matplotlib.pyplot import *
@@ -33,7 +33,7 @@ camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -0.1) * r
 camera.ray_min_depth = 3
 camera.ray_max_depth = 200
 camera.ray_extinction_prob = 0.01
-camera.pixel_samples = 50
+camera.pixel_samples = 100
 camera.rays = 1
 camera.spectral_samples = 20
 camera.pixels = (256, 256)

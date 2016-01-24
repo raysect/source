@@ -36,18 +36,34 @@ from raysect.core.classes cimport Material
 from raysect.primitive.utility cimport EncapsulatedPrimitive
 from libc.math cimport sqrt
 
-# NOTES:
-# thickness is center thickness unless otherwise stated
-# calculate edge thickness and check it is >0 if it isn't then the radius of the faces and center width are not compatible with the diameter
-# the back face is the negative most face along the Z-axis, front face is the positive most face
-# the lens is aligned such that z=0 lies on the back lens surface (on the lens axis), the lens extends along the +ve z axis
+"""
+Basic spherical lens primitives.
+"""
 
 DEF PAD_FACTOR = 1.000001
 
-# todo: docstrings
-# todo: add attributes for derived lens properties, e.g. focal length
-# todo: add additional initialisation methods
 cdef class BiConvex(EncapsulatedPrimitive):
+    """
+    A bi-convex spherical lens primitive.
+
+    A lens consisting of two convex spherical surfaces aligned on a common
+    axis. The two surfaces sit at either end of a cylindrical barrel that is
+    aligned to lie along the z-axis.
+
+    The two lens surfaces are referred to as front and back respectively. The
+    back surface is the negative surface most on the z-axis, while the front
+    surface is the positive most surface on the z-axis. The centre of the back
+    surface lies on z=0 and with the lens extending along the +ve z direction.
+
+    :param diameter: The diameter of the lens body.
+    :param center_thickness: The thickness of the lens measured along the lens axis.
+    :param front_curvature: The radius of curvature of the front surface.
+    :param back_curvature: The radius of curvature of the back surface.
+    :param parent: Assigns the Node's parent to the specified scene-graph object.
+    :param transform: Sets the affine transform associated with the Node.
+    :param material: An object representing the material properties of the primitive.
+    :param name: A string defining the node name.
+    """
 
     cdef:
         readonly double diameter
@@ -117,10 +133,30 @@ cdef class BiConvex(EncapsulatedPrimitive):
         self.edge_thickness = self.center_thickness - (self.front_thickness + self.back_thickness)
 
 
-# todo: docstrings
-# todo: add attributes for derived lens properties, e.g. focal length
-# todo: add additional initialisation methods
 cdef class BiConcave(EncapsulatedPrimitive):
+    """
+    A bi-concave spherical lens primitive.
+
+    A lens consisting of two concave spherical surfaces aligned on a common
+    axis. The two surfaces sit at either end of a cylindrical barrel that is
+    aligned to lie along the z-axis.
+
+    The two lens surfaces are referred to as front and back respectively. The
+    back surface is the negative surface most on the z-axis, while the front
+    surface is the positive most surface on the z-axis. The centre of the back
+    surface lies on z=0 and with the lens extending along the +ve z direction.
+
+    :param diameter: The diameter of the lens body.
+    :param center_thickness: The thickness of the lens measured along the lens axis.
+    :param front_curvature: The radius of curvature of the front surface.
+    :param back_curvature: The radius of curvature of the back surface.
+    :param parent: Assigns the Node's parent to the specified scene-graph object.
+    :param transform: Sets the affine transform associated with the Node.
+    :param material: An object representing the material properties of the primitive.
+    :param name: A string defining the node name.
+    """
+
+
 
     cdef:
         readonly double diameter
@@ -187,10 +223,29 @@ cdef class BiConcave(EncapsulatedPrimitive):
         self.edge_thickness = self.center_thickness + self.front_thickness + self.back_thickness
 
 
-# todo: docstrings
-# todo: add attributes for derived lens properties, e.g. focal length
-# todo: add additional initialisation methods
 cdef class PlanoConvex(EncapsulatedPrimitive):
+    """
+    A plano-convex spherical lens primitive.
+
+    A lens consisting of a convex spherical surface and a plane (flat) surface,
+    aligned on a common axis. The two surfaces sit at either end of a
+    cylindrical barrel that is aligned to lie along the z-axis.
+
+    The two lens surfaces are referred to as front and back respectively. The
+    back surface is the plane surface, it is the negative surface most on the
+    z-axis. The front surface is the spherical surface, it is the positive most
+    surface on the z-axis. The back (plane) surface lies on z=0 with the lens
+    extending along the +ve z direction.
+
+    :param diameter: The diameter of the lens body.
+    :param center_thickness: The thickness of the lens measured along the lens axis.
+    :param curvature: The radius of curvature of the spherical front surface.
+    :param parent: Assigns the Node's parent to the specified scene-graph object.
+    :param transform: Sets the affine transform associated with the Node.
+    :param material: An object representing the material properties of the primitive.
+    :param name: A string defining the node name.
+    :return:
+    """
 
     cdef:
         readonly double diameter
@@ -249,10 +304,29 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
         self.edge_thickness = self.center_thickness - self.curve_thickness
 
 
-# todo: docstrings
-# todo: add attributes for derived lens properties, e.g. focal length
-# todo: add additional initialisation methods
 cdef class PlanoConcave(EncapsulatedPrimitive):
+    """
+    A plano-concave spherical lens primitive.
+
+    A lens consisting of a concave spherical surface and a plane (flat)
+    surface, aligned on a common axis. The two surfaces sit at either end of a
+    cylindrical barrel that is aligned to lie along the z-axis.
+
+    The two lens surfaces are referred to as front and back respectively. The
+    back surface is the plane surface, it is the negative surface most on the
+    z-axis. The front surface is the spherical surface, it is the positive most
+    surface on the z-axis. The back (plane) surface lies on z=0 with the lens
+    extending along the +ve z direction.
+
+    :param diameter: The diameter of the lens body.
+    :param center_thickness: The thickness of the lens measured along the lens axis.
+    :param curvature: The radius of curvature of the spherical front surface.
+    :param parent: Assigns the Node's parent to the specified scene-graph object.
+    :param transform: Sets the affine transform associated with the Node.
+    :param material: An object representing the material properties of the primitive.
+    :param name: A string defining the node name.
+    :return:
+    """
 
     cdef:
         readonly double diameter
@@ -309,7 +383,28 @@ cdef class PlanoConcave(EncapsulatedPrimitive):
 
 
 cdef class Meniscus(EncapsulatedPrimitive):
+    """
+    A meniscus spherical lens primitive.
 
+    A lens consisting of a concave and a convex spherical surface aligned on a
+    common axis. The two surfaces sit at either end of a cylindrical barrel
+    that is aligned to lie along the z-axis.
+
+    The two lens surfaces are referred to as front and back respectively. The
+    back surface is concave, it is the negative surface most on the z-axis. The
+    front surface is convex, it is the positive most surface on the z-axis. The
+    centre of the back surface lies on z=0 and with the lens extending along
+    the +ve z direction.
+
+    :param diameter: The diameter of the lens body.
+    :param center_thickness: The thickness of the lens measured along the lens axis.
+    :param front_curvature: The radius of curvature of the front surface.
+    :param back_curvature: The radius of curvature of the back surface.
+    :param parent: Assigns the Node's parent to the specified scene-graph object.
+    :param transform: Sets the affine transform associated with the Node.
+    :param material: An object representing the material properties of the primitive.
+    :param name: A string defining the node name.
+    """
     cdef:
         readonly double diameter
         readonly double center_thickness
