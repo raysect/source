@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 
 # Raysect imports
 from raysect.optical import World, translate, rotate, Point3D, d65_white, Ray
-from raysect.optical.material import Lambert, schott, Checkerboard
+from raysect.optical.material import Lambert, Checkerboard
+from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
 from raysect.core.math import Vector3D
 from raysect.optical.observer.point_observers import LineOfSight, OpticalFibre
