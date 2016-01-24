@@ -1,4 +1,6 @@
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,33 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""
-The Raysect optical package.
-
-This package builds upon the Raysect core to provide a framework for geometric
-optical simulations.
-
-Units
------
-
-Unless otherwise stated, the following units are used throughout the optical
-framework:
-
- dimensions are in meters (m)
- wavelength is in nanometers (nm)
- energy is in Joules (J)
- power is in Watts (W)
- solid angle is in steradians (str)
- radiance is in W/m^2/str
- spectral radiance is in W/m^2/str/nm
-"""
-
-from .ray import *
-from .colour import *
-from .spectrum import *
-from .spectralfunction import *
-from ..core.scenegraph import Node, Observer, Primitive, World
-from ..core.math import *
+from raysect.core.scenegraph._nodebase cimport _NodeBase
+from raysect.core.scenegraph.node cimport Node
 
 
+cdef class BridgeNode(Node):
 
+    cdef _NodeBase destination

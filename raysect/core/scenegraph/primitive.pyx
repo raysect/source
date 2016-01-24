@@ -56,14 +56,6 @@ cdef class Primitive(Node):
 
         self.material = material
 
-    def __str__(self):
-        """String representation."""
-
-        if self._name:
-            return self._name + " <Primitive at " + str(hex(id(self))) + ">"
-        else:
-            return "<Primitive at " + str(hex(id(self))) + ">"
-
     property material:
 
         def __get__(self):

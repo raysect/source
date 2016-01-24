@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-#Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,46 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.scenegraph._nodebase cimport _NodeBase
+from raysect.core.scenegraph.node cimport Node
+
+
+cdef class BridgeNode(Node):
+    """
+    Specialised scene-graph root node that propagates geometry notifications.
+    """
+
+    def __init__(self, _NodeBase destination):
+
+        super().__init__()
+        self.destination = destination
+
+    def _change(self, _NodeBase node):
+        """
+        Handles a scenegraph node change handler.
+
+        Propagates geometry change notifications to the specified node and it's
+        scenegraph.
+        """
+
+        # propagate geometry change notification from local scene-graph to target's scene-graph
+        self.destination.root._change(self.destination)
+
 
 def print_scenegraph(node):
     """
     Pretty-prints a scene-graph.
-    
+
     This function will print the scene-graph that contains the specified node.
     The specified node will be highlighted in the tree by post-fixing the node
     with the string: "[referring node]".
 
     :param _NodeBase node: The target node.
     """
-     
+
     # start from root node
     root = node.root
-     
+
     # print node
     if root is node:
         print(str(root) + " [referring node]")
@@ -54,7 +79,7 @@ def print_scenegraph(node):
     n = len(root.children)
     for i in range(0, n):
         if i < (n-1):
-            _print_node(root.children[i], "", " |  ", node)    
+            _print_node(root.children[i], "", " |  ", node)
         else:
             _print_node(root.children[i], "", "    ", node)
 
@@ -66,16 +91,16 @@ def _print_node(node, indent, link, highlight):
 
     # print node
     print(indent + " |  ")
-    
+
     if node is highlight:
         print(indent + " |_ " + str(node) + " [referring node]")
     else:
         print(indent + " |_ " + str(node))
-    
+
     # print children
     n = len(node.children)
     for i in range(0, n):
         if i < (n-1):
-            _print_node(node.children[i], indent + link, " |  ", highlight)    
+            _print_node(node.children[i], indent + link, " |  ", highlight)
         else:
-            _print_node(node.children[i], indent + link, "    ", highlight)    
+            _print_node(node.children[i], indent + link, "    ", highlight)

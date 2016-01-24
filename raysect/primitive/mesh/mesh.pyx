@@ -1001,14 +1001,6 @@ cdef class Mesh(Primitive):
         self._next_local_ray = None
         self._ray_distance = 0
 
-    def __str__(self):
-        """String representation."""
-
-        if self.name:
-            return self.name + " <Mesh at " + str(hex(id(self))) + ">"
-        else:
-            return "<Mesh at " + str(hex(id(self))) + ">"
-
     cpdef Intersection hit(self, Ray ray):
         """
         Returns the first intersection with the mesh surface.
