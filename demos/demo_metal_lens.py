@@ -3,7 +3,7 @@ from raysect.primitive import Sphere, Box, Cylinder, Subtract
 from raysect.primitive.lens.spherical import BiConvex
 from raysect.optical.observer import PinholeCamera, CCD
 from raysect.optical.material import Gold, Silver, Copper, Titanium, Aluminium, Beryllium, Lambert, UniformSurfaceEmitter, AbsorbingSurface
-from raysect.optical.material.glass_libraries import schott
+from raysect.optical.library import schott
 from raysect.core import print_scenegraph
 from matplotlib.pyplot import *
 

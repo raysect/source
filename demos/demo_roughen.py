@@ -2,7 +2,7 @@ from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.primitive import Sphere, Box, Cylinder
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material import Roughen, Gold, Silver, Copper, Titanium, Aluminium, Lambert, UniformSurfaceEmitter
-from raysect.optical.material.glass_libraries import schott
+from raysect.optical.library import schott
 from matplotlib.pyplot import *
 
 rough_max = 0.5

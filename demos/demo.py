@@ -1,9 +1,8 @@
-from raysect.core.acceleration import Unaccelerated
 from raysect.optical import World, translate, rotate, Point3D, Vector3D, Ray, d65_white, ConstantSF, InterpolatedSF
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
-from raysect.optical.material.glass_libraries import schott
+from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
 from matplotlib.pyplot import *
 from numpy import array
@@ -48,7 +47,7 @@ camera.spectral_samples = 15
 camera.pixels = (512, 512)
 camera.display_progress = True
 camera.display_update_time = 10
-camera.sub_sample = False
+camera.sub_sample = True
 camera.observe()
 
 ioff()

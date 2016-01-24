@@ -2,7 +2,7 @@ from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, 
 from raysect.optical.observer.camera import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.material.lambert import Lambert
-from raysect.optical.material.glass_libraries import schott
+from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
 from matplotlib.pyplot import *
 from numpy import array

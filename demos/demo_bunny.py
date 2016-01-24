@@ -12,7 +12,7 @@ from raysect.optical.material.absorber import AbsorbingSurface
 from raysect.primitive import Box, Subtract
 from raysect.primitive.mesh import Mesh
 from raysect.primitive.mesh import import_obj
-from raysect.optical.material.glass_libraries import schott
+from raysect.optical.library import schott
 
 
 """
