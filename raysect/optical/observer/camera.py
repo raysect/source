@@ -191,11 +191,8 @@ class Camera(Observer):
             for iy in range(ny):
                 for ix in range(nx):
 
-                    # generate pixel transform
-                    transform = self._generate_pixel_transform(ix, iy)
-
                     # load selected pixel and trace rays
-                    spectrum, ray_count = self._sample_pixel(self.pixel_samples, self.root, ray_template, self.to_root() * transform)
+                    spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
 
                     # convert spectrum to CIE XYZ
                     xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
@@ -310,11 +307,8 @@ class Camera(Observer):
 
             ix, iy = pixel_id
 
-            # generate pixel transform
-            transform = self._generate_pixel_transform(ix, iy)
-
             # load selected pixel and trace rays
-            spectrum, ray_count = self._sample_pixel(self.pixel_samples, self.root, ray_template, self.to_root() * transform)
+            spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
 
             # convert spectrum to CIE XYZ
             xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
@@ -352,21 +346,21 @@ class Camera(Observer):
 
         return rays
 
-    def _generate_pixel_transform(self, x, y):
-        raise NotImplementedError("To be defined in subclass.")
+    def _sample_pixel(self, ix, iy, world, ray_template):
 
-    def _sample_pixel(self, samples, world, ray_template, transform=None):
+        # generate pixel transform
+        transform = self.to_root() * self._generate_pixel_transform(ix, iy)
 
         # create spectrum and calculate sample weighting
         spectrum = ray_template.new_spectrum()
-        weight = 1 / samples
+        weight = 1 / self.pixel_samples
 
         # initialise ray statistics
         ray_count = 0
 
         # generate list of ray origin point and vectors
-        origin_points = self._point_generator(samples)
-        direction_vectors = self._vector_generator(samples)
+        origin_points = self._point_generator(self.pixel_samples)
+        direction_vectors = self._vector_generator(self.pixel_samples)
 
         # launch rays and accumulate spectral samples
         for origin, direction in zip(origin_points, direction_vectors):
@@ -386,6 +380,9 @@ class Camera(Observer):
         spectrum.samples *= self.sensitivity
 
         return spectrum, ray_count
+
+    def _generate_pixel_transform(self, ix, iy):
+        raise NotImplementedError("To be defined in subclass.")
 
     def _start_display(self):
         """

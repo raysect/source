@@ -88,8 +88,8 @@ class CCD(Camera):
         self._width = width
         self._update_image_geometry()
 
-    def _generate_pixel_transform(self, i, j):
+    def _generate_pixel_transform(self, ix, iy):
 
-        pixel_x = self.image_start_x - self.image_delta * i
-        pixel_y = self.image_start_y - self.image_delta * j
+        pixel_x = self.image_start_x - self.image_delta * ix
+        pixel_y = self.image_start_y - self.image_delta * iy
         return translate(pixel_x, pixel_y, 0)
