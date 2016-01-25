@@ -44,8 +44,36 @@ from raysect.optical.observer.point_generator import Rectangle
 from raysect.optical.observer.vector_generators import SingleRay, HemisphereCosine, ConeUniform
 from raysect.optical import Ray
 
+
 # todo: add scheme to evenly subdivide spectral_samples across specified spectral_rays
 class Camera(Observer):
+    """
+    The abstract base class for Camera observers.
+
+    This class holds all the generic options for 2D cameras. It defines all the interface
+    methods that user cameras must implement.
+
+    :param tuple pixels: A tuple specification of the cameras pixel dimensions, the default is pixels=(512, 512).
+    :param float sensitivity: The cameras sensitivity coefficient, all samples collected by this camera will by
+    multiplied by this number.
+    :param int spectral_samples: The number of wavelength bins to collect over the wavelength range min_wavelength to
+    max_wavelength. For example, if the wavelength range is 400nm to 500nm and spectral_samples=100, each wavelength bin
+    would be 1nm wide. Default is spectral_samples=20.
+    :param int spectral_rays: The number of rays to sample over this wavelength range. For example, if the wavelength
+    range is 400nm to 500nm, spectral_samples=100 and spectral_rays=5, their would be five rays launched each with 20
+    spectral samples. The first ray would have the range 400nm-420nm, 420nm-440nm for the second ray, etc. This
+    behaviour is needed when dispersion effects are important. For example, when light passes through a prism and is
+    separated into different paths. For scenes where dispersion effects are important, rays >> 10. The default
+    spectral_rays = 1.
+    :param int pixel_samples: The number of rays to launch per pixel. Real pixels collect light over a solid angle. To
+    prevent aliasing effects and compute a more realistic pixel response, pixel_samples >> 10. The default
+    pixel_samples=100.
+    :param int process_count: The number of parallel processes to use. Defaults to the number of cpu cores available.
+    :param parent: The parent node in the scenegraph. All camera observers must be parented to a World object.
+    :param AffineMatrix3D transform: A transform matrix describing the location and orientation of this camera in world
+    space.
+    :param name: An optional name for this camera.
+    """
 
     def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=21, spectral_rays=1, pixel_samples=100,
                  process_count=0, parent=None, transform=None, name=None):
@@ -123,6 +151,7 @@ class Camera(Observer):
         self.accumulated_samples = 0
 
     def observe(self):
+        """ Ask this Camera to Observe its world. """
 
         # must be connected to a world node to be able to perform a ray trace
         if not isinstance(self.root, World):
@@ -457,9 +486,128 @@ class Camera(Observer):
         pause(0.1)
 
     def save(self, filename):
+        """
+        Save the collected samples in the camera frame to file.
+
+        :param str filename: Filename and path for camera frame output file.
+        """
         imsave(filename, self.frame)
 
 
+class OrthographicCamera(Camera):
+    """
+    A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
+
+    Inherits arguments and attributes from the base camera class.
+
+    :param float width: width of the orthographic area to observe in meters, the height is deduced from the 'pixels'
+    attribute.
+    """
+
+    def __init__(self, pixels=(512, 512), width=10, sensitivity=1.0, spectral_samples=20, spectral_rays=1,
+                 pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
+                 transform=AffineMatrix3D(), name=None):
+
+        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
+                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
+                         parent=parent, transform=transform, name=name)
+
+        self.sub_sample = sub_sample
+        self.width = width
+
+        self._update_image_geometry()
+
+        self._point_generator = Rectangle(self.image_delta, self.image_delta)
+        self._vector_generator = SingleRay()
+
+    def _update_image_geometry(self):
+
+        self.image_delta = self._width / self._pixels[0]
+        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
+        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
+
+    @property
+    def pixels(self):
+        return self._pixels
+
+    @pixels.setter
+    def pixels(self, pixels):
+        # call base class pixels setter
+        self.__class__.__base__.pixels.fset(self, pixels)
+        self._update_image_geometry()
+
+    @property
+    def width(self):
+        return self._width
+
+    @width.setter
+    def width(self, width):
+        if width <= 0:
+            raise ValueError("width can not be less than or equal to 0 meters.")
+        self._width = width
+        self._update_image_geometry()
+
+    def _generate_pixel_transform(self, i, j):
+
+        pixel_x = self.image_start_x - self.image_delta * i
+        pixel_y = self.image_start_y - self.image_delta * j
+        return translate(pixel_x, pixel_y, 0)
 
 
+class CCD(Camera):
+    """ A CCD array camera, each pixel can have custom observing properties.
 
+    Inherits arguments and attributes from the base camera class.
+
+    :param float width: The width in metres of each ccd pixel. All pixels are assumed to be square, defaults to
+    width=0.036m.
+    """
+
+    def __init__(self, pixels=(720, 480), width=0.036, sensitivity=1.0, spectral_samples=20, spectral_rays=1,
+                 pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
+                 transform=AffineMatrix3D(), name=None):
+
+        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
+                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
+                         parent=parent, transform=transform, name=name)
+
+        self.sub_sample = sub_sample
+        self.width = width
+
+        self._update_image_geometry()
+
+        self._point_generator = Rectangle(self.image_delta, self.image_delta)
+        self._vector_generator = HemisphereCosine()
+
+    def _update_image_geometry(self):
+
+        self.image_delta = self._width / self._pixels[0]
+        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
+        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
+
+    @property
+    def pixels(self):
+        return self._pixels
+
+    @pixels.setter
+    def pixels(self, pixels):
+        # call base class pixels setter
+        self.__class__.__base__.pixels.fset(self, pixels)
+        self._update_image_geometry()
+
+    @property
+    def width(self):
+        return self._width
+
+    @width.setter
+    def width(self, width):
+        if width <= 0:
+            raise ValueError("width can not be less than or equal to 0 meters.")
+        self._width = width
+        self._update_image_geometry()
+
+    def _generate_pixel_transform(self, i, j):
+
+        pixel_x = self.image_start_x - self.image_delta * i
+        pixel_y = self.image_start_y - self.image_delta * j
+        return translate(pixel_x, pixel_y, 0)
