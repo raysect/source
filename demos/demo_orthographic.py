@@ -1,6 +1,6 @@
 
 from raysect.optical import World, translate, rotate, Point3D, d65_white, InterpolatedSF
-from raysect.optical.observer.camera import OrthographicCamera
+from raysect.optical.observer import OrthographicCamera
 from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
 from raysect.optical.library import schott

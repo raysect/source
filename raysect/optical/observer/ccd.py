@@ -37,17 +37,13 @@ from raysect.optical.observer.vector_generators import HemisphereCosine
 
 # TODO: fix the numerous bits of broken functionality!
 class CCD(Camera):
-    # """ A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
-    #
-    # :param pixels: tuple containing the number of pixels along horizontal and vertical axis
-    # :param width: width of the area to observe in meters, the height is deduced from the 'pixels' attribute
-    # :param spectral_samples: number of spectral samples by ray
-    # :param rays: number of rays. The total spectrum will be divided over all the rays. The number of rays must be >1 for
-    #  dispersive effects.
-    # :param parent: the scenegraph node which will be the parent of this observer.
-    # :param transform: AffineMatrix describing the relative position/rotation of this node to the parent.
-    # :param name: a printable name.
-    # """
+    """ A CCD array camera, each pixel can have custom observing properties.
+
+    Inherits arguments and attributes from the base camera class.
+
+    :param float width: The width in metres of each ccd pixel. All pixels are assumed to be square, defaults to
+    width=0.036m.
+    """
 
     def __init__(self, pixels=(720, 480), width=0.036, sensitivity=1.0, spectral_samples=21, spectral_rays=1,
                  pixel_samples=100, sub_sample=True, process_count=0, parent=None, transform=None, name=None):

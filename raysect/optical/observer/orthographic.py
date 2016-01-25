@@ -37,16 +37,13 @@ from raysect.optical.observer.vector_generators import SingleRay
 
 # TODO: fix the numerous bits of broken functionality!
 class OrthographicCamera(Camera):
-    """ A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
+    """
+    A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
 
-    :param pixels: tuple containing the number of pixels along horizontal and vertical axis
-    :param width: width of the area to observe in meters, the height is deduced from the 'pixels' attribute
-    :param spectral_samples: number of spectral samples by ray
-    :param rays: number of rays. The total spectrum will be divided over all the rays. The number of rays must be >1 for
-     dispersive effects.
-    :param parent: the scenegraph node which will be the parent of this observer.
-    :param transform: AffineMatrix describing the relative position/rotation of this node to the parent.
-    :param name: a printable name.
+    Inherits arguments and attributes from the base camera class.
+
+    :param float width: width of the orthographic area to observe in meters, the height is deduced from the 'pixels'
+    attribute.
     """
 
     def __init__(self, pixels=(512, 512), width=1, sensitivity=1.0, spectral_samples=21, spectral_rays=1,
