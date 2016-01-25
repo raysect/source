@@ -37,11 +37,9 @@ import numpy as np
 from matplotlib.pyplot import imshow, imsave, show, clf, draw, pause
 from numpy import zeros
 
-from raysect.core import World, AffineMatrix3D, Point3D, Point2D, Vector3D, Observer, translate
+from raysect.core import World, AffineMatrix3D, Observer
 from raysect.core.math import random
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
-from raysect.optical.observer.point_generator import Rectangle
-from raysect.optical.observer.vector_generators import SingleRay, HemisphereCosine, ConeUniform
 from raysect.optical import Ray
 
 
@@ -77,19 +75,6 @@ class Camera(Observer):
 
     def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=21, spectral_rays=1, pixel_samples=100,
                  process_count=0, parent=None, transform=None, name=None):
-        """
-
-        :param pixels:
-        :param sensitivity:
-        :param spectral_samples: Number of wavelength bins between min/max wavelengths.
-        :param spectral_rays: Number of rays to use when sub-sampling the spectral range.
-        :param pixel_samples:
-        :param process_count:
-        :param parent:
-        :param transform:
-        :param name:
-        :return:
-        """
 
         super().__init__(parent, transform, name)
 
