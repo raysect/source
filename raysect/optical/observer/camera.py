@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,22 +44,17 @@ from raysect.optical.observer.point_generator import Rectangle
 from raysect.optical.observer.vector_generators import SingleRay, HemisphereCosine, ConeUniform
 from raysect.optical import Ray
 
-
-
-
-
 # todo: add scheme to evenly subdivide spectral_samples across specified spectral_rays
 class Camera(Observer):
 
     def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=21, spectral_rays=1, pixel_samples=100,
-                 process_count=cpu_count(), parent=None, transform=AffineMatrix3D(), name=None):
+                 process_count=0, parent=None, transform=None, name=None):
         """
 
         :param pixels:
         :param sensitivity:
-        :param spectral_samples: number of wavelength bins between min/max wavelengths.
-        :param spectral_rays: number of rays to use when sub-sampling the overall spectral range. This must be ~15 or
-        greater to see dispersion effects in materials.
+        :param spectral_samples: Number of wavelength bins between min/max wavelengths.
+        :param spectral_rays: Number of rays to use when sub-sampling the spectral range.
         :param pixel_samples:
         :param process_count:
         :param parent:
@@ -93,6 +88,8 @@ class Camera(Observer):
         self.display_update_time = 10.0
 
         # concurrency configuration
+        if process_count < 1:
+            process_count = cpu_count()
         self.process_count = process_count
 
         # camera configuration
@@ -455,6 +452,7 @@ class Camera(Observer):
         imshow(self.frame, aspect="equal", origin="upper")
         draw()
         show()
+
         # workaround for interactivity for QT backend
         pause(0.1)
 
@@ -462,127 +460,6 @@ class Camera(Observer):
         imsave(filename, self.frame)
 
 
-class OrthographicCamera(Camera):
-    """ A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
-
-    :param pixels: tuple containing the number of pixels along horizontal and vertical axis
-    :param width: width of the area to observe in meters, the height is deduced from the 'pixels' attribute
-    :param spectral_samples: number of spectral samples by ray
-    :param rays: number of rays. The total spectrum will be divided over all the rays. The number of rays must be >1 for
-     dispersive effects.
-    :param parent: the scenegraph node which will be the parent of this observer.
-    :param transform: AffineMatrix describing the relative position/rotation of this node to the parent.
-    :param name: a printable name.
-    """
-
-    def __init__(self, pixels=(512, 512), width=10, sensitivity=1.0, spectral_samples=20, spectral_rays=1,
-                 pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
-                 transform=AffineMatrix3D(), name=None):
-
-        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
-                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
-                         parent=parent, transform=transform, name=name)
-
-        self.sub_sample = sub_sample
-        self.width = width
-
-        self._update_image_geometry()
-
-        self._point_generator = Rectangle(self.image_delta, self.image_delta)
-        self._vector_generator = SingleRay()
-
-    def _update_image_geometry(self):
-
-        self.image_delta = self._width / self._pixels[0]
-        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
-        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
-
-    @property
-    def pixels(self):
-        return self._pixels
-
-    @pixels.setter
-    def pixels(self, pixels):
-        # call base class pixels setter
-        self.__class__.__base__.pixels.fset(self, pixels)
-        self._update_image_geometry()
-
-    @property
-    def width(self):
-        return self._width
-
-    @width.setter
-    def width(self, width):
-        if width <= 0:
-            raise ValueError("width can not be less than or equal to 0 meters.")
-        self._width = width
-        self._update_image_geometry()
-
-    def _generate_pixel_transform(self, i, j):
-
-        pixel_x = self.image_start_x - self.image_delta * i
-        pixel_y = self.image_start_y - self.image_delta * j
-        return translate(pixel_x, pixel_y, 0)
 
 
-class CCD(Camera):
-    # """ A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
-    #
-    # :param pixels: tuple containing the number of pixels along horizontal and vertical axis
-    # :param width: width of the area to observe in meters, the height is deduced from the 'pixels' attribute
-    # :param spectral_samples: number of spectral samples by ray
-    # :param rays: number of rays. The total spectrum will be divided over all the rays. The number of rays must be >1 for
-    #  dispersive effects.
-    # :param parent: the scenegraph node which will be the parent of this observer.
-    # :param transform: AffineMatrix describing the relative position/rotation of this node to the parent.
-    # :param name: a printable name.
-    # """
 
-    def __init__(self, pixels=(720, 480), width=0.036, sensitivity=1.0, spectral_samples=20, spectral_rays=1,
-                 pixel_samples=100, sub_sample=False, process_count=cpu_count(), parent=None,
-                 transform=AffineMatrix3D(), name=None):
-
-        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
-                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
-                         parent=parent, transform=transform, name=name)
-
-        self.sub_sample = sub_sample
-        self.width = width
-
-        self._update_image_geometry()
-
-        self._point_generator = Rectangle(self.image_delta, self.image_delta)
-        self._vector_generator = HemisphereCosine()
-
-    def _update_image_geometry(self):
-
-        self.image_delta = self._width / self._pixels[0]
-        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
-        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
-
-    @property
-    def pixels(self):
-        return self._pixels
-
-    @pixels.setter
-    def pixels(self, pixels):
-        # call base class pixels setter
-        self.__class__.__base__.pixels.fset(self, pixels)
-        self._update_image_geometry()
-
-    @property
-    def width(self):
-        return self._width
-
-    @width.setter
-    def width(self, width):
-        if width <= 0:
-            raise ValueError("width can not be less than or equal to 0 meters.")
-        self._width = width
-        self._update_image_geometry()
-
-    def _generate_pixel_transform(self, i, j):
-
-        pixel_x = self.image_start_x - self.image_delta * i
-        pixel_y = self.image_start_y - self.image_delta * j
-        return translate(pixel_x, pixel_y, 0)
