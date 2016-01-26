@@ -348,8 +348,8 @@ class Camera(Observer):
 
     def _sample_pixel(self, ix, iy, world, ray_template):
 
-        # generate pixel transform
-        transform = self.to_root() * self._generate_pixel_transform(ix, iy)
+        # generate rays
+        rays = self._generate_rays(ix, iy, ray_template)
 
         # create spectrum and calculate sample weighting
         spectrum = ray_template.new_spectrum()
@@ -358,18 +358,14 @@ class Camera(Observer):
         # initialise ray statistics
         ray_count = 0
 
-        # generate list of ray origin point and vectors
-        origin_points = self._point_generator(self.pixel_samples)
-        direction_vectors = self._vector_generator(self.pixel_samples)
-
         # launch rays and accumulate spectral samples
-        for origin, direction in zip(origin_points, direction_vectors):
+        for ray in rays:
 
-            if transform is not None:
-                origin = origin.transform(transform)
-                direction = direction.transform(transform)
+            # convert ray from local space to world space
+            # TODO: perhaps add a Ray.transform() method as this turns up frequently? Would need an inplace version.
+            ray.origin = ray.origin.transform(self.to_root())
+            ray.direction = ray.direction.transform(self.to_root())
 
-            ray = ray_template.copy(origin, direction)
             sample = ray.trace(world)
             spectrum.samples += weight * sample.samples
 
@@ -381,7 +377,7 @@ class Camera(Observer):
 
         return spectrum, ray_count
 
-    def _generate_pixel_transform(self, ix, iy):
+    def _generate_rays(self, ix, iy, ray_template):
         raise NotImplementedError("To be defined in subclass.")
 
     def _start_display(self):
@@ -474,3 +470,4 @@ class Camera(Observer):
         :param str filename: Filename and path for camera frame output file.
         """
         imsave(filename, self.frame)
+

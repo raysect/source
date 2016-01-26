@@ -89,8 +89,25 @@ class OrthographicCamera(Camera):
         self._width = width
         self._update_image_geometry()
 
-    def _generate_pixel_transform(self, ix, iy):
+    def _generate_rays(self, ix, iy, ray_template):
 
+        # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
         pixel_y = self.image_start_y - self.image_delta * iy
-        return translate(pixel_x, pixel_y, 0)
+        to_local = translate(pixel_x, pixel_y, 0)
+
+        # generate origin and direction vectors
+        origin_points = self._point_generator(self.pixel_samples)
+        direction_vectors = self._vector_generator(self.pixel_samples)
+
+        # assemble rays
+        rays = []
+        for origin, direction in zip(origin_points, direction_vectors):
+
+            # transform to local space from pixel space
+            origin = origin.transform(to_local)
+            direction = direction.transform(to_local)
+
+            rays.append(ray_template.copy(origin, direction))
+
+        return rays
