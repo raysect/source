@@ -31,7 +31,7 @@
 
 from .camera import Camera
 from raysect.core import translate
-from raysect.optical.observer.point_generator import Rectangle, SinglePoint
+from raysect.optical.observer.point_generator import Rectangle
 from raysect.optical.observer.vector_generators import SingleRay
 
 
@@ -47,18 +47,16 @@ class OrthographicCamera(Camera):
     """
 
     def __init__(self, pixels=(512, 512), width=1, sensitivity=1.0, spectral_samples=21, spectral_rays=1,
-                 pixel_samples=100, sub_sample=True, process_count=0, parent=None, transform=None, name=None):
+                 pixel_samples=100, process_count=0, parent=None, transform=None, name=None):
 
         super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
                          spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
                          parent=parent, transform=transform, name=name)
 
-        self.sub_sample = sub_sample
         self.width = width
 
         self._update_image_geometry()
 
-        # todo: respect subsample setting
         self._point_generator = Rectangle(self.image_delta, self.image_delta)
         self._vector_generator = SingleRay()
 

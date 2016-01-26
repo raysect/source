@@ -362,7 +362,6 @@ class Camera(Observer):
         for ray in rays:
 
             # convert ray from local space to world space
-            # TODO: perhaps add a Ray.transform() method as this turns up frequently? Would need an inplace version.
             ray.origin = ray.origin.transform(self.to_root())
             ray.direction = ray.direction.transform(self.to_root())
 

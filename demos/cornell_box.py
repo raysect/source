@@ -113,7 +113,6 @@ camera.rays = 1
 camera.spectral_samples = 15
 camera.pixels = (256, 256)
 camera.pixel_samples = 25
-camera.sub_sample = True
 camera.display_progress = True
 camera.display_update_time = 10
 camera.accumulate = True

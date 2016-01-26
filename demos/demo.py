@@ -47,7 +47,6 @@ camera.pixel_samples = 50
 camera.spectral_samples = 15
 camera.display_progress = True
 camera.display_update_time = 10
-camera.sub_sample = False
 camera.observe()
 
 ioff()
