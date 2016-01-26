@@ -53,7 +53,7 @@ cdef class Camera(Observer):
     methods that user cameras must implement.
 
     :param tuple pixels: A tuple specification of the cameras pixel dimensions, the default is pixels=(512, 512).
-    :param float sensitivity: The cameras sensitivity coefficient, all samples collected by this camera will by
+    :param float sensitivity: The cameras sensitivity coefficient, all samples collected be this camera will by
     multiplied by this number.
     :param int spectral_samples: The number of wavelength bins to collect over the wavelength range min_wavelength to
     max_wavelength. For example, if the wavelength range is 400nm to 500nm and spectral_samples=100, each wavelength bin
