@@ -1,7 +1,7 @@
 
 from raysect.optical import World, translate, rotate, Point3D, d65_white, InterpolatedSF
-from raysect.optical.observer.camera import PinholeCamera
-from raysect.optical.material.emitter import UniformVolumeEmitter, UniformSurfaceEmitter, Checkerboard
+from raysect.optical.observer import PinholeCamera
+from raysect.optical.material.emitter import UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
 from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
@@ -39,7 +39,7 @@ Box(Point3D(-100, -100, -100), Point3D(100, 100, 100), world, material=UniformSu
 
 ion()
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0))
-camera.pixels = (128, 128)
+camera.pixels = (256, 256)
 camera.ray_min_depth = 3
 camera.ray_max_depth = 200
 camera.ray_extinction_prob = 0.01
