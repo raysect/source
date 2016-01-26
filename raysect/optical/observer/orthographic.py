@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import numpy as np
 from .camera import Camera
 from raysect.core import translate
 from raysect.optical.observer.point_generator import Rectangle
@@ -72,8 +73,15 @@ class OrthographicCamera(Camera):
 
     @pixels.setter
     def pixels(self, pixels):
-        # call base class pixels setter
-        self.__class__.__base__.pixels.fset(self, pixels)
+        if len(pixels) != 2:
+            raise ValueError("Pixel dimensions of camera frame-buffer must be a tuple "
+                             "containing the x and y pixel counts.")
+        self._pixels = pixels
+
+        # reset frames
+        self.xyz_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
+        self.rgb_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
+        self.accumulated_samples = 0
         self._update_image_geometry()
 
     @property

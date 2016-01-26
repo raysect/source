@@ -29,22 +29,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from math import tan, pi, ceil
-from multiprocessing import Process, cpu_count, Queue
+from math import ceil
 from time import time
-
+from multiprocessing import Process, cpu_count, SimpleQueue
 import numpy as np
-from matplotlib.pyplot import imshow, imsave, show, clf, draw, pause
-from numpy import zeros
+import matplotlib.pyplot as plt
 
-from raysect.core import World, AffineMatrix3D, Observer
-from raysect.core.math import random
-from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
-from raysect.optical import Ray
+cimport numpy as np
+from raysect.core.math cimport random
+from raysect.core.scenegraph.observer cimport Observer
+from raysect.core.scenegraph.world cimport World
+from raysect.optical.colour cimport resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz
+from raysect.optical.ray cimport Ray
+from raysect.optical.spectrum cimport Spectrum
+cimport cython
 
 
-# todo: add scheme to evenly subdivide spectral_samples across specified spectral_rays
-class Camera(Observer):
+cdef class Camera(Observer):
     """
     The abstract base class for Camera observers.
 
@@ -72,6 +73,34 @@ class Camera(Observer):
     space.
     :param name: An optional name for this camera.
     """
+
+    # todo: fix encapsulation... these should not all be public (just a quick kludge for now)
+    cdef:
+        public int spectral_rays
+        public int spectral_samples
+        public double min_wavelength
+        public double max_wavelength
+        public double ray_extinction_prob
+        public double ray_min_depth
+        public int ray_max_depth
+
+        # progress information
+        public bint display_progress
+        public double display_update_time
+
+        # concurrency configuration
+        public int process_count
+
+        # camera configuration
+        public tuple _pixels
+        public double sensitivity
+        public int pixel_samples
+        public bint accumulate
+        public int accumulated_samples
+
+        # output from last call to Observe()
+        public np.ndarray xyz_frame
+        public np.ndarray frame
 
     def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=21, spectral_rays=1, pixel_samples=100,
                  process_count=0, parent=None, transform=None, name=None):
@@ -113,11 +142,8 @@ class Camera(Observer):
         self.accumulated_samples = 0
 
         # output from last call to Observe()
-        self.xyz_frame = zeros((pixels[1], pixels[0], 3))
-        self.frame = zeros((pixels[1], pixels[0], 3))
-
-        self._point_generator = None
-        self._vector_generator = None
+        self.xyz_frame = np.zeros((pixels[1], pixels[0], 3))
+        self.rgb_frame = np.zeros((pixels[1], pixels[0], 3))
 
     @property
     def pixels(self):
@@ -131,11 +157,11 @@ class Camera(Observer):
         self._pixels = pixels
 
         # reset frames
-        self.xyz_frame = zeros((self._pixels[1], self._pixels[0], 3))
-        self.frame = zeros((self._pixels[1], self._pixels[0], 3))
+        self.xyz_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
+        self.rgb_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
         self.accumulated_samples = 0
 
-    def observe(self):
+    cpdef observe(self):
         """ Ask this Camera to Observe its world. """
 
         # must be connected to a world node to be able to perform a ray trace
@@ -147,8 +173,8 @@ class Camera(Observer):
 
         # create intermediate and final frame-buffers
         if not self.accumulate:
-            self.xyz_frame = zeros((self._pixels[0], self._pixels[1], 3))
-            self.frame = zeros((self._pixels[0], self._pixels[1], 3))
+            self.xyz_frame = np.zeros((self._pixels[0], self._pixels[1], 3))
+            self.rgb_frame = np.zeros((self._pixels[0], self._pixels[1], 3))
             self.accumulated_samples = 0
 
         # generate spectral data
@@ -156,166 +182,12 @@ class Camera(Observer):
 
         # trace
         if self.process_count == 1:
-            self._observe_single(self.xyz_frame, ray_templates)
+            self._observe_single(ray_templates)
         else:
-            self._observe_parallel(self.xyz_frame, ray_templates)
+            self._observe_parallel(ray_templates)
 
         # update sample accumulation statistics
         self.accumulated_samples += self.pixel_samples * self.spectral_rays
-
-    def _observe_single(self, xyz_frame, ray_templates):
-
-        # initialise user interface
-        display_timer = self._start_display()
-        statistics_data = self._start_statistics()
-
-        # generate weightings for accumulation
-        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
-        previous_weight = self.accumulated_samples / total_samples
-        added_weight = self.spectral_rays * self.pixel_samples / total_samples
-
-        # scale previous state to account for additional samples
-        xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
-
-        # render
-        for i_channel, ray_template in enumerate(ray_templates):
-
-            # generate resampled XYZ curves for channel spectral range
-            resampled_xyz = resample_ciexyz(
-                ray_template.min_wavelength,
-                ray_template.max_wavelength,
-                ray_template.num_samples
-            )
-
-            ny, nx = self._pixels
-            for iy in range(ny):
-                for ix in range(nx):
-
-                    # load selected pixel and trace rays
-                    spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
-
-                    # convert spectrum to CIE XYZ
-                    xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-
-                    xyz_frame[iy, ix, 0] += added_weight * xyz[0]
-                    xyz_frame[iy, ix, 1] += added_weight * xyz[1]
-                    xyz_frame[iy, ix, 2] += added_weight * xyz[2]
-
-                    # convert to sRGB colour-space
-                    self.frame[iy, ix, :] = ciexyz_to_srgb(*xyz_frame[iy, ix, :])
-
-                    # update users
-                    pixel = ix + self._pixels[0] * iy
-                    statistics_data = self._update_statistics(statistics_data, i_channel, pixel, ray_count)
-                    display_timer = self._update_display(display_timer)
-
-        # final update for users
-        self._final_statistics(statistics_data)
-        self._final_display()
-
-    def _observe_parallel(self, xyz_frame, ray_templates):
-
-        world = self.root
-
-        # initialise user interface
-        display_timer = self._start_display()
-        statistics_data = self._start_statistics()
-
-        total_pixels = self._pixels[0] * self._pixels[1]
-
-        # generate weightings for accumulation
-        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
-        previous_weight = self.accumulated_samples / total_samples
-        added_weight = self.spectral_rays * self.pixel_samples / total_samples
-
-        # scale previous state to account for additional samples
-        xyz_frame[:, :, :] = previous_weight * xyz_frame[:, :, :]
-
-        # render
-        for channel, ray_template in enumerate(ray_templates):
-
-            # generate resampled XYZ curves for channel spectral range
-            resampled_xyz = resample_ciexyz(
-                ray_template.min_wavelength,
-                ray_template.max_wavelength,
-                ray_template.num_samples
-            )
-
-            # establish ipc queues using a manager process
-            task_queue = Queue()
-            result_queue = Queue()
-
-            # start process to generate image samples
-            producer = Process(target=self._producer, args=(task_queue, ))
-            producer.start()
-
-            # start worker processes
-            workers = []
-            for pid in range(self.process_count):
-                p = Process(target=self._worker,
-                            args=(world, ray_template,
-                                  resampled_xyz, task_queue, result_queue))
-                p.start()
-                workers.append(p)
-
-            # collect results
-            for pixel in range(total_pixels):
-
-                # obtain result
-                location, xyz, sample_ray_count = result_queue.get()
-                x, y = location
-
-                xyz_frame[y, x, 0] += added_weight * xyz[0]
-                xyz_frame[y, x, 1] += added_weight * xyz[1]
-                xyz_frame[y, x, 2] += added_weight * xyz[2]
-
-                # convert to sRGB colour-space
-                self.frame[y, x, :] = ciexyz_to_srgb(*xyz_frame[y, x, :])
-
-                # update users
-                display_timer = self._update_display(display_timer)
-                statistics_data = self._update_statistics(statistics_data, channel, pixel, sample_ray_count)
-
-            # shutdown workers
-            for _ in workers:
-                task_queue.put(None)
-
-        # final update for users
-        self._final_statistics(statistics_data)
-        self._final_display()
-
-    def _producer(self, task_queue):
-        # task is simply the pixel location
-        nx, ny = self._pixels
-        for y in range(ny):
-            for x in range(nx):
-                task_queue.put((x, y))
-
-    def _worker(self, world, ray_template, resampled_xyz, task_queue, result_queue):
-
-        # re-seed the random number generator to prevent all workers inheriting the same sequence
-        random.seed()
-
-        while True:
-
-            # request next pixel
-            pixel_id = task_queue.get()
-
-            # have we been commanded to shutdown?
-            if pixel_id is None:
-                break
-
-            ix, iy = pixel_id
-
-            # load selected pixel and trace rays
-            spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
-
-            # convert spectrum to CIE XYZ
-            xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-
-            # encode result and send
-            result = (pixel_id, xyz, ray_count)
-            result_queue.put(result)
 
     def _generate_ray_templates(self):
 
@@ -346,14 +218,189 @@ class Camera(Observer):
 
         return rays
 
-    def _sample_pixel(self, ix, iy, world, ray_template):
+    def _observe_single(self, ray_templates):
+
+        # initialise user interface
+        display_timer = self._start_display()
+        statistics_data = self._start_statistics()
+
+        # generate weightings for accumulation
+        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
+        previous_weight = self.accumulated_samples / total_samples
+        added_weight = self.spectral_rays * self.pixel_samples / total_samples
+
+        # scale previous state to account for additional samples
+        self.xyz_frame[:, :, :] = previous_weight * self.xyz_frame[:, :, :]
+
+        # render
+        for channel, ray_template in enumerate(ray_templates):
+
+            # generate resampled XYZ curves for channel spectral range
+            resampled_xyz = resample_ciexyz(
+                ray_template.min_wavelength,
+                ray_template.max_wavelength,
+                ray_template.num_samples
+            )
+
+            ny, nx = self._pixels
+            for iy in range(ny):
+                for ix in range(nx):
+
+                    # load selected pixel and trace rays
+                    spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
+
+                    # convert spectrum to CIE XYZ
+                    xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+
+                    self.xyz_frame[iy, ix, 0] += added_weight * xyz[0]
+                    self.xyz_frame[iy, ix, 1] += added_weight * xyz[1]
+                    self.xyz_frame[iy, ix, 2] += added_weight * xyz[2]
+
+                    xyz = self.xyz_frame[iy, ix, :]
+
+                    # convert to sRGB colour-space
+                    self.rgb_frame[iy, ix, :] = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
+
+                    # update users
+                    pixel = ix + self._pixels[0] * iy
+                    statistics_data = self._update_statistics(statistics_data, channel, pixel, ray_count)
+                    display_timer = self._update_display(display_timer)
+
+        # final update for users
+        self._final_statistics(statistics_data)
+        self._final_display()
+
+    def _observe_parallel(self, ray_templates):
+
+        world = self.root
+
+        # initialise user interface
+        display_timer = self._start_display()
+        statistics_data = self._start_statistics()
+
+        total_pixels = self._pixels[0] * self._pixels[1]
+
+        # generate weightings for accumulation
+        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
+        previous_weight = self.accumulated_samples / total_samples
+        added_weight = self.spectral_rays * self.pixel_samples / total_samples
+
+        # scale previous state to account for additional samples
+        self.xyz_frame[:, :, :] = previous_weight * self.xyz_frame[:, :, :]
+
+        # render
+        for channel, ray_template in enumerate(ray_templates):
+
+            # generate resampled XYZ curves for channel spectral range
+            resampled_xyz = resample_ciexyz(
+                ray_template.min_wavelength,
+                ray_template.max_wavelength,
+                ray_template.num_samples
+            )
+
+            # establish ipc queues using a manager process
+            task_queue = SimpleQueue()
+            result_queue = SimpleQueue()
+
+            # start process to generate image samples
+            producer = Process(target=self._producer, args=(task_queue, ))
+            producer.start()
+
+            # start worker processes
+            workers = []
+            for pid in range(self.process_count):
+                p = Process(target=self._worker,
+                            args=(world, ray_template,
+                                  resampled_xyz, task_queue, result_queue))
+                p.start()
+                workers.append(p)
+
+            # collect results
+            for pixel in range(total_pixels):
+
+                # obtain result
+                location, xyz, sample_ray_count = result_queue.get()
+                x, y = location
+
+                self.xyz_frame[y, x, 0] += added_weight * xyz[0]
+                self.xyz_frame[y, x, 1] += added_weight * xyz[1]
+                self.xyz_frame[y, x, 2] += added_weight * xyz[2]
+
+                xyz = self.xyz_frame[y, x, :]
+
+                # convert to sRGB colour-space
+                self.rgb_frame[y, x, :] = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
+
+                # update users
+                display_timer = self._update_display(display_timer)
+                statistics_data = self._update_statistics(statistics_data, channel, pixel, sample_ray_count)
+
+            # shutdown workers
+            for _ in workers:
+                task_queue.put(None)
+
+        # final update for users
+        self._final_statistics(statistics_data)
+        self._final_display()
+
+    def _producer(self, task_queue):
+        # task is simply the pixel location
+        nx, ny = self._pixels
+        for iy in range(ny):
+            for ix in range(nx):
+                task_queue.put((ix, iy))
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _worker(self, World world, Ray ray_template, np.ndarray resampled_xyz, object task_queue, object result_queue):
+
+        cdef:
+            Spectrum spectrum
+            int ray_count, ix, iy
+            tuple pixel_id, xyz, result
+
+        # re-seed the random number generator to prevent all workers inheriting the same sequence
+        random.seed()
+
+        while True:
+
+            # request next pixel
+            pixel_id = task_queue.get()
+
+            # have we been commanded to shutdown?
+            if pixel_id is None:
+                break
+
+            ix, iy = pixel_id
+
+            # load selected pixel and trace rays
+            spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
+
+            # convert spectrum to CIE XYZ
+            xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+
+            # encode result and send
+            result = (pixel_id, xyz, ray_count)
+            result_queue.put(result)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef inline tuple _sample_pixel(self, int ix, int iy, World world, Ray ray_template):
+
+        cdef:
+            list rays
+            Spectrum spectrum, sample
+            double weight
+            int ray_count
+            Ray ray
 
         # generate rays
         rays = self._generate_rays(ix, iy, ray_template)
 
         # create spectrum and calculate sample weighting
         spectrum = ray_template.new_spectrum()
-        weight = 1 / self.pixel_samples
+        weight = 1.0 / self.pixel_samples
 
         # initialise ray statistics
         ray_count = 0
@@ -366,17 +413,17 @@ class Camera(Observer):
             ray.direction = ray.direction.transform(self.to_root())
 
             sample = ray.trace(world)
-            spectrum.samples += weight * sample.samples
+            spectrum.mad_scalar(weight, sample.samples)
 
             # accumulate statistics
             ray_count += ray.ray_count
 
         # apply camera sensitivity
-        spectrum.samples *= self.sensitivity
+        spectrum.mul_scalar(self.sensitivity)
 
         return spectrum, ray_count
 
-    def _generate_rays(self, ix, iy, ray_template):
+    cpdef list _generate_rays(self, int ix, int iy, Ray ray_template):
         raise NotImplementedError("To be defined in subclass.")
 
     def _start_display(self):
@@ -454,13 +501,13 @@ class Camera(Observer):
         print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
 
     def display(self):
-        clf()
-        imshow(self.frame, aspect="equal", origin="upper")
-        draw()
-        show()
+        plt.clf()
+        plt.imshow(self.rgb_frame, aspect="equal", origin="upper")
+        plt.draw()
+        plt.show()
 
         # workaround for interactivity for QT backend
-        pause(0.1)
+        plt.pause(0.1)
 
     def save(self, filename):
         """
@@ -468,5 +515,5 @@ class Camera(Observer):
 
         :param str filename: Filename and path for camera frame output file.
         """
-        imsave(filename, self.frame)
+        plt.imsave(filename, self.rgb_frame)
 
