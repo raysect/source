@@ -242,7 +242,7 @@ cdef class Camera(Observer):
                 ray_template.num_samples
             )
 
-            ny, nx = self._pixels
+            nx, ny = self._pixels
             for iy in range(ny):
                 for ix in range(nx):
 
