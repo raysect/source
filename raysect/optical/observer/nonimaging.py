@@ -41,10 +41,10 @@ from raysect.core import AffineMatrix3D, Point3D, Vector3D
 
 class SightLine(NonImaging):
     """
-    The most basic Line Of Sight observer in Raysect.
+    An observer that fires rays along the observers z axis.
 
-    Inherits arguments and attributes from the base sensor.NonImaging class. Fires a single ray oriented along the observer's
-    z axis in world space.
+    Inherits arguments and attributes from the base NonImaging sensor class. Fires a single ray oriented along the
+    observer's z axis in world space.
     """
     def _generate_rays(self, ray_template):
 
@@ -56,12 +56,12 @@ class SightLine(NonImaging):
 
 class FibreOptic(NonImaging):
     """
-    An optical fibre Line Of Sight observer.
+    An optical fibre observer that samples rays from an acceptance cone and circular area at the fibre tip.
 
-    Inherits arguments and attributes from the base sensor.NonImaging class. Rays are sampled over a circular area at the fibre tip
-    and a conical solid angle defined by the acceptance_angle parameter.
+    Inherits arguments and attributes from the base NonImaging sensor class. Rays are sampled over a circular area at
+    the fibre tip and a conical solid angle defined by the acceptance_angle parameter.
 
-    :param float acceptance_angle: The angle in radians between the z axis and the cone surface which defines the fibres
+    :param float acceptance_angle: The angle in degrees between the z axis and the cone surface which defines the fibres
     soild angle sampling area.
     :param float radius: The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
     which will be sampled over.

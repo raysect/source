@@ -44,29 +44,33 @@ from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
 cimport cython
 
-# TODO: check normalisation of various random distributions
+
 cdef class Imaging(Observer):
     """
     The abstract base class for imaging observers.
 
-    This class holds all the generic options for 2D cameras. It defines all the interface
-    methods that user cameras must implement.
+    This class holds all the generic options for 2D imaging sensors/cameras. It provides a standard base class on which
+    user sensors can be built.
 
-    :param tuple pixels: A tuple specification of the cameras pixel dimensions, the default is pixels=(512, 512).
+    The wavelength range is defined through the spectral_samples parameter. For example, if the wavelength range is
+    400nm to 500nm and spectral_samples=100, each wavelength bin would be 1nm wide. The spectrum can be broken up into
+    wavelength bins that will each be sampled with their own Ray. This behaviour is important when dispersive media are
+    present in the scene. For example, when light passes through a prism and is separated into different paths. For
+    scenes where dispersion effects are important, rays >> 10. For example, if the wavelength range is 400nm to 500nm,
+    spectral_samples=100 and spectral_rays=5, their would be five rays launched each with 20 spectral samples. The first
+    ray would have the range 400nm-420nm, 420nm-440nm for the second ray, etc.
+
+    Real pixels collect light over a solid angle. To prevent aliasing effects and compute a more realistic pixel
+    response, pixel_samples >> 10.
+
+    :param tuple pixels: A tuple specification of the imaging sensors pixel dimensions, the default is
+    pixels=(512, 512).
     :param float sensitivity: The cameras sensitivity coefficient, all samples collected be this camera will by
     multiplied by this number.
     :param int spectral_samples: The number of wavelength bins to collect over the wavelength range min_wavelength to
-    max_wavelength. For example, if the wavelength range is 400nm to 500nm and spectral_samples=100, each wavelength bin
-    would be 1nm wide. Default is spectral_samples=20.
-    :param int spectral_rays: The number of rays to sample over this wavelength range. For example, if the wavelength
-    range is 400nm to 500nm, spectral_samples=100 and spectral_rays=5, their would be five rays launched each with 20
-    spectral samples. The first ray would have the range 400nm-420nm, 420nm-440nm for the second ray, etc. This
-    behaviour is needed when dispersion effects are important. For example, when light passes through a prism and is
-    separated into different paths. For scenes where dispersion effects are important, rays >> 10. The default
-    spectral_rays = 1.
-    :param int pixel_samples: The number of rays to launch per pixel. Real pixels collect light over a solid angle. To
-    prevent aliasing effects and compute a more realistic pixel response, pixel_samples >> 10. The default
-    pixel_samples=100.
+    max_wavelength. Default is spectral_samples=20.
+    :param int spectral_rays: The number of rays to sample over this wavelength range. Defaults to spectral_rays = 1.
+    :param int pixel_samples: The number of rays to launch per pixel. Defaults pixel_samples=100.
     :param int process_count: The number of parallel processes to use. Defaults to the number of cpu cores available.
     :param parent: The parent node in the scenegraph. All camera observers must be parented to a World object.
     :param AffineMatrix3D transform: A transform matrix describing the location and orientation of this camera in world
@@ -425,7 +429,9 @@ cdef class Imaging(Observer):
 
     cpdef list _generate_rays(self, int ix, int iy, Ray ray_template):
         """
-        Virtual method - to be implemented by derived classes.
+        Generate a list of Rays and their respective area weightings for pixel (ix, iy).
+
+        This is a virtual method to be implemented by derived classes.
 
         Runs during the observe() loop to generate the rays. Allows observers to customise how they launch rays.
 
@@ -436,6 +442,9 @@ cdef class Imaging(Observer):
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
 
+        :param int ix: Index of this pixel along the images' x axis.
+        :param int iy: Index of this pixel along the images' y axis.
+        :param Ray ray_template: A Ray object from which spectral settings can be propagated.
         :return list Rays: A list of tuples.
         """
 
@@ -538,24 +547,27 @@ class NonImaging(Observer):
     """
     The abstract base class for non-imaging observers.
 
-    These observers are different from since they observe from a single origin point and the concept of pixels doesn't
-    make sense. Derived observers could include LineOfSight, OpticalFibre, etc. Point observers can only return a
-    spectrum, not an image.
+    These observers are different from Imaging sensors since they observe from a single origin point and the concept of
+    pixels doesn't make sense. Derived observers could include LineOfSight, OpticalFibre, etc. Point observers can only
+    return a spectrum, not an image.
+
+    The wavelength range is defined through the spectral_samples parameter. For example, if the wavelength range is
+    400nm to 500nm and spectral_samples=100, each wavelength bin would be 1nm wide. The spectrum can be broken up into
+    wavelength bins that will each be sampled with their own Ray. This behaviour is important when dispersive media are
+    present in the scene. For example, when light passes through a prism and is separated into different paths. For
+    scenes where dispersion effects are important, rays >> 10. For example, if the wavelength range is 400nm to 500nm,
+    spectral_samples=100 and spectral_rays=5, their would be five rays launched each with 20 spectral samples. The first
+    ray would have the range 400nm-420nm, 420nm-440nm for the second ray, etc.
+
+    Real pixels collect light over a solid angle. To prevent aliasing effects and compute a more realistic pixel
+    response, pixel_samples >> 10.
 
     :param float sensitivity: The observers sensitivity coefficient, all samples collected by this LOS will be
     multiplied by this number.
     :param int spectral_samples: The number of wavelength bins to collect over the wavelength range min_wavelength to
-    max_wavelength. For example, if the wavelength range is 400nm to 500nm and spectral_samples=100, each wavelength bin
-    would be 1nm wide. Default is spectral_samples=20.
-    :param int spectral_rays: The number of rays to sample over this wavelength range. For example, if the wavelength
-    range is 400nm to 500nm, spectral_samples=100 and spectral_rays=5, their would be five rays launched each with 20
-    spectral samples. The first ray would have the range 400nm-420nm, 420nm-440nm for the second ray, etc. This
-    behaviour is needed when dispersion effects are important. For example, when light passes through a prism and is
-    separated into different paths. For scenes where dispersion effects are important, rays >> 10. The default
-    spectral_rays = 1.
-    :param int pixel_samples: The number of rays to launch when sampling this LOS. Real life observers like fibre optics
-    collect light over a solid angle. To prevent aliasing effects and compute a more realistic response,
-    pixel_samples >> 10. The default pixel_samples=100.
+    max_wavelength. Default is spectral_samples=20.
+    :param int spectral_rays: The number of rays to sample over this wavelength range. Defaults to spectral_rays = 1.
+    :param int pixel_samples: The number of rays to launch per pixel. Defaults pixel_samples=100.
     :param parent: The parent node in the scenegraph. All camera observers must be parented to a World object.
     :param AffineMatrix3D transform: A transform matrix describing the location and orientation of this camera in world
     space.
@@ -649,7 +661,9 @@ class NonImaging(Observer):
 
     def _generate_rays(self, ray_template):
         """
-        Virtual method - to be implemented by derived classes.
+        Generate a list of Rays and their respective area weightings.
+
+        This is a virtual method to be implemented by derived classes.
 
         Runs during the observe() loop to generate the rays. Allows observers to customise how they launch rays.
 
@@ -660,6 +674,7 @@ class NonImaging(Observer):
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
 
+        :param Ray ray_template: A Ray object from which spectral settings can be propagated.
         :return list Rays: A list of tuples.
         """
         raise NotImplementedError("Virtual method _generate_rays() has not been implemented for this point observer.")
