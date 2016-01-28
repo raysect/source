@@ -38,15 +38,21 @@ from raysect.optical.observer.vector_generators import HemisphereCosine
 
 # TODO: fix the numerous bits of broken functionality!
 class CCD(Imaging):
-    """ A CCD array camera, each pixel can have custom observing properties.
+    """
+    An observer that models an idealised CCD-like imaging sensor.
 
-    Inherits arguments and attributes from the base camera class.
+    The CCD is a regular array of square pixels. Each pixel samples red, green
+    and blue channels (behaves like a Foveon imaging sensor). The CCD sensor
+    width is specified with the width parameter. The CCD height is calculated
+    from the width and the number of vertical and horizontal pixels. The
+    default width and sensor ratio approximates a 35mm camera sensor.
 
-    :param float width: The width in metres of each ccd pixel. All pixels are assumed to be square, defaults to
-    width=0.036m.
+    Arguments and attributes are inherited from the base Imaging sensor class.
+
+    :param double width: The width in metres of the sensor (default is 0.035m).
     """
 
-    def __init__(self, pixels=(720, 480), width=0.036, sensitivity=1.0, spectral_samples=21, spectral_rays=1,
+    def __init__(self, pixels=(720, 480), width=0.035, sensitivity=1.0, spectral_samples=21, spectral_rays=1,
                  pixel_samples=100, process_count=0, parent=None, transform=None, name=None):
 
         super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,

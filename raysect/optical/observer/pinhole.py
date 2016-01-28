@@ -1,5 +1,34 @@
+# cython: language_level=3
 
-from multiprocessing import cpu_count
+# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     1. Redistributions of source code must retain the above copyright notice,
+#        this list of conditions and the following disclaimer.
+#
+#     2. Redistributions in binary form must reproduce the above copyright
+#        notice, this list of conditions and the following disclaimer in the
+#        documentation and/or other materials provided with the distribution.
+#
+#     3. Neither the name of the Raysect Project nor the names of its
+#        contributors may be used to endorse or promote products derived from
+#        this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 from math import tan, pi as PI
 import numpy as np
 
@@ -9,8 +38,18 @@ from .sensor import Imaging
 
 
 class PinholeCamera(Imaging):
+    """
+    An observer that models an idealised pinhole camera.
 
-    def __init__(self, pixels=(512, 512), fov=45, sensitivity=1.0, spectral_samples=21, spectral_rays=1,
+    A simple camera that launches rays from the observer's origin point over a
+    specified field of view.
+
+    Arguments and attributes are inherited from the base Imaging sensor class.
+
+    :param double fov: The field of view of the camera in degrees (default is 90 degrees).
+    """
+
+    def __init__(self, pixels=(512, 512), fov=90, sensitivity=1.0, spectral_samples=21, spectral_rays=1,
                  pixel_samples=100, process_count=0, parent=None, transform=None, name=None):
 
         super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
@@ -89,9 +128,10 @@ class PinholeCamera(Imaging):
                 point.z + pixel_centre.z
             ).normalise()
 
-            # the pinhole camera is sampling radiance directly so we don't
-            # want to include a projected area weighting
             ray = ray_template.copy(origin, direction)
-            rays.append((ray, 1.0))
+
+            # projected area weight is normal.incident which simplifies
+            # to incident.z here as the normal is (0, 0 ,1)
+            rays.append((ray, direction.z))
 
         return rays

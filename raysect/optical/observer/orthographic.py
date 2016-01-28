@@ -43,7 +43,7 @@ class OrthographicCamera(Imaging):
 
     Inherits arguments and attributes from the base camera class.
 
-    :param float width: width of the orthographic area to observe in meters, the height is deduced from the 'pixels'
+    :param double width: width of the orthographic area to observe in meters, the height is deduced from the 'pixels'
     attribute.
     """
 
