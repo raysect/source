@@ -29,13 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-import matplotlib.pyplot as plt
-from numpy import pi as PI
-
 from raysect.optical.observer.sensor import NonImaging
-from raysect.optical.observer.point_generator import SinglePoint, Disk
-from raysect.optical.observer.vector_generators import SingleRay, ConeUniform
+from raysect.optical.observer.point_generator import Disk
+from raysect.optical.observer.vector_generators import ConeUniform
 from raysect.core import AffineMatrix3D, Point3D, Vector3D
 
 
