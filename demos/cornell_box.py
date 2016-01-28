@@ -105,7 +105,7 @@ sphere = Sphere(0.4,
     material=schott("N-BK7"))
 
 # create and setup the camera
-camera = PinholeCamera(parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
+camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
