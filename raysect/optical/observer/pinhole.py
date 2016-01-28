@@ -73,7 +73,7 @@ class PinholeCamera(Imaging):
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
         pixel_y = self.image_start_y - self.image_delta * iy
-        pixel_origin = Point3D(pixel_x, pixel_y, 1)
+        pixel_centre = Point3D(pixel_x, pixel_y, 1)
 
         points = self.point_generator(self.pixel_samples)
 
@@ -81,11 +81,17 @@ class PinholeCamera(Imaging):
         rays = []
         for point in points:
 
-            # calculate point in image plane to be used for ray direction.
-            img_point = Point3D(point.x + pixel_origin.x, point.y + pixel_origin.y, point.z + pixel_origin.z)
+            # calculate point in virtual image plane to be used for ray direction
+            origin = Point3D()
+            direction = Vector3D(
+                point.x + pixel_centre.x,
+                point.y + pixel_centre.y,
+                point.z + pixel_centre.z
+            ).normalise()
 
             # the pinhole camera is sampling radiance directly so we don't
             # want to include a projected area weighting
-            rays.append((ray_template.copy(Point3D(), Vector3D(img_point.x, img_point.y, img_point.z)), 1.0))
+            ray = ray_template.copy(origin, direction)
+            rays.append((ray, 1.0))
 
         return rays
