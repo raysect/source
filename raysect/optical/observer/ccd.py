@@ -113,7 +113,9 @@ class CCD(Imaging):
             origin = origin.transform(to_local)
             direction = direction.transform(to_local)
 
-            rays.append(ray_template.copy(origin, direction))
+            # cosine weighted distribution, projected area weight is
+            # implicit in distribution, so set weight to 1.0
+            rays.append((ray_template.copy(origin, direction), 1.0))
 
         return rays
 

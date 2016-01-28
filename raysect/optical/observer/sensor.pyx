@@ -391,7 +391,7 @@ cdef class Imaging(Observer):
         cdef:
             list rays
             Spectrum spectrum, sample
-            double weight
+            double sample_weight, projection_weight
             int ray_count
             Ray ray
 
@@ -400,20 +400,20 @@ cdef class Imaging(Observer):
 
         # create spectrum and calculate sample weighting
         spectrum = ray_template.new_spectrum()
-        weight = 1.0 / self.pixel_samples
+        sample_weight = 1.0 / self.pixel_samples
 
         # initialise ray statistics
         ray_count = 0
 
         # launch rays and accumulate spectral samples
-        for ray in rays:
+        for ray, projection_weight in rays:
 
             # convert ray from local space to world space
             ray.origin = ray.origin.transform(self.to_root())
             ray.direction = ray.direction.transform(self.to_root())
 
             sample = ray.trace(world)
-            spectrum.mad_scalar(weight, sample.samples)
+            spectrum.mad_scalar(sample_weight * projection_weight, sample.samples)
 
             # accumulate statistics
             ray_count += ray.ray_count
@@ -424,6 +424,21 @@ cdef class Imaging(Observer):
         return spectrum, ray_count
 
     cpdef list _generate_rays(self, int ix, int iy, Ray ray_template):
+        """
+        Virtual method - to be implemented by derived classes.
+
+        Runs during the observe() loop to generate the rays. Allows observers to customise how they launch rays.
+
+        This method must return a list of tuples, with each tuple containing
+        a ray object and a corresponding projected area weight (direction cosine).
+
+        If the projected area weight is not required (due to the ray sampling
+        algorithm taking the weighting into account in the distribution e.g.
+        cosine weighted) then the weight should be set to 1.0.
+
+        :return list Rays: A list of tuples.
+        """
+
         raise NotImplementedError("To be defined in subclass.")
 
     def _start_display(self):
@@ -518,6 +533,7 @@ cdef class Imaging(Observer):
         plt.imsave(filename, self.rgb_frame)
 
 
+# todo: cythonise
 class NonImaging(Observer):
     """
     The abstract base class for non-imaging observers.
@@ -595,35 +611,33 @@ class NonImaging(Observer):
             upper_index = lower_index + ray_template.num_samples
 
             # trace rays on this pixel
-            spectrum, ray_count = self._sample_los(self.root, ray_template)
+            spectrum, ray_count = self._sample_pixel(self.root, ray_template)
 
             self.spectrum.samples[lower_index:upper_index] += spectrum.samples
 
             lower_index = upper_index
 
-    def _sample_los(self, world, ray_template):
+    def _sample_pixel(self, world, ray_template):
 
         # generate rays
         rays = self._generate_rays(ray_template)
 
         # create spectrum and calculate sample weighting
         spectrum = ray_template.new_spectrum()
-        weight = 1 / self.los_samples
+        sample_weight = 1 / self.pixel_samples
 
         # initialise ray statistics
         ray_count = 0
 
         # launch rays and accumulate spectral samples
-        for ray in rays:
-
-            print("tracing ray {}".format(ray_count))
+        for ray, projection_weight in rays:
 
             # convert ray from local space to world space
             ray.origin = ray.origin.transform(self.to_root())
             ray.direction = ray.direction.transform(self.to_root())
 
             sample = ray.trace(world)
-            spectrum.samples += weight * sample.samples
+            spectrum.samples += sample_weight * projection_weight * sample.samples
 
             # accumulate statistics
             ray_count += ray.ray_count
@@ -639,7 +653,14 @@ class NonImaging(Observer):
 
         Runs during the observe() loop to generate the rays. Allows observers to customise how they launch rays.
 
-        :return list Rays: a list of ray objects for the observer to sample the scene with.
+        This method must return a list of tuples, with each tuple containing
+        a ray object and a corresponding projected area weight (direction cosine).
+
+        If the projected area weight is not required (due to the ray sampling
+        algorithm taking the weighting into account in the distribution e.g.
+        cosine weighted) then the weight should be set to 1.0.
+
+        :return list Rays: A list of tuples.
         """
         raise NotImplementedError("Virtual method _generate_rays() has not been implemented for this point observer.")
 

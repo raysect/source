@@ -114,6 +114,7 @@ class OrthographicCamera(Imaging):
             origin = origin.transform(to_local)
             direction = direction.transform(to_local)
 
+            # rays fired along normal hence projected area weight is 1.0
             rays.append(ray_template.copy(origin, direction))
 
         return rays

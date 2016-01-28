@@ -39,8 +39,7 @@ from raysect.optical.observer.vector_generators import SingleRay, ConeUniform
 from raysect.core import AffineMatrix3D, Point3D, Vector3D
 
 
-# TODO: check normalisation of various random distributions
-class BasicLineOfSight(NonImaging):
+class SightLine(NonImaging):
     """
     The most basic Line Of Sight observer in Raysect.
 
@@ -51,11 +50,11 @@ class BasicLineOfSight(NonImaging):
 
         rays = []
         for n in range(self.pixel_samples):
-            rays.append(ray_template.copy(Point3D(), Vector3D()))
+            rays.append(ray_template.copy(Point3D(), Vector3D()), 1.0)
         return rays
 
 
-class OpticalFibre(NonImaging):
+class FibreOptic(NonImaging):
     """
     An optical fibre Line Of Sight observer.
 
@@ -87,9 +86,13 @@ class OpticalFibre(NonImaging):
         vector_generator = ConeUniform(self.acceptance_angle)
         directions = vector_generator(self.pixel_samples)
 
-        # todo: add cos(theta).dA weighting Normal.Vector
-
         rays = []
         for n in range(self.pixel_samples):
-            rays.append(ray_template.copy(origins[n], directions[n]))
+
+            # projected area weight is normal.incident which simplifies
+            # to incident.z here as the normal is (0, 0 ,1)
+            weight = directions[n].z
+            ray = ray_template.copy(origins[n], directions[n])
+            rays.append((ray, weight))
+
         return rays

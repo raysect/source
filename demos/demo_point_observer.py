@@ -9,7 +9,7 @@ from raysect.optical.material import Lambert, Checkerboard
 from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
 from raysect.core.math import Vector3D
-from raysect.optical.observer import OpticalFibre
+from raysect.optical.observer import FibreOptic
 
 
 # Box defining the ground plane
@@ -35,7 +35,7 @@ emitter.parent = world
 # 4. Observe()
 # ------------
 
-fibre = OpticalFibre(acceptance_angle=PI/4, radius=0.005, spectral_rays=20, los_samples=100, transform=translate(0, 0, -5), parent=world)
+fibre = FibreOptic(acceptance_angle=45, radius=0.0005, spectral_samples=500, spectral_rays=1, pixel_samples=1000, transform=translate(0, 0, -5), parent=world)
 fibre.observe()
 
 spectrum = fibre.spectrum

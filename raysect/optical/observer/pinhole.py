@@ -80,8 +80,12 @@ class PinholeCamera(Imaging):
         # assemble rays
         rays = []
         for point in points:
+
             # calculate point in image plane to be used for ray direction.
             img_point = Point3D(point.x + pixel_origin.x, point.y + pixel_origin.y, point.z + pixel_origin.z)
-            rays.append(ray_template.copy(Point3D(), Vector3D(img_point.x, img_point.y, img_point.z)))
+
+            # the pinhole camera is sampling radiance directly so we don't
+            # want to include a projected area weighting
+            rays.append((ray_template.copy(Point3D(), Vector3D(img_point.x, img_point.y, img_point.z)), 1.0))
 
         return rays
