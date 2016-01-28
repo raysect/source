@@ -91,7 +91,7 @@
 from os import urandom as _urandom
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.point cimport new_point2d
-from libc.math cimport cos, sin, sqrt, M_PI as PI
+from libc.math cimport cos, sin, log, fabs, sqrt, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
 cimport cython
 
@@ -237,7 +237,7 @@ cpdef seed(object d=None):
 
 
 @cython.cdivision(True)
-cpdef double random():
+cpdef double uniform():
     """
     Generate random doubles in range [0, 1).
 
@@ -247,6 +247,37 @@ cpdef double random():
     """
 
     return (_rand_uint64() >> 11) * (1.0 / 9007199254740992.0)
+
+
+# state variables required by the Box-Muller transform
+cdef bint _normal_generate = True
+cdef double _normal_c1, _normal_c2
+
+
+cpdef double normal(double mean, double stddev):
+    """
+    Generates a normally distributed random number.
+
+    The mean and standard deviation of the distribution must be specified.
+
+    :param mean: The distribution mean.
+    :param stddev: The distribution standard deviation.
+    :return: Random double.
+    """
+
+    global _normal_generate, _normal_c1, _normal_c2
+
+    # normals are generated with the Box–Muller transform
+    # the transform generates two solutions per evaluation
+    _normal_generate = not _normal_generate
+
+    if not _normal_generate:
+        return _normal_c1 * sin(_normal_c2) * stddev + mean
+
+    _normal_c1 = sqrt(-2.0 * log(uniform()))
+    _normal_c2 = 2.0 * PI * uniform()
+
+    return _normal_c1 * cos(_normal_c2) * stddev + mean
 
 
 cpdef bint probability(double prob):
@@ -263,7 +294,7 @@ cpdef bint probability(double prob):
     :return: True or False.
     """
 
-    return random() < prob
+    return uniform() < prob
 
 
 cpdef Point2D point_disk():
@@ -273,17 +304,52 @@ cpdef Point2D point_disk():
     :return: A Point2D on the disk.
     """
 
-    cdef double r = sqrt(random())
-    cdef double theta = 2.0 * PI * random()
+    cdef double r = sqrt(uniform())
+    cdef double theta = 2.0 * PI * uniform()
     return new_point2d(r * cos(theta), r * sin(theta))
 
 
-# cpdef Vector3D vector_sphere():
-#     pass
+cpdef Point2D point_square():
+    """
+    Returns a random point on a square of unit radius.
+
+    :return: A Point2D on the square.
+    """
+
+    return new_point2d(uniform(), uniform())
 
 
-# cpdef Vector3D vector_hemisphere_uniform():
-#     pass
+cpdef Vector3D vector_sphere():
+    """
+    Generates a random vector on a unit sphere.
+
+    :return: A random Vector3D on the unit sphere.
+    """
+
+    cdef double z = 1.0 - 2.0 * uniform()
+    cdef double r = sqrt(max(0, 1.0 - z*z))
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, z)
+
+
+cpdef Vector3D vector_hemisphere_uniform():
+    """
+    Generates a random vector on a unit hemisphere.
+
+    The hemisphere is aligned along the z-axis - the plane that forms the
+    hemisphere base lies in the x-y plane.
+
+    :return: A random Vector3D on the unit hemisphere.
+    """
+
+    cdef double z = uniform()
+    cdef double r = sqrt(max(0, 1.0 - z*z))
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, z)
 
 
 cpdef Vector3D vector_hemisphere_cosine():
@@ -296,8 +362,33 @@ cpdef Vector3D vector_hemisphere_cosine():
     :return: A unit Vector3D.
     """
 
-    cdef Point2D p = point_disk()
-    return new_vector3d(p.x, p.y, sqrt(max(0, 1 - p.x * p.x - p.y * p.y)))
+    cdef double r = sqrt(uniform())
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
+
+
+cpdef Vector3D vector_cone(double theta):
+    """
+    Generates a random vector in a cone along the z-axis.
+
+    The angle of the cone is specified with the theta parameter. For speed, no
+    checks are performs on the theta parameter, it is up to user to ensure the
+    angle is sensible.
+
+    :param theta: An angle between 0 and 90 degrees.
+    :return: A random Vector3D in the cone defined by theta.
+    """
+
+    theta *= 0.017453292519943295 # PI / 180
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double cos_theta = cos(theta)
+    cdef double z = uniform()*(1 - cos_theta) + cos_theta
+    cdef double r = sqrt(max(0, 1.0 - z*z))
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, z)
 
 
 # initialise random number generator

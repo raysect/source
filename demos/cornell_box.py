@@ -1,5 +1,5 @@
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
-from raysect.optical.observer.camera import PinholeCamera
+from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.material.lambert import Lambert
 from raysect.optical.library import schott
@@ -110,10 +110,9 @@ camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
 camera.rays = 1
-camera.spectral_samples = 15
+camera.spectral_samples = 21
 camera.pixels = (256, 256)
-camera.pixel_samples = 25
-camera.sub_sample = True
+camera.pixel_samples = 50
 camera.display_progress = True
 camera.display_update_time = 10
 camera.accumulate = True

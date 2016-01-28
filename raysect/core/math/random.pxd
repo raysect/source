@@ -34,11 +34,19 @@ from raysect.core.math.point cimport Point2D
 
 cpdef seed(object d=*)
 
-cpdef double random()
+cpdef double uniform()
+
+cpdef double normal(double mean, double sigma)
 
 cpdef bint probability(double prob)
 
 cpdef Point2D point_disk()
+
+cpdef Point2D point_square()
+
+cpdef Vector3D vector_sphere()
+
+cpdef Vector3D vector_hemisphere_uniform()
 
 cpdef Vector3D vector_hemisphere_cosine()
 

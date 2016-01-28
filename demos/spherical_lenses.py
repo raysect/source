@@ -39,7 +39,6 @@ camera.spectral_samples = 20
 camera.pixels = (256, 256)
 camera.display_progress = True
 camera.display_update_time = 10
-camera.sub_sample = True
 
 # Start ray tracing
 camera.observe()

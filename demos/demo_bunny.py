@@ -5,10 +5,11 @@ import time
 
 # Internal imports
 from raysect.optical import World, translate, rotate, Point3D, Vector3D, Normal3D, Ray, d65_white, ConstantSF, InterpolatedSF, Node
-from raysect.optical.observer.camera import PinholeCamera
+from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.dielectric import Sellmeier, Dielectric
 from raysect.optical.material.emitter import UniformVolumeEmitter
 from raysect.optical.material.absorber import AbsorbingSurface
+from raysect.optical.material import Lambert
 from raysect.primitive import Box, Subtract
 from raysect.primitive.mesh import Mesh
 from raysect.primitive.mesh import import_obj
@@ -48,7 +49,7 @@ enclosure_outer = Box(Point3D(-0.10 - enclosure_thickness, -0.02 - enclosure_thi
                       Point3D(0.10 + enclosure_thickness, 0.0, 0.10 + enclosure_thickness))
 enclosure_inner = Box(Point3D(-0.10 - padding, -0.02 - padding, -0.10 - padding),
                       Point3D(0.10 + padding, 0.001, 0.10 + padding))
-enclosure = Subtract(enclosure_outer, enclosure_inner, material=AbsorbingSurface(), parent=light_box)
+enclosure = Subtract(enclosure_outer, enclosure_inner, material=Lambert(ConstantSF(0.2)), parent=light_box)
 
 glass_outer = Box(Point3D(-0.10, -0.02, -0.10),
                   Point3D(0.10, 0.0, 0.10))
@@ -66,13 +67,12 @@ camera = PinholeCamera(fov=40, parent=world, transform=translate(0, 0.16, -0.4) 
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
-camera.pixel_samples = 250
+camera.pixel_samples = 50
 camera.rays = 10
 camera.spectral_samples = 2
-camera.pixels = (1024, 1024)
+camera.pixels = (256, 256)
 camera.display_progress = True
 camera.display_update_time = 15
-camera.sub_sample = True
 camera.observe()
 
 ioff()

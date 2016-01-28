@@ -29,63 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray as CoreRay
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.scenegraph.world cimport World
-from raysect.optical.spectrum cimport Spectrum
+
+cdef class PointGenerator:
+    cpdef list sample(self, int samples)
 
 
-cdef class Ray(CoreRay):
-
-    cdef:
-        int _num_samples
-        double _min_wavelength
-        double _max_wavelength
-        double _extinction_prob
-        int _min_depth
-        int _max_depth
-        public int depth
-        readonly int ray_count
-        Ray _primary_ray
-
-    cpdef Spectrum new_spectrum(self)
-
-    cpdef Spectrum trace(self, World world, bint keep_alive=*)
-
-    cpdef Spectrum sample(self, World world, int samples)
-
-    cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction)
-
-    cdef inline int get_num_samples(self)
-
-    cdef inline double get_min_wavelength(self)
-
-    cdef inline double get_max_wavelength(self)
+cdef class SinglePoint(PointGenerator):
+    pass
 
 
-cdef inline Ray new_ray(Point3D origin, Vector3D direction,
-             double min_wavelength, double max_wavelength, int num_samples,
-             double max_distance,
-             double extinction_prob, int min_depth, int max_depth):
+cdef class Disk(PointGenerator):
+    cdef public double radius
 
-    cdef Ray ray
 
-    ray = Ray.__new__(Ray)
-    ray.origin = origin
-    ray.direction = direction
-    ray.max_distance = max_distance
-    ray._num_samples = num_samples
-    ray._min_wavelength = min_wavelength
-    ray._max_wavelength = max_wavelength
-
-    ray._extinction_prob = extinction_prob
-    ray._min_depth = min_depth
-    ray._max_depth = max_depth
-    ray.depth = 0
-
-    ray.ray_count = 0
-    ray._primary_ray = None
-
-    return ray
+cdef class Rectangle(PointGenerator):
+    cdef public double width, height
 
