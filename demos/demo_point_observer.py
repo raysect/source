@@ -1,14 +1,12 @@
 
 # External imports
 import matplotlib.pyplot as plt
-from numpy import pi as PI
 
 # Raysect imports
 from raysect.optical import World, translate, rotate, Point3D, d65_white, Ray
 from raysect.optical.material import Lambert, Checkerboard
 from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
-from raysect.core.math import Vector3D
 from raysect.optical.observer import FibreOptic
 
 

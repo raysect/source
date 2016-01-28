@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 # Raysect imports
 from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.optical.observer import PinholeCamera
-from raysect.optical.material import Lambert, schott, Checkerboard
+from raysect.optical.material import Lambert, Checkerboard
+from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
 
 

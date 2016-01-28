@@ -17,7 +17,7 @@ if "--profile" in sys.argv:
     del sys.argv[sys.argv.index("--profile")]
 
 compilation_includes = [".", numpy.get_include()]
-compilation_args = []  # ["-O0", "-g"]
+compilation_args = []
 
 setup_path = path.dirname(path.abspath(__file__))
 
