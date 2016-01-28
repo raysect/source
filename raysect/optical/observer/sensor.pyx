@@ -177,8 +177,8 @@ cdef class Imaging(Observer):
 
         # create intermediate and final frame-buffers
         if not self.accumulate:
-            self.xyz_frame = np.zeros((self._pixels[0], self._pixels[1], 3))
-            self.rgb_frame = np.zeros((self._pixels[0], self._pixels[1], 3))
+            self.xyz_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
+            self.rgb_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
             self.accumulated_samples = 0
 
         # generate spectral data
