@@ -77,7 +77,7 @@ cdef class ConeUniform(VectorGenerator):
 
     The cone is aligned along the z-axis.
 
-    :param angle: Angle of te cone in degrees.
+    :param angle: Angle of the cone in degrees.
     """
 
     def __init__(self, double angle=45):

@@ -4,11 +4,11 @@ from math import tan, pi as PI
 import numpy as np
 
 from raysect.core import Point3D, Vector3D
-from raysect.optical.observer.point_generator import Rectangle
-from raysect.optical.observer.camera import Camera
+from .point_generator import Rectangle
+from .sensor import Imaging
 
 
-class PinholeCamera(Camera):
+class PinholeCamera(Imaging):
 
     def __init__(self, pixels=(512, 512), fov=45, sensitivity=1.0, spectral_samples=21, spectral_rays=1,
                  pixel_samples=100, process_count=0, parent=None, transform=None, name=None):

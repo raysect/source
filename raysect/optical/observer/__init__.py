@@ -30,4 +30,4 @@
 from .pinhole import PinholeCamera
 from .ccd import CCD
 from .orthographic import OrthographicCamera
-from .los_observers import BasicLineOfSight, OpticalFibre
+from .nonimaging import BasicLineOfSight, OpticalFibre

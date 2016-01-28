@@ -30,14 +30,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
-from .camera import Camera
+from .sensor import Imaging
 from raysect.core import translate
 from raysect.optical.observer.point_generator import Rectangle
 from raysect.optical.observer.vector_generators import SingleRay
 
 
 # TODO: fix the numerous bits of broken functionality!
-class OrthographicCamera(Camera):
+class OrthographicCamera(Imaging):
     """
     A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
 

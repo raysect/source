@@ -30,14 +30,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
-from .camera import Camera
+from .sensor import Imaging
 from raysect.core import translate
 from raysect.optical.observer.point_generator import Rectangle
 from raysect.optical.observer.vector_generators import HemisphereCosine
 
 
 # TODO: fix the numerous bits of broken functionality!
-class CCD(Camera):
+class CCD(Imaging):
     """ A CCD array camera, each pixel can have custom observing properties.
 
     Inherits arguments and attributes from the base camera class.
