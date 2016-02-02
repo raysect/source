@@ -7,9 +7,9 @@ The aims of the Raysect project are as follows:
 
 * develop a ray-tracer that is easy for scientists and engineers to use and extend
 
-* the raytracer must be robust and high precision (double floating point throughout)
+* the raytracer must be robust and high precision
 
-The general development philosophy is ease of use > performance, but performance is not to be ignored.
+The general development philosophy is ease of use trumps performance, but performance is not to be ignored.
 
 Please note, this code is currently alpha quality and subject to significant change.
 
