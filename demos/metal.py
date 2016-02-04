@@ -16,6 +16,7 @@ Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=Lambert(Con
 Cylinder(3.0, 8.0, world, transform=translate(4, 8, 0) * rotate(90, 0, 0), material=UniformSurfaceEmitter(d65_white, 1.0))
 
 camera = PinholeCamera(parent=world, transform=translate(0, 4, -3.5) * rotate(0, -48, 0))
+camera.fov = 45
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
