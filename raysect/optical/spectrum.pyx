@@ -313,6 +313,15 @@ cdef class Spectrum(SpectralFunction):
 
         return photons
 
+    cpdef Spectrum new_spectrum(self):
+        """
+        Returns a new Spectrum compatible with the same spectral settings.
+
+        :return: A new Spectrum object.
+        """
+
+        return new_spectrum(self.min_wavelength, self.max_wavelength, self.num_samples)
+
     # low level scalar maths functions
     @cython.boundscheck(False)
     @cython.wraparound(False)
