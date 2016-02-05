@@ -94,6 +94,9 @@ for ix in range(num_pixels):
             y_points.append(hit_point.x)
             z_points.append(hit_point.y)
             z_show[iy, ix] = hit_point.z
+        else:
+            # add small offset so background is black
+            z_show[iy, ix] = 0.1
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
