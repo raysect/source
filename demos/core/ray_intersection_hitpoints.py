@@ -4,6 +4,9 @@ from numpy import tan, pi as PI
 import numpy as np
 import matplotlib.pyplot as plt
 
+# do not remove the following import or the 3D plotting will break
+from mpl_toolkits.mplot3d import Axes3D
+
 # Internal imports
 from raysect.core.classes import Ray as CoreRay
 from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF, Node, Vector3D
@@ -31,7 +34,7 @@ Bunny model source:
 
 world = World()
 
-mesh = Mesh.from_file("./demos/resources/stanford_bunny.rsm", parent=world, transform=rotate(180, 0, 0))
+mesh = Mesh.from_file("../resources/stanford_bunny.rsm", parent=world, transform=rotate(180, 0, 0))
 
 # LIGHT BOX
 padding = 1e-5
