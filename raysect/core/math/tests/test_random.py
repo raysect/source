@@ -32,7 +32,7 @@ Unit tests for the core functions of the pseudo random number generator.
 """
 
 import unittest
-from raysect.core.math.random import seed, random
+from raysect.core.math.random import seed, uniform
 
 # generated with seed(1234567890)
 _random_reference = [
@@ -248,6 +248,6 @@ class TestRandom(unittest.TestCase):
 
         seed(1234567890)
         for v in _random_reference:
-            self.assertEqual(random(), v, msg="Random failed to reproduce the reference data.")
+            self.assertEqual(uniform(), v, msg="Random failed to reproduce the reference data.")
 
 

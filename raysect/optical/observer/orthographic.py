@@ -55,17 +55,15 @@ class OrthographicCamera(Imaging):
                          parent=parent, transform=transform, name=name)
 
         self.width = width
-
-        self._update_image_geometry()
-
-        self._point_generator = Rectangle(self.image_delta, self.image_delta)
         self._vector_generator = SingleRay()
+        self._update_image_geometry()
 
     def _update_image_geometry(self):
 
         self.image_delta = self._width / self._pixels[0]
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
         self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
+        self._point_generator = Rectangle(self.image_delta, self.image_delta)
 
     @property
     def pixels(self):
@@ -73,9 +71,11 @@ class OrthographicCamera(Imaging):
 
     @pixels.setter
     def pixels(self, pixels):
+
         if len(pixels) != 2:
             raise ValueError("Pixel dimensions of camera frame-buffer must be a tuple "
                              "containing the x and y pixel counts.")
+
         self._pixels = pixels
 
         # reset frames

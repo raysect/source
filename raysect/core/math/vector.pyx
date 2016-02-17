@@ -31,7 +31,8 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt
+from libc.math cimport sqrt, fabs
+
 
 cdef class Vector3D(_Vec3):
     """
@@ -310,5 +311,30 @@ cdef class Vector3D(_Vec3):
         return new_vector3d(self.x,
                             self.y,
                             self.z)
+
+    # todo: this is common code with normal, move into math.cython and call
+    cpdef Vector3D orthogonal(self):
+        """
+        Returns a unit vector that is guaranteed to be orthogonal to the vector.
+        """
+
+        cdef:
+            Vector3D n
+            Vector3D v
+            double m
+
+        n = self.normalise()
+
+        # try x-axis first, if too closely aligned use the y-axis
+        v = new_vector3d(1, 0, 0)
+        if fabs(n.dot(v)) > 0.5:
+            v = new_vector3d(0, 1, 0)
+
+        # make vector perpendicular to normal
+        m = n.dot(v)
+        v = new_vector3d(v.x - m * n.x, v.y - m * n.y, v.z - m * n.z)
+        v = v.normalise()
+
+        return v
 
 
