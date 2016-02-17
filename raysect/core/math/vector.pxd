@@ -52,6 +52,8 @@ cdef class Vector3D(_Vec3):
 
     cpdef Vector3D copy(self)
 
+    cpdef Vector3D orthogonal(self)
+
 
 cdef inline Vector3D new_vector3d(double x, double y, double z):
     """

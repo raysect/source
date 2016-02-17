@@ -216,6 +216,13 @@ class TestPoint3D(unittest.TestCase):
         self.assertEqual(r.y, 2.0, "Copy failed [Y].")
         self.assertEqual(r.z, 3.0, "Copy failed [Z].")
 
+    def test_orthogonal(self):
+
+        v = Vector3D(1.0, 2.0, 3.0)
+        r = v.orthogonal()
+
+        self.assertAlmostEqual(v.dot(r), 0.0, delta=1e-10, msg="Orthogonal did not return an orthogonal vector.")
+
 
 if __name__ == "__main__":
     unittest.main()
