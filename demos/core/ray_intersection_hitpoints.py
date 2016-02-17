@@ -1,3 +1,4 @@
+from os import path
 
 # External imports
 from numpy import tan, pi as PI
@@ -34,7 +35,8 @@ Bunny model source:
 
 world = World()
 
-mesh = Mesh.from_file("../resources/stanford_bunny.rsm", parent=world, transform=rotate(180, 0, 0))
+mesh_path = path.join(path.dirname(__file__), "../resources/stanford_bunny.rsm")
+mesh = Mesh.from_file(mesh_path, parent=world, transform=rotate(180, 0, 0))
 
 # LIGHT BOX
 padding = 1e-5
