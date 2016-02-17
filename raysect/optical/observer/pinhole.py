@@ -58,7 +58,6 @@ class PinholeCamera(Imaging):
 
         self._fov = fov
         self._update_image_geometry()
-        self.point_generator = Rectangle(self.image_delta, self.image_delta)
 
     @property
     def pixels(self):
@@ -66,9 +65,11 @@ class PinholeCamera(Imaging):
 
     @pixels.setter
     def pixels(self, pixels):
+
         if len(pixels) != 2:
             raise ValueError("Pixel dimensions of camera frame-buffer must be a tuple "
                              "containing the x and y pixel counts.")
+
         self._pixels = pixels
 
         # reset frames
@@ -101,8 +102,11 @@ class PinholeCamera(Imaging):
             # set pixel step size in image plane
             self.image_delta = image_delta = image_max_width / max_pixels
 
-            self.image_start_x = 0.5 * self._pixels[1] * image_delta
-            self.image_start_y = 0.5 * self._pixels[0] * image_delta
+            self.image_start_x = 0.5 * self._pixels[0] * image_delta
+            self.image_start_y = 0.5 * self._pixels[1] * image_delta
+
+            # rebuild point generator
+            self.point_generator = Rectangle(self.image_delta, self.image_delta)
 
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
