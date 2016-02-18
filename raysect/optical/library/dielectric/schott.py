@@ -1,6 +1,5 @@
-
+from os import path
 import csv
-from pkg_resources import resource_filename
 from collections import namedtuple
 from numpy import array
 from raysect.optical.material import Dielectric, Sellmeier
@@ -25,7 +24,8 @@ class Schott():
     def __init__(self):
 
         try:
-            schott_file = open(resource_filename("raysect", "optical/library/dielectric/data/schott_catalog_2000.csv"), "r")
+            data_path = path.join(path.dirname(__file__), "data/schott_catalog_2000.csv")
+            schott_file = open(data_path, "r")
         except FileNotFoundError:
             raise ValueError('Schott Glass catalog file could not be found.')
 
