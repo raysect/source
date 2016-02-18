@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from raysect.core.math.utility cimport integrate, interpolate
+from raysect.core.math.cython.utility cimport integrate, interpolate
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 
 # Plank's constant * speed of light in a vacuum

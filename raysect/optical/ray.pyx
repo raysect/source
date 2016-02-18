@@ -31,7 +31,7 @@
 
 from raysect.optical.spectrum cimport new_spectrum
 from raysect.core.math.random cimport probability
-from raysect.core.math.utility cimport clamp
+from raysect.core.math.cython.utility cimport clamp
 from raysect.core.classes cimport Intersection
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.material.material cimport Material

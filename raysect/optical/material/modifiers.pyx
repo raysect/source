@@ -36,10 +36,10 @@ from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.affinematrix cimport new_affinematrix3d
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.random cimport vector_hemisphere_cosine
+from raysect.core.math.cython cimport transform
 
 # sets the maximum number of attempts to find a valid perturbed normal
 # it is highly unlikely (REALLY!) this number will ever be reached, it is just there for my paranoia
@@ -87,7 +87,7 @@ cdef class Roughen(Material):
 
         cdef:
             Ray reflected
-            Vector3D l_normal, l_tangent, l_bitangent
+            Vector3D l_normal, l_tangent
             Vector3D s_incident, s_random
             Normal3D s_normal
             AffineMatrix3D surface_to_local
@@ -96,18 +96,10 @@ cdef class Roughen(Material):
         # generate an orthogonal basis about surface normal
         l_normal = normal.as_vector()
         l_tangent = normal.orthogonal()
-        l_bitangent = l_normal.cross(l_tangent)
 
         # generate inverse surface transform matrix
-        surface_to_local = new_affinematrix3d(l_tangent.x, l_bitangent.x, l_normal.x, 0.0,
-                                              l_tangent.y, l_bitangent.y, l_normal.y, 0.0,
-                                              l_tangent.z, l_bitangent.z, l_normal.z, 0.0,
-                                              0.0, 0.0, 0.0, 1.0)
-
-        local_to_surface = new_affinematrix3d(l_tangent.x, l_tangent.y, l_tangent.z, 0.0,
-                                              l_bitangent.x, l_bitangent.y, l_bitangent.z, 0.0,
-                                              l_normal.x, l_normal.y, l_normal.z, 0.0,
-                                              0.0, 0.0, 0.0, 1.0)
+        surface_to_local = transform.surface_to_local(l_normal, l_tangent)
+        local_to_surface = transform.local_to_surface(l_normal, l_tangent)
 
         # convert ray direction to surface space
         s_incident = ray.direction.transform(world_to_local).transform(local_to_surface)
