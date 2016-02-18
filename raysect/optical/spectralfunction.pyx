@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from raysect.core.math.utility cimport interpolate, integrate
+from raysect.core.math.cython.utility cimport interpolate, integrate
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 from numpy import array, float64, argsort
 

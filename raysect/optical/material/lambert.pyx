@@ -35,7 +35,6 @@ from raysect.core.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.affinematrix cimport new_affinematrix3d
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.normal cimport Normal3D
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF

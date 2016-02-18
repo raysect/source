@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.utility cimport clamp
+from raysect.core.math.cython.utility cimport clamp
 from raysect.optical.spectralfunction cimport InterpolatedSF
 from numpy import array, float64, zeros, linspace
 cimport cython
