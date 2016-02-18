@@ -83,17 +83,11 @@ cdef inline int find_index(double[::1] x, double v):
     bottom_index = 0
     bisection_index = top_index / 2
     while (top_index - bottom_index) != 1:
-
         if v >= x[bisection_index]:
-
             bottom_index = bisection_index
-
         else:
-
             top_index = bisection_index
-
         bisection_index = (top_index + bottom_index) / 2
-
     return bottom_index
 
 
@@ -126,13 +120,11 @@ cdef inline double interpolate(double[::1] x, double[::1] y, double p):
 
     # point is below array limits
     if index == -1:
-
         return y[0]
 
     # wavelength is above array limits
     top_index = x.shape[0] - 1
     if index == top_index:
-
         return y[top_index]
 
     # interpolate inside array
@@ -175,7 +167,6 @@ cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1)
 
     # invalid range
     if x1 <= x0:
-
         return 0.0
 
     # identify array indices that lie between requested values
@@ -281,19 +272,16 @@ cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
     if x0 == x1:
 
         # single point, just sample function
-
         index = find_index(x, x0)
 
         # is point below array?
         if index == -1:
-
             return y[0]
 
         top_index = len(x) - 1
 
         # is point above array?
         if index == top_index:
-
             return y[top_index]
 
         # point is within array
@@ -305,7 +293,6 @@ cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
 
         # ensure x0 is always lower than x1
         if x1 < x0:
-
             temp = x0
             x0 = x1
             x1 = temp

@@ -40,6 +40,7 @@ from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.normal cimport Normal3D
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.core.math.random cimport vector_hemisphere_cosine
+from raysect.core.math.cython cimport transform
 from numpy cimport ndarray
 
 cdef class Lambert(NullVolume):
@@ -57,28 +58,13 @@ cdef class Lambert(NullVolume):
 
         cdef:
             Ray reflected
-            Vector3D v_normal, v_tangent, v_bitangent, direction
+            Vector3D v_normal, v_tangent, direction
             AffineMatrix3D surface_to_local
             Spectrum spectrum
             ndarray reflectivity
 
-        # generate an orthogonal basis about surface normal
-        v_normal = normal.as_vector()
-        v_tangent = normal.orthogonal()
-        v_bitangent = v_normal.cross(v_tangent)
-
-        # generate inverse surface transform matrix
-        # TODO: MOVE THIS TO A UTILITY FUNCTION AND TEST - math.cython.transforms <- high performance but no safety
-        surface_to_local = new_affinematrix3d(v_tangent.x, v_bitangent.x, v_normal.x, 0.0,
-                                              v_tangent.y, v_bitangent.y, v_normal.y, 0.0,
-                                              v_tangent.z, v_bitangent.z, v_normal.z, 0.0,
-                                              0.0, 0.0, 0.0, 1.0)
-
-        # TODO: MOVE THIS TO A UTILITY FUNCTION AND TEST - math.cython.transforms <- high performance but no safety
-        # local_to_surface = new_affinematrix3d(v_tangent.x, v_tangent.y, v_tangent.z, 0.0,
-        #                                     v_bitangent.x, v_bitangent.y, v_bitangent.z, 0.0,
-        #                                     v_normal.x, v_normal.y, v_normal.z, 0.0,
-        #                                     0.0, 0.0, 0.0, 1.0)
+        # generate transform from surface to local space
+        surface_to_local = transform.surface_to_local(normal.as_vector(), normal.orthogonal())
 
         # obtain new world space ray vector from cosine-weighted hemisphere
         direction = vector_hemisphere_cosine()
