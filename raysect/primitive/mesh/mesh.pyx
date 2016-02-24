@@ -308,44 +308,7 @@ cdef class MeshData(KDTree3DCore):
 
         return bbox
 
-    # def __getstate__(self):
-    #     """Encodes state for pickling."""
-    #
-    #     vertices = self.vertices.base.tolist()
-    #     triangles = self.triangles.base.tolist()
-    #     if self.vertex_normals is not None:
-    #         normals = self.vertex_normals.base.tolist()
-    #     else:
-    #         normals = None
-    #
-    #     return vertices, normals, triangles, self.smoothing, self.closed, super().__getstate__()
-    #
-    # def __setstate__(self, state):
-    #     """Decodes state for pickling."""
-    #
-    #     vertices, normals, triangles, self.smoothing, self.closed, base_state = state
-    #
-    #     # convert lists back to numpy arrays and assign to memory views
-    #     self.vertices = array(vertices, dtype=float32)
-    #     self.triangles = array(triangles, dtype=int32)
-    #     if normals is not None:
-    #         self.vertex_normals = array(normals, dtype=float32)
-    #     else:
-    #         self.vertex_normals = None
-    #
-    #     # reset hit data
-    #     self._u = -1.0
-    #     self._v = -1.0
-    #     self._w = -1.0
-    #     self._t = INFINITY
-    #     self._i = NO_INTERSECTION
-    #
-    #     # regenerate face normals
-    #     self._generate_face_normals()
-    #
-    #     super().__setstate__(base_state)
-
-    cpdef bint hit(self, Ray ray):
+    cpdef bint trace(self, Ray ray):
 
         # reset hit data
         self._u = -1.0
@@ -355,11 +318,11 @@ cdef class MeshData(KDTree3DCore):
         self._i = NO_INTERSECTION
 
         self._calc_rayspace_transform(ray)
-        return self._hit(ray)
+        return self._trace(ray)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
 
         cdef:
             float hit_data[4]
@@ -657,7 +620,7 @@ cdef class MeshData(KDTree3DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef bint mesh_contains(self, Point3D p):
+    cpdef bint contains(self, Point3D p):
         """
         Tests if a point is contained by the mesh.
 
@@ -677,7 +640,7 @@ cdef class MeshData(KDTree3DCore):
         ray = new_ray(p, new_vector3d(0, 0, 1), INFINITY)
 
         # search for closest triangle intersection
-        if not self.hit(ray):
+        if not self.trace(ray):
             return False
 
         # inspect the Z component of the triangle face normal to identify orientation
@@ -1028,7 +991,7 @@ cdef class Mesh(Primitive):
         self._ray_distance = 0
 
         # do we hit the mesh?
-        if self._data.hit(local_ray):
+        if self._data.trace(local_ray):
             return self._process_intersection(ray, local_ray)
 
         # there was no intersection so disable next intersection search
@@ -1118,7 +1081,7 @@ cdef class Mesh(Primitive):
             return False
 
         p = p.transform(self.to_local())
-        return self._data.mesh_contains(p)
+        return self._data.contains(p)
 
     cpdef BoundingBox3D bounding_box(self):
         """

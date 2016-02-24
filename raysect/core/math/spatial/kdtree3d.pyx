@@ -101,8 +101,8 @@ cdef class KDTree3DCore:
     Implements a 3D kd-tree for items with finite extents.
 
     This is a Cython abstract base class. It cannot be directly extended in
-    Python due to the need to implement cdef methods _contains_leaf() and
-     _hit_leaf(). Use the KDTree3D wrapper class if extending from Python.
+    Python due to the need to implement cdef methods _items_containing_leaf() and
+     _trace_leaf(). Use the KDTree3D wrapper class if extending from Python.
 
     :param items: A list of Items.
     :param max_depth: The maximum tree depth (automatic if set to 0, default is 0).
@@ -515,21 +515,21 @@ cdef class KDTree3DCore:
         self._next_node += 1
         return id
 
-    cpdef bint hit(self, Ray ray):
+    cpdef bint trace(self, Ray ray):
         """
         Traverses the kd-Tree to find the first intersection with an item stored in the tree.
 
         This method returns True is an item is hit and False otherwise.
 
         :param ray: A Ray object.
-        :return: True is a hit occurs, false otherwise.
+        :return: True is an intersection occurs, false otherwise.
         """
 
-        return self._hit(ray)
+        return self._trace(ray)
 
-    cdef inline bint _hit(self, Ray ray):
+    cdef inline bint _trace(self, Ray ray):
         """
-        Starts the hit traversal of the kd tree.
+        Starts the ray traversal of the kd tree.
 
         :param ray: A Ray object.
         :return: True is a hit occurs, false otherwise.
@@ -545,11 +545,11 @@ cdef class KDTree3DCore:
             return None
 
         # start exploration of kd-Tree
-        return self._hit_node(ROOT_NODE, ray, min_range, max_range)
+        return self._trace_node(ROOT_NODE, ray, min_range, max_range)
 
-    cdef inline bint _hit_node(self, int32_t id, Ray ray, double min_range, double max_range):
+    cdef inline bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range):
         """
-        Dispatches hit calculation to the relevant node handler.
+        Dispatches trace calculation to the relevant node handler.
 
         :param id: Index of node in node array.
         :param ray: Ray object.
@@ -559,12 +559,12 @@ cdef class KDTree3DCore:
         """
 
         if self._nodes[id].type == LEAF:
-            return self._hit_leaf(id, ray, max_range)
+            return self._trace_leaf(id, ray, max_range)
         else:
-            return self._hit_branch(id, ray, min_range, max_range)
+            return self._trace_branch(id, ray, min_range, max_range)
 
     @cython.cdivision(True)
-    cdef inline bint _hit_branch(self, int32_t id, Ray ray, double min_range, double max_range):
+    cdef inline bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range):
         """
         Traverses a kd-Tree branch node along the ray path.
 
@@ -603,9 +603,9 @@ cdef class KDTree3DCore:
 
             # a ray propagating parallel to the split plane
             if origin < split:
-                return self._hit_node(lower_id, ray, min_range, max_range)
+                return self._trace_node(lower_id, ray, min_range, max_range)
             else:
-                return self._hit_node(upper_id, ray, min_range, max_range)
+                return self._trace_node(upper_id, ray, min_range, max_range)
 
         else:
 
@@ -625,22 +625,22 @@ cdef class KDTree3DCore:
 
             # does ray only intersect with the near node?
             if plane_distance > max_range or plane_distance <= 0:
-                return self._hit_node(near_id, ray, min_range, max_range)
+                return self._trace_node(near_id, ray, min_range, max_range)
 
             # does ray only intersect with the far node?
             if plane_distance < min_range:
-                return self._hit_node(far_id, ray, min_range, max_range)
+                return self._trace_node(far_id, ray, min_range, max_range)
 
             # ray must intersect both nodes, try nearest node first
             # note: this could theoretically be an OR operation, but we don't
             # want to risk an optimiser inverting the logic (paranoia!)
-            hit = self._hit_node(near_id, ray, min_range, plane_distance)
+            hit = self._trace_node(near_id, ray, min_range, plane_distance)
             if hit:
                 return True
             else:
-                return self._hit_node(far_id, ray, plane_distance, max_range)
+                return self._trace_node(far_id, ray, plane_distance, max_range)
 
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
         """
         Tests each item in the kd-Tree leaf node to identify if an intersection occurs.
 
@@ -652,7 +652,7 @@ cdef class KDTree3DCore:
         This can be done by setting object attributes prior to returning True.
         The kd-Tree search algorithm stops as soon as the first leaf is
         identified that contains an intersection. Any attributes set when
-        _hit_leaf() returns True are guaranteed not to be further modified.
+        _trace_leaf() returns True are guaranteed not to be further modified.
 
         :param id: Index of node in node array.
         :param ray: Ray object.
@@ -661,9 +661,9 @@ cdef class KDTree3DCore:
         """
 
         # virtual function that must be implemented by derived classes
-        raise NotImplementedError("KDTree3DCore _hit_leaf() method not implemented.")
+        raise NotImplementedError("KDTree3DCore _trace_leaf() method not implemented.")
 
-    cpdef list contains(self, Point3D point):
+    cpdef list items_containing(self, Point3D point):
         """
         Starts contains traversal of the kd-Tree.
         Traverses the kd-Tree to find the items that contain the specified point.
@@ -672,9 +672,9 @@ cdef class KDTree3DCore:
         :return: A list of ids (indices) of the items containing the point
         """
 
-        return self._contains(point)
+        return self._items_containing(point)
 
-    cdef inline list _contains(self, Point3D point):
+    cdef inline list _items_containing(self, Point3D point):
         """
         Starts contains traversal of the kd-Tree.
 
@@ -687,9 +687,9 @@ cdef class KDTree3DCore:
             return []
 
         # start search
-        return self._contains_node(ROOT_NODE, point)
+        return self._items_containing_node(ROOT_NODE, point)
 
-    cdef inline list _contains_node(self, int32_t id, Point3D point):
+    cdef inline list _items_containing_node(self, int32_t id, Point3D point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -699,11 +699,11 @@ cdef class KDTree3DCore:
         """
 
         if self._nodes[id].type == LEAF:
-            return self._contains_leaf(id, point)
+            return self._items_containing_leaf(id, point)
         else:
-            return self._contains_branch(id, point)
+            return self._items_containing_branch(id, point)
 
-    cdef inline list _contains_branch(self, int32_t id, Point3D point):
+    cdef inline list _items_containing_branch(self, int32_t id, Point3D point):
         """
         Locates the kd-Tree node containing the point.
 
@@ -728,11 +728,11 @@ cdef class KDTree3DCore:
         upper_id = self._nodes[id].count
 
         if point.get_index(axis) < split:
-            return self._contains_node(lower_id, point)
+            return self._items_containing_node(lower_id, point)
         else:
-            return self._contains_node(upper_id, point)
+            return self._items_containing_node(upper_id, point)
 
-    cdef list _contains_leaf(self, int32_t id, Point3D point):
+    cdef list _items_containing_leaf(self, int32_t id, Point3D point):
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -743,8 +743,9 @@ cdef class KDTree3DCore:
 
         Derived classes may need to wish to return additional information about
         the enclosing items. This can be done by setting object attributes
-        prior to returning the list. Any attributes set when _contains_leaf()
-        returns are guaranteed not to be further modified.
+        prior to returning the list. Any attributes set when
+        _items_containing_leaf() returns are guaranteed not to be further
+        modified.
 
         :param id: Index of node in node array.
         :param point: Point3D to evaluate.
@@ -752,7 +753,7 @@ cdef class KDTree3DCore:
         """
 
         # virtual function that must be implemented by derived classes
-        raise NotImplementedError("KDTree3DCore _contains_leaf() method not implemented.")
+        raise NotImplementedError("KDTree3DCore _items_containing_leaf() method not implemented.")
 
     cdef inline void _reset(self):
         """
@@ -935,7 +936,7 @@ cdef class KDTree3D(KDTree3DCore):
     Implements a 3D kd-tree for items with finite extents.
 
     This class cannot be used directly, it must be sub-classed. One or both of
-    _hit_item() and _contains_item() must be implemented.
+    _trace_item() and _items_containing_item() must be implemented.
 
     :param items: A list of Items.
     :param max_depth: The maximum tree depth (automatic if set to 0, default is 0).
@@ -944,12 +945,12 @@ cdef class KDTree3D(KDTree3DCore):
     :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
     """
 
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
         """
         Wraps the C-level API so users can derive a class from KDTree3D using Python.
 
         Converts the arguments to types accessible from Python and re-exposes
-        _hit_leaf() as the Python accessible method _hit_items().
+        _trace_leaf() as the Python accessible method _trace_items().
 
         :param id: Index of node in node array.
         :param ray: Ray object.
@@ -966,9 +967,9 @@ cdef class KDTree3D(KDTree3DCore):
         for index in range(self._nodes[id].count):
             items.append(self._nodes[id].items[index])
 
-        return self._hit_items(items, ray, max_range)
+        return self._trace_items(items, ray, max_range)
 
-    cpdef bint _hit_items(self, list item_ids, Ray ray, double max_range):
+    cpdef bint _trace_items(self, list item_ids, Ray ray, double max_range):
         """
         Tests each item to identify if an intersection occurs.
 
@@ -980,7 +981,7 @@ cdef class KDTree3D(KDTree3DCore):
         This can be done by setting object attributes prior to returning True.
         The kd-Tree search algorithm stops as soon as the first leaf is
         identified that contains an intersection. Any attributes set when
-        _hit_items() returns True are guaranteed not to be further modified.
+        _trace_items() returns True are guaranteed not to be further modified.
 
         :param item_ids: List of item ids.
         :param ray: Ray object.
@@ -988,15 +989,16 @@ cdef class KDTree3D(KDTree3DCore):
         :return: True is a hit occurs, false otherwise.
         """
 
-        raise NotImplementedError("KDTree3D Virtual function _hit_items() has not been implemented.")
+        raise NotImplementedError("KDTree3D Virtual function _trace_items() has not been implemented.")
 
 
-    cdef list _contains_leaf(self, int32_t id, Point3D point):
+    cdef list _items_containing_leaf(self, int32_t id, Point3D point):
         """
         Wraps the C-level API so users can derive a class from KDTree3D using Python.
 
         Converts the arguments to types accessible from Python and re-exposes
-        _contains_leaf() as the Python accessible method _contains_items().
+        _items_containing_leaf() as the Python accessible method
+        _items_containing_items().
 
         :param id: Index of node in node array.
         :param point: Point3D to evaluate.
@@ -1012,9 +1014,9 @@ cdef class KDTree3D(KDTree3DCore):
         for index in range(self._nodes[id].count):
             items.append(self._nodes[id].items[index])
 
-        return self._contains_items(items, point)
+        return self._items_containing_items(items, point)
 
-    cpdef list _contains_items(self, list item_ids, Point3D point):
+    cpdef list _items_containing_items(self, list item_ids, Point3D point):
         """
         Tests each item in the list to identify if they enclose the point.
 
@@ -1025,8 +1027,9 @@ cdef class KDTree3D(KDTree3DCore):
 
         Derived classes may need to wish to return additional information about
         the enclosing items. This can be done by setting object attributes
-        prior to returning the list. Any attributes set when _contains_items()
-        returns are guaranteed not to be further modified.
+        prior to returning the list. Any attributes set when
+        _items_containing_items() returns are guaranteed not to be further
+        modified.
 
         :param item_ids: List of item ids.
         :param point: Point3D to evaluate.
@@ -1034,4 +1037,4 @@ cdef class KDTree3D(KDTree3DCore):
         """
 
 
-        raise NotImplementedError("KDTree3D Virtual function _contains_items() has not been implemented.")
+        raise NotImplementedError("KDTree3D Virtual function _items_containing_items() has not been implemented.")

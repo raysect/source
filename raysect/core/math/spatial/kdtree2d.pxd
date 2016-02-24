@@ -86,35 +86,35 @@ cdef class KDTree2DCore:
 
     cdef int32_t _new_node(self)
 
-    cpdef bint hit(self, Point2D point)
+    cpdef bint is_contained(self, Point2D point)
 
-    cdef inline bint _hit(self, Point2D point)
+    cdef inline bint _is_contained(self, Point2D point)
 
-    cdef inline bint _hit_node(self, int32_t id, Point2D point)
+    cdef inline bint _is_contained_node(self, int32_t id, Point2D point)
 
-    cdef inline bint _hit_branch(self, int32_t id, Point2D point)
+    cdef inline bint _is_contained_branch(self, int32_t id, Point2D point)
 
-    cdef bint _hit_leaf(self, int32_t id, Point2D point)
+    cdef bint _is_contained_leaf(self, int32_t id, Point2D point)
 
-    cpdef list contains(self, Point2D point)
+    cpdef list items_containing(self, Point2D point)
 
-    cdef inline list _contains(self, Point2D point)
+    cdef inline list _items_containing(self, Point2D point)
 
-    cdef inline list _contains_node(self, int32_t id, Point2D point)
+    cdef inline list _items_containing_node(self, int32_t id, Point2D point)
 
-    cdef inline list _contains_branch(self, int32_t id, Point2D point)
+    cdef inline list _items_containing_branch(self, int32_t id, Point2D point)
 
-    cdef list _contains_leaf(self, int32_t id, Point2D point)
+    cdef list _items_containing_leaf(self, int32_t id, Point2D point)
 
     cdef void _reset(self)
 
 
 cdef class KDTree2D(KDTree2DCore):
 
-    cdef bint _hit_leaf(self, int32_t id, Point2D point)
+    cdef bint _is_contained_leaf(self, int32_t id, Point2D point)
 
-    cpdef bint _hit_items(self, list items, Point2D point)
+    cpdef bint _is_contained_items(self, list items, Point2D point)
 
-    cdef list _contains_leaf(self, int32_t id, Point2D point)
+    cdef list _items_containing_leaf(self, int32_t id, Point2D point)
 
-    cpdef list _contains_items(self, list items, Point2D point)
+    cpdef list _items_containing_items(self, list items, Point2D point)

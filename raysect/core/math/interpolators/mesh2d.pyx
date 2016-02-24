@@ -120,7 +120,7 @@ cdef class MeshKDTree(KDTree2DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _hit_leaf(self, np.int32_t id, Point2D point):
+    cdef bint _is_contained_leaf(self, np.int32_t id, Point2D point):
 
         cdef:
             np.int32_t index, triangle, i1, i2, i3
@@ -326,7 +326,7 @@ cdef class Interpolator2DMesh(Function2D):
             np.int32_t i1, i2, i3
             double alpha, beta, gamma
 
-        if self._kdtree.hit(new_point2d(x, y)):
+        if self._kdtree.is_contained(new_point2d(x, y)):
 
             # obtain hit data from kdtree attributes
             i1 = self._kdtree.i1
