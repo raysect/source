@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from libc.math cimport M_PI as PI, sqrt
+
 from raysect.optical.spectrum cimport new_spectrum
 from raysect.core.math.random cimport probability
 from raysect.core.math.cython.utility cimport clamp
@@ -369,3 +371,23 @@ cdef class Ray(CoreRay):
             self.max_distance,
             self._extinction_prob, self._min_depth, self._max_depth
         )
+
+    @cython.cdivision(True)
+    cdef inline double _project_on_sphere(self, Point3D observation_point, BoundingBox3D box):
+
+        cdef Point3D centre
+        cdef double d, theta, radius
+
+        # Find bounding sphere
+        radius = box.enclosing_sphere()
+        centre = box.get_centre()
+
+        d = observation_point.distance_to(centre)
+
+        # If the point is inside the bounding sphere then we must sample every direction.
+        if d == 0 or d < radius:
+            return 4 * PI
+
+        # Calculate the solid angle projection of the sphere.
+        k = sqrt(d * d - radius * radius) / d
+        return 2 * PI * (1 - k)
