@@ -29,7 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.scenegraph.signal import GEOMETRY
 from raysect.core.math.affinematrix cimport AffineMatrix3D
+
 
 cdef class Primitive(Node):
     """
@@ -140,15 +142,24 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
 
-    cpdef object notify_root(self):
+    cpdef object notify_root(self, ChangeSignal change):
         """
-        Notifies the scene-graph root that a change to the primitives geometry has occurred.
+        Notifies the scene-graph root that a change to the primitive has occurred.
 
-        This method must be called by primitives when their geometry changes. This method
-        informs the root node that any caching structures used to accelerate ray-tracing
-        calculations are now potentially invalid and must be recalculated, taking the new
-        geometry into account.
+        This method must be called by primitives when their properties change.
+        The notification informs the root node that any caching structures used
+        to accelerate ray-tracing calculations are now potentially invalid and
+        must be recalculated, taking the new properties into account.
+
+        A ChangeSignal object must be supplied specifying the nature of the
+        change to the primitive. Raysect.core provides a signal signal type
+        - GEOMETRY. If the primitive's geometry is modified a GEOMETRY signal
+        must be sent.
+
+        Further signals maybe defined in packages that build on raysect.core.
+        See the documentation for the scene-graph nodes in the relevant
+        packages.
         """
 
-        self.root._change(self)
+        self.root._change(self, change)
 

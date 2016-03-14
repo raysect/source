@@ -29,22 +29,39 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray, Material, Intersection
-from raysect.core.math.point cimport Point3D
-from raysect.core.scenegraph.node cimport Node
-from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.scenegraph.signal cimport ChangeSignal
+"""
+Change notification signals.
 
-cdef class Primitive(Node):
+This file defines signals that are used to identify the nature of node change
+that is being transmitted from a node to the scene-graph root via the _change()
+method call.
 
-    cdef Material material
+All change signals are shared instances of ChangeSignal(). This allows easy
+identification of a signal using "is". For example:
 
-    cpdef Intersection hit(self, Ray ray)
+    if change is GEOMETRY:
+        # do something
 
-    cpdef Intersection next_intersection(self)
+As such there must be only one instance of any signal class in the package.
 
-    cpdef bint contains(self, Point3D p) except -1
+Packages built on top of raysect.core may define their own signals.
+"""
 
-    cpdef BoundingBox3D bounding_box(self)
 
-    cpdef object notify_root(self, ChangeSignal change)
+cdef class ChangeSignal:
+    """
+    Scene-graph change signal class.
+
+    All scene-graph signals must be instances of this class.
+    """
+    pass
+
+
+# change to scene-graph geometry
+GEOMETRY = ChangeSignal()
+
+# change to primitive material
+MATERIAL = ChangeSignal()
+
+
+

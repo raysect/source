@@ -32,6 +32,7 @@
 # TODO: add more advanced material handling
 # TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
 
+from raysect.core.scenegraph.signal import GEOMETRY
 from raysect.core.classes cimport Material, new_ray, new_intersection
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
@@ -262,7 +263,7 @@ cdef class CSGRoot(Node):
         self.csg_primitive.rebuild()
 
         # propagate geometry change notification from csg scenegraph to enclosing scenegraph
-        self.csg_primitive.notify_root()
+        self.csg_primitive.notify_root(GEOMETRY)
 
 
 cdef class Union(CSGPrimitive):

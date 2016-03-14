@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.scenegraph.signal import GEOMETRY
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.normal cimport new_normal3d
 from raysect.core.math.point cimport new_point3d
@@ -120,7 +121,7 @@ cdef class Cylinder(Primitive):
             self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
-            self.notify_root()
+            self.notify_root(GEOMETRY)
 
     property height:
 
@@ -140,7 +141,7 @@ cdef class Cylinder(Primitive):
             self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
-            self.notify_root()
+            self.notify_root(GEOMETRY)
 
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):

@@ -29,9 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.scenegraph import signal
+
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 from raysect.core.scenegraph.node cimport Node
-
+from raysect.core.scenegraph.signal cimport ChangeSignal
 
 cdef class BridgeNode(Node):
     """
@@ -43,16 +45,16 @@ cdef class BridgeNode(Node):
         super().__init__()
         self.destination = destination
 
-    def _change(self, _NodeBase node):
+    def _change(self, _NodeBase node, ChangeSignal change not None):
         """
-        Handles a scenegraph node change handler.
+        Handles a scene-graph node change handler.
 
-        Propagates geometry change notifications to the specified node and it's
-        scenegraph.
+        Propagates change notifications to the specified node and it's
+        scene-graph.
         """
 
-        # propagate geometry change notification from local scene-graph to target's scene-graph
-        self.destination.root._change(self.destination)
+        # propagate change notifications from local scene-graph to target's scene-graph
+        self.destination.root._change(self.destination, change)
 
 
 def print_scenegraph(node):
