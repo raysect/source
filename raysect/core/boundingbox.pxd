@@ -37,7 +37,7 @@ cdef class BoundingBox3D:
     cdef Point3D lower
     cdef Point3D upper
 
-    cdef Point3D get_centre(self)
+    cdef inline Point3D get_centre(self)
 
     cpdef bint hit(self, Ray ray)
 

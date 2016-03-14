@@ -113,7 +113,7 @@ cdef class BoundingBox3D:
         def __get__(self):
             return self.get_centre()
 
-    cdef Point3D get_centre(self):
+    cdef inline Point3D get_centre(self):
         """
         Find the centre of the bounding box.
         """
@@ -314,7 +314,7 @@ cdef class BoundingBox3D:
 
     cpdef double enclosing_sphere(self):
         """
-        Returns the radius of a sphere guaranteed to enclose this Bounding Box.
+        Returns the radius of a sphere guaranteed to enclose the bounding box.
 
         The sphere is centred at the box centre. A small degree of padding is
         added to avoid numerical accuracy issues.

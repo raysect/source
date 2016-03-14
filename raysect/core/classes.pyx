@@ -158,4 +158,6 @@ cdef class Intersection:
 
 cdef class Material
 
+# TODO: add weak reference to primitive
+
 
