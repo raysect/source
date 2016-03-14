@@ -57,7 +57,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
         """
         Tests each item in the kd-Tree leaf node to identify if an intersection occurs.
 
@@ -69,12 +69,12 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
         This can be done by setting object attributes prior to returning True.
         The kd-Tree search algorithm stops as soon as the first leaf is
         identified that contains an intersection. Any attributes set when
-        _hit_leaf() returns True are guaranteed not to be further modified.
+        _trace_leaf() returns True are guaranteed not to be further modified.
 
         :param id: Index of node in node array.
         :param ray: Ray object.
         :param max_range: The maximum intersection search range.
-        :return: True is a hit occurs, false otherwise.
+        :return: True is an intersection occurs, false otherwise.
         """
 
         cdef:
@@ -110,7 +110,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef list _contains_leaf(self, int32_t id, Point3D point):
+    cdef list _items_containing_leaf(self, int32_t id, Point3D point):
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -121,8 +121,9 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
         Derived classes may need to wish to return additional information about
         the enclosing items. This can be done by setting object attributes
-        prior to returning the list. Any attributes set when _contains_leaf()
-        returns are guaranteed not to be further modified.
+        prior to returning the list. Any attributes set when
+        _items_containing_leaf() returns are guaranteed not to be further
+        modified.
 
         :param id: Index of node in node array.
         :param point: Point3D to evaluate.
@@ -157,12 +158,12 @@ cdef class KDTree(_Accelerator):
 
     cpdef Intersection hit(self, Ray ray):
 
-        # we explicitly use _hit() rather than hit() as _hit() is cdef, rather than cpdef
-        if self._kdtree._hit(ray):
+        # we explicitly use _trace() rather than trace() as _trace() is cdef, rather than cpdef
+        if self._kdtree._trace(ray):
             return self._kdtree.hit_intersection
         return None
 
     cpdef list contains(self, Point3D point):
 
-        # we explicitly use _contains() rather than contains() as _contains() is cdef, rather than cpdef
-        return self._kdtree._contains(point)
+        # we explicitly use _items_containing() rather than items_containing() as _items_containing is cdef, rather than cpdef
+        return self._kdtree._items_containing(point)
