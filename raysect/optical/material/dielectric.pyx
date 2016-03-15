@@ -133,6 +133,7 @@ cdef class Dielectric(Material):
 
     def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None, bint transmission_only=False):
 
+        super().__init__()
         self.index = index
         self.transmission = transmission
         self.transmission_only = transmission_only
@@ -313,16 +314,10 @@ cdef class Dielectric(Material):
             int index
 
         length = start_point.vector_to(end_point).get_length()
-
-        transmission = self.transmission.sample_multiple(spectrum.min_wavelength,
-                                                         spectrum.max_wavelength,
-                                                         spectrum.num_samples)
-
+        transmission = self.transmission.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
         s_view = spectrum.samples
         t_view = transmission
-
         for index in range(spectrum.num_samples):
-
             s_view[index] *= cpow(t_view[index], length)
 
         return spectrum

@@ -61,6 +61,7 @@ cdef class Conductor(Material):
 
     def __init__(self, SpectralFunction index, SpectralFunction extinction):
 
+        super().__init__()
         self.index = index
         self.extinction = extinction
 

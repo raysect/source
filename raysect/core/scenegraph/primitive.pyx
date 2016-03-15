@@ -56,7 +56,7 @@ cdef class Primitive(Node):
         if material is None:
             material = Material()
 
-        self._material = material
+        self.material = material
 
     property material:
 
@@ -64,7 +64,16 @@ cdef class Primitive(Node):
             return self._material
 
         def __set__(self, Material value not None):
+
+            # remove any reverse reference from existing material
+            if self._material is not None:
+                self._material.primitives.remove(self)
+
+            # assign new material and provide it with a reverse reference
             self._material = value
+            self._material.primitives.append(self)
+
+            # inform the scene-graph root that a material change has occurred
             self.notify_material_change()
 
     cdef inline Material get_material(self):

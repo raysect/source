@@ -156,8 +156,23 @@ cdef class Intersection:
             self.normal, self.exiting, self.to_local, self.to_world)
 
 
-cdef class Material
+cdef class Material:
 
-# TODO: add weak reference to primitive
+    def __init__(self):
+        self.primitives = []
+
+    cpdef object notify_material_change(self):
+        """
+        Notifies any connected scene-graph root of a change to the material.
+
+        The notification informs the root node that any caching structures used
+        to accelerate ray-tracing calculations are now potentially invalid and
+        must be recalculated, taking the new material properties into account.
+        """
+
+        for primitive in self.primitives:
+            primitive.notify_material_change()
+
+
 
 

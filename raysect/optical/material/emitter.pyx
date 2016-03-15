@@ -36,7 +36,6 @@ from libc.math cimport round
 from raysect.core.math.normal cimport Normal3D
 from raysect.core.math.point cimport new_point3d
 from raysect.optical.spectrum cimport new_spectrum
-from raysect.optical.spectralfunction cimport ConstantSF
 from raysect.optical.colour import d65_white
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
@@ -64,25 +63,20 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         direction = end.vector_to(start)
         length = direction.get_length()
 
+        # nothing to contribute?
         if length == 0:
-
-            # nothing to contribute
             return spectrum
 
         direction = direction.normalise()
 
         # obtain emission density from emission function (W/m^3/str)
-        emission = new_spectrum(spectrum.min_wavelength,
-                                spectrum.max_wavelength,
-                                spectrum.num_samples)
+        emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
 
         # emission function specifies direction from ray origin to hit-point
         emission = self.emission_function(direction, emission, world, ray, primitive, to_local, to_world)
 
         # sanity check as bounds checking is disabled
-        if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1
-            or emission.samples.shape[0] != spectrum.samples.shape[0]):
-
+        if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]):
             raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
 
         # memoryviews used for fast element access
@@ -91,7 +85,6 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
         # integrate emission density along ray path
         for index in range(spectrum.num_samples):
-
             s_view[index] += e_view[index] * length
 
         return spectrum
@@ -107,20 +100,17 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
     def __init__(self, double step = 0.01):
 
+        super().__init__()
         self._step = step
 
     property step:
 
         def __get__(self):
-
             return self._step
 
         def __set__(self, double step):
-
             if step <= 0:
-
                 raise ValueError("Numerical integration step size can not be less than or equal to zero")
-
             self._step = step
 
     @cython.boundscheck(False)
@@ -146,24 +136,18 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         integration_direction = start.vector_to(end)
         length = integration_direction.get_length()
 
+        # nothing to contribute?
         if length == 0:
-
-            # nothing to contribute
             return spectrum
 
         integration_direction = integration_direction.normalise()
         ray_direction = -integration_direction
 
-        emission_previous = new_spectrum(spectrum.min_wavelength,
-                                        spectrum.max_wavelength,
-                                        spectrum.num_samples)
-
+        emission_previous = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
         emission_previous = self.emission_function(start, ray_direction, emission_previous, world, ray, primitive, to_local, to_world)
 
         # sanity check as bounds checking is disabled
-        if (emission_previous.samples.ndim != 1 or spectrum.samples.ndim != 1
-            or emission_previous.samples.shape[0] != spectrum.samples.shape[0]):
-
+        if (emission_previous.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission_previous.samples.shape[0] != spectrum.samples.shape[0]):
             raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
         # assign memoryview for fast element access to output spectrum
@@ -174,20 +158,17 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         c = 0.5 * self._step
         while t <= length:
 
-            sample_point = new_point3d(start.x + t * integration_direction.x,
-                                       start.y + t * integration_direction.y,
-                                       start.z + t * integration_direction.z)
+            sample_point = new_point3d(
+                start.x + t * integration_direction.x,
+                start.y + t * integration_direction.y,
+                start.z + t * integration_direction.z
+            )
 
-            emission = new_spectrum(spectrum.min_wavelength,
-                                    spectrum.max_wavelength,
-                                    spectrum.num_samples)
-
+            emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
             emission = self.emission_function(sample_point, ray_direction, emission, world, ray, primitive, to_local, to_world)
 
             # sanity check as bounds checking is disabled
-            if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1
-                or emission.samples.shape[0] != spectrum.samples.shape[0]):
-
+            if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]):
                 raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
             # memoryviews used for fast element access
@@ -196,7 +177,6 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
             # trapezium rule integration
             for index in range(spectrum.num_samples):
-
                 s_view[index] += c * (e1_view[index] + e2_view[index])
 
             emission_previous = emission
@@ -205,16 +185,11 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         # step back to process any length that remains
         t -= self._step
 
-        emission = new_spectrum(spectrum.min_wavelength,
-                                spectrum.max_wavelength,
-                                spectrum.num_samples)
-
+        emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
         emission = self.emission_function(end, ray_direction, emission, world, ray, primitive, to_local, to_world)
 
         # sanity check as bounds checking is disabled
-        if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1
-            or emission.samples.shape[0] != spectrum.samples.shape[0]):
-
+        if (emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]):
             raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
         # memoryviews used for fast element access
@@ -224,7 +199,6 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         # trapezium rule integration of remainder
         c = 0.5 * (length - t)
         for index in range(spectrum.num_samples):
-
             s_view[index] += c * (e1_view[index] + e2_view[index])
 
         return spectrum
@@ -244,6 +218,7 @@ cdef class UniformSurfaceEmitter(NullVolume):
 
         emission is spectral radiance: W/m2/str/nm"""
 
+        super().__init__()
         self.emission_spectrum = emission_spectrum
         self.scale = scale
 
@@ -260,17 +235,13 @@ cdef class UniformSurfaceEmitter(NullVolume):
             int index
 
         spectrum = ray.new_spectrum()
-
-        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength,
-                                                          spectrum.max_wavelength,
-                                                          spectrum.num_samples)
+        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
 
         # obtain memoryviews
         s_view = spectrum.samples
         e_view = emission
 
         for index in range(spectrum.num_samples):
-
             s_view[index] += e_view[index] * self.scale
 
         return spectrum
@@ -284,6 +255,7 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
         emission is spectral volume radiance: W/m3/str/nm ie spectral radiance per meter"""
 
+        super().__init__()
         self.emission_spectrum = emission_spectrum
         self.scale = scale
 
@@ -298,16 +270,13 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
             double[::1] s_view, e_view
             int index
 
-        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength,
-                                                          spectrum.max_wavelength,
-                                                          spectrum.num_samples)
+        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
 
         # obtain memoryviews
         s_view = spectrum.samples
         e_view = emission
 
         for index in range(spectrum.num_samples):
-
             s_view[index] += e_view[index] * self.scale
 
         return spectrum
@@ -323,6 +292,7 @@ cdef class Checkerboard(NullVolume):
         scale in meters
         """
 
+        super().__init__()
         self._width = width
         self._rwidth = 1.0 / width
         self.emission_spectrum1 = emission_spectrum1
@@ -333,12 +303,10 @@ cdef class Checkerboard(NullVolume):
     property width:
 
         def __get__(self):
-
             return self._width
 
         @cython.cdivision(True)
         def __set__(self, double v):
-
             self._width = v
             self._rwidth = 1.0 / v
 
@@ -368,23 +336,15 @@ cdef class Checkerboard(NullVolume):
         s_view = spectrum.samples
 
         if v:
-
-            emission = self.emission_spectrum1.sample_multiple(spectrum.min_wavelength,
-                                                               spectrum.max_wavelength,
-                                                               spectrum.num_samples)
+            emission = self.emission_spectrum1.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
             e_view = emission
             scale = self.scale1
-
         else:
-
-            emission = self.emission_spectrum2.sample_multiple(spectrum.min_wavelength,
-                                                               spectrum.max_wavelength,
-                                                               spectrum.num_samples)
+            emission = self.emission_spectrum2.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
             e_view = emission
             scale = self.scale2
 
         for index in range(spectrum.num_samples):
-
             s_view[index] = e_view[index] * scale
 
         return spectrum
@@ -397,12 +357,10 @@ cdef class Checkerboard(NullVolume):
 
         # generates check pattern from [0, inf]
         if abs(self._rwidth * p) % 2 >= 1.0:
-
             v = not v
 
         # invert pattern for negative
         if p < 0:
-
             v = not v
 
         return v

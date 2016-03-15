@@ -75,6 +75,8 @@ cdef class Roughen(Material):
 
     def __init__(self, Material material not None, double roughness):
 
+        super().__init__()
+
         if roughness < 0 or roughness > 1.0:
             raise ValueError("Roughness must be a floating point value in the range [0, 1] where 1 is full roughness.")
 

@@ -46,6 +46,8 @@ cdef class Lambert(NullVolume):
 
     def __init__(self, SpectralFunction reflectivity=None):
 
+        super().__init__()
+
         if reflectivity is None:
             reflectivity = ConstantSF(0.5)
 

@@ -59,6 +59,7 @@ cdef class Light(NullVolume):
 
     def __init__(self, Vector3D light_direction, double intensity=1.0, SpectralFunction spectrum=None):
 
+        super().__init__()
         self.light_direction = light_direction.normalise()
         self.intensity = max(0, intensity)
 

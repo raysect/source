@@ -93,6 +93,8 @@ cdef inline Intersection new_intersection(Ray ray, double ray_distance, Primitiv
 
 cdef class Material:
 
-    pass
+    cdef public list primitives
+
+    cpdef object notify_material_change(self)
 
 
