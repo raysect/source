@@ -31,6 +31,21 @@
 
 cdef class Material(CoreMaterial):
 
+    def __init__(self):
+        super().__init__()
+        self._importance = 0.0
+
+    property importance:
+
+        def __get__(self):
+            return self._importance
+
+        def __set__(self, value):
+            if value < 0:
+                raise ValueError("Material sampling importance cannot be less than zero.")
+            self._importance = value
+            self.notify_material_change()
+
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):

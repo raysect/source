@@ -40,6 +40,8 @@ from raysect.optical.spectrum cimport Spectrum
 
 cdef class Material(CoreMaterial):
 
+    cdef double _importance
+
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world)
