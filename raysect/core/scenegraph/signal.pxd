@@ -31,4 +31,5 @@
 
 
 cdef class ChangeSignal:
-    pass
+
+    cdef str _name

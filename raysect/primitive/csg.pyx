@@ -32,7 +32,7 @@
 # TODO: add more advanced material handling
 # TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
 
-from raysect.core.scenegraph.signal import GEOMETRY
+from raysect.core.scenegraph.signal cimport ChangeSignal
 from raysect.core.classes cimport Material, new_ray, new_intersection
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
@@ -251,7 +251,7 @@ cdef class CSGRoot(Node):
         super().__init__()
         self.csg_primitive = csg_primitive
 
-    def _change(self, _NodeBase node):
+    def _change(self, _NodeBase node, ChangeSignal change not None):
         """
         Handles a scenegraph node change handler.
 
@@ -262,8 +262,8 @@ cdef class CSGRoot(Node):
         # the CSG primitive acceleration structures must be rebuilt
         self.csg_primitive.rebuild()
 
-        # propagate geometry change notification from csg scenegraph to enclosing scenegraph
-        self.csg_primitive.notify_root(GEOMETRY)
+        # propagate change notifications from csg scenegraph to enclosing scenegraph
+        self.csg_primitive.root._change(node, change)
 
 
 cdef class Union(CSGPrimitive):
@@ -320,6 +320,7 @@ cdef class Union(CSGPrimitive):
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
+
 
 cdef class Intersect(CSGPrimitive):
 

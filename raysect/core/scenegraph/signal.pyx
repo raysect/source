@@ -43,25 +43,28 @@ identification of a signal using "is". For example:
         # do something
 
 As such there must be only one instance of any signal class in the package.
-
 Packages built on top of raysect.core may define their own signals.
 """
-
 
 cdef class ChangeSignal:
     """
     Scene-graph change signal class.
 
-    All scene-graph signals must be instances of this class.
+    All scene-graph signals must be unique instances of this class.
     """
-    pass
+
+    def __init__(self, name):
+        self._name = name
+
+    def __repr__(self):
+        return "<ChangeSignal: {}>".format(self._name)
 
 
 # change to scene-graph geometry
-GEOMETRY = ChangeSignal()
+GEOMETRY = ChangeSignal("GEOMETRY")
 
 # change to primitive material
-MATERIAL = ChangeSignal()
+MATERIAL = ChangeSignal("MATERIAL")
 
 
 

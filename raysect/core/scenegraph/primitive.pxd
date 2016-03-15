@@ -37,7 +37,9 @@ from raysect.core.scenegraph.signal cimport ChangeSignal
 
 cdef class Primitive(Node):
 
-    cdef Material material
+    cdef Material _material
+
+    cdef inline Material get_material(self)
 
     cpdef Intersection hit(self, Ray ray)
 
@@ -47,4 +49,6 @@ cdef class Primitive(Node):
 
     cpdef BoundingBox3D bounding_box(self)
 
-    cpdef object notify_root(self, ChangeSignal change)
+    cpdef object notify_geometry_change(self)
+
+    cpdef object notify_material_change(self)

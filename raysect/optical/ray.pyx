@@ -241,7 +241,7 @@ cdef class Ray(CoreRay):
         if intersection is not None:
 
             # request surface contribution to spectrum from primitive material
-            material = intersection.primitive.material
+            material = intersection.primitive.get_material()
             spectrum = material.evaluate_surface(
                 world, self,
                 intersection.primitive,
@@ -267,7 +267,7 @@ cdef class Ray(CoreRay):
                 # accumulate volume contributions to the spectrum
                 for primitive in primitives:
 
-                    material = primitive.material
+                    material = primitive.get_material()
                     spectrum = material.evaluate_volume(
                         spectrum,
                         world,

@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.scenegraph.signal import GEOMETRY
 from raysect.core.classes cimport Material, new_intersection
 from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.math.point cimport new_point3d
@@ -97,7 +96,7 @@ cdef class Sphere(Primitive):
             self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
-            self.notify_root(GEOMETRY)
+            self.notify_geometry_change()
 
     cpdef Intersection hit(self, Ray ray):
 
