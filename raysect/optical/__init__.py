@@ -52,7 +52,7 @@ from .ray import *
 from .colour import *
 from .spectrum import *
 from .spectralfunction import *
-from ..core.scenegraph import Node, Observer, Primitive, World
+from .scenegraph import Node, Observer, Primitive, World
 from ..core.math import *
 
 
