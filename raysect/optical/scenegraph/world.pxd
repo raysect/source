@@ -30,11 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from numpy cimport ndarray
-
 from raysect.core.scenegraph.world cimport World as CoreWorld
-from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
-from raysect.core.math.random cimport uniform
-from raysect.core.math.cython.utility cimport find_index
 
 
 cdef class ImportanceManager:
@@ -49,3 +45,14 @@ cdef class ImportanceManager:
     cdef object _calculate_cdf(self)
 
     cpdef tuple pick_primitive(self)
+
+
+cdef class World(CoreWorld):
+
+    cdef:
+        ImportanceManager _importance
+
+    cpdef build_importance(self, bint force=*)
+
+    cpdef tuple pick_important_primitive(self)
+

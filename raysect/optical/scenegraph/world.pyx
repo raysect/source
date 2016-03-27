@@ -30,23 +30,21 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from numpy import zeros
-from raysect.core.scenegraph.world import World
+from raysect.core.scenegraph.signal import MATERIAL
+
+from raysect.core.scenegraph.signal cimport ChangeSignal
 from raysect.core.boundingbox cimport BoundingBox3D
 
-# from raysect.core.scenegraph.signal import GEOMETRY
-# from raysect.core.scenegraph.primitive cimport Primitive
-# from raysect.core.scenegraph.observer cimport Observer
-# from raysect.core.scenegraph.signal cimport ChangeSignal
+from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
+from raysect.core.math.random cimport uniform
+from raysect.core.math.cython.utility cimport find_index
+from raysect.core.scenegraph._nodebase cimport _NodeBase
 
 
+# TODO: docstrings
 cdef class ImportanceManager:
 
-    def __init__(self):
-        self.total_importance = 0
-        self.primitives = None
-        self.cdf = None
-
-    def build(self, list primitives):
+    def __init__(self, primitives):
 
         self.total_importance = 0
         self.primitives = []
@@ -103,66 +101,68 @@ cdef class ImportanceManager:
 
 
 # # TODO: update docstrings
-# cdef class World(CoreWorld):
-#     """
-#     The root node of the optical scene-graph.
-#
-#     The world node tracks all primitives and observers in the world. It maintains acceleration structures to speed up
-#     the ray-tracing calculations. The particular acceleration algorithm used is selectable. The default acceleration
-#     structure is a kd-tree.
-#
-#     :param name: A string defining the node name.
-#     """
-#
-#
-#     def __init__(self, str name=None):
-#         super().__init__(name)
-#         # TODO: add items
-#
-#     cpdef build_importance(self, bint force=False):
-#         # """
-#         # This method manually triggers a rebuild of the Acceleration object.
-#         #
-#         # If the Acceleration object is already in a consistent state this method
-#         # will do nothing unless the force keyword option is set to True.
-#         #
-#         # The Acceleration object is used to accelerate hit() and contains()
-#         # calculations, typically using a spatial sub-division method. If changes are
-#         # made to the scene-graph structure, transforms or to a primitive's
-#         # geometry the acceleration structures may no longer represent the
-#         # geometry of the scene and hence must be rebuilt. This process is
-#         # usually performed automatically as part of the first call to hit() or
-#         # contains() following a change in the scene-graph. As calculating these
-#         # structures can take some time, this method provides the option of
-#         # triggering a rebuild outside of hit() and contains() in case the user wants
-#         # to be able to perform a benchmark without including the overhead of the
-#         # Acceleration object rebuild.
-#         #
-#         # :param bint force: If set to True, forces rebuilding of acceleration structure.
-#         # """
-#
-#         if self._rebuild_importance or force:
-#             # TODO: write me!
-#             self._rebuild_importance = False
-#
-#     def _change(self, _NodeBase node, ChangeSignal change not None):
-#         # """
-#         # Notifies the World of a change to the scene-graph.
-#         #
-#         # This method must be called is a change occurs that may have invalidated
-#         # any acceleration structures held by the World.
-#         #
-#         # The node on which the change occurs and a ChangeSignal must be
-#         # provided. The ChangeSignal must specify the nature of the change to the
-#         # scene-graph.
-#         #
-#         # The core World object only recognises the GEOMETRY signal. When a
-#         # GEOMETRY signal is received, the world will be instructed to rebuild
-#         # it's spatial acceleration structures on the next call to any method
-#         # that interacts with the scene-graph geometry.
-#         # """
-#
-#         super()._change()
-#         if change is MATERIAL:
-#             self._rebuild_importance = True
-#
+cdef class World(CoreWorld):
+    """
+    The root node of the optical scene-graph.
+
+    The world node tracks all primitives and observers in the world. It maintains acceleration structures to speed up
+    the ray-tracing calculations. The particular acceleration algorithm used is selectable. The default acceleration
+    structure is a kd-tree.
+
+    :param name: A string defining the node name.
+    """
+
+    def __init__(self, str name=None):
+        super().__init__(name)
+        self._importance = None
+
+    cpdef build_importance(self, bint force=False):
+        # """
+        # This method manually triggers a rebuild of the Acceleration object.
+        #
+        # If the Acceleration object is already in a consistent state this method
+        # will do nothing unless the force keyword option is set to True.
+        #
+        # The Acceleration object is used to accelerate hit() and contains()
+        # calculations, typically using a spatial sub-division method. If changes are
+        # made to the scene-graph structure, transforms or to a primitive's
+        # geometry the acceleration structures may no longer represent the
+        # geometry of the scene and hence must be rebuilt. This process is
+        # usually performed automatically as part of the first call to hit() or
+        # contains() following a change in the scene-graph. As calculating these
+        # structures can take some time, this method provides the option of
+        # triggering a rebuild outside of hit() and contains() in case the user wants
+        # to be able to perform a benchmark without including the overhead of the
+        # Acceleration object rebuild.
+        #
+        # :param bint force: If set to True, forces rebuilding of acceleration structure.
+        # """
+
+        if self._importance is None or force:
+            self._importance = ImportanceManager(self.primitives)
+
+    def _change(self, _NodeBase node, ChangeSignal change not None):
+        # """
+        # Notifies the World of a change to the scene-graph.
+        #
+        # This method must be called is a change occurs that may have invalidated
+        # any acceleration structures held by the World.
+        #
+        # The node on which the change occurs and a ChangeSignal must be
+        # provided. The ChangeSignal must specify the nature of the change to the
+        # scene-graph.
+        #
+        # The core World object only recognises the GEOMETRY signal. When a
+        # GEOMETRY signal is received, the world will be instructed to rebuild
+        # it's spatial acceleration structures on the next call to any method
+        # that interacts with the scene-graph geometry.
+        # """
+
+        if change is MATERIAL:
+            self._importance = None
+
+        super()._change(node, change)
+
+    cpdef tuple pick_important_primitive(self):
+        self.build_importance()
+        return self._importance.pick_primitive()
