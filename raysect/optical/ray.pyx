@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI as PI, sqrt
+from libc.math cimport M_PI as PI, asin, cos
 
 from raysect.optical.spectrum cimport new_spectrum
 from raysect.core.math.random cimport probability
@@ -372,22 +372,37 @@ cdef class Ray(CoreRay):
             self._extinction_prob, self._min_depth, self._max_depth
         )
 
-    @cython.cdivision(True)
-    cdef inline double _project_on_sphere(self, Point3D observation_point, BoundingBox3D box):
+     @cython.cdivision(True)
+    cdef inline void _project_on_sphere(self, Point3D observation_point, BoundingBox3D box, double *angular_radius, double *solid_angle):
+        """
+        Returns the angular radius and solid angle of a disk enclosing the
+        bounding box as seen from the observation point.
+
+        The disk is calculated by first enclosing the bounding box in a sphere
+        and then calculating the projection of the sphere. If the observation
+        point lies inside the sphere the angular radius and solid angle will
+        be set to 180 degrees and 4*pi respectively (corresponding to a full
+        sphere).
+        """
 
         cdef Point3D centre
-        cdef double d, theta, radius
+        cdef double distance, theta, radius
 
         # Find bounding sphere
         radius = box.enclosing_sphere()
         centre = box.get_centre()
 
-        d = observation_point.distance_to(centre)
+        distance = observation_point.distance_to(centre)
 
-        # If the point is inside the bounding sphere then we must sample every direction.
-        if d == 0 or d < radius:
-            return 4 * PI
+        # if the point lies inside the sphere, the projection is a full sphere
+        if distance == 0 or distance < radius:
+            angular_radius[0] = 180.0
+            solid_angle[0] = 4*PI
+            return
 
-        # Calculate the solid angle projection of the sphere.
-        k = sqrt(d * d - radius * radius) / d
-        return 2 * PI * (1 - k)
+        # calculate the angular radius and solid angle projection of the sphere
+        angular_radius[0] = asin(radius / distance)
+        solid_angle[0] = 2 * PI * (1 - cos(angular_radius[0]))
+
+        # convert radians to degrees
+        angular_radius[0] *= 180 / PI

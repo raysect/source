@@ -64,7 +64,8 @@ cdef class Ray(CoreRay):
 
     cdef inline double get_max_wavelength(self)
 
-    cdef inline double _project_on_sphere(self, Point3D observation_point, BoundingBox3D box)
+    cdef inline void _project_on_sphere(self, Point3D observation_point, BoundingBox3D box, double *angular_radius, double *solid_angle)
+
 
 cdef inline Ray new_ray(Point3D origin, Vector3D direction,
              double min_wavelength, double max_wavelength, int num_samples,
