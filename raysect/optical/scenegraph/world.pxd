@@ -46,6 +46,8 @@ cdef class ImportanceManager:
 
     cpdef tuple pick_primitive(self)
 
+    cpdef bint has_importance(self)
+
 
 cdef class World(CoreWorld):
 
@@ -55,4 +57,6 @@ cdef class World(CoreWorld):
     cpdef build_importance(self, bint force=*)
 
     cpdef tuple pick_important_primitive(self)
+
+    cpdef bint has_importance(self)
 

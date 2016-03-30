@@ -99,6 +99,9 @@ cdef class ImportanceManager:
 
         return box, probability
 
+    cpdef bint has_importance(self):
+        return self.total_importance > 0
+
 
 # # TODO: update docstrings
 cdef class World(CoreWorld):
@@ -166,3 +169,7 @@ cdef class World(CoreWorld):
     cpdef tuple pick_important_primitive(self):
         self.build_importance()
         return self._importance.pick_primitive()
+
+    cpdef bint has_importance(self):
+        self.build_importance()
+        return self._importance.has_importance()
