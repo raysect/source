@@ -39,7 +39,7 @@ These functions can not be called from Python directly.
    segmentation fault.
 """
 
-from raysect.core.math.affinematrix cimport  new_affinematrix3d
+from raysect.core.math.affinematrix cimport new_affinematrix3d
 
 
 cdef inline AffineMatrix3D local_to_surface(Vector3D normal, Vector3D tangent):
@@ -59,8 +59,7 @@ cdef inline AffineMatrix3D local_to_surface(Vector3D normal, Vector3D tangent):
     :return: Transform matrix from local to surface space.
     """
 
-    tangent = normal.orthogonal()
-    bitangent = normal.cross(tangent)
+    cdef Vector3D bitangent = normal.cross(tangent)
 
     return new_affinematrix3d(
         tangent.x, tangent.y, tangent.z, 0.0,
@@ -86,8 +85,7 @@ cdef inline AffineMatrix3D surface_to_local(Vector3D normal, Vector3D tangent):
     :return: Transform matrix from surface to local space.
     """
 
-    tangent = normal.orthogonal()
-    bitangent = normal.cross(tangent)
+    cdef Vector3D bitangent = normal.cross(tangent)
 
     return new_affinematrix3d(
         tangent.x, bitangent.x, normal.x, 0.0,
