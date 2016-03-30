@@ -50,3 +50,5 @@ cpdef Vector3D vector_hemisphere_uniform()
 
 cpdef Vector3D vector_hemisphere_cosine()
 
+cpdef Vector3D vector_cone(double theta)
+
