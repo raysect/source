@@ -2,7 +2,7 @@ from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, 
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.material.lambert import Lambert
-from raysect.optical.library import schott
+# from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
 from matplotlib.pyplot import *
 from numpy import array
@@ -91,18 +91,37 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
 light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
             parent=enclosure,
             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-            material=UniformSurfaceEmitter(light_spectrum, 2.0))
+            material=UniformSurfaceEmitter(light_spectrum, 2))
+
+# light2 = Sphere(0.1,
+#     parent=enclosure,
+#     transform=translate(0.5, -0.75, -0.2)*rotate(0, 0, 0),
+#     material=UniformSurfaceEmitter(light_spectrum, 5.0))
+
+# light3 = Sphere(0.01,
+#     parent=enclosure,
+#     transform=translate(-0.6, -0.95, -0.45)*rotate(0, 0, 0),
+#     material=UniformSurfaceEmitter(light_spectrum, 50.0))
+
+# light4 = Sphere(0.001,
+#     parent=enclosure,
+#     transform=translate(0.8, -0.95, 0.8)*rotate(0, 0, 0),
+#     material=UniformSurfaceEmitter(light_spectrum, 5000.0))
+
+# light.material.importance = 1
+# light2.material.importance = 2
+# light3.material.importance = 10
 
 # objects in enclosure
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
           parent=world,
           transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
-          material=schott("N-BK7"))
+          material=Lambert(white_reflectivity))  # schott("N-BK7"))
 
 sphere = Sphere(0.4,
     parent=world,
     transform=translate(-0.4, -0.6 + 1e-6, -0.4)*rotate(0, 0, 0),
-    material=schott("N-BK7"))
+    material=Lambert(white_reflectivity))  # schott("N-BK7"))
 
 # create and setup the camera
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
@@ -111,11 +130,13 @@ camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
 camera.rays = 1
 camera.spectral_samples = 21
-camera.pixels = (256, 256)
+camera.pixels = (128, 128)
 camera.pixel_samples = 50
 camera.display_progress = True
 camera.display_update_time = 10
 camera.accumulate = True
+
+# camera.process_count = 1
 
 # start ray tracing
 ion()

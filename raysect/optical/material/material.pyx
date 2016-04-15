@@ -34,6 +34,7 @@ cdef class Material(CoreMaterial):
     def __init__(self):
         super().__init__()
         self._importance = 0.0
+        self.continuous = False
 
     property importance:
 
@@ -46,53 +47,58 @@ cdef class Material(CoreMaterial):
             self._importance = value
             self.notify_material_change()
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
+    cpdef Spectrum sample_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                  bint exiting, Point3D inside_point, Point3D outside_point,
+                                  Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
-        raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
+        raise NotImplementedError("Material virtual method sample_surface() has not been implemented.")
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
+    cpdef Spectrum sample_surface_along(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                        bint exiting, Point3D inside_point, Point3D outside_point,
+                                        Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world,
+                                        Vector3D direction):
+
+        raise NotImplementedError("Material virtual method sample_surface_along() has not been implemented.")
+
+    cpdef Spectrum sample_volume(self, Spectrum spectrum, World world,
+                                 Ray ray, Primitive primitive,
+                                 Point3D start_point, Point3D end_point,
+                                 AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         raise NotImplementedError("Material virtual method evaluate_volume() has not been implemented.")
 
 
-cdef class NullSurface(Material):
-
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
-
-        cdef:
-            Point3D origin
-            Ray daughter_ray
-
-        # are we entering or leaving surface?
-        if exiting:
-
-            # ray leaving surface, use exterior point for ray origin
-            origin = outside_point.transform(to_world)
-
-        else:
-
-            # ray entering surface, use interior point for ray origin
-            origin = inside_point.transform(to_world)
-
-        daughter_ray = ray.spawn_daughter(origin, ray.direction)
-
-        # do not count null surfaces in ray depth
-        daughter_ray.depth -= 1
-
-        # prevent extinction on a null surface
-        return daughter_ray.trace(world, keep_alive=True)
-
+# cdef class NullSurface(Material):
+#
+#     cpdef Spectrum evaluate_surface(self, World world, Intersection intersection):
+#
+#         cdef:
+#             Point3D origin
+#             Ray daughter_ray
+#
+#         # are we entering or leaving surface?
+#         if exiting:
+#
+#             # ray leaving surface, use exterior point for ray origin
+#             origin = outside_point.transform(to_world)
+#
+#         else:
+#
+#             # ray entering surface, use interior point for ray origin
+#             origin = inside_point.transform(to_world)
+#
+#         daughter_ray = ray.spawn_daughter(origin, ray.direction)
+#
+#         # do not count null surfaces in ray depth
+#         daughter_ray.depth -= 1
+#
+#         # prevent extinction on a null surface
+#         return daughter_ray.trace(world, keep_alive=True)
+#
 
 cdef class NullVolume(Material):
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
+    cpdef Spectrum sample_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
                                    AffineMatrix3D to_local, AffineMatrix3D to_world):

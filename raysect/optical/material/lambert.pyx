@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.optical.material.material cimport NullVolume
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.world cimport World
@@ -41,8 +42,12 @@ from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.core.math.random cimport vector_hemisphere_cosine
 from raysect.core.math.cython cimport transform
 from numpy cimport ndarray
+from libc.math cimport M_PI as PI
+cimport cython
 
 cdef class Lambert(NullVolume):
+
+    cdef SpectralFunction reflectivity
 
     def __init__(self, SpectralFunction reflectivity=None):
 
@@ -53,7 +58,9 @@ cdef class Lambert(NullVolume):
 
         self.reflectivity = reflectivity
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+        self.continuous = True
+
+    cpdef Spectrum sample_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal3D normal, AffineMatrix3D world_to_local, AffineMatrix3D local_to_world):
 
@@ -87,7 +94,47 @@ cdef class Lambert(NullVolume):
 
         return spectrum
 
+    @cython.cdivision(True)
+    cpdef Spectrum sample_surface_along(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D world_to_local, AffineMatrix3D local_to_world,
+                                    Vector3D direction):
 
+        cdef:
+            Ray reflected
+            AffineMatrix3D surface_to_local
+            Spectrum spectrum
+            ndarray reflectivity
+            double probability, dn
+            Vector3D incident
+
+        # are incident and reflected on the same side?
+        dn = direction.dot(normal)
+        if (exiting and dn >= 0) or (not exiting and dn <= 0):
+            # different sides, return empty spectrum
+            return ray.new_spectrum()
+
+        # probability of this direction
+        # probability = dn / PI
+
+        # generate and trace ray
+        if exiting:
+            reflected = ray.spawn_daughter(inside_point.transform(local_to_world), direction.transform(local_to_world))
+        else:
+            reflected = ray.spawn_daughter(outside_point.transform(local_to_world), direction.transform(local_to_world))
+
+        spectrum = reflected.trace(world)
+
+        # obtain samples of reflectivity
+        reflectivity = self.reflectivity.sample_multiple(spectrum.min_wavelength,
+                                                         spectrum.max_wavelength,
+                                                         spectrum.num_samples)
+        spectrum.mul_array(reflectivity)
+
+        # normalise
+        # spectrum.mul_scalar(1 / probability)
+
+        return spectrum
 
 
 

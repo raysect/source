@@ -32,9 +32,10 @@
 from raysect.core.classes cimport Ray as CoreRay
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.scenegraph.world cimport World
+from raysect.optical.scenegraph.world cimport World
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.boundingbox cimport BoundingBox3D
+from raysect.core.classes cimport Intersection
 
 
 cdef class Ray(CoreRay):
@@ -64,7 +65,13 @@ cdef class Ray(CoreRay):
 
     cdef inline double get_max_wavelength(self)
 
-    cdef inline void _project_on_sphere(self, Point3D observation_point, BoundingBox3D box, double *angular_radius, double *solid_angle)
+    cdef inline Spectrum _sample_surface(self, Intersection intersection, World world)
+
+    cdef inline Vector3D _project_on_sphere(self, Point3D observation_point, BoundingBox3D box, double *angular_radius, double *solid_angle)
+
+    cdef inline Vector3D _sample_important_direction(self, Vector3D orientation, double angular_radius)
+
+    cdef inline Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world)
 
 
 cdef inline Ray new_ray(Point3D origin, Vector3D direction,
