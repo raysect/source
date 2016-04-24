@@ -102,7 +102,7 @@ light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
 #     parent=enclosure,
 #     transform=translate(-0.6, -0.95, -0.45)*rotate(0, 0, 0),
 #     material=UniformSurfaceEmitter(light_spectrum, 50.0))
-
+#
 # light4 = Sphere(0.001,
 #     parent=enclosure,
 #     transform=translate(0.8, -0.95, 0.8)*rotate(0, 0, 0),
@@ -125,6 +125,7 @@ sphere = Sphere(0.4,
 
 # create and setup the camera
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
+# camera.ray_importance_sampling = False
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
@@ -135,6 +136,7 @@ camera.pixel_samples = 50
 camera.display_progress = True
 camera.display_update_time = 10
 camera.accumulate = True
+
 
 # camera.process_count = 1
 
