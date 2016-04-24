@@ -29,52 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.ray cimport Ray
-from raysect.core.intersection cimport Intersection
-from raysect.core.scenegraph.node cimport Node
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
+cdef class Material:
 
-cdef class CSGPrimitive(Primitive):
+    cdef public list primitives
 
-    cdef CSGRoot _csgroot
-    cdef BoundPrimitive _primitive_a
-    cdef BoundPrimitive _primitive_b
-    cdef Ray _cache_ray
-    cdef Intersection _cache_intersection_a
-    cdef Intersection _cache_intersection_b
-    cdef Intersection _cache_last_intersection
-    cdef bint _cache_invalid
-
-    cdef inline Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection)
-
-    cdef inline Intersection _closest_intersection(self, Intersection a, Intersection b)
-
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest)
-
-    cdef Intersection _modify_intersection(self, Intersection closest, Intersection a, Intersection b)
-
-    cdef void rebuild(self)
-
-
-cdef class CSGRoot(Node):
-
-    cdef CSGPrimitive csg_primitive
-
-
-cdef class Union(CSGPrimitive):
-
-    pass
-
-
-cdef class Intersect(CSGPrimitive):
-
-    pass
-
-
-cdef class Subtract(CSGPrimitive):
-
-    pass
-
+    cpdef object notify_material_change(self)
 
 

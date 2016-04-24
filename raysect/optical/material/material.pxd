@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Material as CoreMaterial
+from raysect.core.material cimport Material as CoreMaterial
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.normal cimport Normal3D

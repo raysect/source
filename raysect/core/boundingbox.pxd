@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.point cimport Point3D, Point2D
-from raysect.core.classes cimport Ray
+from raysect.core.ray cimport Ray
 
 cdef class BoundingBox3D:
 

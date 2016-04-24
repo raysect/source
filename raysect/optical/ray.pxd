@@ -29,14 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray as CoreRay
+from raysect.core.ray cimport Ray as CoreRay
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
 from raysect.optical.scenegraph.world cimport World
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.classes cimport Intersection
+from raysect.core.intersection cimport Intersection
 
 
 cdef class Ray(CoreRay):

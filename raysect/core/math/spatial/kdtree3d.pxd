@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.classes cimport Ray
+from raysect.core.ray cimport Ray
 from raysect.core.math.point cimport Point3D
 from libc.stdint cimport int32_t
 

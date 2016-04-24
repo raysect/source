@@ -29,76 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport new_point3d
-
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
-
-cdef class Ray:
-    """
-    Describes a line in space with an origin and direction.
-
-    :param Point3D origin: Point defining origin (default is Point3D(0, 0, 0)).
-    :param Vector3D direction: Vector defining direction (default is Vector3D(0, 0, 1)).
-    :param double max_distance: The terminating distance of the ray.
-    """
-
-    def __init__(self, Point3D origin=None, Vector3D direction=None, double max_distance=INFINITY):
-
-        if origin is None:
-            origin = Point3D(0, 0, 0)
-
-        if direction is None:
-            direction = Vector3D(0, 0, 1)
-
-        self.origin = origin
-        """Point3D defining origin (default is Point3D(0, 0, 0))."""
-        self.direction = direction
-        """Vector3D defining direction (default is Vector3D(0, 0, 1))."""
-        self.max_distance = max_distance
-        """The terminating distance of the ray."""
-
-    def __repr__(self):
-
-        return "Ray({}, {}, {})".format(self.origin, self.direction, self.max_distance)
-
-    def __getstate__(self):
-        """Encodes state for pickling."""
-
-        return self.origin, self.direction, self.max_distance
-
-    def __setstate__(self, state):
-        """Decodes state for pickling."""
-
-        self.origin, self.direction, self.max_distance = state
-
-    cpdef Point3D point_on(self, double t):
-        """
-        Returns the point on the ray at the specified parametric distance from the ray origin.
-
-        Positive values correspond to points forward of the ray origin, along the ray direction.
-
-        :param t: The distance along the ray.
-        :return: A point at distance t along the ray direction measured from its origin.
-        """
-        cdef:
-            Point3D origin = self.origin
-            Vector3D direction = self.direction
-
-        return new_point3d(origin.x + t * direction.x,
-                           origin.y + t * direction.y,
-                           origin.z + t * direction.z)
-
-    cpdef Ray copy(self, Point3D origin=None, Vector3D direction=None):
-
-        if origin is None:
-            origin = self.origin.copy()
-
-        if direction is None:
-            direction =self.direction.copy()
-
-        return new_ray(origin, direction, self.max_distance)
-
 
 cdef class Intersection:
     """
@@ -154,25 +84,3 @@ cdef class Intersection:
             self.ray, self.ray_distance, self.primitive,
             self.hit_point, self.inside_point, self.outside_point,
             self.normal, self.exiting, self.to_local, self.to_world)
-
-
-cdef class Material:
-
-    def __init__(self):
-        self.primitives = []
-
-    cpdef object notify_material_change(self):
-        """
-        Notifies any connected scene-graph root of a change to the material.
-
-        The notification informs the root node that any caching structures used
-        to accelerate ray-tracing calculations are now potentially invalid and
-        must be recalculated, taking the new material properties into account.
-        """
-
-        for primitive in self.primitives:
-            primitive.notify_material_change()
-
-
-
-

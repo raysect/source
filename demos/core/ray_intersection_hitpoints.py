@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # Internal imports
-from raysect.core.classes import Ray as CoreRay
+from raysect.core.ray import Ray as CoreRay
 from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF, Node, Vector3D
 from raysect.optical.material.emitter import UniformVolumeEmitter
 from raysect.optical.material import Lambert

@@ -29,52 +29,27 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.ray cimport Ray
-from raysect.core.intersection cimport Intersection
-from raysect.core.scenegraph.node cimport Node
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
-
-cdef class CSGPrimitive(Primitive):
-
-    cdef CSGRoot _csgroot
-    cdef BoundPrimitive _primitive_a
-    cdef BoundPrimitive _primitive_b
-    cdef Ray _cache_ray
-    cdef Intersection _cache_intersection_a
-    cdef Intersection _cache_intersection_b
-    cdef Intersection _cache_last_intersection
-    cdef bint _cache_invalid
-
-    cdef inline Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection)
-
-    cdef inline Intersection _closest_intersection(self, Intersection a, Intersection b)
-
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest)
-
-    cdef Intersection _modify_intersection(self, Intersection closest, Intersection a, Intersection b)
-
-    cdef void rebuild(self)
+from raysect.core.math.point cimport Point3D
+from raysect.core.math.vector cimport Vector3D
 
 
-cdef class CSGRoot(Node):
+cdef class Ray:
 
-    cdef CSGPrimitive csg_primitive
+    cdef public Point3D origin
+    cdef public Vector3D direction
+    cdef public double max_distance
 
+    cpdef Point3D point_on(self, double t)
 
-cdef class Union(CSGPrimitive):
-
-    pass
-
-
-cdef class Intersect(CSGPrimitive):
-
-    pass
+    cpdef Ray copy(self, Point3D origin=*, Vector3D direction=*)
 
 
-cdef class Subtract(CSGPrimitive):
+cdef inline new_ray(Point3D origin, Vector3D direction, double max_distance):
 
-    pass
+    cdef Ray ray
 
-
-
+    ray = Ray.__new__(Ray)
+    ray.origin = origin
+    ray.direction = direction
+    ray.max_distance = max_distance
+    return ray

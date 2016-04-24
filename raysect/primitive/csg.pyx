@@ -33,7 +33,9 @@
 # TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
 
 from raysect.core.scenegraph.signal cimport ChangeSignal
-from raysect.core.classes cimport Material, new_ray, new_intersection
+from raysect.core.material cimport Material
+from raysect.core.ray cimport new_ray
+from raysect.core.intersection cimport new_intersection
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.boundingbox cimport BoundingBox3D

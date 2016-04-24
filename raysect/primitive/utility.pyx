@@ -32,7 +32,7 @@
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.classes cimport Material
+from raysect.core.material cimport Material
 
 
 # TODO: docstrings

@@ -29,7 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray, Intersection
+from raysect.core.ray cimport Ray
+from raysect.core.intersection cimport Intersection
 from raysect.core.math.point cimport Point3D
 from raysect.core.scenegraph.utility cimport BridgeNode
 from raysect.core.scenegraph.primitive cimport Primitive

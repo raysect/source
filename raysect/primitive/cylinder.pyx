@@ -33,7 +33,8 @@ from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.normal cimport new_normal3d
 from raysect.core.math.point cimport new_point3d
 from raysect.core.math.vector cimport new_vector3d
-from raysect.core.classes cimport Material, new_intersection
+from raysect.core.material cimport Material
+from raysect.core.intersection cimport new_intersection
 from raysect.core.boundingbox cimport BoundingBox3D
 from libc.math cimport sqrt, fabs
 cimport cython

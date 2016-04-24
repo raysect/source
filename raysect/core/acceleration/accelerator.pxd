@@ -29,9 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray
+from raysect.core.ray cimport Ray
 from raysect.core.math.point cimport Point3D
-from raysect.core.classes cimport Intersection
+from raysect.core.intersection cimport Intersection
 
 cdef class Accelerator:
 

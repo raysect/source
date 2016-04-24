@@ -35,10 +35,10 @@ from raysect.optical.spectrum cimport new_spectrum
 from raysect.core.math.random cimport probability, vector_cone
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.cython.utility cimport clamp
-from raysect.core.classes cimport Intersection
+from raysect.core.intersection cimport Intersection
 from raysect.optical.material.material cimport Material
 from raysect.core.math.cython cimport transform
-from raysect.core.classes cimport new_ray as new_coreray
+from raysect.core.ray cimport new_ray as new_coreray
 cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity

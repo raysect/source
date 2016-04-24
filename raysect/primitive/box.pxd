@@ -32,7 +32,8 @@
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.classes cimport Ray, Intersection
+from raysect.core.ray cimport Ray
+from raysect.core.intersection cimport Intersection
 
 cdef class Box(Primitive):
 

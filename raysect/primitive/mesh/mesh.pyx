@@ -41,7 +41,9 @@ from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.point cimport Point3D, new_point3d
 from raysect.core.math.vector cimport Vector3D, new_vector3d
 from raysect.core.math.spatial.kdtree3d cimport KDTree3DCore, Item3D
-from raysect.core.classes cimport Material, Intersection, Ray, new_intersection, new_ray
+from raysect.core.material cimport Material
+from raysect.core.ray cimport Ray, new_ray
+from raysect.core.intersection cimport Intersection, new_intersection
 from raysect.core.boundingbox cimport BoundingBox3D, new_boundingbox3d
 from libc.math cimport fabs
 from numpy cimport float32_t, int32_t, uint8_t

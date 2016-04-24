@@ -29,32 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.ray cimport Ray
 from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.normal cimport Normal3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
-
-cdef class Ray:
-
-    cdef public Point3D origin
-    cdef public Vector3D direction
-    cdef public double max_distance
-
-    cpdef Point3D point_on(self, double t)
-
-    cpdef Ray copy(self, Point3D origin=*, Vector3D direction=*)
-
-
-cdef inline new_ray(Point3D origin, Vector3D direction, double max_distance):
-
-    cdef Ray ray
-
-    ray = Ray.__new__(Ray)
-    ray.origin = origin
-    ray.direction = direction
-    ray.max_distance = max_distance
-    return ray
 
 
 cdef class Intersection:
@@ -89,12 +68,3 @@ cdef inline Intersection new_intersection(Ray ray, double ray_distance, Primitiv
     intersection.to_local = to_local
     intersection.to_world = to_world
     return intersection
-
-
-cdef class Material:
-
-    cdef public list primitives
-
-    cpdef object notify_material_change(self)
-
-
