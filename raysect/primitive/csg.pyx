@@ -177,12 +177,12 @@ cdef class CSGPrimitive(Primitive):
 
                     # convert local intersection attributes to csg primitive coordinate space
                     intersection.ray = ray
-                    intersection.hit_point = intersection.hit_point.transform(intersection.to_world)
-                    intersection.inside_point = intersection.inside_point.transform(intersection.to_world)
-                    intersection.outside_point = intersection.outside_point.transform(intersection.to_world)
-                    intersection.normal = intersection.normal.transform(intersection.to_world)
-                    intersection.to_local = self.to_local()
-                    intersection.to_world = self.to_root()
+                    intersection.hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
+                    intersection.inside_point = intersection.inside_point.transform(intersection.primitive_to_world)
+                    intersection.outside_point = intersection.outside_point.transform(intersection.primitive_to_world)
+                    intersection.normal = intersection.normal.transform(intersection.primitive_to_world)
+                    intersection.world_to_primitive = self.to_local()
+                    intersection.primitive_to_world = self.to_root()
                     intersection.primitive = self
 
                     return intersection
@@ -426,8 +426,8 @@ cdef class Subtract(CSGPrimitive):
                 outside_point=closest.inside_point,
                 normal=closest.normal.neg(),
                 exiting=not closest.exiting,
-                to_local=closest.to_local,
-                to_world=closest.to_world
+                world_to_primitive=closest.world_to_primitive,
+                primitive_to_world=closest.primitive_to_world
             )
 
         return closest

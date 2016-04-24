@@ -1060,8 +1060,8 @@ cdef class Mesh(Primitive):
         # fill in missing intersection information
         intersection.primitive = self
         intersection.ray = world_ray
-        intersection.to_local = self.to_local()
-        intersection.to_world = self.to_root()
+        intersection.world_to_primitive = self.to_local()
+        intersection.primitive_to_world = self.to_root()
 
         return intersection
 

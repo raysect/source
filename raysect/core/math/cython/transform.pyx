@@ -41,7 +41,7 @@ These functions can not be called from Python directly.
 
 from raysect.core.math.affinematrix cimport new_affinematrix3d
 
-
+# TODO: generalise - rotate_basis
 cdef inline AffineMatrix3D local_to_surface(Vector3D normal, Vector3D tangent):
     """
     Returns a transform matrix from that maps from local space to surface space.
@@ -59,15 +59,8 @@ cdef inline AffineMatrix3D local_to_surface(Vector3D normal, Vector3D tangent):
     :return: Transform matrix from local to surface space.
     """
 
-    cdef Vector3D bitangent = normal.cross(tangent)
 
-    return new_affinematrix3d(
-        tangent.x, tangent.y, tangent.z, 0.0,
-        bitangent.x, bitangent.y, bitangent.z, 0.0,
-        normal.x, normal.y, normal.z, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    )
-
+# TODO: generalise - rotate_basis_inverse
 cdef inline AffineMatrix3D surface_to_local(Vector3D normal, Vector3D tangent):
     """
     Returns a transform matrix from that maps from surface space to local space.

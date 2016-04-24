@@ -46,25 +46,30 @@ cdef class Intersection:
     cdef public Point3D inside_point
     cdef public Point3D outside_point
     cdef public Normal3D normal
-    cdef public AffineMatrix3D to_local
-    cdef public AffineMatrix3D to_world
+    cdef public AffineMatrix3D world_to_primitive
+    cdef public AffineMatrix3D primitive_to_world
+    cdef public AffineMatrix3D _primitive_to_surface
+    cdef public AffineMatrix3D _surface_to_primitive
+
+    cdef inline void _construct(self, Ray ray, double ray_distance, Primitive primitive,
+                                Point3D hit_point, Point3D inside_point, Point3D outside_point,
+                                Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive,
+                                AffineMatrix3D primitive_to_world)
+
+    cpdef AffineMatrix3D primitive_to_surface(self)
+
+    cpdef AffineMatrix3D surface_to_primitive(self)
+
+    cdef inline void _generate_surface_transforms(self)
+
 
 
 cdef inline Intersection new_intersection(Ray ray, double ray_distance, Primitive primitive,
                                           Point3D hit_point, Point3D inside_point, Point3D outside_point,
-                                          Normal3D normal, bint exiting, AffineMatrix3D to_local, AffineMatrix3D to_world):
+                                          Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive,
+                                          AffineMatrix3D primitive_to_world):
 
     cdef Intersection intersection
-
     intersection = Intersection.__new__(Intersection)
-    intersection.ray = ray
-    intersection.ray_distance = ray_distance
-    intersection.exiting = exiting
-    intersection.primitive = primitive
-    intersection.hit_point = hit_point
-    intersection.inside_point = inside_point
-    intersection.outside_point = outside_point
-    intersection.normal = normal
-    intersection.to_local = to_local
-    intersection.to_world = to_world
+    intersection._construct(ray, ray_distance, primitive, hit_point, inside_point, outside_point, normal, exiting, world_to_primitive, primitive_to_world)
     return intersection

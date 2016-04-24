@@ -29,6 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.math.affinematrix cimport AffineMatrix3D, new_affinematrix3d
+from raysect.core.math.vector cimport Vector3D
+
 
 cdef class Intersection:
     """
@@ -49,38 +52,91 @@ cdef class Intersection:
     :param Point3D outside_point: The exterior ray launch point (primitive local space).
     :param Normal3D normal: The surface normal (primitive local space)
     :param bint exiting: True if the ray is exiting the surface, False otherwise.
-    :param AffineMatrix3D to_local: A world to primitive local transform matrix.
-    :param AffineMatrix3D to_world: A primitive local to world transform matrix.
+    :param AffineMatrix3D world_to_primitive: A world to primitive local transform matrix.
+    :param AffineMatrix3D primitive_to_world: A primitive local to world transform matrix.
     """
 
     def __init__(self, Ray ray, double ray_distance, Primitive primitive,
                  Point3D hit_point, Point3D inside_point, Point3D outside_point,
-                 Normal3D normal, bint exiting, AffineMatrix3D to_local, AffineMatrix3D to_world):
+                 Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        self._construct(ray, ray_distance, primitive, hit_point, inside_point, outside_point, normal, exiting, world_to_primitive, primitive_to_world)
+
+    cdef inline void _construct(self, Ray ray, double ray_distance, Primitive primitive,
+                                Point3D hit_point, Point3D inside_point, Point3D outside_point,
+                                Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive,
+                                AffineMatrix3D primitive_to_world):
 
         self.ray = ray
-        """The incident ray object (world space)."""
         self.ray_distance = ray_distance
-        """The distance of the intersection along the ray path."""
         self.exiting = exiting
-        """True if the ray is exiting the surface, False otherwise."""
         self.primitive = primitive
-        """The intersected primitive object."""
         self.hit_point = hit_point
-        """The point of intersection between the ray and the primitive (primitive local space)."""
         self.inside_point = inside_point
-        """The interior ray launch point (primitive local space)."""
         self.outside_point = outside_point
-        """The exterior ray launch point (primitive local space)."""
         self.normal = normal
-        """The surface normal (primitive local space)"""
-        self.to_local = to_local
-        """A world to primitive local transform matrix."""
-        self.to_world = to_world
-        """A primitive local to world transform matrix."""
+        self.world_to_primitive = world_to_primitive
+        self.primitive_to_world = primitive_to_world
+        self._primitive_to_surface = None
+        self._surface_to_primitive = None
+
+    cpdef AffineMatrix3D primitive_to_surface(self):
+        """
+        Returns a transform from surface space to primitive local space.
+
+        In surface space the +ve z-axis is aligned with surface normal.
+
+        :return: An AffineMatrix.
+        """
+
+        if self._primitive_to_surface is None:
+            self._generate_surface_transforms()
+        return self._primitive_to_surface
+
+    cpdef AffineMatrix3D surface_to_primitive(self):
+        """
+        Returns a transform from primitive local space to surface space.
+
+        In surface space the +ve z-axis is aligned with surface normal.
+
+        :return: An AffineMatrix.
+        """
+
+
+        if self._surface_to_primitive is None:
+            self._generate_surface_transforms()
+        return self._surface_to_primitive
+
+    cdef inline void _generate_surface_transforms(self):
+        """
+        Calculates and populates the surface space transform attributes.
+        """
+
+        cdef Vector3D normal, tangent, bitangent
+
+        # TODO: when UV information added, align the x-axis with the u-coordinate and y-axis with the v-coordinate
+        normal = self.normal.as_vector()
+        tangent = self.normal.orthogonal()
+        bitangent = normal.cross(tangent)
+
+        self._primitive_to_surface = new_affinematrix3d(
+            tangent.x, tangent.y, tangent.z, 0.0,
+            bitangent.x, bitangent.y, bitangent.z, 0.0,
+            normal.x, normal.y, normal.z, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        )
+
+        self._surface_to_primitive = new_affinematrix3d(
+            tangent.x, bitangent.x, normal.x, 0.0,
+            tangent.y, bitangent.y, normal.y, 0.0,
+            tangent.z, bitangent.z, normal.z, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        )
 
     def __repr__(self):
 
         return "Intersection({}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(
             self.ray, self.ray_distance, self.primitive,
             self.hit_point, self.inside_point, self.outside_point,
-            self.normal, self.exiting, self.to_local, self.to_world)
+            self.normal, self.exiting,
+            self.world_to_primitive, self.primitive_to_world)

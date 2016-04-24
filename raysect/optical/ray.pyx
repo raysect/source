@@ -278,8 +278,8 @@ cdef class Ray(CoreRay):
                     intersection.inside_point,
                     intersection.outside_point,
                     intersection.normal,
-                    intersection.to_local,
-                    intersection.to_world
+                    intersection.world_to_primitive,
+                    intersection.primitive_to_world
                 )
 
             prob_split = 0.5
@@ -294,7 +294,7 @@ cdef class Ray(CoreRay):
                 bounding_box, prob_primitive = world.pick_important_primitive()
 
                 # calculate direction and likelihood
-                orientation = self._project_on_sphere(intersection.hit_point.transform(intersection.to_world), bounding_box, &angular_radius, &solid_angle)
+                orientation = self._project_on_sphere(intersection.hit_point.transform(intersection.primitive_to_world), bounding_box, &angular_radius, &solid_angle)
                 important_direction = self._sample_important_direction(orientation, angular_radius)
                 prob_direction = 1 / solid_angle
 
@@ -311,9 +311,9 @@ cdef class Ray(CoreRay):
                     intersection.inside_point,
                     intersection.outside_point,
                     intersection.normal,
-                    intersection.to_local,
-                    intersection.to_world,
-                    important_direction.transform(intersection.to_local)
+                    intersection.world_to_primitive,
+                    intersection.primitive_to_world,
+                    important_direction.transform(intersection.world_to_primitive)
                 )
                 spectrum.mul_scalar(normalisation)
                 return spectrum
@@ -329,8 +329,8 @@ cdef class Ray(CoreRay):
                     intersection.inside_point,
                     intersection.outside_point,
                     intersection.normal,
-                    intersection.to_local,
-                    intersection.to_world
+                    intersection.world_to_primitive,
+                    intersection.primitive_to_world
                 )
                 # spectrum.mul_scalar(1 / (1.0 - prob_split))
                 return spectrum
@@ -346,8 +346,8 @@ cdef class Ray(CoreRay):
                 intersection.inside_point,
                 intersection.outside_point,
                 intersection.normal,
-                intersection.to_local,
-                intersection.to_world
+                intersection.world_to_primitive,
+                intersection.primitive_to_world
             )
 
     @cython.cdivision(True)
@@ -415,7 +415,7 @@ cdef class Ray(CoreRay):
             # the start and end points for volume contribution calculations
             # defined such that start to end is in the direction of light
             # propagation - from source to observer
-            start_point = intersection.hit_point.transform(intersection.to_world)
+            start_point = intersection.hit_point.transform(intersection.primitive_to_world)
             end_point = self.origin
 
             # accumulate volume contributions to the spectrum
