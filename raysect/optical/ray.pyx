@@ -36,9 +36,9 @@ from raysect.core.math.random cimport probability, vector_cone
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.cython.utility cimport clamp
 from raysect.core.classes cimport Intersection
-from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.material.material cimport Material
 from raysect.core.math.cython cimport transform
+from raysect.core.classes cimport new_ray as new_coreray
 cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
@@ -56,7 +56,8 @@ cdef class Ray(CoreRay):
                  double max_distance = INFINITY,
                  double extinction_prob = 0.1,
                  int min_depth = 3,
-                 int max_depth = 100):
+                 int max_depth = 100,
+                 bint importance_sampling=True):
 
         if num_samples < 1:
             raise ValueError("Number of samples can not be less than 1.")
@@ -77,6 +78,8 @@ cdef class Ray(CoreRay):
         self.min_depth = min_depth
         self.max_depth = max_depth
         self.depth = 0
+
+        self.importance_sampling = importance_sampling
 
         # ray statistics
         self.ray_count = 0
@@ -256,13 +259,13 @@ cdef class Ray(CoreRay):
             BoundingBox3D bounding_box
             Spectrum spectrum
             Vector3D important_direction
-            double prob_primitive, prob_direction, normalisation
+            double prob_primitive, pdf_direction, normalisation
             double angular_radius = 0, solid_angle = 0
 
         # request surface contribution to spectrum from primitive material
         material = intersection.primitive.get_material()
 
-        if material.continuous:
+        if material.continuous and self.importance_sampling:
 
             if not world.has_importance():
 
@@ -281,7 +284,7 @@ cdef class Ray(CoreRay):
 
             prob_split = 0.5
 
-            # todo: add attribute to set split probability
+            # todo: add attribute to set split probability - mis_importance_probability
             # sample BSDF or a random important direction (50:50 split)
             if probability(prob_split):
 
@@ -488,6 +491,7 @@ cdef class Ray(CoreRay):
         ray._extinction_prob = self._extinction_prob
         ray._min_depth = self._min_depth
         ray._max_depth = self._max_depth
+        ray.importance_sampling = self.importance_sampling
         ray.depth = self.depth + 1
 
         # track ray statistics
@@ -518,6 +522,7 @@ cdef class Ray(CoreRay):
             origin, direction,
             self._min_wavelength, self._max_wavelength, self._num_samples,
             self.max_distance,
-            self._extinction_prob, self._min_depth, self._max_depth
+            self._extinction_prob, self._min_depth, self._max_depth,
+            self.importance_sampling
         )
 

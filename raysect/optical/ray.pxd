@@ -33,6 +33,7 @@ from raysect.core.classes cimport Ray as CoreRay
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
 from raysect.optical.scenegraph.world cimport World
+from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.classes cimport Intersection
@@ -41,6 +42,7 @@ from raysect.core.classes cimport Intersection
 cdef class Ray(CoreRay):
 
     cdef:
+        public bint importance_sampling
         int _num_samples
         double _min_wavelength
         double _max_wavelength
@@ -77,7 +79,8 @@ cdef class Ray(CoreRay):
 cdef inline Ray new_ray(Point3D origin, Vector3D direction,
              double min_wavelength, double max_wavelength, int num_samples,
              double max_distance,
-             double extinction_prob, int min_depth, int max_depth):
+             double extinction_prob, int min_depth, int max_depth,
+             bint importance_sampling):
 
     cdef Ray ray
 
@@ -88,6 +91,7 @@ cdef inline Ray new_ray(Point3D origin, Vector3D direction,
     ray._num_samples = num_samples
     ray._min_wavelength = min_wavelength
     ray._max_wavelength = max_wavelength
+    ray.importance_sampling = importance_sampling
 
     ray._extinction_prob = extinction_prob
     ray._min_depth = min_depth

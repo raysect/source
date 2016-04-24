@@ -42,7 +42,7 @@ from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.core.math.random cimport vector_hemisphere_cosine
 from raysect.core.math.cython cimport transform
 from numpy cimport ndarray
-from libc.math cimport M_PI as PI
+from libc.math cimport M_PI as PI, fabs
 cimport cython
 
 cdef class Lambert(NullVolume):
@@ -114,9 +114,6 @@ cdef class Lambert(NullVolume):
             # different sides, return empty spectrum
             return ray.new_spectrum()
 
-        # probability of this direction
-        # probability = dn / PI
-
         # generate and trace ray
         if exiting:
             reflected = ray.spawn_daughter(inside_point.transform(local_to_world), direction.transform(local_to_world))
@@ -129,10 +126,7 @@ cdef class Lambert(NullVolume):
         reflectivity = self.reflectivity.sample_multiple(spectrum.min_wavelength,
                                                          spectrum.max_wavelength,
                                                          spectrum.num_samples)
-        spectrum.mul_array(reflectivity)
-
-        # normalise
-        # spectrum.mul_scalar(1 / probability)
+        spectrum.mul_array(reflectivity * fabs(dn))
 
         return spectrum
 

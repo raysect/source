@@ -87,6 +87,7 @@ cdef class Imaging(Observer):
         public double ray_extinction_prob
         public double ray_min_depth
         public int ray_max_depth
+        public bint ray_importance_sampling
 
         # progress information
         public bint display_progress
@@ -128,6 +129,7 @@ cdef class Imaging(Observer):
         self.ray_extinction_prob = 0.1
         self.ray_min_depth = 3
         self.ray_max_depth = 100
+        self.ray_importance_sampling = True
 
         # progress information
         self.display_progress = True
@@ -217,7 +219,8 @@ cdef class Imaging(Observer):
                     num_samples=end - start,
                     extinction_prob=self.ray_extinction_prob,
                     min_depth=self.ray_min_depth,
-                    max_depth=self.ray_max_depth)
+                    max_depth=self.ray_max_depth,
+                    importance_sampling=self.ray_importance_sampling)
             )
 
         return rays
@@ -703,7 +706,8 @@ class NonImaging(Observer):
                     num_samples=end - start,
                     extinction_prob=self.ray_extinction_prob,
                     min_depth=self.ray_min_depth,
-                    max_depth=self.ray_max_depth)
+                    max_depth=self.ray_max_depth,
+                    importance_sampling=self.ray_importance_sampling)
             )
 
         return rays
