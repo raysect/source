@@ -403,7 +403,7 @@ cdef class Ray(CoreRay):
         sample = vector_cone(angular_radius)
 
         # rotate cone to lie from observation point to box
-        rotation = transform.surface_to_local(orientation, orientation.orthogonal())
+        rotation = transform.rotate_basis(orientation, orientation.orthogonal())
         return sample.transform(rotation)
 
     cdef inline Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):

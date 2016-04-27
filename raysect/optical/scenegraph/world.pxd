@@ -30,6 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from numpy cimport ndarray
+from raysect.core.math.point cimport Point3D
+from raysect.core.math.vector cimport Vector3D
 from raysect.core.scenegraph.world cimport World as CoreWorld
 
 
@@ -38,15 +40,19 @@ cdef class ImportanceManager:
     cdef:
         ndarray cdf
         double total_importance
-        list primitives
+        list spheres
 
     cdef object _process_primitives(self, list primitives)
 
     cdef object _calculate_cdf(self)
 
-    cpdef tuple pick_primitive(self)
+    cdef inline tuple _pick_sphere(self)
 
-    cpdef bint has_importance(self)
+    cpdef Vector3D sample(self, Point3D origin)
+
+    cpdef double pdf(self, Point3D origin, Vector3D direction)
+
+    cpdef bint has_primitives(self)
 
 
 cdef class World(CoreWorld):
@@ -56,7 +62,8 @@ cdef class World(CoreWorld):
 
     cpdef build_importance(self, bint force=*)
 
-    cpdef tuple pick_important_primitive(self)
+    cpdef tuple important_direction_sample(self, Point3D origin)
 
-    cpdef bint has_importance(self)
+    cpdef tuple important_direction_pdf(self, Point3D origin, Vector3D direction)
 
+    cpdef bint has_important_primitives(self)

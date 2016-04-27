@@ -34,11 +34,12 @@ from raysect.core.scenegraph.signal import MATERIAL
 
 from raysect.core.scenegraph.signal cimport ChangeSignal
 from raysect.core.boundingbox cimport BoundingBox3D
-
 from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
-from raysect.core.math.random cimport uniform
+from raysect.core.math.random cimport uniform, vector_sphere, vector_cone
 from raysect.core.math.cython.utility cimport find_index
+from raysect.core.math.cython.transform cimport rotate_basis
 from raysect.core.scenegraph._nodebase cimport _NodeBase
+from libc.math cimport M_PI as PI, asin, cos
 
 
 # TODO: docstrings
@@ -47,7 +48,7 @@ cdef class ImportanceManager:
     def __init__(self, primitives):
 
         self.total_importance = 0
-        self.primitives = []
+        self.spheres = []
 
         if len(primitives) == 0:
             self.cdf = None
@@ -66,21 +67,30 @@ cdef class ImportanceManager:
 
         for primitive in primitives:
             if primitive.material.importance > 0:
-                self.primitives.append(BoundPrimitive(primitive))
-                self.total_importance += primitive.material.importance
+
+                # generate bounding box
+                box = primitive.bounding_box()
+
+                # obtain bounding sphere
+                centre = box.centre
+                radius = box.enclosing_sphere()
+
+                importance = primitive.material.importance
+                self.total_importance += importance
+                self.spheres.append((centre, radius, importance))
 
     cdef object _calculate_cdf(self):
 
-        self.cdf = zeros(len(self.primitives))
-        for index, bound_primitive in enumerate(self.primitives):
-            primitive = bound_primitive.primitive
+        self.cdf = zeros(len(self.spheres))
+        for index, sphere_data in enumerate(self.spheres):
+            _, _, importance = sphere_data
             if index == 0:
-                self.cdf[index] = primitive.material.importance
+                self.cdf[index] = importance
             else:
-                self.cdf[index] = self.cdf[index-1] + primitive.material.importance
+                self.cdf[index] = self.cdf[index-1] + importance
         self.cdf /= self.total_importance
 
-    cpdef tuple pick_primitive(self):
+    cdef inline tuple _pick_sphere(self):
 
         cdef:
             int index
@@ -89,17 +99,58 @@ cdef class ImportanceManager:
             BoundPrimitive bound_primitive
 
         if self.cdf is None:
-            return None, 0
+            return None
 
         # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
         index = find_index(self.cdf, uniform()) + 1
-        bound_primitive = self.primitives[index]
-        box = bound_primitive.box
-        probability = bound_primitive.primitive.material.importance / self.total_importance
+        return self.spheres[index]
 
-        return box, probability
+    cpdef Vector3D sample(self, Point3D origin):
 
-    cpdef bint has_importance(self):
+        # calculate projection of sphere (a disk) as seen from origin point and
+        # generate a random direction towards that projection
+
+        if self.cdf is None:
+            return None
+
+        centre, radius, importance = self._pick_sphere()
+
+        direction = origin.vector_to(centre)
+        distance = direction.get_length()
+
+        # is point inside sphere?
+        if distance == 0 or distance < radius:
+
+            # the point lies inside the sphere, the projection is a full sphere
+            angular_radius = 180.0
+            solid_angle = 4 * PI
+
+            # sample random direction from full sphere
+            return vector_sphere()
+
+        # calculate the angular radius and solid angle projection of the sphere
+        angular_radius = asin(radius / distance)
+        solid_angle = 2 * PI * (1 - cos(angular_radius))
+
+        # convert radians to degrees
+        angular_radius *= 180 / PI
+
+        # sample a vector from a cone of half angle equal to the angular radius
+        sample = vector_cone(angular_radius)
+
+        # rotate cone to lie along vector from observation point to sphere centre
+        direction = direction.normalise()
+        rotation = rotate_basis(direction, direction.orthogonal())
+        return sample.transform(rotation)
+
+    cpdef double pdf(self, Point3D origin, Vector3D direction):
+
+        if self.cdf is None:
+            return None
+
+        # blah
+
+    cpdef bint has_primitives(self):
         return self.total_importance > 0
 
 
@@ -166,10 +217,14 @@ cdef class World(CoreWorld):
 
         super()._change(node, change)
 
-    cpdef tuple pick_important_primitive(self):
+    cpdef tuple important_direction_sample(self, Point3D origin):
         self.build_importance()
-        return self._importance.pick_primitive()
+        return self._importance.sample(origin)
 
-    cpdef bint has_importance(self):
+    cpdef tuple important_direction_pdf(self, Point3D origin, Vector3D direction):
         self.build_importance()
-        return self._importance.has_importance()
+        return self._importance.pdf(origin, direction)
+
+    cpdef bint has_important_primitives(self):
+        self.build_importance()
+        return self._importance.has_primitives()
