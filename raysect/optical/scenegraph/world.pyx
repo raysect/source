@@ -36,6 +36,7 @@ from raysect.core.scenegraph.signal cimport ChangeSignal
 from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
 from raysect.core.math.random cimport uniform, vector_sphere, vector_cone
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.cython.utility cimport find_index
 from raysect.core.math.cython.transform cimport rotate_basis
 from raysect.core.scenegraph._nodebase cimport _NodeBase
@@ -106,10 +107,17 @@ cdef class ImportanceManager:
         index = find_index(self.cdf, uniform()) + 1
         return self.spheres[index]
 
+    @cython.cdivision(True)
     cpdef Vector3D sample(self, Point3D origin):
 
         # calculate projection of sphere (a disk) as seen from origin point and
         # generate a random direction towards that projection
+
+        cdef:
+            Point3D centre
+            double radius, importance, distance, angular_radius
+            Vector3D direction, sample
+            AffineMatrix3D rotation
 
         if self.cdf is None:
             return None
@@ -121,11 +129,7 @@ cdef class ImportanceManager:
 
         # is point inside sphere?
         if distance == 0 or distance < radius:
-
-            # the point lies inside the sphere, the projection is a full sphere
-            angular_radius = 180.0
-
-            # sample random direction from full sphere
+            # the point lies inside the sphere, sample random direction from full sphere
             return vector_sphere()
 
         # calculate the angular radius and solid angle projection of the sphere
@@ -141,6 +145,13 @@ cdef class ImportanceManager:
 
     @cython.cdivision(True)
     cpdef double pdf(self, Point3D origin, Vector3D direction):
+
+        cdef:
+            double radius, importance, distance, solid_angle, angular_radius_cos, t
+            double pdf_all, pdf_sphere, selection_weight
+            Point3D centre
+            Vector3D cone_axis
+            AffineMatrix3D rotation
 
         pdf_all = 0
         for centre, radius, importance in self.spheres:
@@ -245,11 +256,11 @@ cdef class World(CoreWorld):
 
         super()._change(node, change)
 
-    cpdef tuple important_direction_sample(self, Point3D origin):
+    cpdef Vector3D important_direction_sample(self, Point3D origin):
         self.build_importance()
         return self._importance.sample(origin)
 
-    cpdef tuple important_direction_pdf(self, Point3D origin, Vector3D direction):
+    cpdef double important_direction_pdf(self, Point3D origin, Vector3D direction):
         self.build_importance()
         return self._importance.pdf(origin, direction)
 

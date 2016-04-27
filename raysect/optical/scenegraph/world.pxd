@@ -62,8 +62,8 @@ cdef class World(CoreWorld):
 
     cpdef build_importance(self, bint force=*)
 
-    cpdef tuple important_direction_sample(self, Point3D origin)
+    cpdef Vector3D important_direction_sample(self, Point3D origin)
 
-    cpdef tuple important_direction_pdf(self, Point3D origin, Vector3D direction)
+    cpdef double important_direction_pdf(self, Point3D origin, Vector3D direction)
 
     cpdef bint has_important_primitives(self)
