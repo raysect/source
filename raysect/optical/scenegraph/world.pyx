@@ -39,7 +39,8 @@ from raysect.core.math.random cimport uniform, vector_sphere, vector_cone
 from raysect.core.math.cython.utility cimport find_index
 from raysect.core.math.cython.transform cimport rotate_basis
 from raysect.core.scenegraph._nodebase cimport _NodeBase
-from libc.math cimport M_PI as PI, asin, cos
+from libc.math cimport M_PI as PI, asin, sqrt
+cimport cython
 
 
 # TODO: docstrings
@@ -57,7 +58,7 @@ cdef class ImportanceManager:
         self._process_primitives(primitives)
 
         if self.total_importance == 0:
-            # No important materials were found.
+            # no important primitives were found
             self.cdf = None
             return
 
@@ -71,11 +72,11 @@ cdef class ImportanceManager:
                 # generate bounding box
                 box = primitive.bounding_box()
 
-                # obtain bounding sphere
+                # obtain bounding sphere and importance
                 centre = box.centre
                 radius = box.enclosing_sphere()
-
                 importance = primitive.material.importance
+
                 self.total_importance += importance
                 self.spheres.append((centre, radius, importance))
 
@@ -123,32 +124,59 @@ cdef class ImportanceManager:
 
             # the point lies inside the sphere, the projection is a full sphere
             angular_radius = 180.0
-            solid_angle = 4 * PI
 
             # sample random direction from full sphere
             return vector_sphere()
 
         # calculate the angular radius and solid angle projection of the sphere
         angular_radius = asin(radius / distance)
-        solid_angle = 2 * PI * (1 - cos(angular_radius))
-
-        # convert radians to degrees
-        angular_radius *= 180 / PI
 
         # sample a vector from a cone of half angle equal to the angular radius
-        sample = vector_cone(angular_radius)
+        sample = vector_cone(angular_radius * 180 / PI)
 
         # rotate cone to lie along vector from observation point to sphere centre
         direction = direction.normalise()
         rotation = rotate_basis(direction, direction.orthogonal())
         return sample.transform(rotation)
 
+    @cython.cdivision(True)
     cpdef double pdf(self, Point3D origin, Vector3D direction):
 
-        if self.cdf is None:
-            return None
+        pdf_all = 0
+        for centre, radius, importance in self.spheres:
 
-        # blah
+            cone_axis = origin.vector_to(centre)
+            distance = cone_axis.get_length()
+
+            # is point inside sphere?
+            if distance == 0 or distance < radius:
+
+                # the point lies inside the sphere, the projection is a full sphere
+                solid_angle = 4 * PI
+
+            else:
+
+                # calculate cosine of angular radius of cone
+                t = radius / distance
+                angular_radius_cos = sqrt(1 - t * t)
+
+                # does the direction lie inside the cone of projection
+                cone_axis = cone_axis.normalise()
+                if direction.dot(cone_axis) < angular_radius_cos:
+                    # no contribution, outside code of projection
+                    continue
+
+                # calculate solid angle
+                solid_angle = 2 * PI * (1 - angular_radius_cos)
+
+            # calculate probability
+            pdf_sphere = 1 / solid_angle
+            selection_weight = importance / self.total_importance
+
+            # add contribution to pdf
+            pdf_all += selection_weight * pdf_sphere
+
+        return pdf_all
 
     cpdef bint has_primitives(self):
         return self.total_importance > 0
