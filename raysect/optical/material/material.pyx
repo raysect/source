@@ -75,7 +75,6 @@ cdef class ContinuousPDF(Material):
             AffineMatrix3D world_to_surface, surface_to_world, primitive_to_surface, surface_to_primitive
 
         # obtain surface space transforms
-        # TODO - double check AffineMatrix multiplications
         primitive_to_surface, surface_to_primitive = self._generate_surface_transforms(p_normal)
         world_to_surface = primitive_to_surface.mul(world_to_primitive)
         surface_to_world = primitive_to_world.mul(surface_to_primitive)
@@ -83,6 +82,7 @@ cdef class ContinuousPDF(Material):
         # convert ray direction to surface space incident direction
         s_incoming = ray.direction.transform(world_to_surface).neg()
 
+        # convert ray launch points to world space
         w_inside_point = p_inside_point.transform(primitive_to_world)
         w_outside_point = p_outside_point.transform(primitive_to_world)
 
@@ -102,36 +102,36 @@ cdef class ContinuousPDF(Material):
             else:
 
                 # sample bsdf pdf
-                s_outgoing = self.sample(s_incoming)
+                s_outgoing = self.sample(s_incoming, exiting)
                 w_outgoing = s_outgoing.transform(surface_to_world)
 
             # compute combined pdf
             pdf_important = world.important_direction_pdf(w_hit_point, w_outgoing)
-            pdf_bsdf = self.pdf(s_incoming, s_outgoing)
+            pdf_bsdf = self.pdf(s_incoming, s_outgoing, exiting)
             pdf = important_path_weight * pdf_important + (1 - important_path_weight) * pdf_bsdf
 
             # evaluate bsdf and normalise
-            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_inside_point, w_outside_point, world_to_surface, surface_to_world)
+            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_inside_point, w_outside_point, exiting, world_to_surface, surface_to_world)
             spectrum.mul_scalar(1 / pdf)
             return spectrum
 
         else:
 
             # bsdf sampling
-            s_outgoing = self.sample(s_incoming)
-            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_inside_point, w_outside_point, world_to_surface, surface_to_world)
-            pdf = self.pdf(s_incoming, s_outgoing)
+            s_outgoing = self.sample(s_incoming, exiting)
+            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_inside_point, w_outside_point, exiting, world_to_surface, surface_to_world)
+            pdf = self.pdf(s_incoming, s_outgoing, exiting)
             spectrum.mul_scalar(1 / pdf)
             return spectrum
 
-    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing):
+    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing, bint back_face):
         raise NotImplementedError("Virtual method pdf() has not been implemented.")
 
-    cpdef Vector3D sample(self, Vector3D incoming):
+    cpdef Vector3D sample(self, Vector3D incoming, bint back_face):
         raise NotImplementedError("Virtual method sample() has not been implemented.")
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
-                                    Point3D w_inside_point, Point3D w_outside_point,
+                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
 

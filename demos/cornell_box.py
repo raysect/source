@@ -87,31 +87,31 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
               transform=translate(-1, 0, 0) * rotate(90, 0, 0),
               material=Lambert(green_reflectivity))
 
-# # ceiling light
-# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
-#             parent=enclosure,
-#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-#             material=UniformSurfaceEmitter(light_spectrum, 2))
+# ceiling light
+light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+            parent=enclosure,
+            transform=translate(0, 1, 0) * rotate(0, 90, 0),
+            material=UniformSurfaceEmitter(light_spectrum, 2))
 
 # light2 = Sphere(0.1,
 #     parent=enclosure,
 #     transform=translate(0.5, -0.75, -0.2)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 5.0))
+#     material=UniformSurfaceEmitter(light_spectrum, 2.0))
 #
 # light3 = Sphere(0.01,
 #     parent=enclosure,
 #     transform=translate(-0.6, -0.95, -0.45)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 100.0))
+#     material=UniformSurfaceEmitter(light_spectrum, 10.0))
 #
-# light4 = Sphere(0.001,
+# light4 = Sphere(0.01,
 #     parent=enclosure,
 #     transform=translate(0.8, -0.95, 0.8)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 100000.0))
+#     material=UniformSurfaceEmitter(light_spectrum, 10.0))
 
-light5 = Sphere(0.1,
-    parent=enclosure,
-    transform=translate(25.0, 35.0, -100.0)*rotate(0, 0, 0),
-    material=UniformSurfaceEmitter(light_spectrum, 100000.0))
+# light5 = Sphere(0.1,
+#     parent=enclosure,
+#     transform=translate(25.0, -1.15, -100.0)*rotate(0, 0, 0),
+#     material=UniformSurfaceEmitter(light_spectrum, 250000.0))
 
 # light.material.importance = 1
 # light2.material.importance = 2

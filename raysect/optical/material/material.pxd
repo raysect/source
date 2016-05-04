@@ -56,12 +56,12 @@ cdef class Material(CoreMaterial):
 
 cdef class ContinuousPDF(Material):
 
-    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing)
+    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing, bint back_face)
 
-    cpdef Vector3D sample(self, Vector3D incoming)
+    cpdef Vector3D sample(self, Vector3D incoming, bint back_face)
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D incoming, Vector3D outgoing,
-                                    Point3D w_inside_point, Point3D w_outside_point,
+                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
 
     cdef inline tuple _generate_surface_transforms(self, Normal3D normal)
