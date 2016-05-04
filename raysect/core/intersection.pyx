@@ -77,61 +77,6 @@ cdef class Intersection:
         self.normal = normal
         self.world_to_primitive = world_to_primitive
         self.primitive_to_world = primitive_to_world
-        self._primitive_to_surface = None
-        self._surface_to_primitive = None
-
-    cpdef AffineMatrix3D primitive_to_surface(self):
-        """
-        Returns a transform from surface space to primitive local space.
-
-        In surface space the +ve z-axis is aligned with surface normal.
-
-        :return: An AffineMatrix.
-        """
-
-        if self._primitive_to_surface is None:
-            self._generate_surface_transforms()
-        return self._primitive_to_surface
-
-    cpdef AffineMatrix3D surface_to_primitive(self):
-        """
-        Returns a transform from primitive local space to surface space.
-
-        In surface space the +ve z-axis is aligned with surface normal.
-
-        :return: An AffineMatrix.
-        """
-
-
-        if self._surface_to_primitive is None:
-            self._generate_surface_transforms()
-        return self._surface_to_primitive
-
-    cdef inline void _generate_surface_transforms(self):
-        """
-        Calculates and populates the surface space transform attributes.
-        """
-
-        cdef Vector3D normal, tangent, bitangent
-
-        # TODO: when UV information added, align the x-axis with the u-coordinate and y-axis with the v-coordinate
-        normal = self.normal.as_vector()
-        tangent = self.normal.orthogonal()
-        bitangent = normal.cross(tangent)
-
-        self._primitive_to_surface = new_affinematrix3d(
-            tangent.x, tangent.y, tangent.z, 0.0,
-            bitangent.x, bitangent.y, bitangent.z, 0.0,
-            normal.x, normal.y, normal.z, 0.0,
-            0.0, 0.0, 0.0, 1.0
-        )
-
-        self._surface_to_primitive = new_affinematrix3d(
-            tangent.x, bitangent.x, normal.x, 0.0,
-            tangent.y, bitangent.y, normal.y, 0.0,
-            tangent.z, bitangent.z, normal.z, 0.0,
-            0.0, 0.0, 0.0, 1.0
-        )
 
     def __repr__(self):
 

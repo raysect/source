@@ -33,6 +33,7 @@ from raysect.core.material cimport Material as CoreMaterial
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.normal cimport Normal3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
@@ -44,7 +45,9 @@ cdef class Material(CoreMaterial):
 
     cdef double _importance
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Intersection intersection)
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
@@ -53,9 +56,15 @@ cdef class Material(CoreMaterial):
 
 cdef class ContinuousPDF(Material):
 
-    cpdef double pdf(self, World world, Ray ray, Intersection intersection, Vector3D direction)
-    cpdef Vector3D sample(self, World world, Ray ray, Intersection intersection)
-    cpdef Spectrum bsdf(self, World world, Ray ray, Intersection intersection, Vector3D direction)
+    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing)
+
+    cpdef Vector3D sample(self, Vector3D incoming)
+
+    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D incoming, Vector3D outgoing,
+                                    Point3D w_inside_point, Point3D w_outside_point,
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
+
+    cdef inline tuple _generate_surface_transforms(self, Normal3D normal)
 
 
 cdef class NullSurface(Material):

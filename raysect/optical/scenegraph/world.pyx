@@ -44,6 +44,10 @@ from libc.math cimport M_PI as PI, asin, sqrt
 cimport cython
 
 
+class ImportanceError(Exception):
+    pass
+
+
 # TODO: docstrings
 cdef class ImportanceManager:
 
@@ -120,7 +124,8 @@ cdef class ImportanceManager:
             AffineMatrix3D rotation
 
         if self.cdf is None:
-            return None
+            raise ImportanceError("Attempted to sample important direction when no important primitives have been"
+                                  "specified.")
 
         centre, radius, importance = self._pick_sphere()
 
@@ -145,6 +150,9 @@ cdef class ImportanceManager:
 
     @cython.cdivision(True)
     cpdef double pdf(self, Point3D origin, Vector3D direction):
+        """
+        Calculates the value of the PDF in the specified direction.
+        """
 
         cdef:
             double radius, importance, distance, solid_angle, angular_radius_cos, t

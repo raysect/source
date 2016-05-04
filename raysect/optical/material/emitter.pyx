@@ -41,7 +41,7 @@ from raysect.optical.ray cimport Ray
 from raysect.core.math.point cimport Point3D
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.spectralfunction cimport SpectralFunction
-# from raysect.core.math.normal cimport Normal3D
+from raysect.core.math.normal cimport Normal3D
 # from raysect.core.math.point cimport new_point3d
 # from raysect.optical.spectrum cimport new_spectrum
 # from raysect.optical.colour import d65_white
@@ -67,7 +67,9 @@ cdef class UniformSurfaceEmitter(Material):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Intersection intersection):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Spectrum spectrum

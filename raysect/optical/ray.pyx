@@ -258,7 +258,16 @@ cdef class Ray(CoreRay):
 
         # request surface contribution to spectrum from primitive material
         material = intersection.primitive.get_material()
-        return material.evaluate_surface(world, self, intersection)
+        return material.evaluate_surface(world,
+                                         self,
+                                         intersection.primitive,
+                                         intersection.hit_point,
+                                         intersection.exiting,
+                                         intersection.inside_point,
+                                         intersection.outside_point,
+                                         intersection.normal,
+                                         intersection.world_to_primitive,
+                                         intersection.primitive_to_world)
 
     cdef inline Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):
 

@@ -48,19 +48,11 @@ cdef class Intersection:
     cdef public Normal3D normal
     cdef public AffineMatrix3D world_to_primitive
     cdef public AffineMatrix3D primitive_to_world
-    cdef public AffineMatrix3D _primitive_to_surface
-    cdef public AffineMatrix3D _surface_to_primitive
 
     cdef inline void _construct(self, Ray ray, double ray_distance, Primitive primitive,
                                 Point3D hit_point, Point3D inside_point, Point3D outside_point,
                                 Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive,
                                 AffineMatrix3D primitive_to_world)
-
-    cpdef AffineMatrix3D primitive_to_surface(self)
-
-    cpdef AffineMatrix3D surface_to_primitive(self)
-
-    cdef inline void _generate_surface_transforms(self)
 
 
 

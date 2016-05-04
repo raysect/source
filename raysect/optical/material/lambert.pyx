@@ -57,44 +57,50 @@ cdef class Lambert(ContinuousPDF):
             reflectivity = ConstantSF(0.5)
         self.reflectivity = reflectivity
 
-    cpdef double pdf(self, World world, Ray ray, Intersection intersection, Vector3D direction):
+    # TODO: optimise this code
+    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing):
 
-        dn = intersection.normal.dot(ray.direction.transform(intersection.world_to_primitive))
-        if not intersection.exiting:
-            # normal is on the wrong side of the surface, flip
-            dn = -dn
+        if incoming.z > 0:
+            # THis means ray entering surface
+            if outgoing.z < 0:
+                return 0
 
-        if dn < 0:
-            # direction wrong side
-            return 0
+            return outgoing.z
 
-        return dn / PI
+        else:
+            # Ray is leaving surface
+            if outgoing.z > 0:
+                return 0
 
-    cpdef Vector3D sample(self, World world, Ray ray, Intersection intersection):
-        # generate transform from surface to local space
-        surface_to_primitive = intersection.surface_to_primitive()
+            return -outgoing.z
 
-        # obtain new world space ray vector from cosine-weighted hemisphere
-        s_direction = vector_hemisphere_cosine()
-        p_direction = s_direction.transform(surface_to_primitive)
+    # TODO: fix documentation
+    cpdef Vector3D sample(self, Vector3D incoming):
 
-        # generate and trace ray
-        if intersection.exiting:
-            return p_direction.neg()
-        return p_direction
+        # obtain new surface space vector from cosine-weighted hemisphere
+        outgoing = vector_hemisphere_cosine()
 
-    cpdef Spectrum bsdf(self, World world, Ray ray, Intersection intersection, Vector3D direction):
+        if incoming.z < 0:
+            return outgoing.neg()
+        return outgoing
+
+    # TODO: add inside and outside_point to arguments
+    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
+                                    Point3D w_inside_point, Point3D w_outside_point,
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+
+        exiting = s_incoming.z < 0
+
         # are incident and reflected on the same side?
-        dn = direction.dot(intersection.normal)
-        if (intersection.exiting and dn >= 0) or (not intersection.exiting and dn <= 0):
+        if (exiting and s_outgoing.z >= 0) or (not exiting and s_outgoing.z <= 0):
             # different sides, return empty spectrum
             return ray.new_spectrum()
 
         # generate and trace ray
-        if intersection.exiting:
-            reflected = ray.spawn_daughter(intersection.inside_point.transform(intersection.primitive_to_world), direction.transform(intersection.primitive_to_world))
+        if exiting:
+            reflected = ray.spawn_daughter(w_inside_point, s_outgoing.transform(surface_to_world))
         else:
-            reflected = ray.spawn_daughter(intersection.outside_point.transform(intersection.primitive_to_world), direction.transform(intersection.primitive_to_world))
+            reflected = ray.spawn_daughter(w_outside_point, s_outgoing.transform(surface_to_world))
 
         spectrum = reflected.trace(world)
 
@@ -104,10 +110,35 @@ cdef class Lambert(ContinuousPDF):
                                                          spectrum.num_samples)
 
         spectrum.mul_array(reflectivity)
-        spectrum.mul_scalar(fabs(ray.direction.dot(intersection.normal.transform(intersection.primitive_to_world))))
-        spectrum.mul_scalar(1 / PI)
+        spectrum.mul_scalar(fabs(s_incoming.z) / PI)
 
         return spectrum
+
+    # cpdef Spectrum bsdf(self, World world, Ray ray, Intersection intersection, Vector3D direction):
+    #     # are incident and reflected on the same side?
+    #     dn = direction.dot(intersection.normal)
+    #     if (intersection.exiting and dn >= 0) or (not intersection.exiting and dn <= 0):
+    #         # different sides, return empty spectrum
+    #         return ray.new_spectrum()
+    #
+    #     # generate and trace ray
+    #     if intersection.exiting:
+    #         reflected = ray.spawn_daughter(intersection.inside_point.transform(intersection.primitive_to_world), direction.transform(intersection.primitive_to_world))
+    #     else:
+    #         reflected = ray.spawn_daughter(intersection.outside_point.transform(intersection.primitive_to_world), direction.transform(intersection.primitive_to_world))
+    #
+    #     spectrum = reflected.trace(world)
+    #
+    #     # obtain samples of reflectivity
+    #     reflectivity = self.reflectivity.sample_multiple(spectrum.min_wavelength,
+    #                                                      spectrum.max_wavelength,
+    #                                                      spectrum.num_samples)
+    #
+    #     spectrum.mul_array(reflectivity)
+    #     spectrum.mul_scalar(fabs(ray.direction.dot(intersection.normal.transform(intersection.primitive_to_world))))
+    #     spectrum.mul_scalar(1 / PI)
+    #
+    #     return spectrum
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
