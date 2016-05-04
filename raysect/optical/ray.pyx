@@ -254,159 +254,18 @@ cdef class Ray(CoreRay):
     @cython.cdivision(True)
     cdef inline Spectrum _sample_surface(self, Intersection intersection, World world):
 
-        cdef:
-            Material material
-            BoundingBox3D bounding_box
-            Spectrum spectrum
-            Vector3D important_direction
-            double prob_primitive, pdf_direction, normalisation
-            double angular_radius = 0, solid_angle = 0
+        cdef Material material
 
         # request surface contribution to spectrum from primitive material
         material = intersection.primitive.get_material()
-
-        if material.continuous and self.importance_sampling:
-
-            if not world.has_importance():
-
-                # no important primitives, only sample the BSDF
-                return material.sample_surface(
-                    world, self,
-                    intersection.primitive,
-                    intersection.hit_point,
-                    intersection.exiting,
-                    intersection.inside_point,
-                    intersection.outside_point,
-                    intersection.normal,
-                    intersection.world_to_primitive,
-                    intersection.primitive_to_world
-                )
-
-            prob_split = 0.5
-
-            # todo: add attribute to set split probability - mis_importance_probability
-            # sample BSDF or a random important direction (50:50 split)
-            if probability(prob_split):
-
-                # sample important direction
-
-                # obtain the bounding box and relative likelihood of an important primitive
-                bounding_box, prob_primitive = world.pick_important_primitive()
-
-                # calculate direction and likelihood
-                orientation = self._project_on_sphere(intersection.hit_point.transform(intersection.primitive_to_world), bounding_box, &angular_radius, &solid_angle)
-                important_direction = self._sample_important_direction(orientation, angular_radius)
-                prob_direction = 1 / solid_angle
-
-                # calculate normalisation from various probabilities
-                # normalisation = 1 / (prob_split * prob_primitive * prob_direction)
-                normalisation = 1 / prob_direction
-
-                # sample along direction
-                spectrum = material.sample_surface_along(
-                    world, self,
-                    intersection.primitive,
-                    intersection.hit_point,
-                    intersection.exiting,
-                    intersection.inside_point,
-                    intersection.outside_point,
-                    intersection.normal,
-                    intersection.world_to_primitive,
-                    intersection.primitive_to_world,
-                    important_direction.transform(intersection.world_to_primitive)
-                )
-                spectrum.mul_scalar(normalisation)
-                return spectrum
-
-            else:
-
-                # sample BSDF and appropriately normalise
-                spectrum =  material.sample_surface(
-                    world, self,
-                    intersection.primitive,
-                    intersection.hit_point,
-                    intersection.exiting,
-                    intersection.inside_point,
-                    intersection.outside_point,
-                    intersection.normal,
-                    intersection.world_to_primitive,
-                    intersection.primitive_to_world
-                )
-                # spectrum.mul_scalar(1 / (1.0 - prob_split))
-                return spectrum
-
-        else:
-
-            # material has a discrete BSDF, only sample the BSDF
-            return material.sample_surface(
-                world, self,
-                intersection.primitive,
-                intersection.hit_point,
-                intersection.exiting,
-                intersection.inside_point,
-                intersection.outside_point,
-                intersection.normal,
-                intersection.world_to_primitive,
-                intersection.primitive_to_world
-            )
-
-    @cython.cdivision(True)
-    cdef inline Vector3D _project_on_sphere(self, Point3D observation_point, BoundingBox3D box, double *angular_radius, double *solid_angle):
-        """
-        Returns the Vector pointing from the observer, angular radius and solid
-        angle of a disk enclosing the bounding box as seen from the observation
-        point.
-
-        The disk is calculated by first enclosing the bounding box in a sphere
-        and then calculating the projection of the sphere. If the observation
-        point lies inside the sphere the angular radius and solid angle will
-        be set to 180 degrees and 4*pi respectively (corresponding to a full
-        sphere).
-        """
-
-        cdef:
-            Point3D centre
-            Vector3D direction
-            double distance, theta, radius
-
-        # Find bounding sphere
-        radius = box.enclosing_sphere()
-        centre = box.get_centre()
-
-        # calculate normalised direction and distance from observation point to the sphere centre
-        direction = observation_point.vector_to(centre)
-        distance = direction.get_length()
-        direction = direction.normalise()
-
-        # if the point lies inside the sphere, the projection is a full sphere
-        if distance == 0 or distance < radius:
-            angular_radius[0] = 180.0
-            solid_angle[0] = 4*PI
-            return direction
-
-        # calculate the angular radius and solid angle projection of the sphere
-        angular_radius[0] = asin(radius / distance)
-        solid_angle[0] = 2 * PI * (1 - cos(angular_radius[0]))
-
-        # convert radians to degrees
-        angular_radius[0] *= 180 / PI
-
-        return direction
-
-    cdef inline Vector3D _sample_important_direction(self, Vector3D orientation, double angular_radius):
-
-        cdef:
-            Vector3D sample
-            AffineMatrix3D rotation
-
-        # sample a vector from a cone of half angle equal to the angular radius
-        sample = vector_cone(angular_radius)
-
-        # rotate cone to lie from observation point to box
-        rotation = transform.rotate_basis(orientation, orientation.orthogonal())
-        return sample.transform(rotation)
+        return material.evaluate_surface(world, self, intersection)
 
     cdef inline Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):
+
+        cdef:
+            list primitives
+            Point3D start_point, end_point
+            Primitive primitive
 
         # identify any primitive volumes the ray is propagating through
         primitives = world.contains(self.origin)
@@ -422,7 +281,7 @@ cdef class Ray(CoreRay):
             for primitive in primitives:
 
                 material = primitive.get_material()
-                spectrum = material.sample_volume(
+                spectrum = material.evaluate_volume(
                     spectrum,
                     world,
                     self,

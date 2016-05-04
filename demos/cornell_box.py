@@ -87,26 +87,31 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
               transform=translate(-1, 0, 0) * rotate(90, 0, 0),
               material=Lambert(green_reflectivity))
 
-# ceiling light
-light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
-            parent=enclosure,
-            transform=translate(0, 1, 0) * rotate(0, 90, 0),
-            material=UniformSurfaceEmitter(light_spectrum, 2))
+# # ceiling light
+# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+#             parent=enclosure,
+#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
+#             material=UniformSurfaceEmitter(light_spectrum, 2))
 
 # light2 = Sphere(0.1,
 #     parent=enclosure,
 #     transform=translate(0.5, -0.75, -0.2)*rotate(0, 0, 0),
 #     material=UniformSurfaceEmitter(light_spectrum, 5.0))
-
+#
 # light3 = Sphere(0.01,
 #     parent=enclosure,
 #     transform=translate(-0.6, -0.95, -0.45)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 50.0))
+#     material=UniformSurfaceEmitter(light_spectrum, 100.0))
 #
 # light4 = Sphere(0.001,
 #     parent=enclosure,
 #     transform=translate(0.8, -0.95, 0.8)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 5000.0))
+#     material=UniformSurfaceEmitter(light_spectrum, 100000.0))
+
+light5 = Sphere(0.1,
+    parent=enclosure,
+    transform=translate(25.0, 35.0, -100.0)*rotate(0, 0, 0),
+    material=UniformSurfaceEmitter(light_spectrum, 100000.0))
 
 # light.material.importance = 1
 # light2.material.importance = 2
@@ -142,10 +147,14 @@ camera.accumulate = True
 
 # start ray tracing
 ion()
-for p in range(1, 1000):
+for p in range(1, 50):
     print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.rays))
     camera.observe()
-    camera.save("cornell_box_{}_samples.png".format(camera.accumulated_samples))
+    if camera.ray_importance_sampling:
+        name = "cornell_box_mis_{}_samples.png"
+    else:
+        name = "cornell_box_normal_{}_samples.png"
+    camera.save(name.format(camera.accumulated_samples))
     print()
 
 # display final result

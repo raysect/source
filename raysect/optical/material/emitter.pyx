@@ -33,22 +33,23 @@ cimport cython
 from numpy cimport ndarray
 from libc.math cimport round
 
-from raysect.optical.material.material cimport NullVolume
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.scenegraph.world cimport World
+from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
-from raysect.core.math.vector cimport Vector3D
+# from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.point cimport Point3D
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.core.math.normal cimport Normal3D
-from raysect.core.math.point cimport new_point3d
-from raysect.optical.spectrum cimport new_spectrum
-from raysect.optical.colour import d65_white
+# from raysect.core.math.normal cimport Normal3D
+# from raysect.core.math.point cimport new_point3d
+# from raysect.optical.spectrum cimport new_spectrum
+# from raysect.optical.colour import d65_white
+from raysect.core.intersection cimport Intersection
+from raysect.optical.material.material cimport Material
 
 
-cdef class UniformSurfaceEmitter(NullVolume):
+cdef class UniformSurfaceEmitter(Material):
 
     cdef SpectralFunction emission_spectrum
     cdef double scale
@@ -62,14 +63,11 @@ cdef class UniformSurfaceEmitter(NullVolume):
         super().__init__()
         self.emission_spectrum = emission_spectrum
         self.scale = scale
-        self.continuous = False
         self.importance = 1.0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum sample_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                bint exiting, Point3D inside_point, Point3D outside_point,
-                                Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Intersection intersection):
 
         cdef:
             Spectrum spectrum
@@ -87,4 +85,11 @@ cdef class UniformSurfaceEmitter(NullVolume):
         for index in range(spectrum.num_samples):
             s_view[index] += e_view[index] * self.scale
 
+        return spectrum
+
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # no volume contribution
         return spectrum

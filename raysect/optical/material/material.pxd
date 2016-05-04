@@ -32,42 +32,31 @@
 from raysect.core.material cimport Material as CoreMaterial
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.point cimport Point3D
-from raysect.core.math.normal cimport Normal3D
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.scenegraph.world cimport World
+from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
+from raysect.core.intersection cimport Intersection
+
 
 cdef class Material(CoreMaterial):
 
-    cdef:
-        double _importance
-        public bint continuous
+    cdef double _importance
 
-    cpdef Spectrum sample_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                  bint exiting, Point3D inside_point, Point3D outside_point,
-                                  Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world)
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Intersection intersection)
 
-    cpdef Spectrum sample_surface_along(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                        bint exiting, Point3D inside_point, Point3D outside_point,
-                                        Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world,
-                                        Vector3D direction)
-
-    cpdef Spectrum sample_volume(self, Spectrum spectrum, World world,
-                                 Ray ray, Primitive primitive,
-                                 Point3D start_point, Point3D end_point,
-                                 AffineMatrix3D to_local, AffineMatrix3D to_world)
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
 
-# cdef class NullSurface(Material):
-#
-#     pass
+cdef class ContinuousPDF(Material):
+
+    cpdef double pdf(self, World world, Ray ray, Intersection intersection, Vector3D direction)
+    cpdef Vector3D sample(self, World world, Ray ray, Intersection intersection)
+    cpdef Spectrum bsdf(self, World world, Ray ray, Intersection intersection, Vector3D direction)
 
 
-cdef class NullVolume(Material):
-
+cdef class NullSurface(Material):
     pass
-
-
-
