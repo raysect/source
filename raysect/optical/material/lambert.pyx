@@ -62,7 +62,7 @@ cdef class Lambert(ContinuousPDF):
         cdef double cos_theta
 
         # normal is aligned with +ve Z so dot products with the normal are simply the z component of the other vector
-        cos_theta = incoming.z
+        cos_theta = outgoing.z
 
         # if incident ray is on back side of surface, flip normal to the same side
         if back_face:
@@ -110,7 +110,7 @@ cdef class Lambert(ContinuousPDF):
         # obtain samples of reflectivity
         reflectivity = self.reflectivity.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
         spectrum.mul_array(reflectivity)
-        spectrum.mul_scalar(fabs(s_incoming.z) * M_1_PI)
+        spectrum.mul_scalar(fabs(s_outgoing.z) * M_1_PI)
         return spectrum
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,

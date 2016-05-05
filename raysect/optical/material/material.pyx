@@ -91,9 +91,7 @@ cdef class ContinuousPDF(Material):
             w_hit_point = p_hit_point.transform(primitive_to_world)
 
             # multiple importance sampling
-            important_path_weight = 0.5  # TODO: make an attribute
-
-            if probability(important_path_weight):
+            if probability(ray.get_important_path_weight()):
 
                 # sample important path pdf
                 w_outgoing = world.important_direction_sample(w_hit_point)
@@ -108,7 +106,7 @@ cdef class ContinuousPDF(Material):
             # compute combined pdf
             pdf_important = world.important_direction_pdf(w_hit_point, w_outgoing)
             pdf_bsdf = self.pdf(s_incoming, s_outgoing, exiting)
-            pdf = important_path_weight * pdf_important + (1 - important_path_weight) * pdf_bsdf
+            pdf = ray.get_important_path_weight() * pdf_important + (1 - ray.get_important_path_weight()) * pdf_bsdf
 
             # evaluate bsdf and normalise
             spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_inside_point, w_outside_point, exiting, world_to_surface, surface_to_world)

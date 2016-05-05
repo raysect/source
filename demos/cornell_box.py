@@ -130,13 +130,14 @@ sphere = Sphere(0.4,
 
 # create and setup the camera
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
-# camera.ray_importance_sampling = False
+camera.ray_importance_sampling = False
+camera.ray_important_path_weight = 0.5
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
 camera.rays = 1
 camera.spectral_samples = 21
-camera.pixels = (128, 128)
+camera.pixels = (256, 256)
 camera.pixel_samples = 50
 camera.display_progress = True
 camera.display_update_time = 10

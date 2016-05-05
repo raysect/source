@@ -57,7 +57,8 @@ cdef class Ray(CoreRay):
                  double extinction_prob = 0.1,
                  int min_depth = 3,
                  int max_depth = 100,
-                 bint importance_sampling=True):
+                 bint importance_sampling=True,
+                 double important_path_weight=0.25):
 
         if num_samples < 1:
             raise ValueError("Number of samples can not be less than 1.")
@@ -67,6 +68,9 @@ cdef class Ray(CoreRay):
 
         if min_wavelength >= max_wavelength:
             raise ValueError("Minimum wavelength must be less than the maximum wavelength.")
+
+        if important_path_weight < 0 or important_path_weight > 1.0:
+            raise ValueError("Important path weight must be in the range [0, 1].")
 
         super().__init__(origin, direction, max_distance)
 
@@ -80,6 +84,7 @@ cdef class Ray(CoreRay):
         self.depth = 0
 
         self.importance_sampling = importance_sampling
+        self._important_path_weight = important_path_weight
 
         # ray statistics
         self.ray_count = 0
@@ -97,6 +102,8 @@ cdef class Ray(CoreRay):
             self._min_depth,
             self._max_depth,
             self.depth,
+            self.importance_sampling,
+            self._important_path_weight,
             self.ray_count,
             self._primary_ray
         )
@@ -112,6 +119,8 @@ cdef class Ray(CoreRay):
          self._min_depth,
          self._max_depth,
          self.depth,
+         self.importance_sampling,
+         self._important_path_weight,
          self.ray_count,
          self._primary_ray) = state
 
@@ -195,6 +204,19 @@ cdef class Ray(CoreRay):
             if max_depth < self._min_depth:
                 raise ValueError("The maximum depth cannot be less than the minimum depth.")
             self._max_depth = max_depth
+
+    property important_path_weight:
+
+        def __get__(self):
+            return self._important_path_weight
+
+        def __set__(self, double important_path_weight):
+            if important_path_weight < 0 or important_path_weight > 1.0:
+                raise ValueError("Important path weight must be in the range [0, 1].")
+            self._important_path_weight = important_path_weight
+
+    cdef inline double get_important_path_weight(self):
+        return self._important_path_weight
 
     cpdef Spectrum new_spectrum(self):
         """
@@ -360,6 +382,7 @@ cdef class Ray(CoreRay):
         ray._min_depth = self._min_depth
         ray._max_depth = self._max_depth
         ray.importance_sampling = self.importance_sampling
+        ray._important_path_weight = self._important_path_weight
         ray.depth = self.depth + 1
 
         # track ray statistics
@@ -391,6 +414,7 @@ cdef class Ray(CoreRay):
             self._min_wavelength, self._max_wavelength, self._num_samples,
             self.max_distance,
             self._extinction_prob, self._min_depth, self._max_depth,
-            self.importance_sampling
+            self.importance_sampling,
+            self._important_path_weight
         )
 
