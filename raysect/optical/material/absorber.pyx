@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,46 +29,24 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.material cimport Material as CoreMaterial
+cimport cython
+
 from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.normal cimport Normal3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
+from raysect.core.math.point cimport Point3D
+from raysect.core.math.normal cimport Normal3D
 from raysect.optical.spectrum cimport Spectrum
-from raysect.core.intersection cimport Intersection
 
 
-cdef class Material(CoreMaterial):
-
-    cdef double _importance
+cdef class AbsorbingSurface(NullVolume):
+    """
+    A perfectly absorbing surface material.
+    """
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
-
-
-cdef class ContinuousBSDF(Material):
-
-    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing, bint back_face)
-
-    cpdef Vector3D sample(self, Vector3D incoming, bint back_face)
-
-    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D incoming, Vector3D outgoing,
-                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
-
-    cdef inline tuple _generate_surface_transforms(self, Normal3D normal)
-
-
-cdef class NullSurface(Material):
-    pass
-
-cdef class NullVolume(Material):
-    pass
+        return ray.new_spectrum()

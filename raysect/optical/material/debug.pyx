@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,69 +29,54 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport cython
-from numpy cimport ndarray
-from libc.math cimport round
+"""
+This module contains materials to aid with debugging.
+"""
 
+from raysect.optical.colour import d65_white
+
+from raysect.core.math.point cimport Point3D
+from raysect.core.math.normal cimport Normal3D
+from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
-# from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.point cimport Point3D
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.core.math.normal cimport Normal3D
-# from raysect.core.math.point cimport new_point3d
-# from raysect.optical.spectrum cimport new_spectrum
-# from raysect.optical.colour import d65_white
-from raysect.core.intersection cimport Intersection
-from raysect.optical.material.material cimport NullVolume
 
 
-cdef class UniformSurfaceEmitter(NullVolume):
+cdef class Light(NullVolume):
+    """
+    A Lambertian surface material illuminated by a distant light source.
 
-    cdef SpectralFunction emission_spectrum
-    cdef double scale
+    This debug material lights the primitive from the world direction specified
+    by a vector passed to the light_direction parameter. An optional intensity
+    and emission spectrum may be supplied. By default the light spectrum is the
+    D65 white point spectrum.
 
-    def __init__(self, SpectralFunction emission_spectrum, double scale = 1.0):
-        """
-        Uniform and isotropic surface emitter
+    :param light_direction: A world space Vector3D defining the light direction.
+    :param intensity: The light intensity (default is 1.0).
+    :param spectrum: A SpectralFunction defining the light spectrum (default is D65 white).
+    """
 
-        emission is spectral radiance: W/m2/str/nm"""
+    def __init__(self, Vector3D light_direction, double intensity=1.0, SpectralFunction spectrum=None):
 
         super().__init__()
-        self.emission_spectrum = emission_spectrum
-        self.scale = scale
-        self.importance = 1.0
+        self.light_direction = light_direction.normalise()
+        self.intensity = max(0, intensity)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
+        if spectrum is None:
+            self.spectrum = d65_white
+        else:
+            self.spectrum = spectrum
+
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-        cdef:
-            Spectrum spectrum
-            ndarray emission
-            double[::1] s_view, e_view
-            int index
+        cdef Spectrum spectrum
 
         spectrum = ray.new_spectrum()
-        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
-
-        # obtain memoryviews
-        s_view = spectrum.samples
-        e_view = emission
-
-        for index in range(spectrum.num_samples):
-            s_view[index] += e_view[index] * self.scale
-
-        return spectrum
-
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-
-        # no volume contribution
+        if self.intensity != 0.0:
+            diffuse_intensity = self.intensity * max(0, -self.light_direction.transform(world_to_primitive).dot(normal))
+            spectrum.samples[:] = diffuse_intensity * self.spectrum.sample_multiple(ray.min_wavelength, ray.max_wavelength, ray.num_samples)
         return spectrum

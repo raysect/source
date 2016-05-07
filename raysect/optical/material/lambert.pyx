@@ -34,10 +34,8 @@ from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.math.point cimport Point3D
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.normal cimport Normal3D
-from raysect.core.math.random cimport vector_hemisphere_cosine, vector_hemisphere_uniform
-from raysect.core.math.cython cimport transform
-from raysect.core.intersection cimport Intersection
-from raysect.optical.material.material cimport ContinuousPDF
+from raysect.core.math.random cimport vector_hemisphere_cosine
+from raysect.optical.material.material cimport ContinuousBSDF
 from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
@@ -46,7 +44,7 @@ from numpy cimport ndarray
 from libc.math cimport M_1_PI, fabs
 cimport cython
 
-cdef class Lambert(ContinuousPDF):
+cdef class Lambert(ContinuousBSDF):
 
     cdef SpectralFunction reflectivity
 

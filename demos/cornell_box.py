@@ -1,8 +1,8 @@
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter
-from raysect.optical.material.lambert import Lambert
-# from raysect.optical.library import schott
+from raysect.optical.material import Lambert, Titanium
+from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
 from matplotlib.pyplot import *
 from numpy import array
@@ -93,49 +93,30 @@ light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
             transform=translate(0, 1, 0) * rotate(0, 90, 0),
             material=UniformSurfaceEmitter(light_spectrum, 2))
 
-# light2 = Sphere(0.1,
+# back_light = Sphere(0.1,
 #     parent=enclosure,
-#     transform=translate(0.5, -0.75, -0.2)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 2.0))
-#
-# light3 = Sphere(0.01,
-#     parent=enclosure,
-#     transform=translate(-0.6, -0.95, -0.45)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 10.0))
-#
-# light4 = Sphere(0.01,
-#     parent=enclosure,
-#     transform=translate(0.8, -0.95, 0.8)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 10.0))
-
-# light5 = Sphere(0.1,
-#     parent=enclosure,
-#     transform=translate(25.0, -1.15, -100.0)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 250000.0))
-
-# light.material.importance = 1
-# light2.material.importance = 2
-# light3.material.importance = 10
+#     transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
+#     material=UniformSurfaceEmitter(light_spectrum, 100.0))
 
 # objects in enclosure
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
           parent=world,
           transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
-          material=Lambert(white_reflectivity))  # schott("N-BK7"))
+          material=schott("N-BK7"))
 
 sphere = Sphere(0.4,
     parent=world,
     transform=translate(-0.4, -0.6 + 1e-6, -0.4)*rotate(0, 0, 0),
-    material=Lambert(white_reflectivity))  # schott("N-BK7"))
+    material=Titanium()) #schott("N-BK7"))
 
 # create and setup the camera
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
-camera.ray_importance_sampling = False
-camera.ray_important_path_weight = 0.5
+camera.ray_importance_sampling = True
+camera.ray_important_path_weight = 0.1
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
-camera.rays = 1
+camera.spectral_rays = 1
 camera.spectral_samples = 21
 camera.pixels = (256, 256)
 camera.pixel_samples = 50
@@ -148,8 +129,8 @@ camera.accumulate = True
 
 # start ray tracing
 ion()
-for p in range(1, 50):
-    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.rays))
+for p in range(1, 5000):
+    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.spectral_rays))
     camera.observe()
     if camera.ray_importance_sampling:
         name = "cornell_box_mis_{}_samples.png"

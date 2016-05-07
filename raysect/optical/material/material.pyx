@@ -62,7 +62,7 @@ cdef class Material(CoreMaterial):
         raise NotImplementedError("Material virtual method evaluate_volume() has not been implemented.")
 
 
-cdef class ContinuousPDF(Material):
+cdef class ContinuousBSDF(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D p_hit_point,
                                     bint exiting, Point3D p_inside_point, Point3D p_outside_point,
@@ -186,3 +186,13 @@ cdef class NullSurface(Material):
 
         # prevent extinction on a null surface
         return daughter_ray.trace(world, keep_alive=True)
+
+
+cdef class NullVolume(Material):
+
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # no volume contribution
+        return spectrum
