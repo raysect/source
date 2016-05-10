@@ -1,3 +1,4 @@
+from .material import *
 from .emitter import *
 from .lambert import *
 from .dielectric import *
