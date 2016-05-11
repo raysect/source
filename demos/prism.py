@@ -14,7 +14,7 @@ def equilateral_prism(width=1.0, height=1.0, parent=None, transform=None, materi
     mid_point = half_width * tan(60/180*pi) / 2
     centre = Box(Point3D(-half_width * 1.001, 0, 0), Point3D(half_width * 1.001, height, width))
     left = Box(Point3D(0, -height * 0.001, -width * 0.001), Point3D(width, height * 1.001, 2 * width), transform=translate(half_width, 0, 0) * rotate(30, 0, 0))
-    right = Box(Point3D(-width, -height * 0.001, -width * 0.001), Point3D(0.0, height * 0.001, 2 * width), transform=translate(-half_width, 0, 0) * rotate(-30, 0, 0))
+    right = Box(Point3D(-width, -height * 0.001, -width * 0.001), Point3D(0.0, height * 1.001, 2 * width), transform=translate(-half_width, 0, 0) * rotate(-30, 0, 0))
     return Subtract(Subtract(centre, left), right, parent=parent, transform=transform * translate(0, 0, -mid_point), material=material)
 
 
@@ -51,8 +51,8 @@ camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
 camera.spectral_rays = 32
 camera.spectral_samples = 32
-camera.pixels = (128, 64)
-camera.pixel_samples = 50
+camera.pixels = (512, 256)
+camera.pixel_samples = 100
 camera.display_progress = True
 camera.display_update_time = 10
 camera.accumulate = True
