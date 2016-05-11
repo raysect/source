@@ -4,8 +4,9 @@ from raysect.optical.material import Lambert, NullVolume
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.library import schott
 from raysect.primitive import Intersect, Subtract, Box, Cylinder, Sphere
-from math import tan, pi
+from math import tan, pi, cos
 from matplotlib.pyplot import *
+
 
 class DirectionalEmitterSurface(NullVolume):
 
@@ -17,7 +18,7 @@ class DirectionalEmitterSurface(NullVolume):
     def evaluate_surface(self, world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, world_to_primitive, primitive_to_world):
 
         spectrum = ray.new_spectrum()
-        if -normal.dot(ray.direction.transform(world_to_primitive)) > 0.99:
+        if -normal.dot(ray.direction.transform(world_to_primitive)) > cos(2/180*pi):
             spectrum.samples = 1000 * d65_white.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
         return spectrum
 
@@ -35,9 +36,10 @@ def light_box(parent, transform=None):
 
     node = Node(parent=parent, transform=transform)
     outer = Box(Point3D(-0.01, 0, -0.05), Point3D(0.01, 0.15, 0.0))
-    slit = Box(Point3D(-0.005, 0.01, -0.045), Point3D(0.005, 0.014, 0.0001))
+    slit = Box(Point3D(-0.0025, 0.01, -0.045), Point3D(0.0025, 0.14, 0.0001))
     Subtract(outer, slit, parent=node, material=Lambert(reflectivity=ConstantSF(0.1)))
-    Box(Point3D(-0.005, 0.01, -0.045), Point3D(0.005, 0.014, -0.04), parent=node, material=UniformSurfaceEmitter(d65_white, 1000))
+    Box(Point3D(-0.005, 0.01, -0.045), Point3D(0.005, 0.14, -0.04), parent=node, material=UniformSurfaceEmitter(d65_white, 250))
+    # Box(Point3D(-0.005, 0.01, -0.045), Point3D(0.005, 0.14, -0.04), parent=node, material=DirectionalEmitterSurface())
     return node
 
 
@@ -60,7 +62,7 @@ lightbox = light_box(parent=world, transform=translate(0.025, 0, 0) * rotate(-35
 
 light = Sphere(0.5, parent=world, material=UniformSurfaceEmitter(d65_white, scale=2), transform=translate(0, 2, -1))
 
-prism.material.importance = 5
+prism.material.importance = 9
 
 camera = PinholeCamera(parent=world, transform=translate(0, 0.05, -0.05) * rotate(180, -65, 0) * translate(0, 0, -0.75), fov=45)
 camera.ray_importance_sampling = True
@@ -68,7 +70,7 @@ camera.ray_important_path_weight = 0.5
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
-camera.spectral_rays = 1
+camera.spectral_rays = 5
 camera.spectral_samples = 15
 camera.pixels = (128, 64)
 camera.pixel_samples = 50
