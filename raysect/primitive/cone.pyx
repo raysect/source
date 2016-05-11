@@ -62,8 +62,8 @@ cdef class Cone(Primitive):
     capped with a disk forming a closed surface.
     """
 
-    def __init__(self, double radius=0.5, double height=1.0, object parent = None,
-                 AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(),
+    def __init__(self, double radius=0.5, double height=1.0, object parent=None,
+                 AffineMatrix3D transform=None, Material material=None,
                  str name=None):
         """
         Radius is radius of the cone in x-y plane.
