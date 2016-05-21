@@ -131,7 +131,7 @@ cdef class Imaging(Observer):
         self.ray_min_depth = 3
         self.ray_max_depth = 100
         self.ray_importance_sampling = True
-        self.ray_important_path_weight = 0.5
+        self.ray_important_path_weight = 0.2
 
         # progress information
         self.display_progress = True
