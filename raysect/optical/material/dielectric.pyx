@@ -33,10 +33,7 @@ cimport cython
 from numpy import array, float64
 from numpy cimport ndarray
 from libc.math cimport sqrt, pow as cpow
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D, new_vector3d
-from raysect.core.math.normal cimport Normal3D
+from raysect.core.math cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.scenegraph.world cimport World
 from raysect.optical.spectralfunction cimport ConstantSF

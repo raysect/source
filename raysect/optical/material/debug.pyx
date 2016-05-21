@@ -35,10 +35,8 @@ This module contains materials to aid with debugging.
 
 from raysect.optical.colour import d65_white
 
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.normal cimport Normal3D
+from raysect.core.math cimport Point3D, Normal3D, AffineMatrix3D
 from raysect.optical.spectrum cimport Spectrum
-from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray

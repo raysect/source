@@ -30,10 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.material cimport Material as CoreMaterial
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.normal cimport Normal3D
+from raysect.core.math cimport Point3D, Vector3D, Normal3D, AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray

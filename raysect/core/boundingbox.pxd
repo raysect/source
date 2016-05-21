@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport Point3D, Point2D
+from raysect.core.math cimport Point3D, Point2D
 from raysect.core.ray cimport Ray
 
 cdef class BoundingBox3D:

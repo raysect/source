@@ -33,8 +33,7 @@ from raysect.optical.colour import d65_white
 
 from numpy cimport ndarray
 from libc.math cimport round
-from raysect.core.math.point cimport new_point3d
-from raysect.core.math.normal cimport Normal3D
+from raysect.core.math cimport new_point3d, Normal3D
 from raysect.optical.spectrum cimport new_spectrum
 cimport cython
 

@@ -29,8 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
+from raysect.core.math cimport Point3D, Vector3D
 
 
 cdef class Ray:

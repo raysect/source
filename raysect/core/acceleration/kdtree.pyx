@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport Point3D
+from raysect.core.math cimport Point3D
 from raysect.core.math.spatial.kdtree3d cimport Item3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.ray cimport Ray

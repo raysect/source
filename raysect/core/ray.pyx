@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport new_point3d
+from raysect.core.math cimport new_point3d
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999

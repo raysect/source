@@ -31,7 +31,7 @@
 
 from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.point cimport Point3D
+from raysect.core.math cimport Point3D
 from raysect.core.ray cimport Ray
 from raysect.core.intersection cimport Intersection
 

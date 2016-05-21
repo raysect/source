@@ -29,11 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.normal cimport Normal3D
+from raysect.core.math cimport Point3D, Vector3D, AffineMatrix3D
 from raysect.core.math.random cimport vector_hemisphere_cosine
 from raysect.optical.material.material cimport ContinuousBSDF
 from raysect.optical.scenegraph.world cimport World

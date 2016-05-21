@@ -36,10 +36,7 @@ import struct
 
 from numpy import array, float32, int32, zeros
 from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.normal cimport Normal3D, new_normal3d
-from raysect.core.math.point cimport Point3D, new_point3d
-from raysect.core.math.vector cimport Vector3D, new_vector3d
+from raysect.core.math cimport AffineMatrix3D, Normal3D, new_normal3d, Point3D, new_point3d, Vector3D, new_vector3d
 from raysect.core.math.spatial.kdtree3d cimport KDTree3DCore, Item3D
 from raysect.core.material cimport Material
 from raysect.core.ray cimport Ray, new_ray

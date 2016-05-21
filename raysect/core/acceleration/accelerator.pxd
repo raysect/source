@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.ray cimport Ray
-from raysect.core.math.point cimport Point3D
+from raysect.core.math cimport Point3D
 from raysect.core.intersection cimport Intersection
 
 cdef class Accelerator:

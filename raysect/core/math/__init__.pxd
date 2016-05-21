@@ -29,24 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.ray cimport Ray
-from raysect.core.intersection cimport Intersection
-from raysect.core.math cimport Point3D
-from raysect.core.scenegraph.utility cimport BridgeNode
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.boundingbox cimport BoundingBox3D
-
-
-cdef class EncapsulatedPrimitive(Primitive):
-
-    cdef:
-        BridgeNode _localroot
-        Primitive _primitive
-
-    cpdef Intersection hit(self, Ray ray)
-
-    cpdef Intersection next_intersection(self)
-
-    cpdef bint contains(self, Point3D p) except -1
-
-    cpdef BoundingBox3D bounding_box(self)
+from raysect.core.math.point cimport Point3D, Point2D, new_point3d, new_point2d
+from raysect.core.math.vector cimport Vector3D, new_vector3d
+from raysect.core.math.normal cimport Normal3D, new_normal3d
+from raysect.core.math.affinematrix cimport AffineMatrix3D, new_affinematrix3d

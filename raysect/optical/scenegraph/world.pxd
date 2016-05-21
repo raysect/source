@@ -30,8 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from numpy cimport ndarray
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
+from raysect.core.math cimport Point3D, Vector3D
 from raysect.core.scenegraph.world cimport World as CoreWorld
 
 

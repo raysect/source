@@ -31,12 +31,10 @@
 
 
 from raysect.optical.material.material cimport NullSurface, NullVolume
-from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.point cimport Point3D
+from raysect.core.math cimport Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.spectralfunction cimport SpectralFunction
 

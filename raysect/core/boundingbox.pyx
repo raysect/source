@@ -32,7 +32,7 @@
 # TODO: add docstrings
 
 cimport cython
-from raysect.core.math.point cimport new_point3d, new_point2d
+from raysect.core.math cimport new_point3d, new_point2d
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999

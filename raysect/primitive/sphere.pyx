@@ -32,8 +32,7 @@
 from raysect.core.material cimport Material
 from raysect.core.intersection cimport new_intersection
 from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.math.point cimport new_point3d
-from raysect.core.math.normal cimport new_normal3d, Normal3D
+from raysect.core.math cimport new_point3d, new_normal3d, Normal3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from libc.math cimport sqrt
 cimport cython

@@ -36,8 +36,7 @@ from raysect.core.scenegraph.signal cimport ChangeSignal
 from raysect.core.material cimport Material
 from raysect.core.ray cimport new_ray
 from raysect.core.intersection cimport new_intersection
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.math cimport Point3D, AffineMatrix3D
 from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 

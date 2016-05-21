@@ -30,16 +30,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.material.material cimport Material
-from raysect.core.math.affinematrix cimport AffineMatrix3D, new_affinematrix3d
+from raysect.core.math cimport Point3D, Vector3D, Normal3D, new_normal3d, AffineMatrix3D, new_affinematrix3d
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.scenegraph.world cimport World
 from raysect.optical.ray cimport Ray
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
 from raysect.optical.spectrum cimport Spectrum
-from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.random cimport vector_hemisphere_cosine
-from raysect.core.math.cython cimport transform
 from raysect.optical.material.material cimport Material
 
 # sets the maximum number of attempts to find a valid perturbed normal
