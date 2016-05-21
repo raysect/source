@@ -29,13 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.material cimport Material
 from raysect.core.math cimport Point3D, Vector3D, Normal3D, new_normal3d, AffineMatrix3D, new_affinematrix3d
+from raysect.core.math.random cimport vector_hemisphere_cosine
+from raysect.optical.material cimport Material
 from raysect.optical.scenegraph cimport Primitive, World
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
-from raysect.core.math.random cimport vector_hemisphere_cosine
-from raysect.optical.material.material cimport Material
 
 # sets the maximum number of attempts to find a valid perturbed normal
 # it is highly unlikely (REALLY!) this number will ever be reached, it is just there for my paranoia

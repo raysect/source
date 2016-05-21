@@ -29,10 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.scenegraph cimport Primitive
-from raysect.core.math cimport Point3D, Vector3D
-from raysect.core.ray cimport Ray
-from raysect.core.intersection cimport Intersection
+from raysect.core cimport Primitive, Point3D, Vector3D, Ray, Intersection
 
 cdef class Box(Primitive):
 

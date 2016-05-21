@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.material cimport NullVolume
+from raysect.optical.material cimport NullVolume
 
 
 cdef class AbsorbingSurface(NullVolume):

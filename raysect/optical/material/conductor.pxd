@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.optical.material.material cimport Material
+from raysect.optical.material cimport Material
 
 
 cdef class Conductor(Material):

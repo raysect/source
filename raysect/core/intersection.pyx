@@ -29,10 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D, new_affinematrix3d
-from raysect.core.math cimport Vector3D
-
-
 cdef class Intersection:
     """
     Describes the result of a ray-primitive intersection.

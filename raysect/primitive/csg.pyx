@@ -32,12 +32,7 @@
 # TODO: add more advanced material handling
 # TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
 
-from raysect.core.scenegraph cimport _NodeBase, ChangeSignal
-from raysect.core.material cimport Material
-from raysect.core.ray cimport new_ray
-from raysect.core.intersection cimport new_intersection
-from raysect.core.math cimport Point3D, AffineMatrix3D
-from raysect.core.boundingbox cimport BoundingBox3D
+from raysect.core cimport _NodeBase, ChangeSignal, Material, new_ray, new_intersection, Point3D, AffineMatrix3D, BoundingBox3D
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9

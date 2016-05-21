@@ -31,13 +31,12 @@
 
 from libc.math cimport M_PI as PI, asin, cos
 
-from raysect.optical.spectrum cimport new_spectrum
+from raysect.core cimport Intersection
 from raysect.core.math.random cimport probability
-from raysect.core.math.cython.utility cimport clamp
-from raysect.core.intersection cimport Intersection
+from raysect.core.math.cython cimport clamp
 from raysect.optical.material.material cimport Material
+from raysect.optical.spectrum cimport new_spectrum
 from raysect.optical.scenegraph cimport Primitive
-from raysect.core.ray cimport new_ray as new_coreray
 cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity

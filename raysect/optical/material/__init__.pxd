@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,29 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.optical.material cimport Material
-
-cdef class Sellmeier(SpectralFunction):
-
-    cdef:
-        double b1, b2, b3
-        double c1, c2, c3
-        int subsamples
-        bint cached
-        double cached_min_wavelength
-        double cached_max_wavelength
-        double cached_index
-
-    cdef inline double _sellmeier(self, double wavelength) nogil
+from raysect.optical.material.material cimport *
+from raysect.optical.material.emitter cimport *
+from raysect.optical.material.absorber cimport *
+from raysect.optical.material.dielectric cimport *
+from raysect.optical.material.conductor cimport *
+from raysect.optical.material.debug cimport *
 
 
-cdef class Dielectric(Material):
-
-    cdef:
-        public SpectralFunction index
-        public SpectralFunction external_index
-        public SpectralFunction transmission
-        public bint transmission_only
-
-    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil

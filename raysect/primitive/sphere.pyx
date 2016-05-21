@@ -29,10 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.material cimport Material
-from raysect.core.intersection cimport new_intersection
-from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.math cimport new_point3d, new_normal3d, Normal3D, AffineMatrix3D
+from raysect.core cimport Material, new_intersection, BoundingBox3D, new_point3d, new_normal3d, Normal3D, AffineMatrix3D
 from libc.math cimport sqrt
 cimport cython
 

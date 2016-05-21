@@ -29,10 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.ray cimport Ray
-from raysect.core.intersection cimport Intersection
-from raysect.core.scenegraph cimport Node, Primitive
-from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
+from raysect.core cimport Ray, Intersection, Node, Primitive
+from raysect.core.acceleration cimport BoundPrimitive
+
 
 cdef class CSGPrimitive(Primitive):
 

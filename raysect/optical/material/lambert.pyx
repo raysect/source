@@ -31,7 +31,7 @@
 
 from raysect.core.math cimport Point3D, Vector3D, AffineMatrix3D
 from raysect.core.math.random cimport vector_hemisphere_cosine
-from raysect.optical.material.material cimport ContinuousBSDF
+from raysect.optical.material cimport ContinuousBSDF
 from raysect.optical.scenegraph cimport Primitive, World
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
