@@ -27,39 +27,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""
-The Raysect optical package.
-
-This package builds upon the Raysect core to provide a framework for geometric
-optical simulations.
-
-Units
------
-
-Unless otherwise stated, the following units are used throughout the optical
-framework:
-
- dimensions are in meters (m)
- wavelength is in nanometers (nm)
- energy is in Joules (J)
- power is in Watts (W)
- solid angle is in steradians (str)
- radiance is in W/m^2/str
- spectral radiance is in W/m^2/str/nm
-"""
-
 # optical modules
-from .ray import *
-from .colour import *
-from .spectrum import *
-from .spectralfunction import *
-from .scenegraph import *
-from .material import *
+from raysect.optical.ray cimport *
+from raysect.optical.colour cimport *
+from raysect.optical.spectrum cimport *
+from raysect.optical.spectralfunction cimport *
+from raysect.optical.scenegraph cimport *
 
 # core modules that are not superseded by optical modules
-from raysect.core.intersection import *
-from raysect.core.constants import *
-from raysect.core.math import *
-from raysect.core.boundingbox import *
+from raysect.core.intersection cimport *
+from raysect.core.boundingbox cimport *
+from raysect.core.math cimport *
 
 
