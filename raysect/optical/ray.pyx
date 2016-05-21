@@ -32,12 +32,11 @@
 from libc.math cimport M_PI as PI, asin, cos
 
 from raysect.optical.spectrum cimport new_spectrum
-from raysect.core.math.random cimport probability, vector_cone
-from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.math.random cimport probability
 from raysect.core.math.cython.utility cimport clamp
 from raysect.core.intersection cimport Intersection
 from raysect.optical.material.material cimport Material
-from raysect.core.math.cython cimport transform
+from raysect.optical.scenegraph cimport Primitive
 from raysect.core.ray cimport new_ray as new_coreray
 cimport cython
 

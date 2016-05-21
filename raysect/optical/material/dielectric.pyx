@@ -34,8 +34,7 @@ from numpy import array, float64
 from numpy cimport ndarray
 from libc.math cimport sqrt, pow as cpow
 from raysect.core.math cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.optical.scenegraph.world cimport World
+from raysect.optical.scenegraph cimport World, Primitive
 from raysect.optical.spectralfunction cimport ConstantSF
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.ray cimport Ray

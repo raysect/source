@@ -32,7 +32,6 @@
 from raysect.core.ray cimport Ray as CoreRay
 from raysect.core.math cimport Point3D, Vector3D
 from raysect.optical.scenegraph.world cimport World
-from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.intersection cimport Intersection

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,25 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.scenegraph cimport Primitive
-from raysect.core.math cimport Point3D, Vector3D
-from raysect.core.ray cimport Ray
-from raysect.core.intersection cimport Intersection
+from raysect.core.scenegraph._nodebase cimport _NodeBase
+from raysect.core.scenegraph.node cimport Node
+from raysect.core.scenegraph.world cimport World
+from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph.observer cimport Observer
+from raysect.core.scenegraph.signal cimport ChangeSignal
+from raysect.core.scenegraph.utility cimport BridgeNode
 
-cdef class Box(Primitive):
 
-    cdef Point3D _lower
-    cdef Point3D _upper
-    cdef bint _further_intersection
-    cdef double _next_t
-    cdef Point3D _cached_origin
-    cdef Vector3D _cached_direction
-    cdef Ray _cached_ray
-    cdef int _cached_face
-    cdef int _cached_axis
-
-    cdef inline void _slab(self, int axis, double origin, double direction, double lower, double upper, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_axis, int *far_axis)
-
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int axis)
-
-    cdef inline double _interior_offset(self, double hit_point, double lower, double upper)

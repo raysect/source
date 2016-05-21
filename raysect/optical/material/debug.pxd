@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.material.material cimport NullVolume
-from raysect.core.math.vector cimport Vector3D
+from raysect.core.math cimport Vector3D
 from raysect.optical.spectralfunction cimport SpectralFunction
 
 cdef class Light(NullVolume):

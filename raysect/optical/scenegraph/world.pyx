@@ -32,14 +32,13 @@
 from numpy import zeros
 from raysect.core.scenegraph.signal import MATERIAL
 
-from raysect.core.scenegraph.signal cimport ChangeSignal
 from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
+from raysect.core.math cimport AffineMatrix3D
 from raysect.core.math.random cimport uniform, vector_sphere, vector_cone
-from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.cython.utility cimport find_index
 from raysect.core.math.cython.transform cimport rotate_basis
-from raysect.core.scenegraph._nodebase cimport _NodeBase
+from raysect.core.scenegraph cimport _NodeBase, ChangeSignal
 from libc.math cimport M_PI as PI, asin, sqrt
 cimport cython
 

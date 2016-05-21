@@ -31,8 +31,7 @@
 
 from raysect.core.material cimport Material as CoreMaterial
 from raysect.core.math cimport Point3D, Vector3D, Normal3D, AffineMatrix3D
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.optical.scenegraph.world cimport World
+from raysect.optical.scenegraph cimport Primitive, World
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.intersection cimport Intersection

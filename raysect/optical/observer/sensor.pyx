@@ -37,8 +37,7 @@ import matplotlib.pyplot as plt
 
 cimport numpy as np
 from raysect.core.math cimport random
-from raysect.core.scenegraph.observer cimport Observer
-from raysect.core.scenegraph.world cimport World
+from raysect.optical.scenegraph cimport Observer, World
 from raysect.optical.colour cimport resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum

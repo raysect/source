@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.affinematrix cimport AffineMatrix3D, new_affinematrix3d
-from raysect.core.math.vector cimport Vector3D
+from raysect.core.math cimport Vector3D
 
 
 cdef class Intersection:

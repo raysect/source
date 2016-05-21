@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.random cimport probability
-from raysect.core.math.affinematrix cimport new_affinematrix3d
+from raysect.core.math cimport new_affinematrix3d
 
 # TODO: move surface_to_primitive calculation to material from intersection, convert eval_surface API back to list of intersection parameters
 

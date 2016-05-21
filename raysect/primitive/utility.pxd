@@ -32,8 +32,7 @@
 from raysect.core.ray cimport Ray
 from raysect.core.intersection cimport Intersection
 from raysect.core.math cimport Point3D
-from raysect.core.scenegraph.utility cimport BridgeNode
-from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph cimport BridgeNode, Primitive
 from raysect.core.boundingbox cimport BoundingBox3D
 
 

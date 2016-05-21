@@ -31,7 +31,7 @@
 
 from raysect.primitive import Intersect, Subtract, Sphere, Cylinder
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.math cimport AffineMatrix3D
 from raysect.core.math.transform cimport translate
 from raysect.core.material cimport Material
 from raysect.primitive.utility cimport EncapsulatedPrimitive

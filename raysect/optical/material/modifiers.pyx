@@ -31,8 +31,7 @@
 
 from raysect.optical.material.material cimport Material
 from raysect.core.math cimport Point3D, Vector3D, Normal3D, new_normal3d, AffineMatrix3D, new_affinematrix3d
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.optical.scenegraph.world cimport World
+from raysect.optical.scenegraph cimport Primitive, World
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
 from raysect.core.math.random cimport vector_hemisphere_cosine

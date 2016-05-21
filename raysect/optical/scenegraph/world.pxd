@@ -31,7 +31,7 @@
 
 from numpy cimport ndarray
 from raysect.core.math cimport Point3D, Vector3D
-from raysect.core.scenegraph.world cimport World as CoreWorld
+from raysect.core.scenegraph cimport World as CoreWorld
 
 
 cdef class ImportanceManager:

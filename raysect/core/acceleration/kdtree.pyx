@@ -31,7 +31,7 @@
 
 from raysect.core.math cimport Point3D
 from raysect.core.math.spatial.kdtree3d cimport Item3D
-from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.scenegraph cimport Primitive
 from raysect.core.ray cimport Ray
 from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
 from libc.stdint cimport int32_t
