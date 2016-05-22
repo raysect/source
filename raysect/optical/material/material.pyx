@@ -62,6 +62,72 @@ cdef class Material(CoreMaterial):
         raise NotImplementedError("Material virtual method evaluate_volume() has not been implemented.")
 
 
+cdef class NullSurface(Material):
+
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            Point3D origin
+            Ray daughter_ray
+
+        # are we entering or leaving surface?
+        if exiting:
+            origin = outside_point.transform(primitive_to_world)
+        else:
+            origin = inside_point.transform(primitive_to_world)
+
+        daughter_ray = ray.spawn_daughter(origin, ray.direction)
+
+        # do not count null surfaces in ray depth
+        daughter_ray.depth -= 1
+
+        # prevent extinction on a null surface
+        return daughter_ray.trace(world, keep_alive=True)
+
+
+cdef class NullVolume(Material):
+
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # no volume contribution
+        return spectrum
+
+
+cdef class DiscreteBSDF(Material):
+
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D p_hit_point,
+                                    bint exiting, Point3D p_inside_point, Point3D p_outside_point,
+                                    Normal3D p_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            Vector3D w_outgoing, s_incoming
+            AffineMatrix3D world_to_surface, surface_to_world, primitive_to_surface, surface_to_primitive
+
+        # obtain surface space transforms
+        primitive_to_surface, surface_to_primitive = _generate_surface_transforms(p_normal)
+        world_to_surface = primitive_to_surface.mul(world_to_primitive)
+        surface_to_world = primitive_to_world.mul(surface_to_primitive)
+
+        # convert ray direction to surface space incident direction
+        s_incoming = ray.direction.transform(world_to_surface).neg()
+
+        # convert ray launch points to world space
+        w_inside_point = p_inside_point.transform(primitive_to_world)
+        w_outside_point = p_outside_point.transform(primitive_to_world)
+
+        # bsdf sampling
+        return self.evaluate_shading(world, ray, s_incoming, w_inside_point, w_outside_point, exiting, world_to_surface, surface_to_world)
+
+    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming,
+                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+        raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
+
+
 cdef class ContinuousBSDF(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D p_hit_point,
@@ -75,7 +141,7 @@ cdef class ContinuousBSDF(Material):
             AffineMatrix3D world_to_surface, surface_to_world, primitive_to_surface, surface_to_primitive
 
         # obtain surface space transforms
-        primitive_to_surface, surface_to_primitive = self._generate_surface_transforms(p_normal)
+        primitive_to_surface, surface_to_primitive = _generate_surface_transforms(p_normal)
         world_to_surface = primitive_to_surface.mul(world_to_primitive)
         surface_to_world = primitive_to_world.mul(surface_to_primitive)
 
@@ -133,66 +199,34 @@ cdef class ContinuousBSDF(Material):
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
 
-    cdef inline tuple _generate_surface_transforms(self, Normal3D normal):
-        """
-        Calculates and populates the surface space transform attributes.
-        """
 
-        cdef:
-            Vector3D tangent, bitangent
-            AffineMatrix3D primitive_to_surface, surface_to_primitive
+cdef inline tuple _generate_surface_transforms(Normal3D normal):
+    """
+    Calculates and populates the surface space transform attributes.
 
-        # TODO: when UV information added, align the x-axis with the u-coordinate and y-axis with the v-coordinate
-        tangent = normal.orthogonal()
-        bitangent = normal.cross(tangent)
+    :param normal: Primitive space surface normal.
+    :return: Tuple containing primitive to surface and surface to primitive transforms.
+    """
 
-        primitive_to_surface = new_affinematrix3d(
-            tangent.x, tangent.y, tangent.z, 0.0,
-            bitangent.x, bitangent.y, bitangent.z, 0.0,
-            normal.x, normal.y, normal.z, 0.0,
-            0.0, 0.0, 0.0, 1.0
-        )
+    cdef:
+        Vector3D tangent, bitangent
+        AffineMatrix3D primitive_to_surface, surface_to_primitive
 
-        surface_to_primitive = new_affinematrix3d(
-            tangent.x, bitangent.x, normal.x, 0.0,
-            tangent.y, bitangent.y, normal.y, 0.0,
-            tangent.z, bitangent.z, normal.z, 0.0,
-            0.0, 0.0, 0.0, 1.0
-        )
+    tangent = normal.orthogonal()
+    bitangent = normal.cross(tangent)
 
-        return primitive_to_surface, surface_to_primitive
+    primitive_to_surface = new_affinematrix3d(
+        tangent.x, tangent.y, tangent.z, 0.0,
+        bitangent.x, bitangent.y, bitangent.z, 0.0,
+        normal.x, normal.y, normal.z, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    )
 
+    surface_to_primitive = new_affinematrix3d(
+        tangent.x, bitangent.x, normal.x, 0.0,
+        tangent.y, bitangent.y, normal.y, 0.0,
+        tangent.z, bitangent.z, normal.z, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    )
 
-cdef class NullSurface(Material):
-
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-
-        cdef:
-            Point3D origin
-            Ray daughter_ray
-
-        # are we entering or leaving surface?
-        if exiting:
-            origin = outside_point.transform(primitive_to_world)
-        else:
-            origin = inside_point.transform(primitive_to_world)
-
-        daughter_ray = ray.spawn_daughter(origin, ray.direction)
-
-        # do not count null surfaces in ray depth
-        daughter_ray.depth -= 1
-
-        # prevent extinction on a null surface
-        return daughter_ray.trace(world, keep_alive=True)
-
-
-cdef class NullVolume(Material):
-
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-
-        # no volume contribution
-        return spectrum
+    return primitive_to_surface, surface_to_primitive

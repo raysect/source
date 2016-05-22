@@ -49,6 +49,21 @@ cdef class Material(CoreMaterial):
                                    AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
 
+cdef class NullSurface(Material):
+    pass
+
+
+cdef class NullVolume(Material):
+    pass
+
+
+cdef class DiscreteBSDF(Material):
+
+    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming,
+                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
+
+
 cdef class ContinuousBSDF(Material):
 
     cpdef double pdf(self, Vector3D incoming, Vector3D outgoing, bint back_face)
@@ -59,11 +74,3 @@ cdef class ContinuousBSDF(Material):
                                     Point3D w_inside_point, Point3D w_outside_point, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
 
-    cdef inline tuple _generate_surface_transforms(self, Normal3D normal)
-
-
-cdef class NullSurface(Material):
-    pass
-
-cdef class NullVolume(Material):
-    pass
