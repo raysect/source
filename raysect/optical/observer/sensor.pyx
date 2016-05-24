@@ -37,8 +37,7 @@ import matplotlib.pyplot as plt
 
 cimport numpy as np
 from raysect.core.math cimport random
-from raysect.core.scenegraph.observer cimport Observer
-from raysect.core.scenegraph.world cimport World
+from raysect.optical.scenegraph cimport Observer, World
 from raysect.optical.colour cimport resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
@@ -87,6 +86,8 @@ cdef class Imaging(Observer):
         public double ray_extinction_prob
         public double ray_min_depth
         public int ray_max_depth
+        public bint ray_importance_sampling
+        public double ray_important_path_weight
 
         # progress information
         public bint display_progress
@@ -128,6 +129,8 @@ cdef class Imaging(Observer):
         self.ray_extinction_prob = 0.1
         self.ray_min_depth = 3
         self.ray_max_depth = 100
+        self.ray_importance_sampling = True
+        self.ray_important_path_weight = 0.2
 
         # progress information
         self.display_progress = True
@@ -217,7 +220,9 @@ cdef class Imaging(Observer):
                     num_samples=end - start,
                     extinction_prob=self.ray_extinction_prob,
                     min_depth=self.ray_min_depth,
-                    max_depth=self.ray_max_depth)
+                    max_depth=self.ray_max_depth,
+                    importance_sampling=self.ray_importance_sampling,
+                    important_path_weight=self.ray_important_path_weight)
             )
 
         return rays
@@ -703,7 +708,9 @@ class NonImaging(Observer):
                     num_samples=end - start,
                     extinction_prob=self.ray_extinction_prob,
                     min_depth=self.ray_min_depth,
-                    max_depth=self.ray_max_depth)
+                    max_depth=self.ray_max_depth,
+                    importance_sampling=self.ray_importance_sampling,
+                    important_path_weight=self.ray_important_path_weight)
             )
 
         return rays

@@ -29,9 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.material cimport NullVolume
-from raysect.core.math.vector cimport Vector3D
-from raysect.optical.spectralfunction cimport SpectralFunction
+from raysect.optical cimport SpectralFunction, Vector3D
+from raysect.optical.material cimport NullVolume
 
 cdef class Light(NullVolume):
 

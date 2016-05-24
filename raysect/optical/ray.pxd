@@ -29,16 +29,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray as CoreRay
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.scenegraph.world cimport World
+from raysect.core cimport Ray as CoreRay, Point3D, Vector3D, Intersection
+from raysect.optical.scenegraph cimport World
 from raysect.optical.spectrum cimport Spectrum
 
 
 cdef class Ray(CoreRay):
 
     cdef:
+        public bint importance_sampling
+        double _important_path_weight
+        public bint following_important_path
         int _num_samples
         double _min_wavelength
         double _max_wavelength
@@ -50,24 +51,22 @@ cdef class Ray(CoreRay):
         Ray _primary_ray
 
     cpdef Spectrum new_spectrum(self)
-
     cpdef Spectrum trace(self, World world, bint keep_alive=*)
-
     cpdef Spectrum sample(self, World world, int samples)
-
     cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction)
-
     cdef inline int get_num_samples(self)
-
     cdef inline double get_min_wavelength(self)
-
     cdef inline double get_max_wavelength(self)
+    cdef inline double get_important_path_weight(self)
+    cdef inline Spectrum _sample_surface(self, Intersection intersection, World world)
+    cdef inline Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world)
 
 
 cdef inline Ray new_ray(Point3D origin, Vector3D direction,
              double min_wavelength, double max_wavelength, int num_samples,
              double max_distance,
-             double extinction_prob, int min_depth, int max_depth):
+             double extinction_prob, int min_depth, int max_depth,
+             bint importance_sampling, double important_path_weight):
 
     cdef Ray ray
 
@@ -78,6 +77,8 @@ cdef inline Ray new_ray(Point3D origin, Vector3D direction,
     ray._num_samples = num_samples
     ray._min_wavelength = min_wavelength
     ray._max_wavelength = max_wavelength
+    ray.importance_sampling = importance_sampling
+    ray._important_path_weight = important_path_weight
 
     ray._extinction_prob = extinction_prob
     ray._min_depth = min_depth

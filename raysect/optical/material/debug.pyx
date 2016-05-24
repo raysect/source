@@ -33,14 +33,8 @@
 This module contains materials to aid with debugging.
 """
 
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.normal cimport Normal3D
-from raysect.optical.spectrum cimport Spectrum
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.scenegraph.world cimport World
-from raysect.optical.ray cimport Ray
-from raysect.optical.colour import d65_white
+from raysect.optical import d65_white
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Spectrum, World, Primitive, Ray
 
 
 cdef class Light(NullVolume):
@@ -59,6 +53,7 @@ cdef class Light(NullVolume):
 
     def __init__(self, Vector3D light_direction, double intensity=1.0, SpectralFunction spectrum=None):
 
+        super().__init__()
         self.light_direction = light_direction.normalise()
         self.intensity = max(0, intensity)
 
@@ -69,12 +64,12 @@ cdef class Light(NullVolume):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef Spectrum spectrum
 
         spectrum = ray.new_spectrum()
         if self.intensity != 0.0:
-            diffuse_intensity = self.intensity * max(0, -self.light_direction.transform(to_local).dot(normal))
+            diffuse_intensity = self.intensity * max(0, -self.light_direction.transform(world_to_primitive).dot(normal))
             spectrum.samples[:] = diffuse_intensity * self.spectrum.sample_multiple(ray.min_wavelength, ray.max_wavelength, ray.num_samples)
         return spectrum

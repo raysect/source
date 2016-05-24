@@ -29,13 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport cython
-from raysect.core.classes cimport Material, new_intersection
-from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.math.point cimport new_point3d
-from raysect.core.math.normal cimport new_normal3d, Normal3D
-from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core cimport Material, new_intersection, BoundingBox3D, new_point3d, new_normal3d, Normal3D, AffineMatrix3D
 from libc.math cimport sqrt
+cimport cython
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9
@@ -96,7 +92,7 @@ cdef class Sphere(Primitive):
             self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
-            self.notify_root()
+            self.notify_geometry_change()
 
     cpdef Intersection hit(self, Ray ray):
 

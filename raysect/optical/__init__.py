@@ -48,12 +48,21 @@ framework:
  spectral radiance is in W/m^2/str/nm
 """
 
+# core modules that are not superseded by optical modules
+# note the order of the imports matters - core first, then optical so optical can override objects
+from raysect.core.intersection import *
+from raysect.core.constants import *
+from raysect.core.math import *
+from raysect.core.boundingbox import *
+
+# optical modules
 from .ray import *
 from .colour import *
 from .spectrum import *
 from .spectralfunction import *
-from ..core.scenegraph import Node, Observer, Primitive, World
-from ..core.math import *
+from .scenegraph import *
+from .material import *
+
 
 
 

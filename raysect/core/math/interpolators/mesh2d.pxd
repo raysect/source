@@ -32,7 +32,6 @@
 cimport numpy as np
 from raysect.core.boundingbox cimport BoundingBox2D
 from raysect.core.math.function.function2d cimport Function2D
-from raysect.core.math.point cimport Point2D
 from raysect.core.math.spatial.kdtree2d cimport KDTree2DCore
 
 
@@ -45,8 +44,6 @@ cdef class MeshKDTree(KDTree2DCore):
         double alpha, beta, gamma
 
     cdef inline BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)
-
-    cdef bint _hit_leaf(self, np.int32_t id, Point2D point)
 
     cdef inline void _calc_barycentric_coords(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double *alpha, double *beta, double *gamma) nogil
 

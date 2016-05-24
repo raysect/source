@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.classes cimport Ray
+from raysect.core.ray cimport Ray
 from raysect.core.math.point cimport Point3D
 from libc.stdint cimport int32_t
 
@@ -86,25 +86,25 @@ cdef class KDTree3DCore:
 
     cdef int32_t _new_node(self)
 
-    cpdef bint hit(self, Ray ray)
+    cpdef bint trace(self, Ray ray)
 
-    cdef inline bint _hit(self, Ray ray)
+    cdef inline bint _trace(self, Ray ray)
 
-    cdef inline bint _hit_node(self, int32_t id, Ray ray, double min_range, double max_range)
+    cdef inline bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range)
 
-    cdef inline bint _hit_branch(self, int32_t id, Ray ray, double min_range, double max_range)
+    cdef inline bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range)
 
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range)
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range)
 
-    cpdef list contains(self, Point3D point)
+    cpdef list items_containing(self, Point3D point)
 
-    cdef inline list _contains(self, Point3D point)
+    cdef inline list _items_containing(self, Point3D point)
 
-    cdef inline list _contains_node(self, int32_t id, Point3D point)
+    cdef inline list _items_containing_node(self, int32_t id, Point3D point)
 
-    cdef inline list _contains_branch(self, int32_t id, Point3D point)
+    cdef inline list _items_containing_branch(self, int32_t id, Point3D point)
 
-    cdef list _contains_leaf(self, int32_t id, Point3D point)
+    cdef list _items_containing_leaf(self, int32_t id, Point3D point)
 
     cdef void _reset(self)
 
@@ -115,10 +115,10 @@ cdef class KDTree3DCore:
 
 cdef class KDTree3D(KDTree3DCore):
 
-    cdef bint _hit_leaf(self, int32_t id, Ray ray, double max_range)
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range)
 
-    cpdef bint _hit_items(self, list items, Ray ray, double max_range)
+    cpdef bint _trace_items(self, list items, Ray ray, double max_range)
 
-    cdef list _contains_leaf(self, int32_t id, Point3D point)
+    cdef list _items_containing_leaf(self, int32_t id, Point3D point)
 
-    cpdef list _contains_items(self, list items, Point3D point)
+    cpdef list _items_containing_items(self, list items, Point3D point)

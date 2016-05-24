@@ -29,12 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.normal cimport new_normal3d
-from raysect.core.math.point cimport new_point3d
-from raysect.core.math.vector cimport new_vector3d
-from raysect.core.classes cimport Material, new_intersection
-from raysect.core.boundingbox cimport BoundingBox3D
+from raysect.core cimport AffineMatrix3D, new_normal3d, new_point3d, new_vector3d, Material, new_intersection, BoundingBox3D
 from libc.math cimport sqrt, fabs
 cimport cython
 
@@ -120,7 +115,7 @@ cdef class Cylinder(Primitive):
             self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
-            self.notify_root()
+            self.notify_geometry_change()
 
     property height:
 
@@ -140,7 +135,7 @@ cdef class Cylinder(Primitive):
             self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
-            self.notify_root()
+            self.notify_geometry_change()
 
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):

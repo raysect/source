@@ -32,11 +32,7 @@
 # TODO: add more advanced material handling
 # TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
 
-from raysect.core.classes cimport Material, new_ray, new_intersection
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.scenegraph._nodebase cimport _NodeBase
+from raysect.core cimport _NodeBase, ChangeSignal, Material, new_ray, new_intersection, Point3D, AffineMatrix3D, BoundingBox3D
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9
@@ -174,12 +170,12 @@ cdef class CSGPrimitive(Primitive):
 
                     # convert local intersection attributes to csg primitive coordinate space
                     intersection.ray = ray
-                    intersection.hit_point = intersection.hit_point.transform(intersection.to_world)
-                    intersection.inside_point = intersection.inside_point.transform(intersection.to_world)
-                    intersection.outside_point = intersection.outside_point.transform(intersection.to_world)
-                    intersection.normal = intersection.normal.transform(intersection.to_world)
-                    intersection.to_local = self.to_local()
-                    intersection.to_world = self.to_root()
+                    intersection.hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
+                    intersection.inside_point = intersection.inside_point.transform(intersection.primitive_to_world)
+                    intersection.outside_point = intersection.outside_point.transform(intersection.primitive_to_world)
+                    intersection.normal = intersection.normal.transform(intersection.primitive_to_world)
+                    intersection.world_to_primitive = self.to_local()
+                    intersection.primitive_to_world = self.to_root()
                     intersection.primitive = self
 
                     return intersection
@@ -250,7 +246,7 @@ cdef class CSGRoot(Node):
         super().__init__()
         self.csg_primitive = csg_primitive
 
-    def _change(self, _NodeBase node):
+    def _change(self, _NodeBase node, ChangeSignal change not None):
         """
         Handles a scenegraph node change handler.
 
@@ -261,8 +257,8 @@ cdef class CSGRoot(Node):
         # the CSG primitive acceleration structures must be rebuilt
         self.csg_primitive.rebuild()
 
-        # propagate geometry change notification from csg scenegraph to enclosing scenegraph
-        self.csg_primitive.notify_root()
+        # propagate change notifications from csg scenegraph to enclosing scenegraph
+        self.csg_primitive.root._change(node, change)
 
 
 cdef class Union(CSGPrimitive):
@@ -319,6 +315,7 @@ cdef class Union(CSGPrimitive):
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
+
 
 cdef class Intersect(CSGPrimitive):
 
@@ -422,8 +419,8 @@ cdef class Subtract(CSGPrimitive):
                 outside_point=closest.inside_point,
                 normal=closest.normal.neg(),
                 exiting=not closest.exiting,
-                to_local=closest.to_local,
-                to_world=closest.to_world
+                world_to_primitive=closest.world_to_primitive,
+                primitive_to_world=closest.primitive_to_world
             )
 
         return closest

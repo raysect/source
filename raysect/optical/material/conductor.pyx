@@ -33,15 +33,7 @@ cimport cython
 from numpy import array
 from numpy cimport ndarray
 from libc.math cimport fabs
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D, new_vector3d
-from raysect.core.math.normal cimport Normal3D
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.scenegraph.world cimport World
-from raysect.optical.spectralfunction cimport InterpolatedSF
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.ray cimport Ray
+from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, InterpolatedSF, Spectrum, Ray
 
 
 cdef class Conductor(Material):
@@ -61,6 +53,7 @@ cdef class Conductor(Material):
 
     def __init__(self, SpectralFunction index, SpectralFunction extinction):
 
+        super().__init__()
         self.index = index
         self.extinction = extinction
 
@@ -68,7 +61,7 @@ cdef class Conductor(Material):
     @cython.wraparound(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Vector3D incident, reflected
@@ -80,7 +73,7 @@ cdef class Conductor(Material):
             int i
 
         # convert ray direction normal to local coordinates
-        incident = ray.direction.transform(to_local)
+        incident = ray.direction.transform(world_to_primitive)
 
         # ensure vectors are normalised for reflection calculation
         incident = incident.normalise()
@@ -100,7 +93,7 @@ cdef class Conductor(Material):
                                  incident.z - temp * normal.z)
 
         # convert reflected ray direction to world space
-        reflected = reflected.transform(to_world)
+        reflected = reflected.transform(primitive_to_world)
 
         # spawn reflected ray and trace
         # note, we do not use the supplied exiting parameter as the normal is
@@ -108,12 +101,12 @@ cdef class Conductor(Material):
         if ci > 0.0:
 
             # incident ray is pointing out of surface, reflection is therefore inside
-            reflected_ray = ray.spawn_daughter(inside_point.transform(to_world), reflected)
+            reflected_ray = ray.spawn_daughter(inside_point.transform(primitive_to_world), reflected)
 
         else:
 
             # incident ray is pointing in to surface, reflection is therefore outside
-            reflected_ray = ray.spawn_daughter(outside_point.transform(to_world), reflected)
+            reflected_ray = ray.spawn_daughter(outside_point.transform(primitive_to_world), reflected)
 
         spectrum = reflected_ray.trace(world)
 
@@ -145,7 +138,7 @@ cdef class Conductor(Material):
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # do nothing!
         # TODO: make it solid - return black or calculate attenuation from extinction?

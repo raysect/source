@@ -29,35 +29,45 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Material as CoreMaterial
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.normal cimport Normal3D
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.scenegraph.world cimport World
-from raysect.optical.ray cimport Ray
-from raysect.optical.spectrum cimport Spectrum
+from raysect.core.material cimport Material as CoreMaterial
+from raysect.optical cimport Point3D, Vector3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
+
 
 cdef class Material(CoreMaterial):
 
+    cdef double _importance
+
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world)
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D to_local, AffineMatrix3D to_world)
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
 
 cdef class NullSurface(Material):
-
     pass
 
 
 cdef class NullVolume(Material):
-
     pass
 
 
+cdef class DiscreteBSDF(Material):
+
+    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming,
+                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
+
+
+cdef class ContinuousBSDF(Material):
+
+    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing, bint back_face)
+
+    cpdef Vector3D sample(self, Vector3D incoming, bint back_face)
+
+    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D incoming, Vector3D outgoing,
+                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
 

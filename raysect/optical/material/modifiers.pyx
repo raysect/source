@@ -29,17 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.material cimport Material
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.scenegraph.world cimport World
-from raysect.optical.ray cimport Ray
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D
-from raysect.optical.spectrum cimport Spectrum
-from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.random cimport vector_hemisphere_cosine
-from raysect.core.math.cython cimport transform
+from raysect.optical cimport Point3D, Vector3D, Normal3D, new_normal3d, AffineMatrix3D, new_affinematrix3d, Primitive, World, Ray, Spectrum
+from raysect.optical.material cimport Material
 
 # sets the maximum number of attempts to find a valid perturbed normal
 # it is highly unlikely (REALLY!) this number will ever be reached, it is just there for my paranoia
@@ -75,6 +67,8 @@ cdef class Roughen(Material):
 
     def __init__(self, Material material not None, double roughness):
 
+        super().__init__()
+
         if roughness < 0 or roughness > 1.0:
             raise ValueError("Roughness must be a floating point value in the range [0, 1] where 1 is full roughness.")
 
@@ -83,26 +77,20 @@ cdef class Roughen(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_local, AffineMatrix3D local_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Ray reflected
-            Vector3D l_normal, l_tangent
             Vector3D s_incident, s_random
             Normal3D s_normal
-            AffineMatrix3D surface_to_local
+            AffineMatrix3D surface_to_primitive
             int attempt
 
-        # generate an orthogonal basis about surface normal
-        l_normal = normal.as_vector()
-        l_tangent = normal.orthogonal()
-
-        # generate inverse surface transform matrix
-        surface_to_local = transform.surface_to_local(l_normal, l_tangent)
-        local_to_surface = transform.local_to_surface(l_normal, l_tangent)
+        # generate surface transforms
+        primitive_to_surface, surface_to_primitive = self._generate_surface_transforms(normal)
 
         # convert ray direction to surface space
-        s_incident = ray.direction.transform(world_to_local).transform(local_to_surface)
+        s_incident = ray.direction.transform(world_to_primitive).transform(primitive_to_surface)
 
         # attempt to find a valid (intersectable by ray) surface perturbation
         s_normal = new_normal3d(0, 0, 1)
@@ -123,11 +111,11 @@ cdef class Roughen(Material):
             if (s_incident.z * s_incident.dot(s_normal)) > 0:
 
                 # we have found a valid perturbation, re-assign normal
-                normal = s_normal.transform(surface_to_local).normalise()
+                normal = s_normal.transform(surface_to_primitive).normalise()
                 break
 
         return self.material.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point,
-                                              normal, world_to_local, local_to_world)
+                                              normal, world_to_primitive, primitive_to_world)
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
@@ -136,6 +124,33 @@ cdef class Roughen(Material):
 
         return self.material.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
 
+    cdef inline tuple _generate_surface_transforms(self, Normal3D normal):
+        """
+        Calculates and populates the surface space transform attributes.
+        """
+
+        cdef:
+            Vector3D tangent, bitangent
+            AffineMatrix3D primitive_to_surface, surface_to_primitive
+
+        tangent = normal.orthogonal()
+        bitangent = normal.cross(tangent)
+
+        primitive_to_surface = new_affinematrix3d(
+            tangent.x, tangent.y, tangent.z, 0.0,
+            bitangent.x, bitangent.y, bitangent.z, 0.0,
+            normal.x, normal.y, normal.z, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        )
+
+        surface_to_primitive = new_affinematrix3d(
+            tangent.x, bitangent.x, normal.x, 0.0,
+            tangent.y, bitangent.y, normal.y, 0.0,
+            tangent.z, bitangent.z, normal.z, 0.0,
+            0.0, 0.0, 0.0, 1.0
+        )
+
+        return primitive_to_surface, surface_to_primitive
 
 
 

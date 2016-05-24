@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.material cimport NullVolume
-from raysect.optical.spectralfunction cimport SpectralFunction
-
-cdef class Lambert(NullVolume):
-
-    cdef SpectralFunction reflectivity
+from raysect.core.math.point cimport Point3D, Point2D, new_point3d, new_point2d
+from raysect.core.math.vector cimport Vector3D, new_vector3d
+from raysect.core.math.normal cimport Normal3D, new_normal3d
+from raysect.core.math.affinematrix cimport AffineMatrix3D, new_affinematrix3d
+from raysect.core.math.transform cimport translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis
+from raysect.core.math.units cimport *

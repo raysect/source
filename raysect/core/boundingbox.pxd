@@ -29,13 +29,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.point cimport Point3D, Point2D
-from raysect.core.classes cimport Ray
+from raysect.core.math cimport Point3D, Point2D
+from raysect.core.ray cimport Ray
 
 cdef class BoundingBox3D:
 
     cdef Point3D lower
     cdef Point3D upper
+
+    cdef inline Point3D get_centre(self)
 
     cpdef bint hit(self, Ray ray)
 
@@ -64,6 +66,8 @@ cdef class BoundingBox3D:
     cpdef double largest_extent(self)
 
     cpdef object pad(self, double padding)
+
+    cpdef double enclosing_sphere(self)
 
 
 cdef inline BoundingBox3D new_boundingbox3d(Point3D lower, Point3D upper):
