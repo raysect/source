@@ -29,13 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math cimport Point3D, Vector3D, AffineMatrix3D
 from raysect.core.math.random cimport vector_hemisphere_cosine
+from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF
 from raysect.optical.material cimport ContinuousBSDF
-from raysect.optical.scenegraph cimport Primitive, World
-from raysect.optical.ray cimport Ray
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from numpy cimport ndarray
 from libc.math cimport M_1_PI, fabs
 cimport cython

@@ -30,10 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.material cimport Material as CoreMaterial
-from raysect.core.math cimport Point3D, Vector3D, Normal3D, AffineMatrix3D
-from raysect.optical.scenegraph cimport Primitive, World
-from raysect.optical.ray cimport Ray
-from raysect.optical.spectrum cimport Spectrum
+from raysect.optical cimport Point3D, Vector3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
 
 
 cdef class Material(CoreMaterial):

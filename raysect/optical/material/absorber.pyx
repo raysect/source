@@ -31,10 +31,7 @@
 
 cimport cython
 
-from raysect.core cimport Point3D, Normal3D, AffineMatrix3D
-from raysect.optical.scenegraph cimport Primitive, World
-from raysect.optical.ray cimport Ray
-from raysect.optical.spectrum cimport Spectrum
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
 
 
 cdef class AbsorbingSurface(NullVolume):

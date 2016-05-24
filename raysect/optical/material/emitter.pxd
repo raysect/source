@@ -29,12 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.optical cimport World, Primitive, Ray, Spectrum, SpectralFunction, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.material cimport NullSurface, NullVolume
-from raysect.optical.scenegraph cimport World, Primitive
-from raysect.optical.ray cimport Ray
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.core cimport Point3D, Vector3D, AffineMatrix3D
 
 
 cdef class UniformSurfaceEmitter(NullVolume):

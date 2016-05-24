@@ -29,11 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.material cimport *
-from raysect.optical.material.emitter cimport *
-from raysect.optical.material.absorber cimport *
-from raysect.optical.material.dielectric cimport *
-from raysect.optical.material.conductor cimport *
-from raysect.optical.material.debug cimport *
-
-
+from raysect.optical.material.material cimport Material, NullSurface, NullVolume, DiscreteBSDF, ContinuousBSDF
+from raysect.optical.material.emitter cimport UniformSurfaceEmitter, VolumeEmitterHomogeneous, VolumeEmitterInhomogeneous, UniformVolumeEmitter, Checkerboard
+from raysect.optical.material.absorber cimport AbsorbingSurface
+from raysect.optical.material.dielectric cimport Dielectric, Sellmeier
+from raysect.optical.material.conductor cimport Conductor

@@ -27,6 +27,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# core modules that are not superseded by optical modules
+# note the order of the imports matters - core first, then optical so optical can override objects
+from raysect.core.intersection cimport *
+from raysect.core.boundingbox cimport *
+from raysect.core.math cimport *
+
 # optical modules
 from raysect.optical.ray cimport *
 from raysect.optical.colour cimport *
@@ -34,9 +40,6 @@ from raysect.optical.spectrum cimport *
 from raysect.optical.spectralfunction cimport *
 from raysect.optical.scenegraph cimport *
 
-# core modules that are not superseded by optical modules
-from raysect.core.intersection cimport *
-from raysect.core.boundingbox cimport *
-from raysect.core.math cimport *
+
 
 

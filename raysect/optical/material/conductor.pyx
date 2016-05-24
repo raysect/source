@@ -33,11 +33,7 @@ cimport cython
 from numpy import array
 from numpy cimport ndarray
 from libc.math cimport fabs
-from raysect.core cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D
-from raysect.optical.scenegraph cimport World, Primitive
-from raysect.optical.spectralfunction cimport InterpolatedSF
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.ray cimport Ray
+from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, InterpolatedSF, Spectrum, Ray
 
 
 cdef class Conductor(Material):

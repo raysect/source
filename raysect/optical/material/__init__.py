@@ -27,13 +27,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .material import *
-from .emitter import *
-from .absorber import *
-from .lambert import *
-from .dielectric import *
-from .conductor import *
-from .modifiers import *
-from .debug import *
+from .material import Material, NullSurface, NullVolume, ContinuousBSDF
+from .emitter import UniformSurfaceEmitter, UniformVolumeEmitter, VolumeEmitterHomogeneous, VolumeEmitterInhomogeneous, Checkerboard
+from .absorber import AbsorbingSurface
+from .lambert import Lambert
+from .dielectric import Dielectric, Sellmeier
+from .conductor import Conductor, Gold, Silver, Copper, Titanium, Aluminium, Beryllium
+from .modifiers import Roughen
 
 

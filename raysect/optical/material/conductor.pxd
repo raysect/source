@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.spectralfunction cimport SpectralFunction
+from raysect.optical cimport SpectralFunction
 from raysect.optical.material cimport Material
 
 
