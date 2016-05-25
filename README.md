@@ -11,8 +11,15 @@ The aims of the Raysect project are as follows:
 
 The general development philosophy is ease of use trumps performance, but performance is not to be ignored.
 
-Please note, this code is currently alpha quality and subject to significant change.
+Please note, this code is currently under heavy development and subject to change.
 
 Raysect currently only supports Linux. Windows support will come at a later stage.
 
 Please note, for legal reasons we require the copyright to any contributed code to be passed to the Raysect project.
+
+The Raysect Development Team:
+-----------------------------
+
+* Dr Alex Meakins
+* Dr Matthew Carr
+
