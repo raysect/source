@@ -32,7 +32,7 @@ from .emitter import UniformSurfaceEmitter, UniformVolumeEmitter, VolumeEmitterH
 from .absorber import AbsorbingSurface
 from .lambert import Lambert
 from .dielectric import Dielectric, Sellmeier
-from .conductor import Conductor, Gold, Silver, Copper, Titanium, Aluminium, Beryllium
+from .conductor import Conductor
 from .modifiers import Roughen
 
 

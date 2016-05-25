@@ -1,2 +1,3 @@
-from .dielectric import schott
+from .glass import schott
+from .metal import *
 

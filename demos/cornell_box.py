@@ -1,8 +1,7 @@
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
 from raysect.optical.observer import PinholeCamera
-from raysect.optical.material.emitter import UniformSurfaceEmitter
-from raysect.optical.material import Lambert, Titanium
-from raysect.optical.library import schott
+from raysect.optical.material import Lambert, UniformSurfaceEmitter
+from raysect.optical.library import schott, Titanium
 from raysect.primitive import Sphere, Box
 from matplotlib.pyplot import *
 from numpy import array
@@ -92,6 +91,11 @@ light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
             parent=enclosure,
             transform=translate(0, 1, 0) * rotate(0, 90, 0),
             material=UniformSurfaceEmitter(light_spectrum, 2))
+
+# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+#             parent=enclosure,
+#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
+#             material=UniformSurfaceEmitter(d65_white, 2))
 
 # back_light = Sphere(0.1,
 #     parent=enclosure,
