@@ -33,9 +33,9 @@ from numpy cimport ndarray
 
 cdef class SpectralFunction:
 
-    cpdef double sample_single(self, double min_wavelength, double max_wavelength)
+    cpdef double average(self, double min_wavelength, double max_wavelength)
 
-    cpdef ndarray sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples)
+    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples)
 
 
 cdef class InterpolatedSF(SpectralFunction):

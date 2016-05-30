@@ -61,12 +61,10 @@ cdef class Sellmeier(SpectralFunction):
         self.cached_index = -1
 
     @cython.cdivision(True)
-    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+    cpdef double average(self, double min_wavelength, double max_wavelength):
         """
-        Generates a single sample of the refractive index given by the
-        Sellmeier equation.
+        Returns the average refractive  over the wavelength range.
 
-        The refractive index returned is the average over the wavelength range.
         The number of sub-samples used for the average calculation can be
         configured by modifying the subsamples attribute. If the subsamples
         attribute is set to 1, a single sample is taken from the centre of the
@@ -81,9 +79,7 @@ cdef class Sellmeier(SpectralFunction):
             double index, delta_wavelength, centre_wavelength, reciprocal
             int i
 
-        if self.cached_min_wavelength == min_wavelength and \
-             self.cached_max_wavelength == max_wavelength:
-
+        if self.cached_min_wavelength == min_wavelength and self.cached_max_wavelength == max_wavelength:
             return self.cached_index
 
         # sample the refractive index
@@ -92,7 +88,7 @@ cdef class Sellmeier(SpectralFunction):
         reciprocal =  1.0 / self.subsamples
         for i in range(self.subsamples):
 
-            centre_wavelength = (min_wavelength + (0.5 + i) * delta_wavelength)
+            centre_wavelength = min_wavelength + (0.5 + i) * delta_wavelength
 
             # Sellmeier coefficients are specified for wavelength in micrometers
             index += reciprocal * self._sellmeier(centre_wavelength * 1e-3)
@@ -160,8 +156,8 @@ cdef class Dielectric(Material):
         c1 = -normal.dot(incident)
 
         # sample refractive indices
-        internal_index = self.index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
-        external_index = self.external_index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
+        internal_index = self.index.average(ray.get_min_wavelength(), ray.get_max_wavelength())
+        external_index = self.external_index.average(ray.get_min_wavelength(), ray.get_max_wavelength())
 
         # are we entering or leaving material - calculate refractive change
         # note, we do not use the supplied exiting parameter as the normal is
@@ -308,7 +304,7 @@ cdef class Dielectric(Material):
             int index
 
         length = start_point.vector_to(end_point).get_length()
-        transmission = self.transmission.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        transmission = self.transmission.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
         s_view = spectrum.samples
         t_view = transmission
         for index in range(spectrum.num_samples):

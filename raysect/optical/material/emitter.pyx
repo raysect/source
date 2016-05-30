@@ -63,7 +63,7 @@ cdef class UniformSurfaceEmitter(NullVolume):
             int index
 
         spectrum = ray.new_spectrum()
-        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
 
         # obtain memoryviews
         s_view = spectrum.samples
@@ -283,7 +283,7 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
             double[::1] s_view, e_view
             int index
 
-        emission = self.emission_spectrum.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
 
         # obtain memoryviews
         s_view = spectrum.samples
@@ -350,11 +350,11 @@ cdef class Checkerboard(NullVolume):
         s_view = spectrum.samples
 
         if v:
-            emission = self.emission_spectrum1.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+            emission = self.emission_spectrum1.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
             e_view = emission
             scale = self.scale1
         else:
-            emission = self.emission_spectrum2.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+            emission = self.emission_spectrum2.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
             e_view = emission
             scale = self.scale2
 

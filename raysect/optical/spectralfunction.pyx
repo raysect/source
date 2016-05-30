@@ -43,13 +43,11 @@ cdef class SpectralFunction:
     Spectral function base class.
     """
 
-    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+    cpdef double average(self, double min_wavelength, double max_wavelength):
+        raise NotImplementedError("Virtual method average not implemented.")
 
-        return NotImplemented
-
-    cpdef ndarray sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples):
-
-        return NotImplemented
+    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples):
+        raise NotImplementedError("Virtual method sample not implemented.")
 
 
 cdef class InterpolatedSF(SpectralFunction):
@@ -82,9 +80,9 @@ cdef class InterpolatedSF(SpectralFunction):
             raise ValueError("Wavelength and sample arrays must be the same length.")
 
         # sort arrays by increasing wavelength
-        indicies = argsort(self.wavelengths)
-        self.wavelengths = self.wavelengths[indicies]
-        self.samples = self.samples[indicies]
+        indices = argsort(self.wavelengths)
+        self.wavelengths = self.wavelengths[indices]
+        self.samples = self.samples[indices]
 
         # initialise cache with invalid values
         self.cache_samples = None
@@ -93,13 +91,12 @@ cdef class InterpolatedSF(SpectralFunction):
         self.cache_num_samples = -1
 
     def __call__(self, double wavelength):
-
         return interpolate(self.wavelengths, self.samples, wavelength)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+    cpdef double average(self, double min_wavelength, double max_wavelength):
 
         if self.fast_sample:
 
@@ -114,7 +111,7 @@ cdef class InterpolatedSF(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef ndarray sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples):
+    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples):
 
         cdef:
             ndarray samples
@@ -183,11 +180,10 @@ cdef class ConstantSF(SpectralFunction):
         self.cache_max_wavelength = -1
         self.cache_num_samples = -1
 
-    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
-
+    cpdef double average(self, double min_wavelength, double max_wavelength):
         return self.value
 
-    cpdef ndarray sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples):
+    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples):
 
         cdef:
             ndarray samples
