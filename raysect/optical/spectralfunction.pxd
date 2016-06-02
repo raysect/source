@@ -33,9 +33,27 @@ from numpy cimport ndarray
 
 cdef class SpectralFunction:
 
-    cpdef double average(self, double min_wavelength, double max_wavelength)
+    cdef:
+        double _average_cache
+        double _average_cache_min_wvl
+        double _average_cache_max_wvl
 
+        ndarray _sample_cache
+        double _sample_cache_min_wvl
+        double _sample_cache_max_wvl
+        int _sample_cache_num_samp
+
+    cpdef double integrate(self, double min_wavelength, double max_wavelength)
+    cpdef double average(self, double min_wavelength, double max_wavelength)
     cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples)
+
+    cdef inline void _average_cache_init(self)
+    cdef inline double _average_cache_get(self, double min_wavelength, double max_wavelength)
+    cdef inline void _average_cache_set(self, double min_wavelength, double max_wavelength, double average)
+
+    cdef inline void _sample_cache_init(self)
+    cdef inline ndarray _sample_cache_get(self, double min_wavelength, double max_wavelength, int num_samples)
+    cdef inline void _sample_cache_set(self, double min_wavelength, double max_wavelength, int num_samples, ndarray samples)
 
 
 cdef class InterpolatedSF(SpectralFunction):
@@ -43,18 +61,9 @@ cdef class InterpolatedSF(SpectralFunction):
     cdef:
         ndarray wavelengths
         ndarray samples
-        bint fast_sample
         ndarray cache_samples
-        double cache_min_wavelength
-        double cache_max_wavelength
-        double cache_num_samples
 
 
 cdef class ConstantSF(SpectralFunction):
 
-    cdef:
-        readonly double value
-        ndarray cache_samples
-        double cache_min_wavelength
-        double cache_max_wavelength
-        double cache_num_samples
+    cdef readonly double value

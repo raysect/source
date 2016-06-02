@@ -43,11 +43,111 @@ cdef class SpectralFunction:
     Spectral function base class.
     """
 
-    cpdef double average(self, double min_wavelength, double max_wavelength):
+    def __init__(self):
+        self._average_cache_init()
+        self._sample_cache_init()
+
+    cpdef double integrate(self, double min_wavelength, double max_wavelength):
         raise NotImplementedError("Virtual method average not implemented.")
 
+    @cython.cdivision(True)
+    cpdef double average(self, double min_wavelength, double max_wavelength):
+
+        # is a cached average already available?
+        average = self._average_cache_get(min_wavelength, max_wavelength)
+        if average is not None:
+            return average
+
+        average = self.integrate(min_wavelength, max_wavelength) / (max_wavelength - min_wavelength)
+
+        # update cache
+        self._average_cache_set(min_wavelength, max_wavelength, average)
+
+        return average
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples):
-        raise NotImplementedError("Virtual method sample not implemented.")
+
+        cdef:
+            ndarray samples
+            double[::1] s_view
+            npy_intp size, index
+            double lower, upper, delta, reciprocal
+
+        # are cached samples already available?
+        samples = self._sample_cache_get()
+        if samples is not None:
+            return samples
+
+        # create new sample ndarray and obtain a memoryview for fast access
+        size = num_samples
+        samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
+        PyArray_FILLWBYTE(samples, 0)
+        s_view = samples
+
+        # re-sample by averaging data across each bin
+        delta = (max_wavelength - min_wavelength) / num_samples
+        lower = min_wavelength
+        reciprocal = 1.0 / delta
+        for index in range(num_samples):
+            upper = min_wavelength + (index + 1) * delta
+            s_view[index] = reciprocal * self.integrate(lower, upper)
+            lower = upper
+
+        # update cache
+        self._sample_cache_set(min_wavelength, max_wavelength, num_samples, samples)
+
+        return samples
+
+    cdef inline void _average_cache_init(self):
+
+        # initialise cache with invalid values
+        self._average_cache = None
+        self._average_cache_min_wvl = -1
+        self._average_cache_max_wvl = -1
+
+    cdef inline double _average_cache_get(self, double min_wavelength, double max_wavelength):
+
+        if self._average_cache_min_wvl == min_wavelength and self._average_cache_max_wvl == max_wavelength:
+            return self._average_cache
+        return None
+
+    cdef inline void _average_cache_set(self, double min_wavelength, double max_wavelength, double average):
+
+        self._average_cache = average
+        self._average_cache_min_wvl = min_wavelength
+        self._average_cache_max_wvl = max_wavelength
+
+    cdef inline void _sample_cache_init(self):
+
+        # initialise cache with invalid values
+        self._sample_cache = None
+        self._sample_cache_min_wvl = -1
+        self._sample_cache_max_wvl = -1
+        self._sample_cache_num_samp = -1
+
+    cdef inline ndarray _sample_cache_get(self, double min_wavelength, double max_wavelength, int num_samples):
+
+        if self._sample_cache_min_wvl == min_wavelength and \
+           self._sample_cache_max_wvl == max_wavelength and \
+           self._sample_cache_num_samp == num_samples:
+            return self._sample_cache
+        return None
+
+    cdef inline void _sample_cache_set(self, double min_wavelength, double max_wavelength, int num_samples, ndarray samples):
+
+        self._sample_cache = samples
+        self._sample_cache_min_wvl = min_wavelength
+        self._sample_cache_max_wvl = max_wavelength
+        self._sample_cache_num_samp = num_samples
+
+
+cdef class NumericallyIntegratedSF(SpectralFunction):
+
+    # TODO: provide implementation of integrate that numerically integrates function
+    pass
 
 
 cdef class InterpolatedSF(SpectralFunction):
@@ -59,7 +159,7 @@ cdef class InterpolatedSF(SpectralFunction):
     ends are extrapolated. must set ends to zero if you want function to end!
     """
 
-    def __init__(self, object wavelengths, object samples, fast_sample=False):
+    def __init__(self, object wavelengths, object samples):
         """
         wavelengths and samples will be sorted during initialisation.
 
@@ -67,16 +167,15 @@ cdef class InterpolatedSF(SpectralFunction):
         :param samples: 1D array of spectral samples.
         """
 
+        super().__init__()
+
         self.wavelengths = array(wavelengths, dtype=float64)
         self.samples = array(samples, dtype=float64)
-        self.fast_sample = fast_sample
 
         if self.wavelengths.ndim != 1:
-
             raise ValueError("Wavelength array must be 1D.")
 
         if self.samples.shape[0] != self.wavelengths.shape[0]:
-
             raise ValueError("Wavelength and sample arrays must be the same length.")
 
         # sort arrays by increasing wavelength
@@ -84,85 +183,12 @@ cdef class InterpolatedSF(SpectralFunction):
         self.wavelengths = self.wavelengths[indices]
         self.samples = self.samples[indices]
 
-        # initialise cache with invalid values
-        self.cache_samples = None
-        self.cache_min_wavelength = -1
-        self.cache_max_wavelength = -1
-        self.cache_num_samples = -1
+    cpdef double integrate(self, double min_wavelength, double max_wavelength):
+        return integrate(self.wavelengths, self.samples, min_wavelength, max_wavelength)
 
     def __call__(self, double wavelength):
         return interpolate(self.wavelengths, self.samples, wavelength)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cpdef double average(self, double min_wavelength, double max_wavelength):
-
-        if self.fast_sample:
-
-            # sample data at bin centre by linearly interpolating
-            return interpolate(self.wavelengths, self.samples, 0.5 * (min_wavelength + max_wavelength))
-
-        else:
-
-            # average value obtained by integrating linearly interpolated data and normalising
-            return integrate(self.wavelengths, self.samples, min_wavelength, max_wavelength) / (max_wavelength - min_wavelength)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples):
-
-        cdef:
-            ndarray samples
-            double[::1] s_view
-            npy_intp size, index
-            double lower_wavelength, upper_wavelength, delta_wavelength, reciprocal
-
-        # is cached data available to return?
-        if self.cache_samples is not None and \
-            self.cache_min_wavelength == min_wavelength and \
-            self.cache_max_wavelength == max_wavelength and \
-            self.cache_num_samples == num_samples:
-
-            return self.cache_samples
-
-        # create new sample ndarray and obtain a memoryview for fast access
-        size = num_samples
-        samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-        PyArray_FILLWBYTE(samples, 0)
-        s_view = samples
-
-        delta_wavelength = (max_wavelength - min_wavelength) / num_samples
-        if self.fast_sample:
-
-            # sample data at bin centre by linearly interpolating
-            for index in range(num_samples):
-
-                centre_wavelength = min_wavelength + (0.5 + index) * delta_wavelength
-                s_view[index] = interpolate(self.wavelengths, self.samples, centre_wavelength)
-
-        else:
-
-            # re-sample by averaging data across each bin
-            lower_wavelength = min_wavelength
-            reciprocal = 1.0 / delta_wavelength
-            for index in range(num_samples):
-
-                upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
-
-                # average value obtained by integrating linearly interpolated data and normalising
-                s_view[index] = reciprocal * integrate(self.wavelengths, self.samples, lower_wavelength, upper_wavelength)
-
-                lower_wavelength = upper_wavelength
-
-        # update cache
-        self.cache_samples = samples
-        self.cache_min_wavelength = min_wavelength
-        self.cache_max_wavelength = max_wavelength
-        self.cache_num_samples = num_samples
-
-        return samples
 
 
 cdef class ConstantSF(SpectralFunction):
@@ -172,13 +198,11 @@ cdef class ConstantSF(SpectralFunction):
 
     def __init__(self, double value):
 
+        super().__init__()
         self.value = value
 
-        # initialise cache with invalid values
-        self.cache_samples = None
-        self.cache_min_wavelength = -1
-        self.cache_max_wavelength = -1
-        self.cache_num_samples = -1
+    cpdef double integrate(self, double min_wavelength, double max_wavelength):
+        return self.value * (max_wavelength - min_wavelength)
 
     cpdef double average(self, double min_wavelength, double max_wavelength):
         return self.value
@@ -190,13 +214,10 @@ cdef class ConstantSF(SpectralFunction):
             npy_intp size
             double[::1] s_view
 
-        # is cached data available to return?
-        if self.cache_samples is not None and \
-            self.cache_min_wavelength == min_wavelength and \
-            self.cache_max_wavelength == max_wavelength and \
-            self.cache_num_samples == num_samples:
-
-            return self.cache_samples
+        # are cached samples already available?
+        samples = self._sample_cache_get()
+        if samples is not None:
+            return samples
 
         # create new sample ndarray and obtain a memoryview for fast access
         size = num_samples
@@ -208,9 +229,6 @@ cdef class ConstantSF(SpectralFunction):
         s_view[:] = self.value
 
         # update cache
-        self.cache_samples = samples
-        self.cache_min_wavelength = min_wavelength
-        self.cache_max_wavelength = max_wavelength
-        self.cache_num_samples = num_samples
+        self._sample_cache_set(min_wavelength, max_wavelength, num_samples, samples)
 
         return samples
