@@ -30,18 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical cimport NumericallyIntegratedSF
-from numpy cimport ndarray, PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
-from numpy import array, float64, argsort, empty
-from libc.math cimport exp, M_1_PI
+from libc.math cimport exp
 cimport cython
-
-# required by numpy c-api
-import_array()
-
-# from numpy import array, float64
-# from numpy cimport ndarray
-# from raysect.core.math.random cimport probability
-# from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
 
 
 cdef class BlackBody(NumericallyIntegratedSF):
