@@ -29,22 +29,56 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport SpectralFunction, NumericallyIntegratedSF
-from raysect.optical.material cimport Material
+from raysect.optical cimport NumericallyIntegratedSF
+from numpy cimport ndarray, PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
+from numpy import array, float64, argsort, empty
+from libc.math cimport exp, M_1_PI
+cimport cython
 
-cdef class Sellmeier(NumericallyIntegratedSF):
+# required by numpy c-api
+import_array()
 
-    cdef:
-        double b1, b2, b3
-        double c1, c2, c3
+# from numpy import array, float64
+# from numpy cimport ndarray
+# from raysect.core.math.random cimport probability
+# from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
 
 
-cdef class Dielectric(Material):
+cdef class BlackBody(NumericallyIntegratedSF):
 
-    cdef:
-        public SpectralFunction index
-        public SpectralFunction external_index
-        public SpectralFunction transmission
-        public bint transmission_only
+    cdef readonly double temperature, scale
+    cdef double c1, c2
 
-    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil
+    def __init__(self, double temperature, double scale=1.0, double sample_resolution=5):
+
+        super().__init__(sample_resolution)
+
+        if temperature <= 0:
+            raise ValueError("Temperature must be greater than zero.")
+
+        if scale <= 0:
+            raise ValueError("Scale factor must be greater than zero.")
+
+        self.temperature = temperature
+        self.scale = scale
+
+        self.c1 = self.scale * 1.19104295e20
+        self.c2 = 1.43877735e7 / self.temperature
+
+    @cython.cdivision(True)
+    cpdef double function(self, double wavelength):
+
+        # Planck's Law equation (wavelength in nm)
+        return self.c1 / (wavelength**5 * (exp(self.c2 / wavelength) - 1))
+
+
+
+
+
+
+
+
+
+
+
+

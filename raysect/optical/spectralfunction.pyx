@@ -33,6 +33,7 @@ cimport cython
 from raysect.core.math.cython cimport interpolate, integrate
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 from numpy import array, float64, argsort
+from libc.math cimport ceil
 
 # required by numpy c-api
 import_array()
@@ -48,15 +49,14 @@ cdef class SpectralFunction:
         self._sample_cache_init()
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
-        raise NotImplementedError("Virtual method average not implemented.")
+        raise NotImplementedError("Virtual method integrate() not implemented.")
 
     @cython.cdivision(True)
     cpdef double average(self, double min_wavelength, double max_wavelength):
 
         # is a cached average already available?
-        average = self._average_cache_get(min_wavelength, max_wavelength)
-        if average is not None:
-            return average
+        if self._average_cache_valid(min_wavelength, max_wavelength):
+            return self._average_cache_get()
 
         average = self.integrate(min_wavelength, max_wavelength) / (max_wavelength - min_wavelength)
 
@@ -64,6 +64,28 @@ cdef class SpectralFunction:
         self._average_cache_set(min_wavelength, max_wavelength, average)
 
         return average
+
+    cdef inline void _average_cache_init(self):
+
+        # initialise cache with invalid values
+        self._average_cache = 0
+        self._average_cache_min_wvl = -1
+        self._average_cache_max_wvl = -1
+
+    cdef inline bint _average_cache_valid(self, double min_wavelength, double max_wavelength):
+        return (
+            self._average_cache_min_wvl == min_wavelength and
+            self._average_cache_max_wvl == max_wavelength
+        )
+
+    cdef inline double _average_cache_get(self):
+        return self._average_cache
+
+    cdef inline void _average_cache_set(self, double min_wavelength, double max_wavelength, double average):
+
+        self._average_cache = average
+        self._average_cache_min_wvl = min_wavelength
+        self._average_cache_max_wvl = max_wavelength
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -77,9 +99,8 @@ cdef class SpectralFunction:
             double lower, upper, delta, reciprocal
 
         # are cached samples already available?
-        samples = self._sample_cache_get()
-        if samples is not None:
-            return samples
+        if self._sample_cache_valid(min_wavelength, max_wavelength, num_samples):
+            return self._sample_cache_get()
 
         # create new sample ndarray and obtain a memoryview for fast access
         size = num_samples
@@ -101,25 +122,6 @@ cdef class SpectralFunction:
 
         return samples
 
-    cdef inline void _average_cache_init(self):
-
-        # initialise cache with invalid values
-        self._average_cache = None
-        self._average_cache_min_wvl = -1
-        self._average_cache_max_wvl = -1
-
-    cdef inline double _average_cache_get(self, double min_wavelength, double max_wavelength):
-
-        if self._average_cache_min_wvl == min_wavelength and self._average_cache_max_wvl == max_wavelength:
-            return self._average_cache
-        return None
-
-    cdef inline void _average_cache_set(self, double min_wavelength, double max_wavelength, double average):
-
-        self._average_cache = average
-        self._average_cache_min_wvl = min_wavelength
-        self._average_cache_max_wvl = max_wavelength
-
     cdef inline void _sample_cache_init(self):
 
         # initialise cache with invalid values
@@ -128,13 +130,16 @@ cdef class SpectralFunction:
         self._sample_cache_max_wvl = -1
         self._sample_cache_num_samp = -1
 
-    cdef inline ndarray _sample_cache_get(self, double min_wavelength, double max_wavelength, int num_samples):
+    cdef inline bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int num_samples):
 
-        if self._sample_cache_min_wvl == min_wavelength and \
-           self._sample_cache_max_wvl == max_wavelength and \
-           self._sample_cache_num_samp == num_samples:
-            return self._sample_cache
-        return None
+        return (
+            self._sample_cache_min_wvl == min_wavelength and
+            self._sample_cache_max_wvl == max_wavelength and
+            self._sample_cache_num_samp == num_samples
+        )
+
+    cdef inline ndarray _sample_cache_get(self):
+        return self._sample_cache
 
     cdef inline void _sample_cache_set(self, double min_wavelength, double max_wavelength, int num_samples, ndarray samples):
 
@@ -146,8 +151,36 @@ cdef class SpectralFunction:
 
 cdef class NumericallyIntegratedSF(SpectralFunction):
 
-    # TODO: provide implementation of integrate that numerically integrates function
-    pass
+    def __init__(self, double sample_resolution=1.0):
+        super().__init__()
+
+        if sample_resolution <= 0:
+            raise ValueError("Sampling resolution must be greater than zero.")
+
+        self.sample_resolution = sample_resolution
+
+    cpdef double integrate(self, double min_wavelength, double max_wavelength):
+
+        cdef:
+            double delta, centre, sum
+            int samples, i
+
+        # calculate number of samples over range
+        samples = <int> ceil((max_wavelength - min_wavelength) / self.sample_resolution)
+        samples = max(samples, 1)
+
+        # sample the function and integrate
+        # TODO: improve this algorithm - e.g. simpsons rule
+        sum = 0.0
+        delta = (max_wavelength - min_wavelength) / samples
+        for i in range(samples):
+            centre = min_wavelength + (0.5 + i) * delta
+            sum += self.function(centre) * delta
+
+        return sum
+
+    cpdef double function(self, double wavelength):
+        raise NotImplementedError("Virtual method function() not implemented.")
 
 
 cdef class InterpolatedSF(SpectralFunction):
@@ -215,9 +248,8 @@ cdef class ConstantSF(SpectralFunction):
             double[::1] s_view
 
         # are cached samples already available?
-        samples = self._sample_cache_get()
-        if samples is not None:
-            return samples
+        if self._sample_cache_valid(min_wavelength, max_wavelength, num_samples):
+            return self._sample_cache_get()
 
         # create new sample ndarray and obtain a memoryview for fast access
         size = num_samples

@@ -36,14 +36,12 @@ from libc.math cimport sqrt, pow as cpow
 from raysect.core.math.random cimport probability
 from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
 
+# TODO: double check these changes with the original code, make sure the results are the same!
+cdef class Sellmeier(NumericallyIntegratedSF):
 
-cdef class Sellmeier(SpectralFunction):
+    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, double sample_resolution=10):
 
-    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, int subsamples=10):
-
-        if subsamples < 1:
-
-            raise ValueError("The number of sub-samples cannot be less than 1.")
+        super().__init__(sample_resolution)
 
         self.b1 = b1
         self.b2 = b2
@@ -53,64 +51,18 @@ cdef class Sellmeier(SpectralFunction):
         self.c2 = c2
         self.c3 = c3
 
-        self.subsamples = subsamples
-
-        # initialise cache to invalid values
-        self.cached_min_wavelength = -1
-        self.cached_max_wavelength = -1
-        self.cached_index = -1
-
     @cython.cdivision(True)
-    cpdef double average(self, double min_wavelength, double max_wavelength):
-        """
-        Returns the average refractive  over the wavelength range.
-
-        The number of sub-samples used for the average calculation can be
-        configured by modifying the subsamples attribute. If the subsamples
-        attribute is set to 1, a single sample is taken from the centre of the
-        wavelength range.
-
-        :param min_wavelength: Minimum wavelength in nm.
-        :param max_wavelength: Maximum wavelength in nm.
-        :return: A refractive index sample.
-        """
-
-        cdef:
-            double index, delta_wavelength, centre_wavelength, reciprocal
-            int i
-
-        if self.cached_min_wavelength == min_wavelength and self.cached_max_wavelength == max_wavelength:
-            return self.cached_index
-
-        # sample the refractive index
-        index = 0.0
-        delta_wavelength = (max_wavelength - min_wavelength) / self.subsamples
-        reciprocal =  1.0 / self.subsamples
-        for i in range(self.subsamples):
-
-            centre_wavelength = min_wavelength + (0.5 + i) * delta_wavelength
-
-            # Sellmeier coefficients are specified for wavelength in micrometers
-            index += reciprocal * self._sellmeier(centre_wavelength * 1e-3)
-
-        # update cache
-        self.cached_min_wavelength = min_wavelength
-        self.cached_max_wavelength = max_wavelength
-        self.cached_index = index
-
-        return index
-
-    @cython.cdivision(True)
-    cdef inline double _sellmeier(self, double wavelength) nogil:
+    cpdef double function(self, double wavelength):
         """
         Returns a sample of the three term Sellmeier equation at the specified
         wavelength.
 
-        :param wavelength: Wavelength in um.
+        :param wavelength: Wavelength in nm.
         :return: Refractive index sample.
         """
 
-        cdef double w2 = wavelength * wavelength
+        # wavelength in Sellmeier eqn. is specified in micrometers
+        cdef double w2 = wavelength * wavelength * 1e-6
         return sqrt(1 + (self.b1 * w2) / (w2 - self.c1)
                       + (self.b2 * w2) / (w2 - self.c2)
                       + (self.b3 * w2) / (w2 - self.c3))
