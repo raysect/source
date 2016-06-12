@@ -83,8 +83,8 @@ cdef class Conductor(Material):
         ci = normal.dot(incident)
 
         # sample refractive index and absorption
-        n = self.index.sample_multiple(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
-        k = self.extinction.sample_multiple(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
+        n = self.index.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
+        k = self.extinction.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
 
         # reflection
         temp = 2 * ci

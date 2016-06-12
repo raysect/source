@@ -161,7 +161,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
+    cpdef double average(self, double min_wavelength, double max_wavelength):
 
         # sanity check
         if self.samples is None:
@@ -186,7 +186,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef ndarray sample_multiple(self, double min_wavelength, double max_wavelength, int num_samples):
+    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples):
 
         cdef:
             ndarray samples

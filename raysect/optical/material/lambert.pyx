@@ -98,7 +98,7 @@ cdef class Lambert(ContinuousBSDF):
         spectrum = reflected.trace(world)
 
         # obtain samples of reflectivity
-        reflectivity = self.reflectivity.sample_multiple(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        reflectivity = self.reflectivity.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
         spectrum.mul_array(reflectivity)
         spectrum.mul_scalar(fabs(s_outgoing.z) * M_1_PI)
         return spectrum
