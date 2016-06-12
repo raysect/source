@@ -31,8 +31,8 @@
 
 cimport cython
 from raysect.core.math.cython cimport interpolate, integrate
-from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 from numpy import array, float64, argsort
+from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 from libc.math cimport ceil
 
 # required by numpy c-api
@@ -41,7 +41,25 @@ import_array()
 
 cdef class SpectralFunction:
     """
-    Spectral function base class.
+    SpectralFunction abstract base class.
+
+    A common interface for representing optical properties that are a function
+    of wavelength. It provides methods for sampling, integrating and averaging
+    a spectral function over specified wavelength ranges. The optical package
+    uses SpectralFunctions to represent a number of different wavelength
+    dependent optical properties, for example emission spectra, refractive
+    indices and attenuation curves.
+
+    Deriving classes must implement the integrate method.
+
+    It is also recommended that subclasses implement __call__(). This should
+    accept a single argument - wavelength - and return a single sample of the
+    function at that wavelength. The units of wavelength are nanometers.
+
+    A number of utility sub-classes exist to simplify SpectralFunction
+    development.
+
+    see also: NumericallyIntegratedSF, InterpolatedSF, ConstantSF, Spectrum
     """
 
     def __init__(self):
@@ -49,10 +67,23 @@ cdef class SpectralFunction:
         self._sample_cache_init()
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
+        """
+
+        :param min_wavelength:
+        :param max_wavelength:
+        :return:
+        """
+
         raise NotImplementedError("Virtual method integrate() not implemented.")
 
     @cython.cdivision(True)
     cpdef double average(self, double min_wavelength, double max_wavelength):
+        """
+
+        :param min_wavelength:
+        :param max_wavelength:
+        :return:
+        """
 
         # is a cached average already available?
         if self._average_cache_valid(min_wavelength, max_wavelength):
@@ -91,6 +122,13 @@ cdef class SpectralFunction:
     @cython.wraparound(False)
     @cython.cdivision(True)
     cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples):
+        """
+
+        :param min_wavelength:
+        :param max_wavelength:
+        :param num_samples:
+        :return:
+        """
 
         cdef:
             ndarray samples
@@ -150,8 +188,22 @@ cdef class SpectralFunction:
 
 
 cdef class NumericallyIntegratedSF(SpectralFunction):
+    """
+    Numerically integrates an supplied spectral function.
+
+    This abstract class provides an implementation of the integrate method that
+    numerically integrates a supplied function (typically a non-integrable
+    analytical function). The function to numerically integrate is supplied by
+    sub-classing this class and implementing the function() method.
+
+    The function is numerically sampled at regular intervals. A sampling
+    resolution may be specified in the class constructor (default: 1 sample/nm).
+
+    :param double sample_resolution: The numerical sampling resolution in nanometers.
+    """
 
     def __init__(self, double sample_resolution=1.0):
+
         super().__init__()
 
         if sample_resolution <= 0:
@@ -160,6 +212,12 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
         self.sample_resolution = sample_resolution
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
+        """
+
+        :param min_wavelength:
+        :param max_wavelength:
+        :return:
+        """
 
         cdef:
             double delta, centre, sum
@@ -171,6 +229,7 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
 
         # sample the function and integrate
         # TODO: improve this algorithm - e.g. simpsons rule
+        # TODO: rewrite this to sample values into array and then pass this to the cython integrate function - then improve that function as it will improve all the code that uses it
         sum = 0.0
         delta = (max_wavelength - min_wavelength) / samples
         for i in range(samples):
@@ -180,7 +239,19 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
         return sum
 
     cpdef double function(self, double wavelength):
+        """
+        Function to numerically integrate.
+
+        This is a virtual method and must be implemented through sub-classing.
+
+        :param double wavelength: Wavelength in nanometers.
+        :return: Function value at the specified wavelength.
+        """
+
         raise NotImplementedError("Virtual method function() not implemented.")
+
+    def __call__(self, double wavelength):
+        return self.function(wavelength)
 
 
 cdef class InterpolatedSF(SpectralFunction):
