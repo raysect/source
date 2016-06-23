@@ -47,10 +47,10 @@ class OrthographicCamera(Imaging):
     attribute.
     """
 
-    def __init__(self, pixels=(512, 512), width=1, sensitivity=1.0, spectral_samples=21, spectral_rays=1,
+    def __init__(self, pixels=(512, 512), width=1, spectral_samples=21, spectral_rays=1,
                  pixel_samples=100, process_count=0, parent=None, transform=None, name=None):
 
-        super().__init__(pixels=pixels, sensitivity=sensitivity, spectral_samples=spectral_samples,
+        super().__init__(pixels=pixels, spectral_samples=spectral_samples,
                          spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
                          parent=parent, transform=transform, name=name)
 

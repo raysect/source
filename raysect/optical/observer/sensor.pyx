@@ -38,10 +38,78 @@ import matplotlib.pyplot as plt
 cimport numpy as np
 from raysect.core.math cimport random
 from raysect.optical.scenegraph cimport Observer, World
-from raysect.optical.colour cimport resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz
+from raysect.optical.colour cimport resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz, ciexyz_to_ciexyy
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
 cimport cython
+
+
+class ExposureHandler:
+
+    def calculate_sensitivity(self, frame):
+        raise NotImplementedError('Virtual method not implemented.')
+
+
+class FixedExposure(ExposureHandler):
+
+    def __init__(self, sensitivity=1.0):
+
+        if sensitivity <= 0:
+            raise ValueError('Sensitivity must be greater than zero.')
+
+        self.sensitivity = sensitivity
+
+    def calculate_sensitivity(self, frame):
+        return self.sensitivity
+
+
+class AutoExposure(ExposureHandler):
+    """
+
+    Method:
+    1. If all black, abort with sensitivity = 1.0
+    2. Sort all pixel luminance values.
+    3. Sensitivity is calculated so that at least the specified fraction of pixels is unsaturated.
+
+    """
+
+    def __init__(self, unsaturated_fraction=1.0):
+
+        if not (0 < unsaturated_fraction <= 1):
+            raise ValueError('Cutoff must lie in range (0, 1].')
+
+        self.unsaturated_fraction = unsaturated_fraction
+
+    def calculate_sensitivity(self, frame):
+
+        nx = frame.shape[1]
+        ny = frame.shape[0]
+
+        f = np.zeros(nx * ny)
+
+        # Calculate luminance values for frame
+        for ix in range(nx):
+            for iy in range(ny):
+
+                xyz = frame[iy, ix, :]
+                xyy = ciexyz_to_ciexyy(xyz[0], xyz[1], xyz[2])
+                f[iy*nx + ix] = xyy[2]
+
+        # Sort by luminance
+        f.sort()
+
+        # If all pixels black, return default sensitivity
+        for i in range(len(f)):
+            if f[i] > 0:
+                break
+
+        if i == len(f):
+            return 1.0
+
+        # Identify luminance at threshold
+        luminance = f[max(0, round(len(f) * self.unsaturated_fraction) - 1)]
+
+        return 1 / luminance
 
 
 cdef class Imaging(Observer):
@@ -98,7 +166,6 @@ cdef class Imaging(Observer):
 
         # camera configuration
         public tuple _pixels
-        public double sensitivity
         public int pixel_samples
         public bint accumulate
         public int accumulated_samples
@@ -107,8 +174,8 @@ cdef class Imaging(Observer):
         public np.ndarray xyz_frame
         public np.ndarray frame
 
-    def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=21, spectral_rays=1, pixel_samples=100,
-                 process_count=0, parent=None, transform=None, name=None):
+    def __init__(self, pixels=(512, 512), spectral_samples=21, spectral_rays=1, pixel_samples=100,
+                 exposure_handler=None, process_count=0, parent=None, transform=None, name=None):
 
         super().__init__(parent, transform, name)
 
@@ -120,6 +187,9 @@ cdef class Imaging(Observer):
 
         if spectral_rays > spectral_samples:
             raise ValueError("Number of rays cannot exceed the number of spectral sample bins.")
+
+        if exposure_handler is None:
+            exposure_handler = AutoExposure(unsaturated_fraction=1.0)
 
         # ray configuration
         self.spectral_rays = spectral_rays
@@ -143,7 +213,7 @@ cdef class Imaging(Observer):
 
         # camera configuration
         self._pixels = pixels
-        self.sensitivity = sensitivity
+        self.exposure_handler = exposure_handler
         self.pixel_samples = pixel_samples
         self.accumulate = False
         self.accumulated_samples = 0
@@ -265,15 +335,12 @@ cdef class Imaging(Observer):
                     self.xyz_frame[iy, ix, 1] += added_weight * xyz[1]
                     self.xyz_frame[iy, ix, 2] += added_weight * xyz[2]
 
-                    xyz = self.xyz_frame[iy, ix, :]
-
-                    # convert to sRGB colour-space
-                    self.rgb_frame[iy, ix, :] = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
-
                     # update users
                     pixel = ix + self._pixels[0] * iy
                     statistics_data = self._update_statistics(statistics_data, channel, pixel, ray_count)
                     display_timer = self._update_display(display_timer)
+
+        self._generate_srgb_frame()
 
         # final update for users
         self._final_statistics(statistics_data)
@@ -335,11 +402,6 @@ cdef class Imaging(Observer):
                 self.xyz_frame[y, x, 1] += added_weight * xyz[1]
                 self.xyz_frame[y, x, 2] += added_weight * xyz[2]
 
-                xyz = self.xyz_frame[y, x, :]
-
-                # convert to sRGB colour-space
-                self.rgb_frame[y, x, :] = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
-
                 # update users
                 display_timer = self._update_display(display_timer)
                 statistics_data = self._update_statistics(statistics_data, channel, pixel, sample_ray_count)
@@ -347,6 +409,8 @@ cdef class Imaging(Observer):
             # shutdown workers
             for _ in workers:
                 task_queue.put(None)
+
+        self._generate_srgb_frame()
 
         # final update for users
         self._final_statistics(statistics_data)
@@ -427,9 +491,6 @@ cdef class Imaging(Observer):
             # accumulate statistics
             ray_count += ray.ray_count
 
-        # apply camera sensitivity
-        spectrum.mul_scalar(self.sensitivity)
-
         return spectrum, ray_count
 
     cpdef list _generate_rays(self, int ix, int iy, Ray ray_template):
@@ -455,6 +516,18 @@ cdef class Imaging(Observer):
 
         raise NotImplementedError("To be defined in subclass.")
 
+    def _generate_srgb_frame(self):
+
+        # calculate sensitivity for frame
+        sensitivity = self.exposure_handler.calculate_sensitivity(self.xyz_frame)
+
+        # Apply sensitivity to each pixel and convert to sRGB colour-space
+        nx, ny = self._pixels
+        for iy in range(ny):
+            for ix in range(nx):
+                xyz = self.xyz_frame[iy, ix, :] * sensitivity
+                self.rgb_frame[iy, ix, :] = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
+
     def _start_display(self):
         """
         Display live render.
@@ -475,6 +548,7 @@ cdef class Imaging(Observer):
         if self.display_progress and (time() - display_timer) > self.display_update_time:
 
             print("Refreshing display...")
+            self._generate_srgb_frame()
             self.display()
             display_timer = time()
 
