@@ -189,7 +189,7 @@ cdef class SpectralFunction:
 
 cdef class NumericallyIntegratedSF(SpectralFunction):
     """
-    Numerically integrates an supplied spectral function.
+    Numerically integrates a supplied function.
 
     This abstract class provides an implementation of the integrate method that
     numerically integrates a supplied function (typically a non-integrable

@@ -31,4 +31,4 @@ from .pinhole import PinholeCamera
 from .ccd import CCD
 from .orthographic import OrthographicCamera
 from .nonimaging import SightLine, FibreOptic
-from .sensor import NonImaging, Imaging, AutoExposure, FixedExposure
+from .sensor import NonImaging, Imaging, AutoExposure, RelativeExposure, AbsoluteExposure

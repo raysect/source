@@ -50,7 +50,7 @@ class ExposureHandler:
         raise NotImplementedError('Virtual method not implemented.')
 
 
-class FixedExposure(ExposureHandler):
+class AbsoluteExposure(ExposureHandler):
 
     def __init__(self, sensitivity=1.0):
 
@@ -61,6 +61,35 @@ class FixedExposure(ExposureHandler):
 
     def calculate_sensitivity(self, frame):
         return self.sensitivity
+
+
+class RelativeExposure(ExposureHandler):
+
+    def __init__(self, peak_fraction=1.0):
+
+        if not (0 < peak_fraction <= 1):
+            raise ValueError('Fraction of peak value must be lie in range (0, 1].')
+
+        self.peak_fraction = peak_fraction
+
+    def calculate_sensitivity(self, frame):
+
+        nx = frame.shape[1]
+        ny = frame.shape[0]
+
+        peak_luminance = 0
+
+        # find peak luminance
+        for ix in range(nx):
+            for iy in range(ny):
+                xyz = frame[iy, ix, :]
+                xyy = ciexyz_to_ciexyy(xyz[0], xyz[1], xyz[2])
+                peak_luminance = max(xyy[2], peak_luminance)
+
+        if peak_luminance == 0:
+            return 1.0
+
+        return 1 / (self.peak_fraction * peak_luminance)
 
 
 class AutoExposure(ExposureHandler):
@@ -76,7 +105,7 @@ class AutoExposure(ExposureHandler):
     def __init__(self, unsaturated_fraction=1.0):
 
         if not (0 < unsaturated_fraction <= 1):
-            raise ValueError('Cutoff must lie in range (0, 1].')
+            raise ValueError('Unsaturated fraction must lie in range (0, 1].')
 
         self.unsaturated_fraction = unsaturated_fraction
 
@@ -189,7 +218,7 @@ cdef class Imaging(Observer):
             raise ValueError("Number of rays cannot exceed the number of spectral sample bins.")
 
         if exposure_handler is None:
-            exposure_handler = AutoExposure(unsaturated_fraction=1.0)
+            exposure_handler = RelativeExposure()
 
         # ray configuration
         self.spectral_rays = spectral_rays
