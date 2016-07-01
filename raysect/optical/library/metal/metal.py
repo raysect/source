@@ -33,7 +33,6 @@ The data used to define the the following metal materials was sourced from http:
 This data is licensed as public domain (CC0 1.0 - https://creativecommons.org/publicdomain/zero/1.0/).
 """
 
-import sys
 from os import path
 import json
 from numpy import array
@@ -41,32 +40,10 @@ from raysect.optical import InterpolatedSF
 from raysect.optical.material import Conductor
 
 
-# a list of classes to dynamically create in the module and the files in which they will find their data
-_MATERIALS = [
-    ('Silver', 'silver'),
-    ('Aluminium', 'aluminium'),
-    ('Gold', 'gold'),
-    ('Beryllium', 'beryllium'),
-    ('Cobolt', 'cobolt'),
-    ('Copper', 'copper'),
-    ('Iron', 'iron'),
-    ('Mercury', 'mercury'),
-    ('Lithium', 'lithium'),
-    ('Magnesium', 'magnesium'),
-    ('Manganese', 'manganese'),
-    ('Sodium', 'sodium'),
-    ('Nickel', 'nickel'),
-    ('Palladium', 'palladium'),
-    ('Platinum', 'platinum'),
-    ('Silicon', 'silicon'),
-    ('Titanium', 'titanium'),
-    ('Tungsten', 'tungsten'),
-]
+class _DataLoader(Conductor):
 
+    def __init__(self, filename):
 
-def init_factory(filename):
-
-    def init(self):
         with open(path.join(path.dirname(__file__), "data", filename + ".json")) as f:
             data = json.load(f)
 
@@ -74,11 +51,112 @@ def init_factory(filename):
         index = InterpolatedSF(wavelength, array(data['index']))
         extinction = InterpolatedSF(wavelength, array(data['extinction']))
 
-        Conductor.__init__(self, index, extinction)
-
-    return init
+        super().__init__(index, extinction)
 
 
-for clsname, filename in _MATERIALS:
-    cls = type(clsname, (Conductor, ), {"__init__": init_factory(filename)})
-    setattr(sys.modules[__name__], clsname, cls)
+class Aluminium(_DataLoader):
+    """Aluminium metal material."""
+    def __init__(self):
+        super().__init__("aluminium")
+
+
+class Beryllium(_DataLoader):
+    """Beryllium metal material."""
+    def __init__(self):
+        super().__init__("beryllium")
+
+
+class Cobolt(_DataLoader):
+    """Cobolt metal material."""
+    def __init__(self):
+        super().__init__("cobolt")
+
+
+class Copper(_DataLoader):
+    """Copper metal material."""
+    def __init__(self):
+        super().__init__("copper")
+
+
+class Gold(_DataLoader):
+    """Gold metal material."""
+    def __init__(self):
+        super().__init__("gold")
+
+
+class Iron(_DataLoader):
+    """Iron metal material."""
+    def __init__(self):
+        super().__init__("iron")
+
+
+class Lithium(_DataLoader):
+    """Lithium metal material."""
+    def __init__(self):
+        super().__init__("lithium")
+
+
+class Magnesium(_DataLoader):
+    """Magnesium metal material."""
+    def __init__(self):
+        super().__init__("magnesium")
+
+
+class Manganese(_DataLoader):
+    """Manganese metal material."""
+    def __init__(self):
+        super().__init__("manganese")
+
+
+class Mercury(_DataLoader):
+    """Mercury metal material."""
+    def __init__(self):
+        super().__init__("mercury")
+
+
+class Nickel(_DataLoader):
+    """Nickel metal material."""
+    def __init__(self):
+        super().__init__("nickel")
+
+
+class Palladium(_DataLoader):
+    """Palladium metal material."""
+    def __init__(self):
+        super().__init__("palladium")
+
+
+class Platinum(_DataLoader):
+    """Platinum metal material."""
+    def __init__(self):
+        super().__init__("platinum")
+
+
+class Silicon(_DataLoader):
+    """Silicon metal material."""
+    def __init__(self):
+        super().__init__("silicon")
+
+
+class Silver(_DataLoader):
+    """Silver metal material."""
+    def __init__(self):
+        super().__init__("silver")
+
+
+class Sodium(_DataLoader):
+    """Sodium metal material."""
+    def __init__(self):
+        super().__init__("sodium")
+
+
+class Titanium(_DataLoader):
+    """Titanium metal material."""
+    def __init__(self):
+        super().__init__("titanium")
+
+
+class Tungsten(_DataLoader):
+    """Tungsten metal material."""
+    def __init__(self):
+        super().__init__("tungsten")
