@@ -138,6 +138,9 @@ class AutoExposure(ExposureHandler):
         # Identify luminance at threshold
         luminance = f[max(0, round(len(f) * self.unsaturated_fraction) - 1)]
 
+        if luminance == 0:
+            return 1.0
+
         return 1 / luminance
 
 
