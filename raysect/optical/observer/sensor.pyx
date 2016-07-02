@@ -38,53 +38,64 @@ import matplotlib.pyplot as plt
 cimport numpy as np
 from raysect.core.math cimport random
 from raysect.optical.scenegraph cimport Observer, World
-from raysect.optical.colour cimport resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz, ciexyz_to_ciexyy
+from raysect.optical.colour cimport resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
 cimport cython
 
 
-class ExposureHandler:
+cdef class ExposureHandler:
 
-    def calculate_sensitivity(self, frame):
+    cpdef double calculate_sensitivity(self, np.ndarray frame):
         raise NotImplementedError('Virtual method not implemented.')
 
 
-class AbsoluteExposure(ExposureHandler):
+cdef class AbsoluteExposure(ExposureHandler):
 
-    def __init__(self, sensitivity=1.0):
+    cdef readonly double sensitivity
+
+    def __init__(self, double sensitivity=1.0):
 
         if sensitivity <= 0:
             raise ValueError('Sensitivity must be greater than zero.')
 
         self.sensitivity = sensitivity
 
-    def calculate_sensitivity(self, frame):
+    cpdef double calculate_sensitivity(self, np.ndarray frame):
         return self.sensitivity
 
 
-class RelativeExposure(ExposureHandler):
+cdef class RelativeExposure(ExposureHandler):
 
-    def __init__(self, peak_fraction=1.0):
+    cdef readonly double peak_fraction
+
+    def __init__(self, double peak_fraction=1.0):
 
         if not (0 < peak_fraction <= 1):
             raise ValueError('Fraction of peak value must be lie in range (0, 1].')
 
         self.peak_fraction = peak_fraction
 
-    def calculate_sensitivity(self, frame):
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef double calculate_sensitivity(self, np.ndarray frame):
+
+        cdef:
+            int nx, ny, ix, iy
+            double peak_luminance
+            double[:,:,::1] fmv
 
         nx = frame.shape[1]
         ny = frame.shape[0]
+        fmv = frame  # memory view
 
         peak_luminance = 0
 
-        # find peak luminance
-        for ix in range(nx):
-            for iy in range(ny):
-                xyz = frame[iy, ix, :]
-                xyy = ciexyz_to_ciexyy(xyz[0], xyz[1], xyz[2])
-                peak_luminance = max(xyy[2], peak_luminance)
+        # find peak luminance (XYZ Y component is luminance)
+        for iy in range(ny):
+             for ix in range(nx):
+                peak_luminance = max(fmv[iy, ix, 1], peak_luminance)
 
         if peak_luminance == 0:
             return 1.0
@@ -92,7 +103,7 @@ class RelativeExposure(ExposureHandler):
         return 1 / (self.peak_fraction * peak_luminance)
 
 
-class AutoExposure(ExposureHandler):
+cdef class AutoExposure(ExposureHandler):
     """
 
     Method:
@@ -102,46 +113,58 @@ class AutoExposure(ExposureHandler):
 
     """
 
-    def __init__(self, unsaturated_fraction=1.0):
+    cdef readonly double unsaturated_fraction
+
+    def __init__(self, double unsaturated_fraction=1.0):
 
         if not (0 < unsaturated_fraction <= 1):
             raise ValueError('Unsaturated fraction must lie in range (0, 1].')
 
         self.unsaturated_fraction = unsaturated_fraction
 
-    def calculate_sensitivity(self, frame):
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef double calculate_sensitivity(self, np.ndarray frame):
+
+        cdef:
+            int nx, ny, pixels, ix, iy, i
+            double peak_luminance
+            np.ndarray luminance
+            double[:,:,::1] fmv
+            double[::1] lmv
 
         nx = frame.shape[1]
         ny = frame.shape[0]
+        fmv = frame  # memory view
 
-        f = np.zeros(nx * ny)
+        pixels = nx * ny
+        luminance = np.zeros(pixels)
+        lmv = luminance  # memory view
 
-        # Calculate luminance values for frame
-        for ix in range(nx):
-            for iy in range(ny):
+        # calculate luminance values for frame (XYZ Y component is luminance)
+        for iy in range(ny):
+            for ix in range(nx):
+                lmv[iy*nx + ix] = fmv[iy, ix, 1]
 
-                xyz = frame[iy, ix, :]
-                xyy = ciexyz_to_ciexyy(xyz[0], xyz[1], xyz[2])
-                f[iy*nx + ix] = xyy[2]
+        # sort by luminance
+        luminance.sort()
 
-        # Sort by luminance
-        f.sort()
-
-        # If all pixels black, return default sensitivity
-        for i in range(len(f)):
-            if f[i] > 0:
+        # if all pixels black, return default sensitivity
+        for i in range(pixels):
+            if lmv[i] > 0:
                 break
 
-        if i == len(f):
+        if i == pixels:
             return 1.0
 
-        # Identify luminance at threshold
-        luminance = f[max(0, round(len(f) * self.unsaturated_fraction) - 1)]
+        # identify luminance at threshold
+        peak_luminance = lmv[<int> min(pixels - 1, pixels * self.unsaturated_fraction)]
 
-        if luminance == 0:
+        if peak_luminance == 0:
             return 1.0
 
-        return 1 / luminance
+        return 1 / peak_luminance
 
 
 cdef class Imaging(Observer):
@@ -548,17 +571,37 @@ cdef class Imaging(Observer):
 
         raise NotImplementedError("To be defined in subclass.")
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def _generate_srgb_frame(self):
+
+        cdef:
+            int nx, ny, ix, iy
+            double sensitivity
+            double[:, :, ::1] xyz_mv, rgb_mv
+            tuple rgb
 
         # calculate sensitivity for frame
         sensitivity = self.exposure_handler.calculate_sensitivity(self.xyz_frame)
+
+        # obtain memory views
+        xyz_mv = self.xyz_frame
+        rgb_mv = self.rgb_frame
 
         # Apply sensitivity to each pixel and convert to sRGB colour-space
         nx, ny = self._pixels
         for iy in range(ny):
             for ix in range(nx):
-                xyz = self.xyz_frame[iy, ix, :] * sensitivity
-                self.rgb_frame[iy, ix, :] = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
+
+                rgb = ciexyz_to_srgb(
+                    xyz_mv[iy, ix, 0] * sensitivity,
+                    xyz_mv[iy, ix, 1] * sensitivity,
+                    xyz_mv[iy, ix, 2] * sensitivity
+                )
+
+                rgb_mv[iy, ix, 0] = rgb[0]
+                rgb_mv[iy, ix, 1] = rgb[1]
+                rgb_mv[iy, ix, 2] = rgb[2]
 
     def _start_display(self):
         """
