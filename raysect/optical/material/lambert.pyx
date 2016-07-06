@@ -75,6 +75,8 @@ cdef class Lambert(ContinuousBSDF):
             return outgoing.neg()
         return outgoing
 
+    # TODO - s_incoming and s_outgoing need inverting. Wrongly labelled.
+
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
                                     Point3D w_inside_point, Point3D w_outside_point, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world): #, bint back_face
