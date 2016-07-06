@@ -44,6 +44,129 @@ from raysect.optical.spectrum cimport Spectrum
 cimport cython
 
 
+cdef class ExposureHandler:
+
+    cpdef double calculate_sensitivity(self, np.ndarray frame):
+        raise NotImplementedError('Virtual method not implemented.')
+
+
+cdef class AbsoluteExposure(ExposureHandler):
+
+    cdef readonly double sensitivity
+
+    def __init__(self, double sensitivity=1.0):
+
+        if sensitivity <= 0:
+            raise ValueError('Sensitivity must be greater than zero.')
+
+        self.sensitivity = sensitivity
+
+    cpdef double calculate_sensitivity(self, np.ndarray frame):
+        return self.sensitivity
+
+
+cdef class RelativeExposure(ExposureHandler):
+
+    cdef readonly double peak_fraction
+
+    def __init__(self, double peak_fraction=1.0):
+
+        if not (0 < peak_fraction <= 1):
+            raise ValueError('Fraction of peak value must be lie in range (0, 1].')
+
+        self.peak_fraction = peak_fraction
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef double calculate_sensitivity(self, np.ndarray frame):
+
+        cdef:
+            int nx, ny, ix, iy
+            double peak_luminance
+            double[:,:,::1] fmv
+
+        nx = frame.shape[1]
+        ny = frame.shape[0]
+        fmv = frame  # memory view
+
+        peak_luminance = 0
+
+        # find peak luminance (XYZ Y component is luminance)
+        for iy in range(ny):
+             for ix in range(nx):
+                peak_luminance = max(fmv[iy, ix, 1], peak_luminance)
+
+        if peak_luminance == 0:
+            return 1.0
+
+        return 1 / (self.peak_fraction * peak_luminance)
+
+
+cdef class AutoExposure(ExposureHandler):
+    """
+
+    Method:
+    1. If all black, abort with sensitivity = 1.0
+    2. Sort all pixel luminance values.
+    3. Sensitivity is calculated so that at least the specified fraction of pixels is unsaturated.
+
+    """
+
+    cdef readonly double unsaturated_fraction
+
+    def __init__(self, double unsaturated_fraction=1.0):
+
+        if not (0 < unsaturated_fraction <= 1):
+            raise ValueError('Unsaturated fraction must lie in range (0, 1].')
+
+        self.unsaturated_fraction = unsaturated_fraction
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef double calculate_sensitivity(self, np.ndarray frame):
+
+        cdef:
+            int nx, ny, pixels, ix, iy, i
+            double peak_luminance
+            np.ndarray luminance
+            double[:,:,::1] fmv
+            double[::1] lmv
+
+        nx = frame.shape[1]
+        ny = frame.shape[0]
+        fmv = frame  # memory view
+
+        pixels = nx * ny
+        luminance = np.zeros(pixels)
+        lmv = luminance  # memory view
+
+        # calculate luminance values for frame (XYZ Y component is luminance)
+        for iy in range(ny):
+            for ix in range(nx):
+                lmv[iy*nx + ix] = fmv[iy, ix, 1]
+
+        # sort by luminance
+        luminance.sort()
+
+        # if all pixels black, return default sensitivity
+        for i in range(pixels):
+            if lmv[i] > 0:
+                break
+
+        if i == pixels:
+            return 1.0
+
+        # identify luminance at threshold
+        peak_luminance = lmv[<int> min(pixels - 1, pixels * self.unsaturated_fraction)]
+
+        if peak_luminance == 0:
+            return 1.0
+
+        return 1 / peak_luminance
+
+
 cdef class Imaging(Observer):
     """
     The abstract base class for imaging observers.
@@ -98,7 +221,6 @@ cdef class Imaging(Observer):
 
         # camera configuration
         public tuple _pixels
-        public double sensitivity
         public int pixel_samples
         public bint accumulate
         public int accumulated_samples
@@ -107,8 +229,8 @@ cdef class Imaging(Observer):
         public np.ndarray xyz_frame
         public np.ndarray frame
 
-    def __init__(self, pixels=(512, 512), sensitivity=1.0, spectral_samples=21, spectral_rays=1, pixel_samples=100,
-                 process_count=0, parent=None, transform=None, name=None):
+    def __init__(self, pixels=(512, 512), spectral_samples=21, spectral_rays=1, pixel_samples=100,
+                 exposure_handler=None, process_count=0, parent=None, transform=None, name=None):
 
         super().__init__(parent, transform, name)
 
@@ -120,6 +242,9 @@ cdef class Imaging(Observer):
 
         if spectral_rays > spectral_samples:
             raise ValueError("Number of rays cannot exceed the number of spectral sample bins.")
+
+        if exposure_handler is None:
+            exposure_handler = RelativeExposure()
 
         # ray configuration
         self.spectral_rays = spectral_rays
@@ -143,7 +268,7 @@ cdef class Imaging(Observer):
 
         # camera configuration
         self._pixels = pixels
-        self.sensitivity = sensitivity
+        self.exposure_handler = exposure_handler
         self.pixel_samples = pixel_samples
         self.accumulate = False
         self.accumulated_samples = 0
@@ -265,15 +390,12 @@ cdef class Imaging(Observer):
                     self.xyz_frame[iy, ix, 1] += added_weight * xyz[1]
                     self.xyz_frame[iy, ix, 2] += added_weight * xyz[2]
 
-                    xyz = self.xyz_frame[iy, ix, :]
-
-                    # convert to sRGB colour-space
-                    self.rgb_frame[iy, ix, :] = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
-
                     # update users
                     pixel = ix + self._pixels[0] * iy
                     statistics_data = self._update_statistics(statistics_data, channel, pixel, ray_count)
                     display_timer = self._update_display(display_timer)
+
+        self._generate_srgb_frame()
 
         # final update for users
         self._final_statistics(statistics_data)
@@ -335,11 +457,6 @@ cdef class Imaging(Observer):
                 self.xyz_frame[y, x, 1] += added_weight * xyz[1]
                 self.xyz_frame[y, x, 2] += added_weight * xyz[2]
 
-                xyz = self.xyz_frame[y, x, :]
-
-                # convert to sRGB colour-space
-                self.rgb_frame[y, x, :] = ciexyz_to_srgb(xyz[0], xyz[1], xyz[2])
-
                 # update users
                 display_timer = self._update_display(display_timer)
                 statistics_data = self._update_statistics(statistics_data, channel, pixel, sample_ray_count)
@@ -347,6 +464,8 @@ cdef class Imaging(Observer):
             # shutdown workers
             for _ in workers:
                 task_queue.put(None)
+
+        self._generate_srgb_frame()
 
         # final update for users
         self._final_statistics(statistics_data)
@@ -427,9 +546,6 @@ cdef class Imaging(Observer):
             # accumulate statistics
             ray_count += ray.ray_count
 
-        # apply camera sensitivity
-        spectrum.mul_scalar(self.sensitivity)
-
         return spectrum, ray_count
 
     cpdef list _generate_rays(self, int ix, int iy, Ray ray_template):
@@ -455,6 +571,38 @@ cdef class Imaging(Observer):
 
         raise NotImplementedError("To be defined in subclass.")
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _generate_srgb_frame(self):
+
+        cdef:
+            int nx, ny, ix, iy
+            double sensitivity
+            double[:, :, ::1] xyz_mv, rgb_mv
+            tuple rgb
+
+        # calculate sensitivity for frame
+        sensitivity = self.exposure_handler.calculate_sensitivity(self.xyz_frame)
+
+        # obtain memory views
+        xyz_mv = self.xyz_frame
+        rgb_mv = self.rgb_frame
+
+        # Apply sensitivity to each pixel and convert to sRGB colour-space
+        nx, ny = self._pixels
+        for iy in range(ny):
+            for ix in range(nx):
+
+                rgb = ciexyz_to_srgb(
+                    xyz_mv[iy, ix, 0] * sensitivity,
+                    xyz_mv[iy, ix, 1] * sensitivity,
+                    xyz_mv[iy, ix, 2] * sensitivity
+                )
+
+                rgb_mv[iy, ix, 0] = rgb[0]
+                rgb_mv[iy, ix, 1] = rgb[1]
+                rgb_mv[iy, ix, 2] = rgb[2]
+
     def _start_display(self):
         """
         Display live render.
@@ -475,6 +623,7 @@ cdef class Imaging(Observer):
         if self.display_progress and (time() - display_timer) > self.display_update_time:
 
             print("Refreshing display...")
+            self._generate_srgb_frame()
             self.display()
             display_timer = time()
 
