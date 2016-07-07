@@ -33,8 +33,8 @@ from raysect.core.math.random cimport vector_hemisphere_cosine
 from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF
 from raysect.optical.material cimport ContinuousBSDF
 from numpy cimport ndarray
-from libc.math cimport M_1_PI, fabs
-cimport cython
+from libc.math cimport M_1_PI
+
 
 cdef class Lambert(ContinuousBSDF):
 
@@ -47,16 +47,12 @@ cdef class Lambert(ContinuousBSDF):
             reflectivity = ConstantSF(0.5)
         self.reflectivity = reflectivity
 
-    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing, bint back_face):
+    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
 
         cdef double cos_theta
 
         # normal is aligned with +ve Z so dot products with the normal are simply the z component of the other vector
-        cos_theta = outgoing.z
-
-        # if incident ray is on back side of surface, flip normal to the same side
-        if back_face:
-            cos_theta = -cos_theta
+        cos_theta = s_outgoing.z
 
         # clamp probability to zero on far side of surface
         if cos_theta < 0:
@@ -64,43 +60,34 @@ cdef class Lambert(ContinuousBSDF):
 
         return cos_theta * M_1_PI
 
-    cpdef Vector3D sample(self, Vector3D incoming, bint back_face):
-
-        cdef Vector3D outgoing
-
-        # obtain new surface space vector from cosine-weighted hemisphere
-        outgoing = vector_hemisphere_cosine()
-
-        if back_face:
-            return outgoing.neg()
-        return outgoing
+    cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):
+        return vector_hemisphere_cosine()
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
-                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world): #, bint back_face
+                                    Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
 
         cdef:
             Spectrum spectrum
             Ray reflected
             ndarray reflectivity
 
-        # are incident and reflected on the same side?
-        if (back_face and s_outgoing.z >= 0) or (not back_face and s_outgoing.z <= 0):
-            # different sides, return empty spectrum
+        # outgoing ray is sampling incident light so s_outgoing = incident
+
+        # lambert material does not transmit
+        if s_outgoing.z < 0:
             return ray.new_spectrum()
 
         # generate and trace ray
-        if back_face:
-            reflected = ray.spawn_daughter(w_inside_point, s_outgoing.transform(surface_to_world))
-        else:
-            reflected = ray.spawn_daughter(w_outside_point, s_outgoing.transform(surface_to_world))
-
+        reflected = ray.spawn_daughter(w_reflection_origin, s_outgoing.transform(surface_to_world))
         spectrum = reflected.trace(world)
 
         # obtain samples of reflectivity
         reflectivity = self.reflectivity.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+
+        # combine and normalise
         spectrum.mul_array(reflectivity)
-        spectrum.mul_scalar(fabs(s_outgoing.z) * M_1_PI)
+        spectrum.mul_scalar(s_outgoing.z * M_1_PI)
         return spectrum
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,

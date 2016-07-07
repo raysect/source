@@ -32,7 +32,6 @@
 from raysect.core.math.random cimport probability
 from raysect.optical cimport new_affinematrix3d
 
-# TODO: move surface_to_primitive calculation to material from intersection, convert eval_surface API back to list of intersection parameters
 
 cdef class Material(CoreMaterial):
 
@@ -98,6 +97,23 @@ cdef class NullVolume(Material):
 
 
 cdef class DiscreteBSDF(Material):
+    """
+    Surface space
+
+    to simplify maths:
+    normal aligned (flipped) to sit on same side of surface as incoming ray
+    incoming ray vector is aligned to point out of the surface
+    surface space normal is aligned to lie along +ve Z-axis i.e. Normal3D(0, 0, 1)
+
+    The w_reflection_origin and w_transmission_origin points are provided as
+    ray launch points. These points are guaranteed to prevent same-surface
+    re-intersections. The reflection origin lies on the same side of the
+    surface as the incoming ray, the transmission origin lies on the opposite
+    side of the surface.
+
+    back_face is true if the ray is on the back side of the primitive surface,
+    true if on the front side (ie on the side of the primitive surface normal)
+    """
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D p_hit_point,
                                     bint exiting, Point3D p_inside_point, Point3D p_outside_point,
@@ -105,7 +121,25 @@ cdef class DiscreteBSDF(Material):
 
         cdef:
             Vector3D w_outgoing, s_incoming
+            Point3D w_reflection_origin, w_transmission_origin
             AffineMatrix3D world_to_surface, surface_to_world, primitive_to_surface, surface_to_primitive
+
+        # surface space is aligned relative to the incoming ray
+        # define ray launch points and orient normal appropriately
+        if exiting:
+
+            # ray incident on back face
+            w_reflection_origin = p_inside_point.transform(primitive_to_world)
+            w_transmission_origin = p_outside_point.transform(primitive_to_world)
+
+            # flip normal
+            p_normal = p_normal.neg()
+
+        else:
+
+            # ray incident on front face
+            w_reflection_origin = p_outside_point.transform(primitive_to_world)
+            w_transmission_origin = p_inside_point.transform(primitive_to_world)
 
         # obtain surface space transforms
         primitive_to_surface, surface_to_primitive = _generate_surface_transforms(p_normal)
@@ -115,20 +149,33 @@ cdef class DiscreteBSDF(Material):
         # convert ray direction to surface space incident direction
         s_incoming = ray.direction.transform(world_to_surface).neg()
 
-        # convert ray launch points to world space
-        w_inside_point = p_inside_point.transform(primitive_to_world)
-        w_outside_point = p_outside_point.transform(primitive_to_world)
-
         # bsdf sampling
-        return self.evaluate_shading(world, ray, s_incoming, w_inside_point, w_outside_point, exiting, world_to_surface, surface_to_world)
+        return self.evaluate_shading(world, ray, s_incoming, w_reflection_origin, w_transmission_origin, exiting, world_to_surface, surface_to_world)
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming,
-                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
+                                    Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
 
 
 cdef class ContinuousBSDF(Material):
+    """
+    Surface space
+
+    to simplify maths:
+    normal aligned (flipped) to sit on same side of surface as incoming ray
+    incoming ray vector is aligned to point out of the surface
+    surface space normal is aligned to lie along +ve Z-axis i.e. Normal3D(0, 0, 1)
+
+    The w_reflection_origin and w_transmission_origin points are provided as
+    ray launch points. These points are guaranteed to prevent same-surface
+    re-intersections. The reflection origin lies on the same side of the
+    surface as the incoming ray, the transmission origin lies on the opposite
+    side of the surface.
+
+    back_face is true if the ray is on the back side of the primitive surface,
+    true if on the front side (ie on the side of the primitive surface normal)
+    """
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D p_hit_point,
                                     bint exiting, Point3D p_inside_point, Point3D p_outside_point,
@@ -137,8 +184,25 @@ cdef class ContinuousBSDF(Material):
         cdef:
             double pdf, pdf_importance, pdf_bsdf
             Vector3D w_outgoing, s_incoming, s_outgoing
-            Point3D w_hit_point
+            Point3D w_hit_point, w_reflection_origin, w_transmission_origin
             AffineMatrix3D world_to_surface, surface_to_world, primitive_to_surface, surface_to_primitive
+
+        # surface space is aligned relative to the incoming ray
+        # define ray launch points and orient normal appropriately
+        if exiting:
+
+            # ray incident on back face
+            w_reflection_origin = p_inside_point.transform(primitive_to_world)
+            w_transmission_origin = p_outside_point.transform(primitive_to_world)
+
+            # flip normal
+            p_normal = p_normal.neg()
+
+        else:
+
+            # ray incident on front face
+            w_reflection_origin = p_outside_point.transform(primitive_to_world)
+            w_transmission_origin = p_inside_point.transform(primitive_to_world)
 
         # obtain surface space transforms
         primitive_to_surface, surface_to_primitive = _generate_surface_transforms(p_normal)
@@ -147,10 +211,6 @@ cdef class ContinuousBSDF(Material):
 
         # convert ray direction to surface space incident direction
         s_incoming = ray.direction.transform(world_to_surface).neg()
-
-        # convert ray launch points to world space
-        w_inside_point = p_inside_point.transform(primitive_to_world)
-        w_outside_point = p_outside_point.transform(primitive_to_world)
 
         if ray.importance_sampling and world.has_important_primitives():
 
@@ -175,27 +235,27 @@ cdef class ContinuousBSDF(Material):
             pdf = ray.get_important_path_weight() * pdf_important + (1 - ray.get_important_path_weight()) * pdf_bsdf
 
             # evaluate bsdf and normalise
-            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_inside_point, w_outside_point, exiting, world_to_surface, surface_to_world)
-            spectrum.mul_scalar(1 / pdf)
+            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_reflection_origin, w_transmission_origin, exiting, world_to_surface, surface_to_world)
+            spectrum.div_scalar(pdf)
             return spectrum
 
         else:
 
             # bsdf sampling
             s_outgoing = self.sample(s_incoming, exiting)
-            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_inside_point, w_outside_point, exiting, world_to_surface, surface_to_world)
+            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_reflection_origin, w_transmission_origin, exiting, world_to_surface, surface_to_world)
             pdf = self.pdf(s_incoming, s_outgoing, exiting)
-            spectrum.mul_scalar(1 / pdf)
+            spectrum.div_scalar(pdf)
             return spectrum
 
-    cpdef double pdf(self, Vector3D incoming, Vector3D outgoing, bint back_face):
+    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
         raise NotImplementedError("Virtual method pdf() has not been implemented.")
 
-    cpdef Vector3D sample(self, Vector3D incoming, bint back_face):
+    cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):
         raise NotImplementedError("Virtual method sample() has not been implemented.")
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
-                                    Point3D w_inside_point, Point3D w_outside_point, bint back_face,
+                                    Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
 
