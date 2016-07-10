@@ -63,8 +63,6 @@ cdef class Lambert(ContinuousBSDF):
     cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):
         return vector_hemisphere_cosine()
 
-    # TODO - s_incoming and s_outgoing need inverting. Wrongly labelled.
-
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
