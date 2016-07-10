@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.random cimport vector_hemisphere_cosine
-from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF
+from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF, new_vector3d
 from raysect.optical.material cimport ContinuousBSDF
 from numpy cimport ndarray
 from libc.math cimport M_1_PI, M_PI
@@ -84,8 +84,6 @@ cdef class MicroFacet(ContinuousBSDF):
         return vector_hemisphere_cosine()
 
     @cython.cdivision(True)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
@@ -94,52 +92,54 @@ cdef class MicroFacet(ContinuousBSDF):
             Vector3D s_half
             Spectrum spectrum
             Ray reflected
-            ndarray n, k
-            double[::1] s_view, n_view, k_view
 
         # outgoing ray is sampling incident light so s_outgoing = incident
 
         # material does not transmit
-        if s_outgoing.z < 0:
+        if s_outgoing.z <= 0:
+            return ray.new_spectrum()
+
+        # ignore parallel rays which could cause a divide by zero later
+        if s_incoming.z == 0:
             return ray.new_spectrum()
 
         # calculate half vector
-        s_half = s_incoming + s_outgoing
-
-        # catch case when incoming and outgoing vectors are exactly opposite
-        if s_half.get_length() == 0:
-            return ray.new_spectrum()
-
-        s_half = s_half.normalise()
+        s_half = new_vector3d(
+            s_incoming.x + s_outgoing.x,
+            s_incoming.y + s_outgoing.y,
+            s_incoming.z + s_outgoing.z
+        ).normalise()
 
         # generate and trace ray
         reflected = ray.spawn_daughter(w_reflection_origin, s_outgoing.transform(surface_to_world))
         spectrum = reflected.trace(world)
 
-        # sample refractive index and absorption
-        n = self.index.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
-        k = self.extinction.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
+        # perform Cook-Torrance calculation
 
-        # perform Cook-Torrance calcluation
-
-        # divisor
+        # normalisation
         spectrum.mul_scalar(1 / (4 * s_incoming.z))
-        # spectrum.mul_scalar(1 / (4 * s_incoming.z * s_outgoing.z)) # correct? fs*Li*(n.i)?
+
+        # micro-facet distribution term
+        spectrum.mul_scalar(self._d(s_half))
 
         # geometric masking and shadowing term
         spectrum.mul_scalar(self._g(s_incoming, s_outgoing, s_half))
 
-        # Fresnel reflectivity coefficients at each wavelength and apply
-        s_view = spectrum.samples
-        n_view = n
-        k_view = k
-        for i in range(spectrum.num_samples):
-            s_view[i] *= self._f(s_outgoing.z, n_view[i], k_view[i])
-
-        # microfacet distribution term
-        spectrum.mul_scalar(self._d(s_half))
+        # Fresnel reflectivity
+        spectrum = self._f(spectrum, s_outgoing)
 
         return spectrum
+
+    @cython.cdivision(True)
+    cdef inline double _d(self, Vector3D s_half):
+
+        cdef double r2, h2, k
+
+        # ggx distribution
+        r2 = self._roughness * self._roughness
+        h2 = s_half.z * s_half.z
+        k = r2 + (1 - h2) / h2
+        return r2 / (M_PI * h2 * h2 * k * k)
 
     @cython.cdivision(True)
     cdef inline double _g(self, Vector3D s_incoming, Vector3D s_outgoing, Vector3D s_half):
@@ -149,7 +149,26 @@ cdef class MicroFacet(ContinuousBSDF):
         return min(1, k * s_incoming.z, k * s_outgoing.z)
 
     @cython.cdivision(True)
-    cdef inline double _f(self, double ci, double n, double k) nogil:
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing):
+
+        cdef:
+            double[::1] s, n, k
+            int i
+
+        # sample refractive index and absorption
+        n = self.index.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        k = self.extinction.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+
+        s = spectrum.samples
+        for i in range(spectrum.num_samples):
+            s[i] *= self._fresnel_conductor(s_outgoing.z, n[i], k[i])
+
+        return spectrum
+
+    @cython.cdivision(True)
+    cdef inline double _fresnel_conductor(self, double ci, double n, double k) nogil:
 
         cdef double c12, k0, k1, k2, k3
 
@@ -160,23 +179,9 @@ cdef class MicroFacet(ContinuousBSDF):
         k3 = k0 + ci2
         return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
 
-    @cython.cdivision(True)
-    cdef inline double _d(self, Vector3D s_half):
-
-        cdef double r2, h2, k
-
-        # ggx distribution
-        r2 = self._roughness * self._roughness
-        h2 = s_half.z * s_half.z
-        k = (r2 + (1 - h2) / h2)
-        return r2 / (M_PI * h2 * h2 * k * k)
-
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
                                    AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # no volume contribution
         return spectrum
-
-
-
