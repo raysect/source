@@ -33,7 +33,7 @@ from raysect.core.math.random cimport vector_hemisphere_cosine
 from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF, new_vector3d
 from raysect.optical.material cimport ContinuousBSDF
 from numpy cimport ndarray
-from libc.math cimport M_1_PI, M_PI
+from libc.math cimport M_1_PI, M_PI, sqrt
 cimport cython
 
 
@@ -123,7 +123,7 @@ cdef class MicroFacet(ContinuousBSDF):
         spectrum.mul_scalar(self._d(s_half))
 
         # geometric masking and shadowing term
-        spectrum.mul_scalar(self._g(s_incoming, s_outgoing, s_half))
+        spectrum.mul_scalar(self._g(s_incoming, s_outgoing))
 
         # Fresnel reflectivity
         spectrum = self._f(spectrum, s_outgoing)
@@ -138,15 +138,18 @@ cdef class MicroFacet(ContinuousBSDF):
         # ggx distribution
         r2 = self._roughness * self._roughness
         h2 = s_half.z * s_half.z
-        k = r2 + (1 - h2) / h2
-        return r2 / (M_PI * h2 * h2 * k * k)
+        k = h2 * (r2 - 1) + 1
+        return r2 / (M_PI * k * k)
+
+    cdef inline double _g(self, Vector3D s_incoming, Vector3D s_outgoing):
+        # Smith's geometric shadowing model
+        return self._g1(s_incoming) * self._g1(s_outgoing)
 
     @cython.cdivision(True)
-    cdef inline double _g(self, Vector3D s_incoming, Vector3D s_outgoing, Vector3D s_half):
-
-        # todo: replace with smith geometry + ggx G1
-        cdef double k = 2 * s_half.z / (s_incoming.dot(s_half))
-        return min(1, k * s_incoming.z, k * s_outgoing.z)
+    cdef inline double _g1(self, Vector3D v):
+        # Smith's geometric component (G1) for GGX distribution
+        cdef double r2 = self._roughness * self._roughness
+        return 2 * v.z / (v.z + sqrt(r2 + (1 - r2) * (v.z * v.z)))
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
