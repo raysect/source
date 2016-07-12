@@ -114,21 +114,9 @@ cdef class MicroFacet(ContinuousBSDF):
         reflected = ray.spawn_daughter(w_reflection_origin, s_outgoing.transform(surface_to_world))
         spectrum = reflected.trace(world)
 
-        # perform Cook-Torrance calculation
-
-        # normalisation
-        spectrum.mul_scalar(1 / (4 * s_incoming.z))
-
-        # micro-facet distribution term
-        spectrum.mul_scalar(self._d(s_half))
-
-        # geometric masking and shadowing term
-        spectrum.mul_scalar(self._g(s_incoming, s_outgoing))
-
-        # Fresnel reflectivity
-        spectrum = self._f(spectrum, s_outgoing)
-
-        return spectrum
+        # evaluate lighting with Cook-Torrance bsdf (optimised)
+        spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) / (4 * s_incoming.z))
+        return self._f(spectrum, s_outgoing)
 
     @cython.cdivision(True)
     cdef inline double _d(self, Vector3D s_half):
