@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical cimport SpectralFunction
-from raysect.optical.material cimport Material
+from raysect.optical.material cimport Material, ContinuousBSDF
+from raysect.optical cimport Vector3D, Spectrum
+
 
 
 cdef class Conductor(Material):
@@ -40,3 +42,21 @@ cdef class Conductor(Material):
         public SpectralFunction extinction
 
     cdef inline double _fresnel(self, double ci, double n, double k) nogil
+
+
+cdef class RoughConductor(ContinuousBSDF):
+
+    cdef:
+        public SpectralFunction index
+        public SpectralFunction extinction
+        double _roughness
+
+    cdef inline double _d(self, Vector3D s_half)
+
+    cdef inline double _g(self, Vector3D s_incoming, Vector3D s_outgoing)
+
+    cdef inline double _g1(self, Vector3D v)
+
+    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing)
+
+    cdef inline double _fresnel_conductor(self, double ci, double n, double k) nogil

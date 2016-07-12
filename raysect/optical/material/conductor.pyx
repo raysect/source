@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,11 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport cython
-from numpy import array
 from numpy cimport ndarray
-from libc.math cimport fabs
-from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, InterpolatedSF, Spectrum, Ray
+from raysect.core.math.random cimport vector_hemisphere_cosine
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, new_vector3d
+from libc.math cimport M_1_PI, M_PI, sqrt, fabs
+cimport cython
 
 
 cdef class Conductor(Material):
@@ -145,3 +145,148 @@ cdef class Conductor(Material):
         return spectrum
 
 
+# TODO: generalise microfacet models
+cdef class RoughConductor(ContinuousBSDF):
+    """
+    This is implementing Cook-Torrence with conducting fresnel microfacets.
+
+    Smith shadowing and GGX facet distribution used to model roughness.
+    """
+
+    def __init__(self, SpectralFunction index, SpectralFunction extinction, double roughness):
+
+        super().__init__()
+        self.index = index
+        self.extinction = extinction
+        self.roughness = roughness
+
+    property roughness:
+
+        def __get__(self):
+            return self._roughness
+
+        def __set__(self, value):
+            if value <= 0 or value > 1:
+                raise ValueError("Surface roughness must lie in the range (0, 1].")
+            self._roughness = value
+
+    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
+        """
+        temporarily cosine weighted hemispherical sampling
+        not a great strategy for this...!
+        """
+
+        # todo: replace with ggx importance sampling pdf
+        cdef double cos_theta
+
+        # normal is aligned with +ve Z so dot products with the normal are simply the z component of the other vector
+        cos_theta = s_outgoing.z
+
+        # clamp probability to zero on far side of surface
+        if cos_theta < 0:
+            return 0
+
+        return cos_theta * M_1_PI
+
+    cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):
+        """
+        temporarily cosine weighted hemispherical sampling
+        not a great strategy for this...!
+        """
+
+        # todo: replace with ggx importance sampling
+        return vector_hemisphere_cosine()
+
+    @cython.cdivision(True)
+    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
+                                    Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+
+        cdef:
+            Vector3D s_half
+            Spectrum spectrum
+            Ray reflected
+
+        # outgoing ray is sampling incident light so s_outgoing = incident
+
+        # material does not transmit
+        if s_outgoing.z <= 0:
+            return ray.new_spectrum()
+
+        # ignore parallel rays which could cause a divide by zero later
+        if s_incoming.z == 0:
+            return ray.new_spectrum()
+
+        # calculate half vector
+        s_half = new_vector3d(
+            s_incoming.x + s_outgoing.x,
+            s_incoming.y + s_outgoing.y,
+            s_incoming.z + s_outgoing.z
+        ).normalise()
+
+        # generate and trace ray
+        reflected = ray.spawn_daughter(w_reflection_origin, s_outgoing.transform(surface_to_world))
+        spectrum = reflected.trace(world)
+
+        # evaluate lighting with Cook-Torrance bsdf (optimised)
+        spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) / (4 * s_incoming.z))
+        return self._f(spectrum, s_outgoing)
+
+    @cython.cdivision(True)
+    cdef inline double _d(self, Vector3D s_half):
+
+        cdef double r2, h2, k
+
+        # ggx distribution
+        r2 = self._roughness * self._roughness
+        h2 = s_half.z * s_half.z
+        k = h2 * (r2 - 1) + 1
+        return r2 / (M_PI * k * k)
+
+    cdef inline double _g(self, Vector3D s_incoming, Vector3D s_outgoing):
+        # Smith's geometric shadowing model
+        return self._g1(s_incoming) * self._g1(s_outgoing)
+
+    @cython.cdivision(True)
+    cdef inline double _g1(self, Vector3D v):
+        # Smith's geometric component (G1) for GGX distribution
+        cdef double r2 = self._roughness * self._roughness
+        return 2 * v.z / (v.z + sqrt(r2 + (1 - r2) * (v.z * v.z)))
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing):
+
+        cdef:
+            double[::1] s, n, k
+            int i
+
+        # sample refractive index and absorption
+        n = self.index.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        k = self.extinction.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+
+        s = spectrum.samples
+        for i in range(spectrum.num_samples):
+            s[i] *= self._fresnel_conductor(s_outgoing.z, n[i], k[i])
+
+        return spectrum
+
+    @cython.cdivision(True)
+    cdef inline double _fresnel_conductor(self, double ci, double n, double k) nogil:
+
+        cdef double c12, k0, k1, k2, k3
+
+        ci2 = ci * ci
+        k0 = n * n + k * k
+        k1 = k0 * ci2 + 1
+        k2 = 2 * n * ci
+        k3 = k0 + ci2
+        return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
+
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # no volume contribution
+        return spectrum

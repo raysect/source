@@ -33,4 +33,4 @@ from raysect.optical.material.material cimport Material, NullSurface, NullVolume
 from raysect.optical.material.emitter cimport UniformSurfaceEmitter, VolumeEmitterHomogeneous, VolumeEmitterInhomogeneous, UniformVolumeEmitter, Checkerboard
 from raysect.optical.material.absorber cimport AbsorbingSurface
 from raysect.optical.material.dielectric cimport Dielectric, Sellmeier
-from raysect.optical.material.conductor cimport Conductor
+from raysect.optical.material.conductor cimport Conductor, RoughConductor
