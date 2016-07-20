@@ -741,6 +741,9 @@ class NonImaging(Observer):
         self.ray_min_depth = 3
         self.ray_max_depth = 15
 
+        self.ray_importance_sampling = True
+        self.ray_important_path_weight = 0.2
+
         self.sensitivity = sensitivity
         self.pixel_samples = pixel_samples
         self.pixel = None
