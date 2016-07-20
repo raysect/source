@@ -827,6 +827,8 @@ class NonImaging(Observer):
         This method must return a list of tuples, with each tuple containing
         a ray object and a corresponding projected area weight (direction cosine).
 
+        Note that the ray objects must be defined in local coordinate space.
+
         If the projected area weight is not required (due to the ray sampling
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
