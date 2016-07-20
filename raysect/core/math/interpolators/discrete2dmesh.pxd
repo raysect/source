@@ -29,10 +29,32 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .point import Point2D, Point3D
-from .vector import Vector3D
-from .normal import Normal3D
-from .affinematrix import AffineMatrix3D
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis
-from .units import *
-from .interpolators import Interpolator2DMesh, Discrete2DMesh
+cimport numpy as np
+from raysect.core.boundingbox cimport BoundingBox2D
+from raysect.core.math.function.function2d cimport Function2D
+from raysect.core.math.spatial.kdtree2d cimport KDTree2DCore
+
+
+cdef class _MeshKDTree(KDTree2DCore):
+
+    cdef:
+        double[:, ::1] _vertices
+        np.int32_t[:, ::1] _triangles
+        np.int32_t triangle_id
+
+    cdef inline BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)
+
+    cdef inline void _calc_barycentric_coords(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double *alpha, double *beta, double *gamma) nogil
+
+    cdef inline bint _hit_triangle(self, double alpha, double beta, double gamma) nogil
+
+
+cdef class Discrete2DMesh(Function2D):
+
+    cdef:
+        double[::1] _triangle_data
+        _MeshKDTree _kdtree
+        bint _limit
+        double _default_value
+
+    cdef double evaluate(self, double x, double y) except *

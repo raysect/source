@@ -27,4 +27,5 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.interpolators.mesh2d cimport Interpolator2DMesh
+from raysect.core.math.interpolators.interpolator2dmesh cimport Interpolator2DMesh
+from raysect.core.math.interpolators.discrete2dmesh cimport Discrete2DMesh

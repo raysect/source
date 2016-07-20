@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@ DEF X = 0
 DEF Y = 1
 
 
-cdef class MeshKDTree(KDTree2DCore):
+cdef class _MeshKDTree(KDTree2DCore):
 
     def __init__(self, object vertices not None, object triangles not None):
 
@@ -261,7 +261,7 @@ cdef class Interpolator2DMesh(Function2D):
             raise ValueError("Vertex_data dimensions are incompatible with the number of vertices ({} vertices).".format(vertex_coords.shape[0]))
 
         # build kdtree
-        self._kdtree = MeshKDTree(vertex_coords, triangles)
+        self._kdtree = _MeshKDTree(vertex_coords, triangles)
 
         self._vertex_data = vertex_data
         self._default_value = default_value

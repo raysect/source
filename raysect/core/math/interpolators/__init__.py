@@ -29,4 +29,5 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .mesh2d import Interpolator2DMesh
+from .interpolator2dmesh import Interpolator2DMesh
+from .discrete2dmesh import Discrete2DMesh
