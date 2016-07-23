@@ -32,13 +32,13 @@ def d_sample(roughness):
     return Vector3D(x, y, z)
 
 
-def outgoing_sample(incomming, facet_normal):
-    return 2 * incomming.dot(facet_normal) * facet_normal - incomming
+def outgoing_sample(incoming, facet_normal):
+    return 2 * incoming.dot(facet_normal) * facet_normal - incoming
 
 
-def pdf(incomming, outgoing, roughness):
+def pdf(incoming, outgoing, roughness):
 
-    h = ((incomming + outgoing) * 0.5).normalise()
+    h = ((incoming + outgoing) * 0.5).normalise()
     return 0.25 * d_vector(h, roughness) / abs(outgoing.dot(h)) * abs(h.z)
 
 # a = linspace(-pi/2, pi/2, 200)
@@ -64,7 +64,7 @@ def pdf(incomming, outgoing, roughness):
 
 
 # GGX distribution plot
-incomming = Vector3D(0, 0, 1).normalise()
+incoming = Vector3D(1,0,1).normalise()
 rmin = 0.01
 rmax = 1.0
 n = 9
@@ -80,12 +80,13 @@ for f, r in enumerate(linspace(rmin, rmax, n)):
         facet_normal = d_sample(r)
         normal.append((facet_normal.x, facet_normal.y, facet_normal.z, d_vector(facet_normal, r)))
 
-        outgoing = outgoing_sample(incomming, facet_normal)
-        out.append((outgoing.x, outgoing.y, outgoing.z, pdf(incomming, outgoing, r)))
+        outgoing = outgoing_sample(incoming, facet_normal)
+        out.append((outgoing.x, outgoing.y, outgoing.z, pdf(incoming, outgoing, r)))
 
     normal = array(normal)
     out = array(out)
-    mask = (out[:, 1] > -0.1) & (out[:, 1] < 0.1)
+    mask = out[:, 1] < 5
+    # mask = (out[:, 1] > -0.1) & (out[:, 1] < 0.1)
 
     # figure(100)
     # subplot(s, s, f+1)
@@ -118,7 +119,7 @@ for f, r in enumerate(linspace(rmin, rmax, n)):
 
     figure(103)
     subplot(s, s, f + 1)
-    scatter(out[mask,0], out[mask,2], c=out[mask,3], edgecolors='none', s=2)
+    scatter(out[mask,0], out[mask,2], c=out[mask,3], edgecolors='none', s=out[mask,3] / out[mask,3].max() * 20)
     title(r)
     xlim(-1, 1)
     ylim(-1, 1)
