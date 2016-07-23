@@ -22,9 +22,7 @@ def d_sample(roughness):
     e1 = random()
     e2 = random()
 
-    # think there is possibly a mistake in the paper, need to derive..?
     theta = arctan(roughness * sqrt(e1) / sqrt(1 - e1))
-    # theta = arctan(roughness**2 * sqrt(e1) / sqrt(1 - e1))
     phi = 2*pi*e2
 
     z = cos(theta)
