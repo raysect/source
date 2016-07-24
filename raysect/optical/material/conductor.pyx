@@ -141,7 +141,6 @@ cdef class Conductor(Material):
                                    AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # do nothing!
-        # TODO: make it solid - return black or calculate attenuation from extinction?
         return spectrum
 
 
@@ -195,13 +194,13 @@ cdef class RoughConductor(ContinuousBSDF):
 
         cdef:
             double e1, e2
-            double theta, phi
+            double theta, phi, temp
             Vector3D facet_normal
 
         e1 = uniform()
         e2 = uniform()
 
-        theta = atan(self.roughness * sqrt(e1) / sqrt(1 - e1))
+        theta = atan(self._roughness * sqrt(e1) / sqrt(1 - e1))
         phi = 2 * M_PI * e2
 
         facet_normal = new_vector3d(
@@ -210,7 +209,12 @@ cdef class RoughConductor(ContinuousBSDF):
             cos(theta)
         )
 
-        return 2 * s_incoming.dot(facet_normal) * facet_normal - s_incoming
+        temp = 2 * s_incoming.dot(facet_normal)
+        return new_vector3d(
+            temp * facet_normal.x - s_incoming.x,
+            temp * facet_normal.y - s_incoming.y,
+            temp * facet_normal.z - s_incoming.z
+        )
 
     @cython.cdivision(True)
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
@@ -245,7 +249,7 @@ cdef class RoughConductor(ContinuousBSDF):
 
         # evaluate lighting with Cook-Torrance bsdf (optimised)
         spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) / (4 * s_incoming.z))
-        return self._f(spectrum, s_outgoing)
+        return self._f(spectrum, s_outgoing, s_half)
 
     @cython.cdivision(True)
     cdef inline double _d(self, Vector3D s_half):
@@ -271,10 +275,11 @@ cdef class RoughConductor(ContinuousBSDF):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing):
+    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal):
 
         cdef:
             double[::1] s, n, k
+            double ci
             int i
 
         # sample refractive index and absorption
@@ -282,8 +287,9 @@ cdef class RoughConductor(ContinuousBSDF):
         k = self.extinction.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
 
         s = spectrum.samples
+        ci = s_normal.dot(s_outgoing)
         for i in range(spectrum.num_samples):
-            s[i] *= self._fresnel_conductor(s_outgoing.z, n[i], k[i])
+            s[i] *= self._fresnel_conductor(ci, n[i], k[i])
 
         return spectrum
 

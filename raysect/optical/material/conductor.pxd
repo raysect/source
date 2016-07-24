@@ -57,6 +57,6 @@ cdef class RoughConductor(ContinuousBSDF):
 
     cdef inline double _g1(self, Vector3D v)
 
-    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing)
+    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal)
 
     cdef inline double _fresnel_conductor(self, double ci, double n, double k) nogil
