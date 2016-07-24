@@ -54,19 +54,21 @@ camera = PinholeCamera(parent=world, transform=translate(0, 3.3, 0) * rotate(0, 
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
-camera.rays = 1
+camera.spectral_rays = 1
 camera.spectral_samples = 15
-camera.pixels = (512, 256)
+camera.pixels = (1024, 512)
 camera.pixel_samples = 50
 camera.display_progress = True
 camera.display_update_time = 10
 camera.accumulate = True
 camera.exposure_handler = AutoExposure(0.97)
+# camera.ray_importance_sampling = False
+
 
 # start ray tracing
 ion()
 for p in range(1, 1000):
-    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.rays))
+    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.spectral_rays))
     camera.observe()
     camera.save("demo_roughen_{}_samples.png".format(camera.accumulated_samples))
     print()
