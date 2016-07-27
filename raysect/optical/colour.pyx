@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.cython.utility cimport clamp
+from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport InterpolatedSF
 from numpy import array, float64, zeros, linspace
 cimport cython
@@ -134,9 +134,9 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
         raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
     xyz = zeros((num_samples, 3))
-    xyz[:, 0] = ciexyz_x.sample_multiple(min_wavelength, max_wavelength, num_samples)
-    xyz[:, 1] = ciexyz_y.sample_multiple(min_wavelength, max_wavelength, num_samples)
-    xyz[:, 2] = ciexyz_z.sample_multiple(min_wavelength, max_wavelength, num_samples)
+    xyz[:, 0] = ciexyz_x.sample(min_wavelength, max_wavelength, num_samples)
+    xyz[:, 1] = ciexyz_y.sample(min_wavelength, max_wavelength, num_samples)
+    xyz[:, 2] = ciexyz_z.sample(min_wavelength, max_wavelength, num_samples)
 
     return xyz
 

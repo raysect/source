@@ -29,12 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray, Intersection
-from raysect.core.math.point cimport Point3D
-from raysect.core.scenegraph.utility cimport BridgeNode
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.boundingbox cimport BoundingBox3D
-
+from raysect.core cimport Ray, Intersection, Point3D, BridgeNode, Primitive, BoundingBox3D
 
 cdef class EncapsulatedPrimitive(Primitive):
 

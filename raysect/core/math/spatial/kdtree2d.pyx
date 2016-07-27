@@ -469,17 +469,17 @@ cdef class KDTree2DCore:
         self._next_node += 1
         return id
 
-    cpdef bint hit(self, Point2D point):
+    cpdef bint is_contained(self, Point2D point):
         """
-        Traverses the kd-Tree to identify if the point is contained by an item.
+        Traverses the kd-Tree to identify if the point is contained by an any item.
 
         :param point: A Point2D object.
         :return: True if the point lies inside an item, false otherwise.
         """
 
-        return self._hit(point)
+        return self._is_contained(point)
 
-    cdef inline bint _hit(self, Point2D point):
+    cdef inline bint _is_contained(self, Point2D point):
         """
         Starts contains traversal of the kd-Tree.
 
@@ -492,9 +492,9 @@ cdef class KDTree2DCore:
             return False
 
         # start search
-        return self._hit_node(ROOT_NODE, point)
+        return self._is_contained_node(ROOT_NODE, point)
 
-    cdef inline bint _hit_node(self, int32_t id, Point2D point):
+    cdef inline bint _is_contained_node(self, int32_t id, Point2D point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -504,11 +504,11 @@ cdef class KDTree2DCore:
         """
 
         if self._nodes[id].type == LEAF:
-            return self._hit_leaf(id, point)
+            return self._is_contained_leaf(id, point)
         else:
-            return self._hit_branch(id, point)
+            return self._is_contained_branch(id, point)
 
-    cdef inline bint _hit_branch(self, int32_t id, Point2D point):
+    cdef inline bint _is_contained_branch(self, int32_t id, Point2D point):
         """
         Locates the kd-Tree node containing the point.
 
@@ -533,11 +533,11 @@ cdef class KDTree2DCore:
         upper_id = self._nodes[id].count
 
         if point.get_index(axis) < split:
-            return self._hit_node(lower_id, point)
+            return self._is_contained_node(lower_id, point)
         else:
-            return self._hit_node(upper_id, point)
+            return self._is_contained_node(upper_id, point)
 
-    cdef bint _hit_leaf(self, int32_t id, Point2D point):
+    cdef bint _is_contained_leaf(self, int32_t id, Point2D point):
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -547,8 +547,8 @@ cdef class KDTree2DCore:
 
         Derived classes may need to wish to return additional information about
         the enclosing item(s). This can be done by setting object attributes
-        prior to returning. Any attributes set when _hit_leaf() returns are
-        guaranteed not to be further modified.
+        prior to returning. Any attributes set when _is_contained_leaf() returns
+        are guaranteed not to be further modified.
 
         :param id: Index of node in node array.
         :param point: Point2D to evaluate.
@@ -556,9 +556,9 @@ cdef class KDTree2DCore:
         """
 
         # virtual function that must be implemented by derived classes
-        raise NotImplementedError("KDTree2DCore _hit_leaf() method not implemented.")
+        raise NotImplementedError("KDTree2DCore _is_contained_leaf() method not implemented.")
 
-    cpdef list contains(self, Point2D point):
+    cpdef list items_containing(self, Point2D point):
         """
         Traverses the kd-Tree to find the items that contain the specified point.
 
@@ -566,9 +566,9 @@ cdef class KDTree2DCore:
         :return: A list of ids (indices) of the items containing the point
         """
 
-        return self._contains(point)
+        return self._items_containing(point)
 
-    cdef inline list _contains(self, Point2D point):
+    cdef inline list _items_containing(self, Point2D point):
         """
         Starts contains traversal of the kd-Tree.
 
@@ -581,9 +581,9 @@ cdef class KDTree2DCore:
             return []
 
         # start search
-        return self._contains_node(ROOT_NODE, point)
+        return self._items_containing_node(ROOT_NODE, point)
 
-    cdef inline list _contains_node(self, int32_t id, Point2D point):
+    cdef inline list _items_containing_node(self, int32_t id, Point2D point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -593,11 +593,11 @@ cdef class KDTree2DCore:
         """
 
         if self._nodes[id].type == LEAF:
-            return self._contains_leaf(id, point)
+            return self._items_containing_leaf(id, point)
         else:
-            return self._contains_branch(id, point)
+            return self._items_containing_branch(id, point)
 
-    cdef inline list _contains_branch(self, int32_t id, Point2D point):
+    cdef inline list _items_containing_branch(self, int32_t id, Point2D point):
         """
         Locates the kd-Tree node containing the point.
 
@@ -622,11 +622,11 @@ cdef class KDTree2DCore:
         upper_id = self._nodes[id].count
 
         if point.get_index(axis) < split:
-            return self._contains_node(lower_id, point)
+            return self._items_containing_node(lower_id, point)
         else:
-            return self._contains_node(upper_id, point)
+            return self._items_containing_node(upper_id, point)
 
-    cdef list _contains_leaf(self, int32_t id, Point2D point):
+    cdef list _items_containing_leaf(self, int32_t id, Point2D point):
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -637,8 +637,9 @@ cdef class KDTree2DCore:
 
         Derived classes may need to wish to return additional information about
         the enclosing items. This can be done by setting object attributes
-        prior to returning the list. Any attributes set when _contains_leaf()
-        returns are guaranteed not to be further modified.
+        prior to returning the list. Any attributes set when
+        _items_containing_leaf() returns are guaranteed not to be further
+        modified.
 
         :param id: Index of node in node array.
         :param point: Point2D to evaluate.
@@ -646,7 +647,7 @@ cdef class KDTree2DCore:
         """
 
         # virtual function that must be implemented by derived classes
-        raise NotImplementedError("KDTree2DCore _contains_leaf() method not implemented.")
+        raise NotImplementedError("KDTree2DCore _items_containing_leaf() method not implemented.")
 
     cdef inline void _reset(self):
         """
@@ -710,12 +711,12 @@ cdef class KDTree2D(KDTree2DCore):
     :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
     """
 
-    cdef bint _hit_leaf(self, int32_t id, Point2D point):
+    cdef bint _is_contained_leaf(self, int32_t id, Point2D point):
         """
         Wraps the C-level API so users can derive a class from KDTree2D using Python.
 
         Converts the arguments to types accessible from Python and re-exposes
-        _hit_leaf() as the Python accessible method _hit_items().
+        _is_contained_leaf() as the Python accessible method _is_contained_items().
 
         :param id: Index of node in node array.
         :param point: Point2D to evaluate.
@@ -733,7 +734,7 @@ cdef class KDTree2D(KDTree2DCore):
 
         return self._hit_items(items, point)
 
-    cpdef bint _hit_items(self, list item_ids, Point2D point):
+    cpdef bint _is_contained_items(self, list item_ids, Point2D point):
         """
         Tests each item in the list to identify if any enclose the point.
 
@@ -751,14 +752,14 @@ cdef class KDTree2D(KDTree2DCore):
         :return: True if the point lies inside an item, false otherwise.
         """
 
-        raise NotImplementedError("KDTree2D Virtual function _hit_items() has not been implemented.")
+        raise NotImplementedError("KDTree2D Virtual function _is_contained_items() has not been implemented.")
 
-    cdef list _contains_leaf(self, int32_t id, Point2D point):
+    cdef list _items_containing_leaf(self, int32_t id, Point2D point):
         """
         Wraps the C-level API so users can derive a class from KDTree2D using Python.
 
         Converts the arguments to types accessible from Python and re-exposes
-        _contains_leaf() as the Python accessible method _contains_items().
+        _items_containing_leaf() as the Python accessible method _items_containing_items().
 
         :param id: Index of node in node array.
         :param point: Point2D to evaluate.
@@ -774,9 +775,9 @@ cdef class KDTree2D(KDTree2DCore):
         for index in range(self._nodes[id].count):
             items.append(self._nodes[id].items[index])
 
-        return self._contains_items(items, point)
+        return self._items_containing_items(items, point)
 
-    cpdef list _contains_items(self, list item_ids, Point2D point):
+    cpdef list _items_containing_items(self, list item_ids, Point2D point):
         """
         Tests each item in the list to identify if they enclose the point.
 
@@ -795,4 +796,4 @@ cdef class KDTree2D(KDTree2DCore):
         :return: List of ids of the items containing the point.
         """
 
-        raise NotImplementedError("KDTree2D Virtual function _contains_items() has not been implemented.")
+        raise NotImplementedError("KDTree2D Virtual function _items_containing_items() has not been implemented.")

@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from raysect.core.math.point cimport Point2D, new_point3d
+from raysect.core.math cimport Point2D, new_point3d
 from raysect.core.math.random cimport point_disk, uniform
 
 

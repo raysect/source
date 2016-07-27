@@ -46,7 +46,7 @@ class SightLine(NonImaging):
 
         rays = []
         for n in range(self.pixel_samples):
-            rays.append(ray_template.copy(Point3D(), Vector3D()), 1.0)
+            rays.append((ray_template.copy(Point3D(), Vector3D()), 1.0))
         return rays
 
 

@@ -33,25 +33,15 @@ cimport cython
 from numpy import array, float64
 from numpy cimport ndarray
 from libc.math cimport sqrt, pow as cpow
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.point cimport Point3D
-from raysect.core.math.vector cimport Vector3D, new_vector3d
-from raysect.core.math.normal cimport Normal3D
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.scenegraph.world cimport World
-from raysect.optical.spectralfunction cimport ConstantSF
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.ray cimport Ray
 from raysect.core.math.random cimport probability
+from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
 
+# TODO: double check these changes with the original code, make sure the results are the same!
+cdef class Sellmeier(NumericallyIntegratedSF):
 
-cdef class Sellmeier(SpectralFunction):
+    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, double sample_resolution=10):
 
-    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, int subsamples=10):
-
-        if subsamples < 1:
-
-            raise ValueError("The number of sub-samples cannot be less than 1.")
+        super().__init__(sample_resolution)
 
         self.b1 = b1
         self.b2 = b2
@@ -61,68 +51,18 @@ cdef class Sellmeier(SpectralFunction):
         self.c2 = c2
         self.c3 = c3
 
-        self.subsamples = subsamples
-
-        # initialise cache to invalid values
-        self.cached_min_wavelength = -1
-        self.cached_max_wavelength = -1
-        self.cached_index = -1
-
     @cython.cdivision(True)
-    cpdef double sample_single(self, double min_wavelength, double max_wavelength):
-        """
-        Generates a single sample of the refractive index given by the
-        Sellmeier equation.
-
-        The refractive index returned is the average over the wavelength range.
-        The number of sub-samples used for the average calculation can be
-        configured by modifying the subsamples attribute. If the subsamples
-        attribute is set to 1, a single sample is taken from the centre of the
-        wavelength range.
-
-        :param min_wavelength: Minimum wavelength in nm.
-        :param max_wavelength: Maximum wavelength in nm.
-        :return: A refractive index sample.
-        """
-
-        cdef:
-            double index, delta_wavelength, centre_wavelength, reciprocal
-            int i
-
-        if self.cached_min_wavelength == min_wavelength and \
-             self.cached_max_wavelength == max_wavelength:
-
-            return self.cached_index
-
-        # sample the refractive index
-        index = 0.0
-        delta_wavelength = (max_wavelength - min_wavelength) / self.subsamples
-        reciprocal =  1.0 / self.subsamples
-        for i in range(self.subsamples):
-
-            centre_wavelength = (min_wavelength + (0.5 + i) * delta_wavelength)
-
-            # Sellmeier coefficients are specified for wavelength in micrometers
-            index += reciprocal * self._sellmeier(centre_wavelength * 1e-3)
-
-        # update cache
-        self.cached_min_wavelength = min_wavelength
-        self.cached_max_wavelength = max_wavelength
-        self.cached_index = index
-
-        return index
-
-    @cython.cdivision(True)
-    cdef inline double _sellmeier(self, double wavelength) nogil:
+    cpdef double function(self, double wavelength):
         """
         Returns a sample of the three term Sellmeier equation at the specified
         wavelength.
 
-        :param wavelength: Wavelength in um.
+        :param wavelength: Wavelength in nm.
         :return: Refractive index sample.
         """
 
-        cdef double w2 = wavelength * wavelength
+        # wavelength in Sellmeier eqn. is specified in micrometers
+        cdef double w2 = wavelength * wavelength * 1e-6
         return sqrt(1 + (self.b1 * w2) / (w2 - self.c1)
                       + (self.b2 * w2) / (w2 - self.c2)
                       + (self.b3 * w2) / (w2 - self.c3))
@@ -133,6 +73,7 @@ cdef class Dielectric(Material):
 
     def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None, bint transmission_only=False):
 
+        super().__init__()
         self.index = index
         self.transmission = transmission
         self.transmission_only = transmission_only
@@ -142,10 +83,12 @@ cdef class Dielectric(Material):
         else:
             self.external_index = external_index
 
+        self.importance = 1.0
+
     @cython.cdivision(True)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D to_local, AffineMatrix3D to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Vector3D incident, reflected, transmitted
@@ -155,7 +98,7 @@ cdef class Dielectric(Material):
             Spectrum spectrum
 
         # convert ray direction normal to local coordinates
-        incident = ray.direction.transform(to_local)
+        incident = ray.direction.transform(world_to_primitive)
 
         # ensure vectors are normalised for reflection calculation
         incident = incident.normalise()
@@ -165,8 +108,8 @@ cdef class Dielectric(Material):
         c1 = -normal.dot(incident)
 
         # sample refractive indices
-        internal_index = self.index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
-        external_index = self.external_index.sample_single(ray.get_min_wavelength(), ray.get_max_wavelength())
+        internal_index = self.index.average(ray.get_min_wavelength(), ray.get_max_wavelength())
+        external_index = self.external_index.average(ray.get_min_wavelength(), ray.get_max_wavelength())
 
         # are we entering or leaving material - calculate refractive change
         # note, we do not use the supplied exiting parameter as the normal is
@@ -202,7 +145,7 @@ cdef class Dielectric(Material):
                                      incident.z + temp * normal.z)
 
             # convert reflected ray direction to world space
-            reflected = reflected.transform(to_world)
+            reflected = reflected.transform(primitive_to_world)
 
             # spawn reflected ray and trace
             # note, we do not use the supplied exiting parameter as the normal is
@@ -210,12 +153,12 @@ cdef class Dielectric(Material):
             if c1 < 0.0:
 
                 # incident ray is pointing out of surface, reflection is therefore inside
-                reflected_ray = ray.spawn_daughter(inside_point.transform(to_world), reflected)
+                reflected_ray = ray.spawn_daughter(inside_point.transform(primitive_to_world), reflected)
 
             else:
 
                 # incident ray is pointing in to surface, reflection is therefore outside
-                reflected_ray = ray.spawn_daughter(outside_point.transform(to_world), reflected)
+                reflected_ray = ray.spawn_daughter(outside_point.transform(primitive_to_world), reflected)
 
             return reflected_ray.trace(world)
 
@@ -242,7 +185,7 @@ cdef class Dielectric(Material):
                 # transmitted ray path selected
 
                 # we have already calculated the transmitted normal
-                transmitted = transmitted.transform(to_world)
+                transmitted = transmitted.transform(primitive_to_world)
 
                 # spawn ray on correct side of surface
                 # note, we do not use the supplied exiting parameter as the normal is
@@ -250,13 +193,13 @@ cdef class Dielectric(Material):
                 if c1 < 0.0:
 
                     # incident ray is pointing out of surface
-                    outside_point = outside_point.transform(to_world)
+                    outside_point = outside_point.transform(primitive_to_world)
                     transmitted_ray = ray.spawn_daughter(outside_point, transmitted)
 
                 else:
 
                     # incident ray is pointing in to surface
-                    inside_point = inside_point.transform(to_world)
+                    inside_point = inside_point.transform(primitive_to_world)
                     transmitted_ray = ray.spawn_daughter(inside_point, transmitted)
 
                 spectrum = transmitted_ray.trace(world)
@@ -270,7 +213,7 @@ cdef class Dielectric(Material):
                 reflected = new_vector3d(incident.x + temp * normal.x,
                                          incident.y + temp * normal.y,
                                          incident.z + temp * normal.z)
-                reflected = reflected.transform(to_world)
+                reflected = reflected.transform(primitive_to_world)
 
                 # spawn ray on correct side of surface
                 # note, we do not use the supplied exiting parameter as the normal is
@@ -278,13 +221,13 @@ cdef class Dielectric(Material):
                 if c1 < 0.0:
 
                     # incident ray is pointing out of surface
-                    inside_point = inside_point.transform(to_world)
+                    inside_point = inside_point.transform(primitive_to_world)
                     reflected_ray = ray.spawn_daughter(inside_point, reflected)
 
                 else:
 
                     # incident ray is pointing in to surface
-                    outside_point = outside_point.transform(to_world)
+                    outside_point = outside_point.transform(primitive_to_world)
                     reflected_ray = ray.spawn_daughter(outside_point, reflected)
 
                 spectrum = reflected_ray.trace(world)
@@ -304,7 +247,7 @@ cdef class Dielectric(Material):
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             double length
@@ -313,16 +256,10 @@ cdef class Dielectric(Material):
             int index
 
         length = start_point.vector_to(end_point).get_length()
-
-        transmission = self.transmission.sample_multiple(spectrum.min_wavelength,
-                                                         spectrum.max_wavelength,
-                                                         spectrum.num_samples)
-
+        transmission = self.transmission.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
         s_view = spectrum.samples
         t_view = transmission
-
         for index in range(spectrum.num_samples):
-
             s_view[index] *= cpow(t_view[index], length)
 
         return spectrum

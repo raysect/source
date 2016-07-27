@@ -1,8 +1,7 @@
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
-from raysect.optical.observer import PinholeCamera
-from raysect.optical.material.emitter import UniformSurfaceEmitter
-from raysect.optical.material.lambert import Lambert
-from raysect.optical.library import schott
+from raysect.optical.observer import PinholeCamera, AutoExposure
+from raysect.optical.material import Lambert, UniformSurfaceEmitter
+from raysect.optical.library import *
 from raysect.primitive import Sphere, Box
 from matplotlib.pyplot import *
 from numpy import array
@@ -54,7 +53,7 @@ red_reflectivity = InterpolatedSF(wavelengths, red)
 green_reflectivity = InterpolatedSF(wavelengths, green)
 
 # define light spectrum
-light_spectrum = InterpolatedSF(array([400, 500, 600, 700]), array([0.0, 8.0, 15.6, 18.4]) * 0.3)
+light_spectrum = InterpolatedSF(array([400, 500, 600, 700]), array([0.0, 8.0, 15.6, 18.4]))
 
 # set-up scenegraph
 world = World()
@@ -70,6 +69,7 @@ e_back = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
 e_bottom = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
                parent=enclosure,
                transform=translate(0, -1, 0) * rotate(0, -90, 0),
+               # material=m)
                material=Lambert(white_reflectivity))
 
 e_top = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
@@ -88,41 +88,67 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
               material=Lambert(green_reflectivity))
 
 # ceiling light
+# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+#             parent=enclosure,
+#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
+#             material=UniformSurfaceEmitter(light_spectrum, 2))
+
 light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
             parent=enclosure,
             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-            material=UniformSurfaceEmitter(light_spectrum, 2.0))
+            material=UniformSurfaceEmitter(d65_white, 2))
+
+# back_light = Sphere(0.1,
+#     parent=enclosure,
+#     transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
+#     material=UniformSurfaceEmitter(light_spectrum, 100.0))
 
 # objects in enclosure
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
           parent=world,
           transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
-          material=schott("N-BK7"))
+          material=RoughTungsten(0.5))
+          # material=Lambert())
+          # material=schott("N-BK7"))
 
 sphere = Sphere(0.4,
     parent=world,
     transform=translate(-0.4, -0.6 + 1e-6, -0.4)*rotate(0, 0, 0),
-    material=schott("N-BK7"))
+    material=RoughCopper(0.6))
+    # material=Lambert())
+    # material=Titanium())
+    # material=schott("N-BK7"))
+
 
 # create and setup the camera
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
+camera.ray_importance_sampling = True
+camera.ray_important_path_weight = 0.1
 camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
-camera.rays = 1
+camera.spectral_rays = 1
 camera.spectral_samples = 21
 camera.pixels = (256, 256)
 camera.pixel_samples = 50
 camera.display_progress = True
 camera.display_update_time = 10
 camera.accumulate = True
+camera.exposure_handler = AutoExposure(0.97)
+
+
+# camera.process_count = 1
 
 # start ray tracing
 ion()
-for p in range(1, 1000):
-    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.rays))
+for p in range(1, 5000):
+    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.spectral_rays))
     camera.observe()
-    camera.save("cornell_box_{}_samples.png".format(camera.accumulated_samples))
+    if camera.ray_importance_sampling:
+        name = "cornell_box_mis_{}_samples.png"
+    else:
+        name = "cornell_box_normal_{}_samples.png"
+    camera.save(name.format(camera.accumulated_samples))
     print()
 
 # display final result

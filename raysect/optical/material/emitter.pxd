@@ -29,15 +29,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.material cimport NullSurface, NullVolume
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.scenegraph.world cimport World
-from raysect.optical.ray cimport Ray
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.point cimport Point3D
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.spectralfunction cimport SpectralFunction
+from raysect.optical cimport World, Primitive, Ray, Spectrum, SpectralFunction, Point3D, Vector3D, AffineMatrix3D
+from raysect.optical.material cimport NullSurface, NullVolume
+
+
+cdef class UniformSurfaceEmitter(NullVolume):
+
+    cdef:
+        public SpectralFunction emission_spectrum
+        public double scale
+
 
 cdef class VolumeEmitterHomogeneous(NullSurface):
 
@@ -54,19 +55,12 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D to_local, AffineMatrix3D to_world)
 
-cdef class UniformSurfaceEmitter(NullVolume):
-
-    cdef:
-        public SpectralFunction emission_spectrum
-        public double scale
-
 
 cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
     cdef:
         public SpectralFunction emission_spectrum
         public double scale
-
 
 
 cdef class Checkerboard(NullVolume):

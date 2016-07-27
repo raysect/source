@@ -29,11 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray
-from raysect.core.classes cimport Intersection
+from raysect.core.ray cimport Ray
+from raysect.core.intersection cimport Intersection
 from raysect.core.acceleration.accelerator cimport Accelerator
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.point cimport Point3D
+from raysect.core.math cimport Point3D, AffineMatrix3D
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 
 cdef class World(_NodeBase):

@@ -29,14 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.classes cimport Ray, Material, Intersection
-from raysect.core.math.point cimport Point3D
+from raysect.core.ray cimport Ray
+from raysect.core.material cimport Material
+from raysect.core.intersection cimport Intersection
+from raysect.core.math cimport Point3D
 from raysect.core.scenegraph.node cimport Node
 from raysect.core.boundingbox cimport BoundingBox3D
+from raysect.core.scenegraph.signal cimport ChangeSignal
 
 cdef class Primitive(Node):
 
-    cdef Material material
+    cdef Material _material
+
+    cdef inline Material get_material(self)
 
     cpdef Intersection hit(self, Ray ray)
 
@@ -46,4 +51,6 @@ cdef class Primitive(Node):
 
     cpdef BoundingBox3D bounding_box(self)
 
-    cpdef object notify_root(self)
+    cpdef object notify_geometry_change(self)
+
+    cpdef object notify_material_change(self)

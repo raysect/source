@@ -29,12 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.spectrum cimport new_spectrum
+from libc.math cimport M_PI as PI, asin, cos
+
+from raysect.core cimport Intersection
 from raysect.core.math.random cimport probability
-from raysect.core.math.cython.utility cimport clamp
-from raysect.core.classes cimport Intersection
-from raysect.core.scenegraph.primitive cimport Primitive
+from raysect.core.math.cython cimport clamp
 from raysect.optical.material.material cimport Material
+from raysect.optical.spectrum cimport new_spectrum
+from raysect.optical.scenegraph cimport Primitive
 cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
@@ -52,7 +54,9 @@ cdef class Ray(CoreRay):
                  double max_distance = INFINITY,
                  double extinction_prob = 0.1,
                  int min_depth = 3,
-                 int max_depth = 100):
+                 int max_depth = 100,
+                 bint importance_sampling=True,
+                 double important_path_weight=0.25):
 
         if num_samples < 1:
             raise ValueError("Number of samples can not be less than 1.")
@@ -62,6 +66,9 @@ cdef class Ray(CoreRay):
 
         if min_wavelength >= max_wavelength:
             raise ValueError("Minimum wavelength must be less than the maximum wavelength.")
+
+        if important_path_weight < 0 or important_path_weight > 1.0:
+            raise ValueError("Important path weight must be in the range [0, 1].")
 
         super().__init__(origin, direction, max_distance)
 
@@ -73,6 +80,9 @@ cdef class Ray(CoreRay):
         self.min_depth = min_depth
         self.max_depth = max_depth
         self.depth = 0
+
+        self.importance_sampling = importance_sampling
+        self._important_path_weight = important_path_weight
 
         # ray statistics
         self.ray_count = 0
@@ -90,6 +100,8 @@ cdef class Ray(CoreRay):
             self._min_depth,
             self._max_depth,
             self.depth,
+            self.importance_sampling,
+            self._important_path_weight,
             self.ray_count,
             self._primary_ray
         )
@@ -105,6 +117,8 @@ cdef class Ray(CoreRay):
          self._min_depth,
          self._max_depth,
          self.depth,
+         self.importance_sampling,
+         self._important_path_weight,
          self.ray_count,
          self._primary_ray) = state
 
@@ -189,6 +203,19 @@ cdef class Ray(CoreRay):
                 raise ValueError("The maximum depth cannot be less than the minimum depth.")
             self._max_depth = max_depth
 
+    property important_path_weight:
+
+        def __get__(self):
+            return self._important_path_weight
+
+        def __set__(self, double important_path_weight):
+            if important_path_weight < 0 or important_path_weight > 1.0:
+                raise ValueError("Important path weight must be in the range [0, 1].")
+            self._important_path_weight = important_path_weight
+
+    cdef inline double get_important_path_weight(self):
+        return self._important_path_weight
+
     cpdef Spectrum new_spectrum(self):
         """
         Returns a new Spectrum compatible with the ray spectral settings.
@@ -237,48 +264,63 @@ cdef class Ray(CoreRay):
         # does the ray intersect with any of the primitives in the world?
         intersection = world.hit(self)
         if intersection is not None:
-
-            # request surface contribution to spectrum from primitive material
-            material = intersection.primitive.material
-            spectrum = material.evaluate_surface(
-                world, self,
-                intersection.primitive,
-                intersection.hit_point,
-                intersection.exiting,
-                intersection.inside_point,
-                intersection.outside_point,
-                intersection.normal,
-                intersection.to_local,
-                intersection.to_world
-            )
-
-            # identify any primitive volumes the ray is propagating through
-            primitives = world.contains(self.origin)
-            if len(primitives) > 0:
-
-                # the start and end points for volume contribution calculations
-                # defined such that start to end is in the direction of light
-                # propagation - from source to observer
-                start_point = intersection.hit_point.transform(intersection.to_world)
-                end_point = self.origin
-
-                # accumulate volume contributions to the spectrum
-                for primitive in primitives:
-
-                    material = primitive.material
-                    spectrum = material.evaluate_volume(
-                        spectrum,
-                        world,
-                        self,
-                        primitive,
-                        start_point,
-                        end_point,
-                        primitive.to_local(),
-                        primitive.to_root()
-                    )
+            spectrum = self._sample_surface(intersection, world)
+            spectrum = self._sample_volumes(spectrum, intersection, world)
 
         # apply normalisation to ensure the sampling remains unbiased
         spectrum.mul_scalar(normalisation)
+        return spectrum
+
+    @cython.cdivision(True)
+    cdef inline Spectrum _sample_surface(self, Intersection intersection, World world):
+
+        cdef Material material
+
+        # request surface contribution to spectrum from primitive material
+        material = intersection.primitive.get_material()
+        return material.evaluate_surface(world,
+                                         self,
+                                         intersection.primitive,
+                                         intersection.hit_point,
+                                         intersection.exiting,
+                                         intersection.inside_point,
+                                         intersection.outside_point,
+                                         intersection.normal,
+                                         intersection.world_to_primitive,
+                                         intersection.primitive_to_world)
+
+    cdef inline Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):
+
+        cdef:
+            list primitives
+            Point3D start_point, end_point
+            Primitive primitive
+
+        # identify any primitive volumes the ray is propagating through
+        primitives = world.contains(self.origin)
+        if len(primitives) > 0:
+
+            # the start and end points for volume contribution calculations
+            # defined such that start to end is in the direction of light
+            # propagation - from source to observer
+            start_point = intersection.hit_point.transform(intersection.primitive_to_world)
+            end_point = self.origin
+
+            # accumulate volume contributions to the spectrum
+            for primitive in primitives:
+
+                material = primitive.get_material()
+                spectrum = material.evaluate_volume(
+                    spectrum,
+                    world,
+                    self,
+                    primitive,
+                    start_point,
+                    end_point,
+                    primitive.to_local(),
+                    primitive.to_root()
+                )
+
         return spectrum
 
     @cython.cdivision(True)
@@ -337,6 +379,8 @@ cdef class Ray(CoreRay):
         ray._extinction_prob = self._extinction_prob
         ray._min_depth = self._min_depth
         ray._max_depth = self._max_depth
+        ray.importance_sampling = self.importance_sampling
+        ray._important_path_weight = self._important_path_weight
         ray.depth = self.depth + 1
 
         # track ray statistics
@@ -367,5 +411,8 @@ cdef class Ray(CoreRay):
             origin, direction,
             self._min_wavelength, self._max_wavelength, self._num_samples,
             self.max_distance,
-            self._extinction_prob, self._min_depth, self._max_depth
+            self._extinction_prob, self._min_depth, self._max_depth,
+            self.importance_sampling,
+            self._important_path_weight
         )
+

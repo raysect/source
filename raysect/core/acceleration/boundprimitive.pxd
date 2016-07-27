@@ -30,10 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.boundingbox cimport BoundingBox3D
-from raysect.core.scenegraph.primitive cimport Primitive
-from raysect.core.math.point cimport Point3D
-from raysect.core.classes cimport Ray
-from raysect.core.classes cimport Intersection
+from raysect.core.scenegraph cimport Primitive
+from raysect.core.math cimport Point3D
+from raysect.core.ray cimport Ray
+from raysect.core.intersection cimport Intersection
 
 cdef class BoundPrimitive:
 

@@ -39,59 +39,59 @@ These functions can not be called from Python directly.
    segmentation fault.
 """
 
-from raysect.core.math.affinematrix cimport  new_affinematrix3d
+from raysect.core.math.affinematrix cimport new_affinematrix3d
 
 
-cdef inline AffineMatrix3D local_to_surface(Vector3D normal, Vector3D tangent):
+cdef inline AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up):
     """
-    Returns a transform matrix from that maps from local space to surface space.
+    Returns a rotation matrix defined by forward and up vectors.
 
-    Some calculations are most efficiently performed in a coordinate space
-    aligned with the normal of a primitive surface. This convenience function
-    generates a rotation from primitive local space to surface space.
+    The +ve Z-axis of the resulting coordinate space will be aligned with the
+    forward vector. The +ve Y-axis will be aligned to lie in the plane defined
+    the forward and up vectors, along the projection of the up vector that
+    lies orthogonal to the forward vector. The X-axis will lie perpendicular to
+    the plane.
 
-    Surface space is defined by a normal and tangent defined in the local
-    coordinate system. These vectors must be orthogonal and normalised, no
-    checks are performed.
+    The forward and upwards vectors need not be orthogonal. The up vector will
+    be rotated in the plane defined by the two vectors until it is orthogonal.
 
-    :param Vector normal: Surface normal in local space.
-    :param Vector tangent: Surface tangent in local space.
-    :return: Transform matrix from local to surface space.
+    :param forward: A Vector3D object defining the forward direction.
+    :param up: A Vector3D object defining the up direction.
+    :return: An AffineMatrix3D object.
     """
 
-    tangent = normal.orthogonal()
-    bitangent = normal.cross(tangent)
+    cdef Vector3D right = up.cross(forward)
 
     return new_affinematrix3d(
-        tangent.x, tangent.y, tangent.z, 0.0,
-        bitangent.x, bitangent.y, bitangent.z, 0.0,
-        normal.x, normal.y, normal.z, 0.0,
+        right.x, up.x, forward.x, 0.0,
+        right.y, up.y, forward.y, 0.0,
+        right.z, up.z, forward.z, 0.0,
         0.0, 0.0, 0.0, 1.0
     )
 
-cdef inline AffineMatrix3D surface_to_local(Vector3D normal, Vector3D tangent):
+cdef inline AffineMatrix3D rotate_basis_inverse(Vector3D forward, Vector3D up):
     """
-    Returns a transform matrix from that maps from surface space to local space.
+    Returns the inverse of the rotation matrix defined by forward and up vectors.
 
-    Some calculations are most efficiently performed in a coordinate space
-    aligned with the normal of a primitive surface. This convenience function
-    generates a rotation from surface space to primitive local space.
+    The +ve Z-axis of the resulting coordinate space will be aligned with the
+    forward vector. The +ve Y-axis will be aligned to lie in the plane defined
+    the forward and up vectors, along the projection of the up vector that
+    lies orthogonal to the forward vector. The X-axis will lie perpendicular to
+    the plane.
 
-    Surface space is defined by a normal and tangent defined in the local
-    coordinate system. These vectors must be orthogonal and normalised, no
-    checks are performed.
+    The forward and upwards vectors need not be orthogonal. The up vector will
+    be rotated in the plane defined by the two vectors until it is orthogonal.
 
-    :param Vector normal: Surface normal in local space.
-    :param Vector tangent: Surface tangent in local space.
-    :return: Transform matrix from surface to local space.
+    :param forward: A Vector3D object defining the forward direction.
+    :param up: A Vector3D object defining the up direction.
+    :return: An AffineMatrix3D object.
     """
 
-    tangent = normal.orthogonal()
-    bitangent = normal.cross(tangent)
+    cdef Vector3D right = up.cross(forward)
 
     return new_affinematrix3d(
-        tangent.x, bitangent.x, normal.x, 0.0,
-        tangent.y, bitangent.y, normal.y, 0.0,
-        tangent.z, bitangent.z, normal.z, 0.0,
+        right.x, right.x, right.x, 0.0,
+        up.y, up.y, up.y, 0.0,
+        forward.z, forward.z, forward.z, 0.0,
         0.0, 0.0, 0.0, 1.0
     )

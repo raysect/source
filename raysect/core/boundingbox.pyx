@@ -32,7 +32,7 @@
 # TODO: add docstrings
 
 cimport cython
-from raysect.core.math.point cimport new_point3d, new_point2d
+from raysect.core.math cimport new_point3d, new_point2d
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
@@ -41,6 +41,9 @@ DEF INFINITY = 1e999
 DEF X_AXIS = 0
 DEF Y_AXIS = 1
 DEF Z_AXIS = 2
+
+# defines the padding on the sphere which encloses the BoundingBox3D.
+DEF SPHERE_PADDING = 1.000001
 
 
 cdef class BoundingBox3D:
@@ -104,6 +107,22 @@ cdef class BoundingBox3D:
 
         def __set__(self, Point3D value not None):
             self.upper = value
+
+    property centre:
+
+        def __get__(self):
+            return self.get_centre()
+
+    cdef inline Point3D get_centre(self):
+        """
+        Find the centre of the bounding box.
+        """
+
+        return new_point3d(
+            0.5 * (self.lower.x + self.upper.x),
+            0.5 * (self.lower.y + self.upper.y),
+            0.5 * (self.lower.z + self.upper.z)
+        )
 
     cpdef bint hit(self, Ray ray):
 
@@ -292,6 +311,18 @@ cdef class BoundingBox3D:
         self.upper.x = self.upper.x + padding
         self.upper.y = self.upper.y + padding
         self.upper.z = self.upper.z + padding
+
+    cpdef double enclosing_sphere(self):
+        """
+        Returns the radius of a sphere guaranteed to enclose the bounding box.
+
+        The sphere is centred at the box centre. A small degree of padding is
+        added to avoid numerical accuracy issues.
+
+        :return: Radius of sphere.
+        """
+
+        return self.lower.distance_to(self.get_centre()) * SPHERE_PADDING
 
 
 cdef class BoundingBox2D:

@@ -34,7 +34,7 @@
 # two categories based on the way they sample areas of the pixel surface, and solid angles.
 
 from libc.math cimport M_PI as PI
-from raysect.core.math.vector import Vector3D
+from raysect.core.math import Vector3D
 from raysect.core.math.random import vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone, vector_sphere
 
 

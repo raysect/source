@@ -29,9 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.scenegraph.signal import GEOMETRY
+
 from raysect.core.acceleration.kdtree cimport KDTree
 from raysect.core.scenegraph.primitive cimport Primitive
 from raysect.core.scenegraph.observer cimport Observer
+from raysect.core.scenegraph.signal cimport ChangeSignal
 
 
 cdef class World(_NodeBase):
@@ -49,9 +52,9 @@ cdef class World(_NodeBase):
 
         super().__init__(name)
 
-        self. _primitives = list()
-        self. _observers = list()
-        self. _rebuild_accelerator = True
+        self._primitives = list()
+        self._observers = list()
+        self._rebuild_accelerator = True
         self._accelerator = KDTree()
 
     property accelerator:
@@ -172,7 +175,9 @@ cdef class World(_NodeBase):
             self._rebuild_accelerator = False
 
     def _register(self, _NodeBase node):
-        """Adds observers and primitives to the World's object tracking lists."""
+        """
+        Adds observers and primitives to the World's object tracking lists.
+        """
 
         if isinstance(node, Primitive):
             self._primitives.append(node)
@@ -182,7 +187,9 @@ cdef class World(_NodeBase):
             self._observers.append(node)
 
     def _deregister(self, _NodeBase node):
-        """Removes observers and primitives from the World's object tracking lists."""
+        """
+        Removes observers and primitives from the World's object tracking lists.
+        """
 
         if isinstance(node, Primitive):
             self._primitives.remove(node)
@@ -191,11 +198,23 @@ cdef class World(_NodeBase):
         if isinstance(node, Observer):
             self._observers.remove(node)
 
-    def _change(self, _NodeBase node):
+    def _change(self, _NodeBase node, ChangeSignal change not None):
         """
-        Alerts the world that a change to the scene-graph has occurred that could
-        have made the acceleration structure no longer a valid representation
-        of the scene-graph geometry.
+        Notifies the World of a change to the scene-graph.
+
+        This method must be called is a change occurs that may have invalidated
+        any acceleration structures held by the World.
+
+        The node on which the change occurs and a ChangeSignal must be
+        provided. The ChangeSignal must specify the nature of the change to the
+        scene-graph.
+
+        The core World object only recognises the GEOMETRY signal. When a
+        GEOMETRY signal is received, the world will be instructed to rebuild
+        it's spatial acceleration structures on the next call to any method
+        that interacts with the scene-graph geometry.
         """
 
-        self._rebuild_accelerator = True
+        if change is GEOMETRY:
+            self._rebuild_accelerator = True
+

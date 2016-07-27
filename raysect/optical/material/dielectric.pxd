@@ -29,21 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.optical.material.material cimport Material
+from raysect.optical cimport SpectralFunction, NumericallyIntegratedSF
+from raysect.optical.material cimport Material
 
-cdef class Sellmeier(SpectralFunction):
+cdef class Sellmeier(NumericallyIntegratedSF):
 
     cdef:
         double b1, b2, b3
         double c1, c2, c3
-        int subsamples
-        bint cached
-        double cached_min_wavelength
-        double cached_max_wavelength
-        double cached_index
-
-    cdef inline double _sellmeier(self, double wavelength) nogil
 
 
 cdef class Dielectric(Material):

@@ -29,6 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.scenegraph.signal import GEOMETRY
+from raysect.core.scenegraph.signal cimport ChangeSignal
+
+
 cdef class _NodeBase:
     """
     The base class from which all scene-graph objects are derived.
@@ -99,7 +103,6 @@ cdef class _NodeBase:
 
             # report root transforms have changed
             if self._track_modifications:
-
                 self._modified()
 
         else:
@@ -118,15 +121,13 @@ cdef class _NodeBase:
 
             # report root transforms have changed
             if self._track_modifications:
-
                 self._modified()
 
-        # inform root node of change to scenegraph
-        self.root._change(self)
+        # inform root node of change to scene-graph
+        self.root._change(self, GEOMETRY)
 
         # propagate changes to children
         for child in self.children:
-
             child._update()
 
     def _register(self, _NodeBase node):
@@ -154,11 +155,13 @@ cdef class _NodeBase:
 
         pass
 
-    def _change(self, _NodeBase node):
+    def _change(self, _NodeBase node, ChangeSignal change not None):
         """
         When implemented by root nodes this method allows nodes in the
-        scene-graph to inform the root node of any change to scenegraph
+        scene-graph to inform the root node of any change to scene-graph
         structure or to the nodes themselves.
+
+        A ChangeSignal object specifying the nature of the change.
 
         Virtual method call.
         """

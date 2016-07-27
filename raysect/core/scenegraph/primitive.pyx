@@ -29,7 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.scenegraph.signal import GEOMETRY, MATERIAL
 from raysect.core.math.affinematrix cimport AffineMatrix3D
+
 
 cdef class Primitive(Node):
     """
@@ -59,10 +61,23 @@ cdef class Primitive(Node):
     property material:
 
         def __get__(self):
-            return self.material
+            return self._material
 
         def __set__(self, Material value not None):
-            self.material = value
+
+            # remove any reverse reference from existing material
+            if self._material is not None:
+                self._material.primitives.remove(self)
+
+            # assign new material and provide it with a reverse reference
+            self._material = value
+            self._material.primitives.append(self)
+
+            # inform the scene-graph root that a material change has occurred
+            self.notify_material_change()
+
+    cdef inline Material get_material(self):
+        return self._material
 
     # TODO - question name - could be clearer (hits?, primitive.hit_by(ray)?, primitiive.intersects(ray)?)
     cpdef Intersection hit(self, Ray ray):
@@ -140,15 +155,27 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
 
-    cpdef object notify_root(self):
+    cpdef object notify_geometry_change(self):
         """
-        Notifies the scene-graph root that a change to the primitives geometry has occurred.
+        Notifies the scene-graph root of a change to the primitive's geometry.
 
-        This method must be called by primitives when their geometry changes. This method
-        informs the root node that any caching structures used to accelerate ray-tracing
-        calculations are now potentially invalid and must be recalculated, taking the new
-        geometry into account.
+        This method must be called by primitives when their geometry changes.
+        The notification informs the root node that any caching structures used
+        to accelerate ray-tracing calculations are now potentially invalid and
+        must be recalculated, taking the new geometry into account.
         """
 
-        self.root._change(self)
+        self.root._change(self, GEOMETRY)
+
+    cpdef object notify_material_change(self):
+        """
+        Notifies the scene-graph root of a change to the primitive's material.
+
+        This method must be called by primitives when their material changes.
+        The notification informs the root node that any caching structures used
+        to accelerate ray-tracing calculations are now potentially invalid and
+        must be recalculated, taking the new material into account.
+        """
+
+        self.root._change(self, MATERIAL)
 

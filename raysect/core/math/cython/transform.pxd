@@ -32,6 +32,6 @@
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.vector cimport Vector3D
 
-cdef inline AffineMatrix3D local_to_surface(Vector3D normal, Vector3D tangent)
+cdef inline AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up)
 
-cdef inline AffineMatrix3D surface_to_local(Vector3D normal, Vector3D tangent)
+cdef inline AffineMatrix3D rotate_basis_inverse(Vector3D forward, Vector3D up)

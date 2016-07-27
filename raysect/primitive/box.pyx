@@ -29,11 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.normal cimport Normal3D, new_normal3d
-from raysect.core.math.point cimport new_point3d
-from raysect.core.classes cimport Material, new_intersection
-from raysect.core.boundingbox cimport BoundingBox3D
+from raysect.core cimport new_point3d, Normal3D, new_normal3d, AffineMatrix3D, Material, new_intersection, BoundingBox3D
 from libc.math cimport fabs
 cimport cython
 
@@ -124,7 +120,7 @@ cdef class Box(Primitive):
             self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
-            self.notify_root()
+            self.notify_geometry_change()
 
     property upper:
 
@@ -144,7 +140,7 @@ cdef class Box(Primitive):
             self._further_intersection = False
 
             # any geometry caching in the root node is now invalid, inform root
-            self.root._change(self)
+            self.notify_geometry_change()
 
     cpdef Intersection hit(self, Ray ray):
 

@@ -29,14 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .mesh import Mesh
-from raysect.core import Point3D
+from raysect.primitive.mesh import Mesh
 import struct
 import os
 
 STL_AUTOMATIC = 0
 STL_ASCII = 1
 STL_BINARY = 2
+
 
 class STLHandler:
 
