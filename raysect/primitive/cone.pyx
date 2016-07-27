@@ -54,7 +54,7 @@ cdef class Cone(Primitive):
     A cone primitive.
 
     The cone is defined by a radius and height. It lies along the z-axis
-    and extends over the z range [0, height]. The bottom end of the cone is
+    and extends over the z range [0, height]. The top end of the cone is
     capped with a disk forming a closed surface.
     """
 
