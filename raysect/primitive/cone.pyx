@@ -70,7 +70,7 @@ cdef class Cone(Primitive):
         :param parent: Scene-graph parent node or None (default = None).
         :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
         :param material: A Material object defining the cone's material (default = None).
-        :param name: A string specifying a user-friendly name for the cylinder (default = "").
+        :param name: A string specifying a user-friendly name for the cone (default = "").
         """
 
         super().__init__(parent, transform, material, name)
