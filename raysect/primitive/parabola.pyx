@@ -212,47 +212,47 @@ cdef class Parabola(Primitive):
 
             t1 = -origin.z / direction.z
             t1_type = BASE
-    #
-    #     # ensure t0 is always smaller (closer) than t1
-    #     if t0 > t1:
-    #
-    #         # swap ray distance
-    #         temp_d = t0
-    #         t0 = t1
-    #         t1 = temp_d
-    #
-    #         # swap intersection type
-    #         temp_i = t0_type
-    #         t0_type = t1_type
-    #         t1_type = temp_i
-    #
-    #     # are there any intersections inside the ray search range?
-    #     if t0 > ray.max_distance or t1 < 0.0:
-    #         return None
-    #
-    #     # identify closest intersection
-    #     if t0 >= 0.0:
-    #         closest_intersection = t0
-    #         closest_type = t0_type
-    #
-    #         # If there is a further intersection, setup values for next calculation.
-    #         if t1 <= ray.max_distance:
-    #             self._further_intersection = True
-    #             self._next_t = t1
-    #             self._cached_origin = origin
-    #             self._cached_direction = direction
-    #             self._cached_ray = ray
-    #             self._cached_type = t1_type
-    #
-    #     elif t1 <= ray.max_distance:
-    #         closest_intersection = t1
-    #         closest_type = t1_type
-    #
-    #     else:
-    #         return None
-    #
-    #     return self._generate_intersection(ray, origin, direction, closest_intersection, closest_type)
-    #
+
+        # ensure t0 is always smaller (closer) than t1
+        if t0 > t1:
+
+            # swap ray distance
+            temp_d = t0
+            t0 = t1
+            t1 = temp_d
+
+            # swap intersection type
+            temp_i = t0_type
+            t0_type = t1_type
+            t1_type = temp_i
+
+        # are there any intersections inside the ray search range?
+        if t0 > ray.max_distance or t1 < 0.0:
+            return None
+
+        # identify closest intersection
+        if t0 >= 0.0:
+            closest_intersection = t0
+            closest_type = t0_type
+
+            # If there is a further intersection, setup values for next calculation.
+            if t1 <= ray.max_distance:
+                self._further_intersection = True
+                self._next_t = t1
+                self._cached_origin = origin
+                self._cached_direction = direction
+                self._cached_ray = ray
+                self._cached_type = t1_type
+
+        elif t1 <= ray.max_distance:
+            closest_intersection = t1
+            closest_type = t1_type
+
+        else:
+            return None
+
+        return self._generate_intersection(ray, origin, direction, closest_intersection, closest_type)
+
     # cpdef Intersection next_intersection(self):
     #
     #     if not self._further_intersection:
