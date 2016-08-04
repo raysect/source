@@ -200,7 +200,7 @@ cdef class Cone(Primitive):
 
             else:
 
-                # both intersections are valid and with the cone body
+                # both intersections are valid and within the cone body
                 t0_type = CONE
                 t1_type = CONE
 

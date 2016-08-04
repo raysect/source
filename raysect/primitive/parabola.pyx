@@ -155,63 +155,63 @@ cdef class Parabola(Primitive):
         # Solve quadratic equation
         d = b * b - 4 * a * c
 
-    #     if d < 0:
-    #
-    #         # ray misses cone if there are no real roots of the quadratic
-    #         return None
-    #
-    #     elif d > 0:
-    #
-    #         # ray hits full cone quadratic twice
-    #
-    #         # calculate intersections
-    #         d = sqrt(d)
-    #         temp_d = 1 / (2.0 * a)
-    #         t0 = -(d + b) * temp_d
-    #         t1 = (d - b) * temp_d
-    #
-    #         # calculate z height of intersection points
-    #         t0_z = origin.z + t0 * direction.z
-    #         t1_z = origin.z + t1 * direction.z
-    #
-    #         t0_outside = t0_z < 0 or t0_z > height
-    #         t1_outside = t1_z < 0 or t1_z > height
-    #
-    #         if t0_outside and t1_outside:
-    #
-    #             # ray intersects cone outside of height range
-    #             return None
-    #
-    #         elif 0 < t0_z < height and t1_outside:
-    #
-    #             # t0 is in range, t1 is outside
-    #             t0_type = CONE
-    #
-    #             t1 = -origin.z / direction.z
-    #             t1_type = BASE
-    #
-    #         elif t0_outside and 0 < t1_z < height:
-    #
-    #             # t0 is outside range, t1 is inside
-    #             t0_type = BASE
-    #             t0 = -origin.z / direction.z
-    #
-    #             t1_type = CONE
-    #
-    #         else:
-    #
-    #             # both intersections are valid and with the cone body
-    #             t0_type = CONE
-    #             t1_type = CONE
-    #
-    #     else:
-    #
-    #         # ray intersects the tip of the cone
-    #         t0 = -b / (2.0 * a)
-    #         t0_type = CONE
-    #
-    #         t1 = -origin.z / direction.z
-    #         t1_type = BASE
+        if d < 0:
+
+            # ray misses parabola if there are no real roots of the quadratic
+            return None
+
+        elif d > 0:
+
+            # ray hits full parabola quadratic twice
+
+            # calculate intersections
+            d = sqrt(d)
+            temp_d = 1 / (2.0 * a)
+            t0 = -(d + b) * temp_d
+            t1 = (d - b) * temp_d
+
+            # calculate z height of intersection points
+            t0_z = origin.z + t0 * direction.z
+            t1_z = origin.z + t1 * direction.z
+
+            t0_outside = t0_z < 0 or t0_z > height
+            t1_outside = t1_z < 0 or t1_z > height
+
+            if t0_outside and t1_outside:
+
+                # ray intersects parabola outside of height range
+                return None
+
+            elif 0 < t0_z < height and t1_outside:
+
+                # t0 is in range, t1 is outside
+                t0_type = PARABOLA
+
+                t1 = -origin.z / direction.z
+                t1_type = BASE
+
+            elif t0_outside and 0 < t1_z < height:
+
+                # t0 is outside range, t1 is inside
+                t0_type = BASE
+                t0 = -origin.z / direction.z
+
+                t1_type = PARABOLA
+
+            else:
+
+                # both intersections are valid and within the parabola body
+                t0_type = PARABOLA
+                t1_type = PARABOLA
+
+        else:
+
+            # ray intersects the tip of the parabola
+            t0 = -b / (2.0 * a)
+            t0_type = PARABOLA
+
+            t1 = -origin.z / direction.z
+            t1_type = BASE
     #
     #     # ensure t0 is always smaller (closer) than t1
     #     if t0 > t1:
