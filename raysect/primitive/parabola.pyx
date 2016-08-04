@@ -121,38 +121,40 @@ cdef class Parabola(Primitive):
             # any geometry caching in the root node is now invalid, inform root
             self.notify_geometry_change()
 
-    # @cython.cdivision(True)
-    # cpdef Intersection hit(self, Ray ray):
-    #
-    #     cdef:
-    #         Point3D origin
-    #         Vector3D direction
-    #         double radius, height
-    #         double a, b, c, d, k, t0, t1, t0_z, t1_z, temp_d
-    #         int t0_type, t1_type, temp_i
-    #         bint t0_outside, t1_outside
-    #         double closest_intersection
-    #         int closest_type
-    #
-    #     # reset the next intersection cache
-    #     self._further_intersection = False
-    #
-    #     # convert ray origin and direction to local space
-    #     origin = ray.origin.transform(self.to_local())
-    #     direction = ray.direction.transform(self.to_local())
-    #
-    #     radius = self._radius
-    #     height = self._height
-    #
-    #     # Compute quadratic cone coefficients
-    #     # based on math from "Physically Based Rendering - 2nd Edition", Elsevier 2010
-    #     k = radius / height
-    #     k = k * k
-    #     a = direction.x * direction.x + direction.y * direction.y - k * direction.z * direction.z
-    #     b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z - height) )
-    #     c = origin.x * origin.x + origin.y * origin.y - k * (origin.z - height) * (origin.z - height)
-    #     d = b * b - 4 * a * c
-    #
+    @cython.cdivision(True)
+    cpdef Intersection hit(self, Ray ray):
+
+        cdef:
+            Point3D origin
+            Vector3D direction
+            double radius, height
+            double a, b, c, d, k, t0, t1, t0_z, t1_z, temp_d
+            int t0_type, t1_type, temp_i
+            bint t0_outside, t1_outside
+            double closest_intersection
+            int closest_type
+
+        # reset the next intersection cache
+        self._further_intersection = False
+
+        # convert ray origin and direction to local space
+        origin = ray.origin.transform(self.to_local())
+        direction = ray.direction.transform(self.to_local())
+
+        radius = self._radius
+        height = self._height
+
+        # Compute quadratic parabola coefficients
+        # based on math from "Physically Based Rendering - 2nd Edition", Elsevier 2010
+        # source code available at https://github.com/mmp/pbrt-v3/blob/master/src/shapes/paraboloid.cpp
+        k = height / (radius * radius)
+        a = k * (direction.x * direction.x + direction.y * direction.y)
+        b = 2 * k * (direction.x * origin.x + direction.y * origin.y) - direction.z
+        c = k * (origin.x * origin.x + origin.y * origin.y) - origin.z
+
+        # Solve quadratic equation
+        d = b * b - 4 * a * c
+
     #     if d < 0:
     #
     #         # ray misses cone if there are no real roots of the quadratic

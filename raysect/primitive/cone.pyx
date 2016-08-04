@@ -151,6 +151,8 @@ cdef class Cone(Primitive):
         a = direction.x * direction.x + direction.y * direction.y - k * direction.z * direction.z
         b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z - height) )
         c = origin.x * origin.x + origin.y * origin.y - k * (origin.z - height) * (origin.z - height)
+
+        # Solve quadratic equation
         d = b * b - 4 * a * c
 
         if d < 0:
