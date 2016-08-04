@@ -358,29 +358,29 @@ cdef class Parabola(Primitive):
             z = hit_point.z
 
         return new_point3d(x, y, z)
-    #
-    # @cython.cdivision(True)
-    # cpdef bint contains(self, Point3D point) except -1:
-    #
-    #     cdef:
-    #         double cone_radius, point_radius
-    #
-    #     # convert point to local object space
-    #     point = point.transform(self.to_local())
-    #
-    #     # reject points that are outside the cone's height (i.e. above the cones' tip or below its base)
-    #     if point.z < 0 or point.z > self._height:
-    #         return False
-    #
-    #     # calculate the cone radius at that point along the height axis:
-    #     cone_radius = (self._height - point.z) * self._radius / self._height
-    #
-    #     # calculate the point's orthogonal distance from the axis to compare against the cone radius:
-    #     point_radius = sqrt(point.x**2 + point.y**2)
-    #
-    #     # Points distance from axis must be less than cone radius at that height
-    #     return point_radius <= cone_radius
-    #
+
+    @cython.cdivision(True)
+    cpdef bint contains(self, Point3D point) except -1:
+
+        cdef:
+            double parabola_radius, point_radius
+
+        # convert point to local object space
+        point = point.transform(self.to_local())
+
+        # reject points that are outside the parabola's height (i.e. above the parabola's tip or below its base)
+        if point.z < 0 or point.z > self._height:
+            return False
+
+        # calculate the parabola radius at that point along the height axis:
+        parabola_radius = self._radius * sqrt(point.z / self._height)
+
+        # calculate the point's orthogonal distance from the axis to compare against the parabola radius:
+        point_radius = sqrt(point.x**2 + point.y**2)
+
+        # Points distance from axis must be less than parabola radius at that height
+        return point_radius <= parabola_radius
+
     cpdef BoundingBox3D bounding_box(self):
 
         cdef:
