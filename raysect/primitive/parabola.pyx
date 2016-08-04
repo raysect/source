@@ -253,110 +253,111 @@ cdef class Parabola(Primitive):
 
         return self._generate_intersection(ray, origin, direction, closest_intersection, closest_type)
 
-    # cpdef Intersection next_intersection(self):
-    #
-    #     if not self._further_intersection:
-    #         return None
-    #
-    #     # this is the 2nd and therefore last intersection
-    #     self._further_intersection = False
-    #
-    #     return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_type)
-    #
-    # @cython.cdivision(True)
-    # cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int type):
-    #
-    #     cdef:
-    #         Point3D hit_point, inside_point, outside_point
-    #         Normal3D normal
-    #         double a, b
-    #         bint exiting
-    #
-    #     # point of surface intersection in local space
-    #     hit_point = new_point3d(origin.x + ray_distance * direction.x,
-    #                             origin.y + ray_distance * direction.y,
-    #                             origin.z + ray_distance * direction.z)
-    #
-    #     # calculate surface normal in local space
-    #     if type == BASE:
-    #
-    #         # cone base
-    #         normal = new_normal3d(0, 0, -1)
-    #
-    #     elif type == CONE and hit_point.z == self._height:
-    #
-    #         # cone tip
-    #         normal = new_normal3d(0, 0, 1)
-    #
-    #     else:
-    #
-    #         # cone body
-    #         # calculate unit vector that points from origin to hit_point in x-y
-    #         # plane at the base of the cone and rotate perpendicular to cone surface
-    #         a = self._radius / self._height
-    #         b = 1 / (a * sqrt(hit_point.x**2 + hit_point.y**2))
-    #         normal = new_normal3d(b * hit_point.x, b * hit_point.y, a)
-    #         normal = normal.normalise()
-    #
-    #     # displace hit_point away from surface to generate inner and outer points
-    #     inside_point = self._interior_point(hit_point, normal, type)
-    #
-    #     outside_point = new_point3d(hit_point.x + EPSILON * normal.x,
-    #                                 hit_point.y + EPSILON * normal.y,
-    #                                 hit_point.z + EPSILON * normal.z)
-    #
-    #     # is ray exiting surface
-    #     exiting = direction.dot(normal) >= 0.0
-    #
-    #     return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
-    #                             normal, exiting, self.to_local(), self.to_root())
-    #
-    # @cython.cdivision(True)
-    # cdef inline Point3D _interior_point(self, Point3D hit_point, Normal3D normal, int type):
-    #
-    #     cdef:
-    #         double x, y, z
-    #         double old_radius, new_radius, scale
-    #         double inner_height, inner_radius, hit_radius_sqr
-    #
-    #     inner_height = self._height - EPSILON
-    #
-    #     if self._height >= hit_point.z > inner_height:
-    #
-    #         # Avoid tip of cone
-    #         x = 0.0
-    #         y = 0.0
-    #         z = inner_height
-    #
-    #     elif hit_point.z < EPSILON:
-    #
-    #         inner_radius = self._radius - EPSILON
-    #         hit_radius_sqr = hit_point.x**2 + hit_point.y**2
-    #
-    #         if hit_radius_sqr > inner_radius**2:
-    #             # Avoid bottom edges of cone
-    #             scale = inner_radius / sqrt(hit_radius_sqr)
-    #             x = scale * hit_point.x
-    #             y = scale * hit_point.y
-    #             z = EPSILON
-    #
-    #         else:
-    #             # Avoid base of cone
-    #             x = hit_point.x
-    #             y = hit_point.y
-    #             z = EPSILON
-    #
-    #     else:
-    #         # Avoid sides of cone
-    #         old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
-    #         new_radius = old_radius - EPSILON
-    #
-    #         scale = new_radius / old_radius
-    #         x = scale * hit_point.x
-    #         y = scale * hit_point.y
-    #         z = hit_point.z
-    #
-    #     return new_point3d(x, y, z)
+    cpdef Intersection next_intersection(self):
+
+        if not self._further_intersection:
+            return None
+
+        # this is the 2nd and therefore last intersection
+        self._further_intersection = False
+
+        return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_type)
+
+    @cython.cdivision(True)
+    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int type):
+
+        cdef:
+            Point3D hit_point, inside_point, outside_point
+            Normal3D normal
+            double a, b
+            bint exiting
+
+        # point of surface intersection in local space
+        hit_point = new_point3d(origin.x + ray_distance * direction.x,
+                                origin.y + ray_distance * direction.y,
+                                origin.z + ray_distance * direction.z)
+
+        # calculate surface normal in local space
+        if type == BASE:
+
+            # parabola base
+            normal = new_normal3d(0, 0, -1)
+
+        elif type == PARABOLA and hit_point.z == self._height:
+
+            # parabola tip
+            normal = new_normal3d(0, 0, 1)
+
+        else:
+
+            # TODO - this needs to be replaced
+            # parabola body
+            # calculate unit vector that points from origin to hit_point in x-y
+            # plane at the base of the cone and rotate perpendicular to cone surface
+            a = self._radius / self._height
+            b = 1 / (a * sqrt(hit_point.x**2 + hit_point.y**2))
+            normal = new_normal3d(b * hit_point.x, b * hit_point.y, a)
+            normal = normal.normalise()
+
+        # displace hit_point away from surface to generate inner and outer points
+        inside_point = self._interior_point(hit_point, normal, type)
+
+        outside_point = new_point3d(hit_point.x + EPSILON * normal.x,
+                                    hit_point.y + EPSILON * normal.y,
+                                    hit_point.z + EPSILON * normal.z)
+
+        # is ray exiting surface
+        exiting = direction.dot(normal) >= 0.0
+
+        return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
+                                normal, exiting, self.to_local(), self.to_root())
+
+    @cython.cdivision(True)
+    cdef inline Point3D _interior_point(self, Point3D hit_point, Normal3D normal, int type):
+
+        cdef:
+            double x, y, z
+            double old_radius, new_radius, scale
+            double inner_height, inner_radius, hit_radius_sqr
+
+        inner_height = self._height - EPSILON
+
+        if self._height >= hit_point.z > inner_height:
+
+            # Avoid tip of parabola
+            x = 0.0
+            y = 0.0
+            z = inner_height
+
+        elif hit_point.z < EPSILON:
+
+            inner_radius = self._radius - EPSILON
+            hit_radius_sqr = hit_point.x**2 + hit_point.y**2
+
+            if hit_radius_sqr > inner_radius**2:
+                # Avoid bottom edges of parabola
+                scale = inner_radius / sqrt(hit_radius_sqr)
+                x = scale * hit_point.x
+                y = scale * hit_point.y
+                z = EPSILON
+
+            else:
+                # Avoid base of parabola
+                x = hit_point.x
+                y = hit_point.y
+                z = EPSILON
+
+        else:
+            # Avoid sides of parabola
+            old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
+            new_radius = old_radius - EPSILON
+
+            scale = new_radius / old_radius
+            x = scale * hit_point.x
+            y = scale * hit_point.y
+            z = hit_point.z
+
+        return new_point3d(x, y, z)
     #
     # @cython.cdivision(True)
     # cpdef bint contains(self, Point3D point) except -1:

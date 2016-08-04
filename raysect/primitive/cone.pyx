@@ -54,8 +54,9 @@ cdef class Cone(Primitive):
     A cone primitive.
 
     The cone is defined by a radius and height. It lies along the z-axis
-    and extends over the z range [0, height]. The top end of the cone is
-    capped with a disk forming a closed surface.
+    and extends over the z range [0, height]. The tip of the cone lies at
+    z = height. The base of the cone sits on the x-y plane and is capped
+    with a disk, forming a closed surface.
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
