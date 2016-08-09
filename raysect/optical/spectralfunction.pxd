@@ -48,13 +48,13 @@ cdef class SpectralFunction:
     cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples)
 
     cdef inline void _average_cache_init(self)
-    cpdef void _average_cache_clear(self)
+    cpdef object _average_cache_clear(self)
     cdef inline bint _average_cache_valid(self, double min_wavelength, double max_wavelength)
     cdef inline double _average_cache_get(self)
     cdef inline void _average_cache_set(self, double min_wavelength, double max_wavelength, double average)
 
     cdef inline void _sample_cache_init(self)
-    cpdef void _sample_cache_clear(self)
+    cpdef object _sample_cache_clear(self)
     cdef inline bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int num_samples)
     cdef inline ndarray _sample_cache_get(self)
     cdef inline void _sample_cache_set(self, double min_wavelength, double max_wavelength, int num_samples, ndarray samples)
