@@ -182,19 +182,19 @@ cdef class Parabola(Primitive):
                 # ray intersects parabola outside of height range
                 return None
 
-            elif 0 < t0_z < height and t1_outside:
+            elif not t0_outside and t1_outside:
 
-                # t0 is in range, t1 is outside
+                # t0 is inside, t1 is outside
                 t0_type = PARABOLA
 
-                t1 = -origin.z / direction.z
+                t1 = (height - origin.z) / direction.z
                 t1_type = BASE
 
-            elif t0_outside and 0 < t1_z < height:
+            elif t0_outside and not t1_outside:
 
-                # t0 is outside range, t1 is inside
+                # t0 is outside, t1 is inside
                 t0_type = BASE
-                t0 = -origin.z / direction.z
+                t0 = (height - origin.z) / direction.z
 
                 t1_type = PARABOLA
 
@@ -281,22 +281,19 @@ cdef class Parabola(Primitive):
         if type == BASE:
 
             # parabola base
-            normal = new_normal3d(0, 0, -1)
+            normal = new_normal3d(0, 0, 1)
 
         elif type == PARABOLA and hit_point.z == self._height:
 
             # parabola tip
-            normal = new_normal3d(0, 0, 1)
+            normal = new_normal3d(0, 0, -1)
 
         else:
 
-            # TODO - this needs to be replaced
-            # parabola body
-            # calculate unit vector that points from origin to hit_point in x-y
-            # plane at the base of the cone and rotate perpendicular to cone surface
-            a = self._radius / self._height
-            b = 1 / (a * sqrt(hit_point.x**2 + hit_point.y**2))
-            normal = new_normal3d(b * hit_point.x, b * hit_point.y, a)
+            # in implicit form F(x,y,z) = z - f(x,y) = 0, normal is given by grad(F(x, y, z))
+            normal = new_normal3d(2*self._height*hit_point.x/self._radius**2,
+                                  2*self._height*hit_point.y/self._radius**2,
+                                  -1)
             normal = normal.normalise()
 
         # displace hit_point away from surface to generate inner and outer points
@@ -315,49 +312,51 @@ cdef class Parabola(Primitive):
     @cython.cdivision(True)
     cdef inline Point3D _interior_point(self, Point3D hit_point, Normal3D normal, int type):
 
-        cdef:
-            double x, y, z
-            double old_radius, new_radius, scale
-            double inner_height, inner_radius, hit_radius_sqr
+        # cdef:
+        #     double x, y, z
+        #     double old_radius, new_radius, scale
+        #     double inner_height, inner_radius, hit_radius_sqr
+        #
+        # inner_height = self._height - EPSILON
+        #
+        # if self._height >= hit_point.z > inner_height:
+        #
+        #     # Avoid tip of parabola
+        #     x = 0.0
+        #     y = 0.0
+        #     z = inner_height
+        #
+        # elif hit_point.z < EPSILON:
+        #
+        #     inner_radius = self._radius - EPSILON
+        #     hit_radius_sqr = hit_point.x**2 + hit_point.y**2
+        #
+        #     if hit_radius_sqr > inner_radius**2:
+        #         # Avoid bottom edges of parabola
+        #         scale = inner_radius / sqrt(hit_radius_sqr)
+        #         x = scale * hit_point.x
+        #         y = scale * hit_point.y
+        #         z = EPSILON
+        #
+        #     else:
+        #         # Avoid base of parabola
+        #         x = hit_point.x
+        #         y = hit_point.y
+        #         z = -EPSILON
+        #
+        # else:
+        #     # Avoid sides of parabola
+        #     old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
+        #     new_radius = old_radius - EPSILON
+        #
+        #     scale = new_radius / old_radius
+        #     x = scale * hit_point.x
+        #     y = scale * hit_point.y
+        #     z = hit_point.z
 
-        inner_height = self._height - EPSILON
+        # return new_point3d(x, y, z)
 
-        if self._height >= hit_point.z > inner_height:
-
-            # Avoid tip of parabola
-            x = 0.0
-            y = 0.0
-            z = inner_height
-
-        elif hit_point.z < EPSILON:
-
-            inner_radius = self._radius - EPSILON
-            hit_radius_sqr = hit_point.x**2 + hit_point.y**2
-
-            if hit_radius_sqr > inner_radius**2:
-                # Avoid bottom edges of parabola
-                scale = inner_radius / sqrt(hit_radius_sqr)
-                x = scale * hit_point.x
-                y = scale * hit_point.y
-                z = EPSILON
-
-            else:
-                # Avoid base of parabola
-                x = hit_point.x
-                y = hit_point.y
-                z = EPSILON
-
-        else:
-            # Avoid sides of parabola
-            old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
-            new_radius = old_radius - EPSILON
-
-            scale = new_radius / old_radius
-            x = scale * hit_point.x
-            y = scale * hit_point.y
-            z = hit_point.z
-
-        return new_point3d(x, y, z)
+        return new_point3d(hit_point.x - normal.x*EPSILON, hit_point.y - normal.y*EPSILON, hit_point.z - normal.z*EPSILON)
 
     @cython.cdivision(True)
     cpdef bint contains(self, Point3D point) except -1:
