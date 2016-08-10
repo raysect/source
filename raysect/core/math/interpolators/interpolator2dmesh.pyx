@@ -208,13 +208,13 @@ cdef class Interpolator2DMesh(Function2D):
     The mesh is specified as a set of 2D vertices supplied as an Nx2 numpy
     array or a suitably sized sequence that can be converted to a numpy array.
 
-    A data array of length N, containing a value for each vertex, holds the
-    data to be interpolated across the mesh.
-
     The mesh triangles are defined with a Mx3 array where the three values are
     indices into the vertex array that specify the triangle vertices. The
     mesh must not contain overlapping triangles. Supplying a mesh with
     overlapping triangles will result in undefined behaviour.
+
+    A data array of length N, containing a value for each vertex, holds the
+    data to be interpolated across the mesh.
 
     By default, requesting a point outside the bounds of the mesh will cause
     a ValueError exception to be raised. If this is not desired the limit
