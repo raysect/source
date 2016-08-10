@@ -39,6 +39,7 @@ from libc.math cimport ceil
 import_array()
 
 
+# TODO: add a note about how the caching works, particularly that users must cache clear if function parameters change
 cdef class SpectralFunction:
     """
     SpectralFunction abstract base class.
@@ -102,6 +103,9 @@ cdef class SpectralFunction:
         self._average_cache = 0
         self._average_cache_min_wvl = -1
         self._average_cache_max_wvl = -1
+
+    cpdef object _average_cache_clear(self):
+        self._average_cache = None
 
     cdef inline bint _average_cache_valid(self, double min_wavelength, double max_wavelength):
         return (
@@ -167,6 +171,9 @@ cdef class SpectralFunction:
         self._sample_cache_min_wvl = -1
         self._sample_cache_max_wvl = -1
         self._sample_cache_num_samp = -1
+
+    cpdef object _sample_cache_clear(self):
+        self._sample_cache = None
 
     cdef inline bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int num_samples):
 

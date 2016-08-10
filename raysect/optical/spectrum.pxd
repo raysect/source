@@ -41,20 +41,16 @@ cdef class Spectrum(SpectralFunction):
         readonly double delta_wavelength
         public ndarray samples
         ndarray _wavelengths
-        public bint fast_sample
 
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample)
-
+    cdef inline void _wavelength_check(self, double min_wavelength, double max_wavelength)
+    cdef inline void _attribute_check(self)
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples)
     cdef inline void _populate_wavelengths(self)
 
     cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int num_samples)
-
     cpdef bint is_zero(self)
-
     cpdef double total(self)
-
     cpdef ndarray to_photons(self)
-
     cpdef Spectrum new_spectrum(self)
 
     cdef inline void add_scalar(self, double value)

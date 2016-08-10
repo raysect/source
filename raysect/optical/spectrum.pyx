@@ -52,7 +52,16 @@ cdef class Spectrum(SpectralFunction):
 
     """
 
-    def __init__(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample=False):
+    def __init__(self, double min_wavelength, double max_wavelength, int num_samples):
+
+        self._wavelength_check(min_wavelength, max_wavelength)
+
+        if num_samples < 1:
+            raise ValueError("Number of samples cannot be less than 1.")
+
+        self._construct(min_wavelength, max_wavelength, num_samples)
+
+    cdef inline void _wavelength_check(self, double min_wavelength, double max_wavelength):
 
         if min_wavelength <= 0.0 or max_wavelength <= 0.0:
             raise ValueError("Wavelength cannot be less than or equal to zero.")
@@ -60,15 +69,19 @@ cdef class Spectrum(SpectralFunction):
         if min_wavelength >= max_wavelength:
             raise ValueError("Minimum wavelength cannot be greater or equal to the maximum wavelength.")
 
-        if num_samples < 1:
-            raise ValueError("Number of samples cannot be less than 1.")
+    cdef inline void _attribute_check(self):
 
-        self._construct(min_wavelength, max_wavelength, num_samples, fast_sample)
+        # users can modify the sample array, need to prevent segfaults in cython code
+        if self.samples is None:
+            raise ValueError("Cannot generate sample as the sample array is None.")
+
+        if self.samples.shape[0] != self.num_samples:
+            raise ValueError("Sample array length is inconsistent with num_samples.")
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples, bint fast_sample):
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples):
 
         cdef:
             npy_intp size, index
@@ -78,7 +91,6 @@ cdef class Spectrum(SpectralFunction):
         self.max_wavelength = max_wavelength
         self.num_samples = num_samples
         self.delta_wavelength = (max_wavelength - min_wavelength) / num_samples
-        self.fast_sample = fast_sample
 
         # create spectral sample bins, initialise with zero
         size = num_samples
@@ -163,25 +175,31 @@ cdef class Spectrum(SpectralFunction):
     @cython.cdivision(True)
     cpdef double average(self, double min_wavelength, double max_wavelength):
 
-        # sanity check
-        if self.samples is None:
-            raise ValueError("Cannot generate sample as the sample array is None.")
-
-        if self.samples.shape[0] != self.num_samples:
-            raise ValueError("Sample array length is inconsistent with num_samples.")
+        self._wavelength_check(min_wavelength, max_wavelength)
+        self._attribute_check()
 
         # require wavelength information for this calculation
         self._populate_wavelengths()
 
-        if self.fast_sample:
+        # average value obtained by integrating linearly interpolated data and normalising
+        return integrate(self._wavelengths, self.samples, min_wavelength, max_wavelength) / (max_wavelength - min_wavelength)
 
-            # sample data at bin centre by linearly interpolating
-            return interpolate(self._wavelengths, self.samples, 0.5 * (min_wavelength + max_wavelength))
+    cpdef double integrate(self, double min_wavelength, double max_wavelength):
+        """
+        Calculates the radiance over the specified spectral range.
 
-        else:
+        :param min_wavelength:
+        :param max_wavelength:
+        :return: Radiance in W/m^2/str
+        """
 
-            # average value obtained by integrating linearly interpolated data and normalising
-            return integrate(self._wavelengths, self.samples, min_wavelength, max_wavelength) / (max_wavelength - min_wavelength)
+        self._wavelength_check(min_wavelength, max_wavelength)
+        self._attribute_check()
+
+        # this calculation requires the wavelength array
+        self._populate_wavelengths()
+
+        return integrate(self._wavelengths, self.samples, min_wavelength, max_wavelength)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -194,12 +212,8 @@ cdef class Spectrum(SpectralFunction):
             npy_intp size, index
             double lower_wavelength, upper_wavelength, centre_wavelength, delta_wavelength, reciprocal
 
-        # sanity check
-        if self.samples is None:
-            raise ValueError("Cannot generate samples as the sample array is None.")
-
-        if self.samples.shape[0] != self.num_samples:
-            raise ValueError("Sample array length is inconsistent with num_samples.")
+        self._wavelength_check(min_wavelength, max_wavelength)
+        self._attribute_check()
 
         # create new sample object and obtain a memoryview for fast access
         size = num_samples
@@ -211,25 +225,16 @@ cdef class Spectrum(SpectralFunction):
         self._populate_wavelengths()
 
         delta_wavelength = (max_wavelength - min_wavelength) / num_samples
-        if self.fast_sample:
 
-            for index in range(num_samples):
+        # re-sample by averaging data across each bin
+        lower_wavelength = min_wavelength
+        reciprocal = 1.0 / delta_wavelength
+        for index in range(num_samples):
 
-                # sample data at bin centre by linearly interpolating
-                centre_wavelength = min_wavelength + (0.5 + index) * delta_wavelength
-                s_view[index] = interpolate(self._wavelengths, self.samples, centre_wavelength)
-
-        else:
-
-            # re-sample by averaging data across each bin
-            lower_wavelength = min_wavelength
-            reciprocal = 1.0 / delta_wavelength
-            for index in range(num_samples):
-
-                # average value obtained by integrating linearly interpolated data and normalising
-                upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
-                s_view[index] = reciprocal * integrate(self._wavelengths, self.samples, lower_wavelength, upper_wavelength)
-                lower_wavelength = upper_wavelength
+            # average value obtained by integrating linearly interpolated data and normalising
+            upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
+            s_view[index] = reciprocal * integrate(self._wavelengths, self.samples, lower_wavelength, upper_wavelength)
+            lower_wavelength = upper_wavelength
 
         return samples
 
@@ -246,12 +251,7 @@ cdef class Spectrum(SpectralFunction):
             int index
             double[::1] s_view
 
-        # sanity check as users can modify the sample array
-        if self.samples is None:
-            raise ValueError("Cannot generate samples as the sample array is None.")
-
-        if self.samples.shape[0] != self.num_samples:
-            raise ValueError("Sample array length is inconsistent with num_samples.")
+        self._attribute_check()
 
         s_view = self.samples
         for index in range(self.num_samples):
@@ -266,12 +266,7 @@ cdef class Spectrum(SpectralFunction):
         :return: Radiance in W/m^2/str
         """
 
-        # sanity check as users can modify the sample array
-        if self.samples is None:
-            raise ValueError("Cannot generate samples as the sample array is None.")
-
-        if self.samples.shape[0] != self.num_samples:
-            raise ValueError("Sample array length is inconsistent with num_samples.")
+        self._attribute_check()
 
         # this calculation requires the wavelength array
         self._populate_wavelengths()
@@ -292,12 +287,7 @@ cdef class Spectrum(SpectralFunction):
             ndarray photons
             double[::1] photons_view
 
-        # sanity check as users can modify the sample array
-        if self.samples is None:
-            raise ValueError("Cannot generate samples as the sample array is None.")
-
-        if self.samples.shape[0] != self.num_samples:
-            raise ValueError("Sample array length is inconsistent with num_samples.")
+        self._attribute_check()
 
         # this calculation requires the wavelength array
         self._populate_wavelengths()
@@ -456,7 +446,7 @@ cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int num
     cdef Spectrum v
 
     v = Spectrum.__new__(Spectrum)
-    v._construct(min_wavelength, max_wavelength, num_samples, False)
+    v._construct(min_wavelength, max_wavelength, num_samples)
 
     return v
 

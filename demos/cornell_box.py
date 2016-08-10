@@ -1,7 +1,7 @@
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
-from raysect.optical.observer import PinholeCamera
+from raysect.optical.observer import PinholeCamera, AutoExposure
 from raysect.optical.material import Lambert, UniformSurfaceEmitter
-from raysect.optical.library import schott, Titanium
+from raysect.optical.library import *
 from raysect.primitive import Sphere, Box
 from matplotlib.pyplot import *
 from numpy import array
@@ -53,7 +53,7 @@ red_reflectivity = InterpolatedSF(wavelengths, red)
 green_reflectivity = InterpolatedSF(wavelengths, green)
 
 # define light spectrum
-light_spectrum = InterpolatedSF(array([400, 500, 600, 700]), array([0.0, 8.0, 15.6, 18.4]) * 0.3)
+light_spectrum = InterpolatedSF(array([400, 500, 600, 700]), array([0.0, 8.0, 15.6, 18.4]))
 
 # set-up scenegraph
 world = World()
@@ -69,6 +69,7 @@ e_back = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
 e_bottom = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
                parent=enclosure,
                transform=translate(0, -1, 0) * rotate(0, -90, 0),
+               # material=m)
                material=Lambert(white_reflectivity))
 
 e_top = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
@@ -87,15 +88,15 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
               material=Lambert(green_reflectivity))
 
 # ceiling light
-light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
-            parent=enclosure,
-            transform=translate(0, 1, 0) * rotate(0, 90, 0),
-            material=UniformSurfaceEmitter(light_spectrum, 2))
-
 # light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
 #             parent=enclosure,
 #             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-#             material=UniformSurfaceEmitter(d65_white, 2))
+#             material=UniformSurfaceEmitter(light_spectrum, 2))
+
+light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+            parent=enclosure,
+            transform=translate(0, 1, 0) * rotate(0, 90, 0),
+            material=UniformSurfaceEmitter(d65_white, 2))
 
 # back_light = Sphere(0.1,
 #     parent=enclosure,
@@ -106,12 +107,18 @@ light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
           parent=world,
           transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
-          material=schott("N-BK7"))
+          material=RoughTungsten(0.5))
+          # material=Lambert())
+          # material=schott("N-BK7"))
 
 sphere = Sphere(0.4,
     parent=world,
     transform=translate(-0.4, -0.6 + 1e-6, -0.4)*rotate(0, 0, 0),
-    material=Titanium()) #schott("N-BK7"))
+    material=RoughCopper(0.6))
+    # material=Lambert())
+    # material=Titanium())
+    # material=schott("N-BK7"))
+
 
 # create and setup the camera
 camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
@@ -127,6 +134,7 @@ camera.pixel_samples = 50
 camera.display_progress = True
 camera.display_update_time = 10
 camera.accumulate = True
+camera.exposure_handler = AutoExposure(0.97)
 
 
 # camera.process_count = 1

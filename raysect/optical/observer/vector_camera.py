@@ -40,7 +40,7 @@ class VectorCamera(Imaging):
     def _generate_rays(self, ix, iy, ray_template):
 
         # assemble rays
-        origin = self.pixel_origins[ix, iy].transform(self.)
+        origin = self.pixel_origins[ix, iy]
         direction = self.pixel_directions[ix, iy]
 
         # assemble rays

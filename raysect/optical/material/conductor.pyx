@@ -30,9 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from numpy cimport ndarray
-from raysect.core.math.random cimport vector_hemisphere_cosine
+from raysect.core.math.random cimport uniform
 from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, new_vector3d
-from libc.math cimport M_1_PI, M_PI, sqrt, fabs
+from libc.math cimport M_PI, sqrt, fabs, atan, cos, sin
 cimport cython
 
 
@@ -141,7 +141,6 @@ cdef class Conductor(Material):
                                    AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # do nothing!
-        # TODO: make it solid - return black or calculate attenuation from extinction?
         return spectrum
 
 
@@ -170,32 +169,52 @@ cdef class RoughConductor(ContinuousBSDF):
                 raise ValueError("Surface roughness must lie in the range (0, 1].")
             self._roughness = value
 
+    @cython.cdivision(True)
     cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
-        """
-        temporarily cosine weighted hemispherical sampling
-        not a great strategy for this...!
-        """
 
-        # todo: replace with ggx importance sampling pdf
-        cdef double cos_theta
+        cdef Vector3D s_half
 
-        # normal is aligned with +ve Z so dot products with the normal are simply the z component of the other vector
-        cos_theta = s_outgoing.z
+        # calculate half vector
+        s_half = new_vector3d(
+            s_incoming.x + s_outgoing.x,
+            s_incoming.y + s_outgoing.y,
+            s_incoming.z + s_outgoing.z
+        )
 
-        # clamp probability to zero on far side of surface
-        if cos_theta < 0:
-            return 0
+        # catch ill defined half vector
+        if s_half.get_length() == 0.0:
+            # should never produce a none zero BSDF value therefore safe to return zero as pdf
+            return 0.0
 
-        return cos_theta * M_1_PI
+        s_half = s_half.normalise()
+        return 0.25 * self._d(s_half) * fabs(s_half.z / s_outgoing.dot(s_half))
 
+    @cython.cdivision(True)
     cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):
-        """
-        temporarily cosine weighted hemispherical sampling
-        not a great strategy for this...!
-        """
 
-        # todo: replace with ggx importance sampling
-        return vector_hemisphere_cosine()
+        cdef:
+            double e1, e2
+            double theta, phi, temp
+            Vector3D facet_normal
+
+        e1 = uniform()
+        e2 = uniform()
+
+        theta = atan(self._roughness * sqrt(e1) / sqrt(1 - e1))
+        phi = 2 * M_PI * e2
+
+        facet_normal = new_vector3d(
+            cos(phi) * sin(theta),
+            sin(phi) * sin(theta),
+            cos(theta)
+        )
+
+        temp = 2 * s_incoming.dot(facet_normal)
+        return new_vector3d(
+            temp * facet_normal.x - s_incoming.x,
+            temp * facet_normal.y - s_incoming.y,
+            temp * facet_normal.z - s_incoming.z
+        )
 
     @cython.cdivision(True)
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
@@ -230,7 +249,7 @@ cdef class RoughConductor(ContinuousBSDF):
 
         # evaluate lighting with Cook-Torrance bsdf (optimised)
         spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) / (4 * s_incoming.z))
-        return self._f(spectrum, s_outgoing)
+        return self._f(spectrum, s_outgoing, s_half)
 
     @cython.cdivision(True)
     cdef inline double _d(self, Vector3D s_half):
@@ -256,10 +275,11 @@ cdef class RoughConductor(ContinuousBSDF):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing):
+    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal):
 
         cdef:
             double[::1] s, n, k
+            double ci
             int i
 
         # sample refractive index and absorption
@@ -267,8 +287,9 @@ cdef class RoughConductor(ContinuousBSDF):
         k = self.extinction.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
 
         s = spectrum.samples
+        ci = s_normal.dot(s_outgoing)
         for i in range(spectrum.num_samples):
-            s[i] *= self._fresnel_conductor(s_outgoing.z, n[i], k[i])
+            s[i] *= self._fresnel_conductor(ci, n[i], k[i])
 
         return spectrum
 
