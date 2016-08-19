@@ -142,7 +142,7 @@ cdef class _MeshKDTree(KDTree2DCore):
             if self._hit_triangle(alpha, beta, gamma):
 
                 # store id of triangle hit
-                self.triangle_id = index
+                self.triangle_id = triangle
                 return True
 
         return False
