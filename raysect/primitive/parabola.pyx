@@ -55,7 +55,8 @@ cdef class Parabola(Primitive):
 
     The parabola is defined by a radius and height. It lies along the z-axis
     and extends over the z range [0, height]. The top end of the parabola is
-    capped with a disk forming a closed surface.
+    capped with a disk forming a closed surface. The tip of the parabola lies
+    at the origin.
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
@@ -319,51 +320,32 @@ cdef class Parabola(Primitive):
     @cython.cdivision(True)
     cdef inline Point3D _interior_point(self, Point3D hit_point, Normal3D normal, int type):
 
-        # cdef:
-        #     double x, y, z
-        #     double old_radius, new_radius, scale
-        #     double inner_height, inner_radius, hit_radius_sqr
-        #
-        # inner_height = self._height - EPSILON
-        #
-        # if self._height >= hit_point.z > inner_height:
-        #
-        #     # Avoid tip of parabola
-        #     x = 0.0
-        #     y = 0.0
-        #     z = inner_height
-        #
-        # elif hit_point.z < EPSILON:
-        #
-        #     inner_radius = self._radius - EPSILON
-        #     hit_radius_sqr = hit_point.x**2 + hit_point.y**2
-        #
-        #     if hit_radius_sqr > inner_radius**2:
-        #         # Avoid bottom edges of parabola
-        #         scale = inner_radius / sqrt(hit_radius_sqr)
-        #         x = scale * hit_point.x
-        #         y = scale * hit_point.y
-        #         z = EPSILON
-        #
-        #     else:
-        #         # Avoid base of parabola
-        #         x = hit_point.x
-        #         y = hit_point.y
-        #         z = -EPSILON
-        #
-        # else:
-        #     # Avoid sides of parabola
-        #     old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
-        #     new_radius = old_radius - EPSILON
-        #
-        #     scale = new_radius / old_radius
-        #     x = scale * hit_point.x
-        #     y = scale * hit_point.y
-        #     z = hit_point.z
+        cdef:
+            double x, y, z
+            double old_radius, new_radius, scale
+            double cutoff_height, inner_radius, hit_radius_sqr
 
-        # return new_point3d(x, y, z)
+        cutoff_height = self._height - EPSILON
+        cutoff_radius = self._radius - EPSILON
 
-        return new_point3d(hit_point.x - normal.x*EPSILON, hit_point.y - normal.y*EPSILON, hit_point.z - normal.z*EPSILON)
+        hit_radius = sqrt(hit_point.x**2 + hit_point.y**2)
+
+        if hit_radius > cutoff_radius:
+            x = hit_point.x / hit_radius * cutoff_radius
+            y = hit_point.y / hit_radius * cutoff_radius
+            z = cutoff_height
+
+        elif hit_point.z > cutoff_height:
+            x = hit_point.x
+            y = hit_point.y
+            z = cutoff_height
+
+        else:
+            x = hit_point.x - normal.x*EPSILON
+            y = hit_point.y - normal.y*EPSILON
+            z = hit_point.z - normal.z*EPSILON
+
+        return new_point3d(x, y, z)
 
     @cython.cdivision(True)
     cpdef bint contains(self, Point3D point) except -1:
