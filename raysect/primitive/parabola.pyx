@@ -146,7 +146,6 @@ cdef class Parabola(Primitive):
 
         # Compute quadratic parabola coefficients
         # based on math from "Physically Based Rendering - 2nd Edition", Elsevier 2010
-        # source code available at https://github.com/mmp/pbrt-v3/blob/master/src/shapes/paraboloid.cpp
         k = height / (radius * radius)
         a = k * (direction.x * direction.x + direction.y * direction.y)
         b = 2 * k * (direction.x * origin.x + direction.y * origin.y) - direction.z
@@ -162,13 +161,21 @@ cdef class Parabola(Primitive):
 
         elif d > 0:
 
-            # ray hits full parabola quadratic twice
+            # calculate intersection distances using method described in the book:
+            # "Physically Based Rendering - 2nd Edition", Elsevier 2010
+            # this method is more numerically stable than the usual root equation
+            if b < 0:
 
-            # calculate intersections
-            d = sqrt(d)
-            temp_d = 1 / (2.0 * a)
-            t0 = -(d + b) * temp_d
-            t1 = (d - b) * temp_d
+                q = -0.5 * (b - sqrt(d))
+
+            else:
+
+                q = -0.5 * (b + sqrt(d))
+
+            with cython.cdivision(True):
+
+                t0 = q / a
+                t1 = c / q
 
             # calculate z height of intersection points
             t0_z = origin.z + t0 * direction.z
