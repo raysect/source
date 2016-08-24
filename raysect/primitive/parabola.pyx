@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -122,6 +122,7 @@ cdef class Parabola(Primitive):
             # any geometry caching in the root node is now invalid, inform root
             self.notify_geometry_change()
 
+    # TODO: INVERT ALONG Z-AXIS
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):
 
@@ -153,73 +154,56 @@ cdef class Parabola(Primitive):
         c = k * (origin.x * origin.x + origin.y * origin.y) - origin.z
 
         # Solve quadratic equation
-        d = b * b - 4 * a * c
+        d = b*b - 4*a*c
 
+        # ray misses parabola if there are no real roots of the quadratic
         if d < 0:
-
-            # ray misses parabola if there are no real roots of the quadratic
             return None
 
-        elif d > 0:
+        # calculate intersection distances using method described in the book:
+        # "Physically Based Rendering - 2nd Edition", Elsevier 2010
+        # this method is more numerically stable than the usual root equation
+        if b < 0:
+            q = -0.5 * (b - sqrt(d))
+        else:
+            q = -0.5 * (b + sqrt(d))
 
-            # calculate intersection distances using method described in the book:
-            # "Physically Based Rendering - 2nd Edition", Elsevier 2010
-            # this method is more numerically stable than the usual root equation
-            if b < 0:
+        t0 = q / a
+        t1 = c / q
 
-                q = -0.5 * (b - sqrt(d))
+        # calculate z height of intersection points
+        t0_z = origin.z + t0 * direction.z
+        t1_z = origin.z + t1 * direction.z
 
-            else:
+        t0_outside = t0_z > height
+        t1_outside = t1_z > height
 
-                q = -0.5 * (b + sqrt(d))
+        if t0_outside and t1_outside:
 
-            with cython.cdivision(True):
+            # ray intersects parabola outside of height range
+            return None
 
-                t0 = q / a
-                t1 = c / q
+        elif not t0_outside and t1_outside:
 
-            # calculate z height of intersection points
-            t0_z = origin.z + t0 * direction.z
-            t1_z = origin.z + t1 * direction.z
+            # t0 is inside, t1 is outside
+            t0_type = PARABOLA
 
-            t0_outside = t0_z < 0 or t0_z > height
-            t1_outside = t1_z < 0 or t1_z > height
+            t1 = (height - origin.z) / direction.z
+            t1_type = BASE
 
-            if t0_outside and t1_outside:
+        elif t0_outside and not t1_outside:
 
-                # ray intersects parabola outside of height range
-                return None
+            # t0 is outside, t1 is inside
+            t0_type = BASE
+            t0 = (height - origin.z) / direction.z
 
-            elif not t0_outside and t1_outside:
-
-                # t0 is inside, t1 is outside
-                t0_type = PARABOLA
-
-                t1 = (height - origin.z) / direction.z
-                t1_type = BASE
-
-            elif t0_outside and not t1_outside:
-
-                # t0 is outside, t1 is inside
-                t0_type = BASE
-                t0 = (height - origin.z) / direction.z
-
-                t1_type = PARABOLA
-
-            else:
-
-                # both intersections are valid and within the parabola body
-                t0_type = PARABOLA
-                t1_type = PARABOLA
+            t1_type = PARABOLA
 
         else:
 
-            # ray intersects the tip of the parabola
-            t0 = -b / (2.0 * a)
+            # both intersections are valid and within the parabola body
             t0_type = PARABOLA
-
-            t1 = -origin.z / direction.z
-            t1_type = BASE
+            t1_type = PARABOLA
 
         # ensure t0 is always smaller (closer) than t1
         if t0 > t1:
@@ -277,7 +261,7 @@ cdef class Parabola(Primitive):
         cdef:
             Point3D hit_point, inside_point, outside_point
             Normal3D normal
-            double a, b
+            double k
             bint exiting
 
         # point of surface intersection in local space
@@ -291,17 +275,11 @@ cdef class Parabola(Primitive):
             # parabola base
             normal = new_normal3d(0, 0, 1)
 
-        elif type == PARABOLA and hit_point.z == self._height:
-
-            # parabola tip
-            normal = new_normal3d(0, 0, -1)
-
         else:
 
             # in implicit form F(x,y,z) = z - f(x,y) = 0, normal is given by grad(F(x, y, z))
-            normal = new_normal3d(2*self._height*hit_point.x/self._radius**2,
-                                  2*self._height*hit_point.y/self._radius**2,
-                                  -1)
+            k = 2 * self._height / (self._radius * self._radius)
+            normal = new_normal3d(k * hit_point.x, k * hit_point.y, -1)
             normal = normal.normalise()
 
         # displace hit_point away from surface to generate inner and outer points
@@ -322,28 +300,29 @@ cdef class Parabola(Primitive):
 
         cdef:
             double x, y, z
-            double old_radius, new_radius, scale
-            double cutoff_height, inner_radius, hit_radius_sqr
+            double scale
+            double inner_height, inner_radius, hit_radius_sqr
 
-        cutoff_height = self._height - EPSILON
-        cutoff_radius = self._radius - EPSILON
+        inner_height = self._height - EPSILON
+        inner_radius = self._radius - EPSILON
 
-        hit_radius = sqrt(hit_point.x**2 + hit_point.y**2)
+        hit_radius_sqr = hit_point.x**2 + hit_point.y**2
 
-        if hit_radius > cutoff_radius:
-            x = hit_point.x / hit_radius * cutoff_radius
-            y = hit_point.y / hit_radius * cutoff_radius
-            z = cutoff_height
+        if hit_radius_sqr > inner_radius**2:
+            scale = inner_radius / sqrt(hit_radius_sqr)
+            x = scale * hit_point.x
+            y = scale * hit_point.y
+            z = inner_height
 
-        elif hit_point.z > cutoff_height:
+        elif hit_point.z > inner_height:
             x = hit_point.x
             y = hit_point.y
-            z = cutoff_height
+            z = inner_height
 
         else:
-            x = hit_point.x - normal.x*EPSILON
-            y = hit_point.y - normal.y*EPSILON
-            z = hit_point.z - normal.z*EPSILON
+            x = hit_point.x - normal.x * EPSILON
+            y = hit_point.y - normal.y * EPSILON
+            z = hit_point.z - normal.z * EPSILON
 
         return new_point3d(x, y, z)
 
