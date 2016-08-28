@@ -49,6 +49,7 @@ DEF PARABOLA = 0
 DEF BASE = 1
 
 
+# TODO: INVERT ALONG Z-AXIS
 cdef class Parabola(Primitive):
     """
     A parabola primitive.
@@ -122,7 +123,6 @@ cdef class Parabola(Primitive):
             # any geometry caching in the root node is now invalid, inform root
             self.notify_geometry_change()
 
-    # TODO: INVERT ALONG Z-AXIS
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):
 
@@ -303,12 +303,12 @@ cdef class Parabola(Primitive):
             double scale
             double inner_height, inner_radius, hit_radius_sqr
 
-        inner_height = self._height - EPSILON
+        # inner_height = self._height - EPSILON
         inner_radius = self._radius - EPSILON
 
-        hit_radius_sqr = hit_point.x**2 + hit_point.y**2
+        hit_radius_sqr = hit_point.x * hit_point.x + hit_point.y * hit_point.y
 
-        if hit_radius_sqr > inner_radius**2:
+        if hit_radius_sqr > (inner_radius * inner_radius):
             scale = inner_radius / sqrt(hit_radius_sqr)
             x = scale * hit_point.x
             y = scale * hit_point.y
@@ -343,7 +343,7 @@ cdef class Parabola(Primitive):
         parabola_radius = self._radius * sqrt(point.z / self._height)
 
         # calculate the point's orthogonal distance from the axis to compare against the parabola radius:
-        point_radius = sqrt(point.x**2 + point.y**2)
+        point_radius = sqrt(point.x * point.x + point.y * point.y)
 
         # Points distance from axis must be less than parabola radius at that height
         return point_radius <= parabola_radius
