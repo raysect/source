@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -45,42 +45,43 @@ DEF EPSILON = 1e-9
 
 # object type enumeration
 DEF NO_TYPE = -1
-DEF CONE = 0
+DEF PARABOLA = 0
 DEF BASE = 1
 
 
-cdef class Cone(Primitive):
+# TODO: INVERT ALONG Z-AXIS
+cdef class Parabola(Primitive):
     """
-    A cone primitive.
+    A parabola primitive.
 
-    The cone is defined by a radius and height. It lies along the z-axis
-    and extends over the z range [0, height]. The tip of the cone lies at
-    z = height. The base of the cone sits on the x-y plane and is capped
-    with a disk, forming a closed surface.
+    The parabola is defined by a radius and height. It lies along the z-axis
+    and extends over the z range [0, height]. The base of the parabola is
+    capped with a disk forming a closed surface. The base of the parabola lies
+    on the x-y plane, the parabola vertex (tip) lies at z=height.
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
                  AffineMatrix3D transform=None, Material material=None,
                  str name=None):
         """
-        Radius is radius of the cone in x-y plane.
-        Height of cone is the extent along z-axis [0, height].
+        Radius is radius of the parabola base in x-y plane.
+        Height of parabola is its extent along the z-axis [0, height].
 
-        :param radius: Radius of the cone in meters (default = 0.5).
-        :param height: Height of the cone in meters (default = 1.0).
+        :param radius: Radius of the parabola in meters (default = 0.5).
+        :param height: Height of the parabola in meters (default = 1.0).
         :param parent: Scene-graph parent node or None (default = None).
         :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
-        :param material: A Material object defining the cone's material (default = None).
-        :param name: A string specifying a user-friendly name for the cone (default = "").
+        :param material: A Material object defining the parabola's material (default = None).
+        :param name: A string specifying a user-friendly name for the parabola (default = "").
         """
 
         super().__init__(parent, transform, material, name)
 
         # validate radius and height values
         if radius <= 0.0:
-            raise ValueError("Cone radius cannot be less than or equal to zero.")
+            raise ValueError("Parabola radius cannot be less than or equal to zero.")
         if height <= 0.0:
-            raise ValueError("Cone height cannot be less than or equal to zero.")
+            raise ValueError("Parabola height cannot be less than or equal to zero.")
         self._radius = radius
         self._height = height
 
@@ -98,7 +99,7 @@ cdef class Cone(Primitive):
 
         def __set__(self, double value):
             if value <= 0.0:
-                raise ValueError("Cone radius cannot be less than or equal to zero.")
+                raise ValueError("Parabola radius cannot be less than or equal to zero.")
             self._radius = value
 
             # the next intersection cache has been invalidated by the geometry change
@@ -113,7 +114,7 @@ cdef class Cone(Primitive):
 
         def __set__(self, double value):
             if value <= 0.0:
-                raise ValueError("Cone height cannot be less than or equal to zero.")
+                raise ValueError("Parabola height cannot be less than or equal to zero.")
             self._height = value
 
             # the next intersection cache has been invalidated by the geometry change
@@ -145,74 +146,64 @@ cdef class Cone(Primitive):
         radius = self._radius
         height = self._height
 
-        # Compute quadratic cone coefficients
+        # Compute quadratic parabola coefficients
         # based on math from "Physically Based Rendering - 2nd Edition", Elsevier 2010
-        k = radius / height
-        k = k * k
-        a = direction.x * direction.x + direction.y * direction.y - k * direction.z * direction.z
-        b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z - height) )
-        c = origin.x * origin.x + origin.y * origin.y - k * (origin.z - height) * (origin.z - height)
+        k = height / (radius * radius)
+        a = k * (direction.x * direction.x + direction.y * direction.y)
+        b = 2 * k * (direction.x * origin.x + direction.y * origin.y) + direction.z
+        c = k * (origin.x * origin.x + origin.y * origin.y) - (height - origin.z)
 
         # Solve quadratic equation
-        d = b * b - 4 * a * c
+        d = b*b - 4*a*c
 
+        # ray misses parabola if there are no real roots of the quadratic
         if d < 0:
-
-            # ray misses cone if there are no real roots of the quadratic
             return None
 
-        elif d > 0:
-
-            # ray hits full cone quadratic twice
-
-            # calculate intersections
-            d = sqrt(d)
-            temp_d = 1 / (2.0 * a)
-            t0 = -(d + b) * temp_d
-            t1 = (d - b) * temp_d
-
-            # calculate z height of intersection points
-            t0_z = origin.z + t0 * direction.z
-            t1_z = origin.z + t1 * direction.z
-
-            t0_outside = t0_z < 0 or t0_z > height
-            t1_outside = t1_z < 0 or t1_z > height
-
-            if t0_outside and t1_outside:
-
-                # ray intersects cone outside of height range
-                return None
-
-            elif 0 < t0_z < height and t1_outside:
-
-                # t0 is in range, t1 is outside
-                t0_type = CONE
-
-                t1 = -origin.z / direction.z
-                t1_type = BASE
-
-            elif t0_outside and 0 < t1_z < height:
-
-                # t0 is outside range, t1 is inside
-                t0_type = BASE
-                t0 = -origin.z / direction.z
-
-                t1_type = CONE
-
-            else:
-
-                # both intersections are valid and within the cone body
-                t0_type = CONE
-                t1_type = CONE
-
+        # calculate intersection distances using method described in the book:
+        # "Physically Based Rendering - 2nd Edition", Elsevier 2010
+        # this method is more numerically stable than the usual root equation
+        if b < 0:
+            q = -0.5 * (b - sqrt(d))
         else:
+            q = -0.5 * (b + sqrt(d))
 
-            # ray intersects the tip of the cone
-            t0 = -b / (2.0 * a)
-            t0_type = CONE
+        t0 = q / a
+        t1 = c / q
+
+        # calculate z height of intersection points
+        t0_z = origin.z + t0 * direction.z
+        t1_z = origin.z + t1 * direction.z
+
+        t0_outside = t0_z < 0
+        t1_outside = t1_z < 0
+
+        if t0_outside and t1_outside:
+
+            # ray intersects parabola outside of height range
+            return None
+
+        elif not t0_outside and t1_outside:
+
+            # t0 is inside, t1 is outside
+            t0_type = PARABOLA
 
             t1 = -origin.z / direction.z
             t1_type = BASE
+
+        elif t0_outside and not t1_outside:
+
+            # t0 is outside, t1 is inside
+            t0_type = BASE
+            t0 = -origin.z / direction.z
+
+            t1_type = PARABOLA
+
+        else:
+
+            # both intersections are valid and within the parabola body
+            t0_type = PARABOLA
+            t1_type = PARABOLA
 
         # ensure t0 is always smaller (closer) than t1
         if t0 > t1:
@@ -270,7 +261,7 @@ cdef class Cone(Primitive):
         cdef:
             Point3D hit_point, inside_point, outside_point
             Normal3D normal
-            double a, b
+            double k
             bint exiting
 
         # point of surface intersection in local space
@@ -281,22 +272,14 @@ cdef class Cone(Primitive):
         # calculate surface normal in local space
         if type == BASE:
 
-            # cone base
+            # parabola base
             normal = new_normal3d(0, 0, -1)
-
-        elif type == CONE and hit_point.z == self._height:
-
-            # cone tip
-            normal = new_normal3d(0, 0, 1)
 
         else:
 
-            # cone body
-            # calculate unit vector that points from origin to hit_point in x-y
-            # plane at the base of the cone and rotate perpendicular to cone surface
-            a = self._radius / self._height
-            b = 1 / (a * sqrt(hit_point.x*hit_point.x + hit_point.y*hit_point.y))
-            normal = new_normal3d(b * hit_point.x, b * hit_point.y, a)
+            # in implicit form F(x,y,z) = z - f(x,y) = 0, normal is given by grad(F(x, y, z))
+            k = 2 * self._height / (self._radius * self._radius)
+            normal = new_normal3d(k * hit_point.x, k * hit_point.y, 1)
             normal = normal.normalise()
 
         # displace hit_point away from surface to generate inner and outer points
@@ -317,45 +300,27 @@ cdef class Cone(Primitive):
 
         cdef:
             double x, y, z
-            double old_radius, new_radius, scale
-            double inner_height, inner_radius, hit_radius_sqr
+            double scale
+            double inner_radius, hit_radius_sqr
 
-        inner_height = self._height - EPSILON
+        inner_radius = self._radius - EPSILON
+        hit_radius_sqr = hit_point.x * hit_point.x + hit_point.y * hit_point.y
 
-        if self._height >= hit_point.z > inner_height:
-
-            # Avoid tip of cone
-            x = 0.0
-            y = 0.0
-            z = inner_height
-
-        elif hit_point.z < EPSILON:
-
-            inner_radius = self._radius - EPSILON
-            hit_radius_sqr = hit_point.x*hit_point.x + hit_point.y*hit_point.y
-
-            if hit_radius_sqr > (inner_radius*inner_radius):
-                # Avoid bottom edges of cone
-                scale = inner_radius / sqrt(hit_radius_sqr)
-                x = scale * hit_point.x
-                y = scale * hit_point.y
-                z = EPSILON
-
-            else:
-                # Avoid base of cone
-                x = hit_point.x
-                y = hit_point.y
-                z = EPSILON
-
-        else:
-            # Avoid sides of cone
-            old_radius = sqrt(hit_point.x*hit_point.x + hit_point.y*hit_point.y)
-            new_radius = old_radius - EPSILON
-
-            scale = new_radius / old_radius
+        if hit_radius_sqr > (inner_radius * inner_radius):
+            scale = inner_radius / sqrt(hit_radius_sqr)
             x = scale * hit_point.x
             y = scale * hit_point.y
-            z = hit_point.z
+            z = EPSILON
+
+        elif hit_point.z < EPSILON:
+            x = hit_point.x
+            y = hit_point.y
+            z = EPSILON
+
+        else:
+            x = hit_point.x - normal.x * EPSILON
+            y = hit_point.y - normal.y * EPSILON
+            z = hit_point.z - normal.z * EPSILON
 
         return new_point3d(x, y, z)
 
@@ -363,23 +328,23 @@ cdef class Cone(Primitive):
     cpdef bint contains(self, Point3D point) except -1:
 
         cdef:
-            double cone_radius, point_radius
+            double parabola_radius, point_radius
 
         # convert point to local object space
         point = point.transform(self.to_local())
 
-        # reject points that are outside the cone's height (i.e. above the cones' tip or below its base)
+        # reject points that are outside the parabola's height range
         if point.z < 0 or point.z > self._height:
             return False
 
-        # calculate the cone radius at that point along the height axis:
-        cone_radius = (self._height - point.z) * self._radius / self._height
+        # calculate the parabola radius at that point along the height axis:
+        parabola_radius = self._radius * sqrt((self._height - point.z) / self._height)
 
-        # calculate the point's orthogonal distance from the axis to compare against the cone radius:
-        point_radius = sqrt(point.x*point.x + point.y*point.y)
+        # calculate the point's orthogonal distance from the axis to compare against the parabola radius:
+        point_radius = sqrt(point.x * point.x + point.y * point.y)
 
-        # Points distance from axis must be less than cone radius at that height
-        return point_radius <= cone_radius
+        # Points distance from axis must be less than parabola radius at that height
+        return point_radius <= parabola_radius
 
     cpdef BoundingBox3D bounding_box(self):
 
