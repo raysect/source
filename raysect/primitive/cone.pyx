@@ -295,7 +295,7 @@ cdef class Cone(Primitive):
             # calculate unit vector that points from origin to hit_point in x-y
             # plane at the base of the cone and rotate perpendicular to cone surface
             a = self._radius / self._height
-            b = 1 / (a * sqrt(hit_point.x**2 + hit_point.y**2))
+            b = 1 / (a * sqrt(hit_point.x*hit_point.x + hit_point.y*hit_point.y))
             normal = new_normal3d(b * hit_point.x, b * hit_point.y, a)
             normal = normal.normalise()
 
@@ -332,9 +332,9 @@ cdef class Cone(Primitive):
         elif hit_point.z < EPSILON:
 
             inner_radius = self._radius - EPSILON
-            hit_radius_sqr = hit_point.x**2 + hit_point.y**2
+            hit_radius_sqr = hit_point.x*hit_point.x + hit_point.y*hit_point.y
 
-            if hit_radius_sqr > inner_radius**2:
+            if hit_radius_sqr > (inner_radius*inner_radius):
                 # Avoid bottom edges of cone
                 scale = inner_radius / sqrt(hit_radius_sqr)
                 x = scale * hit_point.x
@@ -349,7 +349,7 @@ cdef class Cone(Primitive):
 
         else:
             # Avoid sides of cone
-            old_radius = sqrt(hit_point.x**2 + hit_point.y**2)
+            old_radius = sqrt(hit_point.x*hit_point.x + hit_point.y*hit_point.y)
             new_radius = old_radius - EPSILON
 
             scale = new_radius / old_radius
@@ -376,7 +376,7 @@ cdef class Cone(Primitive):
         cone_radius = (self._height - point.z) * self._radius / self._height
 
         # calculate the point's orthogonal distance from the axis to compare against the cone radius:
-        point_radius = sqrt(point.x**2 + point.y**2)
+        point_radius = sqrt(point.x*point.x + point.y*point.y)
 
         # Points distance from axis must be less than cone radius at that height
         return point_radius <= cone_radius
