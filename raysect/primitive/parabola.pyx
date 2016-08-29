@@ -55,17 +55,17 @@ cdef class Parabola(Primitive):
     A parabola primitive.
 
     The parabola is defined by a radius and height. It lies along the z-axis
-    and extends over the z range [0, height]. The top end of the parabola is
-    capped with a disk forming a closed surface. The tip of the parabola lies
-    at the origin.
+    and extends over the z range [0, height]. The base of the parabola is
+    capped with a disk forming a closed surface. The base of the parabola lies
+    on the x-y plane, the parabola vertex (tip) lies at z=height.
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
                  AffineMatrix3D transform=None, Material material=None,
                  str name=None):
         """
-        Radius is radius of the parabola in x-y plane at height z = 1???.
-        Height of parabola is the extent along the z-axis [0, height].
+        Radius is radius of the parabola base in x-y plane.
+        Height of parabola is its extent along the z-axis [0, height].
 
         :param radius: Radius of the parabola in meters (default = 0.5).
         :param height: Height of the parabola in meters (default = 1.0).
@@ -150,8 +150,8 @@ cdef class Parabola(Primitive):
         # based on math from "Physically Based Rendering - 2nd Edition", Elsevier 2010
         k = height / (radius * radius)
         a = k * (direction.x * direction.x + direction.y * direction.y)
-        b = 2 * k * (direction.x * origin.x + direction.y * origin.y) - direction.z
-        c = k * (origin.x * origin.x + origin.y * origin.y) - origin.z
+        b = 2 * k * (direction.x * origin.x + direction.y * origin.y) + direction.z
+        c = k * (origin.x * origin.x + origin.y * origin.y) - (height - origin.z)
 
         # Solve quadratic equation
         d = b*b - 4*a*c
@@ -175,8 +175,8 @@ cdef class Parabola(Primitive):
         t0_z = origin.z + t0 * direction.z
         t1_z = origin.z + t1 * direction.z
 
-        t0_outside = t0_z > height
-        t1_outside = t1_z > height
+        t0_outside = t0_z < 0
+        t1_outside = t1_z < 0
 
         if t0_outside and t1_outside:
 
@@ -188,14 +188,14 @@ cdef class Parabola(Primitive):
             # t0 is inside, t1 is outside
             t0_type = PARABOLA
 
-            t1 = (height - origin.z) / direction.z
+            t1 = -origin.z / direction.z
             t1_type = BASE
 
         elif t0_outside and not t1_outside:
 
             # t0 is outside, t1 is inside
             t0_type = BASE
-            t0 = (height - origin.z) / direction.z
+            t0 = -origin.z / direction.z
 
             t1_type = PARABOLA
 
@@ -273,13 +273,13 @@ cdef class Parabola(Primitive):
         if type == BASE:
 
             # parabola base
-            normal = new_normal3d(0, 0, 1)
+            normal = new_normal3d(0, 0, -1)
 
         else:
 
             # in implicit form F(x,y,z) = z - f(x,y) = 0, normal is given by grad(F(x, y, z))
             k = 2 * self._height / (self._radius * self._radius)
-            normal = new_normal3d(k * hit_point.x, k * hit_point.y, -1)
+            normal = new_normal3d(k * hit_point.x, k * hit_point.y, 1)
             normal = normal.normalise()
 
         # displace hit_point away from surface to generate inner and outer points
@@ -301,23 +301,21 @@ cdef class Parabola(Primitive):
         cdef:
             double x, y, z
             double scale
-            double inner_height, inner_radius, hit_radius_sqr
+            double inner_radius, hit_radius_sqr
 
-        # inner_height = self._height - EPSILON
         inner_radius = self._radius - EPSILON
-
         hit_radius_sqr = hit_point.x * hit_point.x + hit_point.y * hit_point.y
 
         if hit_radius_sqr > (inner_radius * inner_radius):
             scale = inner_radius / sqrt(hit_radius_sqr)
             x = scale * hit_point.x
             y = scale * hit_point.y
-            z = inner_height
+            z = EPSILON
 
-        elif hit_point.z > inner_height:
+        elif hit_point.z < EPSILON:
             x = hit_point.x
             y = hit_point.y
-            z = inner_height
+            z = EPSILON
 
         else:
             x = hit_point.x - normal.x * EPSILON
@@ -335,12 +333,12 @@ cdef class Parabola(Primitive):
         # convert point to local object space
         point = point.transform(self.to_local())
 
-        # reject points that are outside the parabola's height (i.e. above the parabola's tip or below its base)
+        # reject points that are outside the parabola's height range
         if point.z < 0 or point.z > self._height:
             return False
 
         # calculate the parabola radius at that point along the height axis:
-        parabola_radius = self._radius * sqrt(point.z / self._height)
+        parabola_radius = self._radius * sqrt((self._height - point.z) / self._height)
 
         # calculate the point's orthogonal distance from the axis to compare against the parabola radius:
         point_radius = sqrt(point.x * point.x + point.y * point.y)
