@@ -44,7 +44,7 @@ Reference
    :name: apireferencetoc
 
    api_reference/core/core
-   api_reference/primitive/primitives
+   api_reference/primitives/primitives
    api_reference/optical/optical
 
 Indices and tables
