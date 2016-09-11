@@ -1,6 +1,6 @@
 
-kd-tree Classes
-===============
+kd-tree Module
+==============
 
 Some example text.
 
