@@ -17,6 +17,8 @@ Raysect Guide
 .. toctree::
    :maxdepth: 2
    :numbered:
+   :caption: Table of Contents
+   :name: mastertoc
 
    introduction
    installation
@@ -30,7 +32,6 @@ Raysect Guide
    license
    help
 
-
 *********
 Reference
 *********
@@ -38,6 +39,8 @@ Reference
 .. toctree::
    :maxdepth: 2
    :numbered:
+   :caption: API Reference
+   :name: apireferencetoc
 
    conventions
    raysect_core
