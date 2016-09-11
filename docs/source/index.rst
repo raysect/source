@@ -26,6 +26,7 @@ Raysect Guide
    quickstart_guide
    primitives
    materials
+   conventions
    gallery
    references
    license
@@ -39,8 +40,7 @@ API Reference
    :maxdepth: 3
    :numbered:
    :caption: API Reference
-   :name: apireferencetoc
-   conventions
+   :name: apireferenceto
    api_reference/core/core
    api_reference/primitives/primitives
    api_reference/optical/optical
