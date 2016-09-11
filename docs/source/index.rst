@@ -43,10 +43,7 @@ Reference
    :caption: API Reference
    :name: apireferencetoc
 
-   api_reference/core/raysect_core
-   api_reference/core/raysect_core_math
-   api_reference/core/raysect_core_scenegraph
-   api_reference/core/raysect_core_kdtree
+   api_reference/core/core
    raysect_optical
 
 Indices and tables
