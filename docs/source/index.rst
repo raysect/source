@@ -44,7 +44,8 @@ Reference
    :name: apireferencetoc
 
    api_reference/core/core
-   raysect_optical
+   api_reference/primitive/primitives
+   api_reference/optical/optical
 
 Indices and tables
 ==================
