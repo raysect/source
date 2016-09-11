@@ -26,6 +26,7 @@ Raysect Guide
    quickstart_guide
    primitives
    materials
+   conventions
 
    gallery
    references
@@ -37,16 +38,15 @@ Reference
 *********
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :numbered:
    :caption: API Reference
    :name: apireferencetoc
 
-   conventions
-   raysect_core
-   raysect_core_math
-   raysect_core_scenegraph
-   raysect_core_kdtree
+   api_reference/core/raysect_core
+   api_reference/core/raysect_core_math
+   api_reference/core/raysect_core_scenegraph
+   api_reference/core/raysect_core_kdtree
    raysect_optical
 
 Indices and tables
