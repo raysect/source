@@ -41,6 +41,7 @@ API Reference
    :numbered:
    :caption: API Reference
    :name: apireferenceto
+
    api_reference/core/core
    api_reference/primitives/primitives
    api_reference/optical/optical
