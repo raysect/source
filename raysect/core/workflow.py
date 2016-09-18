@@ -63,7 +63,7 @@ class RenderEngine:
 
     """
 
-    def run(self, tasks, render, update, args=(), kwargs={}):
+    def run(self, tasks, render, update, render_args=(), render_kwargs={}, update_args=(), update_kwargs={}):
         raise NotImplementedError("Virtual method must be implemented in sub-class.")
 
     def worker_count(self):
@@ -72,11 +72,11 @@ class RenderEngine:
 
 class SerialEngine(RenderEngine):
 
-    def run(self, tasks, render, update, args=(), kwargs={}):
+    def run(self, tasks, render, update, render_args=(), render_kwargs={}, update_args=(), update_kwargs={}):
 
         for task in tasks:
-            result = render(task, *args, **kwargs)
-            update(result)
+            result = render(task, *render_args, **render_kwargs)
+            update(result, *update_args, **update_kwargs)
 
     def worker_count(self):
         return 1
@@ -84,7 +84,7 @@ class SerialEngine(RenderEngine):
 
 class MulticoreEngine(RenderEngine):
 
-    def run(self, tasks, render, update, args=(), kwargs={}):
+    def run(self, tasks, render, update, render_args=(), render_kwargs={}, update_args=(), update_kwargs={}):
 
         # establish ipc queues using a manager process
         task_queue = SimpleQueue()
@@ -97,14 +97,14 @@ class MulticoreEngine(RenderEngine):
         # start worker processes
         workers = []
         for pid in range(cpu_count()):
-            p = Process(target=self._worker, args=(render, args, kwargs, task_queue, result_queue))
+            p = Process(target=self._worker, args=(render, render_args, render_kwargs, task_queue, result_queue))
             p.start()
             workers.append(p)
 
         # consume results
         for _ in tasks:
             result = result_queue.get()
-            update(result)
+            update(result, *update_args, **update_kwargs)
 
         # shutdown workers
         for _ in workers:
@@ -137,6 +137,8 @@ class MulticoreEngine(RenderEngine):
 
 if __name__ == '__main__':
 
+    from time import time
+
     class Job:
 
         def __init__(self, engine=None):
@@ -145,7 +147,7 @@ if __name__ == '__main__':
 
         def run(self, v):
             self.total = 0
-            self.engine.run(list(range(v)), self.render, self.update, args=(1000000,))
+            self.engine.run(list(range(v)), self.render, self.update, render_args=(10000,))
             return self.total
 
         def render(self, task, count):
@@ -157,10 +159,12 @@ if __name__ == '__main__':
         def update(self, result):
             self.total += result
 
-    n = 100
+    n = 5000
 
+    t = time()
     j = Job(SerialEngine())
-    print(j.run(n))
+    print(j.run(n), time() - t)
 
+    t = time()
     j = Job(MulticoreEngine())
-    print(j.run(n))
+    print(j.run(n), time() - t)
