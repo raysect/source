@@ -17,6 +17,8 @@ Raysect Guide
 .. toctree::
    :maxdepth: 2
    :numbered:
+   :caption: Table of Contents
+   :name: mastertoc
 
    introduction
    installation
@@ -24,27 +26,25 @@ Raysect Guide
    quickstart_guide
    primitives
    materials
-
+   conventions
    gallery
    references
    license
    help
 
-
-*********
-Reference
-*********
+*************
+API Reference
+*************
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :numbered:
+   :caption: API Reference
+   :name: apireferenceto
 
-   conventions
-   raysect_core
-   raysect_core_math
-   raysect_core_scenegraph
-   raysect_core_kdtree
-   raysect_optical
+   api_reference/core/core
+   api_reference/primitives/primitives
+   api_reference/optical/optical
 
 Indices and tables
 ==================

@@ -259,6 +259,26 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 
 
+cdef class UnityVolumeEmitter(VolumeEmitterHomogeneous):
+
+    def __init__(self):
+        """
+        Uniform, isotropic volume emitter with emission 1W/str/m^2/nm.
+
+        This material is useful for general purpose debugging and evaluating the coupling coefficients between cameras
+        and emitting volumes.
+        """
+
+        super().__init__()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        spectrum.samples[:] = 1.0
+        return spectrum
+
 cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
     def __init__(self, SpectralFunction emission_spectrum, double scale=1.0):

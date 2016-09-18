@@ -56,6 +56,13 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
                                      AffineMatrix3D to_local, AffineMatrix3D to_world)
 
 
+cdef class UnityVolumeEmitter(VolumeEmitterHomogeneous):
+
+    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+
+
 cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
     cdef:

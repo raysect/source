@@ -103,11 +103,11 @@ cdef class KDTree2DCore:
     Python due to the need to implement cdef methods _contains_leaf() and
      _hit_leaf(). Use the KDTree2D wrapper class if extending from Python.
 
-    :param items: A list of Items.
-    :param max_depth: The maximum tree depth (automatic if set to 0, default is 0).
-    :param min_items: The item count threshold for forcing creation of a new leaf node (default 1).
-    :param hit_cost: The relative computational cost of item hit evaluations vs kd-tree traversal (default 20.0).
-    :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
+    :param list items: A list of Items.
+    :param int max_depth: The maximum tree depth (automatic if set to 0, default is 0).
+    :param int min_items: The item count threshold for forcing creation of a new leaf node (default 1).
+    :param double hit_cost: The relative computational cost of item hit evaluations vs kd-tree traversal (default 20.0).
+    :param double empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
     """
 
     def __cinit__(self):
@@ -704,11 +704,11 @@ cdef class KDTree2D(KDTree2DCore):
     This class cannot be used directly, it must be sub-classed. One or both of
     _hit_item() and _contains_item() must be implemented.
 
-    :param items: A list of Items.
-    :param max_depth: The maximum tree depth (automatic if set to 0, default is 0).
-    :param min_items: The item count threshold for forcing creation of a new leaf node (default 1).
-    :param hit_cost: The relative computational cost of item hit evaluations vs kd-tree traversal (default 20.0).
-    :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
+    :param list items: A list of Items.
+    :param int max_depth: The maximum tree depth (automatic if set to 0, default is 0).
+    :param int min_items: The item count threshold for forcing creation of a new leaf node (default 1).
+    :param double hit_cost: The relative computational cost of item hit evaluations vs kd-tree traversal (default 20.0).
+    :param double empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
     """
 
     cdef bint _is_contained_leaf(self, int32_t id, Point2D point):
