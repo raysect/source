@@ -1,6 +1,6 @@
 
-Scenegraph Classes
-==================
+Scenegraph Module
+=================
 
 .. automodule:: raysect.core.scenegraph.node
    :members:
