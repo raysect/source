@@ -34,6 +34,7 @@ from time import time
 from multiprocessing import Process, cpu_count, SimpleQueue
 import numpy as np
 import matplotlib.pyplot as plt
+from raysect.core.workflow import RenderEngine, MulticoreEngine
 
 cimport numpy as np
 from raysect.core.math cimport random
@@ -216,9 +217,6 @@ cdef class Imaging(Observer):
         public bint display_progress
         public double display_update_time
 
-        # concurrency configuration
-        public int process_count
-
         # camera configuration
         public tuple _pixels
         public int pixel_samples
@@ -230,7 +228,7 @@ cdef class Imaging(Observer):
         public np.ndarray frame
 
     def __init__(self, pixels=(512, 512), spectral_samples=21, spectral_rays=1, pixel_samples=100,
-                 exposure_handler=None, process_count=0, parent=None, transform=None, name=None):
+                 exposure_handler=None, render_engine=None, parent=None, transform=None, name=None):
 
         super().__init__(parent, transform, name)
 
@@ -262,9 +260,9 @@ cdef class Imaging(Observer):
         self.display_update_time = 10.0
 
         # concurrency configuration
-        if process_count < 1:
-            process_count = cpu_count()
-        self.process_count = process_count
+        self.render_engine = render_engine if render_engine else MulticoreEngine()
+        if not isinstance(self.render_engine, RenderEngine):
+            raise ValueError("A valid RenderEngine object must be supplied.")
 
         # camera configuration
         self._pixels = pixels
@@ -276,6 +274,10 @@ cdef class Imaging(Observer):
         # output from last call to Observe()
         self.xyz_frame = np.zeros((pixels[1], pixels[0], 3))
         self.rgb_frame = np.zeros((pixels[1], pixels[0], 3))
+
+        # internal attributes
+        self.__display_timer = None
+        self.__statistics_data = None
 
     @property
     def pixels(self):
@@ -313,10 +315,7 @@ cdef class Imaging(Observer):
         ray_templates = self._generate_ray_templates()
 
         # trace
-        if self.process_count == 1:
-            self._observe_single(ray_templates)
-        else:
-            self._observe_parallel(ray_templates)
+        self._observe(ray_templates)
 
         # update sample accumulation statistics
         self.accumulated_samples += self.pixel_samples * self.spectral_rays
@@ -352,62 +351,13 @@ cdef class Imaging(Observer):
 
         return rays
 
-    def _observe_single(self, ray_templates):
-
-        # initialise user interface
-        display_timer = self._start_display()
-        statistics_data = self._start_statistics()
-
-        # generate weightings for accumulation
-        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
-        previous_weight = self.accumulated_samples / total_samples
-        added_weight = self.spectral_rays * self.pixel_samples / total_samples
-
-        # scale previous state to account for additional samples
-        self.xyz_frame[:, :, :] = previous_weight * self.xyz_frame[:, :, :]
-
-        # render
-        for channel, ray_template in enumerate(ray_templates):
-
-            # generate resampled XYZ curves for channel spectral range
-            resampled_xyz = resample_ciexyz(
-                ray_template.min_wavelength,
-                ray_template.max_wavelength,
-                ray_template.num_samples
-            )
-
-            nx, ny = self._pixels
-            for iy in range(ny):
-                for ix in range(nx):
-
-                    # load selected pixel and trace rays
-                    spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
-
-                    # convert spectrum to CIE XYZ
-                    xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
-
-                    self.xyz_frame[iy, ix, 0] += added_weight * xyz[0]
-                    self.xyz_frame[iy, ix, 1] += added_weight * xyz[1]
-                    self.xyz_frame[iy, ix, 2] += added_weight * xyz[2]
-
-                    # update users
-                    pixel = ix + self._pixels[0] * iy
-                    statistics_data = self._update_statistics(statistics_data, channel, pixel, ray_count)
-                    display_timer = self._update_display(display_timer)
-
-        self._generate_srgb_frame()
-
-        # final update for users
-        self._final_statistics(statistics_data)
-        self._final_display()
-
-    def _observe_parallel(self, ray_templates):
+    def _observe(self, ray_templates):
 
         world = self.root
 
         # initialise user interface
-        display_timer = self._start_display()
-        statistics_data = self._start_statistics()
+        self._start_display()
+        self._start_statistics()
 
         total_pixels = self._pixels[0] * self._pixels[1]
 
@@ -429,87 +379,62 @@ cdef class Imaging(Observer):
                 ray_template.num_samples
             )
 
-            # establish ipc queues using a manager process
-            task_queue = SimpleQueue()
-            result_queue = SimpleQueue()
+            # build task list
+            # task is simply the pixel location
+            tasks = []
+            nx, ny = self._pixels
+            for iy in range(ny):
+                for ix in range(nx):
+                    tasks.append((ix, iy))
 
-            # start process to generate image samples
-            producer = Process(target=self._producer, args=(task_queue, ))
-            producer.start()
-
-            # start worker processes
-            workers = []
-            for pid in range(self.process_count):
-                p = Process(target=self._worker,
-                            args=(world, ray_template,
-                                  resampled_xyz, task_queue, result_queue))
-                p.start()
-                workers.append(p)
-
-            # collect results
-            for pixel in range(total_pixels):
-
-                # obtain result
-                location, xyz, sample_ray_count = result_queue.get()
-                x, y = location
-
-                self.xyz_frame[y, x, 0] += added_weight * xyz[0]
-                self.xyz_frame[y, x, 1] += added_weight * xyz[1]
-                self.xyz_frame[y, x, 2] += added_weight * xyz[2]
-
-                # update users
-                display_timer = self._update_display(display_timer)
-                statistics_data = self._update_statistics(statistics_data, channel, pixel, sample_ray_count)
-
-            # shutdown workers
-            for _ in workers:
-                task_queue.put(None)
+            self.render_engine.run(
+                tasks, self._render_pixel, self._update_frame,
+                render_args=(world, ray_template, resampled_xyz),
+                update_args=(added_weight, channel)
+            )
 
         self._generate_srgb_frame()
 
         # final update for users
-        self._final_statistics(statistics_data)
+        self._final_statistics()
         self._final_display()
-
-    def _producer(self, task_queue):
-        # task is simply the pixel location
-        nx, ny = self._pixels
-        for iy in range(ny):
-            for ix in range(nx):
-                task_queue.put((ix, iy))
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _worker(self, World world, Ray ray_template, np.ndarray resampled_xyz, object task_queue, object result_queue):
+    def _render_pixel(self, object task, World world, Ray ray_template, np.ndarray resampled_xyz):
 
         cdef:
             Spectrum spectrum
             int ray_count, ix, iy
             tuple pixel_id, xyz, result
 
-        # re-seed the random number generator to prevent all workers inheriting the same sequence
-        random.seed()
+        # unpack pixel coords from task
+        pixel_id = task
+        ix, iy = pixel_id
 
-        while True:
+        # load selected pixel and trace rays
+        spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
 
-            # request next pixel
-            pixel_id = task_queue.get()
+        # convert spectrum to CIE XYZ
+        xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
 
-            # have we been commanded to shutdown?
-            if pixel_id is None:
-                break
+        return pixel_id, xyz, ray_count
 
-            ix, iy = pixel_id
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _update_frame(self, result, added_weight, channel):
 
-            # load selected pixel and trace rays
-            spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
+        # obtain result
+        location, xyz, sample_ray_count = result
+        x, y = location
 
-            # convert spectrum to CIE XYZ
-            xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+        self.xyz_frame[y, x, 0] += added_weight * xyz[0]
+        self.xyz_frame[y, x, 1] += added_weight * xyz[1]
+        self.xyz_frame[y, x, 2] += added_weight * xyz[2]
 
-            # encode result and send
-            result = (pixel_id, xyz, ray_count)
-            result_queue.put(result)
+        # update users
+        self._update_display()
+        self._update_statistics(channel, x, y, sample_ray_count)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -608,26 +533,23 @@ cdef class Imaging(Observer):
         Display live render.
         """
 
-        display_timer = 0
+        self.__display_timer = 0
         if self.display_progress:
             self.display()
-            display_timer = time()
-        return display_timer
+            self.__display_timer = time()
 
-    def _update_display(self, display_timer):
+    def _update_display(self):
         """
         Update live render.
         """
 
         # update live render display
-        if self.display_progress and (time() - display_timer) > self.display_update_time:
+        if self.display_progress and (time() - self.__display_timer) > self.display_update_time:
 
             print("Refreshing display...")
             self._generate_srgb_frame()
             self.display()
-            display_timer = time()
-
-        return display_timer
+            self.__display_timer = time()
 
     def _final_display(self):
         """
@@ -647,34 +569,37 @@ cdef class Imaging(Observer):
         ray_count = 0
         start_time = time()
         progress_timer = time()
-        return total_work, total_pixels, ray_count, start_time, progress_timer
+        self.__statistics_data = (total_work, total_pixels, ray_count, start_time, progress_timer)
 
-    def _update_statistics(self, statistics_data, index, pixel, sample_ray_count):
+    def _update_statistics(self, channel, x, y, sample_ray_count):
         """
         Display progress statistics.
         """
 
-        total_work, total_pixels, ray_count, start_time, progress_timer = statistics_data
+        total_work, total_pixels, ray_count, start_time, progress_timer = self.__statistics_data
         ray_count += sample_ray_count
+        nx, ny = self._pixels
+        pixel = y*ny + x
 
         if (time() - progress_timer) > 1.0:
 
-            current_work = total_pixels * index + pixel
+            current_work = total_pixels * channel + pixel
             completion = 100 * current_work / total_work
             print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
-                completion, index + 1, self.spectral_rays,
-                ceil((pixel + 1) / self._pixels[0]), self._pixels[1],
+                completion,
+                channel + 1, self.spectral_rays,
+                ceil((pixel + 1) / nx), ny,
                 pixel + 1, total_pixels, ray_count / 1000))
             ray_count = 0
             progress_timer = time()
 
-        return total_work, total_pixels, ray_count, start_time, progress_timer
+        self.__statistics_data = (total_work, total_pixels, ray_count, start_time, progress_timer)
 
-    def _final_statistics(self, statistics_data):
+    def _final_statistics(self):
         """
         Final statistics output.
         """
-        _, _, _, start_time, _ = statistics_data
+        _, _, _, start_time, _ = self.__statistics_data
         elapsed_time = time() - start_time
         print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
 

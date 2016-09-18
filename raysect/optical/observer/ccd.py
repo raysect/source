@@ -53,10 +53,10 @@ class CCD(Imaging):
     """
 
     def __init__(self, pixels=(720, 480), width=0.035, spectral_samples=21, spectral_rays=1,
-                 pixel_samples=100, process_count=0, parent=None, transform=None, name=None):
+                 pixel_samples=100, parent=None, transform=None, name=None):
 
         super().__init__(pixels=pixels, spectral_samples=spectral_samples,
-                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
+                         spectral_rays=spectral_rays, pixel_samples=pixel_samples,
                          parent=parent, transform=transform, name=name)
 
         self.width = width

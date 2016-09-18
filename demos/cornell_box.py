@@ -88,15 +88,15 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
               material=Lambert(green_reflectivity))
 
 # ceiling light
-# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
-#             parent=enclosure,
-#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-#             material=UniformSurfaceEmitter(light_spectrum, 2))
-
 light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
             parent=enclosure,
             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-            material=UniformSurfaceEmitter(d65_white, 2))
+            material=UniformSurfaceEmitter(light_spectrum, 2))
+
+# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+#             parent=enclosure,
+#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
+#             material=UniformSurfaceEmitter(d65_white, 2))
 
 # back_light = Sphere(0.1,
 #     parent=enclosure,

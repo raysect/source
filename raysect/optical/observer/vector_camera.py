@@ -1,6 +1,4 @@
 
-from multiprocessing import cpu_count
-
 from raysect.core import AffineMatrix3D, Point3D, Vector3D
 from raysect.optical.ray import Ray
 from raysect.optical.observer.sensor import Imaging
@@ -19,10 +17,10 @@ class VectorCamera(Imaging):
     """
 
     def __init__(self, pixel_origins, pixel_directions, pixels=(512, 512), exposure_handler=None, spectral_samples=21,
-                 spectral_rays=1, pixel_samples=100, process_count=cpu_count(), parent=None, transform=None, name=None):
+                 spectral_rays=1, pixel_samples=100, parent=None, transform=None, name=None):
 
         super().__init__(pixels=pixels, exposure_handler=exposure_handler, spectral_samples=spectral_samples,
-                         spectral_rays=spectral_rays, pixel_samples=pixel_samples, process_count=process_count,
+                         spectral_rays=spectral_rays, pixel_samples=pixel_samples,
                          parent=parent, transform=transform, name=name)
 
         # camera configuration
