@@ -78,8 +78,8 @@ cdef class Ray:
 
         Positive values correspond to points forward of the ray origin, along the ray direction.
 
-        :param t: The distance along the ray.
-        :return: A point at distance t along the ray direction measured from its origin.
+        :param double t: The distance along the ray.
+        :return Point3D: A point at distance t along the ray direction measured from its origin.
         """
         cdef:
             Point3D origin = self.origin
