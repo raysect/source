@@ -38,8 +38,8 @@ cdef class Ray:
     """
     Describes a line in space with an origin and direction.
 
-    :param Point3D origin: Point defining origin (default is Point3D(0, 0, 0)).
-    :param Vector3D direction: Vector defining direction (default is Vector3D(0, 0, 1)).
+    :param Point3D origin: Point defining ray's origin (default is Point3D(0, 0, 0)).
+    :param Vector3D direction: Vector defining ray's direction (default is Vector3D(0, 0, 1)).
     :param double max_distance: The terminating distance of the ray.
     """
 
@@ -79,7 +79,8 @@ cdef class Ray:
         Positive values correspond to points forward of the ray origin, along the ray direction.
 
         :param double t: The distance along the ray.
-        :return Point3D: A point at distance t along the ray direction measured from its origin.
+        :return: A point at distance t along the ray direction measured from its origin.
+        :rtype: Point3D
         """
         cdef:
             Point3D origin = self.origin
@@ -90,6 +91,14 @@ cdef class Ray:
                            origin.z + t * direction.z)
 
     cpdef Ray copy(self, Point3D origin=None, Vector3D direction=None):
+        """
+        Copy this ray to a new Ray instance.
+
+        :param Point3D origin: Point defining origin (default is Point3D(0, 0, 0)).
+        :param Vector3D direction: Vector defining direction (default is Vector3D(0, 0, 1)).
+        :return: A new Ray instance.
+        :rtype: Ray
+        """
 
         if origin is None:
             origin = self.origin.copy()

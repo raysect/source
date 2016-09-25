@@ -93,6 +93,10 @@ cdef class BoundingBox3D:
         self.lower, self.upper = state
 
     property lower:
+        """
+        The point defining the lower corner of the bounding box.
+        :type: Point3D
+        """
 
         def __get__(self):
             return self.lower
@@ -101,6 +105,10 @@ cdef class BoundingBox3D:
             self.lower = value
 
     property upper:
+        """
+        The point defining the upper corner of the bounding box.
+        :type: Point3D
+        """
 
         def __get__(self):
             return self.upper
@@ -109,7 +117,10 @@ cdef class BoundingBox3D:
             self.upper = value
 
     property centre:
-
+        """
+        The point defining the geometric centre of the bounding box.
+        :type: Point3D
+        """
         def __get__(self):
             return self.get_centre()
 
