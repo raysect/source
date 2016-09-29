@@ -98,7 +98,6 @@ cdef class BoundingBox3D:
 
         :rtype: Point3D
         """
-
         def __get__(self):
             return self.lower
 
@@ -109,9 +108,8 @@ cdef class BoundingBox3D:
         """
         The point defining the upper corner of the bounding box.
 
-        :type: Point3D
+        :rtype: Point3D
         """
-
         def __get__(self):
             return self.upper
 
@@ -122,7 +120,7 @@ cdef class BoundingBox3D:
         """
         The point defining the geometric centre of the bounding box.
 
-        :type: Point3D
+        :rtype: Point3D
         """
         def __get__(self):
             return self.get_centre()
@@ -139,6 +137,12 @@ cdef class BoundingBox3D:
         )
 
     cpdef bint hit(self, Ray ray):
+        """
+        Returns true if the ray hits the bounding box.
+
+        :param Ray ray: The ray to test for intersection.
+        :rtype: boolean
+        """
 
         cdef:
             double front_intersection, back_intersection
@@ -146,6 +150,17 @@ cdef class BoundingBox3D:
         return self.intersect(ray, &front_intersection, &back_intersection)
 
     cpdef tuple full_intersection(self, Ray ray):
+        """
+        Returns full intersection information for an intersection between a ray and a bounding box.
+
+        The first value is a boolean which is true if an intersection has occured, false otherwise. Each intersection
+        with a bounding box will produce two intersections, one on the front and back of the box. The remaining two
+        tuple parameters are floats representing the distance along the ray path to the respective intersections.
+
+        :param ray: The ray to test for intersection
+        :return: A tuple of intersection parameters, (hit, front_intersection, back_intersection).
+        :rtype: tuple
+        """
 
         cdef:
             double front_intersection, back_intersection
@@ -223,6 +238,12 @@ cdef class BoundingBox3D:
             back_intersection[0] = tmax
 
     cpdef bint contains(self, Point3D point):
+        """
+        Returns true if the given 3D point lies inside the bounding box.
+
+        :param Point3D point: A given test point.
+        :rtype: boolean
+        """
 
         # point is inside box if it is inside all slabs
         if (point.x < self.lower.x) or (point.x > self.upper.x):
@@ -234,6 +255,14 @@ cdef class BoundingBox3D:
         return True
 
     cpdef object union(self, BoundingBox3D box):
+        """
+        Union this bounding box instance with the input bounding box.
+
+        The resulting bounding box will be larger so as to just enclose both bounding boxes. This class instance
+        will be edited in place to have the new bounding box dimensions.
+
+        :param BoundingBox3D box: A bounding box instance to union with this bounding box instance.
+        """
 
         self.lower.x = min(self.lower.x, box.lower.x)
         self.lower.y = min(self.lower.y, box.lower.y)
@@ -244,6 +273,15 @@ cdef class BoundingBox3D:
         self.upper.z = max(self.upper.z, box.upper.z)
 
     cpdef object extend(self, Point3D point, double padding=0.0):
+        """
+        Enlarge this bounding box to enclose the given point.
+
+        The resulting bounding box will be larger so as to just enclose the existing bounding box and the new point.
+        This class instance will be edited in place to have the new bounding box dimensions.
+
+        :param Point3D point: the point to use for extending the bounding box.
+        :param float padding: optional padding parameter, gives extra margin around the new point.
+        """
 
         self.lower.x = min(self.lower.x, point.x - padding)
         self.lower.y = min(self.lower.y, point.y - padding)
@@ -254,6 +292,11 @@ cdef class BoundingBox3D:
         self.upper.z = max(self.upper.z, point.z + padding)
 
     cpdef double surface_area(self):
+        """
+        Returns the surface area of the bounding box.
+
+        :rtype: float
+        """
 
         cdef double dx, dy, dz
 
@@ -264,10 +307,21 @@ cdef class BoundingBox3D:
         return 2 * (dx * dy + dx * dz + dy * dz)
 
     cpdef double volume(self):
+        """
+        Returns the volume of the bounding box.
+
+        :rtype: float
+        """
 
         return (self.upper.x - self.lower.x) * (self.upper.y - self.lower.y) * (self.upper.z - self.lower.z)
 
     cpdef list vertices(self):
+        """
+        Get the list of vertices for this bounding box.
+
+        :return: A list of Point3D's representing the corners of the bounding box.
+        :rtype: list
+        """
 
         return [
             new_point3d(self.lower.x, self.lower.y, self.lower.z),
@@ -281,6 +335,12 @@ cdef class BoundingBox3D:
         ]
 
     cpdef double extent(self, int axis) except *:
+        """
+        Returns the spatial extend of this bounding box along the given dimension.
+
+        :param int axis: specifies the axis to return, {0: X axis, 1: Y axis, 2: Z axis}.
+        :rtype float
+        """
 
         if axis == X_AXIS:
             return max(0.0, self.upper.x - self.lower.x)
@@ -292,6 +352,12 @@ cdef class BoundingBox3D:
             raise ValueError("Axis must be in the range [0, 2].")
 
     cpdef int largest_axis(self):
+        """
+        Find the largest axis of this bounding box.
+
+        :return: an int specifying the longest axis, {0: X axis, 1: Y axis, 2: Z axis}.
+        :rtype int
+        """
 
         cdef:
             int largest_axis
@@ -313,10 +379,23 @@ cdef class BoundingBox3D:
         return largest_axis
 
     cpdef double largest_extent(self):
+        """
+        Find the largest spatial extent across all axes.
+
+        :return: distance along the largest bounding box axis.
+        :rtype float
+        """
 
         return max(self.extent(X_AXIS), self.extent(Y_AXIS), self.extent(Z_AXIS))
 
     cpdef object pad(self, double padding):
+        """
+        Makes the bounding box larger by the specified amount of padding.
+
+        Every bounding box axis will end up larger by a factor of 2 x padding.
+
+        :param float padding: distance to use as padding margin
+        """
 
         self.lower.x = self.lower.x - padding
         self.lower.y = self.lower.y - padding
@@ -334,6 +413,7 @@ cdef class BoundingBox3D:
         added to avoid numerical accuracy issues.
 
         :return: Radius of sphere.
+        :rtype: float
         """
 
         return self.lower.distance_to(self.get_centre()) * SPHERE_PADDING
@@ -343,7 +423,6 @@ cdef class BoundingBox2D:
     """
     Axis-aligned 2D bounding box.
     """
-
     def __init__(self, Point2D lower=None, Point2D upper=None):
 
         # initialise to a null box if called without both initial points
@@ -371,7 +450,11 @@ cdef class BoundingBox2D:
         self.lower, self.upper = state
 
     property lower:
+        """
+        The point defining the lower corner of the bounding box.
 
+        :rtype: Point2D
+        """
         def __get__(self):
             return self.lower
 
@@ -379,7 +462,11 @@ cdef class BoundingBox2D:
             self.lower = value
 
     property upper:
+        """
+        The point defining the upper corner of the bounding box.
 
+        :rtype: Point2D
+        """
         def __get__(self):
             return self.upper
 
@@ -387,7 +474,12 @@ cdef class BoundingBox2D:
             self.upper = value
 
     cpdef bint contains(self, Point2D point):
+        """
+        Returns true if the given 2D point lies inside the bounding box.
 
+        :param Point2D point: A given test point.
+        :rtype: boolean
+        """
         # point is inside box if it is inside all slabs
         if (point.x < self.lower.x) or (point.x > self.upper.x):
             return False
@@ -396,7 +488,14 @@ cdef class BoundingBox2D:
         return True
 
     cpdef object union(self, BoundingBox2D box):
+        """
+        Union this bounding box instance with the input bounding box.
 
+        The resulting bounding box will be larger so as to just enclose both bounding boxes. This class instance
+        will be edited in place to have the new bounding box dimensions.
+
+        :param BoundingBox2D box: A bounding box instance to union with this bounding box instance.
+        """
         self.lower.x = min(self.lower.x, box.lower.x)
         self.lower.y = min(self.lower.y, box.lower.y)
 
@@ -404,7 +503,15 @@ cdef class BoundingBox2D:
         self.upper.y = max(self.upper.y, box.upper.y)
 
     cpdef object extend(self, Point2D point, double padding=0.0):
+        """
+        Enlarge this bounding box to enclose the given point.
 
+        The resulting bounding box will be larger so as to just enclose the existing bounding box and the new point.
+        This class instance will be edited in place to have the new bounding box dimensions.
+
+        :param Point2D point: the point to use for extending the bounding box.
+        :param float padding: optional padding parameter, gives extra margin around the new point.
+        """
         self.lower.x = min(self.lower.x, point.x - padding)
         self.lower.y = min(self.lower.y, point.y - padding)
 
@@ -412,11 +519,20 @@ cdef class BoundingBox2D:
         self.upper.y = max(self.upper.y, point.y + padding)
 
     cpdef double surface_area(self):
+        """
+        Returns the surface area of the bounding box.
 
+        :rtype: float
+        """
         return (self.upper.x - self.lower.x) * (self.upper.y - self.lower.y)
 
     cpdef list vertices(self):
+        """
+        Get the list of vertices for this bounding box.
 
+        :return: A list of Point2D's representing the corners of the bounding box.
+        :rtype: list
+        """
         return [
             new_point2d(self.lower.x, self.lower.y),
             new_point2d(self.lower.x, self.upper.y),
@@ -425,7 +541,12 @@ cdef class BoundingBox2D:
         ]
 
     cpdef double extent(self, int axis) except *:
+        """
+        Returns the spatial extend of this bounding box along the given dimension.
 
+        :param int axis: specifies the axis to return, {0: X axis, 1: Y axis}.
+        :rtype float
+        """
         if axis == X_AXIS:
             return max(0.0, self.upper.x - self.lower.x)
         elif axis == Y_AXIS:
@@ -434,7 +555,12 @@ cdef class BoundingBox2D:
             raise ValueError("Axis must be in the range [0, 1].")
 
     cpdef int largest_axis(self):
+        """
+        Find the largest axis of this bounding box.
 
+        :return: an int specifying the longest axis, {0: X axis, 1: Y axis}.
+        :rtype int
+        """
         cdef:
             int largest_axis
             double largest_extent, extent
@@ -450,11 +576,22 @@ cdef class BoundingBox2D:
         return largest_axis
 
     cpdef double largest_extent(self):
+        """
+        Find the largest spatial extent across all axes.
 
+        :return: distance along the largest bounding box axis.
+        :rtype float
+        """
         return max(self.extent(X_AXIS), self.extent(Y_AXIS))
 
     cpdef object pad(self, double padding):
+        """
+        Makes the bounding box larger by the specified amount of padding.
 
+        Every bounding box axis will end up larger by a factor of 2 x padding.
+
+        :param float padding: distance to use as padding margin
+        """
         self.lower.x = self.lower.x - padding
         self.lower.y = self.lower.y - padding
 
