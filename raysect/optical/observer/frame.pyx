@@ -29,49 +29,88 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy import zeros, float64, int64
+from numpy import zeros, full, float64, int32, inf
 from numpy cimport ndarray
 
 
 cdef class Frame2D:
 
     cdef:
-        int nx, ny
+        readonly tuple pixels
+        readonly int channels
         readonly ndarray value
         readonly ndarray variance
         readonly ndarray samples
 
-    def __init__(self, pixels):
+    def __init__(self, pixels, channels):
 
         nx, ny = pixels
         if nx < 1 or ny < 1:
             raise ValueError("Pixels must be a tuple of x and y dimensions, both of which must be >= 1.")
 
-        self.nx = nx
-        self.ny = ny
+        if channels <= 0:
+            raise ValueError("There must be at least one channel.")
+
+        self.pixels = pixels
+        self.channels = channels
 
         # generate frame buffers
-        self._new_buffers(self)
+        self._new_buffers()
 
-    @property
-    def pixels(self):
-        return self.nx, self.ny
-
-    cpdef object add_sample(self, x, y, value):
+    cpdef object add_sample(self, int x, int y, int channel, double value):
         pass
 
-    cpdef object combine_samples(self, x, y, mean, variance, sample_count):
-        pass
+    cpdef object combine_samples(self, int x, int y, int channel, double mean, double variance, int sample_count):
+
+        cdef:
+            int nx, ny, nt
+            double mx, my, mt
+            double vx, vy, vt
+            int[:,:,::1] samples_mv
+            double[:,:,::1] value_mv, variance_mv
+
+        if sample_count < 1:
+            raise ValueError('Number of samples cannot be less than one.')
+
+        if sample_count == 1:
+            self.add_sample(x, y, channel, mean)
+            return
+
+        # acquire memory-views
+        value_mv = self.value
+        variance_mv = self.variance
+        samples_mv = self.samples
+
+        # accumulate samples
+        nx = samples_mv[x, y, channel]
+        ny = sample_count
+        nt = nx + ny
+
+        # calculate new mean
+        mx = value_mv[x, y, channel]
+        my = mean
+        mt = (nx*mx + ny*my) / <double> nt
+
+        # convert unbiased variance to biased variance
+        vx = (nx - 1) * variance_mv[x, y, channel] / <double> nx
+        vy = (ny - 1) * variance / <double> ny
+
+        # calculate new variance
+        vt = (nx * (mx*mx + vx) + ny * (my*my + vy)) / <double> nt - mt*mt
+
+        # convert biased variance to unbiased variance
+        vt = nt * vt / <double> (nt - 1)
+
+        # update frame values
+        value_mv[x, y, channel] = mt
+        variance_mv[x, y, channel] = vt
+        samples_mv[x, y, channel] = nt
 
     cpdef object clear(self):
         self._new_buffers()
 
     cdef inline void _new_buffers(self):
-        self.value = zeros((self.nx, self.ny), dtype=float64)
-        self.variance = zeros((self.nx, self.ny), dtype=float64)
-        self.samples = zeros((self.nx, self.ny), dtype=int64)
-
-
-
-
-
+        nx, ny = self.pixels
+        self.value = zeros((nx, ny, self.channels), dtype=float64)
+        self.variance = full((nx, ny, self.channels), fill_value=inf, dtype=float64)
+        self.samples = zeros((nx, ny, self.channels), dtype=int32)

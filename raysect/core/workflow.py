@@ -31,6 +31,7 @@ from multiprocessing import Process, cpu_count, SimpleQueue
 from raysect.core.math import random
 
 
+# TODO: complete docstring
 class RenderEngine:
     """
     Provides a common rendering workflow interface.
@@ -159,7 +160,7 @@ if __name__ == '__main__':
         def update(self, result):
             self.total += result
 
-    n = 5000
+    n = 2000
 
     t = time()
     j = Job(SerialEngine())
