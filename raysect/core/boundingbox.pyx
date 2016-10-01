@@ -339,7 +339,7 @@ cdef class BoundingBox3D:
         Returns the spatial extend of this bounding box along the given dimension.
 
         :param int axis: specifies the axis to return, {0: X axis, 1: Y axis, 2: Z axis}.
-        :rtype float
+        :rtype: float
         """
 
         if axis == X_AXIS:
@@ -356,7 +356,7 @@ cdef class BoundingBox3D:
         Find the largest axis of this bounding box.
 
         :return: an int specifying the longest axis, {0: X axis, 1: Y axis, 2: Z axis}.
-        :rtype int
+        :rtype: int
         """
 
         cdef:
@@ -383,7 +383,7 @@ cdef class BoundingBox3D:
         Find the largest spatial extent across all axes.
 
         :return: distance along the largest bounding box axis.
-        :rtype float
+        :rtype: float
         """
 
         return max(self.extent(X_AXIS), self.extent(Y_AXIS), self.extent(Z_AXIS))
@@ -545,7 +545,7 @@ cdef class BoundingBox2D:
         Returns the spatial extend of this bounding box along the given dimension.
 
         :param int axis: specifies the axis to return, {0: X axis, 1: Y axis}.
-        :rtype float
+        :rtype: float
         """
         if axis == X_AXIS:
             return max(0.0, self.upper.x - self.lower.x)
@@ -559,7 +559,7 @@ cdef class BoundingBox2D:
         Find the largest axis of this bounding box.
 
         :return: an int specifying the longest axis, {0: X axis, 1: Y axis}.
-        :rtype int
+        :rtype: int
         """
         cdef:
             int largest_axis
@@ -580,7 +580,7 @@ cdef class BoundingBox2D:
         Find the largest spatial extent across all axes.
 
         :return: distance along the largest bounding box axis.
-        :rtype float
+        :rtype: float
         """
         return max(self.extent(X_AXIS), self.extent(Y_AXIS))
 
