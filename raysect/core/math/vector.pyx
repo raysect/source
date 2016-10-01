@@ -35,20 +35,21 @@ from libc.math cimport sqrt, fabs
 
 
 cdef class Vector3D(_Vec3):
-    """
-    Represents a vector in 3D affine space.
-
-    Vectors are described by their (x, y, z) coordinates in the chosen coordinate system. Standard Vector3D operations are
-    supported such as addition, subtraction, scaling, dot product, cross product, normalisation and coordinate
-    transformations.
-    """
 
     def __init__(self, double x=0.0, double y=0.0, double z=1.0):
         """
-        Vector3D Constructor.
+        Represents a vector in 3D affine space.
+
+        Vectors are described by their (x, y, z) coordinates in the chosen coordinate system. Standard Vector3D operations are
+        supported such as addition, subtraction, scaling, dot product, cross product, normalisation and coordinate
+        transformations.
 
         If no initial values are passed, Vector3D defaults to a unit vector
         aligned with the z-axis: Vector3D(0.0, 0.0, 1.0)
+
+        :param float x: initial x coordinate, defaults to x = 0.0.
+        :param float y: initial y coordinate, defaults to y = 0.0.
+        :param float z: initial z coordinate, defaults to z = 0.0.
         """
 
         self.x = x
@@ -186,12 +187,12 @@ cdef class Vector3D(_Vec3):
 
     cpdef Vector3D cross(self, _Vec3 v):
         """
-        Calculates the cross product between this vector and the supplied
-        vector:
+        Calculates the cross product between this vector and the supplied vector
 
-            C = A.cross(B) <=> C = A x B
+        C = A.cross(B) <=> C = A x B
 
-        Returns a Vector3D.
+        :param Vector3D v: An input vector with which to calculate the cross product.
+        :rtype: Vector3D
         """
 
         return new_vector3d(self.y * v.z - v.y * self.z,
@@ -204,6 +205,8 @@ cdef class Vector3D(_Vec3):
         Returns a normalised copy of the vector.
 
         The returned vector is normalised to length 1.0 - a unit vector.
+
+        :rtype: Vector3D
         """
 
         cdef double t
@@ -230,6 +233,10 @@ cdef class Vector3D(_Vec3):
 
         This method is substantially faster than using the multiplication
         operator of AffineMatrix3D when called from cython code.
+
+        :param AffineMatrix3D m: The affine matrix describing the required coordinate transformation.
+        :return: A new instance of this vector that has been transformed with the supplied Affine Matrix.
+        :rtype: Vector3D
         """
 
         return new_vector3d(m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,
@@ -306,6 +313,8 @@ cdef class Vector3D(_Vec3):
     cpdef Vector3D copy(self):
         """
         Returns a copy of the vector.
+
+        :rtype: Vector3D
         """
 
         return new_vector3d(self.x,
@@ -316,6 +325,8 @@ cdef class Vector3D(_Vec3):
     cpdef Vector3D orthogonal(self):
         """
         Returns a unit vector that is guaranteed to be orthogonal to the vector.
+
+        :rtype: vector3D
         """
 
         cdef:
