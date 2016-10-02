@@ -58,14 +58,16 @@ cdef class Frame2D:
         # generate frame buffers
         self._new_buffers()
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef object add_sample(self, int x, int y, int channel, double sample):
         cdef:
-            int n
+            int nx, ny, n
             double m, v
             int[:,:,::1] samples_mv
             double[:,:,::1] value_mv, variance_mv
 
-        # todo: perform bounds check manually, cython repeats them on every access
+        self._bounds_check(x, y, channel)
 
         # acquire memory-views
         value_mv = self.value
@@ -85,6 +87,8 @@ cdef class Frame2D:
         variance_mv[x, y, channel] = v
         samples_mv[x, y, channel] = n
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef object combine_samples(self, int x, int y, int channel, double mean, double variance, int sample_count):
 
         cdef:
@@ -101,7 +105,7 @@ cdef class Frame2D:
             self.add_sample(x, y, channel, mean)
             return
 
-        # todo: perform bounds check manually, cython repeats them on every access
+        self._bounds_check(x, y, channel)
 
         # acquire memory-views
         value_mv = self.value
@@ -134,6 +138,23 @@ cdef class Frame2D:
         self.value = zeros((nx, ny, self.channels), dtype=float64)
         self.variance = zeros((nx, ny, self.channels), dtype=float64)
         self.samples = zeros((nx, ny, self.channels), dtype=int32)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef inline object _bounds_check(self, int x, int y, int channel):
+
+        cdef int nx, ny
+
+        if channel < 0 or channel >= self.channels:
+            raise ValueError("Channel index is out of range.")
+
+        nx, ny = self.pixels
+
+        if x < 0 or x >= nx:
+            raise ValueError("Pixel x index is out of range.")
+
+        if y < 0 or y >= ny:
+            raise ValueError("Pixel y index is out of range.")
 
 
 @cython.cdivision(True)
