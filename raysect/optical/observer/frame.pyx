@@ -29,8 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy import zeros, full, float64, int32, inf
+from numpy import zeros, float64, int32
 from numpy cimport ndarray
+cimport cython
 
 
 cdef class Frame2D:
@@ -57,15 +58,39 @@ cdef class Frame2D:
         # generate frame buffers
         self._new_buffers()
 
-    cpdef object add_sample(self, int x, int y, int channel, double value):
-        pass
+    cpdef object add_sample(self, int x, int y, int channel, double sample):
+        cdef:
+            int n
+            double m, v
+            int[:,:,::1] samples_mv
+            double[:,:,::1] value_mv, variance_mv
+
+        # todo: perform bounds check manually, cython repeats them on every access
+
+        # acquire memory-views
+        value_mv = self.value
+        variance_mv = self.variance
+        samples_mv = self.samples
+
+        # initial values
+        m = value_mv[x, y, channel]
+        v = variance_mv[x, y, channel]
+        n = samples_mv[x, y, channel]
+
+        # calculate statistics
+        _add_sample(sample, &m, &v, &n)
+
+        # update frame values
+        value_mv[x, y, channel] = m
+        variance_mv[x, y, channel] = v
+        samples_mv[x, y, channel] = n
 
     cpdef object combine_samples(self, int x, int y, int channel, double mean, double variance, int sample_count):
 
         cdef:
-            int nx, ny, nt
-            double mx, my, mt
-            double vx, vy, vt
+            int nx, ny, nt = 0
+            double mx, my, mt = 0
+            double vx, vy, vt = 0
             int[:,:,::1] samples_mv
             double[:,:,::1] value_mv, variance_mv
 
@@ -76,30 +101,25 @@ cdef class Frame2D:
             self.add_sample(x, y, channel, mean)
             return
 
+        # todo: perform bounds check manually, cython repeats them on every access
+
         # acquire memory-views
         value_mv = self.value
         variance_mv = self.variance
         samples_mv = self.samples
 
-        # accumulate samples
-        nx = samples_mv[x, y, channel]
-        ny = sample_count
-        nt = nx + ny
-
-        # calculate new mean
+        # set 1 sample count, mean and variance
         mx = value_mv[x, y, channel]
+        vx = variance_mv[x, y, channel]
+        nx = samples_mv[x, y, channel]
+
+        # set 2 sample count, mean and variance
         my = mean
-        mt = (nx*mx + ny*my) / <double> nt
+        vy = variance
+        ny = sample_count
 
-        # convert unbiased variance to biased variance
-        vx = (nx - 1) * variance_mv[x, y, channel] / <double> nx
-        vy = (ny - 1) * variance / <double> ny
-
-        # calculate new variance
-        vt = (nx * (mx*mx + vx) + ny * (my*my + vy)) / <double> nt - mt*mt
-
-        # convert biased variance to unbiased variance
-        vt = nt * vt / <double> (nt - 1)
+        # calculate statistics
+        _combine_samples(mx, vx, nx, my, vy, ny, &mt, &vt, &nt)
 
         # update frame values
         value_mv[x, y, channel] = mt
@@ -112,5 +132,75 @@ cdef class Frame2D:
     cdef inline void _new_buffers(self):
         nx, ny = self.pixels
         self.value = zeros((nx, ny, self.channels), dtype=float64)
-        self.variance = full((nx, ny, self.channels), fill_value=inf, dtype=float64)
+        self.variance = zeros((nx, ny, self.channels), dtype=float64)
         self.samples = zeros((nx, ny, self.channels), dtype=int32)
+
+
+@cython.cdivision(True)
+cdef inline void _add_sample(double sample, double *m, double *v, int *n):
+    """
+    Updates the mean, variance and sample count with the supplied sample value.
+
+    :param sample: Sample value.
+    :param m: Mean to update.
+    :param v: Variance to update.
+    :param n: Sample count to update.
+    """
+
+    cdef:
+        double prev_m, prev_v
+        int prev_n
+
+    if n[0] == 0:
+
+        # initial sample
+        n[0] = 1
+        m[0] = sample
+        v[0] = 0
+
+    else:
+
+        # cache previous values for computation
+        # prev_n is bump up for a single sample to avoid a divide by zero
+        # in this scenario prev_v will always be 0 so this has no effect on the result
+        prev_m = m[0]
+        prev_v = v[0]
+        prev_n = n[0] if n[0] > 1 else 2
+
+        # update statistics
+        n[0] += 1
+        m[0] = prev_m + (sample - prev_m) / n[0]
+        v[0] = (prev_v * (prev_n - 1) + (sample - prev_m)*(sample - m[0])) / (n[0] - 1)
+
+
+@cython.cdivision(True)
+cdef inline void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt):
+    """
+    Computes the combined statistics of two sets of samples specified by mean, variance and sample count.
+
+    :param mx: Mean of set x.
+    :param vx: Variance of set x.
+    :param nx: Sample count of set x.
+    :param my: Mean of set y.
+    :param vy: Variance of set y.
+    :param ny: Sample count of set y.
+    :param mt: Combined mean.
+    :param vt: Combined variance.
+    :param nt: Combined sample count.
+    """
+
+    # accumulate samples
+    nt[0] = nx + ny
+
+    # calculate new mean
+    mt[0] = (nx*mx + ny*my) / <double> nt[0]
+
+    # convert unbiased variance to biased variance
+    vx = (nx - 1) * vx / <double> nx
+    vy = (ny - 1) * vy / <double> ny
+
+    # calculate new variance
+    vt[0] = (nx * (mx*mx + vx) + ny * (my*my + vy)) / <double> nt[0] - mt[0]*mt[0]
+
+    # convert biased variance to unbiased variance
+    vt[0] = nt[0] * vt[0] / <double> (nt[0] - 1)
