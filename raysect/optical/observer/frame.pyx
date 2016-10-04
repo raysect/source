@@ -96,6 +96,11 @@ cdef class Frame2D:
         if sample_count < 1:
             raise ValueError('Number of samples must not be less than 1.')
 
+        # clamp variance to zero
+        # occasionally numerical accuracy limits can result in values < 0
+        if variance < 0:
+            variance = 0
+
         # acquire memory-views
         value_mv = self.value
         variance_mv = self.variance
