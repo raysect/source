@@ -92,6 +92,10 @@ cdef class Frame2D:
 
         self._bounds_check(x, y, channel)
 
+        # validate
+        if sample_count < 1:
+            raise ValueError('Number of samples must not be less than 1.')
+
         # acquire memory-views
         value_mv = self.value
         variance_mv = self.variance
