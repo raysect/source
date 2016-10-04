@@ -30,18 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from numpy import zeros, float64, int32
-from numpy cimport ndarray
 cimport cython
 
 
 cdef class Frame2D:
-
-    cdef:
-        readonly tuple pixels
-        readonly int channels
-        readonly ndarray value
-        readonly ndarray variance
-        readonly ndarray samples
 
     def __init__(self, pixels, channels):
 
@@ -98,13 +90,6 @@ cdef class Frame2D:
             int[:,:,::1] samples_mv
             double[:,:,::1] value_mv, variance_mv
 
-        if sample_count < 1:
-            raise ValueError('Number of samples cannot be less than one.')
-
-        if sample_count == 1:
-            self.add_sample(x, y, channel, mean)
-            return
-
         self._bounds_check(x, y, channel)
 
         # acquire memory-views
@@ -112,12 +97,12 @@ cdef class Frame2D:
         variance_mv = self.variance
         samples_mv = self.samples
 
-        # set 1 sample count, mean and variance
+        # stored sample count, mean and variance
         mx = value_mv[x, y, channel]
         vx = variance_mv[x, y, channel]
         nx = samples_mv[x, y, channel]
 
-        # set 2 sample count, mean and variance
+        # external sample count, mean and variance
         my = mean
         vy = variance
         ny = sample_count
@@ -210,18 +195,84 @@ cdef inline void _combine_samples(double mx, double vx, int nx, double my, doubl
     :param nt: Combined sample count.
     """
 
-    # accumulate samples
-    nt[0] = nx + ny
+    cdef double temp
 
-    # calculate new mean
-    mt[0] = (nx*mx + ny*my) / <double> nt[0]
+    # ensure set x is the largest set
+    if nx < ny:
+        _swap_int(&nx, &ny)
+        _swap_double(&mx, &my)
+        _swap_double(&vx, &vy)
 
-    # convert unbiased variance to biased variance
-    vx = (nx - 1) * vx / <double> nx
-    vy = (ny - 1) * vy / <double> ny
+    # most common case first
+    if nx > 1 and ny > 1:
 
-    # calculate new variance
-    vt[0] = (nx * (mx*mx + vx) + ny * (my*my + vy)) / <double> nt[0] - mt[0]*mt[0]
+        # accumulate samples
+        nt[0] = nx + ny
 
-    # convert biased variance to unbiased variance
-    vt[0] = nt[0] * vt[0] / <double> (nt[0] - 1)
+        # calculate new mean
+        mt[0] = (nx*mx + ny*my) / <double> nt[0]
+
+        # convert unbiased variance to biased variance
+        vx = (nx - 1) * vx / <double> nx
+        vy = (ny - 1) * vy / <double> ny
+
+        # calculate new variance
+        vt[0] = (nx * (mx*mx + vx) + ny * (my*my + vy)) / <double> nt[0] - mt[0]*mt[0]
+
+        # convert biased variance to unbiased variance
+        vt[0] = nt[0] * vt[0] / <double> (nt[0] - 1)
+
+        return
+
+    # special cases
+    if nx == 0 and ny == 0:
+
+        # no samples
+        nt[0] = 0
+        mt[0] = 0
+        vt[0] = 0
+
+    elif nx == 1:
+
+        if ny == 0:
+
+            # single sample
+            nt[0] = 1
+            mt[0] = mx
+            vt[0] = 0
+
+        else:
+
+            # two independent samples, combine
+            nt[0] = 2
+            mt[0] = 0.5 * (mx + my)
+            temp = mx - mt[0]
+            vt[0] = 2*temp*temp
+
+    elif nx > 1:
+
+        # two samples in set x
+        nt[0] = nx
+        mt[0] = mx
+        vt[0] = vx
+
+        if ny == 1:
+
+            # single sample from set y
+            _add_sample(my, mt, vt, nt)
+
+
+cdef inline void _swap_int(int *a, int *b):
+
+        cdef int temp
+        temp = a[0]
+        a[0] = b[0]
+        b[0] = temp
+
+
+cdef inline void _swap_double(double *a, double *b):
+
+        cdef double temp
+        temp = a[0]
+        a[0] = b[0]
+        b[0] = temp
