@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy import zeros, float64, int32
 from numpy cimport ndarray
 
 
@@ -40,6 +39,9 @@ cdef class Pixel:
         readonly ndarray value
         readonly ndarray variance
         readonly ndarray samples
+        double[::1] _value_mv
+        double[::1] _variance_mv
+        int[::1] _samples_mv
 
     cpdef object add_sample(self, int channel, double sample)
 
@@ -60,6 +62,9 @@ cdef class Frame1D:
         readonly ndarray value
         readonly ndarray variance
         readonly ndarray samples
+        double[:,::1] _value_mv
+        double[:,::1] _variance_mv
+        int[:,::1] _samples_mv
 
     cpdef object add_sample(self, int i, int channel, double sample)
 
@@ -80,6 +85,9 @@ cdef class Frame2D:
         readonly ndarray value
         readonly ndarray variance
         readonly ndarray samples
+        double[:,:,::1] _value_mv
+        double[:,:,::1] _variance_mv
+        int[:,:,::1] _samples_mv
 
     cpdef object add_sample(self, int x, int y, int channel, double sample)
 

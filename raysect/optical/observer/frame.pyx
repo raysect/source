@@ -51,28 +51,21 @@ cdef class Pixel:
         cdef:
             int n
             double m, v
-            int[::1] samples_mv
-            double[::1] value_mv, variance_mv
 
         self._bounds_check(channel)
 
-        # acquire memory-views
-        value_mv = self.value
-        variance_mv = self.variance
-        samples_mv = self.samples
-
         # initial values
-        m = value_mv[channel]
-        v = variance_mv[channel]
-        n = samples_mv[channel]
+        m = self._value_mv[channel]
+        v = self._variance_mv[channel]
+        n = self._samples_mv[channel]
 
         # calculate statistics
         _add_sample(sample, &m, &v, &n)
 
         # update frame values
-        value_mv[channel] = m
-        variance_mv[channel] = v
-        samples_mv[channel] = n
+        self._value_mv[channel] = m
+        self._variance_mv[channel] = v
+        self._samples_mv[channel] = n
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -82,8 +75,6 @@ cdef class Pixel:
             int nx, ny, nt = 0
             double mx, my, mt = 0
             double vx, vy, vt = 0
-            int[::1] samples_mv
-            double[::1] value_mv, variance_mv
 
         self._bounds_check(channel)
 
@@ -96,15 +87,10 @@ cdef class Pixel:
         if variance < 0:
             variance = 0
 
-        # acquire memory-views
-        value_mv = self.value
-        variance_mv = self.variance
-        samples_mv = self.samples
-
         # stored sample count, mean and variance
-        mx = value_mv[channel]
-        vx = variance_mv[channel]
-        nx = samples_mv[channel]
+        mx = self._value_mv[channel]
+        vx = self._variance_mv[channel]
+        nx = self._samples_mv[channel]
 
         # external sample count, mean and variance
         my = mean
@@ -115,9 +101,9 @@ cdef class Pixel:
         _combine_samples(mx, vx, nx, my, vy, ny, &mt, &vt, &nt)
 
         # update frame values
-        value_mv[channel] = mt
-        variance_mv[channel] = vt
-        samples_mv[channel] = nt
+        self._value_mv[channel] = mt
+        self._variance_mv[channel] = vt
+        self._samples_mv[channel] = nt
 
     cpdef object clear(self):
         self._new_buffers()
@@ -126,6 +112,9 @@ cdef class Pixel:
         self.value = zeros((self.channels, ), dtype=float64)
         self.variance = zeros((self.channels, ), dtype=float64)
         self.samples = zeros((self.channels, ), dtype=int32)
+        self._value_mv = self.value
+        self._variance_mv = self.variance
+        self._samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int channel):
 
@@ -155,28 +144,21 @@ cdef class Frame1D:
         cdef:
             int n
             double m, v
-            int[:,::1] samples_mv
-            double[:,::1] value_mv, variance_mv
 
         self._bounds_check(i, channel)
 
-        # acquire memory-views
-        value_mv = self.value
-        variance_mv = self.variance
-        samples_mv = self.samples
-
         # initial values
-        m = value_mv[i, channel]
-        v = variance_mv[i, channel]
-        n = samples_mv[i, channel]
+        m = self._value_mv[i, channel]
+        v = self._variance_mv[i, channel]
+        n = self._samples_mv[i, channel]
 
         # calculate statistics
         _add_sample(sample, &m, &v, &n)
 
         # update frame values
-        value_mv[i, channel] = m
-        variance_mv[i, channel] = v
-        samples_mv[i, channel] = n
+        self._value_mv[i, channel] = m
+        self._variance_mv[i, channel] = v
+        self._samples_mv[i, channel] = n
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -186,8 +168,6 @@ cdef class Frame1D:
             int nx, ny, nt = 0
             double mx, my, mt = 0
             double vx, vy, vt = 0
-            int[:,::1] samples_mv
-            double[:,::1] value_mv, variance_mv
 
         self._bounds_check(i, channel)
 
@@ -200,15 +180,10 @@ cdef class Frame1D:
         if variance < 0:
             variance = 0
 
-        # acquire memory-views
-        value_mv = self.value
-        variance_mv = self.variance
-        samples_mv = self.samples
-
         # stored sample count, mean and variance
-        mx = value_mv[i, channel]
-        vx = variance_mv[i, channel]
-        nx = samples_mv[i, channel]
+        mx = self._value_mv[i, channel]
+        vx = self._variance_mv[i, channel]
+        nx = self._samples_mv[i, channel]
 
         # external sample count, mean and variance
         my = mean
@@ -219,9 +194,9 @@ cdef class Frame1D:
         _combine_samples(mx, vx, nx, my, vy, ny, &mt, &vt, &nt)
 
         # update frame values
-        value_mv[i, channel] = mt
-        variance_mv[i, channel] = vt
-        samples_mv[i, channel] = nt
+        self._value_mv[i, channel] = mt
+        self._variance_mv[i, channel] = vt
+        self._samples_mv[i, channel] = nt
 
     cpdef object clear(self):
         self._new_buffers()
@@ -230,6 +205,9 @@ cdef class Frame1D:
         self.value = zeros((self.pixels, self.channels), dtype=float64)
         self.variance = zeros((self.pixels, self.channels), dtype=float64)
         self.samples = zeros((self.pixels, self.channels), dtype=int32)
+        self._value_mv = self.value
+        self._variance_mv = self.variance
+        self._samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int i, int channel):
 
@@ -263,28 +241,21 @@ cdef class Frame2D:
         cdef:
             int nx, ny, n
             double m, v
-            int[:,:,::1] samples_mv
-            double[:,:,::1] value_mv, variance_mv
 
         self._bounds_check(x, y, channel)
 
-        # acquire memory-views
-        value_mv = self.value
-        variance_mv = self.variance
-        samples_mv = self.samples
-
         # initial values
-        m = value_mv[x, y, channel]
-        v = variance_mv[x, y, channel]
-        n = samples_mv[x, y, channel]
+        m = self._value_mv[x, y, channel]
+        v = self._variance_mv[x, y, channel]
+        n = self._samples_mv[x, y, channel]
 
         # calculate statistics
         _add_sample(sample, &m, &v, &n)
 
         # update frame values
-        value_mv[x, y, channel] = m
-        variance_mv[x, y, channel] = v
-        samples_mv[x, y, channel] = n
+        self._value_mv[x, y, channel] = m
+        self._variance_mv[x, y, channel] = v
+        self._samples_mv[x, y, channel] = n
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -294,8 +265,6 @@ cdef class Frame2D:
             int nx, ny, nt = 0
             double mx, my, mt = 0
             double vx, vy, vt = 0
-            int[:,:,::1] samples_mv
-            double[:,:,::1] value_mv, variance_mv
 
         self._bounds_check(x, y, channel)
 
@@ -308,15 +277,10 @@ cdef class Frame2D:
         if variance < 0:
             variance = 0
 
-        # acquire memory-views
-        value_mv = self.value
-        variance_mv = self.variance
-        samples_mv = self.samples
-
         # stored sample count, mean and variance
-        mx = value_mv[x, y, channel]
-        vx = variance_mv[x, y, channel]
-        nx = samples_mv[x, y, channel]
+        mx = self._value_mv[x, y, channel]
+        vx = self._variance_mv[x, y, channel]
+        nx = self._samples_mv[x, y, channel]
 
         # external sample count, mean and variance
         my = mean
@@ -327,9 +291,9 @@ cdef class Frame2D:
         _combine_samples(mx, vx, nx, my, vy, ny, &mt, &vt, &nt)
 
         # update frame values
-        value_mv[x, y, channel] = mt
-        variance_mv[x, y, channel] = vt
-        samples_mv[x, y, channel] = nt
+        self._value_mv[x, y, channel] = mt
+        self._variance_mv[x, y, channel] = vt
+        self._samples_mv[x, y, channel] = nt
 
     cpdef object clear(self):
         self._new_buffers()
@@ -339,6 +303,9 @@ cdef class Frame2D:
         self.value = zeros((nx, ny, self.channels), dtype=float64)
         self.variance = zeros((nx, ny, self.channels), dtype=float64)
         self.samples = zeros((nx, ny, self.channels), dtype=int32)
+        self._value_mv = self.value
+        self._variance_mv = self.variance
+        self._samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int x, int y, int channel):
 
@@ -356,6 +323,7 @@ cdef class Frame2D:
             raise ValueError("Pixel y index is out of range.")
 
 
+# todo: move to core
 @cython.cdivision(True)
 cdef inline void _add_sample(double sample, double *m, double *v, int *n):
     """
@@ -393,6 +361,7 @@ cdef inline void _add_sample(double sample, double *m, double *v, int *n):
         v[0] = (prev_v * (prev_n - 1) + (sample - prev_m)*(sample - m[0])) / (n[0] - 1)
 
 
+# todo: move to core
 @cython.cdivision(True)
 cdef inline void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt):
     """
@@ -476,6 +445,7 @@ cdef inline void _combine_samples(double mx, double vx, int nx, double my, doubl
             _add_sample(my, mt, vt, nt)
 
 
+# todo: move to core
 cdef inline void _swap_int(int *a, int *b):
 
         cdef int temp
@@ -484,6 +454,7 @@ cdef inline void _swap_int(int *a, int *b):
         b[0] = temp
 
 
+# todo: move to core
 cdef inline void _swap_double(double *a, double *b):
 
         cdef double temp
