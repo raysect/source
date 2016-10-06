@@ -6,6 +6,5 @@ Math Module
    points_and_vectors
    functions
    affinematrix
-   kdtree
    random
    units
