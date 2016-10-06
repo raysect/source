@@ -33,13 +33,220 @@ from numpy import zeros, float64, int32
 cimport cython
 
 
+cdef class Pixel:
+
+    def __init__(self, channels):
+
+        if channels <= 0:
+            raise ValueError("There must be at least one channel.")
+
+        self.channels = channels
+
+        # generate pixel buffers
+        self._new_buffers()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object add_sample(self, int channel, double sample):
+        cdef:
+            int n
+            double m, v
+            int[::1] samples_mv
+            double[::1] value_mv, variance_mv
+
+        self._bounds_check(channel)
+
+        # acquire memory-views
+        value_mv = self.value
+        variance_mv = self.variance
+        samples_mv = self.samples
+
+        # initial values
+        m = value_mv[channel]
+        v = variance_mv[channel]
+        n = samples_mv[channel]
+
+        # calculate statistics
+        _add_sample(sample, &m, &v, &n)
+
+        # update frame values
+        value_mv[channel] = m
+        variance_mv[channel] = v
+        samples_mv[channel] = n
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object combine_samples(self, int channel, double mean, double variance, int sample_count):
+
+        cdef:
+            int nx, ny, nt = 0
+            double mx, my, mt = 0
+            double vx, vy, vt = 0
+            int[::1] samples_mv
+            double[::1] value_mv, variance_mv
+
+        self._bounds_check(channel)
+
+        # validate
+        if sample_count < 1:
+            raise ValueError('Number of samples must not be less than 1.')
+
+        # clamp variance to zero
+        # occasionally numerical accuracy limits can result in values < 0
+        if variance < 0:
+            variance = 0
+
+        # acquire memory-views
+        value_mv = self.value
+        variance_mv = self.variance
+        samples_mv = self.samples
+
+        # stored sample count, mean and variance
+        mx = value_mv[channel]
+        vx = variance_mv[channel]
+        nx = samples_mv[channel]
+
+        # external sample count, mean and variance
+        my = mean
+        vy = variance
+        ny = sample_count
+
+        # calculate statistics
+        _combine_samples(mx, vx, nx, my, vy, ny, &mt, &vt, &nt)
+
+        # update frame values
+        value_mv[channel] = mt
+        variance_mv[channel] = vt
+        samples_mv[channel] = nt
+
+    cpdef object clear(self):
+        self._new_buffers()
+
+    cdef inline void _new_buffers(self):
+        self.value = zeros((self.channels, ), dtype=float64)
+        self.variance = zeros((self.channels, ), dtype=float64)
+        self.samples = zeros((self.channels, ), dtype=int32)
+
+    cdef inline object _bounds_check(self, int channel):
+
+        if channel < 0 or channel >= self.channels:
+            raise ValueError("Channel index is out of range.")
+
+
+cdef class Frame1D:
+
+    def __init__(self, pixels, channels):
+
+        if pixels < 1:
+            raise ValueError("Number of pixels must be >= 1.")
+
+        if channels <= 0:
+            raise ValueError("There must be at least one channel.")
+
+        self.pixels = pixels
+        self.channels = channels
+
+        # generate frame buffers
+        self._new_buffers()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object add_sample(self, int i, int channel, double sample):
+        cdef:
+            int n
+            double m, v
+            int[:,::1] samples_mv
+            double[:,::1] value_mv, variance_mv
+
+        self._bounds_check(i, channel)
+
+        # acquire memory-views
+        value_mv = self.value
+        variance_mv = self.variance
+        samples_mv = self.samples
+
+        # initial values
+        m = value_mv[i, channel]
+        v = variance_mv[i, channel]
+        n = samples_mv[i, channel]
+
+        # calculate statistics
+        _add_sample(sample, &m, &v, &n)
+
+        # update frame values
+        value_mv[i, channel] = m
+        variance_mv[i, channel] = v
+        samples_mv[i, channel] = n
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object combine_samples(self, int i, int channel, double mean, double variance, int sample_count):
+
+        cdef:
+            int nx, ny, nt = 0
+            double mx, my, mt = 0
+            double vx, vy, vt = 0
+            int[:,::1] samples_mv
+            double[:,::1] value_mv, variance_mv
+
+        self._bounds_check(i, channel)
+
+        # validate
+        if sample_count < 1:
+            raise ValueError('Number of samples must not be less than 1.')
+
+        # clamp variance to zero
+        # occasionally numerical accuracy limits can result in values < 0
+        if variance < 0:
+            variance = 0
+
+        # acquire memory-views
+        value_mv = self.value
+        variance_mv = self.variance
+        samples_mv = self.samples
+
+        # stored sample count, mean and variance
+        mx = value_mv[i, channel]
+        vx = variance_mv[i, channel]
+        nx = samples_mv[i, channel]
+
+        # external sample count, mean and variance
+        my = mean
+        vy = variance
+        ny = sample_count
+
+        # calculate statistics
+        _combine_samples(mx, vx, nx, my, vy, ny, &mt, &vt, &nt)
+
+        # update frame values
+        value_mv[i, channel] = mt
+        variance_mv[i, channel] = vt
+        samples_mv[i, channel] = nt
+
+    cpdef object clear(self):
+        self._new_buffers()
+
+    cdef inline void _new_buffers(self):
+        self.value = zeros((self.pixels, self.channels), dtype=float64)
+        self.variance = zeros((self.pixels, self.channels), dtype=float64)
+        self.samples = zeros((self.pixels, self.channels), dtype=int32)
+
+    cdef inline object _bounds_check(self, int i, int channel):
+
+        if channel < 0 or channel >= self.channels:
+            raise ValueError("Channel index is out of range.")
+
+        if i < 0 or i >= self.pixels:
+            raise ValueError("Pixel index is out of range.")
+
+
 cdef class Frame2D:
 
     def __init__(self, pixels, channels):
 
         nx, ny = pixels
         if nx < 1 or ny < 1:
-            raise ValueError("Pixels must be a tuple of x and y dimensions, both of which must be >= 1.")
+            raise ValueError("Bins must be a tuple of x and y dimensions, both of which must be >= 1.")
 
         if channels <= 0:
             raise ValueError("There must be at least one channel.")
@@ -133,8 +340,6 @@ cdef class Frame2D:
         self.variance = zeros((nx, ny, self.channels), dtype=float64)
         self.samples = zeros((nx, ny, self.channels), dtype=int32)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cdef inline object _bounds_check(self, int x, int y, int channel):
 
         cdef int nx, ny

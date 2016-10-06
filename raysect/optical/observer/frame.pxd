@@ -31,7 +31,45 @@
 
 from numpy import zeros, float64, int32
 from numpy cimport ndarray
-cimport cython
+
+
+cdef class Pixel:
+
+    cdef:
+        readonly int channels
+        readonly ndarray value
+        readonly ndarray variance
+        readonly ndarray samples
+
+    cpdef object add_sample(self, int channel, double sample)
+
+    cpdef object combine_samples(self, int channel, double mean, double variance, int sample_count)
+
+    cpdef object clear(self)
+
+    cdef inline void _new_buffers(self)
+
+    cdef inline object _bounds_check(self, int channel)
+
+
+cdef class Frame1D:
+
+    cdef:
+        readonly int pixels
+        readonly int channels
+        readonly ndarray value
+        readonly ndarray variance
+        readonly ndarray samples
+
+    cpdef object add_sample(self, int i, int channel, double sample)
+
+    cpdef object combine_samples(self, int i, int channel, double mean, double variance, int sample_count)
+
+    cpdef object clear(self)
+
+    cdef inline void _new_buffers(self)
+
+    cdef inline object _bounds_check(self, int i, int channel)
 
 
 cdef class Frame2D:
