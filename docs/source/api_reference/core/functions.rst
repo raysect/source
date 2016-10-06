@@ -2,13 +2,13 @@
 Functions and Interpolators
 ===========================
 
-.. automodule:: raysect.core.math.function.function1d
+.. autoclass:: raysect.core.math.function.function1d.Function1D
    :members:
 
-.. automodule:: raysect.core.math.function.function2d
+.. autoclass:: raysect.core.math.function.function2d.Function2D
    :members:
 
-.. automodule:: raysect.core.math.function.function3d
+.. autoclass:: raysect.core.math.function.function3d.Function3D
    :members:
 
 .. automodule:: raysect.core.math.interpolators.discrete2dmesh
