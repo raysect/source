@@ -32,6 +32,7 @@
 import numbers
 cimport cython
 
+
 cdef class Function1D:
     """
     Cython optimised class for representing an arbitrary 1D function.
@@ -135,8 +136,10 @@ cdef class PythonFunction1D(Function1D):
     Function1D object it should be wrapped using this class for internal use.
 
     See also: autowrap_function1d()
-    """
 
+    :param object function: the python function to wrap, __call__() function must be
+    implemented on the object.
+    """
     def __init__(self, object function):
         self.function = function
 
@@ -168,10 +171,9 @@ cdef class AddFunction1D(Function1D):
     This class is not intended to be used directly, but rather returned as the result of an __add__() call on a
     Function1D object.
 
-    :param function1: A Function1D object.
-    :param function2: A Function1D object.
+    :param Function1D function1: A Function1D object.
+    :param Function1D function2: A Function1D object.
     """
-
     def __init__(self, Function1D function1, Function1D function2):
         self._function1 = autowrap_function1d(function1)
         self._function2 = autowrap_function1d(function2)
@@ -187,10 +189,9 @@ cdef class SubtractFunction1D(Function1D):
     This class is not intended to be used directly, but rather returned as the result of a __sub__() call on a
     Function1D object.
 
-    :param function1: A Function1D object.
-    :param function2: A Function1D object.
+    :param Function1D function1: A Function1D object.
+    :param Function1D function2: A Function1D object.
     """
-
     def __init__(self, Function1D function1, Function1D function2):
         self._function1 = autowrap_function1d(function1)
         self._function2 = autowrap_function1d(function2)
@@ -206,10 +207,9 @@ cdef class MultiplyFunction1D(Function1D):
     This class is not intended to be used directly, but rather returned as the result of a __mul__() call on a
     Function1D object.
 
-    :param function1: A Function1D object.
-    :param function2: A Function1D object.
+    :param Function1D function1: A Function1D object.
+    :param Function1D function2: A Function1D object.
     """
-
     def __init__(self, function1, function2):
         self._function1 = autowrap_function1d(function1)
         self._function2 = autowrap_function1d(function2)
@@ -225,10 +225,9 @@ cdef class DivideFunction1D(Function1D):
     This class is not intended to be used directly, but rather returned as the result of a __truediv__() call on a
     Function1D object.
 
-    :param function1: A Function1D object.
-    :param function2: A Function1D object.
+    :param Function1D function1: A Function1D object.
+    :param Function1D function2: A Function1D object.
     """
-
     def __init__(self, function1, function2):
         self._function1 = autowrap_function1d(function1)
         self._function2 = autowrap_function1d(function2)
@@ -248,10 +247,9 @@ cdef class AddScalar1D(Function1D):
     This class is not intended to be used directly, but rather returned as the result of an __add__() call on a
     Function1D object.
 
-    :param value: A double value.
-    :param function: A Function1D object.
+    :param float value: A double value.
+    :param Function1D function: A Function1D object.
     """
-
     def __init__(self, double value, Function1D function):
         self._value = value
         self._function = autowrap_function1d(function)
@@ -267,10 +265,9 @@ cdef class SubtractScalar1D(Function1D):
     This class is not intended to be used directly, but rather returned as the result of an __sub__() call on a
     Function1D object.
 
-    :param value: A double value.
-    :param function: A Function1D object.
+    :param double value: A double value.
+    :param Function1D function: A Function1D object.
     """
-
     def __init__(self, double value, Function1D function):
         self._value = value
         self._function = autowrap_function1d(function)
@@ -286,10 +283,9 @@ cdef class MultiplyScalar1D(Function1D):
     This class is not intended to be used directly, but rather returned as the result of an __mul__() call on a
     Function1D object.
 
-    :param value: A double value.
-    :param function: A Function1D object.
+    :param float value: A double value.
+    :param Function1D function: A Function1D object.
     """
-
     def __init__(self, double value, Function1D function):
         self._value = value
         self._function = autowrap_function1d(function)
@@ -305,10 +301,9 @@ cdef class DivideScalar1D(Function1D):
     This class is not intended to be used directly, but rather returned as the result of an __div__() call on a
     Function1D object.
 
-    :param value: A double value.
-    :param function: A Function1D object.
+    :param float value: A double value.
+    :param Function1D function: A Function1D object.
     """
-
     def __init__(self, double value, Function1D function):
         self._value = value
         self._function = autowrap_function1d(function)

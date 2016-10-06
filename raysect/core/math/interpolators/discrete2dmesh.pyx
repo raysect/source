@@ -229,11 +229,11 @@ cdef class Discrete2DMesh(Function2D):
     will avoid the cost in memory and time of rebuilding an identical
     acceleration structure.
 
-    :param vertex_coords: An array of vertex coordinates (x, y) with shape Nx2.
-    :param triangles: An array of vertex indices defining the mesh triangles, with shape Mx3.
-    :param triangle_data: An array containing data for each triangle of shape Mx1.
-    :param limit: Raise an exception outside mesh limits - True (default) or False.
-    :param default_value: The value to return outside the mesh limits if limit is set to False.
+    :param ndarray vertex_coords: An array of vertex coordinates (x, y) with shape Nx2.
+    :param ndarray triangles: An array of vertex indices defining the mesh triangles, with shape Mx3.
+    :param ndarray triangle_data: An array containing data for each triangle of shape Mx1.
+    :param bool limit: Raise an exception outside mesh limits - True (default) or False.
+    :param float default_value: The value to return outside the mesh limits if limit is set to False.
     """
 
     def __init__(self, object vertex_coords not None, object triangles not None, object triangle_data not None, bint limit=True, double default_value=0.0):
@@ -270,11 +270,12 @@ cdef class Discrete2DMesh(Function2D):
         repeated rebuilding of the mesh acceleration structures by sharing the
         geometry data between multiple interpolator objects.
 
-        :param instance: Discrete2DMesh object.
-        :param triangle_data: An array containing data for each triangle of shape Mx1 (default None).
-        :param limit: Raise an exception outside mesh limits - True (default) or False (default None).
-        :param default_value: The value to return outside the mesh limits if limit is set to False (default None).
+        :param Discrete2DMesh instance: Discrete2DMesh object.
+        :param ndarray triangle_data: An array containing data for each triangle of shape Mx1 (default None).
+        :param bool limit: Raise an exception outside mesh limits - True (default) or False (default None).
+        :param float default_value: The value to return outside the mesh limits if limit is set to False (default None).
         :return: An Discrete2DMesh object.
+        :rtype: Discrete2DMesh
         """
 
         cdef Discrete2DMesh m

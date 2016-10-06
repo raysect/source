@@ -135,8 +135,10 @@ cdef class PythonFunction2D(Function2D):
     Function2D object it should be wrapped using this class for internal use.
 
     See also: autowrap_function2d()
-    """
 
+    :param object function: the python function to wrap, __call__() function must
+    be implemented on the object.
+    """
     def __init__(self, object function):
         self.function = function
 
@@ -168,10 +170,9 @@ cdef class AddFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of an __add__() call on a
     Function2D object.
 
-    :param function1: A Function2D object.
-    :param function2: A Function2D object.
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
     """
-
     def __init__(self, Function2D function1, Function2D function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
@@ -187,10 +188,9 @@ cdef class SubtractFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __sub__() call on a
     Function2D object.
 
-    :param function1: A Function2D object.
-    :param function2: A Function2D object.
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
     """
-
     def __init__(self, Function2D function1, Function2D function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
@@ -206,8 +206,8 @@ cdef class MultiplyFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __mul__() call on a
     Function2D object.
 
-    :param function1: A Function2D object.
-    :param function2: A Function2D object.
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
     """
 
     def __init__(self, function1, function2):
@@ -225,8 +225,8 @@ cdef class DivideFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __truediv__() call on a
     Function2D object.
 
-    :param function1: A Function2D object.
-    :param function2: A Function2D object.
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
     """
 
     def __init__(self, function1, function2):
@@ -248,8 +248,8 @@ cdef class AddScalar2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of an __add__() call on a
     Function2D object.
 
-    :param value: A double value.
-    :param function: A Function2D object.
+    :param float value: A double value.
+    :param Function2D function: A Function2D object.
     """
 
     def __init__(self, double value, Function2D function):

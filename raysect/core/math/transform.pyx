@@ -37,6 +37,11 @@ cimport cython
 cpdef AffineMatrix3D translate(double x, double y, double z):
     """
     Returns an affine matrix representing a translation of the coordinate space.
+
+    :param float x: x-coordinate
+    :param float y: y-coordinate
+    :param float z: z-coordinate
+    :rtype: AffineMatrix3D
     """
 
     return new_affinematrix3d(1, 0, 0, x,
@@ -51,7 +56,10 @@ cpdef AffineMatrix3D rotate_x(double angle):
     Returns an affine matrix representing the rotation of the coordinate space
     about the X axis by the supplied angle.
 
-    The angle is specified in degrees.
+    The rotation direction is clockwise when looking along the x-axis.
+
+    :param float angle: The angle specified in degrees.
+    :rtype: AffineMatrix3D
     """
 
     cdef double r
@@ -69,7 +77,10 @@ cpdef AffineMatrix3D rotate_y(double angle):
     Returns an affine matrix representing the rotation of the coordinate space
     about the Y axis by the supplied angle.
 
-    The angle is specified in degrees.
+    The rotation direction is clockwise when looking along the y-axis.
+
+    :param float angle: The angle specified in degrees.
+    :rtype: AffineMatrix3D
     """
 
     cdef double r
@@ -87,7 +98,10 @@ cpdef AffineMatrix3D rotate_z(double angle):
     Returns an affine matrix representing the rotation of the coordinate space
     about the Z axis by the supplied angle.
 
-    The angle is specified in degrees.
+    The rotation direction is clockwise when looking along the z-axis.
+
+    :param float angle: The angle specified in degrees.
+    :rtype: AffineMatrix3D
     """
 
     cdef double r
@@ -105,7 +119,9 @@ cpdef AffineMatrix3D rotate_vector(double angle, Vector3D v):
     Returns an affine matrix representing the rotation of the coordinate space
     about the supplied vector by the specified angle.
 
-    The angle is specified in degrees.
+    :param float angle: The angle specified in degrees.
+    :param Vector3D v: The vector about which to rotate.
+    :rtype: AffineMatrix3D
     """
 
     cdef Vector3D vn
@@ -143,10 +159,10 @@ cpdef AffineMatrix3D rotate(double yaw, double pitch, double roll):
     X-axis and up is the +ve Y-axis then this rotation operation corresponds to
     the yaw, pitch and roll of the object.
 
-    :param yaw: Yaw angle in degrees.
-    :param pitch: Pitch angle in degrees.
-    :param roll: Roll angle in degrees.
-    :return: An AffineMatrix3D object.
+    :param float yaw: Yaw angle in degrees.
+    :param float pitch: Pitch angle in degrees.
+    :param float roll: Roll angle in degrees.
+    :rtype: AffineMatrix3D
     """
 
     return rotate_y(-yaw) * rotate_x(-pitch) * rotate_z(roll)
@@ -165,9 +181,9 @@ cpdef AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up):
     The forward and upwards vectors need not be orthogonal. The up vector will
     be rotated in the plane defined by the two vectors until it is orthogonal.
 
-    :param forward: A Vector3D object defining the forward direction.
-    :param up: A Vector3D object defining the up direction.
-    :return: An AffineMatrix3D object.
+    :param Vector3D forward: A Vector3D object defining the forward direction.
+    :param Vector3D up: A Vector3D object defining the up direction.
+    :rtype: AffineMatrix3D
     """
 
     cdef Vector3D x, y, z
