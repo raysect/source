@@ -59,15 +59,15 @@ cdef class Primitive(Node):
         self.material = material
 
     property material:
+        """
+        The material class for this primitive.
+
+        :getter: Returns this primitive's material.
+        :setter: Sets this primitive's material.
+        :rtype: Material
+        """
 
         def __get__(self):
-            """
-            The material class for this primitive.
-
-            :getter: Returns this primitive's material.
-            :setter: Sets this primitive's material.
-            :rtype: Material
-            """
             return self._material
 
         def __set__(self, Material value not None):

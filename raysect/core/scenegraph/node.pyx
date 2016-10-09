@@ -66,15 +66,15 @@ cdef class Node(_NodeBase):
         self._track_modifications = True
 
     property parent:
+        """
+        The parent of this node in the scenegraph.
+
+        :getter: Returns this node's parent node.
+        :setter: Sets this node's parent.
+        :rtype: Node
+        """
 
         def __get__(self):
-            """
-            The parent of this node in the scenegraph.
-
-            :getter: Returns this node's parent node.
-            :setter: Sets this node's parent.
-            :rtype: Node
-            """
             return self._parent
 
         def __set__(self, object value):
@@ -120,15 +120,15 @@ cdef class Node(_NodeBase):
                     self._update()
 
     property transform:
+        """
+        The transform for this node's coordinate system in relation to the parent node.
+
+        :getter: Returns this node's affine transform matrix.
+        :setter: Sets this node's affine transform matrix.
+        :rtype: AffineMatrix3D
+        """
 
         def __get__(self):
-            """
-            The transform for this node's coordinate system in relation to the parent node.
-
-            :getter: Returns this node's affine transform matrix.
-            :setter: Sets this node's affine transform matrix.
-            :rtype: AffineMatrix3D
-            """
             return self._transform
 
         def __set__(self, AffineMatrix3D value not None):
@@ -136,15 +136,15 @@ cdef class Node(_NodeBase):
             self._update()
 
     property name:
+        """
+        The name of this node.
+
+        :getter: Returns this node's name.
+        :setter: Sets this node's name.
+        :rtype: str
+        """
 
         def __get__(self):
-            """
-            The name of this node.
-
-            :getter: Returns this node's name.
-            :setter: Sets this node's name.
-            :rtype: str
-            """
             return self._name
 
         def __set__(self, unicode value not None):

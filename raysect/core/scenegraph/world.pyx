@@ -58,14 +58,14 @@ cdef class World(_NodeBase):
         self._accelerator = KDTree()
 
     property accelerator:
+        """
+        The acceleration structure used for this world's scene-graph.
+
+        :getter: Returns this world node's acceleration structure.
+        :setter: Sets this world node's acceleration structure.
+        """
 
         def __get__(self):
-            """
-            The acceleration structure used for this world's scene-graph.
-
-            :getter: Returns this world node's acceleration structure.
-            :setter: Sets this world node's acceleration structure.
-            """
             return self._accelerator
 
         def __set__(self, Accelerator accelerator not None):
@@ -73,40 +73,40 @@ cdef class World(_NodeBase):
             self._rebuild_accelerator = True
 
     property name:
+        """
+        The name for this world node.
+
+        :getter: Returns this world node's name.
+        :setter: Sets this world node's name.
+        :rtype: str
+        """
 
         def __get__(self):
-            """
-            The name for this world node.
-
-            :getter: Returns this world node's name.
-            :setter: Sets this world node's name.
-            :rtype: str
-            """
             return self._name
 
         def __set__(self, unicode value not None):
             self._name = value
 
     property primitives:
+        """
+        The list of primitives maintained in this scene-graph.
+
+        :getter: Returns this world node's primitive list.
+        :rtype: list
+        """
 
         def __get__(self):
-            """
-            The list of primitives maintained in this scene-graph.
-
-            :getter: Returns this world node's primitive list.
-            :rtype: list
-            """
             return self._primitives
 
     property observers:
+        """
+        The list of observers in this scene-graph.
+
+        :getter: Returns this world node's observers.
+        :rtype: list
+        """
 
         def __get__(self):
-            """
-            The list of observers in this scene-graph.
-
-            :getter: Returns this world node's observers.
-            :rtype: list
-            """
             return self._observers
 
     cpdef AffineMatrix3D to(self, _NodeBase node):
