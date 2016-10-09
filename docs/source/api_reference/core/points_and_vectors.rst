@@ -2,12 +2,10 @@
 Points and Vectors
 ==================
 
-.. automodule:: raysect.core.math.point
+.. autoclass:: raysect.core.math.point.Point3D
    :members:
 
-.. automodule:: raysect.core.math.vector
+.. autoclass:: raysect.core.math.point.Point2D
    :members:
 
-.. automodule:: raysect.core.math.normal
-   :members:
 
