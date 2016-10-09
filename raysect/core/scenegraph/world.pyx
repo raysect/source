@@ -60,6 +60,12 @@ cdef class World(_NodeBase):
     property accelerator:
 
         def __get__(self):
+            """
+            The acceleration structure used for this world's scene-graph.
+
+            :getter: Returns this world node's acceleration structure.
+            :setter: Sets this world node's acceleration structure.
+            """
             return self._accelerator
 
         def __set__(self, Accelerator accelerator not None):
@@ -69,6 +75,13 @@ cdef class World(_NodeBase):
     property name:
 
         def __get__(self):
+            """
+            The name for this world node.
+
+            :getter: Returns this world node's name.
+            :setter: Sets this world node's name.
+            :rtype: str
+            """
             return self._name
 
         def __set__(self, unicode value not None):
@@ -77,11 +90,23 @@ cdef class World(_NodeBase):
     property primitives:
 
         def __get__(self):
+            """
+            The list of primitives maintained in this scene-graph.
+
+            :getter: Returns this world node's primitive list.
+            :rtype: list
+            """
             return self._primitives
 
     property observers:
 
         def __get__(self):
+            """
+            The list of observers in this scene-graph.
+
+            :getter: Returns this world node's observers.
+            :rtype: list
+            """
             return self._observers
 
     cpdef AffineMatrix3D to(self, _NodeBase node):
@@ -97,6 +122,7 @@ cdef class World(_NodeBase):
 
         :param _NodeBase node: The target node.
         :return: An AffineMatrix3D describing the coordinate transform.
+        :rtype: AffineMatrix3D
         """
 
         if self.root is node.root:
@@ -122,6 +148,7 @@ cdef class World(_NodeBase):
 
         :param Ray ray: The ray to test.
         :return: An Intersection object or None if no intersection occurs.
+        :rtype: Intersection
         """
 
         self.build_accelerator()
@@ -143,6 +170,7 @@ cdef class World(_NodeBase):
 
         :param Point3D point: The point to test.
         :return: A list containing all Primitives that enclose the Point3D.
+        :rtype: list
         """
 
         self.build_accelerator()
@@ -167,7 +195,7 @@ cdef class World(_NodeBase):
         to be able to perform a benchmark without including the overhead of the
         Acceleration object rebuild.
 
-        :param bint force: If set to True, forces rebuilding of acceleration structure.
+        :param bool force: If set to True, forces rebuilding of acceleration structure.
         """
 
         if self._rebuild_accelerator or force:

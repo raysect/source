@@ -45,8 +45,8 @@ cdef class Primitive(Node):
 
     :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
     :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
-    :param material: An object representing the material properties of the primitive.
-    :param name: A string defining the node name.
+    :param Material material: An object representing the material properties of the primitive.
+    :param str name: A string defining the node name.
     """
 
     def __init__(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
@@ -61,6 +61,13 @@ cdef class Primitive(Node):
     property material:
 
         def __get__(self):
+            """
+            The material class for this primitive.
+
+            :getter: Returns this primitive's material.
+            :setter: Sets this primitive's material.
+            :rtype: Material
+            """
             return self._material
 
         def __set__(self, Material value not None):
@@ -94,6 +101,7 @@ cdef class Primitive(Node):
 
         :param Ray ray: The ray to test for intersection.
         :return: An Intersection object or None if no intersection occurs.
+        :rtype: Intersection
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method hit() has not been implemented.")
@@ -119,6 +127,8 @@ cdef class Primitive(Node):
         cache data to accelerate next_intersection() calls which will be
         invalidated by geometric alterations to the scene. If the scene is
         altered the data returned by next_intersection() is undefined.
+
+        :rtype: Intersection
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method next_intersection() has not been implemented.")
@@ -132,6 +142,7 @@ cdef class Primitive(Node):
 
         :param Point3D p: The Point3D to test.
         :return: True if the Point3D is enclosed by the primitive surface, False otherwise.
+        :rtype: bool
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method inside() has not been implemented.")
@@ -151,6 +162,7 @@ cdef class Primitive(Node):
         exception.
 
         :return: A world space BoundingBox3D object.
+        :rtype: BoundingBox3D
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")

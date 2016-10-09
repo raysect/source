@@ -47,7 +47,7 @@ cdef class Intersection:
     :param Point3D inside_point: The interior ray launch point (primitive local space).
     :param Point3D outside_point: The exterior ray launch point (primitive local space).
     :param Normal3D normal: The surface normal (primitive local space)
-    :param bint exiting: True if the ray is exiting the surface, False otherwise.
+    :param bool exiting: True if the ray is exiting the surface, False otherwise.
     :param AffineMatrix3D world_to_primitive: A world to primitive local transform matrix.
     :param AffineMatrix3D primitive_to_world: A primitive local to world transform matrix.
     """
