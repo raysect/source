@@ -34,6 +34,7 @@ from .sensor import Imaging
 from raysect.core import translate
 from raysect.optical.observer.point_generator import Rectangle
 from raysect.optical.observer.vector_generators import SingleRay
+from .frame import Frame2D
 
 
 # TODO: fix the numerous bits of broken functionality!
@@ -79,8 +80,8 @@ class OrthographicCamera(Imaging):
         self._pixels = pixels
 
         # reset frames
-        self.xyz_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
-        self.rgb_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
+        self.xyz_frame = Frame2D(self._pixels, 3)
+        self.rgb_frame = np.zeros((self._pixels[0], self._pixels[1], 3))
         self.accumulated_samples = 0
         self._update_image_geometry()
 

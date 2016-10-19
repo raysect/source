@@ -42,6 +42,7 @@ from raysect.optical.scenegraph cimport Observer, World
 from raysect.optical.colour cimport resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz
 from raysect.optical.ray cimport Ray
 from raysect.optical.spectrum cimport Spectrum
+from raysect.optical.observer.frame cimport Pixel, Frame2D
 cimport cython
 
 
@@ -87,16 +88,16 @@ cdef class RelativeExposure(ExposureHandler):
             double peak_luminance
             double[:,:,::1] fmv
 
-        nx = frame.shape[1]
-        ny = frame.shape[0]
+        nx = frame.shape[0]
+        ny = frame.shape[1]
         fmv = frame  # memory view
 
         peak_luminance = 0
 
         # find peak luminance (XYZ Y component is luminance)
-        for iy in range(ny):
-             for ix in range(nx):
-                peak_luminance = max(fmv[iy, ix, 1], peak_luminance)
+        for ix in range(nx):
+             for iy in range(ny):
+                peak_luminance = max(fmv[ix, iy, 1], peak_luminance)
 
         if peak_luminance == 0:
             return 1.0
@@ -135,8 +136,8 @@ cdef class AutoExposure(ExposureHandler):
             double[:,:,::1] fmv
             double[::1] lmv
 
-        nx = frame.shape[1]
-        ny = frame.shape[0]
+        nx = frame.shape[0]
+        ny = frame.shape[1]
         fmv = frame  # memory view
 
         pixels = nx * ny
@@ -144,9 +145,9 @@ cdef class AutoExposure(ExposureHandler):
         lmv = luminance  # memory view
 
         # calculate luminance values for frame (XYZ Y component is luminance)
-        for iy in range(ny):
-            for ix in range(nx):
-                lmv[iy*nx + ix] = fmv[iy, ix, 1]
+        for ix in range(nx):
+            for iy in range(ny):
+                lmv[iy*nx + ix] = fmv[ix, iy, 1]
 
         # sort by luminance
         luminance.sort()
@@ -224,7 +225,7 @@ cdef class Imaging(Observer):
         public int accumulated_samples
 
         # output from last call to Observe()
-        public np.ndarray xyz_frame
+        public Frame2D xyz_frame
         public np.ndarray frame
 
     def __init__(self, pixels=(512, 512), spectral_samples=21, spectral_rays=1, pixel_samples=100,
@@ -272,8 +273,8 @@ cdef class Imaging(Observer):
         self.accumulated_samples = 0
 
         # output from last call to Observe()
-        self.xyz_frame = np.zeros((pixels[1], pixels[0], 3))
-        self.rgb_frame = np.zeros((pixels[1], pixels[0], 3))
+        self.xyz_frame = Frame2D(pixels, channels=3)
+        self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
 
         # internal attributes
         self.__display_timer = None
@@ -291,8 +292,8 @@ cdef class Imaging(Observer):
         self._pixels = pixels
 
         # reset frames
-        self.xyz_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
-        self.rgb_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
+        self.xyz_frame = Frame2D(pixels, channels=3)
+        self.rgb_frame = np.zeros((self._pixels[0], self._pixels[1], 3))
         self.accumulated_samples = 0
 
     cpdef observe(self):
@@ -307,9 +308,8 @@ cdef class Imaging(Observer):
 
         # create intermediate and final frame-buffers
         if not self.accumulate:
-            self.xyz_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
-            self.rgb_frame = np.zeros((self._pixels[1], self._pixels[0], 3))
-            self.accumulated_samples = 0
+            self.xyz_frame = Frame2D(self._pixels, channels=3)
+            self.rgb_frame = np.zeros((self._pixels[0], self._pixels[1], 3))
 
         # generate spectral data
         ray_templates = self._generate_ray_templates()
@@ -359,15 +359,24 @@ cdef class Imaging(Observer):
         self._start_display()
         self._start_statistics()
 
-        total_pixels = self._pixels[0] * self._pixels[1]
-
-        # generate weightings for accumulation
-        total_samples = self.accumulated_samples + self.pixel_samples * self.spectral_rays
-        previous_weight = self.accumulated_samples / total_samples
-        added_weight = self.spectral_rays * self.pixel_samples / total_samples
-
-        # scale previous state to account for additional samples
-        self.xyz_frame[:, :, :] = previous_weight * self.xyz_frame[:, :, :]
+        # build task list
+        # task is simply the pixel location
+        tasks = []
+        nx, ny = self._pixels
+        f = self.xyz_frame
+        i = f.value > 0
+        norm_frame_var = np.zeros((self._pixels[0], self._pixels[1], 3))
+        norm_frame_var[i] = f.variance[i] / f.value[i]**2
+        max_frame_samples = f.samples.max()
+        percentile_frame_variance = np.percentile(norm_frame_var, 90)
+        for iy in range(ny):
+            for ix in range(nx):
+                min_pixel_samples = self.xyz_frame.samples[ix, iy, :].min()
+                max_pixel_variance = norm_frame_var[ix, iy, :].max()
+                if min_pixel_samples < 500*self.spectral_rays or \
+                    min_pixel_samples <= 0.1 * max_frame_samples or \
+                    max_pixel_variance > percentile_frame_variance:
+                    tasks.append((ix, iy))
 
         # render
         for channel, ray_template in enumerate(ray_templates):
@@ -379,18 +388,10 @@ cdef class Imaging(Observer):
                 ray_template.num_samples
             )
 
-            # build task list
-            # task is simply the pixel location
-            tasks = []
-            nx, ny = self._pixels
-            for iy in range(ny):
-                for ix in range(nx):
-                    tasks.append((ix, iy))
-
             self.render_engine.run(
                 tasks, self._render_pixel, self._update_frame,
                 render_args=(world, ray_template, resampled_xyz),
-                update_args=(added_weight, channel)
+                update_args=(channel, )
             )
 
         self._generate_srgb_frame()
@@ -406,31 +407,34 @@ cdef class Imaging(Observer):
         cdef:
             Spectrum spectrum
             int ray_count, ix, iy
-            tuple pixel_id, xyz, result
+            tuple pixel_id, xyz, mean, variance, samples
+            Pixel pixel
 
         # unpack pixel coords from task
         pixel_id = task
         ix, iy = pixel_id
 
         # load selected pixel and trace rays
-        spectrum, ray_count = self._sample_pixel(ix, iy, self.root, ray_template)
+        pixel, ray_count = self._sample_pixel(ix, iy, self.root, ray_template, resampled_xyz)
 
-        # convert spectrum to CIE XYZ
-        xyz = spectrum_to_ciexyz(spectrum, resampled_xyz)
+        # pack pixel
+        mean = (pixel.value[0], pixel.value[1], pixel.value[2])
+        variance = (pixel.variance[0], pixel.variance[1], pixel.variance[2])
+        samples = (pixel.samples[0], pixel.samples[1], pixel.samples[2])
 
-        return pixel_id, xyz, ray_count
+        return pixel_id, mean, variance, samples, ray_count
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _update_frame(self, result, added_weight, channel):
+    def _update_frame(self, result, channel):
 
         # obtain result
-        location, xyz, sample_ray_count = result
+        location, mean, variance, samples, sample_ray_count = result
         x, y = location
 
-        self.xyz_frame[y, x, 0] += added_weight * xyz[0]
-        self.xyz_frame[y, x, 1] += added_weight * xyz[1]
-        self.xyz_frame[y, x, 2] += added_weight * xyz[2]
+        self.xyz_frame.combine_samples(x, y, 0, mean[0], variance[0], samples[0])
+        self.xyz_frame.combine_samples(x, y, 1, mean[1], variance[1], samples[1])
+        self.xyz_frame.combine_samples(x, y, 2, mean[2], variance[2], samples[2])
 
         # update users
         self._update_display()
@@ -438,22 +442,21 @@ cdef class Imaging(Observer):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    @cython.cdivision(True)
-    cdef inline tuple _sample_pixel(self, int ix, int iy, World world, Ray ray_template):
+    cdef inline tuple _sample_pixel(self, int ix, int iy, World world, Ray ray_template, resampled_xyz):
 
         cdef:
             list rays
-            Spectrum spectrum, sample
-            double sample_weight, projection_weight
+            Spectrum spectrum
+            double projection_weight, x, y, z
             int ray_count
             Ray ray
+            Pixel pixel
 
         # generate rays
         rays = self._generate_rays(ix, iy, ray_template)
 
-        # create spectrum and calculate sample weighting
-        spectrum = ray_template.new_spectrum()
-        sample_weight = 1.0 / self.pixel_samples
+        # create spectrum and xyz pixel
+        pixel = Pixel(channels=3)
 
         # initialise ray statistics
         ray_count = 0
@@ -465,13 +468,20 @@ cdef class Imaging(Observer):
             ray.origin = ray.origin.transform(self.to_root())
             ray.direction = ray.direction.transform(self.to_root())
 
-            sample = ray.trace(world)
-            spectrum.mad_scalar(sample_weight * projection_weight, sample.samples)
+            # sample and apply projection weight
+            spectrum = ray.trace(world)
+            spectrum.mul_scalar(projection_weight)
+
+            # convert spectrum to CIE XYZ and add sample to pixel buffer
+            x, y, z = spectrum_to_ciexyz(spectrum, resampled_xyz)
+            pixel.add_sample(0, x)
+            pixel.add_sample(1, y)
+            pixel.add_sample(2, z)
 
             # accumulate statistics
             ray_count += ray.ray_count
 
-        return spectrum, ray_count
+        return pixel, ray_count
 
     cpdef list _generate_rays(self, int ix, int iy, Ray ray_template):
         """
@@ -507,26 +517,26 @@ cdef class Imaging(Observer):
             tuple rgb
 
         # calculate sensitivity for frame
-        sensitivity = self.exposure_handler.calculate_sensitivity(self.xyz_frame)
+        sensitivity = self.exposure_handler.calculate_sensitivity(self.xyz_frame.value)
 
         # obtain memory views
-        xyz_mv = self.xyz_frame
+        xyz_mv = self.xyz_frame.value
         rgb_mv = self.rgb_frame
 
         # Apply sensitivity to each pixel and convert to sRGB colour-space
         nx, ny = self._pixels
-        for iy in range(ny):
-            for ix in range(nx):
+        for ix in range(nx):
+            for iy in range(ny):
 
                 rgb = ciexyz_to_srgb(
-                    xyz_mv[iy, ix, 0] * sensitivity,
-                    xyz_mv[iy, ix, 1] * sensitivity,
-                    xyz_mv[iy, ix, 2] * sensitivity
+                    xyz_mv[ix, iy, 0] * sensitivity,
+                    xyz_mv[ix, iy, 1] * sensitivity,
+                    xyz_mv[ix, iy, 2] * sensitivity
                 )
 
-                rgb_mv[iy, ix, 0] = rgb[0]
-                rgb_mv[iy, ix, 1] = rgb[1]
-                rgb_mv[iy, ix, 2] = rgb[2]
+                rgb_mv[ix, iy, 0] = rgb[0]
+                rgb_mv[ix, iy, 1] = rgb[1]
+                rgb_mv[ix, iy, 2] = rgb[2]
 
     def _start_display(self):
         """
@@ -585,11 +595,14 @@ cdef class Imaging(Observer):
 
             current_work = total_pixels * channel + pixel
             completion = 100 * current_work / total_work
-            print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
+            print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays, {:0.1f}/{:0.1f}/{:0.1f} min/mean/max variance)".format(
                 completion,
                 channel + 1, self.spectral_rays,
                 ceil((pixel + 1) / nx), ny,
-                pixel + 1, total_pixels, ray_count / 1000))
+                pixel + 1, total_pixels, ray_count / 1000,
+                self.xyz_frame.variance.min(),
+                self.xyz_frame.variance.mean(),
+                self.xyz_frame.variance.max()))
             ray_count = 0
             progress_timer = time()
 
@@ -604,8 +617,37 @@ cdef class Imaging(Observer):
         print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
 
     def display(self):
+
+        plt.figure(1)
         plt.clf()
-        plt.imshow(self.rgb_frame, aspect="equal", origin="upper")
+        img = np.transpose(self.rgb_frame, (1, 0, 2))
+        plt.imshow(img, aspect="equal", origin="upper")
+        # plt.imshow(self.xyz_frame.value / self.xyz_frame.value.max(), aspect="equal", origin="upper")
+
+        plt.figure(2)
+        plt.clf()
+        f = self.xyz_frame
+        i = f.value > 0
+        norm_frame_var = np.zeros((self._pixels[0], self._pixels[1], 3))
+        norm_frame_var[i] = f.variance[i] / f.value[i]**2
+        img = np.transpose(norm_frame_var.max(2) / norm_frame_var.max())
+        plt.imshow(img, aspect="equal", origin="upper")
+
+        plt.figure(3)
+        plt.clf()
+        img = np.transpose(f.samples.max(2) / f.samples.max())
+        plt.imshow(img, aspect="equal", origin="upper")
+
+        # plt.figure(2)
+        # plt.clf()
+        # plt.imshow(self.xyz_frame.variance[:,:,0], aspect="equal", origin="upper")
+        # plt.figure(3)
+        # plt.clf()
+        # plt.imshow(self.xyz_frame.variance[:,:,1], aspect="equal", origin="upper")
+        # plt.figure(4)
+        # plt.clf()
+        # plt.imshow(self.xyz_frame.variance[:,:,2], aspect="equal", origin="upper")
+
         plt.draw()
         plt.show()
 
@@ -618,7 +660,8 @@ cdef class Imaging(Observer):
 
         :param str filename: Filename and path for camera frame output file.
         """
-        plt.imsave(filename, self.rgb_frame)
+        img = np.transpose(self.rgb_frame, (1, 0, 2))
+        plt.imsave(filename, img)
 
 
 # todo: cythonise
