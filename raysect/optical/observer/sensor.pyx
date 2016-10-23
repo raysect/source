@@ -366,16 +366,17 @@ cdef class Imaging(Observer):
         f = self.xyz_frame
         i = f.value > 0
         norm_frame_var = np.zeros((self._pixels[0], self._pixels[1], 3))
-        norm_frame_var[i] = f.variance[i] / f.value[i]**2
+        norm_frame_var[i] = f.variance[i]
+        # norm_frame_var[i] = np.minimum(f.variance[i], f.variance[i] / f.value[i]**2)
         max_frame_samples = f.samples.max()
-        percentile_frame_variance = np.percentile(norm_frame_var, 90)
+        percentile_frame_variance = np.percentile(norm_frame_var, 80)
         for iy in range(ny):
             for ix in range(nx):
                 min_pixel_samples = self.xyz_frame.samples[ix, iy, :].min()
                 max_pixel_variance = norm_frame_var[ix, iy, :].max()
-                if min_pixel_samples < 500*self.spectral_rays or \
+                if min_pixel_samples < 1000*self.spectral_rays or \
                     min_pixel_samples <= 0.1 * max_frame_samples or \
-                    max_pixel_variance > percentile_frame_variance:
+                    max_pixel_variance >= percentile_frame_variance:
                     tasks.append((ix, iy))
 
         # render
@@ -405,7 +406,6 @@ cdef class Imaging(Observer):
     def _render_pixel(self, object task, World world, Ray ray_template, np.ndarray resampled_xyz):
 
         cdef:
-            Spectrum spectrum
             int ray_count, ix, iy
             tuple pixel_id, xyz, mean, variance, samples
             Pixel pixel
@@ -595,14 +595,14 @@ cdef class Imaging(Observer):
 
             current_work = total_pixels * channel + pixel
             completion = 100 * current_work / total_work
-            print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays, {:0.1f}/{:0.1f}/{:0.1f} min/mean/max variance)".format(
+            print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays, {:0.2g}/{:0.2g}/{:0.2g} min/mean/max sigma)".format(
                 completion,
                 channel + 1, self.spectral_rays,
                 ceil((pixel + 1) / nx), ny,
                 pixel + 1, total_pixels, ray_count / 1000,
-                self.xyz_frame.variance.min(),
-                self.xyz_frame.variance.mean(),
-                self.xyz_frame.variance.max()))
+                np.sqrt(self.xyz_frame.variance.min()),
+                np.sqrt(self.xyz_frame.variance.mean()),
+                np.sqrt(self.xyz_frame.variance.max())))
             ray_count = 0
             progress_timer = time()
 
@@ -629,14 +629,19 @@ cdef class Imaging(Observer):
         f = self.xyz_frame
         i = f.value > 0
         norm_frame_var = np.zeros((self._pixels[0], self._pixels[1], 3))
-        norm_frame_var[i] = f.variance[i] / f.value[i]**2
-        img = np.transpose(norm_frame_var.max(2) / norm_frame_var.max())
+        # norm_frame_var[i] = np.minimum(f.variance[i], f.variance[i] / f.value[i]**2)
+        norm_frame_var[i] = f.variance[i]
+        img = np.sqrt(np.transpose(norm_frame_var.max(2)))
+        # img = np.transpose(norm_frame_var.max(2) / norm_frame_var.max())
         plt.imshow(img, aspect="equal", origin="upper")
+        plt.colorbar()
 
         plt.figure(3)
         plt.clf()
-        img = np.transpose(f.samples.max(2) / f.samples.max())
+        img = np.transpose(f.samples.max(2))
+        # img = np.transpose(f.samples.max(2) / f.samples.max())
         plt.imshow(img, aspect="equal", origin="upper")
+        plt.colorbar()
 
         # plt.figure(2)
         # plt.clf()
