@@ -120,8 +120,6 @@ cdef class Spectrum(SpectralFunction):
             self.num_samples,
             self.delta_wavelength,
             self.samples,
-            self._wavelengths,
-            self.fast_sample
         )
 
     def __setstate__(self, state):
@@ -131,9 +129,9 @@ cdef class Spectrum(SpectralFunction):
          self.max_wavelength,
          self.num_samples,
          self.delta_wavelength,
-         self.samples,
-         self._wavelengths,
-         self.fast_sample) = state
+         self.samples) = state
+
+        self._wavelengths = None
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
