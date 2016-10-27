@@ -28,19 +28,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
+import matplotlib.pyplot as plt
 from random import shuffle
 
 from raysect.core.workflow import MulticoreEngine
 from raysect.optical.scenegraph import Observer, World
 from raysect.optical.observer.frame import Pixel, Frame2D
 from raysect.optical.colour import resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz
-
-
-class SpectralChunk(Pixel):
-
-    def __init__(self):
-        super().__init__()
-
+from raysect.optical import Ray
 
 
 class Pipeline2D:
@@ -58,6 +53,15 @@ class Pipeline2D:
         """
         pass
 
+    def pixel_processor(self, channel):
+        pass
+
+    def update(self, pixel, packed_result, channel):
+        pass
+
+    def finalise(self):
+        pass
+
 
 class PixelProcessor:
 
@@ -73,9 +77,9 @@ class RGBPipeline2D(Pipeline2D):
     def initialise(self, pixels, ray_templates):
 
         # create intermediate and final frame-buffers
-        if not self.accumulate:
-            self.xyz_frame = Frame2D(pixels, channels=3)
-            self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
+        # if not self.accumulate:
+        self.xyz_frame = Frame2D(pixels, channels=3)
+        self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
 
         # generate resampled XYZ curves for ray spectral ranges
         self._resampled_xyz = [resample_ciexyz(ray.min_wavelength, ray.max_wavelength, ray.num_samples) for ray in ray_templates]
@@ -85,11 +89,31 @@ class RGBPipeline2D(Pipeline2D):
     def pixel_processor(self, channel):
         return XYZPixelProcessor(self._resampled_xyz[channel])
 
-    def update(self, packed_result, channel):
-        pass
+    def update(self, pixel_id, packed_result, channel):
+
+        # obtain result
+        x, y = pixel_id
+        mean, variance, samples = packed_result
+
+        self.xyz_frame.combine_samples(x, y, 0, mean[0], variance[0], samples[0])
+        self.xyz_frame.combine_samples(x, y, 1, mean[1], variance[1], samples[1])
+        self.xyz_frame.combine_samples(x, y, 2, mean[2], variance[2], samples[2])
+
+        # update users
+        # self._update_display()
+        # self._update_statistics(channel, x, y, sample_ray_count)
 
     def finalise(self):
-        pass
+
+        plt.figure(1)
+        plt.clf()
+        img = np.transpose(self.xyz_frame.value, (1, 0, 2))
+        plt.imshow(img, aspect="equal", origin="upper")
+        plt.draw()
+        plt.show()
+
+        # workaround for interactivity for QT backend
+        plt.pause(0.1)
 
 
 class XYZPixelProcessor(PixelProcessor):
@@ -192,33 +216,45 @@ class Observer2D(Observer):
         - save state for each pipeline as required.
     """
 
-    def __init__(self, parent=None, transform=None, name=None):
-        super().__init__(parent, transform, name)
+    def __init__(self, frame_sampler, processing_pipelines, render_engine=None, parent=None, transform=None, name=None):
 
-    def construct(self, frame_sampler, processing_pipelines, render_engine=None):
+        super().__init__(parent, transform, name)
 
         # TODO - add validation
         self.frame_sampler = frame_sampler
-        self.processing_pipelines = processing_pipelines
+        self.pipelines = processing_pipelines
         self.render_engine = render_engine or MulticoreEngine()
 
-        self.spectral_rays = spectral_rays
-        self.spectral_samples = spectral_samples
-        self.min_wavelength = min_wavelength
-        self.max_wavelength = max_wavelength
-        self.ray_extinction_prob = ray_extinction_prob
-        self.ray_min_depth = ray_min_depth
-        self.ray_max_depth = ray_max_depth
-        self.ray_importance_sampling = ray_importance_sampling
-        self.ray_important_path_weight = ray_important_path_weight
+        # ray configuration
+        self.spectral_rays = 1
+        self.spectral_samples = 15
+        self.min_wavelength = 375.0
+        self.max_wavelength = 740.0
+        self.ray_extinction_prob = 0.1
+        self.ray_min_depth = 3
+        self.ray_max_depth = 100
+        self.ray_importance_sampling = True
+        self.ray_important_path_weight = 0.2
+
+        # self.spectral_rays = spectral_rays
+        # self.spectral_samples = spectral_samples
+        # self.min_wavelength = min_wavelength
+        # self.max_wavelength = max_wavelength
+        # self.ray_extinction_prob = ray_extinction_prob
+        # self.ray_min_depth = ray_min_depth
+        # self.ray_max_depth = ray_max_depth
+        # self.ray_importance_sampling = ray_importance_sampling
+        # self.ray_important_path_weight = ray_important_path_weight
 
         # progress information
-        self.display_progress = display_progress
-        self.display_update_time = display_update_time
+        # self.display_progress = display_progress
+        # self.display_update_time = display_update_time
 
         # camera configuration
-        self.pixels = pixels
-        self.pixel_samples = pixel_samples
+        self.pixels = (64, 64)
+        self.pixel_samples = 500
+        # self.pixels = pixels
+        # self.pixel_samples = pixel_samples
 
     def observe(self):
         """ Ask this Camera to Observe its world. """
@@ -239,20 +275,51 @@ class Observer2D(Observer):
         for pipeline in self.pipelines:
             pipeline.initialise(self.pixels, ray_templates)
 
-        tasks = self.frame_sampler.generate_tasks()
+        tasks = self.frame_sampler.generate_tasks(self.pixels)
 
         # render
         for channel, ray_template in enumerate(ray_templates):
 
             self.render_engine.run(
                 tasks, self._render_pixel, self._update_pipelines,
-                render_args=(self.root, ray_template, channel),
+                render_args=(ray_template, channel),
                 update_args=(channel, )
             )
 
         # close pipelines
         for pipeline in self.pipelines:
             pipeline.finalise()
+
+    def _generate_ray_templates(self):
+
+        # split spectral bins across rays - non-integer division is handled by
+        # rounding up or down the non-integer boundaries between the ray ranges,
+        # this means that some rays will have more samples than others
+        current = 0
+        start = 0
+        ranges = []
+        while start < self.spectral_samples:
+            current += self.spectral_samples / self.spectral_rays
+            end = round(current)
+            ranges.append((start, end))
+            start = end
+
+        # build template rays
+        rays = []
+        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.spectral_samples
+        for start, end in ranges:
+            rays.append(
+                Ray(min_wavelength=self.min_wavelength + delta_wavelength * start,
+                    max_wavelength=self.min_wavelength + delta_wavelength * end,
+                    num_samples=end - start,
+                    extinction_prob=self.ray_extinction_prob,
+                    min_depth=self.ray_min_depth,
+                    max_depth=self.ray_max_depth,
+                    importance_sampling=self.ray_importance_sampling,
+                    important_path_weight=self.ray_important_path_weight)
+            )
+
+        return rays
 
     #################
     # WORKER THREAD #
@@ -280,7 +347,7 @@ class Observer2D(Observer):
         # generate rays
         rays = self._generate_rays(ix, iy, ray_template)
 
-        pixel_processors = [pipeline.pixel_processor(channel) for pipeline in self.processing_pipelines]
+        pixel_processors = [pipeline.pixel_processor(channel) for pipeline in self.pipelines]
 
         # initialise ray statistics
         ray_count = 0
@@ -294,7 +361,7 @@ class Observer2D(Observer):
 
             # sample and apply projection weight
             spectrum = ray.trace(world)
-            spectrum.mul_scalar(projection_weight)
+            spectrum.samples *= projection_weight
 
             for processor in pixel_processors:
                 processor.add_sample(spectrum)
@@ -348,8 +415,8 @@ class Observer2D(Observer):
         # unpack worker results
         pixel_id, results, ray_count = packed_result
 
-        for result, pipeline in zip(results, self.processing_pipelines):
-            pipeline.update(result, channel)
+        for result, pipeline in zip(results, self.pipelines):
+            pipeline.update(pixel_id, result, channel)
 
         # update users
         # TODO - add statistics
@@ -409,3 +476,82 @@ class Observer2D(Observer):
     #     _, _, _, start_time, _ = self.__statistics_data
     #     elapsed_time = time() - start_time
     #     print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
+
+
+
+
+from raysect.core import Point3D, Vector3D
+from .point_generator import Rectangle
+from .frame import Frame2D
+from math import pi, tan
+
+
+class PinholeCamera(Observer2D):
+    """
+    An observer that models an idealised pinhole camera.
+
+    A simple camera that launches rays from the observer's origin point over a
+    specified field of view.
+
+    Arguments and attributes are inherited from the base Imaging sensor class.
+
+    :param double fov: The field of view of the camera in degrees (default is 90 degrees).
+    """
+
+    def __init__(self, parent=None, transform=None, name=None):
+
+        super().__init__(FullFrameSampler(), [RGBPipeline2D()],
+                         parent=parent, transform=transform, name=name)
+
+        self._fov = 45
+        self._update_image_geometry()
+
+    def _update_image_geometry(self):
+
+        max_pixels = max(self.pixels)
+
+        if max_pixels > 1:
+
+            # Get width of image plane at a distance of 1m from aperture.
+            image_max_width = 2 * tan(pi / 180 * 0.5 * self._fov)
+
+            # set pixel step size in image plane
+            self.image_delta = image_delta = image_max_width / max_pixels
+
+            self.image_start_x = 0.5 * self.pixels[0] * image_delta
+            self.image_start_y = 0.5 * self.pixels[1] * image_delta
+
+            # rebuild point generator
+            self.point_generator = Rectangle(self.image_delta, self.image_delta)
+
+        else:
+            raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
+
+    def _generate_rays(self, ix, iy, ray_template):
+
+        # generate pixel transform
+        pixel_x = self.image_start_x - self.image_delta * ix
+        pixel_y = self.image_start_y - self.image_delta * iy
+        pixel_centre = Point3D(pixel_x, pixel_y, 1)
+
+        points = self.point_generator(self.pixel_samples)
+
+        # assemble rays
+        rays = []
+        for point in points:
+
+            # calculate point in virtual image plane to be used for ray direction
+            origin = Point3D()
+            direction = Vector3D(
+                point.x + pixel_centre.x,
+                point.y + pixel_centre.y,
+                point.z + pixel_centre.z
+            ).normalise()
+
+            ray = ray_template.copy(origin, direction)
+
+            # projected area weight is normal.incident which simplifies
+            # to incident.z here as the normal is (0, 0 ,1)
+            rays.append((ray, direction.z))
+
+        return rays
