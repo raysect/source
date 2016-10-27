@@ -27,9 +27,133 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from random import shuffle
+
 from raysect.core.workflow import MulticoreEngine
-from raysect.optical.scenegraph import Observer
+from raysect.optical.scenegraph import Observer, World
 from raysect.optical.observer.frame import Pixel
+
+
+
+class SpectralChunk(Pixel):
+
+    def __init__(self):
+        super().__init__()
+
+
+
+class Pipeline2D:
+    """
+    base class defining the core interfaces to define an image processing pipeline
+    """
+
+    def initialise(self, pixels, ray_templates):
+        """
+        setup internal buffers (e.g. frames)
+        reset internal statistics as appropriate
+        etc..
+
+        :return:
+        """
+        pass
+
+
+class PixelProcessor:
+    pass
+
+
+class RGBPipeline2D(Pipeline2D):
+
+    def initialise(self, pixels, ray_templates):
+
+        # create intermediate and final frame-buffers
+        if not self.accumulate:
+            self.xyz_frame = Frame2D(pixels, channels=3)
+            self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
+
+        # generate resampled XYZ curves for ray spectral ranges
+        self._resampled_xyz = [resample_ciexyz(ray.min_wavelength, ray.max_wavelength, ray.num_samples) for ray in ray_templates]
+
+        # TODO - add statistics and display initialisation
+
+    def pixel_processor(self, channel):
+        return XYZPixelProcessor(self._resampled_xyz[channel])
+
+    def update(self, packed_result, channel):
+        pass
+
+    def finalise(self):
+        pass
+
+
+class XYZPixelProcessor(PixelProcessor):
+
+    def __init__(self, resampled_xyz):
+        self._resampled_xyz = resampled_xyz
+        self._xyz = Pixel(channels=3)
+
+    def add_sample(self, spectrum):
+        # convert spectrum to CIE XYZ and add sample to pixel buffer
+        x, y, z = spectrum_to_ciexyz(spectrum, self._resampled_xyz)
+        self._xyz.add_sample(0, x)
+        self._xyz.add_sample(1, y)
+        self._xyz.add_sample(2, z)
+
+    def pack_results(self):
+
+        mean = (self._xyz.value[0], self._xyz.value[1], self._xyz.value[2])
+        variance = (self._xyz.variance[0], self._xyz.variance[1], self._xyz.variance[2])
+        samples = (self._xyz.samples[0], self._xyz.samples[1], self._xyz.samples[2])
+
+        return mean, variance, samples
+
+
+class FrameSampler:
+
+    def generate_tasks(self, pixels):
+        pass
+
+
+class FullFrameSampler(FrameSampler):
+
+    def generate_tasks(self, pixels):
+
+        tasks = []
+        nx, ny = pixels
+        for iy in range(ny):
+            for ix in range(nx):
+                tasks.append((ix, iy))
+
+        # perform tasks in random order so that image is assembled randomly rather than sequentially
+        shuffle(tasks)
+
+        return tasks
+
+
+class AdaptiveSampler(FrameSampler):
+
+    def generate_tasks(self, pixels):
+
+        # build task list -> task is simply the pixel location
+        tasks = []
+        nx, ny = pixels
+        f = self.xyz_frame
+        i = f.value > 0
+        norm_frame_var = np.zeros((pixels[0], pixels[1], 3))
+        norm_frame_var[i] = f.variance[i]
+        # norm_frame_var[i] = np.minimum(f.variance[i], f.variance[i] / f.value[i]**2)
+        max_frame_samples = f.samples.max()
+        percentile_frame_variance = np.percentile(norm_frame_var, 80)
+        for iy in range(ny):
+            for ix in range(nx):
+                min_pixel_samples = self.xyz_frame.samples[ix, iy, :].min()
+                max_pixel_variance = norm_frame_var[ix, iy, :].max()
+                if min_pixel_samples < 1000*self.spectral_rays or \
+                    min_pixel_samples <= 0.1 * max_frame_samples or \
+                    max_pixel_variance >= percentile_frame_variance:
+                    tasks.append((ix, iy))
+
+
 
 
 class Observer2D(Observer):
@@ -101,20 +225,31 @@ class Observer2D(Observer):
 
         # TODO - initialise workflow statistics
 
-        # TODO - init pipelines (setup frames, displays, pipeline dependent statistics)
-
         # generate ray templates
         ray_templates = self._generate_ray_templates()
 
-        # trace
-        # TODO - generate tasks, setup and launch render engine
+        # initialise pipelines for rendering
+        for pipeline in self.pipelines:
+            pipeline.initialise(self.pixels, ray_templates)
 
+        tasks = self.frame_sampler.generate_tasks()
+
+        # render
+        for channel, ray_template in enumerate(ray_templates):
+
+            self.render_engine.run(
+                tasks, self._render_pixel, self._update_pipelines,
+                render_args=(self.root, ray_template),
+                update_args=(channel, )
+            )
+
+        # todo - save pipeline results - common file basename
 
     #################
     # WORKER THREAD #
     #################
 
-    def render_pixel(self, pixel_id, ray_template):
+    def _render_pixel(self, pixel_id, ray_template):
         """
         - passed in are ray_template and pipeline object references
         - unpack task ID (pixel id)
@@ -196,7 +331,7 @@ class Observer2D(Observer):
     # CONSUMER THREAD #
     ###################
 
-    def _update_pipelines(self, packed_result):
+    def _update_pipelines(self, packed_result, channel):
         """
         - unpack pixel ID and pipeline result tuples.
         - pass results to each pipeline to update pipelines internal state
@@ -211,7 +346,7 @@ class Observer2D(Observer):
         pixel_id, results, ray_count = packed_result
 
         for result, pipeline in zip(results, self.processing_pipelines):
-            pipeline.update(result)
+            pipeline.update(result, channel)
 
         # update users
         self._update_display()
