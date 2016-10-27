@@ -27,12 +27,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import numpy as np
 from random import shuffle
 
 from raysect.core.workflow import MulticoreEngine
 from raysect.optical.scenegraph import Observer, World
-from raysect.optical.observer.frame import Pixel
-
+from raysect.optical.observer.frame import Pixel, Frame2D
+from raysect.optical.colour import resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz
 
 
 class SpectralChunk(Pixel):
@@ -59,7 +60,12 @@ class Pipeline2D:
 
 
 class PixelProcessor:
-    pass
+
+    def add_sample(self, spectrum):
+        pass
+
+    def pack_results(self):
+        pass
 
 
 class RGBPipeline2D(Pipeline2D):
@@ -130,28 +136,29 @@ class FullFrameSampler(FrameSampler):
         return tasks
 
 
-class AdaptiveSampler(FrameSampler):
-
-    def generate_tasks(self, pixels):
-
-        # build task list -> task is simply the pixel location
-        tasks = []
-        nx, ny = pixels
-        f = self.xyz_frame
-        i = f.value > 0
-        norm_frame_var = np.zeros((pixels[0], pixels[1], 3))
-        norm_frame_var[i] = f.variance[i]
-        # norm_frame_var[i] = np.minimum(f.variance[i], f.variance[i] / f.value[i]**2)
-        max_frame_samples = f.samples.max()
-        percentile_frame_variance = np.percentile(norm_frame_var, 80)
-        for iy in range(ny):
-            for ix in range(nx):
-                min_pixel_samples = self.xyz_frame.samples[ix, iy, :].min()
-                max_pixel_variance = norm_frame_var[ix, iy, :].max()
-                if min_pixel_samples < 1000*self.spectral_rays or \
-                    min_pixel_samples <= 0.1 * max_frame_samples or \
-                    max_pixel_variance >= percentile_frame_variance:
-                    tasks.append((ix, iy))
+# TODO - add Adaptive Sampler
+# class AdaptiveSampler(FrameSampler):
+#
+#     def generate_tasks(self, pixels):
+#
+#         # build task list -> task is simply the pixel location
+#         tasks = []
+#         nx, ny = pixels
+#         f = self.xyz_frame
+#         i = f.value > 0
+#         norm_frame_var = np.zeros((pixels[0], pixels[1], 3))
+#         norm_frame_var[i] = f.variance[i]
+#         # norm_frame_var[i] = np.minimum(f.variance[i], f.variance[i] / f.value[i]**2)
+#         max_frame_samples = f.samples.max()
+#         percentile_frame_variance = np.percentile(norm_frame_var, 80)
+#         for iy in range(ny):
+#             for ix in range(nx):
+#                 min_pixel_samples = self.xyz_frame.samples[ix, iy, :].min()
+#                 max_pixel_variance = norm_frame_var[ix, iy, :].max()
+#                 if min_pixel_samples < 1000*self.spectral_rays or \
+#                     min_pixel_samples <= 0.1 * max_frame_samples or \
+#                     max_pixel_variance >= percentile_frame_variance:
+#                     tasks.append((ix, iy))
 
 
 
@@ -239,17 +246,19 @@ class Observer2D(Observer):
 
             self.render_engine.run(
                 tasks, self._render_pixel, self._update_pipelines,
-                render_args=(self.root, ray_template),
+                render_args=(self.root, ray_template, channel),
                 update_args=(channel, )
             )
 
-        # todo - save pipeline results - common file basename
+        # close pipelines
+        for pipeline in self.pipelines:
+            pipeline.finalise()
 
     #################
     # WORKER THREAD #
     #################
 
-    def _render_pixel(self, pixel_id, ray_template):
+    def _render_pixel(self, pixel_id, ray_template, channel):
         """
         - passed in are ray_template and pipeline object references
         - unpack task ID (pixel id)
@@ -271,11 +280,7 @@ class Observer2D(Observer):
         # generate rays
         rays = self._generate_rays(ix, iy, ray_template)
 
-        # TODO - create spectral chunk object, should be its own class
-        # - stores offset into full spectrum object, as well as wavelengths, etc.
-
-        # create buffer to hold spectrum along with variance and sample counts per bin
-        pixel = Pixel(channels=self.spectral_samples)
+        pixel_processors = [pipeline.pixel_processor(channel) for pipeline in self.processing_pipelines]
 
         # initialise ray statistics
         ray_count = 0
@@ -291,16 +296,14 @@ class Observer2D(Observer):
             spectrum = ray.trace(world)
             spectrum.mul_scalar(projection_weight)
 
-            for bin in range(self.spectral_samples):
-                pixel.add_sample(bin)
+            for processor in pixel_processors:
+                processor.add_sample(spectrum)
 
             # accumulate statistics
             ray_count += ray.ray_count
 
-        # process spectrum with each pipeline
-        results = []
-        for pipeline in self.processing_pipelines:
-            results.append(pipeline.process_pixel(pixel))
+        # acquire results from pixel processors
+        results = [processor.pack_results() for processor in pixel_processors]
 
         return pixel_id, results, ray_count
 
@@ -349,91 +352,60 @@ class Observer2D(Observer):
             pipeline.update(result, channel)
 
         # update users
-        self._update_display()
-        self._update_statistics(channel, x, y, sample_ray_count)
+        # TODO - add statistics
 
-    def _start_display(self):
-        """
-        Display live render.
-        """
-        self.__display_timer = 0
-        if self.display_progress:
-            # TODO - here initialise pipeline displays
-            self.__display_timer = time()
-
-    def _update_display(self):
-        """
-        Update live render.
-        """
-
-        # update live render display
-        if self.display_progress and (time() - self.__display_timer) > self.display_update_time:
-
-            print("Refreshing display...")
-            # TODO - update each pipeline display
-            self.__display_timer = time()
-
-    def _final_display(self):
-        """
-        Display final frame.
-        """
-
-        if self.display_progress:
-            # TODO - display final pipeline results
-            pass
-
-    def _start_statistics(self):
-        """
-        Initialise statistics.
-        """
-
-        total_pixels = self._pixels[0] * self._pixels[1]
-        total_work = total_pixels * self.spectral_rays
-        ray_count = 0
-        start_time = time()
-        progress_timer = time()
-        self.__statistics_data = (total_work, total_pixels, ray_count, start_time, progress_timer)
-
-        for pipeline in self.processing_pipelines:
-            pipeline.start_statistics()
-
-    def _update_statistics(self, channel, x, y, sample_ray_count):
-        """
-        Display progress statistics.
-        """
-
-        total_work, total_pixels, ray_count, start_time, progress_timer = self.__statistics_data
-        ray_count += sample_ray_count
-        nx, ny = self._pixels
-        pixel = y*ny + x
-
-        if (time() - progress_timer) > 1.0:
-
-            current_work = total_pixels * channel + pixel
-            completion = 100 * current_work / total_work
-            print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
-                completion,
-                channel + 1, self.spectral_rays,
-                ceil((pixel + 1) / nx), ny,
-                pixel + 1, total_pixels, ray_count / 1000
-
-            # update pipeline statistics
-            for pipeline in self.processing_pipelines:
-                pipeline.update_statistics()
-
-            ray_count = 0
-            progress_timer = time()
-
-        self.__statistics_data = (total_work, total_pixels, ray_count, start_time, progress_timer)
-
-    def _final_statistics(self):
-        """
-        Final statistics output.
-        """
-
-        for pipeline in self.processing_pipelines:
-            pipeline.final_statistics()
-
-        _, _, _, start_time, _ = self.__statistics_data
-        elapsed_time = time() - start_time
-        print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
+    # def _start_statistics(self):
+    #     """
+    #     Initialise statistics.
+    #     """
+    #
+    #     total_pixels = self._pixels[0] * self._pixels[1]
+    #     total_work = total_pixels * self.spectral_rays
+    #     ray_count = 0
+    #     start_time = time()
+    #     progress_timer = time()
+    #     self.__statistics_data = (total_work, total_pixels, ray_count, start_time, progress_timer)
+    #
+    #     for pipeline in self.processing_pipelines:
+    #         pipeline.start_statistics()
+    #
+    # def _update_statistics(self, channel, x, y, sample_ray_count):
+    #     """
+    #     Display progress statistics.
+    #     """
+    #
+    #     total_work, total_pixels, ray_count, start_time, progress_timer = self.__statistics_data
+    #     ray_count += sample_ray_count
+    #     nx, ny = self._pixels
+    #     pixel = y*ny + x
+    #
+    #     if (time() - progress_timer) > 1.0:
+    #
+    #         current_work = total_pixels * channel + pixel
+    #         completion = 100 * current_work / total_work
+    #         print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
+    #             completion,
+    #             channel + 1, self.spectral_rays,
+    #             ceil((pixel + 1) / nx), ny,
+    #             pixel + 1, total_pixels, ray_count / 1000
+    #
+    #         # update pipeline statistics
+    #         for pipeline in self.processing_pipelines:
+    #             pipeline.update_statistics()
+    #
+    #         ray_count = 0
+    #         progress_timer = time()
+    #
+    #     self.__statistics_data = (total_work, total_pixels, ray_count, start_time, progress_timer)
+    #
+    # def _final_statistics(self):
+    #     """
+    #     Final statistics output.
+    #     """
+    #
+    #     for pipeline in self.processing_pipelines:
+    #         pipeline.final_statistics()
+    #
+    #     _, _, _, start_time, _ = self.__statistics_data
+    #     elapsed_time = time() - start_time
+    #     print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
