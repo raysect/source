@@ -263,7 +263,7 @@ cdef class UnityVolumeEmitter(VolumeEmitterHomogeneous):
 
     def __init__(self):
         """
-        Uniform, isotropic volume emitter with emission 1W/str/m^2/nm.
+        Uniform, isotropic volume emitter with emission 1W/str/m^3/ x nm, where x is the spectrum's wavelength interval.
 
         This material is useful for general purpose debugging and evaluating the coupling coefficients between cameras
         and emitting volumes.
@@ -285,7 +285,7 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
         """
         Uniform, homogeneous and isotropic volume emitter
 
-        emission is spectral volume radiance: W/m3/str/nm ie spectral radiance per meter"""
+        emission is spectral volume radiance: W/m^3/str/nm ie spectral radiance per meter"""
 
         super().__init__()
         self.emission_spectrum = emission_spectrum

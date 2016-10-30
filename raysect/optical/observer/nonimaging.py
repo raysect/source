@@ -30,8 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.observer.sensor import NonImaging
-from raysect.optical.observer.point_generator import Disk
-from raysect.optical.observer.vector_generators import ConeUniform
+from raysect.optical.observer.point_generator import Disk, Rectangle
+from raysect.optical.observer.vector_generators import ConeUniform, HemisphereCosine
 from raysect.core import AffineMatrix3D, Point3D, Vector3D
 
 
@@ -80,6 +80,82 @@ class FibreOptic(NonImaging):
         point_generator = Disk(self.radius)
         origins = point_generator(self.pixel_samples)
         vector_generator = ConeUniform(self.acceptance_angle)
+        directions = vector_generator(self.pixel_samples)
+
+        rays = []
+        for n in range(self.pixel_samples):
+
+            # projected area weight is normal.incident which simplifies
+            # to incident.z here as the normal is (0, 0 ,1)
+            weight = directions[n].z
+            ray = ray_template.copy(origins[n], directions[n])
+            rays.append((ray, weight))
+
+        return rays
+
+
+class RectangularPixel(NonImaging):
+    """
+    An observer which records all emission arriving at a rectangular surface.
+
+    Inherits arguments and attributes from the base NonImaging sensor class. Rays are sampled over a hemisphere of solid
+    angle aligned with the surface normal. The area of sampling on the surface is defined by the rectangle dimensions.
+
+    :param float width: The width of the rectangular surface in metres.
+    :param float height: The height of the rectangular surface in metres.
+    """
+    def __init__(self, width=0.001, height=0.001, sensitivity=1.0, spectral_samples=512,
+                 spectral_rays=1, pixel_samples=1, parent=None, transform=AffineMatrix3D(), name=""):
+
+        super().__init__(sensitivity=sensitivity, spectral_samples=spectral_samples, spectral_rays=spectral_rays,
+                         pixel_samples=pixel_samples, parent=parent, transform=transform, name=name)
+
+        self.width = width
+        self.height = height
+
+    def _generate_rays(self, ray_template):
+
+        point_generator = Rectangle(self.width, self.height)
+        origins = point_generator(self.pixel_samples)
+
+        vector_generator = HemisphereCosine()
+        directions = vector_generator(self.pixel_samples)
+
+        rays = []
+        for n in range(self.pixel_samples):
+
+            # projected area weight is normal.incident which simplifies
+            # to incident.z here as the normal is (0, 0 ,1)
+            weight = directions[n].z
+            ray = ray_template.copy(origins[n], directions[n])
+            rays.append((ray, weight))
+
+        return rays
+
+
+class CircularPixel(NonImaging):
+    """
+    An observer which records all emission arriving at a circular surface.
+
+    Inherits arguments and attributes from the base NonImaging sensor class. Rays are sampled over a hemisphere of solid
+    angle aligned with the surface normal. The area of sampling on the surface is defined by the circle radius.
+
+    :param float radius: The radius of the circular pixel area in metres.
+    """
+    def __init__(self, radius=0.001, sensitivity=1.0, spectral_samples=512,
+                 spectral_rays=1, pixel_samples=1, parent=None, transform=AffineMatrix3D(), name=""):
+
+        super().__init__(sensitivity=sensitivity, spectral_samples=spectral_samples, spectral_rays=spectral_rays,
+                         pixel_samples=pixel_samples, parent=parent, transform=transform, name=name)
+
+        self.radius = radius
+
+    def _generate_rays(self, ray_template):
+
+        point_generator = Disk(self.radius)
+        origins = point_generator(self.pixel_samples)
+
+        vector_generator = HemisphereCosine()
         directions = vector_generator(self.pixel_samples)
 
         rays = []
