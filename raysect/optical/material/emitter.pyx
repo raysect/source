@@ -70,7 +70,7 @@ cdef class UniformSurfaceEmitter(NullVolume):
         e_view = emission
 
         for index in range(spectrum.num_samples):
-            s_view[index] += e_view[index] * self.scale
+            s_view[index] = e_view[index] * self.scale
 
         return spectrum
 
@@ -278,6 +278,7 @@ cdef class UnityVolumeEmitter(VolumeEmitterHomogeneous):
                                      AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
         spectrum.samples[:] = 1.0
         return spectrum
+
 
 cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
