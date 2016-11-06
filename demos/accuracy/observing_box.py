@@ -20,7 +20,7 @@ if cube_size <= 2 * sphere_radius:
     raise ValueError("The cube dimensions must be larger that the sphere.")
 
 # Emitter is a sphere volume emitter located at the origin
-# Volume of the sphere is 4/3 * Pi * r^3
+# Volume of the sphere is 4/3 * Pi * r^3, emission over 4 * pi
 # UnityVolumeEmitter emits 1W/str/m^3/ x nm, where x is the wavelength interval, integrated over length
 
 # emitter = Sphere(radius=sphere_radius, parent=world, material=UnityVolumeEmitter())
@@ -28,7 +28,7 @@ if cube_size <= 2 * sphere_radius:
 
 
 # Emitter is a sphere surface emitter located at the origin
-# Surface area of the sphere is 4 * Pi * r^2
+# Surface area of the sphere is 4 * Pi * r^2, emission over 2 * pi
 # UniformSurfaceEmitter is configured to emit 1W/str/m^2/ x nm, where x is the wavelength interval
 
 emitter = Sphere(radius=sphere_radius, parent=world, material=UniformSurfaceEmitter(ConstantSF(1.0)))
