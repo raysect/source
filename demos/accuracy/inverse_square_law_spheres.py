@@ -6,6 +6,7 @@ from raysect.optical import World
 from raysect.optical.observer.nonimaging import SightLine
 from raysect.optical.material.emitter import UnityVolumeEmitter
 from math import sqrt
+from numpy import pi
 
 
 # set-up scenegraph
@@ -33,8 +34,12 @@ for i, sphere in enumerate(spheres):
     sl.observe()
     measured_emission = sl.spectrum.samples[0]
 
-    print('sphere distance d => {} m'.format(distances[i]))
-    print('Measured emission => {} W / x nm'.format(measured_emission))
+    d = distances[i]
+    solid_angle = pi * 0.5 ** 2 / (4 * pi * d**2)
+
+    print('sphere distance d => {} m'.format(d))
+    print('sphere solid angle => {:.4G} str'.format(solid_angle))
+    print('Measured emission => {} W / str / x nm'.format(measured_emission))
     sphere.parent = None
 
 print()
