@@ -58,9 +58,9 @@ class FibreOptic(NonImaging):
     the fibre tip and a conical solid angle defined by the acceptance_angle parameter.
 
     :param float acceptance_angle: The angle in degrees between the z axis and the cone surface which defines the fibres
-    soild angle sampling area.
+       soild angle sampling area.
     :param float radius: The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
-    which will be sampled over.
+       which will be sampled over.
     """
     def __init__(self, acceptance_angle=10, radius=0.001, sensitivity=1.0, spectral_samples=512,
                  spectral_rays=1, pixel_samples=1, parent=None, transform=AffineMatrix3D(), name=""):

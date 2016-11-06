@@ -44,7 +44,7 @@ class OrthographicCamera(Imaging):
     Inherits arguments and attributes from the base camera class.
 
     :param double width: width of the orthographic area to observe in meters, the height is deduced from the 'pixels'
-    attribute.
+       attribute.
     """
 
     def __init__(self, pixels=(512, 512), width=1, spectral_samples=21, spectral_rays=1,

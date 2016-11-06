@@ -186,17 +186,17 @@ cdef class Imaging(Observer):
     response, pixel_samples >> 10.
 
     :param tuple pixels: A tuple specification of the imaging sensors pixel dimensions, the default is
-    pixels=(512, 512).
+       pixels=(512, 512).
     :param float sensitivity: The cameras sensitivity coefficient, all samples collected be this camera will by
-    multiplied by this number.
+       multiplied by this number.
     :param int spectral_samples: The number of wavelength bins to collect over the wavelength range min_wavelength to
-    max_wavelength. Default is spectral_samples=20.
+       max_wavelength. Default is spectral_samples=20.
     :param int spectral_rays: The number of rays to sample over this wavelength range. Defaults to spectral_rays = 1.
     :param int pixel_samples: The number of rays to launch per pixel. Defaults pixel_samples=100.
     :param int process_count: The number of parallel processes to use. Defaults to the number of cpu cores available.
     :param parent: The parent node in the scenegraph. All camera observers must be parented to a World object.
     :param AffineMatrix3D transform: A transform matrix describing the location and orientation of this camera in world
-    space.
+       space.
     :param name: An optional name for this camera.
     """
 
@@ -717,14 +717,14 @@ class NonImaging(Observer):
     response, pixel_samples >> 10.
 
     :param float sensitivity: The observers sensitivity coefficient, all samples collected by this LOS will be
-    multiplied by this number.
+       multiplied by this number.
     :param int spectral_samples: The number of wavelength bins to collect over the wavelength range min_wavelength to
-    max_wavelength. Default is spectral_samples=20.
+       max_wavelength. Default is spectral_samples=20.
     :param int spectral_rays: The number of rays to sample over this wavelength range. Defaults to spectral_rays = 1.
     :param int pixel_samples: The number of rays to launch per pixel. Defaults pixel_samples=100.
     :param parent: The parent node in the scenegraph. All camera observers must be parented to a World object.
     :param AffineMatrix3D transform: A transform matrix describing the location and orientation of this camera in world
-    space.
+       space.
     :param name: An optional name for this camera.
     """
 
