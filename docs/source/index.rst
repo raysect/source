@@ -28,6 +28,7 @@ built with scientific ray-tracing in mind. Some of its features include:
    license
    help
 
+
 .. toctree::
    :maxdepth: 3
    :numbered:

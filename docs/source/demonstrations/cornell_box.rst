@@ -1,8 +1,5 @@
 
 Welcome to Raysect, an OOP ray-tracing framework in python. Raysect has been
-built with scientific ray-tracing in mind. Some of its features include:
+built with scientific ray-tracing in mind.
 
-* Fully spectral, high precision. Supports scientific ray-tracing of spectra from physical light sources such as plasmas.
-* All core loops are written in cython for speed.
-* Easily extensible, written with user customisation of materials and emissive sources in mind.
-* Different observer types supported such as Pinhole cameras and optical fibres.
+.. literalinclude:: /demos/cornell_box.py
