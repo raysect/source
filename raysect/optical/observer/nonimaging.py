@@ -124,11 +124,10 @@ class RectangularPixel(NonImaging):
         rays = []
         for n in range(self.pixel_samples):
 
-            # projected area weight is normal.incident which simplifies
-            # to incident.z here as the normal is (0, 0 ,1)
-            weight = directions[n].z
+            # cosine weighted distribution, projected area weight is
+            # implicit in distribution, so set weight to 1.0
             ray = ray_template.copy(origins[n], directions[n])
-            rays.append((ray, weight))
+            rays.append((ray, 1.0))
 
         return rays
 
@@ -161,10 +160,9 @@ class CircularPixel(NonImaging):
         rays = []
         for n in range(self.pixel_samples):
 
-            # projected area weight is normal.incident which simplifies
-            # to incident.z here as the normal is (0, 0 ,1)
-            weight = directions[n].z
+            # cosine weighted distribution, projected area weight is
+            # implicit in distribution, so set weight to 1.0
             ray = ray_template.copy(origins[n], directions[n])
-            rays.append((ray, weight))
+            rays.append((ray, 1.0))
 
         return rays
