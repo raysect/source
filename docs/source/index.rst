@@ -10,10 +10,6 @@ built with scientific ray-tracing in mind. Some of its features include:
 * Easily extensible, written with user customisation of materials and emissive sources in mind.
 * Different observer types supported such as Pinhole cameras and optical fibres.
 
-*************
-Raysect Guide
-*************
-
 .. toctree::
    :maxdepth: 2
    :numbered:
@@ -32,9 +28,13 @@ Raysect Guide
    license
    help
 
-*************
-API Reference
-*************
+.. toctree::
+   :maxdepth: 3
+   :numbered:
+   :caption: Demonstrations
+   :name: demonstrations
+
+   demonstrations/cornell_box
 
 .. toctree::
    :maxdepth: 3
