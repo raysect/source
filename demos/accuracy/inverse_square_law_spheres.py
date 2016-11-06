@@ -51,4 +51,5 @@ for sphere in spheres:
 
 sl.observe()
 measured_emission = sl.spectrum.samples[0]
+print('effective solid angle ???')
 print('Measured emission => {} W / x nm'.format(measured_emission))
