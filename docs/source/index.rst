@@ -35,6 +35,8 @@ built with scientific ray-tracing in mind. Some of its features include:
    :name: demonstrations
 
    demonstrations/cornell_box
+   demonstrations/bunny
+
 
 .. toctree::
    :maxdepth: 3
