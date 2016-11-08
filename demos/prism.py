@@ -80,11 +80,13 @@ screen = Intersect(
 
 
 # construct main collimated light source
-prism_light = light_box(parent=world, transform=rotate(-35.5, 0, 0) * translate(0.10, 0, 0) * rotate(90, 0, 0))
+prism_light = light_box(parent=world,
+                        transform=rotate(-35.5, 0, 0) * translate(0.10, 0, 0) * rotate(90, 0, 0))
 
 
 # background light source
-top_light = Sphere(0.5, parent=world, material=UniformSurfaceEmitter(d65_white, scale=2), transform=translate(0, 2, -1))
+top_light = Sphere(0.5, parent=world, transform=translate(0, 2, -1),
+                   material=UniformSurfaceEmitter(d65_white, scale=2))
 
 
 # Give the prism a high importance to ensure adequate sampling
@@ -92,8 +94,8 @@ prism.material.importance = 9
 
 
 # create and setup the camera
-camera = PinholeCamera(fov=45, parent=world,
-                       transform=translate(0, 0.05, -0.05) * rotate(180, -65, 0) * translate(0, 0, -0.75))
+camera = PinholeCamera(fov=45, parent=world)
+camera.transform = translate(0, 0.05, -0.05) * rotate(180, -65, 0) * translate(0, 0, -0.75)
 camera.ray_importance_sampling = True
 camera.ray_important_path_weight = 0.75
 camera.ray_min_depth = 3
