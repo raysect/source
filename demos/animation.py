@@ -40,6 +40,6 @@ for frame in range(num_frames):
     target.transform = rotate(rotation, 25, 5)
 
     camera.observe()
-    camera.save("renders/anim/frame{:04}.png".format(frame))
+    camera.save("frame{:04}.png".format(frame))
     camera.display()
     show()
