@@ -107,7 +107,8 @@ class RGBPipeline2D(Pipeline2D):
 
         plt.figure(1)
         plt.clf()
-        img = np.transpose(self.xyz_frame.value, (1, 0, 2))
+        img = np.transpose(10 * self.xyz_frame.value/self.xyz_frame.value.max(), (1, 0, 2))
+        img[img > 1.0] = 1.0
         plt.imshow(img, aspect="equal", origin="upper")
         plt.draw()
         plt.show()
@@ -186,7 +187,6 @@ class FullFrameSampler(FrameSampler):
 
 
 
-
 class Observer2D(Observer):
     """
     - Needs to know about mean, max, min wavelength, number of samples, rays.
@@ -251,8 +251,8 @@ class Observer2D(Observer):
         # self.display_update_time = display_update_time
 
         # camera configuration
-        self.pixels = (64, 64)
-        self.pixel_samples = 500
+        self.pixels = (256, 256)
+        self.pixel_samples = 100
         # self.pixels = pixels
         # self.pixel_samples = pixel_samples
 
@@ -333,7 +333,7 @@ class Observer2D(Observer):
         returns a frame 1D object representing a spectrum with variance and sample count
         for each bin.
         - passes frame 1D to each pipeline object for pixel processing. Each of those
-        returns a custum tuple of data tied to details of that pipeline.
+        returns a custom tuple of data tied to details of that pipeline.
         - All results packaged together with pixel ID and returned to consumer.
         :return:
         """
@@ -341,16 +341,16 @@ class Observer2D(Observer):
         # obtain reference to world
         world = self.root
 
-        # unpack pixel coords from task
-        ix, iy = pixel_id
-
         # generate rays
-        rays = self._generate_rays(ix, iy, ray_template)
+        rays = self._generate_rays(pixel_id, ray_template)  # todo: ray_template -> channel_config
 
         pixel_processors = [pipeline.pixel_processor(channel) for pipeline in self.pipelines]
 
         # initialise ray statistics
         ray_count = 0
+
+        # obtain pixel etendue to convert spectral radiance to spectral power
+        etendue = self._pixel_etendue(pixel_id)
 
         # launch rays and accumulate spectral samples
         for ray, projection_weight in rays:
@@ -359,9 +359,9 @@ class Observer2D(Observer):
             ray.origin = ray.origin.transform(self.to_root())
             ray.direction = ray.direction.transform(self.to_root())
 
-            # sample and apply projection weight
+            # sample, apply projection weight and convert to power
             spectrum = ray.trace(world)
-            spectrum.samples *= projection_weight
+            spectrum.samples *= projection_weight * etendue
 
             for processor in pixel_processors:
                 processor.add_sample(spectrum)
@@ -374,7 +374,7 @@ class Observer2D(Observer):
 
         return pixel_id, results, ray_count
 
-    def _generate_rays(self, ix, iy, ray_template):
+    def _generate_rays(self, pixel_id, ray_template):
         """
         Generate a list of Rays and their respective area weightings for pixel (ix, iy).
 
@@ -396,6 +396,16 @@ class Observer2D(Observer):
         """
 
         raise NotImplementedError("To be defined in subclass.")
+
+    def _pixel_etendue(self, pixel_id):
+        """
+
+        :param pixel_id:
+        :return:
+        """
+
+        raise NotImplementedError("To be defined in subclass.")
+
 
     ###################
     # CONSUMER THREAD #
@@ -527,7 +537,10 @@ class PinholeCamera(Observer2D):
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
 
-    def _generate_rays(self, ix, iy, ray_template):
+    def _generate_rays(self, pixel_id, ray_template):
+
+        # unpack pixel co-ordinates
+        ix, iy = pixel_id
 
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
@@ -555,3 +568,6 @@ class PinholeCamera(Observer2D):
             rays.append((ray, direction.z))
 
         return rays
+
+    def _pixel_etendue(self, pixel_id):
+        return 1.0
