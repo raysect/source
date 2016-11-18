@@ -30,11 +30,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
-from .sensor import Imaging
-from raysect.core import translate
 from raysect.optical.observer.point_generator import Rectangle
-from raysect.optical.observer.vector_generators import HemisphereCosine
+
+from raysect.core import translate
+from raysect.optical.observer.old.vector_generators import HemisphereCosine
 from .frame import Frame2D
+from .sensor import Imaging
 
 
 # TODO: fix the numerous bits of broken functionality!

@@ -27,8 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .pinhole import PinholeCamera
-from .ccd import CCD
-from .orthographic import OrthographicCamera
-from .nonimaging import SightLine, FibreOptic
-from .sensor import NonImaging, Imaging, AutoExposure, RelativeExposure, AbsoluteExposure
+from raysect.optical.observer.old.ccd import CCD
+from raysect.optical.observer.old.nonimaging import SightLine, FibreOptic
+from raysect.optical.observer.old.orthographic import OrthographicCamera
+from raysect.optical.observer.old.pinhole import PinholeCamera
+from raysect.optical.observer.old.sensor import NonImaging, Imaging, AutoExposure, RelativeExposure, AbsoluteExposure
+

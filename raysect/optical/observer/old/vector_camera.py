@@ -1,7 +1,4 @@
-
-from raysect.core import AffineMatrix3D, Point3D, Vector3D
-from raysect.optical.ray import Ray
-from raysect.optical.observer.sensor import Imaging
+from raysect.optical.observer.old.sensor import Imaging
 
 
 class VectorCamera(Imaging):

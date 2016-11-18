@@ -27,15 +27,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import numpy as np
-import matplotlib.pyplot as plt
 from random import shuffle
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from raysect.core.workflow import MulticoreEngine
-from raysect.optical.scenegraph import Observer, World
-from raysect.optical.observer.frame import Pixel, Frame2D
-from raysect.optical.colour import resample_ciexyz, ciexyz_to_srgb, spectrum_to_ciexyz
 from raysect.optical import Ray
+from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz
+from raysect.optical.observer.frame import Pixel
+from raysect.optical.scenegraph import Observer, World
 
 
 class Pipeline2D:
@@ -376,14 +377,14 @@ class Observer2D(Observer):
 
     def _generate_rays(self, pixel_id, ray_template):
         """
-        Generate a list of Rays and their respective area weightings for pixel (ix, iy).
+        Generate a list of Rays that sample over the etendue of the pixel.
 
         This is a virtual method to be implemented by derived classes.
 
         Runs during the observe() loop to generate the rays. Allows observers to customise how they launch rays.
 
         This method must return a list of tuples, with each tuple containing
-        a ray object and a corresponding projected area weight (direction cosine).
+        a Ray object and a corresponding projected area weight (direction cosine).
 
         If the projected area weight is not required (due to the ray sampling
         algorithm taking the weighting into account in the distribution e.g.
@@ -405,7 +406,6 @@ class Observer2D(Observer):
         """
 
         raise NotImplementedError("To be defined in subclass.")
-
 
     ###################
     # CONSUMER THREAD #
@@ -491,7 +491,7 @@ class Observer2D(Observer):
 
 
 from raysect.core import Point3D, Vector3D
-from .point_generator import Rectangle
+from raysect.optical.observer.old.point_generator import Rectangle
 from .frame import Frame2D
 from math import pi, tan
 
