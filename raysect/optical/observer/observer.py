@@ -27,165 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from random import shuffle
-
-import matplotlib.pyplot as plt
-import numpy as np
-
 from raysect.core.workflow import MulticoreEngine
 from raysect.optical import Ray
-from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz
-from raysect.optical.observer.frame import Pixel
 from raysect.optical.scenegraph import Observer, World
-
-
-class Pipeline2D:
-    """
-    base class defining the core interfaces to define an image processing pipeline
-    """
-
-    def initialise(self, pixels, ray_templates):
-        """
-        setup internal buffers (e.g. frames)
-        reset internal statistics as appropriate
-        etc..
-
-        :return:
-        """
-        pass
-
-    def pixel_processor(self, channel):
-        pass
-
-    def update(self, pixel, packed_result, channel):
-        pass
-
-    def finalise(self):
-        pass
-
-
-class PixelProcessor:
-
-    def add_sample(self, spectrum):
-        pass
-
-    def pack_results(self):
-        pass
-
-
-class RGBPipeline2D(Pipeline2D):
-
-    def initialise(self, pixels, ray_templates):
-
-        # create intermediate and final frame-buffers
-        # if not self.accumulate:
-        self.xyz_frame = Frame2D(pixels, channels=3)
-        self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
-
-        # generate resampled XYZ curves for ray spectral ranges
-        self._resampled_xyz = [resample_ciexyz(ray.min_wavelength, ray.max_wavelength, ray.num_samples) for ray in ray_templates]
-
-        # TODO - add statistics and display initialisation
-
-    def pixel_processor(self, channel):
-        return XYZPixelProcessor(self._resampled_xyz[channel])
-
-    def update(self, pixel_id, packed_result, channel):
-
-        # obtain result
-        x, y = pixel_id
-        mean, variance, samples = packed_result
-
-        self.xyz_frame.combine_samples(x, y, 0, mean[0], variance[0], samples[0])
-        self.xyz_frame.combine_samples(x, y, 1, mean[1], variance[1], samples[1])
-        self.xyz_frame.combine_samples(x, y, 2, mean[2], variance[2], samples[2])
-
-        # update users
-        # self._update_display()
-        # self._update_statistics(channel, x, y, sample_ray_count)
-
-    def finalise(self):
-
-        plt.figure(1)
-        plt.clf()
-        img = np.transpose(10 * self.xyz_frame.value/self.xyz_frame.value.max(), (1, 0, 2))
-        img[img > 1.0] = 1.0
-        plt.imshow(img, aspect="equal", origin="upper")
-        plt.draw()
-        plt.show()
-
-        # workaround for interactivity for QT backend
-        plt.pause(0.1)
-
-
-class XYZPixelProcessor(PixelProcessor):
-
-    def __init__(self, resampled_xyz):
-        self._resampled_xyz = resampled_xyz
-        self._xyz = Pixel(channels=3)
-
-    def add_sample(self, spectrum):
-        # convert spectrum to CIE XYZ and add sample to pixel buffer
-        x, y, z = spectrum_to_ciexyz(spectrum, self._resampled_xyz)
-        self._xyz.add_sample(0, x)
-        self._xyz.add_sample(1, y)
-        self._xyz.add_sample(2, z)
-
-    def pack_results(self):
-
-        mean = (self._xyz.value[0], self._xyz.value[1], self._xyz.value[2])
-        variance = (self._xyz.variance[0], self._xyz.variance[1], self._xyz.variance[2])
-        samples = (self._xyz.samples[0], self._xyz.samples[1], self._xyz.samples[2])
-
-        return mean, variance, samples
-
-
-class FrameSampler:
-
-    def generate_tasks(self, pixels):
-        pass
-
-
-class FullFrameSampler(FrameSampler):
-
-    def generate_tasks(self, pixels):
-
-        tasks = []
-        nx, ny = pixels
-        for iy in range(ny):
-            for ix in range(nx):
-                tasks.append((ix, iy))
-
-        # perform tasks in random order so that image is assembled randomly rather than sequentially
-        shuffle(tasks)
-
-        return tasks
-
-
-# TODO - add Adaptive Sampler
-# class AdaptiveSampler(FrameSampler):
-#
-#     def generate_tasks(self, pixels):
-#
-#         # build task list -> task is simply the pixel location
-#         tasks = []
-#         nx, ny = pixels
-#         f = self.xyz_frame
-#         i = f.value > 0
-#         norm_frame_var = np.zeros((pixels[0], pixels[1], 3))
-#         norm_frame_var[i] = f.variance[i]
-#         # norm_frame_var[i] = np.minimum(f.variance[i], f.variance[i] / f.value[i]**2)
-#         max_frame_samples = f.samples.max()
-#         percentile_frame_variance = np.percentile(norm_frame_var, 80)
-#         for iy in range(ny):
-#             for ix in range(nx):
-#                 min_pixel_samples = self.xyz_frame.samples[ix, iy, :].min()
-#                 max_pixel_variance = norm_frame_var[ix, iy, :].max()
-#                 if min_pixel_samples < 1000*self.spectral_rays or \
-#                     min_pixel_samples <= 0.1 * max_frame_samples or \
-#                     max_pixel_variance >= percentile_frame_variance:
-#                     tasks.append((ix, iy))
-
 
 
 class Observer2D(Observer):
@@ -263,9 +107,6 @@ class Observer2D(Observer):
         # must be connected to a world node to be able to perform a ray trace
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
-
-        if self.min_wavelength >= self.max_wavelength:
-            raise RuntimeError("Min wavelength is superior to max wavelength!")
 
         # TODO - initialise workflow statistics
 
@@ -493,6 +334,8 @@ class Observer2D(Observer):
 from raysect.core import Point3D, Vector3D
 from raysect.optical.observer.old.point_generator import Rectangle
 from .frame import Frame2D
+from .sampler import FullFrameSampler
+from .pipeline import RGBPipeline2D
 from math import pi, tan
 
 
