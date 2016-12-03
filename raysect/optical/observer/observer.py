@@ -30,6 +30,7 @@
 from raysect.core.workflow import MulticoreEngine
 from raysect.optical import Ray
 from raysect.optical.scenegraph import Observer, World
+from time import time
 
 
 class Observer2D(Observer):
@@ -96,8 +97,8 @@ class Observer2D(Observer):
         # self.display_update_time = display_update_time
 
         # camera configuration
-        self.pixels = (256, 256)
-        self.pixel_samples = 100
+        self.pixels = (32, 32)
+        self.pixel_samples = 250
         # self.pixels = pixels
         # self.pixel_samples = pixel_samples
 
@@ -108,8 +109,6 @@ class Observer2D(Observer):
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
-        # TODO - initialise workflow statistics
-
         # generate ray templates
         ray_templates = self._generate_ray_templates()
 
@@ -119,11 +118,15 @@ class Observer2D(Observer):
 
         tasks = self.frame_sampler.generate_tasks(self.pixels)
 
+        # initialise statistics with total task count
+        self._initialise_statistics(tasks)
+        # todo: initialise_pipeline_display()
+
         # render
         for channel, ray_template in enumerate(ray_templates):
 
             self.render_engine.run(
-                tasks, self._render_pixel, self._update_pipelines,
+                tasks, self._render_pixel, self._update_state,
                 render_args=(ray_template, channel),
                 update_args=(channel, )
             )
@@ -131,6 +134,10 @@ class Observer2D(Observer):
         # close pipelines
         for pipeline in self.pipelines:
             pipeline.finalise()
+
+        # close statistics
+        self._finalise_statistics()
+        # todo: finalise_display()
 
     def _generate_ray_templates(self):
 
@@ -231,7 +238,7 @@ class Observer2D(Observer):
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
 
-        :param int ix: Index of this pixel along the images' x axis.
+        :param int pixel_id: Index of this pixel along the images' x axis.
         :param int iy: Index of this pixel along the images' y axis.
         :param Ray ray_template: A Ray object from which spectral settings can be propagated.
         :return list Rays: A list of tuples.
@@ -252,7 +259,7 @@ class Observer2D(Observer):
     # CONSUMER THREAD #
     ###################
 
-    def _update_pipelines(self, packed_result, channel):
+    def _update_state(self, packed_result, channel):
         """
         - unpack pixel ID and pipeline result tuples.
         - pass results to each pipeline to update pipelines internal state
@@ -270,65 +277,48 @@ class Observer2D(Observer):
             pipeline.update(pixel_id, result, channel)
 
         # update users
-        # TODO - add statistics
+        self._update_statistics(ray_count)
 
-    # def _start_statistics(self):
-    #     """
-    #     Initialise statistics.
-    #     """
-    #
-    #     total_pixels = self._pixels[0] * self._pixels[1]
-    #     total_work = total_pixels * self.spectral_rays
-    #     ray_count = 0
-    #     start_time = time()
-    #     progress_timer = time()
-    #     self.__statistics_data = (total_work, total_pixels, ray_count, start_time, progress_timer)
-    #
-    #     for pipeline in self.processing_pipelines:
-    #         pipeline.start_statistics()
-    #
-    # def _update_statistics(self, channel, x, y, sample_ray_count):
-    #     """
-    #     Display progress statistics.
-    #     """
-    #
-    #     total_work, total_pixels, ray_count, start_time, progress_timer = self.__statistics_data
-    #     ray_count += sample_ray_count
-    #     nx, ny = self._pixels
-    #     pixel = y*ny + x
-    #
-    #     if (time() - progress_timer) > 1.0:
-    #
-    #         current_work = total_pixels * channel + pixel
-    #         completion = 100 * current_work / total_work
-    #         print("{:0.2f}% complete (channel {}/{}, line {}/{}, pixel {}/{}, {:0.1f}k rays)".format(
-    #             completion,
-    #             channel + 1, self.spectral_rays,
-    #             ceil((pixel + 1) / nx), ny,
-    #             pixel + 1, total_pixels, ray_count / 1000
-    #
-    #         # update pipeline statistics
-    #         for pipeline in self.processing_pipelines:
-    #             pipeline.update_statistics()
-    #
-    #         ray_count = 0
-    #         progress_timer = time()
-    #
-    #     self.__statistics_data = (total_work, total_pixels, ray_count, start_time, progress_timer)
-    #
-    # def _final_statistics(self):
-    #     """
-    #     Final statistics output.
-    #     """
-    #
-    #     for pipeline in self.processing_pipelines:
-    #         pipeline.final_statistics()
-    #
-    #     _, _, _, start_time, _ = self.__statistics_data
-    #     elapsed_time = time() - start_time
-    #     print("Render complete - time elapsed {:0.3f}s".format(elapsed_time))
+    def _initialise_statistics(self, tasks):
+        """
+        Initialise statistics.
+        """
 
+        self._stats_ray_count = 0
+        self._stats_total_rays = 0
+        self._stats_start_time = time()
+        self._stats_progress_timer = time()
+        self._stats_total_tasks = len(tasks) * self.spectral_rays
+        self._stats_completed_tasks = 0
 
+    def _update_statistics(self, sample_ray_count):
+        """
+        Display progress statistics.
+        """
+
+        self._stats_completed_tasks += 1
+        self._stats_ray_count += sample_ray_count
+        self._stats_total_rays += sample_ray_count
+
+        if (time() - self._stats_progress_timer) > 1.0:
+
+            current_time = time() - self._stats_start_time
+            completion = 100 * self._stats_completed_tasks / self._stats_total_tasks
+            print("Render time: {:0.3f}s ({:0.2f}% complete, {:0.1f}k rays)".format(
+                current_time, completion, self._stats_ray_count / 1000))
+
+            self._stats_ray_count = 0
+            self._stats_progress_timer = time()
+
+    def _finalise_statistics(self):
+        """
+        Final statistics output.
+        """
+
+        elapsed_time = time() - self._stats_start_time
+        mean_rays_per_sec = self._stats_total_rays / elapsed_time
+        print("Render complete - time elapsed {:0.3f}s - {:0.1f}k rays/s".format(
+            elapsed_time, mean_rays_per_sec / 1000))
 
 
 from raysect.core import Point3D, Vector3D
