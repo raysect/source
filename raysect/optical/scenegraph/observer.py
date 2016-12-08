@@ -29,11 +29,14 @@
 
 from raysect.core.workflow import MulticoreEngine
 from raysect.optical import Ray
-from raysect.optical.scenegraph import Observer, World
+from raysect.optical import World
+from raysect.core import Observer as CoreObserver
 from time import time
 
+# TODO: cythonise me!
 
-class Observer2D(Observer):
+
+class Observer(CoreObserver):
     """
     - Needs to know about mean, max, min wavelength, number of samples, rays.
     - Things it will do:
@@ -76,9 +79,9 @@ class Observer2D(Observer):
         self.spectral_samples = 15
         self.min_wavelength = 375.0
         self.max_wavelength = 740.0
-        self.ray_extinction_prob = 0.1
+        self.ray_extinction_prob = 0.01
         self.ray_min_depth = 3
-        self.ray_max_depth = 100
+        self.ray_max_depth = 500
         self.ray_importance_sampling = True
         self.ray_important_path_weight = 0.2
 
@@ -97,7 +100,7 @@ class Observer2D(Observer):
         # self.display_update_time = display_update_time
 
         # camera configuration
-        self.pixels = (32, 32)
+        self.pixels = (64, 64)
         self.pixel_samples = 250
         # self.pixels = pixels
         # self.pixel_samples = pixel_samples
@@ -120,7 +123,6 @@ class Observer2D(Observer):
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)
-        # todo: initialise_pipeline_display()
 
         # render
         for channel, ray_template in enumerate(ray_templates):
@@ -137,7 +139,6 @@ class Observer2D(Observer):
 
         # close statistics
         self._finalise_statistics()
-        # todo: finalise_display()
 
     def _generate_ray_templates(self):
 
@@ -238,8 +239,7 @@ class Observer2D(Observer):
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
 
-        :param int pixel_id: Index of this pixel along the images' x axis.
-        :param int iy: Index of this pixel along the images' y axis.
+        :param tuple pixel_id:
         :param Ray ray_template: A Ray object from which spectral settings can be propagated.
         :return list Rays: A list of tuples.
         """
@@ -320,87 +320,3 @@ class Observer2D(Observer):
         print("Render complete - time elapsed {:0.3f}s - {:0.1f}k rays/s".format(
             elapsed_time, mean_rays_per_sec / 1000))
 
-
-from raysect.core import Point3D, Vector3D
-from raysect.optical.observer.old.point_generator import Rectangle
-from .frame import Frame2D
-from .sampler import FullFrameSampler
-from .pipeline import RGBPipeline2D
-from math import pi, tan
-
-
-class PinholeCamera(Observer2D):
-    """
-    An observer that models an idealised pinhole camera.
-
-    A simple camera that launches rays from the observer's origin point over a
-    specified field of view.
-
-    Arguments and attributes are inherited from the base Imaging sensor class.
-
-    :param double fov: The field of view of the camera in degrees (default is 90 degrees).
-    """
-
-    def __init__(self, parent=None, transform=None, name=None):
-
-        super().__init__(FullFrameSampler(), [RGBPipeline2D()],
-                         parent=parent, transform=transform, name=name)
-
-        self._fov = 45
-        self._update_image_geometry()
-
-    def _update_image_geometry(self):
-
-        max_pixels = max(self.pixels)
-
-        if max_pixels > 1:
-
-            # Get width of image plane at a distance of 1m from aperture.
-            image_max_width = 2 * tan(pi / 180 * 0.5 * self._fov)
-
-            # set pixel step size in image plane
-            self.image_delta = image_delta = image_max_width / max_pixels
-
-            self.image_start_x = 0.5 * self.pixels[0] * image_delta
-            self.image_start_y = 0.5 * self.pixels[1] * image_delta
-
-            # rebuild point generator
-            self.point_generator = Rectangle(self.image_delta, self.image_delta)
-
-        else:
-            raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
-
-    def _generate_rays(self, pixel_id, ray_template):
-
-        # unpack pixel co-ordinates
-        ix, iy = pixel_id
-
-        # generate pixel transform
-        pixel_x = self.image_start_x - self.image_delta * ix
-        pixel_y = self.image_start_y - self.image_delta * iy
-        pixel_centre = Point3D(pixel_x, pixel_y, 1)
-
-        points = self.point_generator(self.pixel_samples)
-
-        # assemble rays
-        rays = []
-        for point in points:
-
-            # calculate point in virtual image plane to be used for ray direction
-            origin = Point3D()
-            direction = Vector3D(
-                point.x + pixel_centre.x,
-                point.y + pixel_centre.y,
-                point.z + pixel_centre.z
-            ).normalise()
-
-            ray = ray_template.copy(origin, direction)
-
-            # projected area weight is normal.incident which simplifies
-            # to incident.z here as the normal is (0, 0 ,1)
-            rays.append((ray, direction.z))
-
-        return rays
-
-    def _pixel_etendue(self, pixel_id):
-        return 1.0

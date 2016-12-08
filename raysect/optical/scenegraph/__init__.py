@@ -29,5 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.scenegraph import Primitive, Observer, Node
+from raysect.core.scenegraph import Primitive, Node
+from .observer import Observer
 from .world import World
