@@ -29,13 +29,20 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from time import time
 
-from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz
+from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.optical.observer.frame import Frame2D, Pixel
 from raysect.optical.observer.observer2d import Pipeline2D, PixelProcessor
 
 
 class RGBPipeline2D(Pipeline2D):
+
+    def __init__(self, sensitivity=1.0, display_progress=True, display_update_time=5):
+        self.sensitivity = sensitivity
+        self.display_progress = display_progress
+        self._display_timer = 0
+        self.display_update_time = display_update_time
 
     def initialise(self, pixels, spectral_fragments):
 
@@ -50,7 +57,7 @@ class RGBPipeline2D(Pipeline2D):
             id, _, _, num_samples, min_wavelength, max_wavelength = fragment
             self._resampled_xyz[id] = resample_ciexyz(min_wavelength, max_wavelength, num_samples)
 
-        # TODO - add statistics and display initialisation
+        self._start_display()
 
     def pixel_processor(self, fragment):
         id, _, _, _, _, _ = fragment
@@ -67,21 +74,74 @@ class RGBPipeline2D(Pipeline2D):
         self.xyz_frame.combine_samples(x, y, 2, mean[2], variance[2], samples[2])
 
         # update users
-        # self._update_display()
+        self._update_display()
         # self._update_statistics(channel, x, y, sample_ray_count)
 
     def finalise(self):
 
-        plt.figure(1)
+        self._generate_srgb_frame()
+
+        if self.display_progress:
+            self.display()
+
+    def _generate_srgb_frame(self):
+
+        # TODO - re-add exposure handlers
+
+        # Apply sensitivity to each pixel and convert to sRGB colour-space
+        nx, ny, _ = self.rgb_frame.shape
+        for iy in range(ny):
+            for ix in range(nx):
+
+                rgb = ciexyz_to_srgb(
+                    self.xyz_frame.value[iy, ix, 0] * self.sensitivity,
+                    self.xyz_frame.value[iy, ix, 1] * self.sensitivity,
+                    self.xyz_frame.value[iy, ix, 2] * self.sensitivity
+                )
+
+                self.rgb_frame[iy, ix, 0] = rgb[0]
+                self.rgb_frame[iy, ix, 1] = rgb[1]
+                self.rgb_frame[iy, ix, 2] = rgb[2]
+
+    def _start_display(self):
+        """
+        Display live render.
+        """
+
+        self._display_timer = 0
+        if self.display_progress:
+            self.display()
+            self._display_timer = time()
+
+    def _update_display(self):
+        """
+        Update live render.
+        """
+
+        # update live render display
+        if self.display_progress and (time() - self._display_timer) > self.display_update_time:
+
+            print("RGBPipeline2D updating display...")
+            self._generate_srgb_frame()
+            self.display()
+            self._display_timer = time()
+
+    def display(self):
         plt.clf()
-        img = np.transpose(10 * self.xyz_frame.value/self.xyz_frame.value.max(), (1, 0, 2))
-        img[img > 1.0] = 1.0
-        plt.imshow(img, aspect="equal", origin="upper")
+        plt.imshow(np.transpose(self.rgb_frame, (1, 0, 2)), aspect="equal", origin="upper")
         plt.draw()
         plt.show()
 
         # workaround for interactivity for QT backend
         plt.pause(0.1)
+
+    def save(self, filename):
+        """
+        Save the collected samples in the camera frame to file.
+        :param str filename: Filename and path for camera frame output file.
+        """
+        plt.imsave(filename, np.transpose(self.rgb_frame, (1, 0, 2)))
+
 
 
 class XYZPixelProcessor(PixelProcessor):
