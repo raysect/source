@@ -78,18 +78,16 @@ class RGBPipeline2D(Pipeline2D):
         self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
 
         # generate pixel processors for each fragment
-        self._pixel_processors = {}
+        self._resampled_xyz = {}
         for fragment in spectral_fragments:
             id, _, _, num_samples, min_wavelength, max_wavelength = fragment
-            self._pixel_processors[id] = XYZPixelProcessor(
-                resample_ciexyz(min_wavelength, max_wavelength, num_samples)
-            )
+            self._resampled_xyz[id] = resample_ciexyz(min_wavelength, max_wavelength, num_samples)
 
         # TODO - add statistics and display initialisation
 
     def pixel_processor(self, fragment):
         id, _, _, _, _, _ = fragment
-        return self._pixel_processors[id]
+        return XYZPixelProcessor(self._resampled_xyz[id])
 
     def update(self, pixel_id, packed_result, fragment):
 
@@ -109,7 +107,7 @@ class RGBPipeline2D(Pipeline2D):
 
         plt.figure(1)
         plt.clf()
-        img = np.transpose(self.xyz_frame.value/self.xyz_frame.value.max(), (1, 0, 2))
+        img = np.transpose(10 * self.xyz_frame.value/self.xyz_frame.value.max(), (1, 0, 2))
         img[img > 1.0] = 1.0
         plt.imshow(img, aspect="equal", origin="upper")
         plt.draw()
