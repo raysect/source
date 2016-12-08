@@ -30,13 +30,13 @@
 from raysect.core import Point3D, Vector3D
 from raysect.optical.observer.old.point_generator import Rectangle
 from .frame import Frame2D
-from .sampler import FullFrameSampler
-from .pipeline import RGBPipeline2D
 from math import pi, tan
-from raysect.optical import Observer
+from raysect.optical.observer.observer2d import Observer2D
+from raysect.optical.observer.sampler2d import FullFrameSampler2D
+from raysect.optical.observer.pipeline2d import RGBPipeline2D
 
 
-class PinholeCamera(Observer):
+class PinholeCamera(Observer2D):
     """
     An observer that models an idealised pinhole camera.
 
@@ -48,9 +48,9 @@ class PinholeCamera(Observer):
     :param double fov: The field of view of the camera in degrees (default is 90 degrees).
     """
 
-    def __init__(self, parent=None, transform=None, name=None):
+    def __init__(self, pixels, parent=None, transform=None, name=None):
 
-        super().__init__(FullFrameSampler(), [RGBPipeline2D()],
+        super().__init__(pixels, FullFrameSampler2D(), [RGBPipeline2D()],
                          parent=parent, transform=transform, name=name)
 
         self._fov = 45

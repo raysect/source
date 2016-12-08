@@ -125,7 +125,7 @@ from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
 from raysect.core.workflow import SerialEngine
 
 # create and setup the camera
-camera = PinholeCamera(parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
+camera = PinholeCamera((256, 256), parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
 # camera.render_engine = SerialEngine()
 
 # camera.ray_importance_sampling = True

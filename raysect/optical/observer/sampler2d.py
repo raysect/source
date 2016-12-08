@@ -28,10 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from random import shuffle
-from .base import _FrameSamplerBase
+from .observer2d import FrameSampler2D
 
 
-class FullFrameSampler(_FrameSamplerBase):
+class FullFrameSampler2D(FrameSampler2D):
 
     def generate_tasks(self, pixels):
 
@@ -48,7 +48,7 @@ class FullFrameSampler(_FrameSamplerBase):
 
 
 # TODO - add Adaptive Sampler
-# class AdaptiveSampler(FrameSampler):
+# class AdaptiveSampler2D(FrameSampler):
 #
 #     def generate_tasks(self, pixels):
 #

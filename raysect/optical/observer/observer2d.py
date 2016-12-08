@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.base import _ObserverBase, _FrameSamplerBase, _PipelineBase
+from raysect.optical.observer.base import _ObserverBase, _FrameSamplerBase, _PipelineBase, PixelProcessor
 
 
 class FrameSampler2D(_FrameSamplerBase):
@@ -65,11 +65,11 @@ class Observer2D(_ObserverBase):
 
         self.pixels = pixels
         self.frame_sampler = frame_sampler
-        self.processing_pipelines = processing_pipelines
+        self.pipelines = processing_pipelines
 
     @property
     def pixels(self):
-        return self._pixels
+        return self._pixel_config
 
     @pixels.setter
     def pixels(self, value):
@@ -81,7 +81,7 @@ class Observer2D(_ObserverBase):
             raise ValueError("Number of x pixels must be greater than 0.")
         if y <= 0:
             raise ValueError("Number of y pixels must be greater than 0.")
-        self._pixels = value
+        self._pixel_config = value
 
     @property
     def frame_sampler(self):

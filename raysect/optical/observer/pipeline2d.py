@@ -32,40 +32,7 @@ import numpy as np
 
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz
 from raysect.optical.observer.frame import Frame2D, Pixel
-
-
-class Pipeline2D:
-    """
-    base class defining the core interfaces to define an image processing pipeline
-    """
-
-    def initialise(self, pixels, spectral_fragments):
-        """
-        setup internal buffers (e.g. frames)
-        reset internal statistics as appropriate
-        etc..
-
-        :return:
-        """
-        pass
-
-    def pixel_processor(self, fragment):
-        pass
-
-    def update(self, pixel, packed_result, fragment):
-        pass
-
-    def finalise(self):
-        pass
-
-
-class PixelProcessor:
-
-    def add_sample(self, spectrum):
-        pass
-
-    def pack_results(self):
-        pass
+from raysect.optical.observer.observer2d import Pipeline2D, PixelProcessor
 
 
 class RGBPipeline2D(Pipeline2D):

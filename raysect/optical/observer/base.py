@@ -39,6 +39,15 @@ from time import time
 # TODO: relabel SpectralFragment as SpectralSlice
 
 
+class PixelProcessor:
+
+    def add_sample(self, spectrum):
+        pass
+
+    def pack_results(self):
+        pass
+
+
 # TODO - raise not implemented exceptions
 class _FrameSamplerBase:
 
@@ -198,7 +207,7 @@ class _ObserverBase(Observer):
     def ray_min_depth(self, value):
         if value < 0:
             raise ValueError("Minimum ray depth cannot be less than 0.")
-        if value > self._max_ray_depth:
+        if value > self._ray_max_depth:
             raise ValueError("Minimum ray depth cannot be greater than maximum ray depth.")
         self._ray_min_depth = value
 
@@ -210,7 +219,7 @@ class _ObserverBase(Observer):
     def ray_max_depth(self, value):
         if value < 0:
             raise ValueError("Maximum ray depth cannot be less than 0.")
-        if value < self._min_ray_depth:
+        if value < self._ray_min_depth:
             raise ValueError("Maximum ray depth cannot be less than minimum ray depth.")
         self._ray_max_depth = value
 
