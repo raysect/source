@@ -28,15 +28,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from random import shuffle
+from .base import _FrameSamplerBase
 
 
-class FrameSampler:
-
-    def generate_tasks(self, pixels):
-        pass
-
-
-class FullFrameSampler(FrameSampler):
+class FullFrameSampler(_FrameSamplerBase):
 
     def generate_tasks(self, pixels):
 

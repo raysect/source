@@ -30,14 +30,49 @@
 from raysect.core.workflow import MulticoreEngine
 from raysect.optical.ray import Ray
 from raysect.optical.scenegraph.world import World
-from raysect.core import Observer as CoreObserver
+from raysect.optical.scenegraph import Observer
 from time import time
 
 # TODO: cythonise me!
 # TODO: convert fragment tuple to a cdef class - SpectralFragment?
 # TODO: also... create a SpectralConfig to hold the commonly used min, max lambda and num_samples? This would tidy up a lot of material code too...
+# TODO: relabel SpectralFragment as SpectralSlice
 
-class Observer(CoreObserver):
+
+# TODO - raise not implemented exceptions
+class _FrameSamplerBase:
+
+    def generate_tasks(self, pixels):
+        pass
+
+
+# TODO - raise not implemented exceptions
+class _PipelineBase:
+    """
+    base class defining the core interfaces to define an image processing pipeline
+    """
+
+    def initialise(self, pixel_config, spectral_fragments):
+        """
+        setup internal buffers (e.g. frames)
+        reset internal statistics as appropriate
+        etc..
+
+        :return:
+        """
+        pass
+
+    def pixel_processor(self, fragment):
+        pass
+
+    def update(self, pixel, packed_result, fragment):
+        pass
+
+    def finalise(self):
+        pass
+
+
+class _ObserverBase(Observer):
     """
     - Needs to know about mean, max, min wavelength, number of samples, rays.
     - Things it will do:
@@ -66,45 +101,132 @@ class Observer(CoreObserver):
         - save state for each pipeline as required.
     """
 
-    def __init__(self, frame_sampler, processing_pipelines, render_engine=None, parent=None, transform=None, name=None):
+    def __init__(self, pixel_config, frame_sampler, processing_pipelines, render_engine=None, parent=None,
+                 transform=None, name=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
+                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_min_depth=None,
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(parent, transform, name)
 
-        # TODO - add validation
+        self.pixel_config = pixel_config
+        self.pixel_samples = pixel_samples or 100
+
         self.frame_sampler = frame_sampler
         self.pipelines = processing_pipelines
         self.render_engine = render_engine or MulticoreEngine()
 
-        # ray configuration
-        self.spectral_rays = 1
-        self.spectral_samples = 15
-        self.min_wavelength = 375.0
-        self.max_wavelength = 740.0
-        self.ray_extinction_prob = 0.01
-        self.ray_min_depth = 3
-        self.ray_max_depth = 500
-        self.ray_importance_sampling = True
-        self.ray_important_path_weight = 0.2
+        # preset internal values to satisfy property dependencies
+        self._min_wavelength = 0
+        self._ray_min_depth = 0
 
-        # self.spectral_rays = spectral_rays
-        # self.spectral_samples = spectral_samples
-        # self.min_wavelength = min_wavelength
-        # self.max_wavelength = max_wavelength
-        # self.ray_extinction_prob = ray_extinction_prob
-        # self.ray_min_depth = ray_min_depth
-        # self.ray_max_depth = ray_max_depth
-        # self.ray_importance_sampling = ray_importance_sampling
-        # self.ray_important_path_weight = ray_important_path_weight
+        # ray configuration (order matters due to property dependencies)
+        self.spectral_samples = spectral_samples or 15
+        self.spectral_rays = spectral_rays or 1
+        self.max_wavelength = max_wavelength or 740.0
+        self.min_wavelength = min_wavelength or 375.0
+        self.ray_extinction_prob = ray_extinction_prob or 0.01
+        self.ray_max_depth = ray_max_depth or 500
+        self.ray_min_depth = ray_min_depth or 3
+        self.ray_importance_sampling = ray_importance_sampling or True
+        self.ray_important_path_weight = ray_important_path_weight or 0.2
 
-        # progress information
-        # self.display_progress = display_progress
-        # self.display_update_time = display_update_time
+    @property
+    def pixel_samples(self):
+        return self._pixel_samples
 
-        # camera configuration
-        self.pixels = (64, 64)
-        self.pixel_samples = 50
-        # self.pixels = pixels
-        # self.pixel_samples = pixel_samples
+    @pixel_samples.setter
+    def pixel_samples(self, value):
+        if value <= 0:
+            raise ValueError("The number of pixel samples must be greater than 0.")
+        self._pixel_samples = value
+
+    @property
+    def spectral_samples(self):
+        return self._spectral_samples
+
+    @spectral_samples.setter
+    def spectral_samples(self, value):
+        if value <= 0:
+            raise ValueError("The number of spectral samples must be greater than 0.")
+        self._spectral_samples = value
+
+    @property
+    def spectral_rays(self):
+        return self._spectral_rays
+
+    @spectral_rays.setter
+    def spectral_rays(self, value):
+        if not 0 < value <= self.spectral_samples:
+            raise ValueError("The number of spectral rays must be in the range [1, spectral_samples].")
+        self._spectral_rays = value
+
+    @property
+    def min_wavelength(self):
+        return self._min_wavelength
+
+    @min_wavelength.setter
+    def min_wavelength(self, value):
+        if value <= 0:
+            raise ValueError("The minimum wavelength must be greater than 0.")
+        if value >= self._max_wavelength:
+            raise ValueError("The minimum wavelength must be less than the maximum wavelength.")
+        self._min_wavelength = value
+
+    @property
+    def max_wavelength(self):
+        return self._max_wavelength
+
+    @max_wavelength.setter
+    def max_wavelength(self, value):
+        if value <= 0:
+            raise ValueError("The maximum wavelength must be greater than 0.")
+        if value <= self._min_wavelength:
+            raise ValueError("The maximum wavelength must be greater than the minimum wavelength.")
+        self._max_wavelength = value
+
+    @property
+    def ray_extinction_prob(self):
+        return self._ray_extinction_prob
+
+    @ray_extinction_prob.setter
+    def ray_extinction_prob(self, value):
+        if not 0 <= value <= 1:
+            raise ValueError("The ray extinction probability must be in the range [0, 1].")
+        self._ray_extinction_prob = value
+
+    @property
+    def ray_min_depth(self):
+        return self._ray_min_depth
+
+    @ray_min_depth.setter
+    def ray_min_depth(self, value):
+        if value < 0:
+            raise ValueError("Minimum ray depth cannot be less than 0.")
+        if value > self._max_ray_depth:
+            raise ValueError("Minimum ray depth cannot be greater than maximum ray depth.")
+        self._ray_min_depth = value
+
+    @property
+    def ray_max_depth(self):
+        return self._ray_max_depth
+
+    @ray_max_depth.setter
+    def ray_max_depth(self, value):
+        if value < 0:
+            raise ValueError("Maximum ray depth cannot be less than 0.")
+        if value < self._min_ray_depth:
+            raise ValueError("Maximum ray depth cannot be less than minimum ray depth.")
+        self._ray_max_depth = value
+
+    @property
+    def ray_important_path_weight(self):
+        return self._ray_important_path_weight
+
+    @ray_important_path_weight.setter
+    def ray_important_path_weight(self, value):
+        if not 0 <= value <= 1:
+            raise ValueError("The ray important path weight must be in the range [0, 1].")
+        self._ray_important_path_weight = value
 
     def observe(self):
         """ Ask this Camera to Observe its world. """
@@ -118,9 +240,9 @@ class Observer(CoreObserver):
 
         # initialise pipelines for rendering
         for pipeline in self.pipelines:
-            pipeline.initialise(self.pixels, fragments)
+            pipeline.initialise(self.pixel_config, fragments)
 
-        tasks = self.frame_sampler.generate_tasks(self.pixels)
+        tasks = self.frame_sampler.generate_tasks(self.pixel_config)
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)
@@ -130,8 +252,8 @@ class Observer(CoreObserver):
 
             self.render_engine.run(
                 tasks, self._render_pixel, self._update_state,
-                render_args=(fragment, ),   # todo: pass in spectral configuration for full problem?
-                update_args=(fragment, )    # todo: pass in spectral configuration for full problem?
+                render_args=(fragment, ),
+                update_args=(fragment, )
             )
 
         # close pipelines

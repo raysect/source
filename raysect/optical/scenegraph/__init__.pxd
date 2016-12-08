@@ -29,8 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.scenegraph cimport Node, Primitive, BridgeNode, ChangeSignal
-# from raysect.optical.scenegraph.observer cimport Observer
+from raysect.core.scenegraph cimport Node, Primitive, Observer, BridgeNode, ChangeSignal
 from raysect.optical.scenegraph.world cimport World
 
 
