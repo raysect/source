@@ -1,4 +1,4 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -101,18 +101,14 @@ class _ObserverBase(Observer):
         - save state for each pipeline as required.
     """
 
-    def __init__(self, pixel_config, frame_sampler, processing_pipelines, render_engine=None, parent=None,
+    def __init__(self, render_engine=None, parent=None,
                  transform=None, name=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(parent, transform, name)
 
-        self.pixel_config = pixel_config
         self.pixel_samples = pixel_samples or 100
-
-        self.frame_sampler = frame_sampler
-        self.pipelines = processing_pipelines
         self.render_engine = render_engine or MulticoreEngine()
 
         # preset internal values to satisfy property dependencies
@@ -240,9 +236,9 @@ class _ObserverBase(Observer):
 
         # initialise pipelines for rendering
         for pipeline in self.pipelines:
-            pipeline.initialise(self.pixel_config, fragments)
+            pipeline.initialise(self._pixel_config, fragments)
 
-        tasks = self.frame_sampler.generate_tasks(self.pixel_config)
+        tasks = self.frame_sampler.generate_tasks(self._pixel_config)
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)
