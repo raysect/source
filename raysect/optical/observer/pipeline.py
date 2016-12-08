@@ -39,7 +39,7 @@ class Pipeline2D:
     base class defining the core interfaces to define an image processing pipeline
     """
 
-    def initialise(self, pixels, ray_templates):
+    def initialise(self, pixels, spectral_fragments):
         """
         setup internal buffers (e.g. frames)
         reset internal statistics as appropriate
@@ -49,10 +49,10 @@ class Pipeline2D:
         """
         pass
 
-    def pixel_processor(self, channel):
+    def pixel_processor(self, fragment):
         pass
 
-    def update(self, pixel, packed_result, channel):
+    def update(self, pixel, packed_result, fragment):
         pass
 
     def finalise(self):
@@ -70,22 +70,28 @@ class PixelProcessor:
 
 class RGBPipeline2D(Pipeline2D):
 
-    def initialise(self, pixels, ray_templates):
+    def initialise(self, pixels, spectral_fragments):
 
         # create intermediate and final frame-buffers
         # if not self.accumulate:
         self.xyz_frame = Frame2D(pixels, channels=3)
         self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
 
-        # generate resampled XYZ curves for ray spectral ranges
-        self._resampled_xyz = [resample_ciexyz(ray.min_wavelength, ray.max_wavelength, ray.num_samples) for ray in ray_templates]
+        # generate pixel processors for each fragment
+        self._pixel_processors = {}
+        for fragment in spectral_fragments:
+            id, _, _, num_samples, min_wavelength, max_wavelength = fragment
+            self._pixel_processors[id] = XYZPixelProcessor(
+                resample_ciexyz(min_wavelength, max_wavelength, num_samples)
+            )
 
         # TODO - add statistics and display initialisation
 
-    def pixel_processor(self, channel):
-        return XYZPixelProcessor(self._resampled_xyz[channel])
+    def pixel_processor(self, fragment):
+        id, _, _, _, _, _ = fragment
+        return self._pixel_processors[id]
 
-    def update(self, pixel_id, packed_result, channel):
+    def update(self, pixel_id, packed_result, fragment):
 
         # obtain result
         x, y = pixel_id
@@ -103,7 +109,7 @@ class RGBPipeline2D(Pipeline2D):
 
         plt.figure(1)
         plt.clf()
-        img = np.transpose(10 * self.xyz_frame.value/self.xyz_frame.value.max(), (1, 0, 2))
+        img = np.transpose(self.xyz_frame.value/self.xyz_frame.value.max(), (1, 0, 2))
         img[img > 1.0] = 1.0
         plt.imshow(img, aspect="equal", origin="upper")
         plt.draw()

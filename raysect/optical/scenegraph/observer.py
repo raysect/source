@@ -28,13 +28,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.workflow import MulticoreEngine
-from raysect.optical import Ray
-from raysect.optical import World
+from raysect.optical.ray import Ray
+from raysect.optical.scenegraph.world import World
 from raysect.core import Observer as CoreObserver
 from time import time
 
 # TODO: cythonise me!
-
+# TODO: convert fragment tuple to a cdef class - SpectralFragment?
+# TODO: also... create a SpectralConfig to hold the commonly used min, max lambda and num_samples? This would tidy up a lot of material code too...
 
 class Observer(CoreObserver):
     """
@@ -101,7 +102,7 @@ class Observer(CoreObserver):
 
         # camera configuration
         self.pixels = (64, 64)
-        self.pixel_samples = 250
+        self.pixel_samples = 50
         # self.pixels = pixels
         # self.pixel_samples = pixel_samples
 
@@ -112,25 +113,25 @@ class Observer(CoreObserver):
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
-        # generate ray templates
-        ray_templates = self._generate_ray_templates()
+        # generate spectral fragment configuration
+        fragments = self._generate_spectral_fragments()
 
         # initialise pipelines for rendering
         for pipeline in self.pipelines:
-            pipeline.initialise(self.pixels, ray_templates)
+            pipeline.initialise(self.pixels, fragments)
 
         tasks = self.frame_sampler.generate_tasks(self.pixels)
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)
 
-        # render
-        for channel, ray_template in enumerate(ray_templates):
+        # render each spectral fragment
+        for fragment in fragments:
 
             self.render_engine.run(
                 tasks, self._render_pixel, self._update_state,
-                render_args=(ray_template, channel),
-                update_args=(channel, )
+                render_args=(fragment, ),   # todo: pass in spectral configuration for full problem?
+                update_args=(fragment, )    # todo: pass in spectral configuration for full problem?
             )
 
         # close pipelines
@@ -140,7 +141,27 @@ class Observer(CoreObserver):
         # close statistics
         self._finalise_statistics()
 
-    def _generate_ray_templates(self):
+    def _generate_spectral_fragments(self):
+        """
+        Sub-divides the spectral range into smaller wavelength fragments.
+
+        In dispersive rendering, where multiple rays are launched across the full spectral range, each ray samples a small
+        portion of the spectrum. A fragment defines a sub region of the spectral range that is sampled
+        by launching a ray.
+
+        A spectral fragment is a tuple containing the following information:
+
+            fragment = (
+                id,             # numerical index of fragment
+                ray_template,   # ray template configured for fragment
+                offset,         # offset into full spectral sample array
+                num_samples,    # number of samples covered by the fragment
+                min_wavelength, # lower wavelength bound of fragment
+                max_wavelength, # upper wavelength bound of fragment
+            )
+
+        :return: A list of fragment tuples.
+        """
 
         # split spectral bins across rays - non-integer division is handled by
         # rounding up or down the non-integer boundaries between the ray ranges,
@@ -154,28 +175,39 @@ class Observer(CoreObserver):
             ranges.append((start, end))
             start = end
 
-        # build template rays
-        rays = []
+        # build fragments
+        fragments = []
         delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.spectral_samples
-        for start, end in ranges:
-            rays.append(
-                Ray(min_wavelength=self.min_wavelength + delta_wavelength * start,
-                    max_wavelength=self.min_wavelength + delta_wavelength * end,
-                    num_samples=end - start,
-                    extinction_prob=self.ray_extinction_prob,
-                    min_depth=self.ray_min_depth,
-                    max_depth=self.ray_max_depth,
-                    importance_sampling=self.ray_importance_sampling,
-                    important_path_weight=self.ray_important_path_weight)
+        for id, range in enumerate(ranges):
+
+            start, end = range
+
+            # calculate fragment parameters
+            min_wavelength = self.min_wavelength + delta_wavelength * start
+            max_wavelength = self.min_wavelength + delta_wavelength * end
+            num_samples = end - start
+            offset = start
+            ray_template = Ray(
+                min_wavelength=min_wavelength,
+                max_wavelength=max_wavelength,
+                num_samples=num_samples,
+                extinction_prob=self.ray_extinction_prob,
+                min_depth=self.ray_min_depth,
+                max_depth=self.ray_max_depth,
+                importance_sampling=self.ray_importance_sampling,
+                important_path_weight=self.ray_important_path_weight
             )
 
-        return rays
+            fragment = (id, ray_template, offset, num_samples, min_wavelength, max_wavelength)
+            fragments.append(fragment)
+
+        return fragments
 
     #################
     # WORKER THREAD #
     #################
 
-    def _render_pixel(self, pixel_id, ray_template, channel):
+    def _render_pixel(self, pixel_id, fragment):
         """
         - passed in are ray_template and pipeline object references
         - unpack task ID (pixel id)
@@ -192,9 +224,9 @@ class Observer(CoreObserver):
         world = self.root
 
         # generate rays
-        rays = self._generate_rays(pixel_id, ray_template)  # todo: ray_template -> channel_config
+        rays = self._generate_rays(pixel_id, fragment)
 
-        pixel_processors = [pipeline.pixel_processor(channel) for pipeline in self.pipelines]
+        pixel_processors = [pipeline.pixel_processor(fragment) for pipeline in self.pipelines]
 
         # initialise ray statistics
         ray_count = 0
@@ -224,7 +256,7 @@ class Observer(CoreObserver):
 
         return pixel_id, results, ray_count
 
-    def _generate_rays(self, pixel_id, ray_template):
+    def _generate_rays(self, pixel_id, fragment):
         """
         Generate a list of Rays that sample over the etendue of the pixel.
 
@@ -233,15 +265,15 @@ class Observer(CoreObserver):
         Runs during the observe() loop to generate the rays. Allows observers to customise how they launch rays.
 
         This method must return a list of tuples, with each tuple containing
-        a Ray object and a corresponding projected area weight (direction cosine).
+        a Ray object and a corresponding weighting, typically the projected area/direction cosine.
 
         If the projected area weight is not required (due to the ray sampling
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
 
-        :param tuple pixel_id:
-        :param Ray ray_template: A Ray object from which spectral settings can be propagated.
-        :return list Rays: A list of tuples.
+        :param tuple pixel_id: The pixel id.
+        :param tuple fragment: The spectral fragment configuration.
+        :return list: A list of tuples of (ray, weight)
         """
 
         raise NotImplementedError("To be defined in subclass.")
@@ -259,7 +291,7 @@ class Observer(CoreObserver):
     # CONSUMER THREAD #
     ###################
 
-    def _update_state(self, packed_result, channel):
+    def _update_state(self, packed_result, fragment):
         """
         - unpack pixel ID and pipeline result tuples.
         - pass results to each pipeline to update pipelines internal state
@@ -274,7 +306,7 @@ class Observer(CoreObserver):
         pixel_id, results, ray_count = packed_result
 
         for result, pipeline in zip(results, self.pipelines):
-            pipeline.update(pixel_id, result, channel)
+            pipeline.update(pixel_id, result, fragment)
 
         # update users
         self._update_statistics(ray_count)

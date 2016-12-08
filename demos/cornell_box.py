@@ -1,5 +1,5 @@
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
-from raysect.optical.observer import PinholeCamera, AutoExposure
+# from raysect.optical.observer import PinholeCamera, AutoExposure
 from raysect.optical.material import Lambert, UniformSurfaceEmitter
 from raysect.optical.library import *
 from raysect.primitive import Sphere, Box
@@ -107,52 +107,60 @@ light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
           parent=world,
           transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
-          material=RoughTungsten(0.5))
+          # material=RoughTungsten(0.5))
           # material=Lambert())
-          # material=schott("N-BK7"))
+          material=schott("N-BK7"))
 
 sphere = Sphere(0.4,
     parent=world,
     transform=translate(-0.4, -0.6 + 1e-6, -0.4)*rotate(0, 0, 0),
-    material=RoughCopper(0.6))
+    # material=RoughCopper(0.6))
     # material=Lambert())
     # material=Titanium())
-    # material=schott("N-BK7"))
+    material=schott("N-BK7"))
 
+
+from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
+
+from raysect.core.workflow import SerialEngine
 
 # create and setup the camera
-camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
-camera.ray_importance_sampling = True
-camera.ray_important_path_weight = 0.1
-camera.ray_min_depth = 3
-camera.ray_max_depth = 500
-camera.ray_extinction_prob = 0.01
-camera.spectral_rays = 1
-camera.spectral_samples = 21
-camera.pixels = (256, 256)
-camera.pixel_samples = 50
-camera.display_progress = True
-camera.display_update_time = 10
-camera.accumulate = True
-camera.exposure_handler = AutoExposure(0.97)
+camera = PinholeCamera(parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
+# camera.render_engine = SerialEngine()
 
+# camera.ray_importance_sampling = True
+# camera.ray_important_path_weight = 0.1
+# camera.ray_min_depth = 3
+# camera.ray_max_depth = 500
+# camera.ray_extinction_prob = 0.01
+# camera.spectral_rays = 1
+# camera.spectral_samples = 21
+# camera.pixels = (256, 256)
+# camera.pixel_samples = 50
+# camera.display_progress = True
+# camera.display_update_time = 10
+# camera.accumulate = True
+# camera.exposure_handler = AutoExposure(0.97)
+
+# ion()
+camera.observe()
 
 # camera.process_count = 1
 
-# start ray tracing
-ion()
-for p in range(1, 5000):
-    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.spectral_rays))
-    camera.observe()
-    if camera.ray_importance_sampling:
-        name = "cornell_box_mis_{}_samples.png"
-    else:
-        name = "cornell_box_normal_{}_samples.png"
-    camera.save(name.format(camera.accumulated_samples))
-    print()
-
-# display final result
-ioff()
-camera.display()
-show()
+# # start ray tracing
+# ion()
+# for p in range(1, 5000):
+#     print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.spectral_rays))
+#     camera.observe()
+#     if camera.ray_importance_sampling:
+#         name = "cornell_box_mis_{}_samples.png"
+#     else:
+#         name = "cornell_box_normal_{}_samples.png"
+#     camera.save(name.format(camera.accumulated_samples))
+#     print()
+#
+# # display final result
+# ioff()
+# camera.display()
+# show()
 
