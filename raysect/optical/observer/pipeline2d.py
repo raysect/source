@@ -44,26 +44,26 @@ class RGBPipeline2D(Pipeline2D):
         self._display_timer = 0
         self.display_update_time = display_update_time
 
-    def initialise(self, pixels, spectral_fragments):
+    def initialise(self, pixels, spectral_slices):
 
         # create intermediate and final frame-buffers
         # if not self.accumulate:
         self.xyz_frame = Frame2D(pixels, channels=3)
         self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
 
-        # generate pixel processors for each fragment
+        # generate pixel processors for each spectral slice
         self._resampled_xyz = {}
-        for fragment in spectral_fragments:
-            id, _, _, num_samples, min_wavelength, max_wavelength = fragment
+        for slice in spectral_slices:
+            id, _, _, num_samples, min_wavelength, max_wavelength = slice
             self._resampled_xyz[id] = resample_ciexyz(min_wavelength, max_wavelength, num_samples)
 
         self._start_display()
 
-    def pixel_processor(self, fragment):
-        id, _, _, _, _, _ = fragment
+    def pixel_processor(self, slice):
+        id, _, _, _, _, _ = slice
         return XYZPixelProcessor(self._resampled_xyz[id])
 
-    def update(self, pixel_id, packed_result, fragment):
+    def update(self, pixel_id, packed_result, slice):
 
         # obtain result
         x, y = pixel_id

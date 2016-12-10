@@ -61,7 +61,7 @@ class _PipelineBase:
     base class defining the core interfaces to define an image processing pipeline
     """
 
-    def initialise(self, pixel_config, spectral_fragments):
+    def initialise(self, pixel_config, spectral_slices):
         """
         setup internal buffers (e.g. frames)
         reset internal statistics as appropriate
@@ -71,10 +71,10 @@ class _PipelineBase:
         """
         pass
 
-    def pixel_processor(self, fragment):
+    def pixel_processor(self, slice):
         pass
 
-    def update(self, pixel, packed_result, fragment):
+    def update(self, pixel, packed_result, slice):
         pass
 
     def finalise(self):
@@ -240,25 +240,25 @@ class _ObserverBase(Observer):
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
-        # generate spectral fragment configuration
-        fragments = self._generate_spectral_fragments()
+        # generate spectral configuration
+        slices = self._slice_spectum()
 
         # initialise pipelines for rendering
         for pipeline in self.pipelines:
-            pipeline.initialise(self._pixel_config, fragments)
+            pipeline.initialise(self._pixel_config, slices)
 
         tasks = self.frame_sampler.generate_tasks(self._pixel_config)
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)
 
-        # render each spectral fragment
-        for fragment in fragments:
+        # render each spectral slice
+        for slice in slices:
 
             self.render_engine.run(
                 tasks, self._render_pixel, self._update_state,
-                render_args=(fragment, ),
-                update_args=(fragment, )
+                render_args=(slice, ),
+                update_args=(slice, )
             )
 
         # close pipelines
@@ -268,26 +268,26 @@ class _ObserverBase(Observer):
         # close statistics
         self._finalise_statistics()
 
-    def _generate_spectral_fragments(self):
+    def _slice_spectum(self):
         """
-        Sub-divides the spectral range into smaller wavelength fragments.
+        Sub-divides the spectral range into smaller wavelength slices.
 
         In dispersive rendering, where multiple rays are launched across the full spectral range, each ray samples a small
-        portion of the spectrum. A fragment defines a sub region of the spectral range that is sampled
+        portion of the spectrum. A slice defines a sub region of the spectral range that is sampled
         by launching a ray.
 
-        A spectral fragment is a tuple containing the following information:
+        A spectral slice is a tuple containing the following information:
 
-            fragment = (
-                id,             # numerical index of fragment
-                ray_template,   # ray template configured for fragment
+            slice = (
+                id,             # numerical index of slice
+                ray_template,   # ray template configured for slice
                 offset,         # offset into full spectral sample array
-                num_samples,    # number of samples covered by the fragment
-                min_wavelength, # lower wavelength bound of fragment
-                max_wavelength, # upper wavelength bound of fragment
+                num_samples,    # number of samples covered by the slice
+                min_wavelength, # lower wavelength bound of slice
+                max_wavelength, # upper wavelength bound of slice
             )
 
-        :return: A list of fragment tuples.
+        :return: A list of slice tuples.
         """
 
         # split spectral bins across rays - non-integer division is handled by
@@ -302,14 +302,14 @@ class _ObserverBase(Observer):
             ranges.append((start, end))
             start = end
 
-        # build fragments
-        fragments = []
+        # build slices
+        slices = []
         delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.spectral_samples
         for id, range in enumerate(ranges):
 
             start, end = range
 
-            # calculate fragment parameters
+            # calculate slice parameters
             min_wavelength = self.min_wavelength + delta_wavelength * start
             max_wavelength = self.min_wavelength + delta_wavelength * end
             num_samples = end - start
@@ -325,16 +325,16 @@ class _ObserverBase(Observer):
                 important_path_weight=self.ray_important_path_weight
             )
 
-            fragment = (id, ray_template, offset, num_samples, min_wavelength, max_wavelength)
-            fragments.append(fragment)
+            slice = (id, ray_template, offset, num_samples, min_wavelength, max_wavelength)
+            slices.append(slice)
 
-        return fragments
+        return slices
 
     #################
     # WORKER THREAD #
     #################
 
-    def _render_pixel(self, pixel_id, fragment):
+    def _render_pixel(self, pixel_id, slice):
         """
         - passed in are ray_template and pipeline object references
         - unpack task ID (pixel id)
@@ -351,9 +351,9 @@ class _ObserverBase(Observer):
         world = self.root
 
         # generate rays
-        rays = self._generate_rays(pixel_id, fragment)
+        rays = self._generate_rays(pixel_id, slice)
 
-        pixel_processors = [pipeline.pixel_processor(fragment) for pipeline in self.pipelines]
+        pixel_processors = [pipeline.pixel_processor(slice) for pipeline in self.pipelines]
 
         # initialise ray statistics
         ray_count = 0
@@ -383,7 +383,7 @@ class _ObserverBase(Observer):
 
         return pixel_id, results, ray_count
 
-    def _generate_rays(self, pixel_id, fragment):
+    def _generate_rays(self, pixel_id, slice):
         """
         Generate a list of Rays that sample over the etendue of the pixel.
 
@@ -399,7 +399,7 @@ class _ObserverBase(Observer):
         cosine weighted) then the weight should be set to 1.0.
 
         :param tuple pixel_id: The pixel id.
-        :param tuple fragment: The spectral fragment configuration.
+        :param tuple slice: The spectral slice configuration.
         :return list: A list of tuples of (ray, weight)
         """
 
@@ -418,7 +418,7 @@ class _ObserverBase(Observer):
     # CONSUMER THREAD #
     ###################
 
-    def _update_state(self, packed_result, fragment):
+    def _update_state(self, packed_result, slice):
         """
         - unpack pixel ID and pipeline result tuples.
         - pass results to each pipeline to update pipelines internal state
@@ -433,7 +433,7 @@ class _ObserverBase(Observer):
         pixel_id, results, ray_count = packed_result
 
         for result, pipeline in zip(results, self.pipelines):
-            pipeline.update(pixel_id, result, fragment)
+            pipeline.update(pixel_id, result, slice)
 
         # update users
         self._update_statistics(ray_count)

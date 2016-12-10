@@ -41,13 +41,13 @@ class Pipeline2D(_PipelineBase):
     """
     """
 
-    def initialise(self, pixels, spectral_fragments):
+    def initialise(self, pixels, spectral_slices):
         """
         change docstring
 
         :return:
         """
-        super().initialise(pixels, spectral_fragments)
+        super().initialise(pixels, spectral_slices)
 
 
 class Observer2D(_ObserverBase):
