@@ -90,18 +90,18 @@ class RGBPipeline2D(Pipeline2D):
 
         # Apply sensitivity to each pixel and convert to sRGB colour-space
         nx, ny, _ = self.rgb_frame.shape
-        for iy in range(ny):
-            for ix in range(nx):
+        for ix in range(nx):
+            for iy in range(ny):
 
                 rgb = ciexyz_to_srgb(
-                    self.xyz_frame.value[iy, ix, 0] * self.sensitivity,
-                    self.xyz_frame.value[iy, ix, 1] * self.sensitivity,
-                    self.xyz_frame.value[iy, ix, 2] * self.sensitivity
+                    self.xyz_frame.value[ix, iy, 0] * self.sensitivity,
+                    self.xyz_frame.value[ix, iy, 1] * self.sensitivity,
+                    self.xyz_frame.value[ix, iy, 2] * self.sensitivity
                 )
 
-                self.rgb_frame[iy, ix, 0] = rgb[0]
-                self.rgb_frame[iy, ix, 1] = rgb[1]
-                self.rgb_frame[iy, ix, 2] = rgb[2]
+                self.rgb_frame[ix, iy, 0] = rgb[0]
+                self.rgb_frame[ix, iy, 1] = rgb[1]
+                self.rgb_frame[ix, iy, 2] = rgb[2]
 
     def _start_display(self):
         """
@@ -141,7 +141,6 @@ class RGBPipeline2D(Pipeline2D):
         :param str filename: Filename and path for camera frame output file.
         """
         plt.imsave(filename, np.transpose(self.rgb_frame, (1, 0, 2)))
-
 
 
 class XYZPixelProcessor(PixelProcessor):
