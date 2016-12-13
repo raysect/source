@@ -58,16 +58,13 @@ class RGBPipeline2D(Pipeline2D):
         self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
 
         # generate pixel processor configurations for each spectral slice
-        self._resampled_xyz = []
-        self._normalisation = []
-        for slice in spectral_slices:
-            self._resampled_xyz.append(resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.num_samples))
-            self._normalisation.append(slice.total_samples / slice.num_samples)
+        self._normalisation = len(spectral_slices)
+        self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.num_samples) for slice in spectral_slices]
 
         self._start_display()
 
     def pixel_processor(self, slice_id):
-        return XYZPixelProcessor(self._resampled_xyz[slice_id], self._normalisation[slice_id])
+        return XYZPixelProcessor(self._resampled_xyz[slice_id], self._normalisation)
 
     def update(self, pixel_id, packed_result, slice_id):
 
