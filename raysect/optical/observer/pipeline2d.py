@@ -44,6 +44,12 @@ class RGBPipeline2D(Pipeline2D):
         self._display_timer = 0
         self.display_update_time = display_update_time
 
+        self.xyz_frame = None
+        self.rgb_frame = None
+
+        self._resampled_xyz = None
+        self._normalisation = None
+
     def initialise(self, pixels, spectral_slices):
 
         # create intermediate and final frame-buffers
@@ -51,19 +57,19 @@ class RGBPipeline2D(Pipeline2D):
         self.xyz_frame = Frame2D(pixels, channels=3)
         self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
 
-        # generate pixel processors for each spectral slice
-        self._resampled_xyz = {}
+        # generate pixel processor configurations for each spectral slice
+        self._resampled_xyz = []
+        self._normalisation = []
         for slice in spectral_slices:
-            id, _, _, num_samples, min_wavelength, max_wavelength = slice
-            self._resampled_xyz[id] = resample_ciexyz(min_wavelength, max_wavelength, num_samples)
+            self._resampled_xyz.append(resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.num_samples))
+            self._normalisation.append(slice.total_samples / slice.num_samples)
 
         self._start_display()
 
-    def pixel_processor(self, slice):
-        id, _, _, _, _, _ = slice
-        return XYZPixelProcessor(self._resampled_xyz[id])
+    def pixel_processor(self, slice_id):
+        return XYZPixelProcessor(self._resampled_xyz[slice_id], self._normalisation[slice_id])
 
-    def update(self, pixel_id, packed_result, slice):
+    def update(self, pixel_id, packed_result, slice_id):
 
         # obtain result
         x, y = pixel_id
@@ -127,6 +133,10 @@ class RGBPipeline2D(Pipeline2D):
             self._display_timer = time()
 
     def display(self):
+
+        if self.rgb_frame is None:
+            raise RuntimeError("No frame data to display.")
+
         plt.clf()
         plt.imshow(np.transpose(self.rgb_frame, (1, 0, 2)), aspect="equal", origin="upper")
         plt.draw()
@@ -140,21 +150,25 @@ class RGBPipeline2D(Pipeline2D):
         Save the collected samples in the camera frame to file.
         :param str filename: Filename and path for camera frame output file.
         """
+        if self.rgb_frame is None:
+            raise RuntimeError("No frame data to save.")
+
         plt.imsave(filename, np.transpose(self.rgb_frame, (1, 0, 2)))
 
 
 class XYZPixelProcessor(PixelProcessor):
 
-    def __init__(self, resampled_xyz):
+    def __init__(self, resampled_xyz, normalisation):
         self._resampled_xyz = resampled_xyz
+        self._normalisation = normalisation
         self._xyz = Pixel(channels=3)
 
     def add_sample(self, spectrum):
         # convert spectrum to CIE XYZ and add sample to pixel buffer
         x, y, z = spectrum_to_ciexyz(spectrum, self._resampled_xyz)
-        self._xyz.add_sample(0, x)
-        self._xyz.add_sample(1, y)
-        self._xyz.add_sample(2, z)
+        self._xyz.add_sample(0, x * self._normalisation)
+        self._xyz.add_sample(1, y * self._normalisation)
+        self._xyz.add_sample(2, z * self._normalisation)
 
     def pack_results(self):
 

@@ -34,9 +34,46 @@ from raysect.optical.scenegraph import Observer
 from time import time
 
 # TODO: cythonise me!
-# TODO: convert fragment tuple to a cdef class - SpectralFragment?
-# TODO: also... create a SpectralConfig to hold the commonly used min, max lambda and num_samples? This would tidy up a lot of material code too...
-# TODO: relabel SpectralFragment as SpectralSlice
+
+
+class SpectralSlice:
+
+    def __init__(self, num_samples, min_wavelength, max_wavelength, slice_samples, slice_offset):
+
+        # basic validation
+        if num_samples <= 0:
+            raise ValueError("The sample count must be greater than 0.")
+
+        if min_wavelength <= 0:
+            raise ValueError("The minimum wavelength must be greater than 0.")
+
+        if max_wavelength <= 0:
+            raise ValueError("The maximum wavelength must be greater than 0.")
+
+        if min_wavelength >= max_wavelength:
+            raise ValueError("The minimum wavelength must be less than the maximum wavelength.")
+
+        if slice_samples <= 0:
+            raise ValueError("The slice sample count must be greater than 0.")
+
+        if num_samples <= 0:
+            raise ValueError("The slice offset cannot be less that 0.")
+
+        # check slice samples and offset are consistent with full sample count
+        if (slice_offset + slice_samples) > num_samples:
+            raise ValueError("The slice offset plus the sample count extends beyond the full sample count.")
+
+        # calculate slice properties
+        delta_wavelength = (max_wavelength - min_wavelength) / num_samples
+        self.min_wavelength = min_wavelength + delta_wavelength * slice_offset
+        self.max_wavelength = min_wavelength + delta_wavelength * (slice_offset + slice_samples)
+        self.offset = slice_offset
+        self.num_samples = slice_samples
+
+        # store full spectral range
+        self.total_samples = num_samples
+        self.total_min_wavelength = min_wavelength
+        self.total_max_wavelength = max_wavelength
 
 
 class PixelProcessor:
@@ -71,10 +108,10 @@ class _PipelineBase:
         """
         pass
 
-    def pixel_processor(self, slice):
+    def pixel_processor(self, slice_id):
         pass
 
-    def update(self, pixel, packed_result, slice):
+    def update(self, pixel, packed_result, slice_id):
         pass
 
     def finalise(self):
@@ -240,8 +277,9 @@ class _ObserverBase(Observer):
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
-        # generate spectral configuration
+        # generate spectral configuration and ray templates
         slices = self._slice_spectum()
+        templates = self._generate_templates(slices)
 
         # initialise pipelines for rendering
         for pipeline in self.pipelines:
@@ -253,12 +291,12 @@ class _ObserverBase(Observer):
         self._initialise_statistics(tasks)
 
         # render each spectral slice
-        for slice in slices:
+        for slice_id, template in enumerate(templates):
 
             self.render_engine.run(
                 tasks, self._render_pixel, self._update_state,
-                render_args=(slice, ),
-                update_args=(slice, )
+                render_args=(slice_id, template),
+                update_args=(slice_id, )
             )
 
         # close pipelines
@@ -276,18 +314,7 @@ class _ObserverBase(Observer):
         portion of the spectrum. A slice defines a sub region of the spectral range that is sampled
         by launching a ray.
 
-        A spectral slice is a tuple containing the following information:
-
-            slice = (
-                id,             # numerical index of slice
-                ray_template,   # ray template configured for slice
-                offset,         # offset into full spectral sample array
-                num_samples,    # number of samples covered by the slice
-                min_wavelength, # lower wavelength bound of slice
-                max_wavelength, # upper wavelength bound of slice
-            )
-
-        :return: A list of slice tuples.
+        :return: A list of SpectralSlice objects.
         """
 
         # split spectral bins across rays - non-integer division is handled by
@@ -303,38 +330,28 @@ class _ObserverBase(Observer):
             start = end
 
         # build slices
-        slices = []
-        delta_wavelength = (self.max_wavelength - self.min_wavelength) / self.spectral_samples
-        for id, range in enumerate(ranges):
+        return [SpectralSlice(self._spectral_samples, self._min_wavelength, self._max_wavelength, end - start, start) for start, end in ranges]
 
-            start, end = range
+    def _generate_templates(self, slices):
 
-            # calculate slice parameters
-            min_wavelength = self.min_wavelength + delta_wavelength * start
-            max_wavelength = self.min_wavelength + delta_wavelength * end
-            num_samples = end - start
-            offset = start
-            ray_template = Ray(
-                min_wavelength=min_wavelength,
-                max_wavelength=max_wavelength,
-                num_samples=num_samples,
+        return [
+            Ray(
+                min_wavelength=slice.min_wavelength,
+                max_wavelength=slice.max_wavelength,
+                num_samples=slice.num_samples,
                 extinction_prob=self.ray_extinction_prob,
                 min_depth=self.ray_min_depth,
                 max_depth=self.ray_max_depth,
                 importance_sampling=self.ray_importance_sampling,
                 important_path_weight=self.ray_important_path_weight
-            )
-
-            slice = (id, ray_template, offset, num_samples, min_wavelength, max_wavelength)
-            slices.append(slice)
-
-        return slices
+            ) for slice in slices
+        ]
 
     #################
     # WORKER THREAD #
     #################
 
-    def _render_pixel(self, pixel_id, slice):
+    def _render_pixel(self, pixel_id, slice_id, template):
         """
         - passed in are ray_template and pipeline object references
         - unpack task ID (pixel id)
@@ -351,9 +368,9 @@ class _ObserverBase(Observer):
         world = self.root
 
         # generate rays
-        rays = self._generate_rays(pixel_id, slice)
+        rays = self._generate_rays(pixel_id, template)
 
-        pixel_processors = [pipeline.pixel_processor(slice) for pipeline in self.pipelines]
+        pixel_processors = [pipeline.pixel_processor(slice_id) for pipeline in self.pipelines]
 
         # initialise ray statistics
         ray_count = 0
@@ -383,7 +400,7 @@ class _ObserverBase(Observer):
 
         return pixel_id, results, ray_count
 
-    def _generate_rays(self, pixel_id, slice):
+    def _generate_rays(self, pixel_id, template):
         """
         Generate a list of Rays that sample over the etendue of the pixel.
 
@@ -399,7 +416,7 @@ class _ObserverBase(Observer):
         cosine weighted) then the weight should be set to 1.0.
 
         :param tuple pixel_id: The pixel id.
-        :param tuple slice: The spectral slice configuration.
+        :param Ray template: The template ray from which all rays should be generated.
         :return list: A list of tuples of (ray, weight)
         """
 
@@ -418,7 +435,7 @@ class _ObserverBase(Observer):
     # CONSUMER THREAD #
     ###################
 
-    def _update_state(self, packed_result, slice):
+    def _update_state(self, packed_result, slice_id):
         """
         - unpack pixel ID and pipeline result tuples.
         - pass results to each pipeline to update pipelines internal state
@@ -433,7 +450,7 @@ class _ObserverBase(Observer):
         pixel_id, results, ray_count = packed_result
 
         for result, pipeline in zip(results, self.pipelines):
-            pipeline.update(pixel_id, result, slice)
+            pipeline.update(pixel_id, result, slice_id)
 
         # update users
         self._update_statistics(ray_count)

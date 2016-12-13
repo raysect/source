@@ -77,11 +77,10 @@ class PinholeCamera(Observer2D):
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
 
-    def _generate_rays(self, pixel_id, slice):
+    def _generate_rays(self, pixel_id, template):
 
         # unpack
         ix, iy = pixel_id
-        _, ray_template, _, _, _, _ = slice
 
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
@@ -102,7 +101,7 @@ class PinholeCamera(Observer2D):
                 point.z + pixel_centre.z
             ).normalise()
 
-            ray = ray_template.copy(origin, direction)
+            ray = template.copy(origin, direction)
 
             # projected area weight is normal.incident which simplifies
             # to incident.z here as the normal is (0, 0 ,1)
