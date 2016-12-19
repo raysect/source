@@ -41,7 +41,7 @@ class Pipeline2D(_PipelineBase):
     """
     """
 
-    def initialise(self, pixels, spectral_slices):
+    def initialise(self, pixels, pixel_samples, spectral_slices):
         """
         change docstring
 

@@ -98,7 +98,7 @@ class _PipelineBase:
     base class defining the core interfaces to define an image processing pipeline
     """
 
-    def initialise(self, pixel_config, spectral_slices):
+    def initialise(self, pixel_config, pixel_samples, spectral_slices):
         """
         setup internal buffers (e.g. frames)
         reset internal statistics as appropriate
@@ -283,7 +283,7 @@ class _ObserverBase(Observer):
 
         # initialise pipelines for rendering
         for pipeline in self.pipelines:
-            pipeline.initialise(self._pixel_config, slices)
+            pipeline.initialise(self._pixel_config, self.pixel_samples, slices)
 
         tasks = self.frame_sampler.generate_tasks(self._pixel_config)
 
@@ -367,9 +367,8 @@ class _ObserverBase(Observer):
         # obtain reference to world
         world = self.root
 
-        # generate rays
-        rays = self._generate_rays(pixel_id, template)
-
+        # generate rays and obtain pixel processors from each pipeline
+        rays = self._generate_rays(pixel_id, template, self.pixel_samples)
         pixel_processors = [pipeline.pixel_processor(slice_id) for pipeline in self.pipelines]
 
         # initialise ray statistics
@@ -400,16 +399,19 @@ class _ObserverBase(Observer):
 
         return pixel_id, results, ray_count
 
-    def _generate_rays(self, pixel_id, template):
+    def _generate_rays(self, pixel_id, template, ray_count):
         """
         Generate a list of Rays that sample over the etendue of the pixel.
 
         This is a virtual method to be implemented by derived classes.
 
-        Runs during the observe() loop to generate the rays. Allows observers to customise how they launch rays.
+        Runs during the observe() loop to generate the rays. Allows observers
+        to customise how they launch rays.
 
         This method must return a list of tuples, with each tuple containing
-        a Ray object and a corresponding weighting, typically the projected area/direction cosine.
+        a Ray object and a corresponding weighting, typically the projected
+        area/direction cosine. The number of rays returned must be equal to
+        ray_count otherwise pipeline statistics will be incorrectly calculated.
 
         If the projected area weight is not required (due to the ray sampling
         algorithm taking the weighting into account in the distribution e.g.
@@ -417,6 +419,7 @@ class _ObserverBase(Observer):
 
         :param tuple pixel_id: The pixel id.
         :param Ray template: The template ray from which all rays should be generated.
+        :param int ray_count: The number of rays to be generated.
         :return list: A list of tuples of (ray, weight)
         """
 

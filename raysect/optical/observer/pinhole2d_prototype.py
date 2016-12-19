@@ -77,7 +77,7 @@ class PinholeCamera(Observer2D):
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
 
-    def _generate_rays(self, pixel_id, template):
+    def _generate_rays(self, pixel_id, template, ray_count):
 
         # unpack
         ix, iy = pixel_id
@@ -87,7 +87,7 @@ class PinholeCamera(Observer2D):
         pixel_y = self.image_start_y - self.image_delta * iy
         pixel_centre = Point3D(pixel_x, pixel_y, 1)
 
-        points = self.point_generator(self.pixel_samples)
+        points = self.point_generator(ray_count)
 
         # assemble rays
         rays = []

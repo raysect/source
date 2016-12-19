@@ -36,51 +36,74 @@ from raysect.optical.observer.frame import Frame2D, Pixel
 from raysect.optical.observer.observer2d import Pipeline2D, PixelProcessor
 
 
+# todo: variance calculation is incorrect when performing multiple passes
+# todo: need to create an intermediate buffer to accumulate xyz over spectral slices, then combine the samples with the total frame (X=x1 + x2 + ... , Vx = Vx1 + Vx2 + ... )
 class RGBPipeline2D(Pipeline2D):
 
-    def __init__(self, sensitivity=1.0, display_progress=True, display_update_time=5):
+    def __init__(self, sensitivity=1.0, display_progress=True, display_update_time=5, accumulate=False):
         self.sensitivity = sensitivity
         self.display_progress = display_progress
         self._display_timer = 0
         self.display_update_time = display_update_time
+        self.accumulate = accumulate
 
         self.xyz_frame = None
         self.rgb_frame = None
 
+        self._working_mean = None
+        self._working_variance = None
+
         self._resampled_xyz = None
         self._normalisation = None
 
-    def initialise(self, pixels, spectral_slices):
+        self._samples = 0
+
+    def initialise(self, pixels, pixel_samples, spectral_slices):
 
         # create intermediate and final frame-buffers
-        # if not self.accumulate:
-        self.xyz_frame = Frame2D(pixels, channels=3)
-        self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
+        if not self.accumulate or self.xyz_frame is None or self.xyz_frame.pixels != pixels:
+            self.xyz_frame = Frame2D(pixels, channels=3)
+            self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
+
+        self._working_mean = np.zeros((pixels[0], pixels[1], 3))
+        self._working_variance = np.zeros((pixels[0], pixels[1], 3))
 
         # generate pixel processor configurations for each spectral slice
-        self._normalisation = len(spectral_slices)
         self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.num_samples) for slice in spectral_slices]
+
+        self._samples = pixel_samples
 
         self._start_display()
 
     def pixel_processor(self, slice_id):
-        return XYZPixelProcessor(self._resampled_xyz[slice_id], self._normalisation)
+        return XYZPixelProcessor(self._resampled_xyz[slice_id])
 
     def update(self, pixel_id, packed_result, slice_id):
 
         # obtain result
         x, y = pixel_id
-        mean, variance, samples = packed_result
+        mean, variance = packed_result
 
-        self.xyz_frame.combine_samples(x, y, 0, mean[0], variance[0], samples[0])
-        self.xyz_frame.combine_samples(x, y, 1, mean[1], variance[1], samples[1])
-        self.xyz_frame.combine_samples(x, y, 2, mean[2], variance[2], samples[2])
+        # accumulate sub-samples
+        self._working_mean[x, y, 0] += mean[0]
+        self._working_mean[x, y, 1] += mean[1]
+        self._working_mean[x, y, 2] += mean[2]
+
+        self._working_variance[x, y, 0] += variance[0]
+        self._working_variance[x, y, 1] += variance[1]
+        self._working_variance[x, y, 2] += variance[2]
 
         # update users
         self._update_display()
-        # self._update_statistics(channel, x, y, sample_ray_count)
 
     def finalise(self):
+
+        # update final frame with working frame results
+        for x in range(self.xyz_frame.pixels[0]):
+            for y in range(self.xyz_frame.pixels[1]):
+                self.xyz_frame.combine_samples(x, y, 0, self._working_mean[x, y, 0], self._working_variance[x, y, 0], self._samples)
+                self.xyz_frame.combine_samples(x, y, 1, self._working_mean[x, y, 1], self._working_variance[x, y, 1], self._samples)
+                self.xyz_frame.combine_samples(x, y, 2, self._working_mean[x, y, 2], self._working_variance[x, y, 2], self._samples)
 
         self._generate_srgb_frame()
 
@@ -134,8 +157,21 @@ class RGBPipeline2D(Pipeline2D):
         if self.rgb_frame is None:
             raise RuntimeError("No frame data to display.")
 
+        plt.figure(1)
         plt.clf()
         plt.imshow(np.transpose(self.rgb_frame, (1, 0, 2)), aspect="equal", origin="upper")
+        plt.tight_layout()
+
+        # plot standard error
+        plt.figure(2)
+        plt.clf()
+        if (self.xyz_frame.samples[:,:,1] == 0).any():
+            plt.imshow(np.transpose(np.zeros(self.xyz_frame.pixels)), aspect="equal", origin="upper")
+        else:
+            plt.imshow(np.transpose(np.sqrt(self.xyz_frame.variance[:,:,1] / self.xyz_frame.samples[:,:,1])), aspect="equal", origin="upper")
+        plt.colorbar()
+        plt.tight_layout()
+
         plt.draw()
         plt.show()
 
@@ -155,22 +191,19 @@ class RGBPipeline2D(Pipeline2D):
 
 class XYZPixelProcessor(PixelProcessor):
 
-    def __init__(self, resampled_xyz, normalisation):
+    def __init__(self, resampled_xyz):
         self._resampled_xyz = resampled_xyz
-        self._normalisation = normalisation
         self._xyz = Pixel(channels=3)
 
     def add_sample(self, spectrum):
         # convert spectrum to CIE XYZ and add sample to pixel buffer
         x, y, z = spectrum_to_ciexyz(spectrum, self._resampled_xyz)
-        self._xyz.add_sample(0, x * self._normalisation)
-        self._xyz.add_sample(1, y * self._normalisation)
-        self._xyz.add_sample(2, z * self._normalisation)
+        self._xyz.add_sample(0, x)
+        self._xyz.add_sample(1, y)
+        self._xyz.add_sample(2, z)
 
     def pack_results(self):
 
         mean = (self._xyz.value[0], self._xyz.value[1], self._xyz.value[2])
         variance = (self._xyz.variance[0], self._xyz.variance[1], self._xyz.variance[2])
-        samples = (self._xyz.samples[0], self._xyz.samples[1], self._xyz.samples[2])
-
-        return mean, variance, samples
+        return mean, variance
