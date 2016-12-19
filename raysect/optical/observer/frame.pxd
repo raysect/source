@@ -36,11 +36,13 @@ cdef class Pixel:
 
     cdef:
         readonly int channels
-        readonly ndarray value
+        readonly ndarray mean
         readonly ndarray variance
+        readonly ndarray error
         readonly ndarray samples
-        double[::1] _value_mv
+        double[::1] _mean_mv
         double[::1] _variance_mv
+        double[::1] _error_mv
         int[::1] _samples_mv
 
     cpdef object add_sample(self, int channel, double sample)
@@ -59,11 +61,13 @@ cdef class Frame1D:
     cdef:
         readonly int pixels
         readonly int channels
-        readonly ndarray value
+        readonly ndarray mean
         readonly ndarray variance
+        readonly ndarray error
         readonly ndarray samples
-        double[:,::1] _value_mv
+        double[:,::1] _mean_mv
         double[:,::1] _variance_mv
+        double[:,::1] _error_mv
         int[:,::1] _samples_mv
 
     cpdef object add_sample(self, int i, int channel, double sample)
@@ -82,11 +86,13 @@ cdef class Frame2D:
     cdef:
         readonly tuple pixels
         readonly int channels
-        readonly ndarray value
+        readonly ndarray mean
         readonly ndarray variance
+        readonly ndarray error
         readonly ndarray samples
-        double[:,:,::1] _value_mv
+        double[:,:,::1] _mean_mv
         double[:,:,::1] _variance_mv
+        double[:,:,::1] _error_mv
         int[:,:,::1] _samples_mv
 
     cpdef object add_sample(self, int x, int y, int channel, double sample)

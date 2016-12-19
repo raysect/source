@@ -120,9 +120,9 @@ class RGBPipeline2D(Pipeline2D):
             for iy in range(ny):
 
                 rgb = ciexyz_to_srgb(
-                    self.xyz_frame.value[ix, iy, 0] * self.sensitivity,
-                    self.xyz_frame.value[ix, iy, 1] * self.sensitivity,
-                    self.xyz_frame.value[ix, iy, 2] * self.sensitivity
+                    self.xyz_frame.mean[ix, iy, 0] * self.sensitivity,
+                    self.xyz_frame.mean[ix, iy, 1] * self.sensitivity,
+                    self.xyz_frame.mean[ix, iy, 2] * self.sensitivity
                 )
 
                 self.rgb_frame[ix, iy, 0] = rgb[0]
@@ -159,16 +159,13 @@ class RGBPipeline2D(Pipeline2D):
 
         plt.figure(1)
         plt.clf()
-        plt.imshow(np.transpose(self.rgb_frame, (1, 0, 2)), aspect="equal", origin="upper")
+        plt.imshow(np.transpose(self.rgb_frame, (1, 0, 2)), aspect="equal", origin="upper", interpolation='nearest')
         plt.tight_layout()
 
         # plot standard error
         plt.figure(2)
         plt.clf()
-        if (self.xyz_frame.samples[:,:,1] == 0).any():
-            plt.imshow(np.transpose(np.zeros(self.xyz_frame.pixels)), aspect="equal", origin="upper")
-        else:
-            plt.imshow(np.transpose(np.sqrt(self.xyz_frame.variance[:,:,1] / self.xyz_frame.samples[:,:,1])), aspect="equal", origin="upper")
+        plt.imshow(np.transpose(self.xyz_frame.error.mean(axis=2)), aspect="equal", origin="upper", interpolation='nearest')
         plt.colorbar()
         plt.tight_layout()
 
@@ -204,6 +201,6 @@ class XYZPixelProcessor(PixelProcessor):
 
     def pack_results(self):
 
-        mean = (self._xyz.value[0], self._xyz.value[1], self._xyz.value[2])
+        mean = (self._xyz.mean[0], self._xyz.mean[1], self._xyz.mean[2])
         variance = (self._xyz.variance[0], self._xyz.variance[1], self._xyz.variance[2])
         return mean, variance
