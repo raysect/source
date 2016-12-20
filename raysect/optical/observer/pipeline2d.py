@@ -36,8 +36,6 @@ from raysect.optical.observer.frame import Frame2D, Pixel
 from raysect.optical.observer.observer2d import Pipeline2D, PixelProcessor
 
 
-# todo: variance calculation is incorrect when performing multiple passes
-# todo: need to create an intermediate buffer to accumulate xyz over spectral slices, then combine the samples with the total frame (X=x1 + x2 + ... , Vx = Vx1 + Vx2 + ... )
 class RGBPipeline2D(Pipeline2D):
 
     def __init__(self, sensitivity=1.0, display_progress=True, display_update_time=5, accumulate=False):

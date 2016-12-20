@@ -34,13 +34,14 @@ from numpy import zeros, float64, int32
 from libc.math cimport sqrt
 cimport cython
 
+# todo: add recalculate() method to all below to force error recalculation ... or better yet return std_error on demand as a function()
 
 cdef class Pixel:
 
     def __init__(self, channels):
 
         if channels <= 0:
-            raise ValueError("There must be at least one channel.")
+            raise ValueError("There must be at least one c.")
 
         self.channels = channels
 
@@ -67,7 +68,6 @@ cdef class Pixel:
         # update frame values
         self._mean_mv[channel] = m
         self._variance_mv[channel] = v
-        self._error_mv[channel] = _std_error(v, n)
         self._samples_mv[channel] = n
 
     @cython.boundscheck(False)
@@ -106,8 +106,27 @@ cdef class Pixel:
         # update frame values
         self._mean_mv[channel] = mt
         self._variance_mv[channel] = vt
-        self._error_mv[channel] = _std_error(vt, nt)
         self._samples_mv[channel] = nt
+
+    cpdef double error(self, int channel):
+        return _std_error(self._variance_mv[channel], self._samples_mv[channel])
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef ndarray errors(self):
+
+        cdef:
+            int c
+            ndarray errors
+            double[::1] errors_mv
+
+        errors = zeros((self.channels,), dtype=float64)
+
+        errors_mv = errors
+        for c in range(self.channels):
+            errors_mv[c] = _std_error(self._variance_mv[c], self._samples_mv[c])
+
+        return errors
 
     cpdef object clear(self):
         self._new_buffers()
@@ -115,11 +134,9 @@ cdef class Pixel:
     cdef inline void _new_buffers(self):
         self.mean = zeros((self.channels,), dtype=float64)
         self.variance = zeros((self.channels, ), dtype=float64)
-        self.error = zeros((self.channels, ), dtype=float64)
         self.samples = zeros((self.channels, ), dtype=int32)
         self._mean_mv = self.mean
         self._variance_mv = self.variance
-        self._error_mv = self.error
         self._samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int channel):
@@ -136,7 +153,7 @@ cdef class Frame1D:
             raise ValueError("Number of pixels must be >= 1.")
 
         if channels <= 0:
-            raise ValueError("There must be at least one channel.")
+            raise ValueError("There must be at least one c.")
 
         self.pixels = pixels
         self.channels = channels
@@ -164,7 +181,6 @@ cdef class Frame1D:
         # update frame values
         self._mean_mv[i, channel] = m
         self._variance_mv[i, channel] = v
-        self._error_mv[i, channel] = _std_error(v, n)
         self._samples_mv[i, channel] = n
 
     @cython.boundscheck(False)
@@ -203,8 +219,28 @@ cdef class Frame1D:
         # update frame values
         self._mean_mv[i, channel] = mt
         self._variance_mv[i, channel] = vt
-        self._error_mv[i, channel] = _std_error(vt, nt)
         self._samples_mv[i, channel] = nt
+
+    cpdef double error(self, int i, int channel):
+        return _std_error(self._variance_mv[i, channel], self._samples_mv[i, channel])
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef ndarray errors(self):
+
+        cdef:
+            int i, c
+            ndarray errors
+            double[:,::1] errors_mv
+
+        errors = zeros((self.pixels, self.channels), dtype=float64)
+
+        errors_mv = errors
+        for i in range(self.pixels):
+            for c in range(self.channels):
+                errors_mv[i, c] = _std_error(self._variance_mv[i, c], self._samples_mv[i, c])
+
+        return errors
 
     cpdef object clear(self):
         self._new_buffers()
@@ -212,11 +248,9 @@ cdef class Frame1D:
     cdef inline void _new_buffers(self):
         self.mean = zeros((self.pixels, self.channels), dtype=float64)
         self.variance = zeros((self.pixels, self.channels), dtype=float64)
-        self.error = zeros((self.pixels, self.channels), dtype=float64)
         self.samples = zeros((self.pixels, self.channels), dtype=int32)
         self._mean_mv = self.mean
         self._variance_mv = self.variance
-        self._error_mv = self.error
         self._samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int i, int channel):
@@ -237,7 +271,7 @@ cdef class Frame2D:
             raise ValueError("Bins must be a tuple of x and y dimensions, both of which must be >= 1.")
 
         if channels <= 0:
-            raise ValueError("There must be at least one channel.")
+            raise ValueError("There must be at least one c.")
 
         self.pixels = pixels
         self.channels = channels
@@ -265,9 +299,7 @@ cdef class Frame2D:
         # update frame values
         self._mean_mv[x, y, channel] = m
         self._variance_mv[x, y, channel] = v
-        self._error_mv[x, y, channel] = _std_error(v, n)
         self._samples_mv[x, y, channel] = n
-
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -305,8 +337,30 @@ cdef class Frame2D:
         # update frame values
         self._mean_mv[x, y, channel] = mt
         self._variance_mv[x, y, channel] = vt
-        self._error_mv[x, y, channel] = _std_error(vt, nt)
         self._samples_mv[x, y, channel] = nt
+
+    cpdef double error(self, int x, int y, int channel):
+        return _std_error(self._variance_mv[x, y, channel], self._samples_mv[x, y, channel])
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef ndarray errors(self):
+
+        cdef:
+            int nx, ny, x, y, c
+            ndarray errors
+            double[:,:,::1] errors_mv
+
+        nx, ny = self.pixels
+        errors = zeros((nx, ny, self.channels), dtype=float64)
+
+        errors_mv = errors
+        for x in range(nx):
+            for y in range(ny):
+                for c in range(self.channels):
+                    errors_mv[x, y, c] = _std_error(self._variance_mv[x, y, c], self._samples_mv[x, y, c])
+
+        return errors
 
     cpdef object clear(self):
         self._new_buffers()
@@ -315,11 +369,9 @@ cdef class Frame2D:
         nx, ny = self.pixels
         self.mean = zeros((nx, ny, self.channels), dtype=float64)
         self.variance = zeros((nx, ny, self.channels), dtype=float64)
-        self.error = zeros((nx, ny, self.channels), dtype=float64)
         self.samples = zeros((nx, ny, self.channels), dtype=int32)
         self._mean_mv = self.mean
         self._variance_mv = self.variance
-        self._error_mv = self.error
         self._samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int x, int y, int channel):
