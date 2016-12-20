@@ -163,7 +163,7 @@ class RGBPipeline2D(Pipeline2D):
         # plot standard error
         plt.figure(2)
         plt.clf()
-        plt.imshow(np.transpose(self.xyz_frame.error.mean(axis=2)), aspect="equal", origin="upper", interpolation='nearest')
+        plt.imshow(np.transpose(self.xyz_frame.errors().mean(axis=2)), aspect="equal", origin="upper", interpolation='nearest')
         plt.colorbar()
         plt.tight_layout()
 
