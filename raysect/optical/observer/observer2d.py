@@ -42,12 +42,29 @@ class Pipeline2D(_PipelineBase):
     """
 
     def initialise(self, pixels, pixel_samples, spectral_slices):
-        """
-        change docstring
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-        :return:
-        """
-        super().initialise(pixels, spectral_slices)
+    def update(self, x, y, packed_result, slice_id):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+    def finalise(self):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+    def pixel_processor(self, slice_id):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+    def _base_initialise(self, pixel_config, pixel_samples, spectral_slices):
+        self.initialise(pixel_config, pixel_samples, spectral_slices)
+
+    def _base_update(self, pixel_id, packed_result, slice_id):
+        x, y = pixel_id
+        self.update(x, y, packed_result, slice_id)
+
+    def _base_finalise(self):
+        self.finalise()
+
+    def _base_pixel_processor(self, slice_id):
+        return self.pixel_processor(slice_id)
 
 
 class Observer2D(_ObserverBase):

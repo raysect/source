@@ -60,6 +60,7 @@ class RGBPipeline2D(Pipeline2D):
 
         self._pixels = None
         self._samples = 0
+        self._slices = 0
 
     @property
     def rgb_frame(self):
@@ -70,6 +71,8 @@ class RGBPipeline2D(Pipeline2D):
     def initialise(self, pixels, pixel_samples, spectral_slices):
 
         nx, ny = pixels
+        self._pixels = pixels
+        self._samples = pixel_samples
 
         # create intermediate and final frame-buffers
         if not self.accumulate or self.xyz_frame is None or self.xyz_frame.shape != (nx, ny, 3):
@@ -81,19 +84,15 @@ class RGBPipeline2D(Pipeline2D):
         # generate pixel processor configurations for each spectral slice
         self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.num_samples) for slice in spectral_slices]
 
-        self._pixels = pixels
-        self._samples = pixel_samples
-
         if self.display_progress:
             self._start_display()
 
     def pixel_processor(self, slice_id):
         return XYZPixelProcessor(self._resampled_xyz[slice_id])
 
-    def update(self, pixel_id, packed_result, slice_id):
+    def update(self, x, y, packed_result, slice_id):
 
         # obtain result
-        x, y = pixel_id
         mean, variance = packed_result
 
         # accumulate sub-samples
@@ -176,11 +175,11 @@ class RGBPipeline2D(Pipeline2D):
             self._render_display(self._display_frame)
             self._display_timer = time()
 
-    def _render_display(self, xyz_frame):
+    def _render_display(self, display_frame):
 
         INTERPOLATION = 'nearest'
 
-        rgb_frame = self._generate_srgb_frame(xyz_frame)
+        rgb_frame = self._generate_srgb_frame(display_frame)
 
         plt.figure(1)
         plt.clf()
@@ -190,17 +189,14 @@ class RGBPipeline2D(Pipeline2D):
         # plot standard error
         plt.figure(2)
         plt.clf()
-        plt.imshow(np.transpose(xyz_frame.errors().mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
+        plt.imshow(np.transpose(self.xyz_frame.errors().mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         plt.colorbar()
         plt.tight_layout()
-
-        plt.draw()
-        plt.show()
 
         # plot samples
         plt.figure(3)
         plt.clf()
-        plt.imshow(np.transpose(xyz_frame.samples.mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
+        plt.imshow(np.transpose(self.xyz_frame.samples.mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         plt.colorbar()
         plt.tight_layout()
 

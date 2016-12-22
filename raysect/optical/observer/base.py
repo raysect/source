@@ -92,13 +92,12 @@ class _FrameSamplerBase:
         pass
 
 
-# TODO - raise not implemented exceptions
 class _PipelineBase:
     """
-    base class defining the core interfaces to define an image processing pipeline
+    base class defining internal interfaces to  image processing pipeline
     """
 
-    def initialise(self, pixel_config, pixel_samples, spectral_slices):
+    def _base_initialise(self, pixel_config, pixel_samples, spectral_slices):
         """
         setup internal buffers (e.g. frames)
         reset internal statistics as appropriate
@@ -106,16 +105,16 @@ class _PipelineBase:
 
         :return:
         """
-        pass
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    def pixel_processor(self, slice_id):
-        pass
+    def _base_pixel_processor(self, slice_id):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    def update(self, pixel, packed_result, slice_id):
-        pass
+    def _base_update(self, pixel, packed_result, slice_id):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    def finalise(self):
-        pass
+    def _base_finalise(self):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
 
 class _ObserverBase(Observer):
@@ -283,7 +282,7 @@ class _ObserverBase(Observer):
 
         # initialise pipelines for rendering
         for pipeline in self.pipelines:
-            pipeline.initialise(self._pixel_config, self.pixel_samples, slices)
+            pipeline._base_initialise(self._pixel_config, self.pixel_samples, slices)
 
         tasks = self.frame_sampler.generate_tasks(self._pixel_config)
 
@@ -301,7 +300,7 @@ class _ObserverBase(Observer):
 
         # close pipelines
         for pipeline in self.pipelines:
-            pipeline.finalise()
+            pipeline._base_finalise()
 
         # close statistics
         self._finalise_statistics()
@@ -369,7 +368,7 @@ class _ObserverBase(Observer):
 
         # generate rays and obtain pixel processors from each pipeline
         rays = self._generate_rays(pixel_id, template, self.pixel_samples)
-        pixel_processors = [pipeline.pixel_processor(slice_id) for pipeline in self.pipelines]
+        pixel_processors = [pipeline._base_pixel_processor(slice_id) for pipeline in self.pipelines]
 
         # initialise ray statistics
         ray_count = 0
@@ -453,7 +452,7 @@ class _ObserverBase(Observer):
         pixel_id, results, ray_count = packed_result
 
         for result, pipeline in zip(results, self.pipelines):
-            pipeline.update(pixel_id, result, slice_id)
+            pipeline._base_update(pixel_id, result, slice_id)
 
         # update users
         self._update_statistics(ray_count)
