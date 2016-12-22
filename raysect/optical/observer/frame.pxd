@@ -53,6 +53,8 @@ cdef class Pixel:
 
     cpdef object clear(self)
 
+    cpdef Pixel copy(self)
+
     cdef inline void _new_buffers(self)
 
     cdef inline object _bounds_check(self, int channel)
@@ -80,6 +82,8 @@ cdef class Frame1D:
 
     cpdef object clear(self)
 
+    cpdef Frame1D copy(self)
+
     cdef inline void _new_buffers(self)
 
     cdef inline object _bounds_check(self, int i, int channel)
@@ -106,6 +110,8 @@ cdef class Frame2D:
     cpdef ndarray errors(self)
 
     cpdef object clear(self)
+
+    cpdef Frame2D copy(self)
 
     cdef inline void _new_buffers(self)
 

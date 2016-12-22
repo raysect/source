@@ -101,7 +101,7 @@ light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
 # back_light = Sphere(0.1,
 #     parent=enclosure,
 #     transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 100.0))
+#     material=UniformSurfaceEmitter(light_spectrum, 10.0))
 
 # objects in enclosure
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
@@ -125,8 +125,9 @@ from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
 from raysect.core.workflow import SerialEngine
 
 # create and setup the camera
-camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
-camera.pixel_samples = 250
+camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0))
+camera.pixel_samples = 50
+camera.pipelines[0].accumulate = True
 # camera.render_engine = SerialEngine()
 
 # camera.ray_importance_sampling = True
@@ -143,23 +144,18 @@ camera.pixel_samples = 250
 # camera.accumulate = True
 # camera.exposure_handler = AutoExposure(0.97)
 
-ion()
-camera.observe()
+# ion()
+# camera.observe()
 
 # camera.process_count = 1
 
 # # start ray tracing
-# ion()
-# for p in range(1, 5000):
-#     print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.spectral_rays))
-#     camera.observe()
-#     if camera.ray_importance_sampling:
-#         name = "cornell_box_mis_{}_samples.png"
-#     else:
-#         name = "cornell_box_normal_{}_samples.png"
-#     camera.save(name.format(camera.accumulated_samples))
-#     print()
-#
+ion()
+for p in range(1, 5000):
+    print("Rendering pass {}...".format(p))
+    camera.observe()
+    print()
+
 # # display final result
 ioff()
 camera.pipelines[0].display()

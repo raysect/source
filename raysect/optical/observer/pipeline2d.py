@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import matplotlib.pyplot as plt
+from .colormaps import viridis
 import numpy as np
 from time import time
 
@@ -46,22 +47,28 @@ class RGBPipeline2D(Pipeline2D):
         self.accumulate = accumulate
 
         self.xyz_frame = None
-        self.rgb_frame = None
 
         self._working_mean = None
         self._working_variance = None
+
+        self._display_frame = None
 
         self._resampled_xyz = None
         self._normalisation = None
 
         self._samples = 0
 
+    @property
+    def rgb_frame(self):
+        if self.xyz_frame:
+            return self._generate_srgb_frame(self.xyz_frame)
+        return None
+
     def initialise(self, pixels, pixel_samples, spectral_slices):
 
         # create intermediate and final frame-buffers
         if not self.accumulate or self.xyz_frame is None or self.xyz_frame.pixels != pixels:
             self.xyz_frame = Frame2D(pixels, channels=3)
-            self.rgb_frame = np.zeros((pixels[0], pixels[1], 3))
 
         self._working_mean = np.zeros((pixels[0], pixels[1], 3))
         self._working_variance = np.zeros((pixels[0], pixels[1], 3))
@@ -69,9 +76,11 @@ class RGBPipeline2D(Pipeline2D):
         # generate pixel processor configurations for each spectral slice
         self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.num_samples) for slice in spectral_slices]
 
+        self._pixels = pixels
         self._samples = pixel_samples
 
-        self._start_display()
+        if self.display_progress:
+            self._start_display()
 
     def pixel_processor(self, slice_id):
         return XYZPixelProcessor(self._resampled_xyz[slice_id])
@@ -92,7 +101,8 @@ class RGBPipeline2D(Pipeline2D):
         self._working_variance[x, y, 2] += variance[2]
 
         # update users
-        self._update_display()
+        if self.display_progress:
+            self._update_display(x, y)
 
     def finalise(self):
 
@@ -103,67 +113,79 @@ class RGBPipeline2D(Pipeline2D):
                 self.xyz_frame.combine_samples(x, y, 1, self._working_mean[x, y, 1], self._working_variance[x, y, 1], self._samples)
                 self.xyz_frame.combine_samples(x, y, 2, self._working_mean[x, y, 2], self._working_variance[x, y, 2], self._samples)
 
-        self._generate_srgb_frame()
-
         if self.display_progress:
-            self.display()
+            self._render_display(self.xyz_frame)
 
-    def _generate_srgb_frame(self):
+    def _generate_srgb_frame(self, xyz_frame):
 
         # TODO - re-add exposure handlers
+        nx, ny = self._pixels
+        rgb_frame = np.zeros((nx, ny, 3))
 
         # Apply sensitivity to each pixel and convert to sRGB colour-space
-        nx, ny, _ = self.rgb_frame.shape
         for ix in range(nx):
             for iy in range(ny):
 
-                rgb = ciexyz_to_srgb(
-                    self.xyz_frame.mean[ix, iy, 0] * self.sensitivity,
-                    self.xyz_frame.mean[ix, iy, 1] * self.sensitivity,
-                    self.xyz_frame.mean[ix, iy, 2] * self.sensitivity
+                rgb_pixel = ciexyz_to_srgb(
+                    xyz_frame.mean[ix, iy, 0] * self.sensitivity,
+                    xyz_frame.mean[ix, iy, 1] * self.sensitivity,
+                    xyz_frame.mean[ix, iy, 2] * self.sensitivity
                 )
 
-                self.rgb_frame[ix, iy, 0] = rgb[0]
-                self.rgb_frame[ix, iy, 1] = rgb[1]
-                self.rgb_frame[ix, iy, 2] = rgb[2]
+                rgb_frame[ix, iy, 0] = rgb_pixel[0]
+                rgb_frame[ix, iy, 1] = rgb_pixel[1]
+                rgb_frame[ix, iy, 2] = rgb_pixel[2]
+
+        return rgb_frame
 
     def _start_display(self):
         """
         Display live render.
         """
 
-        self._display_timer = 0
-        if self.display_progress:
-            self.display()
-            self._display_timer = time()
+        # populate live frame with current frame state
+        self._display_frame = self.xyz_frame.copy()
 
-    def _update_display(self):
+        # display initial frame
+        self._render_display(self._display_frame)
+        self._display_timer = time()
+
+    def _update_display(self, x, y):
         """
         Update live render.
         """
 
+        # update display pixel by combining existing frame data with working data
+        self._display_frame.mean[x, y, :] = self.xyz_frame.mean[x, y, :]
+        self._display_frame.variance[x, y, :] = self.xyz_frame.variance[x, y, :]
+        self._display_frame.samples[x, y, :] = self.xyz_frame.samples[x, y, :]
+
+        self._display_frame.combine_samples(x, y, 0, self._working_mean[x, y, 0], self._working_variance[x, y, 0], self._samples)
+        self._display_frame.combine_samples(x, y, 1, self._working_mean[x, y, 1], self._working_variance[x, y, 1], self._samples)
+        self._display_frame.combine_samples(x, y, 2, self._working_mean[x, y, 2], self._working_variance[x, y, 2], self._samples)
+
         # update live render display
-        if self.display_progress and (time() - self._display_timer) > self.display_update_time:
+        if (time() - self._display_timer) > self.display_update_time:
 
             print("RGBPipeline2D updating display...")
-            self._generate_srgb_frame()
-            self.display()
+            self._render_display(self._display_frame)
             self._display_timer = time()
 
-    def display(self):
+    def _render_display(self, xyz_frame):
 
-        if self.rgb_frame is None:
-            raise RuntimeError("No frame data to display.")
+        INTERPOLATION = 'nearest'
+
+        rgb_frame = self._generate_srgb_frame(xyz_frame)
 
         plt.figure(1)
         plt.clf()
-        plt.imshow(np.transpose(self.rgb_frame, (1, 0, 2)), aspect="equal", origin="upper", interpolation='nearest')
+        plt.imshow(np.transpose(rgb_frame, (1, 0, 2)), aspect="equal", origin="upper", interpolation=INTERPOLATION)
         plt.tight_layout()
 
         # plot standard error
         plt.figure(2)
         plt.clf()
-        plt.imshow(np.transpose(self.xyz_frame.errors().mean(axis=2)), aspect="equal", origin="upper", interpolation='nearest')
+        plt.imshow(np.transpose(xyz_frame.errors().mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         plt.colorbar()
         plt.tight_layout()
 
@@ -173,15 +195,19 @@ class RGBPipeline2D(Pipeline2D):
         # workaround for interactivity for QT backend
         plt.pause(0.1)
 
+    def display(self):
+        if self.xyz_frame:
+            self._render_display(self.xyz_frame)
+        raise ValueError("There is no frame to display.")
+
     def save(self, filename):
         """
         Save the collected samples in the camera frame to file.
         :param str filename: Filename and path for camera frame output file.
         """
-        if self.rgb_frame is None:
-            raise RuntimeError("No frame data to save.")
 
-        plt.imsave(filename, np.transpose(self.rgb_frame, (1, 0, 2)))
+        rgb_frame = self._generate_srgb_frame(self.xyz_frame)
+        plt.imsave(filename, np.transpose(rgb_frame, (1, 0, 2)))
 
 
 class XYZPixelProcessor(PixelProcessor):
@@ -202,3 +228,4 @@ class XYZPixelProcessor(PixelProcessor):
         mean = (self._xyz.mean[0], self._xyz.mean[1], self._xyz.mean[2])
         variance = (self._xyz.variance[0], self._xyz.variance[1], self._xyz.variance[2])
         return mean, variance
+

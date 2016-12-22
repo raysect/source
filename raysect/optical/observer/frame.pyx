@@ -131,6 +131,13 @@ cdef class Pixel:
     cpdef object clear(self):
         self._new_buffers()
 
+    cpdef Pixel copy(self):
+        obj = Pixel( self.channels)
+        obj.mean[:] = self.mean[:]
+        obj.variance[:] = self.variance[:]
+        obj.samples[:] = self.samples[:]
+        return obj
+
     cdef inline void _new_buffers(self):
         self.mean = zeros((self.channels,), dtype=float64)
         self.variance = zeros((self.channels, ), dtype=float64)
@@ -244,6 +251,13 @@ cdef class Frame1D:
 
     cpdef object clear(self):
         self._new_buffers()
+
+    cpdef Frame1D copy(self):
+        obj = Frame1D(self.pixels, self.channels)
+        obj.mean[:] = self.mean[:]
+        obj.variance[:] = self.variance[:]
+        obj.samples[:] = self.samples[:]
+        return obj
 
     cdef inline void _new_buffers(self):
         self.mean = zeros((self.pixels, self.channels), dtype=float64)
@@ -364,6 +378,13 @@ cdef class Frame2D:
 
     cpdef object clear(self):
         self._new_buffers()
+
+    cpdef Frame2D copy(self):
+        obj = Frame2D(self.pixels, self.channels)
+        obj.mean[:] = self.mean[:]
+        obj.variance[:] = self.variance[:]
+        obj.samples[:] = self.samples[:]
+        return obj
 
     cdef inline void _new_buffers(self):
         nx, ny = self.pixels
