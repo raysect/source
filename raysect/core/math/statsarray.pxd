@@ -32,10 +32,10 @@
 from numpy cimport ndarray
 
 
-cdef class Pixel:
+cdef class StatsArray1D:
 
     cdef:
-        readonly int channels
+        readonly int length
         readonly ndarray mean
         readonly ndarray variance
         readonly ndarray samples
@@ -43,28 +43,27 @@ cdef class Pixel:
         double[::1] _variance_mv
         int[::1] _samples_mv
 
-    cpdef object add_sample(self, int channel, double sample)
+    cpdef object clear(self)
 
-    cpdef object combine_samples(self, int channel, double mean, double variance, int sample_count)
+    cpdef StatsArray1D copy(self)
 
-    cpdef double error(self, int channel)
+    cpdef object add_sample(self, int x, double sample)
+
+    cpdef object combine_samples(self, int x, double mean, double variance, int sample_count)
+
+    cpdef double error(self, int x)
 
     cpdef ndarray errors(self)
 
-    cpdef object clear(self)
-
-    cpdef Pixel copy(self)
-
     cdef inline void _new_buffers(self)
 
-    cdef inline object _bounds_check(self, int channel)
+    cdef inline object _bounds_check(self, int x)
 
 
-cdef class Frame1D:
+cdef class StatsArray2D:
 
     cdef:
-        readonly int pixels
-        readonly int channels
+        readonly int nx, ny
         readonly ndarray mean
         readonly ndarray variance
         readonly ndarray samples
@@ -72,28 +71,27 @@ cdef class Frame1D:
         double[:,::1] _variance_mv
         int[:,::1] _samples_mv
 
-    cpdef object add_sample(self, int i, int channel, double sample)
+    cpdef object clear(self)
 
-    cpdef object combine_samples(self, int i, int channel, double mean, double variance, int sample_count)
+    cpdef StatsArray2D copy(self)
 
-    cpdef double error(self, int i, int channel)
+    cpdef object add_sample(self, int x, int y, double sample)
+
+    cpdef object combine_samples(self, int x, int y, double mean, double variance, int sample_count)
+
+    cpdef double error(self, int x, int y)
 
     cpdef ndarray errors(self)
 
-    cpdef object clear(self)
-
-    cpdef Frame1D copy(self)
-
     cdef inline void _new_buffers(self)
 
-    cdef inline object _bounds_check(self, int i, int channel)
+    cdef inline object _bounds_check(self, int x, int y)
 
 
-cdef class Frame2D:
+cdef class StatsArray3D:
 
     cdef:
-        readonly tuple pixels
-        readonly int channels
+        readonly int nx, ny, nz
         readonly ndarray mean
         readonly ndarray variance
         readonly ndarray samples
@@ -101,18 +99,18 @@ cdef class Frame2D:
         double[:,:,::1] _variance_mv
         int[:,:,::1] _samples_mv
 
-    cpdef object add_sample(self, int x, int y, int channel, double sample)
+    cpdef object clear(self)
 
-    cpdef object combine_samples(self, int x, int y, int channel, double mean, double variance, int sample_count)
+    cpdef StatsArray3D copy(self)
 
-    cpdef double error(self, int x, int y, int channel)
+    cpdef object add_sample(self, int x, int y, int z, double sample)
+
+    cpdef object combine_samples(self, int x, int y, int z, double mean, double variance, int sample_count)
+
+    cpdef double error(self, int x, int y, int z)
 
     cpdef ndarray errors(self)
 
-    cpdef object clear(self)
-
-    cpdef Frame2D copy(self)
-
     cdef inline void _new_buffers(self)
 
-    cdef inline object _bounds_check(self, int x, int y, int channel)
+    cdef inline object _bounds_check(self, int x, int y, int z)

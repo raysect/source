@@ -27,19 +27,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import matplotlib.pyplot as plt
-from .colormaps import viridis
-import numpy as np
 from time import time
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+from raysect.core.math import StatsArray3D, StatsArray1D
 from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
-from raysect.optical.observer.frame import Frame2D, Pixel
 from raysect.optical.observer.observer2d import Pipeline2D, PixelProcessor
+from .colormaps import viridis
 
 
 class RGBPipeline2D(Pipeline2D):
 
     def __init__(self, sensitivity=1.0, display_progress=True, display_update_time=5, accumulate=False):
+
         self.sensitivity = sensitivity
         self.display_progress = display_progress
         self._display_timer = 0
@@ -56,6 +58,7 @@ class RGBPipeline2D(Pipeline2D):
         self._resampled_xyz = None
         self._normalisation = None
 
+        self._pixels = None
         self._samples = 0
 
     @property
@@ -66,12 +69,14 @@ class RGBPipeline2D(Pipeline2D):
 
     def initialise(self, pixels, pixel_samples, spectral_slices):
 
-        # create intermediate and final frame-buffers
-        if not self.accumulate or self.xyz_frame is None or self.xyz_frame.pixels != pixels:
-            self.xyz_frame = Frame2D(pixels, channels=3)
+        nx, ny = pixels
 
-        self._working_mean = np.zeros((pixels[0], pixels[1], 3))
-        self._working_variance = np.zeros((pixels[0], pixels[1], 3))
+        # create intermediate and final frame-buffers
+        if not self.accumulate or self.xyz_frame is None or self.xyz_frame.shape != (nx, ny, 3):
+            self.xyz_frame = StatsArray3D(nx, ny, 3)
+
+        self._working_mean = np.zeros((nx, ny, 3))
+        self._working_variance = np.zeros((nx, ny, 3))
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.num_samples) for slice in spectral_slices]
@@ -107,8 +112,8 @@ class RGBPipeline2D(Pipeline2D):
     def finalise(self):
 
         # update final frame with working frame results
-        for x in range(self.xyz_frame.pixels[0]):
-            for y in range(self.xyz_frame.pixels[1]):
+        for x in range(self.xyz_frame.shape[0]):
+            for y in range(self.xyz_frame.shape[1]):
                 self.xyz_frame.combine_samples(x, y, 0, self._working_mean[x, y, 0], self._working_variance[x, y, 0], self._samples)
                 self.xyz_frame.combine_samples(x, y, 1, self._working_mean[x, y, 1], self._working_variance[x, y, 1], self._samples)
                 self.xyz_frame.combine_samples(x, y, 2, self._working_mean[x, y, 2], self._working_variance[x, y, 2], self._samples)
@@ -192,6 +197,16 @@ class RGBPipeline2D(Pipeline2D):
         plt.draw()
         plt.show()
 
+        # plot samples
+        plt.figure(3)
+        plt.clf()
+        plt.imshow(np.transpose(xyz_frame.samples.mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
+        plt.colorbar()
+        plt.tight_layout()
+
+        plt.draw()
+        plt.show()
+
         # workaround for interactivity for QT backend
         plt.pause(0.1)
 
@@ -214,7 +229,7 @@ class XYZPixelProcessor(PixelProcessor):
 
     def __init__(self, resampled_xyz):
         self._resampled_xyz = resampled_xyz
-        self._xyz = Pixel(channels=3)
+        self._xyz = StatsArray1D(3)
 
     def add_sample(self, spectrum):
         # convert spectrum to CIE XYZ and add sample to pixel buffer

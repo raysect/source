@@ -29,7 +29,6 @@
 
 from raysect.core import Point3D, Vector3D
 from raysect.optical.observer.old.point_generator import Rectangle
-from .frame import Frame2D
 from math import pi, tan
 from raysect.optical.observer.observer2d import Observer2D
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
