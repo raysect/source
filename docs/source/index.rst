@@ -40,6 +40,7 @@ built with scientific ray-tracing in mind. Some of its features include:
    demonstrations/cornell_box
    demonstrations/prism
    demonstrations/animations
+   demonstrations/surface_roughness
 
 
 .. toctree::
