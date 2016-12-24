@@ -7,5 +7,5 @@ generate adequate samples for this demonstration.
 
 .. literalinclude:: ../../../demos/prism.py
 
-.. image:: prism_22400_samples.png
+.. image:: prism_720x360.jpg
    :align: center
