@@ -85,11 +85,10 @@ class PixelProcessor:
         pass
 
 
-# TODO - raise not implemented exceptions
 class _FrameSamplerBase:
 
     def generate_tasks(self, pixels):
-        pass
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
 
 class _PipelineBase:
@@ -146,8 +145,8 @@ class _ObserverBase(Observer):
         - save state for each pipeline as required.
     """
 
-    def __init__(self, render_engine=None, parent=None,
-                 transform=None, name=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
+    def __init__(self, render_engine=None, parent=None, transform=None, name=None,
+                 pixel_samples=None, spectral_rays=None, spectral_samples=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
@@ -277,7 +276,7 @@ class _ObserverBase(Observer):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
         # generate spectral configuration and ray templates
-        slices = self._slice_spectum()
+        slices = self._slice_spectrum()
         templates = self._generate_templates(slices)
 
         # initialise pipelines for rendering
@@ -305,7 +304,7 @@ class _ObserverBase(Observer):
         # close statistics
         self._finalise_statistics()
 
-    def _slice_spectum(self):
+    def _slice_spectrum(self):
         """
         Sub-divides the spectral range into smaller wavelength slices.
 
