@@ -191,6 +191,8 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._render_display(self._display_frame)
         self._display_timer = time()
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def _update_display(self, int x, int y):
         """
         Update live render.
