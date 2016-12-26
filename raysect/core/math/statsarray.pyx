@@ -70,17 +70,17 @@ cdef class StatsArray1D:
         self._bounds_check(x)
 
         # initial values
-        m = self._mean_mv[x]
-        v = self._variance_mv[x]
-        n = self._samples_mv[x]
+        m = self.mean_mv[x]
+        v = self.variance_mv[x]
+        n = self.samples_mv[x]
 
         # calculate statistics
         _add_sample(sample, &m, &v, &n)
 
         # update frame values
-        self._mean_mv[x] = m
-        self._variance_mv[x] = v
-        self._samples_mv[x] = n
+        self.mean_mv[x] = m
+        self.variance_mv[x] = v
+        self.samples_mv[x] = n
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -103,9 +103,9 @@ cdef class StatsArray1D:
             variance = 0
 
         # stored sample count, mean and variance
-        ma = self._mean_mv[x]
-        va = self._variance_mv[x]
-        na = self._samples_mv[x]
+        ma = self.mean_mv[x]
+        va = self.variance_mv[x]
+        na = self.samples_mv[x]
 
         # external sample count, mean and variance
         mb = mean
@@ -116,12 +116,12 @@ cdef class StatsArray1D:
         _combine_samples(ma, va, na, mb, vb, nb, &mt, &vt, &nt)
 
         # update frame values
-        self._mean_mv[x] = mt
-        self._variance_mv[x] = vt
-        self._samples_mv[x] = nt
+        self.mean_mv[x] = mt
+        self.variance_mv[x] = vt
+        self.samples_mv[x] = nt
 
     cpdef double error(self, int x):
-        return _std_error(self._variance_mv[x], self._samples_mv[x])
+        return _std_error(self.variance_mv[x], self.samples_mv[x])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -136,7 +136,7 @@ cdef class StatsArray1D:
 
         errors_mv = errors
         for x in range(self.length):
-            errors_mv[x] = _std_error(self._variance_mv[x], self._samples_mv[x])
+            errors_mv[x] = _std_error(self.variance_mv[x], self.samples_mv[x])
 
         return errors
 
@@ -144,9 +144,9 @@ cdef class StatsArray1D:
         self.mean = zeros((self.length,), dtype=float64)
         self.variance = zeros((self.length, ), dtype=float64)
         self.samples = zeros((self.length, ), dtype=int32)
-        self._mean_mv = self.mean
-        self._variance_mv = self.variance
-        self._samples_mv = self.samples
+        self.mean_mv = self.mean
+        self.variance_mv = self.variance
+        self.samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int x):
 
@@ -194,17 +194,17 @@ cdef class StatsArray2D:
         self._bounds_check(x, y)
 
         # initial values
-        m = self._mean_mv[x, y]
-        v = self._variance_mv[x, y]
-        n = self._samples_mv[x, y]
+        m = self.mean_mv[x, y]
+        v = self.variance_mv[x, y]
+        n = self.samples_mv[x, y]
 
         # calculate statistics
         _add_sample(sample, &m, &v, &n)
 
         # update frame values
-        self._mean_mv[x, y] = m
-        self._variance_mv[x, y] = v
-        self._samples_mv[x, y] = n
+        self.mean_mv[x, y] = m
+        self.variance_mv[x, y] = v
+        self.samples_mv[x, y] = n
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -227,9 +227,9 @@ cdef class StatsArray2D:
             variance = 0
 
         # stored sample count, mean and variance
-        mx = self._mean_mv[x, y]
-        vx = self._variance_mv[x, y]
-        nx = self._samples_mv[x, y]
+        mx = self.mean_mv[x, y]
+        vx = self.variance_mv[x, y]
+        nx = self.samples_mv[x, y]
 
         # external sample count, mean and variance
         my = mean
@@ -240,12 +240,12 @@ cdef class StatsArray2D:
         _combine_samples(mx, vx, nx, my, vy, ny, &mt, &vt, &nt)
 
         # update frame values
-        self._mean_mv[x, y] = mt
-        self._variance_mv[x, y] = vt
-        self._samples_mv[x, y] = nt
+        self.mean_mv[x, y] = mt
+        self.variance_mv[x, y] = vt
+        self.samples_mv[x, y] = nt
 
     cpdef double error(self, int x, int y):
-        return _std_error(self._variance_mv[x, y], self._samples_mv[x, y])
+        return _std_error(self.variance_mv[x, y], self.samples_mv[x, y])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -261,7 +261,7 @@ cdef class StatsArray2D:
         errors_mv = errors
         for x in range(self.nx):
             for y in range(self.ny):
-                errors_mv[x, y] = _std_error(self._variance_mv[x, y], self._samples_mv[x, y])
+                errors_mv[x, y] = _std_error(self.variance_mv[x, y], self.samples_mv[x, y])
 
         return errors
 
@@ -269,9 +269,9 @@ cdef class StatsArray2D:
         self.mean = zeros((self.nx, self.ny), dtype=float64)
         self.variance = zeros((self.nx, self.ny), dtype=float64)
         self.samples = zeros((self.nx, self.ny), dtype=int32)
-        self._mean_mv = self.mean
-        self._variance_mv = self.variance
-        self._samples_mv = self.samples
+        self.mean_mv = self.mean
+        self.variance_mv = self.variance
+        self.samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int x, int y):
 
@@ -326,17 +326,17 @@ cdef class StatsArray3D:
         self._bounds_check(x, y, z)
 
         # initial values
-        m = self._mean_mv[x, y, z]
-        v = self._variance_mv[x, y, z]
-        n = self._samples_mv[x, y, z]
+        m = self.mean_mv[x, y, z]
+        v = self.variance_mv[x, y, z]
+        n = self.samples_mv[x, y, z]
 
         # calculate statistics
         _add_sample(sample, &m, &v, &n)
 
         # update frame values
-        self._mean_mv[x, y, z] = m
-        self._variance_mv[x, y, z] = v
-        self._samples_mv[x, y, z] = n
+        self.mean_mv[x, y, z] = m
+        self.variance_mv[x, y, z] = v
+        self.samples_mv[x, y, z] = n
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -359,9 +359,9 @@ cdef class StatsArray3D:
             variance = 0
 
         # stored sample count, mean and variance
-        ma = self._mean_mv[x, y, z]
-        va = self._variance_mv[x, y, z]
-        na = self._samples_mv[x, y, z]
+        ma = self.mean_mv[x, y, z]
+        va = self.variance_mv[x, y, z]
+        na = self.samples_mv[x, y, z]
 
         # external sample count, mean and variance
         mb = mean
@@ -372,12 +372,12 @@ cdef class StatsArray3D:
         _combine_samples(ma, va, na, mb, vb, nb, &mt, &vt, &nt)
 
         # update frame values
-        self._mean_mv[x, y, z] = mt
-        self._variance_mv[x, y, z] = vt
-        self._samples_mv[x, y, z] = nt
+        self.mean_mv[x, y, z] = mt
+        self.variance_mv[x, y, z] = vt
+        self.samples_mv[x, y, z] = nt
 
     cpdef double error(self, int x, int y, int z):
-        return _std_error(self._variance_mv[x, y, z], self._samples_mv[x, y, z])
+        return _std_error(self.variance_mv[x, y, z], self.samples_mv[x, y, z])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -394,7 +394,7 @@ cdef class StatsArray3D:
         for x in range(self.nx):
             for y in range(self.ny):
                 for z in range(self.nz):
-                    errors_mv[x, y, z] = _std_error(self._variance_mv[x, y, z], self._samples_mv[x, y, z])
+                    errors_mv[x, y, z] = _std_error(self.variance_mv[x, y, z], self.samples_mv[x, y, z])
 
         return errors
 
@@ -402,9 +402,9 @@ cdef class StatsArray3D:
         self.mean = zeros((self.nx, self.ny, self.nz), dtype=float64)
         self.variance = zeros((self.nx, self.ny, self.nz), dtype=float64)
         self.samples = zeros((self.nx, self.ny, self.nz), dtype=int32)
-        self._mean_mv = self.mean
-        self._variance_mv = self.variance
-        self._samples_mv = self.samples
+        self.mean_mv = self.mean
+        self.variance_mv = self.variance
+        self.samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int x, int y, int z):
 

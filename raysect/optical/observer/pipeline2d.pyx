@@ -31,17 +31,36 @@ from time import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-from raysect.core.math import StatsArray3D, StatsArray1D
-from raysect.optical.colour import resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
-from raysect.optical.observer.observer2d import Pipeline2D, PixelProcessor
 from .colormaps import viridis
 
+cimport cython
+cimport numpy as np
+from raysect.core.math cimport StatsArray3D, StatsArray1D
+from raysect.optical.spectrum cimport Spectrum
+from raysect.optical.colour cimport resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
+from raysect.optical.observer.observer2d cimport Pipeline2D
+from raysect.optical.observer._base cimport PixelProcessor
 
-class RGBPipeline2D(Pipeline2D):
 
-    def __init__(self, sensitivity=1.0, display_progress=True, display_update_time=5, accumulate=False):
 
+cdef class RGBPipeline2D(Pipeline2D):
+
+    cdef:
+        public double sensitivity
+        public bint display_progress
+        double _display_timer
+        public double display_update_time
+        public bint accumulate
+        readonly StatsArray3D xyz_frame
+        double[:,:,::1] _working_mean, _working_variance
+        StatsArray3D _display_frame
+        list _resampled_xyz
+        tuple _pixels
+        int _samples
+
+    def __init__(self, double sensitivity=1.0, bint display_progress=True, double display_update_time=15, bint accumulate=False):
+
+        # todo: add validation
         self.sensitivity = sensitivity
         self.display_progress = display_progress
         self._display_timer = 0
@@ -56,11 +75,9 @@ class RGBPipeline2D(Pipeline2D):
         self._display_frame = None
 
         self._resampled_xyz = None
-        self._normalisation = None
 
         self._pixels = None
         self._samples = 0
-        self._slices = 0
 
     @property
     def rgb_frame(self):
@@ -68,7 +85,7 @@ class RGBPipeline2D(Pipeline2D):
             return self._generate_srgb_frame(self.xyz_frame)
         return None
 
-    def initialise(self, pixels, pixel_samples, spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -87,10 +104,17 @@ class RGBPipeline2D(Pipeline2D):
         if self.display_progress:
             self._start_display()
 
-    def pixel_processor(self, slice_id):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef PixelProcessor pixel_processor(self, int slice_id):
         return XYZPixelProcessor(self._resampled_xyz[slice_id])
 
-    def update(self, x, y, packed_result, slice_id):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object update(self, int x, int y, tuple packed_result, int slice_id):
+
+        cdef:
+            tuple mean, variance
 
         # obtain result
         mean, variance = packed_result
@@ -108,7 +132,11 @@ class RGBPipeline2D(Pipeline2D):
         if self.display_progress:
             self._update_display(x, y)
 
-    def finalise(self):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object finalise(self):
+
+        cdef int x, y
 
         # update final frame with working frame results
         for x in range(self.xyz_frame.shape[0]):
@@ -120,25 +148,34 @@ class RGBPipeline2D(Pipeline2D):
         if self.display_progress:
             self._render_display(self.xyz_frame)
 
-    def _generate_srgb_frame(self, xyz_frame):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef _generate_srgb_frame(self, StatsArray3D xyz_frame):
+
+        cdef:
+            int nx, ny, ix, iy
+            np.ndarray rgb_frame
+            double[:,:,::1] rgb_frame_mv
+            tuple rgb_pixel
 
         # TODO - re-add exposure handlers
         nx, ny = self._pixels
         rgb_frame = np.zeros((nx, ny, 3))
+        rgb_frame_mv = rgb_frame
 
         # Apply sensitivity to each pixel and convert to sRGB colour-space
         for ix in range(nx):
             for iy in range(ny):
 
                 rgb_pixel = ciexyz_to_srgb(
-                    xyz_frame.mean[ix, iy, 0] * self.sensitivity,
-                    xyz_frame.mean[ix, iy, 1] * self.sensitivity,
-                    xyz_frame.mean[ix, iy, 2] * self.sensitivity
+                    xyz_frame.mean_mv[ix, iy, 0] * self.sensitivity,
+                    xyz_frame.mean_mv[ix, iy, 1] * self.sensitivity,
+                    xyz_frame.mean_mv[ix, iy, 2] * self.sensitivity
                 )
 
-                rgb_frame[ix, iy, 0] = rgb_pixel[0]
-                rgb_frame[ix, iy, 1] = rgb_pixel[1]
-                rgb_frame[ix, iy, 2] = rgb_pixel[2]
+                rgb_frame_mv[ix, iy, 0] = rgb_pixel[0]
+                rgb_frame_mv[ix, iy, 1] = rgb_pixel[1]
+                rgb_frame_mv[ix, iy, 2] = rgb_pixel[2]
 
         return rgb_frame
 
@@ -154,15 +191,15 @@ class RGBPipeline2D(Pipeline2D):
         self._render_display(self._display_frame)
         self._display_timer = time()
 
-    def _update_display(self, x, y):
+    def _update_display(self, int x, int y):
         """
         Update live render.
         """
 
         # update display pixel by combining existing frame data with working data
-        self._display_frame.mean[x, y, :] = self.xyz_frame.mean[x, y, :]
-        self._display_frame.variance[x, y, :] = self.xyz_frame.variance[x, y, :]
-        self._display_frame.samples[x, y, :] = self.xyz_frame.samples[x, y, :]
+        self._display_frame.mean_mv[x, y, :] = self.xyz_frame.mean_mv[x, y, :]
+        self._display_frame.variance_mv[x, y, :] = self.xyz_frame.variance_mv[x, y, :]
+        self._display_frame.samples_mv[x, y, :] = self.xyz_frame.samples_mv[x, y, :]
 
         self._display_frame.combine_samples(x, y, 0, self._working_mean[x, y, 0], self._working_variance[x, y, 0], self._samples)
         self._display_frame.combine_samples(x, y, 1, self._working_mean[x, y, 1], self._working_variance[x, y, 1], self._samples)
@@ -221,20 +258,30 @@ class RGBPipeline2D(Pipeline2D):
         plt.imsave(filename, np.transpose(rgb_frame, (1, 0, 2)))
 
 
-class XYZPixelProcessor(PixelProcessor):
+cdef class XYZPixelProcessor(PixelProcessor):
 
-    def __init__(self, resampled_xyz):
+    cdef:
+        np.ndarray _resampled_xyz
+        StatsArray1D _xyz
+
+    def __init__(self, np.ndarray resampled_xyz):
         self._resampled_xyz = resampled_xyz
         self._xyz = StatsArray1D(3)
 
-    def add_sample(self, spectrum):
+
+    cpdef object add_sample(self, Spectrum spectrum):
+
+        cdef double x, y, z
+
         # convert spectrum to CIE XYZ and add sample to pixel buffer
         x, y, z = spectrum_to_ciexyz(spectrum, self._resampled_xyz)
         self._xyz.add_sample(0, x)
         self._xyz.add_sample(1, y)
         self._xyz.add_sample(2, z)
 
-    def pack_results(self):
+    cpdef tuple pack_results(self):
+
+        cdef tuple mean, variance
 
         mean = (self._xyz.mean[0], self._xyz.mean[1], self._xyz.mean[2])
         variance = (self._xyz.variance[0], self._xyz.variance[1], self._xyz.variance[2])

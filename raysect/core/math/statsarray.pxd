@@ -39,9 +39,9 @@ cdef class StatsArray1D:
         readonly ndarray mean
         readonly ndarray variance
         readonly ndarray samples
-        double[::1] _mean_mv
-        double[::1] _variance_mv
-        int[::1] _samples_mv
+        double[::1] mean_mv
+        double[::1] variance_mv
+        int[::1] samples_mv
 
     cpdef object clear(self)
 
@@ -67,9 +67,9 @@ cdef class StatsArray2D:
         readonly ndarray mean
         readonly ndarray variance
         readonly ndarray samples
-        double[:,::1] _mean_mv
-        double[:,::1] _variance_mv
-        int[:,::1] _samples_mv
+        double[:,::1] mean_mv
+        double[:,::1] variance_mv
+        int[:,::1] samples_mv
 
     cpdef object clear(self)
 
@@ -95,9 +95,9 @@ cdef class StatsArray3D:
         readonly ndarray mean
         readonly ndarray variance
         readonly ndarray samples
-        double[:,:,::1] _mean_mv
-        double[:,:,::1] _variance_mv
-        int[:,:,::1] _samples_mv
+        double[:,:,::1] mean_mv
+        double[:,:,::1] variance_mv
+        int[:,:,::1] samples_mv
 
     cpdef object clear(self)
 
