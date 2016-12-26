@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -27,16 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.workflow import MulticoreEngine
-from raysect.optical.ray import Ray
-from raysect.optical.scenegraph.world import World
-from raysect.optical.scenegraph import Observer
 from time import time
+from raysect.core.workflow import RenderEngine, MulticoreEngine
 
-# TODO: cythonise me!
+cimport cython
+from raysect.optical cimport Spectrum, Ray
+from raysect.optical cimport World, Observer
 
 
-class SpectralSlice:
+cdef class SpectralSlice:
+
+    cdef:
+        readonly int offset, num_samples, total_samples
+        readonly double min_wavelength, max_wavelength, total_min_wavelength, total_max_wavelength
 
     def __init__(self, num_samples, min_wavelength, max_wavelength, slice_samples, slice_offset):
 
@@ -76,27 +81,28 @@ class SpectralSlice:
         self.total_max_wavelength = max_wavelength
 
 
-class PixelProcessor:
+cdef class PixelProcessor:
 
-    def add_sample(self, spectrum):
-        pass
+    cpdef object add_sample(self, Spectrum spectrum):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    def pack_results(self):
-        pass
-
-
-class _FrameSamplerBase:
-
-    def generate_tasks(self, pixels):
+    cpdef tuple pack_results(self):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
 
-class _PipelineBase:
+cdef class _FrameSamplerBase:
+
+    cpdef generate_tasks(self, tuple pixels):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+
+# TODO: make cdef?
+cdef class _PipelineBase:
     """
     base class defining internal interfaces to  image processing pipeline
     """
 
-    def _base_initialise(self, pixel_config, pixel_samples, spectral_slices):
+    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, list spectral_slices):
         """
         setup internal buffers (e.g. frames)
         reset internal statistics as appropriate
@@ -106,17 +112,17 @@ class _PipelineBase:
         """
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    def _base_pixel_processor(self, slice_id):
+    cpdef PixelProcessor _base_pixel_processor(self, int slice_id):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    def _base_update(self, pixel, packed_result, slice_id):
+    cpdef object _base_update(self, tuple pixel, tuple packed_result, int slice_id):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    def _base_finalise(self):
+    cpdef object _base_finalise(self):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
 
-class _ObserverBase(Observer):
+cdef class _ObserverBase(Observer):
     """
     - Needs to know about mean, max, min wavelength, number of samples, rays.
     - Things it will do:
@@ -144,6 +150,18 @@ class _ObserverBase(Observer):
         - display visual imagery for each pipeline as required
         - save state for each pipeline as required.
     """
+
+    cdef:
+        public _FrameSamplerBase _frame_sampler
+        public tuple _pipelines
+        int _pixel_samples
+        double _min_wavelength, _max_wavelength
+        int _ray_min_depth, _ray_max_depth
+        int _spectral_samples, _spectral_rays
+        double _ray_extinction_prob
+        bint _ray_importance_sampling
+        double ray_important_path_weight
+        public tuple _pixel_config
 
     def __init__(self, render_engine=None, parent=None, transform=None, name=None,
                  pixel_samples=None, spectral_rays=None, spectral_samples=None,
@@ -268,8 +286,14 @@ class _ObserverBase(Observer):
             raise ValueError("The ray important path weight must be in the range [0, 1].")
         self._ray_important_path_weight = value
 
-    def observe(self):
+    cpdef observe(self):
         """ Ask this Camera to Observe its world. """
+
+        cdef:
+            list slices, templates, tasks
+            _PipelineBase pipeline
+            int slice_id
+            Ray template
 
         # must be connected to a world node to be able to perform a ray trace
         if not isinstance(self.root, World):
@@ -280,10 +304,10 @@ class _ObserverBase(Observer):
         templates = self._generate_templates(slices)
 
         # initialise pipelines for rendering
-        for pipeline in self.pipelines:
-            pipeline._base_initialise(self._pixel_config, self.pixel_samples, slices)
+        for pipeline in self._pipelines:
+            pipeline._base_initialise(self._pixel_config, self._pixel_samples, slices)
 
-        tasks = self.frame_sampler.generate_tasks(self._pixel_config)
+        tasks = self._frame_sampler.generate_tasks(self._pixel_config)
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)
@@ -298,13 +322,14 @@ class _ObserverBase(Observer):
             )
 
         # close pipelines
-        for pipeline in self.pipelines:
+        for pipeline in self._pipelines:
             pipeline._base_finalise()
 
         # close statistics
         self._finalise_statistics()
 
-    def _slice_spectrum(self):
+    @cython.cdivision(True)
+    cdef inline list _slice_spectrum(self):
         """
         Sub-divides the spectral range into smaller wavelength slices.
 
@@ -315,14 +340,19 @@ class _ObserverBase(Observer):
         :return: A list of SpectralSlice objects.
         """
 
+        cdef:
+            double current
+            int start, end
+            list ranges
+
         # split spectral bins across rays - non-integer division is handled by
         # rounding up or down the non-integer boundaries between the ray ranges,
         # this means that some rays will have more samples than others
         current = 0
         start = 0
         ranges = []
-        while start < self.spectral_samples:
-            current += self.spectral_samples / self.spectral_rays
+        while start < self._spectral_samples:
+            current += self._spectral_samples / self._spectral_rays
             end = round(current)
             ranges.append((start, end))
             start = end
@@ -330,7 +360,7 @@ class _ObserverBase(Observer):
         # build slices
         return [SpectralSlice(self._spectral_samples, self._min_wavelength, self._max_wavelength, end - start, start) for start, end in ranges]
 
-    def _generate_templates(self, slices):
+    cdef inline list _generate_templates(self, list slices):
 
         return [
             Ray(
@@ -349,7 +379,9 @@ class _ObserverBase(Observer):
     # WORKER THREAD #
     #################
 
-    def _render_pixel(self, pixel_id, slice_id, template):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object _render_pixel(self, tuple pixel_id, int slice_id, Ray template):
         """
         - passed in are ray_template and pipeline object references
         - unpack task ID (pixel id)
@@ -362,12 +394,23 @@ class _ObserverBase(Observer):
         :return:
         """
 
+        cdef:
+            World world
+            list rays, pixel_processors
+            _PipelineBase pipeline
+            PixelProcessor processor
+            int ray_count
+            double etendue, projection_weight
+            Ray ray
+            Spectrum spectrum
+            list results
+
         # obtain reference to world
         world = self.root
 
         # generate rays and obtain pixel processors from each pipeline
-        rays = self._generate_rays(pixel_id, template, self.pixel_samples)
-        pixel_processors = [pipeline._base_pixel_processor(slice_id) for pipeline in self.pipelines]
+        rays = self._generate_rays(pixel_id, template, self._pixel_samples)
+        pixel_processors = [pipeline._base_pixel_processor(slice_id) for pipeline in self._pipelines]
 
         # initialise ray statistics
         ray_count = 0
@@ -384,7 +427,7 @@ class _ObserverBase(Observer):
 
             # sample, apply projection weight and convert to power
             spectrum = ray.trace(world)
-            spectrum.samples *= projection_weight * etendue
+            spectrum.mul_scalar(projection_weight * etendue)
 
             for processor in pixel_processors:
                 processor.add_sample(spectrum)
@@ -397,7 +440,80 @@ class _ObserverBase(Observer):
 
         return pixel_id, results, ray_count
 
-    def _generate_rays(self, pixel_id, template, ray_count):
+    ###################
+    # CONSUMER THREAD #
+    ###################
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object _update_state(self, tuple packed_result, int slice_id):
+        """
+        - unpack pixel ID and pipeline result tuples.
+        - pass results to each pipeline to update pipelines internal state
+        - print workflow statistics and any statistics for each pipeline.
+        - display visual imagery for each pipeline as required
+        - save state for each pipeline as required.
+
+        :return:
+        """
+
+        cdef:
+            tuple pixel_id, result
+            list results
+            int ray_count
+            _PipelineBase pipeline
+
+        # unpack worker results
+        pixel_id, results, ray_count = packed_result
+
+        for result, pipeline in zip(results, self._pipelines):
+            pipeline._base_update(pixel_id, result, slice_id)
+
+        # update users
+        self._update_statistics(ray_count)
+
+    cpdef object _initialise_statistics(self, list tasks):
+        """
+        Initialise statistics.
+        """
+
+        self._stats_ray_count = 0
+        self._stats_total_rays = 0
+        self._stats_start_time = time()
+        self._stats_progress_timer = time()
+        self._stats_total_tasks = len(tasks) * self.spectral_rays
+        self._stats_completed_tasks = 0
+
+    cpdef object _update_statistics(self, int sample_ray_count):
+        """
+        Display progress statistics.
+        """
+
+        self._stats_completed_tasks += 1
+        self._stats_ray_count += sample_ray_count
+        self._stats_total_rays += sample_ray_count
+
+        if (time() - self._stats_progress_timer) > 1.0:
+
+            current_time = time() - self._stats_start_time
+            completion = 100 * self._stats_completed_tasks / self._stats_total_tasks
+            print("Render time: {:0.3f}s ({:0.2f}% complete, {:0.1f}k rays)".format(
+                current_time, completion, self._stats_ray_count / 1000))
+
+            self._stats_ray_count = 0
+            self._stats_progress_timer = time()
+
+    cpdef object _finalise_statistics(self):
+        """
+        Final statistics output.
+        """
+
+        elapsed_time = time() - self._stats_start_time
+        mean_rays_per_sec = self._stats_total_rays / elapsed_time
+        print("Render complete - time elapsed {:0.3f}s - {:0.1f}k rays/s".format(
+            elapsed_time, mean_rays_per_sec / 1000))
+
+    cpdef list _generate_rays(self, tuple pixel_id, Ray template, int ray_count):
         """
         Generate a list of Rays that sample over the etendue of the pixel.
 
@@ -423,7 +539,7 @@ class _ObserverBase(Observer):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    def _pixel_etendue(self, pixel_id):
+    cpdef double _pixel_etendue(self, tuple pixel_id):
         """
 
         :param pixel_id:
@@ -431,69 +547,3 @@ class _ObserverBase(Observer):
         """
 
         raise NotImplementedError("To be defined in subclass.")
-
-    ###################
-    # CONSUMER THREAD #
-    ###################
-
-    def _update_state(self, packed_result, slice_id):
-        """
-        - unpack pixel ID and pipeline result tuples.
-        - pass results to each pipeline to update pipelines internal state
-        - print workflow statistics and any statistics for each pipeline.
-        - display visual imagery for each pipeline as required
-        - save state for each pipeline as required.
-
-        :return:
-        """
-
-        # unpack worker results
-        pixel_id, results, ray_count = packed_result
-
-        for result, pipeline in zip(results, self.pipelines):
-            pipeline._base_update(pixel_id, result, slice_id)
-
-        # update users
-        self._update_statistics(ray_count)
-
-    def _initialise_statistics(self, tasks):
-        """
-        Initialise statistics.
-        """
-
-        self._stats_ray_count = 0
-        self._stats_total_rays = 0
-        self._stats_start_time = time()
-        self._stats_progress_timer = time()
-        self._stats_total_tasks = len(tasks) * self.spectral_rays
-        self._stats_completed_tasks = 0
-
-    def _update_statistics(self, sample_ray_count):
-        """
-        Display progress statistics.
-        """
-
-        self._stats_completed_tasks += 1
-        self._stats_ray_count += sample_ray_count
-        self._stats_total_rays += sample_ray_count
-
-        if (time() - self._stats_progress_timer) > 1.0:
-
-            current_time = time() - self._stats_start_time
-            completion = 100 * self._stats_completed_tasks / self._stats_total_tasks
-            print("Render time: {:0.3f}s ({:0.2f}% complete, {:0.1f}k rays)".format(
-                current_time, completion, self._stats_ray_count / 1000))
-
-            self._stats_ray_count = 0
-            self._stats_progress_timer = time()
-
-    def _finalise_statistics(self):
-        """
-        Final statistics output.
-        """
-
-        elapsed_time = time() - self._stats_start_time
-        mean_rays_per_sec = self._stats_total_rays / elapsed_time
-        print("Render complete - time elapsed {:0.3f}s - {:0.1f}k rays/s".format(
-            elapsed_time, mean_rays_per_sec / 1000))
-
