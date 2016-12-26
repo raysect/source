@@ -41,6 +41,7 @@ cdef class Spectrum(SpectralFunction):
         readonly double delta_wavelength
         public ndarray samples
         ndarray _wavelengths
+        double[::1] samples_mv
 
     cdef inline void _wavelength_check(self, double min_wavelength, double max_wavelength)
     cdef inline void _attribute_check(self)
