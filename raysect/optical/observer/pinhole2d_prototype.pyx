@@ -27,15 +27,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core import Point3D, Vector3D
 from raysect.optical.observer.old.point_generator import Rectangle
-from math import pi, tan
-from raysect.optical.observer.observer2d import Observer2D
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline2d import RGBPipeline2D
 
+from raysect.optical.observer.old.point_generator cimport PointGenerator
+from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d
+from raysect.optical cimport Ray
+from libc.math cimport M_PI as pi, tan
+from raysect.optical.observer.observer2d cimport Observer2D
 
-class PinholeCamera(Observer2D):
+
+
+cdef class PinholeCamera(Observer2D):
     """
     An observer that models an idealised pinhole camera.
 
@@ -47,6 +51,10 @@ class PinholeCamera(Observer2D):
     :param double fov: The field of view of the camera in degrees (default is 90 degrees).
     """
 
+    cdef:
+        double _fov, image_delta, image_start_x, image_start_y
+        PointGenerator point_generator
+
     def __init__(self, pixels, parent=None, transform=None, name=None):
 
         super().__init__(pixels, FullFrameSampler2D(), [RGBPipeline2D()],
@@ -55,7 +63,7 @@ class PinholeCamera(Observer2D):
         self._fov = 45
         self._update_image_geometry()
 
-    def _update_image_geometry(self):
+    cdef inline object _update_image_geometry(self):
 
         max_pixels = max(self.pixels)
 
@@ -76,7 +84,15 @@ class PinholeCamera(Observer2D):
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
 
-    def _generate_rays(self, pixel_id, template, ray_count):
+    cpdef list _generate_rays(self, tuple pixel_id, Ray template, int ray_count):
+
+        cdef:
+            int ix, iy
+            double pixel_x, pixel_y
+            list points, rays
+            Point3D pixel_centre, point, origin
+            Vector3D direction
+            Ray ray
 
         # unpack
         ix, iy = pixel_id
@@ -84,7 +100,7 @@ class PinholeCamera(Observer2D):
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
         pixel_y = self.image_start_y - self.image_delta * iy
-        pixel_centre = Point3D(pixel_x, pixel_y, 1)
+        pixel_centre = new_point3d(pixel_x, pixel_y, 1)
 
         points = self.point_generator(ray_count)
 
@@ -93,8 +109,8 @@ class PinholeCamera(Observer2D):
         for point in points:
 
             # calculate point in virtual image plane to be used for ray direction
-            origin = Point3D()
-            direction = Vector3D(
+            origin = new_point3d(0, 0, 0)
+            direction = new_vector3d(
                 point.x + pixel_centre.x,
                 point.y + pixel_centre.y,
                 point.z + pixel_centre.z
@@ -108,5 +124,5 @@ class PinholeCamera(Observer2D):
 
         return rays
 
-    def _pixel_etendue(self, pixel_id):
+    cpdef double _pixel_etendue(self, tuple pixel_id):
         return 1.0

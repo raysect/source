@@ -67,15 +67,22 @@ cdef class _ObserverBase(Observer):
 
     cdef:
         public _FrameSamplerBase _frame_sampler
+        public object render_engine
         public tuple _pipelines
         int _pixel_samples
         double _min_wavelength, _max_wavelength
         int _ray_min_depth, _ray_max_depth
         int _spectral_samples, _spectral_rays
         double _ray_extinction_prob
-        bint _ray_importance_sampling
-        double ray_important_path_weight
+        public bint ray_importance_sampling
+        double _ray_important_path_weight
         public tuple _pixel_config
+        int _stats_ray_count
+        int _stats_total_rays
+        double _stats_start_time
+        double _stats_progress_timer
+        int _stats_total_tasks
+        int _stats_completed_tasks
 
     cdef inline list _slice_spectrum(self)
 
