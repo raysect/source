@@ -33,15 +33,10 @@ from time import time
 from raysect.core.workflow import RenderEngine, MulticoreEngine
 
 cimport cython
-from raysect.optical cimport Spectrum, Ray
-from raysect.optical cimport World, Observer
+from raysect.optical cimport World
 
 
 cdef class SpectralSlice:
-
-    cdef:
-        readonly int offset, num_samples, total_samples
-        readonly double min_wavelength, max_wavelength, total_min_wavelength, total_max_wavelength
 
     def __init__(self, num_samples, min_wavelength, max_wavelength, slice_samples, slice_offset):
 
@@ -150,18 +145,6 @@ cdef class _ObserverBase(Observer):
         - display visual imagery for each pipeline as required
         - save state for each pipeline as required.
     """
-
-    cdef:
-        public _FrameSamplerBase _frame_sampler
-        public tuple _pipelines
-        int _pixel_samples
-        double _min_wavelength, _max_wavelength
-        int _ray_min_depth, _ray_max_depth
-        int _spectral_samples, _spectral_rays
-        double _ray_extinction_prob
-        bint _ray_importance_sampling
-        double ray_important_path_weight
-        public tuple _pixel_config
 
     def __init__(self, render_engine=None, parent=None, transform=None, name=None,
                  pixel_samples=None, spectral_rays=None, spectral_samples=None,
@@ -286,6 +269,8 @@ cdef class _ObserverBase(Observer):
             raise ValueError("The ray important path weight must be in the range [0, 1].")
         self._ray_important_path_weight = value
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef observe(self):
         """ Ask this Camera to Observe its world. """
 
