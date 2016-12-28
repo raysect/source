@@ -29,38 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport Spectrum, Ray
+from raysect.optical cimport Ray
 from raysect.optical cimport Observer
-
-
-cdef class SpectralSlice:
-
-    cdef:
-        readonly int offset, num_samples, total_samples
-        readonly double min_wavelength, max_wavelength, total_min_wavelength, total_max_wavelength
-
-
-cdef class PixelProcessor:
-
-    cpdef object add_sample(self, Spectrum spectrum)
-
-    cpdef tuple pack_results(self)
-
-
-cdef class _FrameSamplerBase:
-
-    cpdef generate_tasks(self, tuple pixels)
-
-
-cdef class _PipelineBase:
-
-    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, list spectral_slices)
-
-    cpdef PixelProcessor _base_pixel_processor(self, int slice_id)
-
-    cpdef object _base_update(self, tuple pixel, tuple packed_result, int slice_id)
-
-    cpdef object _base_finalise(self)
+from raysect.optical.observer.base.sampler cimport _FrameSamplerBase
 
 
 cdef class _ObserverBase(Observer):
@@ -101,3 +72,7 @@ cdef class _ObserverBase(Observer):
     cpdef list _generate_rays(self, tuple pixel_id, Ray template, int ray_count)
 
     cpdef double _pixel_etendue(self, tuple pixel_id)
+
+
+cdef class Observer2D(_ObserverBase):
+    pass

@@ -28,19 +28,16 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from time import time
-
+cimport cython
+cimport numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
 from .colormaps import viridis
 
-cimport cython
-cimport numpy as np
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsArray3D, StatsArray1D
-from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.colour cimport resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
-from raysect.optical.observer.observer2d cimport Pipeline2D
-from raysect.optical.observer._base cimport PixelProcessor
-
+from raysect.optical.spectrum cimport Spectrum
 
 
 cdef class RGBPipeline2D(Pipeline2D):

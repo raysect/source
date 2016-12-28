@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from random import shuffle
-from .observer2d import FrameSampler2D
+from .base import FrameSampler2D
 
 
 class FullFrameSampler2D(FrameSampler2D):

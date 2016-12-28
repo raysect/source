@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -27,11 +29,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer._base cimport _ObserverBase, _FrameSamplerBase, _PipelineBase, PixelProcessor
+from raysect.optical.observer.base.processor cimport PixelProcessor
 
 
-cdef class FrameSampler2D(_FrameSamplerBase):
-    pass
+cdef class _PipelineBase:
+
+    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, list spectral_slices)
+
+    cpdef PixelProcessor _base_pixel_processor(self, int slice_id)
+
+    cpdef object _base_update(self, tuple pixel, tuple packed_result, int slice_id)
+
+    cpdef object _base_finalise(self)
 
 
 cdef class Pipeline2D(_PipelineBase):
@@ -43,7 +52,3 @@ cdef class Pipeline2D(_PipelineBase):
     cpdef object finalise(self)
 
     cpdef PixelProcessor pixel_processor(self, int slice_id)
-
-
-cdef class Observer2D(_ObserverBase):
-    pass

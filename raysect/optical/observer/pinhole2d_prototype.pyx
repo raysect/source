@@ -35,8 +35,7 @@ from raysect.optical.observer.old.point_generator cimport PointGenerator
 from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d
 from raysect.optical cimport Ray
 from libc.math cimport M_PI as pi, tan
-from raysect.optical.observer.observer2d cimport Observer2D
-
+from raysect.optical.observer.base cimport Observer2D
 
 
 cdef class PinholeCamera(Observer2D):
