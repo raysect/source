@@ -47,7 +47,7 @@ cdef class _ObserverBase(Observer):
         double _ray_extinction_prob
         public bint ray_importance_sampling
         double _ray_important_path_weight
-        public tuple _pixel_config
+        public tuple _pixels
         int _stats_ray_count
         int _stats_total_rays
         double _stats_start_time

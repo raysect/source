@@ -69,21 +69,25 @@ cdef class _ObserverBase(Observer):
         - save state for each pipeline as required.
     """
 
-    def __init__(self, render_engine=None, parent=None, transform=None, name=None,
-                 pixel_samples=None, spectral_rays=None, spectral_samples=None,
+    def __init__(self, pixels, frame_sampler, pipelines,
+                 parent=None, transform=None, name=None,
+                 render_engine=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(parent, transform, name)
 
-        self.pixel_samples = pixel_samples or 100
         self.render_engine = render_engine or MulticoreEngine()
+        self.pixel_samples = pixel_samples or 100
 
         # preset internal values to satisfy property dependencies
         self._min_wavelength = 0
         self._ray_min_depth = 0
 
         # ray configuration (order matters due to property dependencies)
+        self.pixels = pixels
+        self.frame_sampler = frame_sampler
+        self.pipelines = pipelines
         self.spectral_samples = spectral_samples or 15
         self.spectral_rays = spectral_rays or 1
         self.max_wavelength = max_wavelength or 740.0
@@ -93,6 +97,45 @@ cdef class _ObserverBase(Observer):
         self.ray_min_depth = ray_min_depth or 3
         self.ray_importance_sampling = ray_importance_sampling or True
         self.ray_important_path_weight = ray_important_path_weight or 0.2
+
+    def _validate_pixels(self, pixels):
+        raise NotImplementedError("To be defined in subclass.")
+
+    def _validate_frame_sampler(self, frame_sampler):
+        raise NotImplementedError("To be defined in subclass.")
+
+    def _validate_pipelines(self, pipelines):
+        raise NotImplementedError("To be defined in subclass.")
+
+    @property
+    def pixels(self):
+        return self._pixels
+
+    @pixels.setter
+    def pixels(self, value):
+        pixels = tuple(value)
+        self._validate_pixels(pixels)
+        self._pixels = pixels
+
+    @property
+    def frame_sampler(self):
+        return self._frame_sampler
+
+    @frame_sampler.setter
+    def frame_sampler(self, value):
+        self._validate_frame_sampler(value)
+        self._frame_sampler = value
+
+    @property
+    def pipelines(self):
+        return self._pipelines
+
+    @pipelines.setter
+    def pipelines(self, value):
+
+        pipelines = tuple(value)
+        self._validate_pipelines(pipelines)
+        self._pipelines = pipelines
 
     @property
     def pixel_samples(self):
@@ -213,9 +256,9 @@ cdef class _ObserverBase(Observer):
 
         # initialise pipelines for rendering
         for pipeline in self._pipelines:
-            pipeline._base_initialise(self._pixel_config, self._pixel_samples, slices)
+            pipeline._base_initialise(self._pixels, self._pixel_samples, slices)
 
-        tasks = self._frame_sampler.generate_tasks(self._pixel_config)
+        tasks = self._frame_sampler.generate_tasks(self._pixels)
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)
@@ -459,58 +502,37 @@ cdef class _ObserverBase(Observer):
 
 cdef class Observer2D(_ObserverBase):
 
-    def __init__(self, pixels, frame_sampler, processing_pipelines, render_engine=None, parent=None,
-                 transform=None, name=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
+    def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
+                 render_engine=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(
-            render_engine, parent, transform, name, pixel_samples, spectral_rays, spectral_samples,
+            pixels, frame_sampler, pipelines, parent, transform, name, render_engine,
+            pixel_samples, spectral_rays, spectral_samples,
             min_wavelength, max_wavelength, ray_extinction_prob, ray_min_depth,
             ray_max_depth, ray_importance_sampling, ray_important_path_weight
         )
 
-        self.pixels = pixels
-        self.frame_sampler = frame_sampler
-        self.pipelines = processing_pipelines
+    def _validate_pixels(self, pixels):
 
-    @property
-    def pixels(self):
-        return self._pixel_config
-
-    @pixels.setter
-    def pixels(self, value):
-        value = tuple(value)
-        if len(value) != 2:
+        if len(pixels) != 2:
             raise ValueError("Pixels must be a 2 element tuple defining the x and y resolution.")
-        x, y = value
+        x, y = pixels
         if x <= 0:
             raise ValueError("Number of x pixels must be greater than 0.")
         if y <= 0:
             raise ValueError("Number of y pixels must be greater than 0.")
-        self._pixel_config = value
 
-    @property
-    def frame_sampler(self):
-        return self._frame_sampler
+    def _validate_frame_sampler(self, frame_sampler):
 
-    @frame_sampler.setter
-    def frame_sampler(self, value):
-        if not isinstance(value, FrameSampler2D):
+        if not isinstance(frame_sampler, FrameSampler2D):
             raise TypeError("The frame sampler for a 2d observer must be a subclass of FrameSampler2D.")
-        self._frame_sampler = value
 
-    @property
-    def pipelines(self):
-        return self._pipelines
+    def _validate_pipelines(self, pipelines):
 
-    @pipelines.setter
-    def pipelines(self, value):
-
-        pipelines = tuple(value)
         if len(pipelines) < 1:
             raise ValueError("At least one processing pipeline must be provided.")
         for pipeline in pipelines:
             if not isinstance(pipeline, Pipeline2D):
                 raise TypeError("Processing pipelines for a 2d observer must be a subclass of Pipeline2D.")
-        self._pipelines = pipelines
