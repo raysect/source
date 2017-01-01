@@ -53,7 +53,7 @@ cdef class Ray(CoreRay):
                  int num_samples = 40,
                  double max_distance = INFINITY,
                  double extinction_prob = 0.1,
-                 int min_depth = 3,
+                 int extinction_min_depth = 3,
                  int max_depth = 100,
                  bint importance_sampling=True,
                  double important_path_weight=0.25):
@@ -77,7 +77,7 @@ cdef class Ray(CoreRay):
         self._max_wavelength = max_wavelength
 
         self.extinction_prob = extinction_prob
-        self.min_depth = min_depth
+        self.extinction_min_depth = extinction_min_depth
         self.max_depth = max_depth
         self.depth = 0
 
@@ -97,7 +97,7 @@ cdef class Ray(CoreRay):
             self._min_wavelength,
             self._max_wavelength,
             self._extinction_prob,
-            self._min_depth,
+            self._extinction_min_depth,
             self._max_depth,
             self.depth,
             self.importance_sampling,
@@ -114,7 +114,7 @@ cdef class Ray(CoreRay):
          self._min_wavelength,
          self._max_wavelength,
          self._extinction_prob,
-         self._min_depth,
+         self._extinction_min_depth,
          self._max_depth,
          self.depth,
          self.importance_sampling,
@@ -183,15 +183,15 @@ cdef class Ray(CoreRay):
         def __set__(self, double extinction_prob):
             self._extinction_prob = clamp(extinction_prob, 0.0, 1.0)
 
-    property min_depth:
+    property extinction_min_depth:
 
         def __get__(self):
-            return self._min_depth
+            return self._extinction_min_depth
 
-        def __set__(self, int min_depth):
-            if min_depth <= 1:
-                raise ValueError("The minimum depth cannot be less than 1.")
-            self._min_depth = min_depth
+        def __set__(self, int extinction_min_depth):
+            if extinction_min_depth <= 1:
+                raise ValueError("The minimum extinction depth cannot be less than 1.")
+            self._extinction_min_depth = extinction_min_depth
 
     property max_depth:
 
@@ -199,7 +199,7 @@ cdef class Ray(CoreRay):
             return self._max_depth
 
         def __set__(self, int max_depth):
-            if max_depth < self._min_depth:
+            if max_depth < self._extinction_min_depth:
                 raise ValueError("The maximum depth cannot be less than the minimum depth.")
             self._max_depth = max_depth
 
@@ -253,7 +253,7 @@ cdef class Ray(CoreRay):
 
         # limit ray recursion depth with Russian roulette
         # set normalisation to ensure the sampling remains unbiased
-        if keep_alive or self.depth < self._min_depth:
+        if keep_alive or self.depth < self._extinction_min_depth:
             normalisation = 1.0
         else:
             if self.depth >= self._max_depth or probability(self._extinction_prob):
@@ -377,7 +377,7 @@ cdef class Ray(CoreRay):
         ray._max_wavelength = self._max_wavelength
         ray.max_distance = self.max_distance
         ray._extinction_prob = self._extinction_prob
-        ray._min_depth = self._min_depth
+        ray._extinction_min_depth = self._extinction_min_depth
         ray._max_depth = self._max_depth
         ray.importance_sampling = self.importance_sampling
         ray._important_path_weight = self._important_path_weight
@@ -411,7 +411,7 @@ cdef class Ray(CoreRay):
             origin, direction,
             self._min_wavelength, self._max_wavelength, self._num_samples,
             self.max_distance,
-            self._extinction_prob, self._min_depth, self._max_depth,
+            self._extinction_prob, self._extinction_min_depth, self._max_depth,
             self.importance_sampling,
             self._important_path_weight
         )

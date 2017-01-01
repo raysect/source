@@ -44,7 +44,7 @@ cdef class Ray(CoreRay):
         double _min_wavelength
         double _max_wavelength
         double _extinction_prob
-        int _min_depth
+        int _extinction_min_depth
         int _max_depth
         public int depth
         readonly int ray_count
@@ -63,10 +63,10 @@ cdef class Ray(CoreRay):
 
 
 cdef inline Ray new_ray(Point3D origin, Vector3D direction,
-             double min_wavelength, double max_wavelength, int num_samples,
-             double max_distance,
-             double extinction_prob, int min_depth, int max_depth,
-             bint importance_sampling, double important_path_weight):
+                        double min_wavelength, double max_wavelength, int num_samples,
+                        double max_distance,
+                        double extinction_prob, int extinction_min_depth, int max_depth,
+                        bint importance_sampling, double important_path_weight):
 
     cdef Ray ray
 
@@ -81,7 +81,7 @@ cdef inline Ray new_ray(Point3D origin, Vector3D direction,
     ray._important_path_weight = important_path_weight
 
     ray._extinction_prob = extinction_prob
-    ray._min_depth = min_depth
+    ray._extinction_min_depth = extinction_min_depth
     ray._max_depth = max_depth
     ray.depth = 0
 

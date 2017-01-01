@@ -42,7 +42,7 @@ cdef class _ObserverBase(Observer):
         public tuple _pipelines
         int _pixel_samples
         double _min_wavelength, _max_wavelength
-        int _ray_min_depth, _ray_max_depth
+        int _ray_extinction_min_depth, _ray_max_depth
         int _spectral_samples, _spectral_rays
         double _ray_extinction_prob
         public bint ray_importance_sampling

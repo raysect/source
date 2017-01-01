@@ -72,7 +72,7 @@ cdef class _ObserverBase(Observer):
     def __init__(self, pixels, frame_sampler, pipelines,
                  parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
-                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_min_depth=None,
+                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(parent, transform, name)
@@ -82,7 +82,7 @@ cdef class _ObserverBase(Observer):
 
         # preset internal values to satisfy property dependencies
         self._min_wavelength = 0
-        self._ray_min_depth = 0
+        self._ray_extinction_min_depth = 0
 
         # ray configuration (order matters due to property dependencies)
         self.pixels = pixels
@@ -94,7 +94,7 @@ cdef class _ObserverBase(Observer):
         self.min_wavelength = min_wavelength or 375.0
         self.ray_extinction_prob = ray_extinction_prob or 0.01
         self.ray_max_depth = ray_max_depth or 500
-        self.ray_min_depth = ray_min_depth or 3
+        self.ray_extinction_min_depth = ray_extinction_min_depth or 3
         self.ray_importance_sampling = ray_importance_sampling or True
         self.ray_important_path_weight = ray_important_path_weight or 0.2
 
@@ -202,16 +202,14 @@ cdef class _ObserverBase(Observer):
         self._ray_extinction_prob = value
 
     @property
-    def ray_min_depth(self):
-        return self._ray_min_depth
+    def ray_extinction_min_depth(self):
+        return self._ray_extinction_min_depth
 
-    @ray_min_depth.setter
-    def ray_min_depth(self, value):
+    @ray_extinction_min_depth.setter
+    def ray_extinction_min_depth(self, value):
         if value < 0:
             raise ValueError("Minimum ray depth cannot be less than 0.")
-        if value > self._ray_max_depth:
-            raise ValueError("Minimum ray depth cannot be greater than maximum ray depth.")
-        self._ray_min_depth = value
+        self._ray_extinction_min_depth = value
 
     @property
     def ray_max_depth(self):
@@ -221,8 +219,6 @@ cdef class _ObserverBase(Observer):
     def ray_max_depth(self, value):
         if value < 0:
             raise ValueError("Maximum ray depth cannot be less than 0.")
-        if value < self._ray_min_depth:
-            raise ValueError("Maximum ray depth cannot be less than minimum ray depth.")
         self._ray_max_depth = value
 
     @property
@@ -319,7 +315,7 @@ cdef class _ObserverBase(Observer):
                 max_wavelength=slice.max_wavelength,
                 num_samples=slice.num_samples,
                 extinction_prob=self.ray_extinction_prob,
-                min_depth=self.ray_min_depth,
+                extinction_min_depth=self.ray_extinction_min_depth,
                 max_depth=self.ray_max_depth,
                 importance_sampling=self.ray_importance_sampling,
                 important_path_weight=self.ray_important_path_weight
@@ -504,13 +500,13 @@ cdef class Observer2D(_ObserverBase):
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
-                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_min_depth=None,
+                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(
             pixels, frame_sampler, pipelines, parent, transform, name, render_engine,
             pixel_samples, spectral_rays, spectral_samples,
-            min_wavelength, max_wavelength, ray_extinction_prob, ray_min_depth,
+            min_wavelength, max_wavelength, ray_extinction_prob, ray_extinction_min_depth,
             ray_max_depth, ray_importance_sampling, ray_important_path_weight
         )
 
