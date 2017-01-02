@@ -121,7 +121,7 @@ sphere = Sphere(0.4,
 
 
 from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
-from raysect.optical.observer.pipeline2d import RGBPipeline2D, BayerPipeline2D
+from raysect.optical.observer.pipeline2d import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D
 
 
 from raysect.core.workflow import SerialEngine
@@ -132,14 +132,17 @@ rgb.accumulate = True
 
 bayer = BayerPipeline2D()
 bayer.accumulate = True
-pipelines = [rgb, bayer]
 
-camera = PinholeCamera((256, 256), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+spectral = SpectralPipeline2D()
+spectral.accumulate = True
+
+pipelines = [rgb, bayer, spectral]
+
+camera = PinholeCamera((32, 32), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 camera.pixel_samples = 50
+camera.spectral_samples = 15
 camera.spectral_rays = 1
 # camera.render_engine = SerialEngine()
-
-# camera.pipelines[0].display_progress = False
 
 # camera.ray_importance_sampling = True
 # camera.ray_important_path_weight = 0.1
