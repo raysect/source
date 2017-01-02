@@ -112,9 +112,9 @@ cdef class RGBPipeline2D(Pipeline2D):
     cpdef object update(self, int x, int y, tuple packed_result, int slice_id):
 
         cdef:
-            tuple mean, variance
+            np.ndarray mean, variance
 
-        # obtain result
+        # unpack results
         mean, variance = packed_result
 
         # accumulate sub-samples
@@ -279,12 +279,7 @@ cdef class XYZPixelProcessor(PixelProcessor):
         self._xyz.add_sample(2, z)
 
     cpdef tuple pack_results(self):
-
-        cdef tuple mean, variance
-
-        mean = (self._xyz.mean[0], self._xyz.mean[1], self._xyz.mean[2])
-        variance = (self._xyz.variance[0], self._xyz.variance[1], self._xyz.variance[2])
-        return mean, variance
+        return self._xyz.mean, self._xyz.variance
 
 
 cdef class BayerPipeline2D(Pipeline2D):
@@ -595,7 +590,7 @@ cdef class SpectralPipeline2D(Pipeline2D):
 
         cdef:
             int bin
-            tuple mean, variance
+            np.ndarray mean, variance
             SpectralSlice slice
 
         # obtain result
@@ -708,8 +703,5 @@ cdef class SpectralPixelProcessor(PixelProcessor):
             self._bins.add_sample(index, spectrum.samples_mv[index])
 
     cpdef tuple pack_results(self):
+        return self._bins.mean, self._bins.variance
 
-        cdef tuple mean, variance
-        mean = tuple(self._bins.mean)
-        variance = tuple(self._bins.variance)
-        return mean, variance

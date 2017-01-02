@@ -138,8 +138,8 @@ spectral.accumulate = True
 
 pipelines = [rgb, bayer, spectral]
 
-camera = PinholeCamera((32, 32), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
-camera.pixel_samples = 50
+camera = PinholeCamera((512, 512), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+camera.pixel_samples = 250
 camera.spectral_samples = 15
 camera.spectral_rays = 1
 # camera.render_engine = SerialEngine()
