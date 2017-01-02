@@ -299,7 +299,7 @@ cdef class _ObserverBase(Observer):
         start = 0
         ranges = []
         while start < self._spectral_samples:
-            current += self._spectral_samples / self._spectral_rays
+            current += self._spectral_samples / <double> self._spectral_rays
             end = round(current)
             ranges.append((start, end))
             start = end
