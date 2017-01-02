@@ -54,9 +54,11 @@ cdef class PinholeCamera(Observer2D):
         double _fov, image_delta, image_start_x, image_start_y
         PointGenerator point_generator
 
-    def __init__(self, pixels, parent=None, transform=None, name=None):
+    def __init__(self, pixels, parent=None, transform=None, name=None, pipelines=None):
 
-        super().__init__(pixels, FullFrameSampler2D(), [RGBPipeline2D()],
+        pipelines = pipelines or [RGBPipeline2D()]
+
+        super().__init__(pixels, FullFrameSampler2D(), pipelines,
                          parent=parent, transform=transform, name=name)
 
         self._fov = 45

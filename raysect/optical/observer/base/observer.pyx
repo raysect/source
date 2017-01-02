@@ -357,7 +357,7 @@ cdef class _ObserverBase(Observer):
 
         # generate rays and obtain pixel processors from each pipeline
         rays = self._generate_rays(pixel_id, template, self._pixel_samples)
-        pixel_processors = [pipeline._base_pixel_processor(slice_id) for pipeline in self._pipelines]
+        pixel_processors = [pipeline._base_pixel_processor(pixel_id, slice_id) for pipeline in self._pipelines]
 
         # initialise ray statistics
         ray_count = 0

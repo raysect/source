@@ -31,7 +31,7 @@
 
 cdef class _PipelineBase:
     """
-    base class defining internal interfaces to  image processing pipeline
+    base class defining internal interfaces to image processing pipeline
     """
 
     cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, list spectral_slices):
@@ -44,7 +44,7 @@ cdef class _PipelineBase:
         """
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    cpdef PixelProcessor _base_pixel_processor(self, int slice_id):
+    cpdef PixelProcessor _base_pixel_processor(self, tuple pixel, int slice_id):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
     cpdef object _base_update(self, tuple pixel, tuple packed_result, int slice_id):
@@ -61,13 +61,13 @@ cdef class Pipeline2D(_PipelineBase):
     cpdef object initialise(self, tuple pixels, int pixel_samples, list spectral_slices):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
+    cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
     cpdef object update(self, int x, int y, tuple packed_result, int slice_id):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
     cpdef object finalise(self):
-        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
-
-    cpdef PixelProcessor pixel_processor(self, int slice_id):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
     cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, list spectral_slices):
@@ -81,6 +81,8 @@ cdef class Pipeline2D(_PipelineBase):
     cpdef object _base_finalise(self):
         self.finalise()
 
-    cpdef PixelProcessor _base_pixel_processor(self, int slice_id):
-        return self.pixel_processor(slice_id)
+    cpdef PixelProcessor _base_pixel_processor(self, tuple pixel, int slice_id):
+        cdef int x, y
+        x, y = pixel
+        return self.pixel_processor(x, y, slice_id)
 

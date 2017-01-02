@@ -121,14 +121,25 @@ sphere = Sphere(0.4,
 
 
 from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
+from raysect.optical.observer.pipeline2d import RGBPipeline2D, BayerPipeline2D
+
 
 from raysect.core.workflow import SerialEngine
 
 # create and setup the camera
-camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0))
+rgb = RGBPipeline2D()
+rgb.accumulate = True
+
+bayer = BayerPipeline2D()
+bayer.accumulate = True
+pipelines = [rgb, bayer]
+
+camera = PinholeCamera((256, 256), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 camera.pixel_samples = 50
-camera.pipelines[0].accumulate = True
+camera.spectral_rays = 1
 # camera.render_engine = SerialEngine()
+
+# camera.pipelines[0].display_progress = False
 
 # camera.ray_importance_sampling = True
 # camera.ray_important_path_weight = 0.1
@@ -147,16 +158,15 @@ camera.pipelines[0].accumulate = True
 # ion()
 # camera.observe()
 
-# camera.process_count = 1
 
-# # start ray tracing
+# start ray tracing
 ion()
 for p in range(1, 5000):
     print("Rendering pass {}...".format(p))
     camera.observe()
     print()
 
-# # display final result
+# display final result
 ioff()
 camera.pipelines[0].display()
 show()
