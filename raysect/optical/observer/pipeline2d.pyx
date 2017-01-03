@@ -83,7 +83,7 @@ cdef class RGBPipeline2D(Pipeline2D):
             return self._generate_srgb_frame(self.xyz_frame)
         return None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -109,10 +109,10 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef object update(self, int x, int y, tuple packed_result, int slice_id):
+    cpdef object update(self, int x, int y, int slice_id, tuple packed_result):
 
         cdef:
-            np.ndarray mean, variance
+            double[::1] mean, variance
 
         # unpack results
         mean, variance = packed_result
@@ -324,7 +324,7 @@ cdef class BayerPipeline2D(Pipeline2D):
     #         return self._generate_srgb_frame(self.xyz_frame)
     #     return None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -350,7 +350,7 @@ cdef class BayerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef object update(self, int x, int y, tuple packed_result, int slice_id):
+    cpdef object update(self, int x, int y, int slice_id, tuple packed_result):
 
         cdef:
             double mean, variance
@@ -561,20 +561,16 @@ cdef class SpectralPipeline2D(Pipeline2D):
         self._samples = 0
         self._spectral_slices = None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels
         self._samples = pixel_samples
         self._spectral_slices = spectral_slices
 
-        # obtain full spectral configuration from first spectral slice
-        # todo: pass through full spectral range in addition to slices
-        bins = spectral_slices[0].total_samples
-
         # create intermediate and final frame-buffers
-        if not self.accumulate or self.frame is None or self.frame.shape != (nx, ny, bins):
-            self.frame = StatsArray3D(nx, ny, bins)
+        if not self.accumulate or self.frame is None or self.frame.shape != (nx, ny, spectral_samples):
+            self.frame = StatsArray3D(nx, ny, spectral_samples)
 
         if self.display_progress:
             self._start_display()
@@ -586,11 +582,11 @@ cdef class SpectralPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef object update(self, int x, int y, tuple packed_result, int slice_id):
+    cpdef object update(self, int x, int y, int slice_id, tuple packed_result):
 
         cdef:
-            int bin
-            np.ndarray mean, variance
+            int bin, index
+            double[::1] mean, variance
             SpectralSlice slice
 
         # obtain result

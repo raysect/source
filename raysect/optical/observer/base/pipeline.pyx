@@ -34,7 +34,7 @@ cdef class _PipelineBase:
     base class defining internal interfaces to image processing pipeline
     """
 
-    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, list spectral_slices):
+    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
         """
         setup internal buffers (e.g. frames)
         reset internal statistics as appropriate
@@ -44,10 +44,10 @@ cdef class _PipelineBase:
         """
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    cpdef PixelProcessor _base_pixel_processor(self, tuple pixel, int slice_id):
+    cpdef PixelProcessor _base_pixel_processor(self, tuple pixel_id, int slice_id):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    cpdef object _base_update(self, tuple pixel, tuple packed_result, int slice_id):
+    cpdef object _base_update(self, tuple pixel_id, int slice_id, tuple packed_result):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
     cpdef object _base_finalise(self):
@@ -58,31 +58,31 @@ cdef class Pipeline2D(_PipelineBase):
     """
     """
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    cpdef object update(self, int x, int y, tuple packed_result, int slice_id):
+    cpdef object update(self, int x, int y, int slice_id, tuple packed_result):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
     cpdef object finalise(self):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, list spectral_slices):
-        self.initialise(pixel_config, pixel_samples, spectral_slices)
+    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
+        self.initialise(pixel_config, pixel_samples, spectral_samples, min_wavelength, max_wavelength, spectral_slices)
 
-    cpdef object _base_update(self, tuple pixel, tuple packed_result, int slice_id):
+    cpdef object _base_update(self, tuple pixel_id, int slice_id, tuple packed_result):
         cdef int x, y
-        x, y = pixel
-        self.update(x, y, packed_result, slice_id)
+        x, y = pixel_id
+        self.update(x, y, slice_id, packed_result)
 
     cpdef object _base_finalise(self):
         self.finalise()
 
-    cpdef PixelProcessor _base_pixel_processor(self, tuple pixel, int slice_id):
+    cpdef PixelProcessor _base_pixel_processor(self, tuple pixel_id, int slice_id):
         cdef int x, y
-        x, y = pixel
+        x, y = pixel_id
         return self.pixel_processor(x, y, slice_id)
 

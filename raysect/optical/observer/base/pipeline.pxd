@@ -34,22 +34,22 @@ from raysect.optical.observer.base.processor cimport PixelProcessor
 
 cdef class _PipelineBase:
 
-    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, list spectral_slices)
+    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices)
 
-    cpdef PixelProcessor _base_pixel_processor(self, tuple pixel, int slice_id)
+    cpdef PixelProcessor _base_pixel_processor(self, tuple pixel_id, int slice_id)
 
-    cpdef object _base_update(self, tuple pixel, tuple packed_result, int slice_id)
+    cpdef object _base_update(self, tuple pixel_id, int slice_id, tuple packed_result)
 
     cpdef object _base_finalise(self)
 
 
 cdef class Pipeline2D(_PipelineBase):
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, list spectral_slices)
+    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices)
 
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id)
 
-    cpdef object update(self, int x, int y, tuple packed_result, int slice_id)
+    cpdef object update(self, int x, int y, int slice_id, tuple packed_result)
 
     cpdef object finalise(self)
 

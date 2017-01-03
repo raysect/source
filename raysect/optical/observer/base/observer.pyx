@@ -164,7 +164,7 @@ cdef class _ObserverBase(Observer):
     @spectral_rays.setter
     def spectral_rays(self, value):
         if not 0 < value <= self.spectral_samples:
-            raise ValueError("The number of spectral rays must be in the range [1, spectral_samples].")
+            raise ValueError("The number of spectral rays cannot be greater than the number of spectral bins (currently {}).".format(self.spectral_samples))
         self._spectral_rays = value
 
     @property
@@ -252,7 +252,7 @@ cdef class _ObserverBase(Observer):
 
         # initialise pipelines for rendering
         for pipeline in self._pipelines:
-            pipeline._base_initialise(self._pixels, self._pixel_samples, slices)
+            pipeline._base_initialise(self._pixels, self._pixel_samples, self.spectral_samples, self.min_wavelength, self.max_wavelength, slices)
 
         tasks = self._frame_sampler.generate_tasks(self._pixels)
 
@@ -275,7 +275,6 @@ cdef class _ObserverBase(Observer):
         # close statistics
         self._finalise_statistics()
 
-    @cython.cdivision(True)
     cdef inline list _slice_spectrum(self):
         """
         Sub-divides the spectral range into smaller wavelength slices.
@@ -299,7 +298,7 @@ cdef class _ObserverBase(Observer):
         start = 0
         ranges = []
         while start < self._spectral_samples:
-            current += self._spectral_samples / <double> self._spectral_rays
+            current += self._spectral_samples / self._spectral_rays
             end = round(current)
             ranges.append((start, end))
             start = end
@@ -414,7 +413,7 @@ cdef class _ObserverBase(Observer):
         pixel_id, results, ray_count = packed_result
 
         for result, pipeline in zip(results, self._pipelines):
-            pipeline._base_update(pixel_id, result, slice_id)
+            pipeline._base_update(pixel_id, slice_id, result)
 
         # update users
         self._update_statistics(ray_count)
