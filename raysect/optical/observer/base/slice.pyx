@@ -49,7 +49,7 @@ cdef class SpectralSlice:
         if slice_samples <= 0:
             raise ValueError("The slice sample count must be greater than 0.")
 
-        if num_samples <= 0:
+        if slice_offset <= 0:
             raise ValueError("The slice offset cannot be less that 0.")
 
         # check slice samples and offset are consistent with full sample count
