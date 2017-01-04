@@ -63,7 +63,7 @@ cdef class Ray(CoreRay):
 
 
 cdef inline Ray new_ray(Point3D origin, Vector3D direction,
-                        double lower_wavelength, double upper_wavelength, int bins,
+                        double min_wavelength, double max_wavelength, int num_samples,
                         double max_distance,
                         double extinction_prob, int extinction_min_depth, int max_depth,
                         bint importance_sampling, double important_path_weight):
@@ -74,9 +74,9 @@ cdef inline Ray new_ray(Point3D origin, Vector3D direction,
     ray.origin = origin
     ray.direction = direction
     ray.max_distance = max_distance
-    ray._num_samples = bins
-    ray._min_wavelength = lower_wavelength
-    ray._max_wavelength = upper_wavelength
+    ray._num_samples = num_samples
+    ray._min_wavelength = min_wavelength
+    ray._max_wavelength = max_wavelength
     ray.importance_sampling = importance_sampling
     ray._important_path_weight = important_path_weight
 

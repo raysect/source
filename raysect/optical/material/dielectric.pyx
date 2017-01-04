@@ -256,10 +256,10 @@ cdef class Dielectric(Material):
             int index
 
         length = start_point.vector_to(end_point).get_length()
-        transmission = self.transmission.sample(spectrum.lower_wavelength, spectrum.upper_wavelength, spectrum.bins)
+        transmission = self.transmission.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
         s_view = spectrum.samples
         t_view = transmission
-        for index in range(spectrum.bins):
+        for index in range(spectrum.num_samples):
             s_view[index] *= cpow(t_view[index], length)
 
         return spectrum

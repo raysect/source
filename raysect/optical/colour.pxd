@@ -32,7 +32,7 @@
 from raysect.optical.spectrum cimport Spectrum
 from numpy cimport ndarray
 
-cpdef ndarray resample_ciexyz(double lower_wavelength, double upper_wavelength, int bins)
+cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int samples)
 
 cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = *)
 
