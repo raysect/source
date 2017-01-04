@@ -48,9 +48,9 @@ cdef class Ray(CoreRay):
     def __init__(self,
                  Point3D origin = Point3D(0, 0, 0),
                  Vector3D direction = Vector3D(0, 0, 1),
-                 double min_wavelength = 375,
-                 double max_wavelength = 785,
-                 int num_samples = 40,
+                 double lower_wavelength = 375,
+                 double upper_wavelength = 785,
+                 int bins = 40,
                  double max_distance = INFINITY,
                  double extinction_prob = 0.1,
                  int extinction_min_depth = 3,
@@ -58,13 +58,13 @@ cdef class Ray(CoreRay):
                  bint importance_sampling=True,
                  double important_path_weight=0.25):
 
-        if num_samples < 1:
-            raise ValueError("Number of samples can not be less than 1.")
+        if bins < 1:
+            raise ValueError("Number of bins can not be less than 1.")
 
-        if min_wavelength <= 0.0 or max_wavelength <= 0.0:
+        if lower_wavelength <= 0.0 or upper_wavelength <= 0.0:
             raise ValueError("Wavelength must be greater than to zero.")
 
-        if min_wavelength >= max_wavelength:
+        if lower_wavelength >= upper_wavelength:
             raise ValueError("Minimum wavelength must be less than the maximum wavelength.")
 
         if important_path_weight < 0 or important_path_weight > 1.0:
@@ -72,9 +72,9 @@ cdef class Ray(CoreRay):
 
         super().__init__(origin, direction, max_distance)
 
-        self._num_samples = num_samples
-        self._min_wavelength = min_wavelength
-        self._max_wavelength = max_wavelength
+        self._num_samples = bins
+        self._min_wavelength = lower_wavelength
+        self._max_wavelength = upper_wavelength
 
         self.extinction_prob = extinction_prob
         self.extinction_min_depth = extinction_min_depth
@@ -124,53 +124,53 @@ cdef class Ray(CoreRay):
 
         super().__setstate__(super_state)
 
-    property num_samples:
+    property bins:
 
         def __get__(self):
             return self._num_samples
 
-        def __set__(self, int num_samples):
+        def __set__(self, int bins):
 
-            if num_samples < 1:
-                raise ValueError("Number of samples can not be less than 1.")
+            if bins < 1:
+                raise ValueError("Number of bins can not be less than 1.")
 
-            self._num_samples = num_samples
+            self._num_samples = bins
 
     cdef inline int get_num_samples(self):
         return self._num_samples
 
-    property min_wavelength:
+    property lower_wavelength:
 
         def __get__(self):
             return self._min_wavelength
 
-        def __set__(self, double min_wavelength):
+        def __set__(self, double lower_wavelength):
 
-            if min_wavelength <= 0.0:
+            if lower_wavelength <= 0.0:
                 raise ValueError("Wavelength can not be less than or equal to zero.")
 
-            if min_wavelength >= self._max_wavelength:
+            if lower_wavelength >= self._max_wavelength:
                 raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
-            self._min_wavelength = min_wavelength
+            self._min_wavelength = lower_wavelength
 
     cdef inline double get_min_wavelength(self):
         return self._min_wavelength
 
-    property max_wavelength:
+    property upper_wavelength:
 
         def __get__(self):
             return self._max_wavelength
 
-        def __set__(self, double max_wavelength):
+        def __set__(self, double upper_wavelength):
 
-            if max_wavelength <= 0.0:
+            if upper_wavelength <= 0.0:
                 raise ValueError("Wavelength can not be less than or equal to zero.")
 
-            if self.min_wavelength >= max_wavelength:
+            if self.lower_wavelength >= upper_wavelength:
                 raise ValueError("Maximum wavelength can not be less than or equal to the minimum wavelength.")
 
-            self._max_wavelength = max_wavelength
+            self._max_wavelength = upper_wavelength
 
     cdef inline double get_max_wavelength(self):
         return self._max_wavelength

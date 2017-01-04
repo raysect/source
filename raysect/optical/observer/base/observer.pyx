@@ -72,7 +72,7 @@ cdef class _ObserverBase(Observer):
     def __init__(self, pixels, frame_sampler, pipelines,
                  parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
-                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
+                 lower_wavelength=None, upper_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(parent, transform, name)
@@ -90,8 +90,8 @@ cdef class _ObserverBase(Observer):
         self.pipelines = pipelines
         self.spectral_samples = spectral_samples or 15
         self.spectral_rays = spectral_rays or 1
-        self.max_wavelength = max_wavelength or 740.0
-        self.min_wavelength = min_wavelength or 375.0
+        self.upper_wavelength = upper_wavelength or 740.0
+        self.lower_wavelength = lower_wavelength or 375.0
         self.ray_extinction_prob = ray_extinction_prob or 0.01
         self.ray_max_depth = ray_max_depth or 500
         self.ray_extinction_min_depth = ray_extinction_min_depth or 3
@@ -168,11 +168,11 @@ cdef class _ObserverBase(Observer):
         self._spectral_rays = value
 
     @property
-    def min_wavelength(self):
+    def lower_wavelength(self):
         return self._min_wavelength
 
-    @min_wavelength.setter
-    def min_wavelength(self, value):
+    @lower_wavelength.setter
+    def lower_wavelength(self, value):
         if value <= 0:
             raise ValueError("The minimum wavelength must be greater than 0.")
         if value >= self._max_wavelength:
@@ -180,11 +180,11 @@ cdef class _ObserverBase(Observer):
         self._min_wavelength = value
 
     @property
-    def max_wavelength(self):
+    def upper_wavelength(self):
         return self._max_wavelength
 
-    @max_wavelength.setter
-    def max_wavelength(self, value):
+    @upper_wavelength.setter
+    def upper_wavelength(self, value):
         if value <= 0:
             raise ValueError("The maximum wavelength must be greater than 0.")
         if value <= self._min_wavelength:
@@ -252,7 +252,7 @@ cdef class _ObserverBase(Observer):
 
         # initialise pipelines for rendering
         for pipeline in self._pipelines:
-            pipeline._base_initialise(self._pixels, self._pixel_samples, self.spectral_samples, self.min_wavelength, self.max_wavelength, slices)
+            pipeline._base_initialise(self._pixels, self._pixel_samples, self.spectral_samples, self.lower_wavelength, self.upper_wavelength, slices)
 
         tasks = self._frame_sampler.generate_tasks(self._pixels)
 
@@ -310,9 +310,9 @@ cdef class _ObserverBase(Observer):
 
         return [
             Ray(
-                min_wavelength=slice.min_wavelength,
-                max_wavelength=slice.max_wavelength,
-                num_samples=slice.num_samples,
+                lower_wavelength=slice.lower_wavelength,
+                upper_wavelength=slice.upper_wavelength,
+                bins=slice.bins,
                 extinction_prob=self.ray_extinction_prob,
                 extinction_min_depth=self.ray_extinction_min_depth,
                 max_depth=self.ray_max_depth,
@@ -499,13 +499,13 @@ cdef class Observer2D(_ObserverBase):
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
-                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
+                 lower_wavelength=None, upper_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(
             pixels, frame_sampler, pipelines, parent, transform, name, render_engine,
             pixel_samples, spectral_rays, spectral_samples,
-            min_wavelength, max_wavelength, ray_extinction_prob, ray_extinction_min_depth,
+            lower_wavelength, upper_wavelength, ray_extinction_prob, ray_extinction_min_depth,
             ray_max_depth, ray_importance_sampling, ray_important_path_weight
         )
 

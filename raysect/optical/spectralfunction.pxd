@@ -43,28 +43,28 @@ cdef class SpectralFunction:
         double _sample_cache_max_wvl
         int _sample_cache_num_samp
 
-    cpdef double integrate(self, double min_wavelength, double max_wavelength)
-    cpdef double average(self, double min_wavelength, double max_wavelength)
-    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples)
+    cpdef double integrate(self, double lower_wavelength, double upper_wavelength)
+    cpdef double average(self, double lower_wavelength, double upper_wavelength)
+    cpdef ndarray sample(self, double lower_wavelength, double upper_wavelength, int bins)
 
     cdef inline void _average_cache_init(self)
     cpdef object _average_cache_clear(self)
-    cdef inline bint _average_cache_valid(self, double min_wavelength, double max_wavelength)
+    cdef inline bint _average_cache_valid(self, double lower_wavelength, double upper_wavelength)
     cdef inline double _average_cache_get(self)
-    cdef inline void _average_cache_set(self, double min_wavelength, double max_wavelength, double average)
+    cdef inline void _average_cache_set(self, double lower_wavelength, double upper_wavelength, double average)
 
     cdef inline void _sample_cache_init(self)
     cpdef object _sample_cache_clear(self)
-    cdef inline bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int num_samples)
+    cdef inline bint _sample_cache_valid(self, double lower_wavelength, double upper_wavelength, int bins)
     cdef inline ndarray _sample_cache_get(self)
-    cdef inline void _sample_cache_set(self, double min_wavelength, double max_wavelength, int num_samples, ndarray samples)
+    cdef inline void _sample_cache_set(self, double lower_wavelength, double upper_wavelength, int bins, ndarray samples)
 
 
 cdef class NumericallyIntegratedSF(SpectralFunction):
 
     cdef readonly double sample_resolution
 
-    cpdef double integrate(self, double min_wavelength, double max_wavelength)
+    cpdef double integrate(self, double lower_wavelength, double upper_wavelength)
     cpdef double function(self, double wavelength)
 
 

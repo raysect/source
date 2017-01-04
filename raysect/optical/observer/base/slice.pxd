@@ -32,5 +32,5 @@
 cdef class SpectralSlice:
 
     cdef:
-        readonly int offset, num_samples, total_samples
-        readonly double min_wavelength, max_wavelength, total_min_wavelength, total_max_wavelength
+        readonly int offset, bins, total_samples
+        readonly double lower_wavelength, upper_wavelength, total_min_wavelength, total_max_wavelength
