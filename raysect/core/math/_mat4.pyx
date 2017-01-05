@@ -29,6 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cimport cython
+
+
+@cython.freelist(256)
 cdef class _Mat4:
     """4x4 matrix base class."""
 

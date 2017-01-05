@@ -34,6 +34,8 @@ from libc.math cimport sqrt
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math._vec3 cimport _Vec3
 
+
+@cython.freelist(256)
 cdef class Point3D:
     """
     Represents a point in 3D affine space.
