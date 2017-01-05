@@ -40,6 +40,7 @@ import_array()
 
 
 # TODO: add a note about how the caching works, particularly that users must cache clear if function parameters change
+@cython.freelist(512)
 cdef class SpectralFunction:
     """
     SpectralFunction abstract base class.
