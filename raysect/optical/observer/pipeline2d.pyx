@@ -83,7 +83,7 @@ cdef class RGBPipeline2D(Pipeline2D):
             return self._generate_srgb_frame(self.xyz_frame)
         return None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_bins, double min_wavelength, double max_wavelength, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -324,7 +324,7 @@ cdef class BayerPipeline2D(Pipeline2D):
     #         return self._generate_srgb_frame(self.xyz_frame)
     #     return None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_bins, double min_wavelength, double max_wavelength, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -561,7 +561,7 @@ cdef class SpectralPipeline2D(Pipeline2D):
         self._samples = 0
         self._spectral_slices = None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_bins, double min_wavelength, double max_wavelength, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels

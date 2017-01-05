@@ -252,7 +252,7 @@ cdef class _ObserverBase(Observer):
 
         # initialise pipelines for rendering
         for pipeline in self._pipelines:
-            pipeline._base_initialise(self._pixels, self._pixel_samples, self.spectral_bins, self.min_wavelength, self.max_wavelength, slices)
+            pipeline._base_initialise(self._pixels, self._pixel_samples, self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
 
         tasks = self._frame_sampler.generate_tasks(self._pixels)
 
