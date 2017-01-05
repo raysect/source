@@ -125,12 +125,12 @@ cdef class SpectralFunction:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples):
+    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int bins):
         """
 
         :param min_wavelength:
         :param max_wavelength:
-        :param num_samples:
+        :param bins:
         :return:
         """
 
@@ -141,26 +141,26 @@ cdef class SpectralFunction:
             double lower, upper, delta, reciprocal
 
         # are cached samples already available?
-        if self._sample_cache_valid(min_wavelength, max_wavelength, num_samples):
+        if self._sample_cache_valid(min_wavelength, max_wavelength, bins):
             return self._sample_cache_get()
 
         # create new sample ndarray and obtain a memoryview for fast access
-        size = num_samples
+        size = bins
         samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
         PyArray_FILLWBYTE(samples, 0)
         s_view = samples
 
         # re-sample by averaging data across each bin
-        delta = (max_wavelength - min_wavelength) / num_samples
+        delta = (max_wavelength - min_wavelength) / bins
         lower = min_wavelength
         reciprocal = 1.0 / delta
-        for index in range(num_samples):
+        for index in range(bins):
             upper = min_wavelength + (index + 1) * delta
             s_view[index] = reciprocal * self.integrate(lower, upper)
             lower = upper
 
         # update cache
-        self._sample_cache_set(min_wavelength, max_wavelength, num_samples, samples)
+        self._sample_cache_set(min_wavelength, max_wavelength, bins, samples)
 
         return samples
 
@@ -175,23 +175,23 @@ cdef class SpectralFunction:
     cpdef object _sample_cache_clear(self):
         self._sample_cache = None
 
-    cdef inline bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int num_samples):
+    cdef inline bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int bins):
 
         return (
             self._sample_cache_min_wvl == min_wavelength and
             self._sample_cache_max_wvl == max_wavelength and
-            self._sample_cache_num_samp == num_samples
+            self._sample_cache_num_samp == bins
         )
 
     cdef inline ndarray _sample_cache_get(self):
         return self._sample_cache
 
-    cdef inline void _sample_cache_set(self, double min_wavelength, double max_wavelength, int num_samples, ndarray samples):
+    cdef inline void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples):
 
         self._sample_cache = samples
         self._sample_cache_min_wvl = min_wavelength
         self._sample_cache_max_wvl = max_wavelength
-        self._sample_cache_num_samp = num_samples
+        self._sample_cache_num_samp = bins
 
 
 cdef class NumericallyIntegratedSF(SpectralFunction):
@@ -318,7 +318,7 @@ cdef class ConstantSF(SpectralFunction):
     cpdef double average(self, double min_wavelength, double max_wavelength):
         return self.value
 
-    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int num_samples):
+    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int bins):
 
         cdef:
             ndarray samples
@@ -326,11 +326,11 @@ cdef class ConstantSF(SpectralFunction):
             double[::1] s_view
 
         # are cached samples already available?
-        if self._sample_cache_valid(min_wavelength, max_wavelength, num_samples):
+        if self._sample_cache_valid(min_wavelength, max_wavelength, bins):
             return self._sample_cache_get()
 
         # create new sample ndarray and obtain a memoryview for fast access
-        size = num_samples
+        size = bins
         samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
         PyArray_FILLWBYTE(samples, 0)
         s_view = samples
@@ -339,6 +339,6 @@ cdef class ConstantSF(SpectralFunction):
         s_view[:] = self.value
 
         # update cache
-        self._sample_cache_set(min_wavelength, max_wavelength, num_samples, samples)
+        self._sample_cache_set(min_wavelength, max_wavelength, bins, samples)
 
         return samples

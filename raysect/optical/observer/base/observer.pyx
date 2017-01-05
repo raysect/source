@@ -71,7 +71,7 @@ cdef class _ObserverBase(Observer):
 
     def __init__(self, pixels, frame_sampler, pipelines,
                  parent=None, transform=None, name=None,
-                 render_engine=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
+                 render_engine=None, pixel_samples=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
@@ -88,7 +88,7 @@ cdef class _ObserverBase(Observer):
         self.pixels = pixels
         self.frame_sampler = frame_sampler
         self.pipelines = pipelines
-        self.spectral_samples = spectral_samples or 15
+        self.spectral_bins = spectral_bins or 15
         self.spectral_rays = spectral_rays or 1
         self.max_wavelength = max_wavelength or 740.0
         self.min_wavelength = min_wavelength or 375.0
@@ -148,14 +148,14 @@ cdef class _ObserverBase(Observer):
         self._pixel_samples = value
 
     @property
-    def spectral_samples(self):
-        return self._spectral_samples
+    def spectral_bins(self):
+        return self._spectral_bins
 
-    @spectral_samples.setter
-    def spectral_samples(self, value):
+    @spectral_bins.setter
+    def spectral_bins(self, value):
         if value <= 0:
             raise ValueError("The number of spectral samples must be greater than 0.")
-        self._spectral_samples = value
+        self._spectral_bins = value
 
     @property
     def spectral_rays(self):
@@ -163,8 +163,8 @@ cdef class _ObserverBase(Observer):
 
     @spectral_rays.setter
     def spectral_rays(self, value):
-        if not 0 < value <= self.spectral_samples:
-            raise ValueError("The number of spectral rays cannot be greater than the number of spectral bins (currently {}).".format(self.spectral_samples))
+        if not 0 < value <= self.spectral_bins:
+            raise ValueError("The number of spectral rays cannot be greater than the number of spectral bins (currently {}).".format(self.spectral_bins))
         self._spectral_rays = value
 
     @property
@@ -252,7 +252,7 @@ cdef class _ObserverBase(Observer):
 
         # initialise pipelines for rendering
         for pipeline in self._pipelines:
-            pipeline._base_initialise(self._pixels, self._pixel_samples, self.spectral_samples, self.min_wavelength, self.max_wavelength, slices)
+            pipeline._base_initialise(self._pixels, self._pixel_samples, self.spectral_bins, self.min_wavelength, self.max_wavelength, slices)
 
         tasks = self._frame_sampler.generate_tasks(self._pixels)
 
@@ -297,14 +297,14 @@ cdef class _ObserverBase(Observer):
         current = 0
         start = 0
         ranges = []
-        while start < self._spectral_samples:
-            current += self._spectral_samples / self._spectral_rays
+        while start < self._spectral_bins:
+            current += self._spectral_bins / self._spectral_rays
             end = round(current)
             ranges.append((start, end))
             start = end
 
         # build slices
-        return [SpectralSlice(self._spectral_samples, self._min_wavelength, self._max_wavelength, end - start, start) for start, end in ranges]
+        return [SpectralSlice(self._min_wavelength, self._max_wavelength, self._spectral_bins, end - start, start) for start, end in ranges]
 
     cdef inline list _generate_templates(self, list slices):
 
@@ -312,7 +312,7 @@ cdef class _ObserverBase(Observer):
             Ray(
                 min_wavelength=slice.min_wavelength,
                 max_wavelength=slice.max_wavelength,
-                num_samples=slice.num_samples,
+                bins=slice.bins,
                 extinction_prob=self.ray_extinction_prob,
                 extinction_min_depth=self.ray_extinction_min_depth,
                 max_depth=self.ray_max_depth,
@@ -498,13 +498,13 @@ cdef class _ObserverBase(Observer):
 cdef class Observer2D(_ObserverBase):
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
-                 render_engine=None, pixel_samples=None, spectral_rays=None, spectral_samples=None,
+                 render_engine=None, pixel_samples=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(
             pixels, frame_sampler, pipelines, parent, transform, name, render_engine,
-            pixel_samples, spectral_rays, spectral_samples,
+            pixel_samples, spectral_rays, spectral_bins,
             min_wavelength, max_wavelength, ray_extinction_prob, ray_extinction_min_depth,
             ray_max_depth, ray_importance_sampling, ray_important_path_weight
         )

@@ -83,7 +83,7 @@ cdef class RGBPipeline2D(Pipeline2D):
             return self._generate_srgb_frame(self.xyz_frame)
         return None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_bins, double min_wavelength, double max_wavelength, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -97,7 +97,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._working_variance = np.zeros((nx, ny, 3))
 
         # generate pixel processor configurations for each spectral slice
-        self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.num_samples) for slice in spectral_slices]
+        self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
 
         if self.display_progress:
             self._start_display()
@@ -324,7 +324,7 @@ cdef class BayerPipeline2D(Pipeline2D):
     #         return self._generate_srgb_frame(self.xyz_frame)
     #     return None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_bins, double min_wavelength, double max_wavelength, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -338,7 +338,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         self._working_variance = np.zeros((nx, ny))
 
         # generate pixel processor configurations for each spectral slice
-        self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.num_samples) for slice in spectral_slices]
+        self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
 
         if self.display_progress:
             self._start_display()
@@ -561,7 +561,7 @@ cdef class SpectralPipeline2D(Pipeline2D):
         self._samples = 0
         self._spectral_slices = None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_bins, double min_wavelength, double max_wavelength, list spectral_slices):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -569,8 +569,8 @@ cdef class SpectralPipeline2D(Pipeline2D):
         self._spectral_slices = spectral_slices
 
         # create intermediate and final frame-buffers
-        if not self.accumulate or self.frame is None or self.frame.shape != (nx, ny, spectral_samples):
-            self.frame = StatsArray3D(nx, ny, spectral_samples)
+        if not self.accumulate or self.frame is None or self.frame.shape != (nx, ny, spectral_bins):
+            self.frame = StatsArray3D(nx, ny, spectral_bins)
 
         if self.display_progress:
             self._start_display()
@@ -594,7 +594,7 @@ cdef class SpectralPipeline2D(Pipeline2D):
 
         # accumulate samples
         slice = self._spectral_slices[slice_id]
-        for index in range(slice.num_samples):
+        for index in range(slice.bins):
             bin = slice.offset + index
             self.frame.combine_samples(x, y, bin, mean[index], variance[index], self._samples)
 
@@ -690,7 +690,7 @@ cdef class SpectralPixelProcessor(PixelProcessor):
     cdef StatsArray1D _bins
 
     def __init__(self, SpectralSlice slice):
-        self._bins = StatsArray1D(slice.num_samples)
+        self._bins = StatsArray1D(slice.bins)
 
     cpdef object add_sample(self, Spectrum spectrum):
 

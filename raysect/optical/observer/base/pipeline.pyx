@@ -34,7 +34,7 @@ cdef class _PipelineBase:
     base class defining internal interfaces to image processing pipeline
     """
 
-    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
+    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, int spectral_bins, double min_wavelength, double max_wavelength, list spectral_slices):
         """
         setup internal buffers (e.g. frames)
         reset internal statistics as appropriate
@@ -58,7 +58,7 @@ cdef class Pipeline2D(_PipelineBase):
     """
     """
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, int spectral_bins, double min_wavelength, double max_wavelength, list spectral_slices):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
@@ -70,8 +70,8 @@ cdef class Pipeline2D(_PipelineBase):
     cpdef object finalise(self):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
-    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, int spectral_samples, double min_wavelength, double max_wavelength, list spectral_slices):
-        self.initialise(pixel_config, pixel_samples, spectral_samples, min_wavelength, max_wavelength, spectral_slices)
+    cpdef object _base_initialise(self, tuple pixel_config, int pixel_samples, int spectral_bins, double min_wavelength, double max_wavelength, list spectral_slices):
+        self.initialise(pixel_config, pixel_samples, spectral_bins, min_wavelength, max_wavelength, spectral_slices)
 
     cpdef object _base_update(self, tuple pixel_id, int slice_id, tuple packed_result):
         cdef int x, y

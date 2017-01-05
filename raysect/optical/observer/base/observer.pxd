@@ -43,7 +43,7 @@ cdef class _ObserverBase(Observer):
         int _pixel_samples
         double _min_wavelength, _max_wavelength
         int _ray_extinction_min_depth, _ray_max_depth
-        int _spectral_samples, _spectral_rays
+        int _spectral_bins, _spectral_rays
         double _ray_extinction_prob
         public bint ray_importance_sampling
         double _ray_important_path_weight

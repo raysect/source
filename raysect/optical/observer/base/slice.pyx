@@ -31,11 +31,11 @@
 
 cdef class SpectralSlice:
 
-    def __init__(self, num_samples, min_wavelength, max_wavelength, slice_samples, slice_offset):
+    def __init__(self, min_wavelength, max_wavelength, bins, slice_bins, slice_offset):
 
         # basic validation
-        if num_samples <= 0:
-            raise ValueError("The sample count must be greater than 0.")
+        if bins <= 0:
+            raise ValueError("The bin count must be greater than 0.")
 
         if min_wavelength <= 0:
             raise ValueError("The minimum wavelength must be greater than 0.")
@@ -46,24 +46,24 @@ cdef class SpectralSlice:
         if min_wavelength >= max_wavelength:
             raise ValueError("The minimum wavelength must be less than the maximum wavelength.")
 
-        if slice_samples <= 0:
-            raise ValueError("The slice sample count must be greater than 0.")
+        if slice_bins <= 0:
+            raise ValueError("The slice bin count must be greater than 0.")
 
-        if slice_offset <= 0:
+        if slice_offset < 0:
             raise ValueError("The slice offset cannot be less that 0.")
 
         # check slice samples and offset are consistent with full sample count
-        if (slice_offset + slice_samples) > num_samples:
-            raise ValueError("The slice offset plus the sample count extends beyond the full sample count.")
+        if (slice_offset + slice_bins) > bins:
+            raise ValueError("The slice offset plus the bin count extends beyond the full bin count.")
 
         # calculate slice properties
-        delta_wavelength = (max_wavelength - min_wavelength) / num_samples
+        delta_wavelength = (max_wavelength - min_wavelength) / bins
         self.min_wavelength = min_wavelength + delta_wavelength * slice_offset
-        self.max_wavelength = min_wavelength + delta_wavelength * (slice_offset + slice_samples)
+        self.max_wavelength = min_wavelength + delta_wavelength * (slice_offset + slice_bins)
         self.offset = slice_offset
-        self.num_samples = slice_samples
+        self.bins = slice_bins
 
         # store full spectral range
-        self.total_samples = num_samples
+        self.total_bins = bins
         self.total_min_wavelength = min_wavelength
         self.total_max_wavelength = max_wavelength

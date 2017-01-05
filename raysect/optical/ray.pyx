@@ -50,7 +50,7 @@ cdef class Ray(CoreRay):
                  Vector3D direction = Vector3D(0, 0, 1),
                  double min_wavelength = 375,
                  double max_wavelength = 785,
-                 int num_samples = 40,
+                 int bins = 40,
                  double max_distance = INFINITY,
                  double extinction_prob = 0.1,
                  int extinction_min_depth = 3,
@@ -58,8 +58,8 @@ cdef class Ray(CoreRay):
                  bint importance_sampling=True,
                  double important_path_weight=0.25):
 
-        if num_samples < 1:
-            raise ValueError("Number of samples can not be less than 1.")
+        if bins < 1:
+            raise ValueError("Number of bins cannot be less than 1.")
 
         if min_wavelength <= 0.0 or max_wavelength <= 0.0:
             raise ValueError("Wavelength must be greater than to zero.")
@@ -72,7 +72,7 @@ cdef class Ray(CoreRay):
 
         super().__init__(origin, direction, max_distance)
 
-        self._num_samples = num_samples
+        self._bins = bins
         self._min_wavelength = min_wavelength
         self._max_wavelength = max_wavelength
 
@@ -93,7 +93,7 @@ cdef class Ray(CoreRay):
 
         return (
             super().__getstate__(),
-            self._num_samples,
+            self._bins,
             self._min_wavelength,
             self._max_wavelength,
             self._extinction_prob,
@@ -110,7 +110,7 @@ cdef class Ray(CoreRay):
         """Decodes state for pickling."""
 
         (super_state,
-         self._num_samples,
+         self._bins,
          self._min_wavelength,
          self._max_wavelength,
          self._extinction_prob,
@@ -124,20 +124,20 @@ cdef class Ray(CoreRay):
 
         super().__setstate__(super_state)
 
-    property num_samples:
+    property bins:
 
         def __get__(self):
-            return self._num_samples
+            return self._bins
 
-        def __set__(self, int num_samples):
+        def __set__(self, int bins):
 
-            if num_samples < 1:
-                raise ValueError("Number of samples can not be less than 1.")
+            if bins < 1:
+                raise ValueError("Number of bins cannot be less than 1.")
 
-            self._num_samples = num_samples
+            self._bins = bins
 
-    cdef inline int get_num_samples(self):
-        return self._num_samples
+    cdef inline int get_bins(self):
+        return self._bins
 
     property min_wavelength:
 
@@ -221,7 +221,7 @@ cdef class Ray(CoreRay):
         Returns a new Spectrum compatible with the ray spectral settings.
         """
 
-        return new_spectrum(self._min_wavelength, self._max_wavelength, self._num_samples)
+        return new_spectrum(self._min_wavelength, self._max_wavelength, self._bins)
 
     @cython.cdivision(True)
     cpdef Spectrum trace(self, World world, bint keep_alive=False):
@@ -372,7 +372,7 @@ cdef class Ray(CoreRay):
 
         ray.origin = origin
         ray.direction = direction
-        ray._num_samples = self._num_samples
+        ray._bins = self._bins
         ray._min_wavelength = self._min_wavelength
         ray._max_wavelength = self._max_wavelength
         ray.max_distance = self.max_distance
@@ -409,7 +409,7 @@ cdef class Ray(CoreRay):
 
         return new_ray(
             origin, direction,
-            self._min_wavelength, self._max_wavelength, self._num_samples,
+            self._min_wavelength, self._max_wavelength, self._bins,
             self.max_distance,
             self._extinction_prob, self._extinction_min_depth, self._max_depth,
             self.importance_sampling,

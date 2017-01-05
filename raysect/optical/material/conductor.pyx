@@ -83,8 +83,8 @@ cdef class Conductor(Material):
         ci = normal.dot(incident)
 
         # sample refractive index and absorption
-        n = self.index.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
-        k = self.extinction.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_num_samples())
+        n = self.index.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
+        k = self.extinction.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
 
         # reflection
         temp = 2 * ci
@@ -115,7 +115,7 @@ cdef class Conductor(Material):
         s_view = spectrum.samples
         n_view = n
         k_view = k
-        for i in range(spectrum.num_samples):
+        for i in range(spectrum.bins):
             s_view[i] *= self._fresnel(ci, n_view[i], k_view[i])
 
         return spectrum
@@ -283,12 +283,12 @@ cdef class RoughConductor(ContinuousBSDF):
             int i
 
         # sample refractive index and absorption
-        n = self.index.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
-        k = self.extinction.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        n = self.index.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        k = self.extinction.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
         s = spectrum.samples
         ci = s_normal.dot(s_outgoing)
-        for i in range(spectrum.num_samples):
+        for i in range(spectrum.bins):
             s[i] *= self._fresnel_conductor(ci, n[i], k[i])
 
         return spectrum
