@@ -223,22 +223,37 @@ cdef class RGBPipeline2D(Pipeline2D):
         plt.imshow(np.transpose(rgb_frame, (1, 0, 2)), aspect="equal", origin="upper", interpolation=INTERPOLATION)
         plt.tight_layout()
 
-        # # plot standard error
-        # plt.figure(2)
-        # plt.clf()
-        # plt.imshow(np.transpose(self.xyz_frame.errors().mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
-        # plt.colorbar()
-        # plt.tight_layout()
-        #
+        # plot standard error
+        plt.figure(2)
+        plt.clf()
+        plt.imshow(np.transpose(self.xyz_frame.errors().max(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
+        plt.colorbar()
+        plt.tight_layout()
+
         # # plot samples
         # plt.figure(3)
         # plt.clf()
         # plt.imshow(np.transpose(self.xyz_frame.samples.mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         # plt.colorbar()
         # plt.tight_layout()
-        #
-        # plt.draw()
-        # plt.show()
+
+
+        # plot normalised error
+        plt.figure(4)
+        plt.clf()
+        error_frame = self.xyz_frame.errors()
+        magnitude_frame = self.xyz_frame.mean.copy()
+        invalid = magnitude_frame <= 0
+        error_frame[invalid] = 0
+        magnitude_frame[invalid] = 1
+        normalised = error_frame / magnitude_frame
+        plt.imshow(np.transpose(normalised.max(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
+        plt.colorbar()
+        plt.tight_layout()
+
+
+        plt.draw()
+        plt.show()
 
         # workaround for interactivity for QT backend
         plt.pause(0.1)

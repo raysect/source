@@ -136,27 +136,19 @@ bayer.accumulate = True
 spectral = SpectralPipeline2D()
 spectral.accumulate = True
 
-pipelines = [rgb, bayer, spectral]
+pipelines = [rgb] #, bayer, spectral]
 
-camera = PinholeCamera((512, 512), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+camera = PinholeCamera((256, 256), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 camera.pixel_samples = 250
-camera.spectral_samples = 15
+camera.spectral_bins = 15
 camera.spectral_rays = 1
+camera.ray_importance_sampling = True
+camera.ray_important_path_weight = 0.1
+camera.ray_max_depth = 500
+camera.ray_extinction_min_depth = 3
+camera.ray_extinction_prob = 0.01
 # camera.render_engine = SerialEngine()
 
-# camera.ray_importance_sampling = True
-# camera.ray_important_path_weight = 0.1
-# camera.ray_min_depth = 3
-# camera.ray_max_depth = 500
-# camera.ray_extinction_prob = 0.01
-# camera.spectral_rays = 1
-# camera.spectral_samples = 21
-# camera.pixels = (256, 256)
-# camera.pixel_samples = 50
-# camera.display_progress = True
-# camera.display_update_time = 10
-# camera.accumulate = True
-# camera.exposure_handler = AutoExposure(0.97)
 
 # ion()
 # camera.observe()
