@@ -121,7 +121,7 @@ sphere = Sphere(0.4,
 
 
 from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
-from raysect.optical.observer.pipeline2d import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D
+from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D
 
 
 from raysect.core.workflow import SerialEngine

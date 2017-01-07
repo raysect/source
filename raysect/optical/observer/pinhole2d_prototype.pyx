@@ -29,7 +29,7 @@
 
 from raysect.optical.observer.old.point_generator import Rectangle
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
-from raysect.optical.observer.pipeline2d import RGBPipeline2D
+from raysect.optical.observer.pipeline import RGBPipeline2D
 
 from raysect.optical.observer.old.point_generator cimport PointGenerator
 from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d
