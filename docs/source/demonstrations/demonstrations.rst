@@ -9,9 +9,6 @@ Core Functionality
    * - Name
      - Description
      - Preview
-   * - Test scene
-     - Testing the description field.
-     - Preview images will go here.
    * - :ref:`Ray Intersection Points <demo_ray_intersection_points>`
      - Tracking of and visualisation of where rays intersect with objects in the scene.
      - .. image:: ray_intersection_points_fig1.png
@@ -44,7 +41,7 @@ Core Functionality
    * - :ref:`Making animations <demo_making_animations>`
      - Looping over the observe loop whilst changing the position of primitives generates an animation.
      -
-   * - :ref:`Surface roughness <demo_ray_intersection_points>`
+   * - :ref:`Surface roughness <_demo_surface_roughness_scan>`
      - Material properties can be varied from smooth to rough with a material roughness modifier.
      - .. image:: surface_roughness.jpg
           :height: 150px

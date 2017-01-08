@@ -1,5 +1,5 @@
 
-.. _demo_ray_intersection_points:
+.. _demo_surface_roughness_scan:
 
 Surface Roughness Scan
 ======================
