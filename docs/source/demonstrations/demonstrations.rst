@@ -3,7 +3,6 @@ Core Functionality
 ==================
 
 .. list-table:: Core API examples
-   :widths: auto
    :header-rows: 1
 
    * - Name
