@@ -35,6 +35,7 @@ built with scientific ray-tracing in mind. Some of its features include:
    :caption: Demonstrations
    :name: demonstrations
 
+   demonstrations/demonstrations
    demonstrations/ray_intersection_points
    demonstrations/world_contains_point
    demonstrations/cornell_box

@@ -1,4 +1,6 @@
 
+.. _demo_point_inside_material:
+
 Point Inside A Material
 =======================
 
