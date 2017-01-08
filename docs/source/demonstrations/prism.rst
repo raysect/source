@@ -1,4 +1,6 @@
 
+.. _demo_prism_dispersion:
+
 Dispersion through a Prism
 ==========================
 

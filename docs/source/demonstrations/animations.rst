@@ -1,4 +1,6 @@
 
+.. _demo_making_animations:
+
 Making Animations
 =================
 

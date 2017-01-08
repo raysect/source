@@ -1,4 +1,6 @@
 
+.. _demo_cornell_box:
+
 Cornell Box
 ===========
 
