@@ -36,12 +36,6 @@ built with scientific ray-tracing in mind. Some of its features include:
    :name: demonstrations
 
    demonstrations/demonstrations
-   demonstrations/ray_intersection_points
-   demonstrations/world_contains_point
-   demonstrations/cornell_box
-   demonstrations/prism
-   demonstrations/animations
-   demonstrations/surface_roughness
 
 
 .. toctree::

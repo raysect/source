@@ -21,6 +21,9 @@ Core Functionality
           :width: 150px
 
 
+Examples Gallery
+================
+
 .. list-table:: Example scenes
    :widths: 28 50 22
    :header-rows: 1
@@ -41,7 +44,7 @@ Core Functionality
    * - :ref:`Making animations <demo_making_animations>`
      - Looping over the observe loop whilst changing the position of primitives generates an animation.
      -
-   * - :ref:`Surface roughness <_demo_surface_roughness_scan>`
+   * - :ref:`Surface roughness <demo_surface_roughness_scan>`
      - Material properties can be varied from smooth to rough with a material roughness modifier.
      - .. image:: surface_roughness.jpg
           :height: 150px
