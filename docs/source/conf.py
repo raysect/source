@@ -112,7 +112,10 @@ html_theme = 'default'
 # documentation.
 html_theme_options = {'cssfiles': ['https://media.readthedocs.org/css/sphinx_rtd_theme.css',
                                    'https://media.readthedocs.org/css/readthedocs-doc-embed.css',
-                                   'static/style.css']}
+                                   'static/theme_overrides.css']}
+
+# def setup(app):
+#     app.add_stylesheet('css/theme_overrides.css')
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
