@@ -50,7 +50,7 @@ cdef class VectorCamera(Observer2D):
 
     cdef:
         double image_delta, image_start_x, image_start_y
-        double[::] pixel_origins, pixel_directions
+        double[:,::1] pixel_origins, pixel_directions
         PointGenerator point_generator
 
     def __init__(self, pixel_origins, pixel_directions, pixels, parent=None, transform=None, name=None, pipelines=None):
