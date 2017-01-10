@@ -14,11 +14,13 @@ Core Functionality
      - .. image:: ray_intersection_points_fig1.png
           :height: 150px
           :width: 150px
+          :target:`demo_ray_intersection_points`_
    * - :ref:`Point Inside A Material <demo_point_inside_material>`
      - Finding all primitives which contain a test point.
      - .. image:: test_point_inside_material.png
           :height: 150px
           :width: 150px
+          :target:`demo_point_inside_material`_
 
 
 Examples Gallery
@@ -36,11 +38,13 @@ Examples Gallery
      - .. image:: cornell_box_mis_1550_samples.png
           :height: 150px
           :width: 150px
+          :target:`demo_cornell_box`_
    * - :ref:`Prism dispersion <demo_prism_dispersion>`
      - White light is split into its component colours as it passes through a glass prism.
      - .. image:: prism_720x360.jpg
           :height: 150px
           :width: 150px
+          :target:`demo_prism_dispersion`_
    * - :ref:`Making animations <demo_making_animations>`
      - Looping over the observe loop whilst changing the position of primitives generates an animation.
      -
@@ -49,3 +53,4 @@ Examples Gallery
      - .. image:: surface_roughness.jpg
           :height: 150px
           :width: 150px
+          :target:`demo_surface_roughness_scan`_
