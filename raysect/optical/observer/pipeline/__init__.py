@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# from .mono import MonochromePipeline2D
+from .mono import MonoPipeline2D
 from .rgb import RGBPipeline2D
 from .bayer import BayerPipeline2D
 from .spectral import SpectralPipeline2D
