@@ -115,9 +115,6 @@ html_theme_options = {}
 #                                    'https://media.readthedocs.org/css/readthedocs-doc-embed.css',
 #                                    'static/theme_overrides.css']}
 
-def setup(app):
-    app.add_stylesheet('static/theme_overrides.css')
-
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 
@@ -141,6 +138,11 @@ html_favicon = "RaysectLogo_web.ico"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['static']
+
+html_context = {'css_files': [
+    '_static/theme_overrides.css',  # override wide tables in RTD theme
+    ]
+}
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
