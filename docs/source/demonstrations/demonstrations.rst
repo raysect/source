@@ -43,7 +43,9 @@ Examples Gallery
           :width: 150px
    * - :ref:`Making animations <demo_making_animations>`
      - Looping over the observe loop whilst changing the position of primitives generates an animation.
-     -
+     - .. image:: animation_preview.jpg
+          :height: 150px
+          :width: 150px
    * - :ref:`Surface roughness <demo_surface_roughness_scan>`
      - Material properties can be varied from smooth to rough with a material roughness modifier.
      - .. image:: surface_roughness.jpg
