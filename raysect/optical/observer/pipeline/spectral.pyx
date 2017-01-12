@@ -152,6 +152,7 @@ cdef class SpectralPipeline2D(Pipeline2D):
         plt.clf()
         plt.imshow(np.transpose(self.frame.mean.sum(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'))
         plt.tight_layout()
+        plt.draw()
 
         # plt.figure(22)
         # plt.clf()
@@ -159,6 +160,7 @@ cdef class SpectralPipeline2D(Pipeline2D):
         # plt.plot(self.frame.mean[28, 8, :] + 3 * errors[28, 8, :], 'k-')
         # plt.plot(self.frame.mean[28, 8, :] - 3 * errors[28, 8, :], 'k-')
         # plt.tight_layout()
+        # plt.draw()
 
         # # plot standard error
         # plt.figure(2)
@@ -166,14 +168,14 @@ cdef class SpectralPipeline2D(Pipeline2D):
         # plt.imshow(np.transpose(self.frame.errors().mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         # plt.colorbar()
         # plt.tight_layout()
-        #
+        # plt.draw()
+
         # # plot samples
         # plt.figure(3)
         # plt.clf()
         # plt.imshow(np.transpose(self.frame.samples.mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         # plt.colorbar()
         # plt.tight_layout()
-        #
         # plt.draw()
         # plt.show()
 

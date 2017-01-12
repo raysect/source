@@ -222,6 +222,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         plt.clf()
         plt.imshow(np.transpose(rgb_frame, (1, 0, 2)), aspect="equal", origin="upper", interpolation=INTERPOLATION)
         plt.tight_layout()
+        plt.draw()
 
         # plot standard error
         plt.figure(2)
@@ -229,6 +230,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         plt.imshow(np.transpose(self.xyz_frame.errors().max(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         plt.colorbar()
         plt.tight_layout()
+        plt.draw()
 
         # # plot samples
         # plt.figure(3)
@@ -236,7 +238,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         # plt.imshow(np.transpose(self.xyz_frame.samples.mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         # plt.colorbar()
         # plt.tight_layout()
-
+        # plt.draw()
 
         # plot normalised error
         plt.figure(4)
@@ -250,8 +252,6 @@ cdef class RGBPipeline2D(Pipeline2D):
         plt.imshow(np.transpose(normalised.max(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         plt.colorbar()
         plt.tight_layout()
-
-
         plt.draw()
         plt.show()
 

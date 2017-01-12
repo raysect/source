@@ -211,6 +211,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         plt.clf()
         plt.imshow(np.transpose(display_frame.mean * self.sensitivity), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'), vmin=0, vmax=1)
         plt.tight_layout()
+        plt.draw()
 
         # # plot standard error
         # plt.figure(12)
@@ -218,15 +219,14 @@ cdef class BayerPipeline2D(Pipeline2D):
         # plt.imshow(np.transpose(self.frame.errors()), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         # plt.colorbar()
         # plt.tight_layout()
-        #
+        # plt.draw()
         # # plot samples
         # plt.figure(13)
         # plt.clf()
         # plt.imshow(np.transpose(self.frame.samples), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         # plt.colorbar()
         # plt.tight_layout()
-
-        plt.draw()
+        # plt.draw()
         plt.show()
 
         # workaround for interactivity for QT backend
