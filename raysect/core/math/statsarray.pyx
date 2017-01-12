@@ -35,6 +35,71 @@ from libc.math cimport sqrt
 cimport cython
 
 
+cdef class StatsBin:
+
+    def __init__(self):
+
+        self.mean = 0.0
+        self.variance = 0.0
+        self.samples = 0
+
+    cpdef object clear(self):
+        self.mean = 0.0
+        self.variance = 0.0
+        self.samples = 0
+
+    cpdef StatsBin copy(self):
+        obj = StatsBin()
+        obj.mean = self.mean
+        obj.variance = self.variance
+        obj.samples = self.samples
+        return obj
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object add_sample(self, double sample):
+        _add_sample(sample, &self.mean, &self.variance, &self.samples)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object combine_samples(self, double mean, double variance, int sample_count):
+
+        cdef:
+            int na, nb, nt = 0
+            double ma, mb, mt = 0
+            double va, vb, vt = 0
+
+        # validate
+        if sample_count < 1:
+            raise ValueError('Number of samples must not be less than 1.')
+
+        # clamp variance to zero
+        # occasionally numerical accuracy limits can result in values < 0
+        if variance < 0:
+            variance = 0
+
+        # stored sample count, mean and variance
+        ma = self.mean
+        va = self.variance
+        na = self.samples
+
+        # external sample count, mean and variance
+        mb = mean
+        vb = variance
+        nb = sample_count
+
+        # calculate statistics
+        _combine_samples(ma, va, na, mb, vb, nb, &mt, &vt, &nt)
+
+        # update frame values
+        self.mean = mt
+        self.variance = vt
+        self.samples = nt
+
+    cpdef double error(self):
+        return _std_error(self.variance, self.samples)
+
+
 cdef class StatsArray1D:
 
     def __init__(self, length):

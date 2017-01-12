@@ -35,4 +35,4 @@ from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.affinematrix cimport AffineMatrix3D, new_affinematrix3d
 from raysect.core.math.transform cimport translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis
 from raysect.core.math.units cimport *
-from raysect.core.math.statsarray cimport StatsArray1D, StatsArray2D, StatsArray3D
+from raysect.core.math.statsarray cimport StatsBin, StatsArray1D, StatsArray2D, StatsArray3D

@@ -36,4 +36,4 @@ from .affinematrix import AffineMatrix3D
 from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis
 from .units import *
 from .interpolators import Interpolator2DMesh, Discrete2DMesh
-from .statsarray import StatsArray1D, StatsArray2D, StatsArray3D
+from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D

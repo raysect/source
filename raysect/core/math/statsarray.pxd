@@ -32,6 +32,24 @@
 from numpy cimport ndarray
 
 
+cdef class StatsBin:
+
+    cdef:
+        readonly double mean
+        readonly double variance
+        readonly int samples
+
+    cpdef object clear(self)
+
+    cpdef StatsBin copy(self)
+
+    cpdef object add_sample(self, double sample)
+
+    cpdef object combine_samples(self, double mean, double variance, int sample_count)
+
+    cpdef double error(self)
+
+
 cdef class StatsArray1D:
 
     cdef:

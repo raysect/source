@@ -36,7 +36,7 @@ from .colormaps import viridis
 
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
-from raysect.core.math cimport StatsArray3D, StatsArray2D, StatsArray1D
+from raysect.core.math cimport StatsBin, StatsArray2D
 from raysect.optical.colour cimport resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.observer.base.slice cimport SpectralSlice
@@ -218,13 +218,11 @@ cdef class MonoPipeline2D(Pipeline2D):
 cdef class MonoPixelProcessor(PixelProcessor):
 
     cdef:
-        StatsArray1D bin
+        StatsBin bin
         double[::1] sensitivity, _temp
 
     def __init__(self, int x, int y, double[::1] sensitivity):
-
-        # TODO: create a StatsBin object
-        self.bin = StatsArray1D(1)
+        self.bin = StatsBin()
         self.sensitivity = sensitivity
 
     @cython.boundscheck(False)
@@ -239,7 +237,7 @@ cdef class MonoPixelProcessor(PixelProcessor):
         for index in range(spectrum.bins):
             total += spectrum.samples_mv[index] * self.sensitivity[index]
 
-        self.bin.add_sample(0, total)
+        self.bin.add_sample(total)
 
     cpdef tuple pack_results(self):
-        return self.bin.mean[0], self.bin.variance[0]
+        return self.bin.mean, self.bin.variance
