@@ -33,13 +33,10 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
-from raysect.optical.observer.old.point_generator import Rectangle
-from raysect.optical.observer.old.vector_generators import HemisphereCosine
-from raysect.optical.observer.old.vector_generators cimport VectorGenerator
-from raysect.optical.observer.old.point_generator cimport PointGenerator
+from raysect.core cimport RectangleSampler, HemisphereCosineSampler, VectorSampler, PointSampler
 from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate
 from raysect.optical cimport Ray
-from libc.math cimport M_PI as pi, tan
+from libc.math cimport M_PI as pi
 from raysect.optical.observer.base cimport Observer2D
 
 
@@ -60,8 +57,8 @@ cdef class CCDArray(Observer2D):
 
     cdef:
         double _width, _pixel_area, image_delta, image_start_x, image_start_y
-        PointGenerator point_generator
-        VectorGenerator vector_generator
+        PointSampler point_sampler
+        VectorSampler vector_sampler
 
     def __init__(self, width=0.035, pixels=(720, 480), parent=None, transform=None, name=None, pipelines=None):
 
@@ -71,7 +68,7 @@ cdef class CCDArray(Observer2D):
                          parent=parent, transform=transform, name=name)
 
         self.width = width
-        self.vector_generator = HemisphereCosine()
+        self.vector_sampler = HemisphereCosineSampler()
 
     @property
     def pixels(self):
@@ -101,7 +98,7 @@ cdef class CCDArray(Observer2D):
         self.image_delta = self._width / self._pixels[0]
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
         self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
-        self.point_generator = Rectangle(self.image_delta, self.image_delta)
+        self.point_sampler = RectangleSampler(self.image_delta, self.image_delta)
 
     cpdef list _generate_rays(self, tuple pixel_id, Ray template, int ray_count):
 
@@ -123,8 +120,8 @@ cdef class CCDArray(Observer2D):
         to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
-        origin_points = self.point_generator(ray_count)
-        direction_vectors = self.vector_generator(ray_count)
+        origin_points = self.point_sampler(ray_count)
+        direction_vectors = self.vector_sampler(ray_count)
 
         # assemble rays
         rays = []

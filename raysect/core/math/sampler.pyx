@@ -35,10 +35,30 @@
 
 from libc.math cimport M_PI as PI
 from raysect.core.math import Vector3D
-from raysect.core.math.random import vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone, vector_sphere
+from raysect.core.math cimport Point2D, new_point3d
+from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone, vector_sphere, point_disk, uniform
 
 
-cdef class VectorGenerator:
+cdef class PointSampler:
+    """
+    Base class for an object that generates a list of Point3D objects.
+    """
+
+    def __call__(self, samples):
+        """
+        :param int samples: Number of points to generate.
+        """
+
+        return self.sample(samples)
+
+    cpdef list sample(self, int samples):
+        """
+        :param int samples: Number of points to generate.
+        """
+        raise NotImplemented("The method sample() is not implemented for this point generator.")
+
+
+cdef class VectorSampler:
     """
     Base class for an object that generates a list of Vector3D objects.
     """
@@ -56,22 +76,63 @@ cdef class VectorGenerator:
         raise NotImplemented("The method sample() is not implemented for this vector generator.")
 
 
-cdef class SingleRay(VectorGenerator):
+cdef class DiskSampler(PointSampler):
     """
-    Fires a single ray along the observer axis N times. Effectively a delta function acceptance cone.
+    Generates a random Point3D on a disk.
+
+    :param double radius: The radius of the disk.
     """
 
+    def __init__(self, radius=1):
+        super().__init__()
+        self.radius = radius
+
     cpdef list sample(self, int samples):
+
         cdef list results
         cdef int i
+        cdef Point2D random_point
 
         results = []
         for i in range(samples):
-            results.append(Vector3D(0, 0, 1))
+            random_point = point_disk()
+            results.append(new_point3d(random_point.x * self.radius, random_point.y * self.radius, 0))
+
         return results
 
 
-cdef class ConeUniform(VectorGenerator):
+cdef class RectangleSampler(PointSampler):
+    """
+    Generates a random Point3D on a rectangle.
+
+    :param double width: The width of the rectangular sampling area of this observer.
+    :param double height: The height of the rectangular sampling area of this observer.
+    """
+
+    def __init__(self, width=1, height=1):
+
+        super().__init__()
+        self.width = width
+        self.height = height
+
+    cpdef list sample(self, int samples):
+
+        cdef list results
+        cdef int i
+        cdef double u, v
+        cdef double width_offset = 0.5 * self.width
+        cdef double height_offset = 0.5 * self.height
+
+        results = []
+        for i in range(samples):
+            u = uniform() * self.width - width_offset
+            v = uniform() * self.height - height_offset
+            results.append(new_point3d(u, v, 0))
+
+        return results
+
+
+cdef class ConeSampler(VectorSampler):
     """
     Generates a list of random unit Vector3D objects inside a cone.
 
@@ -97,7 +158,7 @@ cdef class ConeUniform(VectorGenerator):
         return results
 
 
-cdef class SphereUniform(VectorGenerator):
+cdef class SphereSampler(VectorSampler):
     """
     Generates a random vector on a unit sphere.
     """
@@ -111,7 +172,7 @@ cdef class SphereUniform(VectorGenerator):
         return results
 
 
-cdef class HemisphereUniform(VectorGenerator):
+cdef class HemisphereUniformSampler(VectorSampler):
     """
     Generates a random vector on a unit hemisphere.
 
@@ -128,7 +189,7 @@ cdef class HemisphereUniform(VectorGenerator):
         return results
 
 
-cdef class HemisphereCosine(VectorGenerator):
+cdef class HemisphereCosineSampler(VectorSampler):
     """
     Generates a cosine-weighted random vector on a unit hemisphere.
 

@@ -27,14 +27,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.old.point_generator import Rectangle
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
-from raysect.optical.observer.old.point_generator cimport PointGenerator
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d
+from raysect.core cimport Point3D, Vector3D
 from raysect.optical cimport Ray
-from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
 
 
@@ -51,7 +48,6 @@ cdef class VectorCamera(Observer2D):
     cdef:
         double image_delta, image_start_x, image_start_y
         double[:,::1] pixel_origins, pixel_directions
-        PointGenerator point_generator
 
     def __init__(self, pixel_origins, pixel_directions, pixels, parent=None, transform=None, name=None, pipelines=None):
 

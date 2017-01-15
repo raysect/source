@@ -27,15 +27,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.old.point_generator import Rectangle
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
-from raysect.optical.observer.old.vector_generators cimport VectorGenerator
-from raysect.optical.observer.old.vector_generators import SingleRay
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate
+from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate, RectangleSampler, PointSampler
 from raysect.optical cimport Ray
-from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
 
 
@@ -51,7 +47,7 @@ cdef class OrthographicCamera(Observer2D):
 
     cdef:
         double image_delta, image_start_x, image_start_y, _width
-        VectorGenerator _vector_generator
+        PointSampler point_sampler
 
     def __init__(self, pixels, width=1, parent=None, transform=None, name=None, pipelines=None):
 
@@ -61,7 +57,6 @@ cdef class OrthographicCamera(Observer2D):
                          parent=parent, transform=transform, name=name)
 
         self.width = width
-        self._vector_generator = SingleRay()
         self._update_image_geometry()
 
     cdef inline object _update_image_geometry(self):
@@ -69,7 +64,7 @@ cdef class OrthographicCamera(Observer2D):
         self.image_delta = self._width / self._pixels[0]
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
         self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
-        self._point_generator = Rectangle(self.image_delta, self.image_delta)
+        self._point_sampler = RectangleSampler(self.image_delta, self.image_delta)
 
     @property
     def width(self):
@@ -101,18 +96,17 @@ cdef class OrthographicCamera(Observer2D):
         to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
-        origin_points = self._point_generator(self._pixel_samples)
-        direction_vectors = self._vector_generator(self._pixel_samples)
+        points = self._point_sampler(self._pixel_samples)
 
         # assemble rays
         rays = []
-        for origin, direction in zip(origin_points, direction_vectors):
+        for origin in zip(points):
 
             # transform to local space from pixel space
             origin = origin.transform(to_local)
             direction = direction.transform(to_local)
 
-            ray = template.copy(origin, direction)
+            ray = template.copy(origin, new_vector3d(0, 0, 1))
 
             # rays fired along normal hence projected area weight is 1.0
             rays.append((ray, 1.0))

@@ -28,16 +28,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from time import time
-cimport cython
-cimport numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
 from .colormaps import viridis
 
+cimport cython
+cimport numpy as np
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsBin, StatsArray2D
-from raysect.optical.colour cimport resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.observer.base.slice cimport SpectralSlice
 

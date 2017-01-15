@@ -27,12 +27,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.old.point_generator import Rectangle
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
-from raysect.optical.observer.old.point_generator cimport PointGenerator
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d
+from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, PointSampler, RectangleSampler
 from raysect.optical cimport Ray
 from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
@@ -52,7 +50,7 @@ cdef class PinholeCamera(Observer2D):
 
     cdef:
         double _fov, image_delta, image_start_x, image_start_y
-        PointGenerator point_generator
+        PointSampler point_sampler
 
     def __init__(self, pixels, parent=None, transform=None, name=None, pipelines=None):
 
@@ -80,7 +78,7 @@ cdef class PinholeCamera(Observer2D):
             self.image_start_y = 0.5 * self.pixels[1] * image_delta
 
             # rebuild point generator
-            self.point_generator = Rectangle(self.image_delta, self.image_delta)
+            self.point_sampler = RectangleSampler(self.image_delta, self.image_delta)
 
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
@@ -103,7 +101,7 @@ cdef class PinholeCamera(Observer2D):
         pixel_y = self.image_start_y - self.image_delta * iy
         pixel_centre = new_point3d(pixel_x, pixel_y, 1)
 
-        points = self.point_generator(ray_count)
+        points = self.point_sampler(ray_count)
 
         # assemble rays
         rays = []

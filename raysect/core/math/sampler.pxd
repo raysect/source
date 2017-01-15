@@ -30,18 +30,33 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-cdef class PointGenerator:
+cdef class PointSampler:
     cpdef list sample(self, int samples)
 
 
-cdef class SinglePoint(PointGenerator):
-    pass
+cdef class VectorSampler:
+    cpdef list sample(self, int samples)
 
 
-cdef class Disk(PointGenerator):
+cdef class DiskSampler(PointSampler):
     cdef public double radius
 
 
-cdef class Rectangle(PointGenerator):
+cdef class RectangleSampler(PointSampler):
     cdef public double width, height
 
+
+cdef class ConeSampler(VectorSampler):
+    cdef public double angle
+
+
+cdef class SphereSampler(VectorSampler):
+    pass
+
+
+cdef class HemisphereUniformSampler(VectorSampler):
+    pass
+
+
+cdef class HemisphereCosineSampler(VectorSampler):
+    pass
