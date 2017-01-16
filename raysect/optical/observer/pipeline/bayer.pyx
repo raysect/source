@@ -51,6 +51,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         public bint accumulate
         readonly StatsArray2D frame
         double[:,::1] _working_mean, _working_variance
+        char[:,::1] _working_touched
         StatsArray2D _display_frame
         list _resampled_xyz
         tuple _pixels
@@ -69,6 +70,7 @@ cdef class BayerPipeline2D(Pipeline2D):
 
         self._working_mean = None
         self._working_variance = None
+        self._working_touched = None
 
         self._display_frame = None
 
@@ -95,6 +97,7 @@ cdef class BayerPipeline2D(Pipeline2D):
 
         self._working_mean = np.zeros((nx, ny))
         self._working_variance = np.zeros((nx, ny))
+        self._working_touched = np.zeros((nx, ny), dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
@@ -121,6 +124,9 @@ cdef class BayerPipeline2D(Pipeline2D):
         self._working_mean[x, y] += mean
         self._working_variance[x, y] += variance
 
+        # mark pixel as modified
+        self._working_touched[x, y] = 1
+
         # update users
         if self.display_progress:
             self._update_display(x, y)
@@ -134,7 +140,8 @@ cdef class BayerPipeline2D(Pipeline2D):
         # update final frame with working frame results
         for x in range(self.frame.shape[0]):
             for y in range(self.frame.shape[1]):
-                self.frame.combine_samples(x, y, self._working_mean[x, y], self._working_variance[x, y], self._samples)
+                if self._working_touched[x, y] == 1:
+                    self.frame.combine_samples(x, y, self._working_mean[x, y], self._working_variance[x, y], self._samples)
 
         if self.display_progress:
             self._render_display(self.frame)
