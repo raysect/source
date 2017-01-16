@@ -30,6 +30,7 @@
 from time import time
 import matplotlib.pyplot as plt
 import numpy as np
+from random import shuffle
 from .colormaps import viridis
 
 cimport cython
@@ -39,6 +40,7 @@ from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsBin, StatsArray2D
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.observer.base.slice cimport SpectralSlice
+from raysect.optical.observer.base.sampler cimport FrameSampler2D
 
 
 cdef class MonoPipeline2D(Pipeline2D):
@@ -52,6 +54,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         public bint accumulate
         readonly StatsArray2D frame
         double[:,::1] _working_mean, _working_variance
+        char[:,::1] _working_touched
         StatsArray2D _display_frame
         list _resampled_sensitivity
         tuple _pixels
@@ -72,6 +75,7 @@ cdef class MonoPipeline2D(Pipeline2D):
 
         self._working_mean = None
         self._working_variance = None
+        self._working_touched = None
 
         self._display_frame = None
 
@@ -92,6 +96,7 @@ cdef class MonoPipeline2D(Pipeline2D):
 
         self._working_mean = np.zeros((nx, ny))
         self._working_variance = np.zeros((nx, ny))
+        self._working_touched = np.zeros((nx, ny), dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_sensitivity = [self.sensitivity.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
@@ -118,6 +123,9 @@ cdef class MonoPipeline2D(Pipeline2D):
         self._working_mean[x, y] += mean
         self._working_variance[x, y] += variance
 
+        # mark pixel as modified
+        self._working_touched[x, y] = 1
+
         # update users
         if self.display_progress:
             self._update_display(x, y)
@@ -131,7 +139,8 @@ cdef class MonoPipeline2D(Pipeline2D):
         # update final frame with working frame results
         for x in range(self.frame.shape[0]):
             for y in range(self.frame.shape[1]):
-                self.frame.combine_samples(x, y, self._working_mean[x, y], self._working_variance[x, y], self._samples)
+                if self._working_touched[x, y] == 1:
+                    self.frame.combine_samples(x, y, self._working_mean[x, y], self._working_variance[x, y], self._samples)
 
         if self.display_progress:
             self._render_display(self.frame)
@@ -176,7 +185,6 @@ cdef class MonoPipeline2D(Pipeline2D):
         plt.figure(11)
         plt.clf()
         plt.imshow(np.transpose(display_frame.mean * self.display_sensitivity), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'), vmin=0, vmax=1)
-        plt.tight_layout()
         plt.draw()
 
         # plot standard error
@@ -184,7 +192,6 @@ cdef class MonoPipeline2D(Pipeline2D):
         plt.clf()
         plt.imshow(np.transpose(self.frame.errors()), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         plt.colorbar()
-        plt.tight_layout()
         plt.draw()
 
         # plot samples
@@ -192,7 +199,19 @@ cdef class MonoPipeline2D(Pipeline2D):
         plt.clf()
         plt.imshow(np.transpose(self.frame.samples), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         plt.colorbar()
-        plt.tight_layout()
+        plt.draw()
+
+        # plot normalised error
+        plt.figure(14)
+        plt.clf()
+        error_frame = self.frame.errors()
+        magnitude_frame = self.frame.mean.copy()
+        invalid = magnitude_frame <= 0
+        error_frame[invalid] = 0
+        magnitude_frame[invalid] = 1
+        normalised = error_frame / magnitude_frame
+        plt.imshow(np.transpose(normalised), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
+        plt.colorbar()
         plt.draw()
         plt.show()
 
@@ -240,3 +259,57 @@ cdef class MonoPixelProcessor(PixelProcessor):
 
     cpdef tuple pack_results(self):
         return self.bin.mean, self.bin.variance
+
+
+cdef class MonoAdaptiveSampler2D(FrameSampler2D):
+
+    cdef:
+        MonoPipeline2D pipeline
+        double fraction, ratio
+        int min_samples
+
+    def __init__(self, MonoPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000):
+
+        # todo: validation
+        self.pipeline = pipeline
+        self.fraction = fraction
+        self.ratio = ratio
+        self.min_samples = min_samples
+
+    cpdef generate_tasks(self, tuple pixels):
+
+        cdef:
+            int nx, ny, x, y
+            np.ndarray normalised
+            double[:,::1] error, normalised_mv
+            list tasks
+
+        nx, ny = pixels
+        frame = self.pipeline.frame
+        min_samples = max(self.min_samples, frame.samples.max() / self.ratio)
+        error = frame.errors()
+        normalised = np.zeros((nx, ny))
+        normalised_mv = normalised
+
+        # calculated normalised standard error
+        for x in range(nx):
+            for y in range(ny):
+                if frame.mean_mv[x, y] <= 0:
+                    normalised_mv[x, y] = 0
+                else:
+                    normalised_mv[x, y] = error[x, y] / frame.mean_mv[x, y]
+
+        # locate error value corresponding to fraction of frame to process
+        percentile_error = np.percentile(normalised, (1 - self.fraction) * 100)
+
+        # build tasks
+        tasks = []
+        for x in range(nx):
+            for y in range(ny):
+                if frame.samples_mv[x, y] < min_samples or normalised_mv[x, y] >= percentile_error:
+                    tasks.append((x, y))
+
+        # perform tasks in random order so that image is assembled randomly rather than sequentially
+        shuffle(tasks)
+
+        return tasks

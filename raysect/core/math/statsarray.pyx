@@ -483,7 +483,6 @@ cdef class StatsArray3D:
             raise ValueError("Index z is out of range.")
 
 
-# todo: move to core
 @cython.cdivision(True)
 cdef inline double _std_error(double v, int n):
     """

@@ -88,20 +88,20 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
               material=Lambert(green_reflectivity))
 
 # ceiling light
-light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
-            parent=enclosure,
-            transform=translate(0, 1, 0) * rotate(0, 90, 0),
-            material=UniformSurfaceEmitter(light_spectrum, 2))
+# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+#             parent=enclosure,
+#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
+#             material=UniformSurfaceEmitter(light_spectrum, 2))
 
 # light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
 #             parent=enclosure,
 #             transform=translate(0, 1, 0) * rotate(0, 90, 0),
 #             material=UniformSurfaceEmitter(d65_white, 2))
 
-# back_light = Sphere(0.1,
-#     parent=enclosure,
-#     transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 10.0))
+back_light = Sphere(0.1,
+    parent=enclosure,
+    transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
+    material=UniformSurfaceEmitter(light_spectrum, 10.0))
 
 # objects in enclosure
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
@@ -122,7 +122,7 @@ sphere = Sphere(0.4,
 
 from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
 from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D, MonoPipeline2D
-
+from raysect.optical.observer.pipeline.mono import MonoAdaptiveSampler2D
 
 from raysect.core.workflow import SerialEngine
 
@@ -131,9 +131,11 @@ rgb = RGBPipeline2D()
 rgb.accumulate = True
 
 # sens = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
-sens = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 0.8, 1, 0, 0])
-mono = MonoPipeline2D(sensitivity=sens, display_sensitivity=1)
+# sens = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 0.8, 1, 0, 0])
+# mono = MonoPipeline2D(sensitivity=sens, display_sensitivity=0.1)
+mono = MonoPipeline2D(display_sensitivity=0.05)
 mono.accumulate = True
+mono_sampler = MonoAdaptiveSampler2D(mono, ratio=5, fraction=0.2, min_samples=500)
 
 bayer = BayerPipeline2D()
 bayer.accumulate = True
@@ -145,14 +147,15 @@ spectral.accumulate = True
 pipelines = [mono]
 
 camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
-camera.pixel_samples = 250
+camera.frame_sampler = mono_sampler
+camera.pixel_samples = 100
 camera.spectral_bins = 15
 camera.spectral_rays = 1
 camera.ray_importance_sampling = True
-camera.ray_important_path_weight = 0.1
-camera.ray_max_depth = 500
+camera.ray_important_path_weight = 0.2
+camera.ray_max_depth = 200
 camera.ray_extinction_min_depth = 3
-camera.ray_extinction_prob = 0.01
+camera.ray_extinction_prob = 0.05
 # camera.render_engine = SerialEngine()
 
 
@@ -167,8 +170,4 @@ for p in range(1, 5000):
     camera.observe()
     print()
 
-# display final result
-ioff()
-camera.pipelines[0].display()
-show()
 
