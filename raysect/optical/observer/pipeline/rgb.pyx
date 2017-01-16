@@ -51,6 +51,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         public bint accumulate
         readonly StatsArray3D xyz_frame
         double[:,:,::1] _working_mean, _working_variance
+        char[:,::1] _working_touched
         StatsArray3D _display_frame
         list _resampled_xyz
         tuple _pixels
@@ -69,6 +70,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
         self._working_mean = None
         self._working_variance = None
+        self._working_touched = None
 
         self._display_frame = None
 
@@ -95,6 +97,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
         self._working_mean = np.zeros((nx, ny, 3))
         self._working_variance = np.zeros((nx, ny, 3))
+        self._working_touched = np.zeros((nx, ny), dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
@@ -126,6 +129,9 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._working_variance[x, y, 1] += variance[1]
         self._working_variance[x, y, 2] += variance[2]
 
+        # mark pixel as modified
+        self._working_touched[x, y] = 1
+
         # update users
         if self.display_progress:
             self._update_display(x, y)
@@ -139,9 +145,10 @@ cdef class RGBPipeline2D(Pipeline2D):
         # update final frame with working frame results
         for x in range(self.xyz_frame.shape[0]):
             for y in range(self.xyz_frame.shape[1]):
-                self.xyz_frame.combine_samples(x, y, 0, self._working_mean[x, y, 0], self._working_variance[x, y, 0], self._samples)
-                self.xyz_frame.combine_samples(x, y, 1, self._working_mean[x, y, 1], self._working_variance[x, y, 1], self._samples)
-                self.xyz_frame.combine_samples(x, y, 2, self._working_mean[x, y, 2], self._working_variance[x, y, 2], self._samples)
+                if self._working_touched[x, y] == 1:
+                    self.xyz_frame.combine_samples(x, y, 0, self._working_mean[x, y, 0], self._working_variance[x, y, 0], self._samples)
+                    self.xyz_frame.combine_samples(x, y, 1, self._working_mean[x, y, 1], self._working_variance[x, y, 1], self._samples)
+                    self.xyz_frame.combine_samples(x, y, 2, self._working_mean[x, y, 2], self._working_variance[x, y, 2], self._samples)
 
         if self.display_progress:
             self._render_display(self.xyz_frame)
@@ -221,7 +228,6 @@ cdef class RGBPipeline2D(Pipeline2D):
         plt.figure(1)
         plt.clf()
         plt.imshow(np.transpose(rgb_frame, (1, 0, 2)), aspect="equal", origin="upper", interpolation=INTERPOLATION)
-        plt.tight_layout()
         plt.draw()
 
         # plot standard error
@@ -229,7 +235,6 @@ cdef class RGBPipeline2D(Pipeline2D):
         plt.clf()
         plt.imshow(np.transpose(self.xyz_frame.errors().max(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         plt.colorbar()
-        plt.tight_layout()
         plt.draw()
 
         # # plot samples
@@ -237,7 +242,6 @@ cdef class RGBPipeline2D(Pipeline2D):
         # plt.clf()
         # plt.imshow(np.transpose(self.xyz_frame.samples.mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         # plt.colorbar()
-        # plt.tight_layout()
         # plt.draw()
 
         # plot normalised error
@@ -251,7 +255,6 @@ cdef class RGBPipeline2D(Pipeline2D):
         normalised = error_frame / magnitude_frame
         plt.imshow(np.transpose(normalised.max(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
         plt.colorbar()
-        plt.tight_layout()
         plt.draw()
         plt.show()
 

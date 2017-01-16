@@ -261,6 +261,9 @@ cdef class MonoPixelProcessor(PixelProcessor):
         return self.bin.mean, self.bin.variance
 
 
+@cython.cdivision(True)
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cdef class MonoAdaptiveSampler2D(FrameSampler2D):
 
     cdef:

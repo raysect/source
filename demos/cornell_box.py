@@ -88,20 +88,20 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
               material=Lambert(green_reflectivity))
 
 # ceiling light
-# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
-#             parent=enclosure,
-#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-#             material=UniformSurfaceEmitter(light_spectrum, 2))
+light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+            parent=enclosure,
+            transform=translate(0, 1, 0) * rotate(0, 90, 0),
+            material=UniformSurfaceEmitter(light_spectrum, 2))
 
 # light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
 #             parent=enclosure,
 #             transform=translate(0, 1, 0) * rotate(0, 90, 0),
 #             material=UniformSurfaceEmitter(d65_white, 2))
 
-back_light = Sphere(0.1,
-    parent=enclosure,
-    transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
-    material=UniformSurfaceEmitter(light_spectrum, 10.0))
+# back_light = Sphere(0.1,
+#     parent=enclosure,
+#     transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
+#     material=UniformSurfaceEmitter(light_spectrum, 10.0))
 
 # objects in enclosure
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
@@ -144,7 +144,7 @@ spectral = SpectralPipeline2D()
 spectral.accumulate = True
 
 # pipelines = [mono, rgb, bayer, spectral]
-pipelines = [mono]
+pipelines = [mono, rgb]
 
 camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 camera.frame_sampler = mono_sampler
@@ -152,10 +152,10 @@ camera.pixel_samples = 100
 camera.spectral_bins = 15
 camera.spectral_rays = 1
 camera.ray_importance_sampling = True
-camera.ray_important_path_weight = 0.2
-camera.ray_max_depth = 200
+camera.ray_important_path_weight = 0.1
+camera.ray_max_depth = 500
 camera.ray_extinction_min_depth = 3
-camera.ray_extinction_prob = 0.05
+camera.ray_extinction_prob = 0.01
 # camera.render_engine = SerialEngine()
 
 
