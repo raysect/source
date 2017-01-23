@@ -69,10 +69,13 @@ cdef class _ObserverBase(Observer):
 
     cpdef object _finalise_statistics(self)
 
-    cpdef list _generate_rays(self, tuple pixel_id, Ray template, int ray_count)
+    cpdef list _base_generate_rays(self, tuple pixel_id, Ray template, int ray_count)
 
-    cpdef double _pixel_etendue(self, tuple pixel_id)
+    cpdef double _base_pixel_etendue(self, tuple pixel_id)
 
 
 cdef class Observer2D(_ObserverBase):
-    pass
+
+    cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count)
+
+    cpdef double _pixel_etendue(self, int x, int y)

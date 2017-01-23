@@ -83,18 +83,14 @@ cdef class PinholeCamera(Observer2D):
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
 
-    cpdef list _generate_rays(self, tuple pixel_id, Ray template, int ray_count):
+    cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
 
         cdef:
-            int ix, iy
             double pixel_x, pixel_y
             list points, rays
             Point3D pixel_centre, point, origin
             Vector3D direction
             Ray ray
-
-        # unpack
-        ix, iy = pixel_id
 
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
@@ -123,5 +119,5 @@ cdef class PinholeCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, tuple pixel_id):
+    cpdef double _pixel_etendue(self, int ix, int iy):
         return 1.0

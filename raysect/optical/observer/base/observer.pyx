@@ -355,14 +355,14 @@ cdef class _ObserverBase(Observer):
         world = self.root
 
         # generate rays and obtain pixel processors from each pipeline
-        rays = self._generate_rays(pixel_id, template, self._pixel_samples)
+        rays = self._base_generate_rays(pixel_id, template, self._pixel_samples)
         pixel_processors = [pipeline._base_pixel_processor(pixel_id, slice_id) for pipeline in self._pipelines]
 
         # initialise ray statistics
         ray_count = 0
 
         # obtain pixel etendue to convert spectral radiance to spectral power
-        etendue = self._pixel_etendue(pixel_id)
+        etendue = self._base_pixel_etendue(pixel_id)
 
         # launch rays and accumulate spectral samples
         for ray, projection_weight in rays:
@@ -459,7 +459,7 @@ cdef class _ObserverBase(Observer):
         print("Render complete - time elapsed {:0.3f}s - {:0.1f}k rays/s".format(
             elapsed_time, mean_rays_per_sec / 1000))
 
-    cpdef list _generate_rays(self, tuple pixel_id, Ray template, int ray_count):
+    cpdef list _base_generate_rays(self, tuple pixel_id, Ray template, int ray_count):
         """
         Generate a list of Rays that sample over the etendue of the pixel.
 
@@ -485,7 +485,7 @@ cdef class _ObserverBase(Observer):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _pixel_etendue(self, tuple pixel_id):
+    cpdef double _base_pixel_etendue(self, tuple pixel_id):
         """
 
         :param pixel_id:
@@ -531,3 +531,50 @@ cdef class Observer2D(_ObserverBase):
         for pipeline in pipelines:
             if not isinstance(pipeline, Pipeline2D):
                 raise TypeError("Processing pipelines for a 2d observer must be a subclass of Pipeline2D.")
+
+    cpdef list _base_generate_rays(self, tuple pixel_id, Ray template, int ray_count):
+        cdef int x, y
+        x, y = pixel_id
+        return self._generate_rays(x, y, template, ray_count)
+
+    cpdef double _base_pixel_etendue(self, tuple pixel_id):
+        cdef int x, y
+        x, y = pixel_id
+        return self._pixel_etendue(x, y)
+
+    cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count):
+        """
+        Generate a list of Rays that sample over the etendue of the pixel.
+
+        This is a virtual method to be implemented by derived classes.
+
+        Runs during the observe() loop to generate the rays. Allows observers
+        to customise how they launch rays.
+
+        This method must return a list of tuples, with each tuple containing
+        a Ray object and a corresponding weighting, typically the projected
+        area/direction cosine. The number of rays returned must be equal to
+        ray_count otherwise pipeline statistics will be incorrectly calculated.
+
+        If the projected area weight is not required (due to the ray sampling
+        algorithm taking the weighting into account in the distribution e.g.
+        cosine weighted) then the weight should be set to 1.0.
+
+        :param int x: Pixel x index.
+        :param int y: Pixel y index.
+        :param Ray template: The template ray from which all rays should be generated.
+        :param int ray_count: The number of rays to be generated.
+        :return list: A list of tuples of (ray, weight)
+        """
+
+        raise NotImplementedError("To be defined in subclass.")
+
+    cpdef double _pixel_etendue(self, int x, int y):
+        """
+
+        :param int x: Pixel x index.
+        :param int y: Pixel y index.
+        :return:
+        """
+
+        raise NotImplementedError("To be defined in subclass.")

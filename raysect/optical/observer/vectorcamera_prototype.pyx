@@ -60,17 +60,13 @@ cdef class VectorCamera(Observer2D):
         self.pixel_origins = pixel_origins
         self.pixel_directions = pixel_directions
 
-    cpdef list _generate_rays(self, tuple pixel_id, Ray template, int ray_count):
+    cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
 
         cdef:
-            int ix, iy
             list rays
             Point3D origin
             Vector3D direction
             Ray ray
-
-        # unpack
-        ix, iy = pixel_id
 
         # assemble rays
         origin = self.pixel_origins[ix, iy]
@@ -88,5 +84,5 @@ cdef class VectorCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, tuple pixel_id):
+    cpdef double _pixel_etendue(self, int ix, int iy):
         return 1.0
