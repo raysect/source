@@ -135,7 +135,7 @@ rgb.accumulate = True
 # mono = MonoPipeline2D(sensitivity=sens, display_sensitivity=0.1)
 mono = MonoPipeline2D(display_sensitivity=0.05)
 mono.accumulate = True
-mono_sampler = MonoAdaptiveSampler2D(mono, ratio=5, fraction=0.2, min_samples=500)
+mono_sampler = MonoAdaptiveSampler2D(mono, ratio=5, fraction=0.2, min_samples=500, cutoff=0.15)
 
 bayer = BayerPipeline2D()
 bayer.accumulate = True
@@ -144,7 +144,7 @@ spectral = SpectralPipeline2D()
 spectral.accumulate = True
 
 # pipelines = [mono, rgb, bayer, spectral]
-pipelines = [mono, rgb]
+pipelines = [mono]#, rgb]
 
 camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 camera.frame_sampler = mono_sampler
@@ -165,9 +165,11 @@ camera.ray_extinction_prob = 0.01
 
 # start ray tracing
 ion()
-for p in range(1, 5000):
+p = 1
+while not camera.render_complete:
+
     print("Rendering pass {}...".format(p))
     camera.observe()
     print()
 
-
+    p += 1
