@@ -35,6 +35,7 @@ from .colormaps import viridis
 
 cimport cython
 cimport numpy as np
+from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsBin, StatsArray2D
@@ -49,8 +50,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         public SpectralFunction sensitivity
         public bint display_progress
         double _display_timer
-        public double display_update_time
-        public double display_sensitivity
+        double display_update_time  # TODO - add property
         public bint accumulate
         readonly StatsArray2D frame
         double[:,::1] _working_mean, _working_variance
@@ -59,14 +59,31 @@ cdef class MonoPipeline2D(Pipeline2D):
         list _resampled_sensitivity
         tuple _pixels
         int _samples
+        double black_point, white_point, unsaturated_fraction
+        bint auto_exposure
 
-    def __init__(self, SpectralFunction sensitivity=None, double display_sensitivity=1.0, bint display_progress=True, double display_update_time=15, bint accumulate=False):
+    def __init__(self, SpectralFunction sensitivity=None, bint display_progress=True,
+                 double display_update_time=15, bint accumulate=True,
+                 bint auto_exposure=True, double black_point=0.0, double white_point=1.0,
+                 double unsaturated_fraction=1.0):
 
         # todo: add validation
         self.sensitivity = sensitivity or ConstantSF(1.0)
 
         self.display_progress = display_progress
-        self.display_sensitivity = display_sensitivity
+        self.auto_exposure = auto_exposure
+
+        if black_point < 0:
+            raise ValueError('Black point cannot be less than zero.')
+        self.black_point = black_point
+        if white_point < black_point:
+            white_point = black_point
+        self.white_point = white_point
+
+        if not (0 < unsaturated_fraction <= 1):
+            raise ValueError('Unsaturated fraction must lie in range (0, 1].')
+        self.unsaturated_fraction = unsaturated_fraction
+
         self._display_timer = 0
         self.display_update_time = display_update_time
         self.accumulate = accumulate
@@ -180,43 +197,77 @@ cdef class MonoPipeline2D(Pipeline2D):
 
     def _render_display(self, display_frame):
 
+        cdef:
+            int nx, ny, ix, iy
+            np.ndarray image
+            double[:,::1] image_mv
+
         INTERPOLATION = 'nearest'
+
+        if self.auto_exposure:
+            self.white_point = self._calculate_white_point(display_frame.mean)
+
+        image = display_frame.mean.copy()
+        image_mv = image
+        nx = display_frame.shape[1]
+        ny = display_frame.shape[0]
+
+        # clamp data to within black and white point range, and shift zero to blackpoint
+        for ix in range(nx):
+            for iy in range(ny):
+                image_mv[ix, iy] = clamp(image_mv[ix, iy], self.black_point, self.white_point) - self.black_point
 
         plt.figure(11)
         plt.clf()
-        plt.imshow(np.transpose(display_frame.mean * self.display_sensitivity), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'), vmin=0, vmax=1)
+        plt.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'))
         plt.draw()
-
-        # plot standard error
-        plt.figure(12)
-        plt.clf()
-        plt.imshow(np.transpose(self.frame.errors()), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
-        plt.colorbar()
-        plt.draw()
-
-        # plot samples
-        plt.figure(13)
-        plt.clf()
-        plt.imshow(np.transpose(self.frame.samples), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
-        plt.colorbar()
-        plt.draw()
-
-        # plot normalised error
-        plt.figure(14)
-        plt.clf()
-        error_frame = self.frame.errors()
-        magnitude_frame = self.frame.mean.copy()
-        invalid = magnitude_frame <= 0
-        error_frame[invalid] = 0
-        magnitude_frame[invalid] = 1
-        normalised = error_frame / magnitude_frame
-        plt.imshow(np.transpose(normalised), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
-        plt.colorbar()
-        plt.draw()
-        plt.show()
 
         # workaround for interactivity for QT backend
         plt.pause(0.1)
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef double _calculate_white_point(self, np.ndarray frame):
+
+        cdef:
+            int nx, ny, pixels, ix, iy, i
+            double peak_luminance
+            np.ndarray luminance
+            double[:,::1] fmv
+            double[::1] lmv
+
+        nx = frame.shape[1]
+        ny = frame.shape[0]
+        fmv = frame  # memory view
+
+        pixels = nx * ny
+        luminance = np.zeros(pixels)
+        lmv = luminance  # memory view
+
+        # calculate luminance values for frame (XYZ Y component is luminance)
+        for iy in range(ny):
+            for ix in range(nx):
+                lmv[iy*nx + ix] = max(fmv[iy, ix] - self.black_point, 0)
+
+        # sort by luminance
+        luminance.sort()
+
+        # if all pixels black, return default sensitivity
+        for i in range(pixels):
+            if lmv[i] > 0:
+                break
+
+        if i == pixels:
+            return self.black_point
+
+        # identify luminance at threshold
+        peak_luminance = lmv[<int> min(pixels - 1, pixels * self.unsaturated_fraction)]
+
+        if peak_luminance == 0:
+            return self.black_point
+
+        return peak_luminance + self.black_point
 
     def display(self):
         if self.frame:

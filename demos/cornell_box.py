@@ -133,7 +133,7 @@ rgb.accumulate = True
 # sens = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
 # sens = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 0.8, 1, 0, 0])
 # mono = MonoPipeline2D(sensitivity=sens, display_sensitivity=0.1)
-mono = MonoPipeline2D(display_sensitivity=0.05)
+mono = MonoPipeline2D(unsaturated_fraction=0.9)
 mono.accumulate = True
 mono_sampler = MonoAdaptiveSampler2D(mono, ratio=5, fraction=0.2, min_samples=500, cutoff=0.15)
 
