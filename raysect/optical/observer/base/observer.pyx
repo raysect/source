@@ -98,6 +98,9 @@ cdef class _ObserverBase(Observer):
         self.ray_importance_sampling = ray_importance_sampling or True
         self.ray_important_path_weight = ray_important_path_weight or 0.2
 
+        # flag indicating if the frame sampler is not supplying any tasks (in which case the rendering process is over)
+        self.render_complete = False
+
     def _validate_pixels(self, pixels):
         raise NotImplementedError("To be defined in subclass.")
 
@@ -242,6 +245,8 @@ cdef class _ObserverBase(Observer):
             int slice_id
             Ray template
 
+        self.render_complete = False
+
         # must be connected to a world node to be able to perform a ray trace
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
@@ -254,7 +259,13 @@ cdef class _ObserverBase(Observer):
         for pipeline in self._pipelines:
             pipeline._base_initialise(self._pixels, self._pixel_samples, self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
 
+        # request render tasks and escape early if there is no work to perform
+        # if there is no work to perform then the render is considered "complete"
         tasks = self._frame_sampler.generate_tasks(self._pixels)
+        if not tasks:
+            self.render_complete = True
+            print("Render complete - No render tasks were generated.")
+            return
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)

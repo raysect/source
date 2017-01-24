@@ -54,6 +54,7 @@ cdef class _ObserverBase(Observer):
         double _stats_progress_timer
         int _stats_total_tasks
         int _stats_completed_tasks
+        readonly bint render_complete
 
     cdef inline list _slice_spectrum(self)
 

@@ -268,23 +268,27 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
 
     cdef:
         MonoPipeline2D pipeline
-        double fraction, ratio
+        double fraction, ratio, cutoff
         int min_samples
 
-    def __init__(self, MonoPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000):
+    def __init__(self, MonoPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
 
         # todo: validation
         self.pipeline = pipeline
         self.fraction = fraction
         self.ratio = ratio
         self.min_samples = min_samples
+        self.cutoff = cutoff
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef generate_tasks(self, tuple pixels):
 
         cdef:
             int nx, ny, x, y
             np.ndarray normalised
             double[:,::1] error, normalised_mv
+            double percentile_error
             list tasks
 
         nx, ny = pixels
@@ -309,7 +313,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
         tasks = []
         for x in range(nx):
             for y in range(ny):
-                if frame.samples_mv[x, y] < min_samples or normalised_mv[x, y] >= percentile_error:
+                if frame.samples_mv[x, y] < min_samples or normalised_mv[x, y] > max(self.cutoff, percentile_error):
                     tasks.append((x, y))
 
         # perform tasks in random order so that image is assembled randomly rather than sequentially
