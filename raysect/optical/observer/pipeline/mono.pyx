@@ -270,9 +270,10 @@ cdef class MonoPipeline2D(Pipeline2D):
         return peak_luminance + self.black_point
 
     def display(self):
-        if self.frame:
-            self._render_display(self.frame)
-        raise ValueError("There is no frame to display.")
+        if not self.frame:
+            raise ValueError("There is no frame to display.")
+        self._render_display(self.frame)
+
 
     # def save(self, filename):
     #     """
