@@ -209,8 +209,8 @@ cdef class MonoPipeline2D(Pipeline2D):
 
         image = display_frame.mean.copy()
         image_mv = image
-        nx = display_frame.shape[1]
-        ny = display_frame.shape[0]
+        nx = display_frame.shape[0]
+        ny = display_frame.shape[1]
 
         # clamp data to within black and white point range, and shift zero to blackpoint
         for ix in range(nx):
@@ -221,6 +221,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         plt.clf()
         plt.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'))
         plt.draw()
+        plt.show()
 
         # workaround for interactivity for QT backend
         plt.pause(0.1)
