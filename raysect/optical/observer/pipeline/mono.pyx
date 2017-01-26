@@ -42,6 +42,7 @@ from raysect.core.math cimport StatsBin, StatsArray2D
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.observer.base.slice cimport SpectralSlice
 from raysect.optical.observer.base.sampler cimport FrameSampler2D
+from libc.math cimport pow
 
 
 cdef class MonoPipeline2D(Pipeline2D):
@@ -59,33 +60,38 @@ cdef class MonoPipeline2D(Pipeline2D):
         list _resampled_sensitivity
         tuple _pixels
         int _samples
-        double black_point, white_point, unsaturated_fraction
-        bint auto_exposure
+        double display_black_point, display_white_point, display_unsaturated_fraction, display_gamma
+        bint display_auto_exposure
+
 
     def __init__(self, SpectralFunction sensitivity=None, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
-                 bint auto_exposure=True, double black_point=0.0, double white_point=1.0,
-                 double unsaturated_fraction=1.0):
+                 bint display_auto_exposure=True, double display_black_point=0.0, double display_white_point=1.0,
+                 double display_unsaturated_fraction=1.0, display_gamma=2.2):
 
-        # todo: add validation
         self.sensitivity = sensitivity or ConstantSF(1.0)
 
-        self.display_progress = display_progress
-        self.auto_exposure = auto_exposure
-
-        if black_point < 0:
+        if display_black_point < 0:
             raise ValueError('Black point cannot be less than zero.')
-        self.black_point = black_point
-        if white_point < black_point:
-            white_point = black_point
-        self.white_point = white_point
 
-        if not (0 < unsaturated_fraction <= 1):
-            raise ValueError('Unsaturated fraction must lie in range (0, 1].')
-        self.unsaturated_fraction = unsaturated_fraction
+        if display_white_point < display_black_point:
+            display_white_point = display_black_point
 
-        self._display_timer = 0
+        if display_gamma <= 0.0:
+            raise ValueError('Gamma correction value must be greater that 0.')
+
+        if not (0 < display_unsaturated_fraction <= 1):
+            raise ValueError('Auto exposure unsaturated fraction must lie in range (0, 1].')
+
+        self.display_progress = display_progress
         self.display_update_time = display_update_time
+
+        self.display_gamma = display_gamma
+        self.display_black_point = display_black_point
+        self.display_white_point = display_white_point
+        self.display_auto_exposure = display_auto_exposure
+        self.display_unsaturated_fraction = display_unsaturated_fraction
+
         self.accumulate = accumulate
 
         self.frame = None
@@ -95,11 +101,14 @@ cdef class MonoPipeline2D(Pipeline2D):
         self._working_touched = None
 
         self._display_frame = None
+        self._display_timer = 0
 
         self._resampled_sensitivity = None
 
         self._pixels = None
         self._samples = 0
+
+    # todo: add properties to alter display settings
 
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
 
@@ -195,27 +204,32 @@ cdef class MonoPipeline2D(Pipeline2D):
             self._render_display(self._display_frame)
             self._display_timer = time()
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     def _render_display(self, display_frame):
 
         cdef:
-            int nx, ny, ix, iy
+            int nx, ny, x, y
             np.ndarray image
             double[:,::1] image_mv
+            double gamma_exponent
 
         INTERPOLATION = 'nearest'
 
-        if self.auto_exposure:
-            self.white_point = self._calculate_white_point(display_frame.mean)
+        if self.display_auto_exposure:
+            self.display_white_point = self._calculate_white_point(display_frame.mean)
 
         image = display_frame.mean.copy()
         image_mv = image
+
+        # clamp data to within black and white point range, and shift zero to blackpoint, apply gamma correction
         nx = display_frame.shape[0]
         ny = display_frame.shape[1]
-
-        # clamp data to within black and white point range, and shift zero to blackpoint
-        for ix in range(nx):
-            for iy in range(ny):
-                image_mv[ix, iy] = clamp(image_mv[ix, iy], self.black_point, self.white_point) - self.black_point
+        gamma_exponent = 1.0 / self.display_gamma
+        for x in range(nx):
+            for y in range(ny):
+                image_mv[x, y] = (clamp(image_mv[x, y], self.display_black_point, self.display_white_point) - self.display_black_point)
+                image_mv[x, y] = pow(image_mv[x, y], gamma_exponent)
 
         plt.figure(11)
         plt.clf()
@@ -232,14 +246,14 @@ cdef class MonoPipeline2D(Pipeline2D):
     cpdef double _calculate_white_point(self, np.ndarray frame):
 
         cdef:
-            int nx, ny, pixels, ix, iy, i
+            int nx, ny, pixels, x, y, i
             double peak_luminance
             np.ndarray luminance
             double[:,::1] fmv
             double[::1] lmv
 
-        nx = frame.shape[1]
-        ny = frame.shape[0]
+        nx = frame.shape[0]
+        ny = frame.shape[1]
         fmv = frame  # memory view
 
         pixels = nx * ny
@@ -247,9 +261,9 @@ cdef class MonoPipeline2D(Pipeline2D):
         lmv = luminance  # memory view
 
         # calculate luminance values for frame (XYZ Y component is luminance)
-        for iy in range(ny):
-            for ix in range(nx):
-                lmv[iy*nx + ix] = max(fmv[iy, ix] - self.black_point, 0)
+        for x in range(nx):
+            for y in range(ny):
+                lmv[y*nx + x] = max(fmv[y, x] - self.display_black_point, 0)
 
         # sort by luminance
         luminance.sort()
@@ -260,15 +274,15 @@ cdef class MonoPipeline2D(Pipeline2D):
                 break
 
         if i == pixels:
-            return self.black_point
+            return self.display_black_point
 
         # identify luminance at threshold
-        peak_luminance = lmv[<int> min(pixels - 1, pixels * self.unsaturated_fraction)]
+        peak_luminance = lmv[<int> min(pixels - 1, pixels * self.display_unsaturated_fraction)]
 
         if peak_luminance == 0:
-            return self.black_point
+            return self.display_black_point
 
-        return peak_luminance + self.black_point
+        return peak_luminance + self.display_black_point
 
     def display(self):
         if not self.frame:
