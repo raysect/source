@@ -44,7 +44,8 @@ from raysect.optical.observer.base.slice cimport SpectralSlice
 from raysect.optical.observer.base.sampler cimport FrameSampler2D
 from libc.math cimport pow
 
-DEFAULT_PIPELINE_NAME = "Mono pipeline"
+
+DEFAULT_PIPELINE_NAME = "Monochromatic Pipeline"
 
 
 cdef class MonoPipeline2D(Pipeline2D):
@@ -120,9 +121,7 @@ cdef class MonoPipeline2D(Pipeline2D):
             raise ValueError("White point cannot be less than black point.")
         self._display_auto_exposure = False
         self._display_white_point = value
-        # update display if active
-        if self.display_progress and self.frame:
-            self._render_display(self.frame)
+        self._refresh_display()
 
     @property
     def display_black_point(self):
@@ -135,9 +134,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         if value > self._display_white_point:
             raise ValueError("Black point cannot be greater than white point.")
         self._display_black_point = value
-        # update display if active
-        if self.display_progress and self.frame:
-            self._render_display(self.frame)
+        self._refresh_display()
 
     @property
     def display_gamma(self):
@@ -148,9 +145,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         if value <= 0.0:
             raise ValueError('Gamma correction value must be greater that 0.')
         self._display_gamma = value
-        # update display if active
-        if self.display_progress and self.frame:
-            self._render_display(self.frame)
+        self._refresh_display()
 
     @property
     def display_auto_exposure(self):
@@ -159,9 +154,7 @@ cdef class MonoPipeline2D(Pipeline2D):
     @display_auto_exposure.setter
     def display_auto_exposure(self, value):
         self._display_auto_exposure = value
-        # update display if active
-        if self.display_progress and self.frame:
-            self._render_display(self.frame)
+        self._refresh_display()
 
     @property
     def display_unsaturated_fraction(self):
@@ -172,9 +165,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         if not (0 < value <= 1):
             raise ValueError('Auto exposure unsaturated fraction must lie in range (0, 1].')
         self._display_unsaturated_fraction = value
-        # update display if active
-        if self.display_progress and self.frame:
-            self._render_display(self.frame)
+        self._refresh_display()
 
     @property
     def display_update_time(self):
@@ -185,6 +176,28 @@ cdef class MonoPipeline2D(Pipeline2D):
         if value <= 0:
             raise ValueError('Display update time must be greater than zero seconds.')
         self._display_update_time = value
+
+    def _refresh_display(self):
+        """
+        Refreshes the display window (if active) and frame data is present.
+
+        This method is called when display attributes are changed to refresh
+        the display according to the new settings.
+        """
+
+        # there must be frame data present
+        if not self.frame:
+            return
+
+        # is there a figure present (only present if display() called or display progress was on during render)?
+        if not self._display_figure:
+            return
+
+        # does the figure have an active window?
+        if not plt.fignum_exists(self._display_figure.number):
+            return
+
+        self._render_display(self.frame)
 
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
 
@@ -252,15 +265,19 @@ cdef class MonoPipeline2D(Pipeline2D):
         Display live render.
         """
 
-        # obtain matplotlib figure for display if not present
-        if not self._display_figure or not self.display_persist_figure:
-            self._display_figure = plt.figure()
+        # reset figure handle if we are not persisting across observation runs
+        if not self.display_persist_figure:
+            self._display_figure = None
 
         # populate live frame with current frame state
         self._display_frame = self.frame.copy()
 
         # display initial frame
-        self._render_display(self._display_frame)
+        self._render_display(self._display_frame, 'rendering...')
+
+        # workaround for interactivity for QT backend
+        plt.pause(0.1)
+
         self._display_timer = time()
 
     @cython.boundscheck(False)
@@ -280,13 +297,17 @@ cdef class MonoPipeline2D(Pipeline2D):
         # update live render display
         if (time() - self._display_timer) > self.display_update_time:
 
-            print("MonoPipeline2D updating display...")
-            self._render_display(self._display_frame)
+            print("{} - updating display...".format(self.name))
+            self._render_display(self._display_frame, 'rendering...')
+
+            # workaround for interactivity for QT backend
+            plt.pause(0.1)
+
             self._display_timer = time()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _render_display(self, display_frame):
+    def _render_display(self, display_frame, status=None):
 
         cdef:
             int nx, ny, x, y
@@ -311,18 +332,25 @@ cdef class MonoPipeline2D(Pipeline2D):
                 image_mv[x, y] = (clamp(image_mv[x, y], self.display_black_point, self.display_white_point) - self.display_black_point)
                 image_mv[x, y] = pow(image_mv[x, y], gamma_exponent)
 
+        # create a fresh figure if the existing figure window has gone missing
+        if not self._display_figure or not plt.fignum_exists(self._display_figure.number):
+            self._display_figure = plt.figure()
         fig = self._display_figure
+
+        # set window title
+        if status:
+            fig.canvas.set_window_title("{} - {}".format(self.name, status))
+        else:
+            fig.canvas.set_window_title(self.name)
+
+        # populate figure
         fig.clf()
-        fig.canvas.set_window_title("Frame: {}".format(self.name))
         ax = fig.add_axes([0,0,1,1])
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         ax.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'))
         plt.draw()
         plt.show()
-
-        # workaround for interactivity for QT backend
-        plt.pause(0.1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
@@ -372,7 +400,6 @@ cdef class MonoPipeline2D(Pipeline2D):
         if not self.frame:
             raise ValueError("There is no frame to display.")
         self._render_display(self.frame)
-
 
     # def save(self, filename):
     #     """
