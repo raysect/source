@@ -44,10 +44,13 @@ from raysect.optical.observer.base.slice cimport SpectralSlice
 from raysect.optical.observer.base.sampler cimport FrameSampler2D
 from libc.math cimport pow
 
+DEFAULT_PIPELINE_NAME = "Mono pipeline"
+
 
 cdef class MonoPipeline2D(Pipeline2D):
 
     cdef:
+        str name
         public SpectralFunction sensitivity
         public bint display_progress
         double _display_timer
@@ -60,14 +63,17 @@ cdef class MonoPipeline2D(Pipeline2D):
         list _resampled_sensitivity
         tuple _pixels
         int _samples
+        object _display_figure
         double display_black_point, display_white_point, display_unsaturated_fraction, display_gamma
         bint display_auto_exposure
-
+        public bint display_persist_figure
 
     def __init__(self, SpectralFunction sensitivity=None, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
                  bint display_auto_exposure=True, double display_black_point=0.0, double display_white_point=1.0,
-                 double display_unsaturated_fraction=1.0, display_gamma=2.2):
+                 double display_unsaturated_fraction=1.0, display_gamma=2.2, str name=None):
+
+        self.name = name or DEFAULT_PIPELINE_NAME
 
         self.sensitivity = sensitivity or ConstantSF(1.0)
 
@@ -85,6 +91,7 @@ cdef class MonoPipeline2D(Pipeline2D):
 
         self.display_progress = display_progress
         self.display_update_time = display_update_time
+        self.display_persist_figure = True
 
         self.display_gamma = display_gamma
         self.display_black_point = display_black_point
@@ -102,6 +109,7 @@ cdef class MonoPipeline2D(Pipeline2D):
 
         self._display_frame = None
         self._display_timer = 0
+        self._display_figure = None
 
         self._resampled_sensitivity = None
 
@@ -176,6 +184,10 @@ cdef class MonoPipeline2D(Pipeline2D):
         Display live render.
         """
 
+        # obtain matplotlib figure for display if not present
+        if not self._display_figure or not self.display_persist_figure:
+            self._display_figure = plt.figure()
+
         # populate live frame with current frame state
         self._display_frame = self.frame.copy()
 
@@ -231,9 +243,13 @@ cdef class MonoPipeline2D(Pipeline2D):
                 image_mv[x, y] = (clamp(image_mv[x, y], self.display_black_point, self.display_white_point) - self.display_black_point)
                 image_mv[x, y] = pow(image_mv[x, y], gamma_exponent)
 
-        plt.figure(11)
-        plt.clf()
-        plt.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'))
+        fig = self._display_figure
+        fig.clf()
+        fig.canvas.set_window_title("Frame: {}".format(self.name))
+        ax = fig.add_axes([0,0,1,1])
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        ax.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'))
         plt.draw()
         plt.show()
 
