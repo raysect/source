@@ -54,7 +54,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         public SpectralFunction sensitivity
         public bint display_progress
         double _display_timer
-        double display_update_time  # TODO - add property
+        double _display_update_time
         public bint accumulate
         readonly StatsArray2D frame
         double[:,::1] _working_mean, _working_variance
@@ -64,8 +64,8 @@ cdef class MonoPipeline2D(Pipeline2D):
         tuple _pixels
         int _samples
         object _display_figure
-        double display_black_point, display_white_point, display_unsaturated_fraction, display_gamma
-        bint display_auto_exposure
+        double _display_black_point, _display_white_point, _display_unsaturated_fraction, _display_gamma
+        bint _display_auto_exposure
         public bint display_persist_figure
 
     def __init__(self, SpectralFunction sensitivity=None, bint display_progress=True,
@@ -83,20 +83,14 @@ cdef class MonoPipeline2D(Pipeline2D):
         if display_white_point < display_black_point:
             display_white_point = display_black_point
 
-        if display_gamma <= 0.0:
-            raise ValueError('Gamma correction value must be greater that 0.')
-
-        if not (0 < display_unsaturated_fraction <= 1):
-            raise ValueError('Auto exposure unsaturated fraction must lie in range (0, 1].')
-
         self.display_progress = display_progress
         self.display_update_time = display_update_time
         self.display_persist_figure = True
 
         self.display_gamma = display_gamma
-        self.display_black_point = display_black_point
-        self.display_white_point = display_white_point
-        self.display_auto_exposure = display_auto_exposure
+        self._display_black_point = display_black_point
+        self._display_white_point = display_white_point
+        self._display_auto_exposure = display_auto_exposure
         self.display_unsaturated_fraction = display_unsaturated_fraction
 
         self.accumulate = accumulate
@@ -116,7 +110,81 @@ cdef class MonoPipeline2D(Pipeline2D):
         self._pixels = None
         self._samples = 0
 
-    # todo: add properties to alter display settings
+    @property
+    def display_white_point(self):
+        return self._display_white_point
+
+    @display_white_point.setter
+    def display_white_point(self, value):
+        if value < self._display_black_point:
+            raise ValueError("White point cannot be less than black point.")
+        self._display_auto_exposure = False
+        self._display_white_point = value
+        # update display if active
+        if self.display_progress and self.frame:
+            self._render_display(self.frame)
+
+    @property
+    def display_black_point(self):
+        return self._display_black_point
+
+    @display_black_point.setter
+    def display_black_point(self, value):
+        if value < 0:
+            raise ValueError('Black point cannot be less than zero.')
+        if value > self._display_white_point:
+            raise ValueError("Black point cannot be greater than white point.")
+        self._display_black_point = value
+        # update display if active
+        if self.display_progress and self.frame:
+            self._render_display(self.frame)
+
+    @property
+    def display_gamma(self):
+        return self._display_gamma
+
+    @display_gamma.setter
+    def display_gamma(self, value):
+        if value <= 0.0:
+            raise ValueError('Gamma correction value must be greater that 0.')
+        self._display_gamma = value
+        # update display if active
+        if self.display_progress and self.frame:
+            self._render_display(self.frame)
+
+    @property
+    def display_auto_exposure(self):
+        return self._display_auto_exposure
+
+    @display_auto_exposure.setter
+    def display_auto_exposure(self, value):
+        self._display_auto_exposure = value
+        # update display if active
+        if self.display_progress and self.frame:
+            self._render_display(self.frame)
+
+    @property
+    def display_unsaturated_fraction(self):
+        return self._display_unsaturated_fraction
+
+    @display_unsaturated_fraction.setter
+    def display_unsaturated_fraction(self, value):
+        if not (0 < value <= 1):
+            raise ValueError('Auto exposure unsaturated fraction must lie in range (0, 1].')
+        self._display_unsaturated_fraction = value
+        # update display if active
+        if self.display_progress and self.frame:
+            self._render_display(self.frame)
+
+    @property
+    def display_update_time(self):
+        return self._display_update_time
+
+    @display_update_time.setter
+    def display_update_time(self, value):
+        if value <= 0:
+            raise ValueError('Display update time must be greater than zero seconds.')
+        self._display_update_time = value
 
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
 
@@ -229,7 +297,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         INTERPOLATION = 'nearest'
 
         if self.display_auto_exposure:
-            self.display_white_point = self._calculate_white_point(display_frame.mean)
+            self._display_white_point = self._calculate_white_point(display_frame.mean)
 
         image = display_frame.mean.copy()
         image_mv = image
