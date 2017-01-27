@@ -45,7 +45,9 @@ from raysect.optical.observer.base.sampler cimport FrameSampler2D
 from libc.math cimport pow
 
 
-DEFAULT_PIPELINE_NAME = "Monochromatic Pipeline"
+_DEFAULT_PIPELINE_NAME = "Monochromatic Pipeline"
+_DISPLAY_DPI = 100
+_DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
 
 
 cdef class MonoPipeline2D(Pipeline2D):
@@ -74,7 +76,7 @@ cdef class MonoPipeline2D(Pipeline2D):
                  bint display_auto_exposure=True, double display_black_point=0.0, double display_white_point=1.0,
                  double display_unsaturated_fraction=1.0, display_gamma=2.2, str name=None):
 
-        self.name = name or DEFAULT_PIPELINE_NAME
+        self.name = name or _DEFAULT_PIPELINE_NAME
 
         self.sensitivity = sensitivity or ConstantSF(1.0)
 
@@ -334,7 +336,7 @@ cdef class MonoPipeline2D(Pipeline2D):
 
         # create a fresh figure if the existing figure window has gone missing
         if not self._display_figure or not plt.fignum_exists(self._display_figure.number):
-            self._display_figure = plt.figure(facecolor=(0.5, 0.5, 0.5))
+            self._display_figure = plt.figure(facecolor=(0.5, 0.5, 0.5), figsize=_DISPLAY_SIZE, dpi=_DISPLAY_DPI)
         fig = self._display_figure
 
         # set window title
@@ -351,6 +353,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         ax.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'))
         plt.draw()
         plt.show()
+
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
