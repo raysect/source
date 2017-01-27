@@ -127,15 +127,15 @@ from raysect.core.workflow import SerialEngine
 
 # create and setup the camera
 mono_unfiltered = MonoPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
-mono_unfiltered.display_update_time = 5
+mono_unfiltered.display_update_time = 15
 
 filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
 mono_green = MonoPipeline2D(sensitivity=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
-mono_green.display_update_time = 5
+mono_green.display_update_time = 15
 
 filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
 mono_red = MonoPipeline2D(sensitivity=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
-mono_red.display_update_time = 5
+mono_red.display_update_time = 15
 
 # rgb = RGBPipeline2D()
 # rgb.accumulate = True
@@ -150,7 +150,7 @@ mono_red.display_update_time = 5
 pipelines = [mono_unfiltered, mono_green, mono_red]
 sampler = MonoAdaptiveSampler2D(mono_unfiltered, ratio=5, fraction=0.2, min_samples=500, cutoff=0.01)
 
-camera = PinholeCamera((64, 64), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+camera = PinholeCamera((256, 256), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 camera.frame_sampler = sampler
 camera.pixel_samples = 100
 camera.spectral_bins = 15

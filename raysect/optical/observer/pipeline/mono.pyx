@@ -326,10 +326,10 @@ cdef class MonoPipeline2D(Pipeline2D):
         # clamp data to within black and white point range, and shift zero to blackpoint, apply gamma correction
         nx = display_frame.shape[0]
         ny = display_frame.shape[1]
-        gamma_exponent = 1.0 / self.display_gamma
+        gamma_exponent = 1.0 / self._display_gamma
         for x in range(nx):
             for y in range(ny):
-                image_mv[x, y] = (clamp(image_mv[x, y], self.display_black_point, self.display_white_point) - self.display_black_point)
+                image_mv[x, y] = (clamp(image_mv[x, y], self._display_black_point, self._display_white_point) - self._display_black_point)
                 image_mv[x, y] = pow(image_mv[x, y], gamma_exponent)
 
         # create a fresh figure if the existing figure window has gone missing
@@ -375,7 +375,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         # calculate luminance values for frame (XYZ Y component is luminance)
         for x in range(nx):
             for y in range(ny):
-                lmv[y*nx + x] = max(fmv[y, x] - self.display_black_point, 0)
+                lmv[y*nx + x] = max(fmv[x, y] - self._display_black_point, 0)
 
         # sort by luminance
         luminance.sort()
@@ -386,15 +386,15 @@ cdef class MonoPipeline2D(Pipeline2D):
                 break
 
         if i == pixels:
-            return self.display_black_point
+            return self._display_black_point
 
         # identify luminance at threshold
-        peak_luminance = lmv[<int> min(pixels - 1, pixels * self.display_unsaturated_fraction)]
+        peak_luminance = lmv[<int> min(pixels - 1, pixels * self._display_unsaturated_fraction)]
 
         if peak_luminance == 0:
-            return self.display_black_point
+            return self._display_black_point
 
-        return peak_luminance + self.display_black_point
+        return peak_luminance + self._display_black_point
 
     def display(self):
         if not self.frame:
