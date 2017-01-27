@@ -351,9 +351,8 @@ cdef class MonoPipeline2D(Pipeline2D):
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         ax.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'))
-        plt.draw()
+        fig.canvas.draw_idle()
         plt.show()
-
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
