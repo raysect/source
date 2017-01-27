@@ -93,15 +93,15 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
 #             transform=translate(0, 1, 0) * rotate(0, 90, 0),
 #             material=UniformSurfaceEmitter(light_spectrum, 2))
 
-# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
-#             parent=enclosure,
-#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-#             material=UniformSurfaceEmitter(d65_white, 2))
+light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+            parent=enclosure,
+            transform=translate(0, 1, 0) * rotate(0, 90, 0),
+            material=UniformSurfaceEmitter(d65_white, 2))
 
-back_light = Sphere(0.1,
-    parent=enclosure,
-    transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
-    material=UniformSurfaceEmitter(light_spectrum, 10.0))
+# back_light = Sphere(0.1,
+#     parent=enclosure,
+#     transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
+#     material=UniformSurfaceEmitter(light_spectrum, 10.0))
 
 # objects in enclosure
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
