@@ -334,7 +334,7 @@ cdef class MonoPipeline2D(Pipeline2D):
 
         # create a fresh figure if the existing figure window has gone missing
         if not self._display_figure or not plt.fignum_exists(self._display_figure.number):
-            self._display_figure = plt.figure()
+            self._display_figure = plt.figure(facecolor=(0.5, 0.5, 0.5))
         fig = self._display_figure
 
         # set window title
