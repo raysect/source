@@ -123,32 +123,35 @@ sphere = Sphere(0.4,
 from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
 from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D, MonoPipeline2D
 from raysect.optical.observer.pipeline.mono import MonoAdaptiveSampler2D
-
 from raysect.core.workflow import SerialEngine
 
 # create and setup the camera
-rgb = RGBPipeline2D()
-rgb.accumulate = True
+mono_unfiltered = MonoPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
+mono_unfiltered.display_update_time = 5
 
-# sens = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
-# sens = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 0.8, 1, 0, 0])
-# mono = MonoPipeline2D(sensitivity=sens, display_sensitivity=0.1)
-mono = MonoPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered Mono Pinhole Camera")
-mono.display_update_time = 5
-mono.accumulate = True
-mono_sampler = MonoAdaptiveSampler2D(mono, ratio=5, fraction=0.2, min_samples=500, cutoff=0.01)
+filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
+mono_green = MonoPipeline2D(sensitivity=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
+mono_green.display_update_time = 5
 
-bayer = BayerPipeline2D()
-bayer.accumulate = True
+filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
+mono_red = MonoPipeline2D(sensitivity=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
+mono_red.display_update_time = 5
 
-spectral = SpectralPipeline2D()
-spectral.accumulate = True
+# rgb = RGBPipeline2D()
+# rgb.accumulate = True
+
+# bayer = BayerPipeline2D()
+# bayer.accumulate = True
+
+# spectral = SpectralPipeline2D()
+# spectral.accumulate = True
 
 # pipelines = [mono, rgb, bayer, spectral]
-pipelines = [mono]
+pipelines = [mono_unfiltered, mono_green, mono_red]
+sampler = MonoAdaptiveSampler2D(mono_unfiltered, ratio=5, fraction=0.2, min_samples=500, cutoff=0.01)
 
 camera = PinholeCamera((64, 64), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
-camera.frame_sampler = mono_sampler
+camera.frame_sampler = sampler
 camera.pixel_samples = 100
 camera.spectral_bins = 15
 camera.spectral_rays = 1
