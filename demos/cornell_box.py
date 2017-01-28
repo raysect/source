@@ -168,9 +168,14 @@ p = 1
 while not camera.render_complete:
 
     print("Rendering pass {}...".format(p))
-    camera.observe()
-    print()
 
+    camera.observe()
+
+    mono_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
+    mono_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
+    mono_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
+
+    print()
     p += 1
 
 ioff()

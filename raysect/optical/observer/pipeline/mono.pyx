@@ -179,28 +179,6 @@ cdef class MonoPipeline2D(Pipeline2D):
             raise ValueError('Display update time must be greater than zero seconds.')
         self._display_update_time = value
 
-    def _refresh_display(self):
-        """
-        Refreshes the display window (if active) and frame data is present.
-
-        This method is called when display attributes are changed to refresh
-        the display according to the new settings.
-        """
-
-        # there must be frame data present
-        if not self.frame:
-            return
-
-        # is there a figure present (only present if display() called or display progress was on during render)?
-        if not self._display_figure:
-            return
-
-        # does the figure have an active window?
-        if not plt.fignum_exists(self._display_figure.number):
-            return
-
-        self._render_display(self.frame)
-
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
 
         nx, ny = pixels
@@ -307,32 +285,36 @@ cdef class MonoPipeline2D(Pipeline2D):
 
             self._display_timer = time()
 
+    def _refresh_display(self):
+        """
+        Refreshes the display window (if active) and frame data is present.
+
+        This method is called when display attributes are changed to refresh
+        the display according to the new settings.
+        """
+
+        # there must be frame data present
+        if not self.frame:
+            return
+
+        # is there a figure present (only present if display() called or display progress was on during render)?
+        if not self._display_figure:
+            return
+
+        # does the figure have an active window?
+        if not plt.fignum_exists(self._display_figure.number):
+            return
+
+        self._render_display(self.frame)
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _render_display(self, display_frame, status=None):
-
-        cdef:
-            int nx, ny, x, y
-            np.ndarray image
-            double[:,::1] image_mv
-            double gamma_exponent
+    def _render_display(self, frame, status=None):
 
         INTERPOLATION = 'nearest'
 
-        if self.display_auto_exposure:
-            self._display_white_point = self._calculate_white_point(display_frame.mean)
-
-        image = display_frame.mean.copy()
-        image_mv = image
-
-        # clamp data to within black and white point range, and shift zero to blackpoint, apply gamma correction
-        nx = display_frame.shape[0]
-        ny = display_frame.shape[1]
-        gamma_exponent = 1.0 / self._display_gamma
-        for x in range(nx):
-            for y in range(ny):
-                image_mv[x, y] = (clamp(image_mv[x, y], self._display_black_point, self._display_white_point) - self._display_black_point)
-                image_mv[x, y] = pow(image_mv[x, y], gamma_exponent)
+        # generate display image
+        image = self._generate_display_image(frame)
 
         # create a fresh figure if the existing figure window has gone missing
         if not self._display_figure or not plt.fignum_exists(self._display_figure.number):
@@ -357,7 +339,35 @@ cdef class MonoPipeline2D(Pipeline2D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef double _calculate_white_point(self, np.ndarray frame):
+    def _generate_display_image(self, StatsArray2D frame):
+
+        cdef:
+            int nx, ny, x, y
+            np.ndarray image
+            double[:,::1] image_mv
+            double gamma_exponent
+
+        if self.display_auto_exposure:
+            self._display_white_point = self._calculate_white_point(frame.mean)
+
+        image = frame.mean.copy()
+        image_mv = image
+
+        # clamp data to within black and white point range, and shift zero to blackpoint, apply gamma correction
+        nx = frame.shape[0]
+        ny = frame.shape[1]
+        gamma_exponent = 1.0 / self._display_gamma
+        for x in range(nx):
+            for y in range(ny):
+                image_mv[x, y] = clamp(image_mv[x, y], self._display_black_point, self._display_white_point) - self._display_black_point
+                image_mv[x, y] = pow(image_mv[x, y], gamma_exponent)
+
+        return image
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _calculate_white_point(self, np.ndarray frame):
 
         cdef:
             int nx, ny, pixels, x, y, i
@@ -403,14 +413,21 @@ cdef class MonoPipeline2D(Pipeline2D):
             raise ValueError("There is no frame to display.")
         self._render_display(self.frame)
 
-    # def save(self, filename):
-    #     """
-    #     Save the collected samples in the camera frame to file.
-    #     :param str filename: Filename and path for camera frame output file.
-    #     """
-    #
-    #     rgb_frame = self._generate_srgb_frame(self.frame)
-    #     plt.imsave(filename, np.transpose(rgb_frame))
+    def save(self, filename):
+        """
+        Saves the display image to a png file.
+
+        The current display settings (exposure, gamma, etc..) are used to
+        process the image prior saving.
+
+        :param str filename: Image path and filename.
+        """
+
+        if not self.frame:
+            raise ValueError("There is no frame to save.")
+
+        image = self._generate_display_image(self.frame)
+        plt.imsave(filename, np.transpose(image), cmap='gray')
 
 
 cdef class MonoPixelProcessor(PixelProcessor):
