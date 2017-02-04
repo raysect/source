@@ -367,18 +367,18 @@ cdef class MonoPipeline2D(Pipeline2D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _calculate_white_point(self, np.ndarray frame):
+    def _calculate_white_point(self, np.ndarray image):
 
         cdef:
             int nx, ny, pixels, x, y, i
             double peak_luminance
             np.ndarray luminance
-            double[:,::1] fmv
+            double[:,::1] imv
             double[::1] lmv
 
-        nx = frame.shape[0]
-        ny = frame.shape[1]
-        fmv = frame  # memory view
+        nx = image.shape[0]
+        ny = image.shape[1]
+        imv = image  # memory view
 
         pixels = nx * ny
         luminance = np.zeros(pixels)
@@ -387,7 +387,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         # calculate luminance values for frame (XYZ Y component is luminance)
         for x in range(nx):
             for y in range(ny):
-                lmv[y*nx + x] = max(fmv[x, y] - self._display_black_point, 0)
+                lmv[y*nx + x] = max(imv[x, y] - self._display_black_point, 0)
 
         # sort by luminance
         luminance.sort()
