@@ -60,7 +60,7 @@ cdef class CCDArray(Observer2D):
         PointSampler point_sampler
         VectorSampler vector_sampler
 
-    def __init__(self, width=0.035, pixels=(720, 480), parent=None, transform=None, name=None, pipelines=None):
+    def __init__(self, pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
 
         pipelines = pipelines or [RGBPipeline2D()]
 

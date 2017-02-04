@@ -332,7 +332,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         ax = fig.add_axes([0,0,1,1])
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        ax.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'))
+        ax.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'), vmin=0.0)
         fig.canvas.draw_idle()
         plt.show()
 
@@ -427,7 +427,7 @@ cdef class MonoPipeline2D(Pipeline2D):
             raise ValueError("There is no frame to save.")
 
         image = self._generate_display_image(self.frame)
-        plt.imsave(filename, np.transpose(image), cmap='gray')
+        plt.imsave(filename, np.transpose(image), cmap='gray', vmin=0.0)
 
 
 cdef class MonoPixelProcessor(PixelProcessor):
@@ -447,10 +447,11 @@ cdef class MonoPixelProcessor(PixelProcessor):
         cdef:
             int index
             double total = 0
+            Spectrum filtered
 
-        # apply sensitivity curve
+        # apply sensitivity curve and integrate
         for index in range(spectrum.bins):
-            total += spectrum.samples_mv[index] * self.sensitivity[index]
+            total += spectrum.samples_mv[index] * self.sensitivity[index] * spectrum.delta_wavelength
 
         self.bin.add_sample(total)
 
