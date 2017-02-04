@@ -310,6 +310,25 @@ cdef class Spectrum(SpectralFunction):
 
         return new_spectrum(self.min_wavelength, self.max_wavelength, self.bins)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef Spectrum copy(self):
+        """
+        Returns a copy of the spectrum.
+
+        :return: A new Spectrum object.
+        """
+
+        cdef:
+            Spectrum spectrum
+            npy_intp index
+
+        spectrum = self.new_spectrum()
+        for index in range(self.samples_mv.shape[0]):
+            spectrum.samples_mv[index] = self.samples_mv[index]
+
+        return spectrum
+
     # low level scalar maths functions
     @cython.boundscheck(False)
     @cython.wraparound(False)
