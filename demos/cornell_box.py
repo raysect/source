@@ -121,6 +121,7 @@ sphere = Sphere(0.4,
 
 
 from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
+from raysect.optical.observer.ccd import CCDArray
 from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D, MonoPipeline2D
 from raysect.optical.observer.pipeline.mono import MonoAdaptiveSampler2D
 from raysect.core.workflow import SerialEngine
@@ -130,11 +131,11 @@ mono_unfiltered = MonoPipeline2D(display_unsaturated_fraction=0.96, name="Unfilt
 mono_unfiltered.display_update_time = 15
 
 filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
-mono_green = MonoPipeline2D(sensitivity=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
+mono_green = MonoPipeline2D(filter=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
 mono_green.display_update_time = 15
 
 filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
-mono_red = MonoPipeline2D(sensitivity=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
+mono_red = MonoPipeline2D(filter=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
 mono_red.display_update_time = 15
 
 # rgb = RGBPipeline2D()
@@ -150,7 +151,8 @@ mono_red.display_update_time = 15
 pipelines = [mono_unfiltered, mono_green, mono_red]
 sampler = MonoAdaptiveSampler2D(mono_unfiltered, ratio=5, fraction=0.2, min_samples=500, cutoff=0.01)
 
-camera = PinholeCamera((256, 256), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+# camera = CCDArray((64, 64), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 camera.frame_sampler = sampler
 camera.pixel_samples = 100
 camera.spectral_bins = 15
@@ -175,6 +177,7 @@ while not camera.render_complete:
     mono_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
     mono_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
 
+    print("total power:", mono_unfiltered.frame.mean.sum(), "+/-", np.sqrt(np.sum(mono_unfiltered.frame.variance**2)))
     print()
     p += 1
 

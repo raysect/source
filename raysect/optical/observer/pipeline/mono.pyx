@@ -54,7 +54,7 @@ cdef class MonoPipeline2D(Pipeline2D):
 
     cdef:
         str name
-        public SpectralFunction sensitivity
+        public SpectralFunction filter
         public bint display_progress
         double _display_timer
         double _display_update_time
@@ -63,7 +63,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         double[:,::1] _working_mean, _working_variance
         char[:,::1] _working_touched
         StatsArray2D _display_frame
-        list _resampled_sensitivity
+        list _resampled_filter
         tuple _pixels
         int _samples
         object _display_figure
@@ -71,14 +71,14 @@ cdef class MonoPipeline2D(Pipeline2D):
         bint _display_auto_exposure
         public bint display_persist_figure
 
-    def __init__(self, SpectralFunction sensitivity=None, bint display_progress=True,
+    def __init__(self, SpectralFunction filter=None, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
                  bint display_auto_exposure=True, double display_black_point=0.0, double display_white_point=1.0,
                  double display_unsaturated_fraction=1.0, display_gamma=2.2, str name=None):
 
         self.name = name or _DEFAULT_PIPELINE_NAME
 
-        self.sensitivity = sensitivity or ConstantSF(1.0)
+        self.filter = filter or ConstantSF(1.0)
 
         if display_black_point < 0:
             raise ValueError('Black point cannot be less than zero.')
@@ -108,7 +108,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         self._display_timer = 0
         self._display_figure = None
 
-        self._resampled_sensitivity = None
+        self._resampled_filter = None
 
         self._pixels = None
         self._samples = 0
@@ -194,7 +194,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         self._working_touched = np.zeros((nx, ny), dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
-        self._resampled_sensitivity = [self.sensitivity.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
 
         if self.display_progress:
             self._start_display()
@@ -202,7 +202,7 @@ cdef class MonoPipeline2D(Pipeline2D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
-        return MonoPixelProcessor(x, y, self._resampled_sensitivity[slice_id])
+        return MonoPixelProcessor(x, y, self._resampled_filter[slice_id])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -434,11 +434,11 @@ cdef class MonoPixelProcessor(PixelProcessor):
 
     cdef:
         StatsBin bin
-        double[::1] sensitivity, _temp
+        double[::1] filter, _temp
 
-    def __init__(self, int x, int y, double[::1] sensitivity):
+    def __init__(self, int x, int y, double[::1] filter):
         self.bin = StatsBin()
-        self.sensitivity = sensitivity
+        self.filter = filter
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -449,9 +449,9 @@ cdef class MonoPixelProcessor(PixelProcessor):
             double total = 0
             Spectrum filtered
 
-        # apply sensitivity curve and integrate
+        # apply filter curve and integrate
         for index in range(spectrum.bins):
-            total += spectrum.samples_mv[index] * self.sensitivity[index] * spectrum.delta_wavelength
+            total += spectrum.samples_mv[index] * self.filter[index] * spectrum.delta_wavelength
 
         self.bin.add_sample(total)
 
@@ -459,9 +459,6 @@ cdef class MonoPixelProcessor(PixelProcessor):
         return self.bin.mean, self.bin.variance
 
 
-@cython.cdivision(True)
-@cython.boundscheck(False)
-@cython.wraparound(False)
 cdef class MonoAdaptiveSampler2D(FrameSampler2D):
 
     cdef:
