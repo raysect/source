@@ -126,29 +126,31 @@ from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, Sp
 from raysect.optical.observer.pipeline.mono import MonoAdaptiveSampler2D
 from raysect.core.workflow import SerialEngine
 
+filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
+filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
+filter_blue = InterpolatedSF([100, 480, 490, 500, 510, 800], [0, 0, 1, 1, 0, 0])
+
 # create and setup the camera
 mono_unfiltered = MonoPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
 mono_unfiltered.display_update_time = 15
 
-filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
 mono_green = MonoPipeline2D(filter=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
 mono_green.display_update_time = 15
 
-filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
 mono_red = MonoPipeline2D(filter=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
 mono_red.display_update_time = 15
 
 # rgb = RGBPipeline2D()
 # rgb.accumulate = True
 
-# bayer = BayerPipeline2D()
-# bayer.accumulate = True
+bayer = BayerPipeline2D(filter_red, filter_green, filter_blue)
+bayer.display_update_time = 15
 
 # spectral = SpectralPipeline2D()
 # spectral.accumulate = True
 
 # pipelines = [mono, rgb, bayer, spectral]
-pipelines = [mono_unfiltered, mono_green, mono_red]
+pipelines = [mono_unfiltered, mono_green, mono_red, bayer]
 sampler = MonoAdaptiveSampler2D(mono_unfiltered, ratio=5, fraction=0.2, min_samples=500, cutoff=0.01)
 
 camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)

@@ -28,42 +28,78 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from time import time
-cimport cython
-cimport numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
-from .colormaps import viridis
 
+cimport cython
+cimport numpy as np
+from raysect.core.math.cython cimport clamp
+from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
-from raysect.core.math cimport StatsArray3D, StatsArray2D, StatsArray1D
-from raysect.optical.colour cimport resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
-from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.observer.base.slice cimport SpectralSlice
+from raysect.core.math cimport StatsArray2D
+from raysect.optical.observer.pipeline.mono cimport MonoPixelProcessor
+from libc.math cimport pow
+
+
+_DEFAULT_PIPELINE_NAME = "Bayer Pipeline"
+_DISPLAY_DPI = 100
+_DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
 
 
 cdef class BayerPipeline2D(Pipeline2D):
 
     cdef:
-        public double sensitivity
+        str name
+        public SpectralFunction red_filter, green_filter, blue_filter
+        tuple _bayer_mosaic
         public bint display_progress
         double _display_timer
-        public double display_update_time
+        double _display_update_time
         public bint accumulate
         readonly StatsArray2D frame
         double[:,::1] _working_mean, _working_variance
         char[:,::1] _working_touched
         StatsArray2D _display_frame
-        list _resampled_xyz
+        list _resampled_filters
         tuple _pixels
         int _samples
+        object _display_figure
+        double _display_black_point, _display_white_point, _display_unsaturated_fraction, _display_gamma
+        bint _display_auto_exposure
+        public bint display_persist_figure
 
-    def __init__(self, double sensitivity=1.0, bint display_progress=True, double display_update_time=15, bint accumulate=False):
+    def __init__(self, SpectralFunction red_filter, SpectralFunction green_filter,
+                 SpectralFunction blue_filter, bint display_progress=True,
+                 double display_update_time=15, bint accumulate=True,
+                 bint display_auto_exposure=True, double display_black_point=0.0, double display_white_point=1.0,
+                 double display_unsaturated_fraction=1.0, display_gamma=2.2, str name=None):
 
-        # todo: add validation
-        self.sensitivity = sensitivity
+        self.name = name or _DEFAULT_PIPELINE_NAME
+
+        self.red_filter = red_filter
+        self.green_filter = green_filter
+        self.blue_filter = blue_filter
+
+        # TODO - expose bayer mosaic as a property
+        # also support converting 'R', 'G', 'B' strings to 0, 1, 2
+        self._bayer_mosaic = (0, 1, 1, 2)
+
+        if display_black_point < 0:
+            raise ValueError('Black point cannot be less than zero.')
+
+        if display_white_point < display_black_point:
+            display_white_point = display_black_point
+
         self.display_progress = display_progress
-        self._display_timer = 0
         self.display_update_time = display_update_time
+        self.display_persist_figure = True
+
+        self.display_gamma = display_gamma
+        self._display_black_point = display_black_point
+        self._display_white_point = display_white_point
+        self._display_auto_exposure = display_auto_exposure
+        self.display_unsaturated_fraction = display_unsaturated_fraction
+
         self.accumulate = accumulate
 
         self.frame = None
@@ -73,17 +109,79 @@ cdef class BayerPipeline2D(Pipeline2D):
         self._working_touched = None
 
         self._display_frame = None
+        self._display_timer = 0
+        self._display_figure = None
 
-        self._resampled_xyz = None
+        self._resampled_filters = None
 
         self._pixels = None
         self._samples = 0
 
-    # @property
-    # def rgb_frame(self):
-    #     if self.xyz_frame:
-    #         return self._generate_srgb_frame(self.xyz_frame)
-    #     return None
+    @property
+    def display_white_point(self):
+        return self._display_white_point
+
+    @display_white_point.setter
+    def display_white_point(self, value):
+        if value < self._display_black_point:
+            raise ValueError("White point cannot be less than black point.")
+        self._display_auto_exposure = False
+        self._display_white_point = value
+        self._refresh_display()
+
+    @property
+    def display_black_point(self):
+        return self._display_black_point
+
+    @display_black_point.setter
+    def display_black_point(self, value):
+        if value < 0:
+            raise ValueError('Black point cannot be less than zero.')
+        if value > self._display_white_point:
+            raise ValueError("Black point cannot be greater than white point.")
+        self._display_black_point = value
+        self._refresh_display()
+
+    @property
+    def display_gamma(self):
+        return self._display_gamma
+
+    @display_gamma.setter
+    def display_gamma(self, value):
+        if value <= 0.0:
+            raise ValueError('Gamma correction value must be greater that 0.')
+        self._display_gamma = value
+        self._refresh_display()
+
+    @property
+    def display_auto_exposure(self):
+        return self._display_auto_exposure
+
+    @display_auto_exposure.setter
+    def display_auto_exposure(self, value):
+        self._display_auto_exposure = value
+        self._refresh_display()
+
+    @property
+    def display_unsaturated_fraction(self):
+        return self._display_unsaturated_fraction
+
+    @display_unsaturated_fraction.setter
+    def display_unsaturated_fraction(self, value):
+        if not (0 < value <= 1):
+            raise ValueError('Auto exposure unsaturated fraction must lie in range (0, 1].')
+        self._display_unsaturated_fraction = value
+        self._refresh_display()
+
+    @property
+    def display_update_time(self):
+        return self._display_update_time
+
+    @display_update_time.setter
+    def display_update_time(self, value):
+        if value <= 0:
+            raise ValueError('Display update time must be greater than zero seconds.')
+        self._display_update_time = value
 
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
 
@@ -100,7 +198,10 @@ cdef class BayerPipeline2D(Pipeline2D):
         self._working_touched = np.zeros((nx, ny), dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
-        self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        resampled_red_filter = [self.red_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        resampled_green_filter = [self.green_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        resampled_blue_filter = [self.blue_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        self._resampled_filters = [resampled_red_filter, resampled_green_filter, resampled_blue_filter]
 
         if self.display_progress:
             self._start_display()
@@ -108,7 +209,16 @@ cdef class BayerPipeline2D(Pipeline2D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
-        return BayerPixelProcessor(x, y, self._resampled_xyz[slice_id])
+
+        cdef:
+            np.ndarray filter
+            int filter_id, index
+
+        index = (x % 2) + 2 * (y % 2)
+        filter_id = self._bayer_mosaic[index]
+        filter = self._resampled_filters[filter_id][slice_id]
+
+        return MonoPixelProcessor(x, y, filter)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -146,47 +256,24 @@ cdef class BayerPipeline2D(Pipeline2D):
         if self.display_progress:
             self._render_display(self.frame)
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
-    # cpdef _generate_srgb_frame(self, StatsArray3D xyz_frame):
-    #
-    #     cdef:
-    #         int nx, ny, ix, iy
-    #         np.ndarray rgb_frame
-    #         double[:,:,::1] rgb_frame_mv
-    #         tuple rgb_pixel
-    #
-    #     # TODO - re-add exposure handlers
-    #     nx, ny = self._pixels
-    #     rgb_frame = np.zeros((nx, ny, 3))
-    #     rgb_frame_mv = rgb_frame
-    #
-    #     # Apply sensitivity to each pixel and convert to sRGB colour-space
-    #     for ix in range(nx):
-    #         for iy in range(ny):
-    #
-    #             rgb_pixel = ciexyz_to_srgb(
-    #                 xyz_frame.mean_mv[ix, iy, 0] * self.sensitivity,
-    #                 xyz_frame.mean_mv[ix, iy, 1] * self.sensitivity,
-    #                 xyz_frame.mean_mv[ix, iy, 2] * self.sensitivity
-    #             )
-    #
-    #             rgb_frame_mv[ix, iy, 0] = rgb_pixel[0]
-    #             rgb_frame_mv[ix, iy, 1] = rgb_pixel[1]
-    #             rgb_frame_mv[ix, iy, 2] = rgb_pixel[2]
-    #
-    #     return rgb_frame
-
     def _start_display(self):
         """
         Display live render.
         """
 
+        # reset figure handle if we are not persisting across observation runs
+        if not self.display_persist_figure:
+            self._display_figure = None
+
         # populate live frame with current frame state
         self._display_frame = self.frame.copy()
 
         # display initial frame
-        self._render_display(self._display_frame)
+        self._render_display(self._display_frame, 'rendering...')
+
+        # workaround for interactivity for QT backend
+        plt.pause(0.1)
+
         self._display_timer = time()
 
     @cython.boundscheck(False)
@@ -206,92 +293,155 @@ cdef class BayerPipeline2D(Pipeline2D):
         # update live render display
         if (time() - self._display_timer) > self.display_update_time:
 
-            print("BayerPipeline2D updating display...")
-            self._render_display(self._display_frame)
+            print("{} - updating display...".format(self.name))
+            self._render_display(self._display_frame, 'rendering...')
+
+            # workaround for interactivity for QT backend
+            plt.pause(0.1)
+
             self._display_timer = time()
 
-    def _render_display(self, display_frame):
+    def _refresh_display(self):
+        """
+        Refreshes the display window (if active) and frame data is present.
+
+        This method is called when display attributes are changed to refresh
+        the display according to the new settings.
+        """
+
+        # there must be frame data present
+        if not self.frame:
+            return
+
+        # is there a figure present (only present if display() called or display progress was on during render)?
+        if not self._display_figure:
+            return
+
+        # does the figure have an active window?
+        if not plt.fignum_exists(self._display_figure.number):
+            return
+
+        self._render_display(self.frame)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _render_display(self, frame, status=None):
 
         INTERPOLATION = 'nearest'
 
-        plt.figure(11)
-        plt.clf()
-        plt.imshow(np.transpose(display_frame.mean * self.sensitivity), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'), vmin=0, vmax=1)
-        plt.tight_layout()
-        plt.draw()
+        # generate display image
+        image = self._generate_display_image(frame)
 
-        # # plot standard error
-        # plt.figure(12)
-        # plt.clf()
-        # plt.imshow(np.transpose(self.frame.errors()), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
-        # plt.colorbar()
-        # plt.tight_layout()
-        # plt.draw()
-        # # plot samples
-        # plt.figure(13)
-        # plt.clf()
-        # plt.imshow(np.transpose(self.frame.samples), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
-        # plt.colorbar()
-        # plt.tight_layout()
-        # plt.draw()
+        # create a fresh figure if the existing figure window has gone missing
+        if not self._display_figure or not plt.fignum_exists(self._display_figure.number):
+            self._display_figure = plt.figure(facecolor=(0.5, 0.5, 0.5), figsize=_DISPLAY_SIZE, dpi=_DISPLAY_DPI)
+        fig = self._display_figure
+
+        # set window title
+        if status:
+            fig.canvas.set_window_title("{} - {}".format(self.name, status))
+        else:
+            fig.canvas.set_window_title(self.name)
+
+        # populate figure
+        fig.clf()
+        ax = fig.add_axes([0,0,1,1])
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        ax.imshow(np.transpose(image), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=plt.get_cmap('gray'), vmin=0.0)
+        fig.canvas.draw_idle()
         plt.show()
 
-        # workaround for interactivity for QT backend
-        plt.pause(0.1)
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _generate_display_image(self, StatsArray2D frame):
+
+        cdef:
+            int nx, ny, x, y
+            np.ndarray image
+            double[:,::1] image_mv
+            double gamma_exponent
+
+        if self.display_auto_exposure:
+            self._display_white_point = self._calculate_white_point(frame.mean)
+
+        image = frame.mean.copy()
+        image_mv = image
+
+        # clamp data to within black and white point range, and shift zero to blackpoint, apply gamma correction
+        nx = frame.shape[0]
+        ny = frame.shape[1]
+        gamma_exponent = 1.0 / self._display_gamma
+        for x in range(nx):
+            for y in range(ny):
+                image_mv[x, y] = clamp(image_mv[x, y], self._display_black_point, self._display_white_point) - self._display_black_point
+                image_mv[x, y] = pow(image_mv[x, y], gamma_exponent)
+
+        return image
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _calculate_white_point(self, np.ndarray image):
+
+        cdef:
+            int nx, ny, pixels, x, y, i
+            double peak_luminance
+            np.ndarray luminance
+            double[:,::1] imv
+            double[::1] lmv
+
+        nx = image.shape[0]
+        ny = image.shape[1]
+        imv = image  # memory view
+
+        pixels = nx * ny
+        luminance = np.zeros(pixels)
+        lmv = luminance  # memory view
+
+        # calculate luminance values for frame (XYZ Y component is luminance)
+        for x in range(nx):
+            for y in range(ny):
+                lmv[y*nx + x] = max(imv[x, y] - self._display_black_point, 0)
+
+        # sort by luminance
+        luminance.sort()
+
+        # if all pixels black, return default sensitivity
+        for i in range(pixels):
+            if lmv[i] > 0:
+                break
+
+        if i == pixels:
+            return self._display_black_point
+
+        # identify luminance at threshold
+        peak_luminance = lmv[<int> min(pixels - 1, pixels * self._display_unsaturated_fraction)]
+
+        if peak_luminance == 0:
+            return self._display_black_point
+
+        return peak_luminance + self._display_black_point
 
     def display(self):
-        if self.frame:
-            self._render_display(self.frame)
-        raise ValueError("There is no frame to display.")
+        if not self.frame:
+            raise ValueError("There is no frame to display.")
+        self._render_display(self.frame)
 
-    # def save(self, filename):
-    #     """
-    #     Save the collected samples in the camera frame to file.
-    #     :param str filename: Filename and path for camera frame output file.
-    #     """
-    #
-    #     rgb_frame = self._generate_srgb_frame(self.frame)
-    #     plt.imsave(filename, np.transpose(rgb_frame))
+    def save(self, filename):
+        """
+        Saves the display image to a png file.
 
+        The current display settings (exposure, gamma, etc..) are used to
+        process the image prior saving.
 
-cdef class BayerPixelProcessor(PixelProcessor):
+        :param str filename: Image path and filename.
+        """
 
-    cdef:
-        np.ndarray _resampled_xyz
-        StatsArray1D _bin
-        int _filter_id
+        if not self.frame:
+            raise ValueError("There is no frame to save.")
 
-    def __init__(self, int x, int y, np.ndarray resampled_xyz):
+        image = self._generate_display_image(self.frame)
+        plt.imsave(filename, np.transpose(image), cmap='gray', vmin=0.0)
 
-        # select appropriate filter for pixel
-        if y % 2:
-            # upper row
-            if x % 2:
-                # left - red
-                self._filter_id = 0
-            else:
-                # right - green
-                self._filter_id = 1
-        else:
-            # lower row
-            if x % 2:
-                # left - green
-                self._filter_id = 1
-            else:
-                # right - blue
-                self._filter_id = 2
-
-        self._resampled_xyz = resampled_xyz
-        self._bin = StatsArray1D(1)
-
-    cpdef object add_sample(self, Spectrum spectrum):
-
-        cdef tuple xyz
-
-        # todo: inefficient kludge
-        # convert spectrum to CIE XYZ and add sample to pixel buffer
-        xyz = spectrum_to_ciexyz(spectrum, self._resampled_xyz)
-        self._bin.add_sample(0, xyz[self._filter_id])
-
-    cpdef tuple pack_results(self):
-        return self._bin.mean[0], self._bin.variance[0]

@@ -31,7 +31,6 @@ from time import time
 import matplotlib.pyplot as plt
 import numpy as np
 from random import shuffle
-from .colormaps import viridis
 
 cimport cython
 cimport numpy as np
@@ -40,7 +39,6 @@ from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsBin, StatsArray2D
 from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.observer.base.slice cimport SpectralSlice
 from raysect.optical.observer.base.sampler cimport FrameSampler2D
 from libc.math cimport pow
 
@@ -51,25 +49,6 @@ _DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
 
 
 cdef class MonoPipeline2D(Pipeline2D):
-
-    cdef:
-        str name
-        public SpectralFunction filter
-        public bint display_progress
-        double _display_timer
-        double _display_update_time
-        public bint accumulate
-        readonly StatsArray2D frame
-        double[:,::1] _working_mean, _working_variance
-        char[:,::1] _working_touched
-        StatsArray2D _display_frame
-        list _resampled_filter
-        tuple _pixels
-        int _samples
-        object _display_figure
-        double _display_black_point, _display_white_point, _display_unsaturated_fraction, _display_gamma
-        bint _display_auto_exposure
-        public bint display_persist_figure
 
     def __init__(self, SpectralFunction filter=None, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
@@ -432,10 +411,6 @@ cdef class MonoPipeline2D(Pipeline2D):
 
 cdef class MonoPixelProcessor(PixelProcessor):
 
-    cdef:
-        StatsBin bin
-        double[::1] filter, _temp
-
     def __init__(self, int x, int y, double[::1] filter):
         self.bin = StatsBin()
         self.filter = filter
@@ -460,11 +435,6 @@ cdef class MonoPixelProcessor(PixelProcessor):
 
 
 cdef class MonoAdaptiveSampler2D(FrameSampler2D):
-
-    cdef:
-        MonoPipeline2D pipeline
-        double fraction, ratio, cutoff
-        int min_samples
 
     def __init__(self, MonoPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
 
