@@ -146,11 +146,10 @@ mono_red.display_update_time = 15
 bayer = BayerPipeline2D(filter_red, filter_green, filter_blue)
 bayer.display_update_time = 15
 
-# spectral = SpectralPipeline2D()
-# spectral.accumulate = True
+spectral = SpectralPipeline2D()
 
 # pipelines = [mono, rgb, bayer, spectral]
-pipelines = [mono_unfiltered, mono_green, mono_red, bayer]
+pipelines = [mono_unfiltered, mono_green, mono_red, bayer, spectral]
 sampler = MonoAdaptiveSampler2D(mono_unfiltered, ratio=5, fraction=0.2, min_samples=500, cutoff=0.01)
 
 camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
@@ -178,6 +177,8 @@ while not camera.render_complete:
     mono_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
     mono_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
     mono_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
+
+    spectral.display_pixel(28, 70)
 
     print("total power:", mono_unfiltered.frame.mean.sum(), "+/-", np.sqrt(np.sum(mono_unfiltered.frame.variance**2)))
     print()

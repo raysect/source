@@ -382,7 +382,8 @@ cdef class _ObserverBase(Observer):
             ray.origin = ray.origin.transform(self.to_root())
             ray.direction = ray.direction.transform(self.to_root())
 
-            # sample, apply projection weight and convert to power
+            # TODO - move etendue calculation into pipeline so usr can decide units
+            # sample, apply projection weight and convert to power per nm
             spectrum = ray.trace(world)
             spectrum.mul_scalar(projection_weight * etendue)
 
