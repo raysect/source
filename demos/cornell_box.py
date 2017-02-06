@@ -143,7 +143,7 @@ mono_red.display_update_time = 15
 # rgb = RGBPipeline2D()
 # rgb.accumulate = True
 
-bayer = BayerPipeline2D(filter_red, filter_green, filter_blue)
+bayer = BayerPipeline2D(filter_red, filter_green, filter_blue, display_unsaturated_fraction=0.96, name="Bayer Filter")
 bayer.display_update_time = 15
 
 spectral = SpectralPipeline2D()
@@ -177,6 +177,7 @@ while not camera.render_complete:
     mono_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
     mono_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
     mono_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
+    bayer.save('cornell_box_bayer_pass_{:04d}.png'.format(p))
 
     spectral.display_pixel(28, 70)
 
