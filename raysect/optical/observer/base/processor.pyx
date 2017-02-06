@@ -31,7 +31,7 @@
 
 cdef class PixelProcessor:
 
-    cpdef object add_sample(self, Spectrum spectrum):
+    cpdef object add_sample(self, Spectrum spectrum, double etendue):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
     cpdef tuple pack_results(self):

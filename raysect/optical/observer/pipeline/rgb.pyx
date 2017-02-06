@@ -286,10 +286,11 @@ cdef class XYZPixelProcessor(PixelProcessor):
         self._resampled_xyz = resampled_xyz
         self._xyz = StatsArray1D(3)
 
-    cpdef object add_sample(self, Spectrum spectrum):
+    cpdef object add_sample(self, Spectrum spectrum, double etendue):
 
         cdef double x, y, z
 
+        # TODO - note this needs to be in radiance
         # convert spectrum to CIE XYZ and add sample to pixel buffer
         x, y, z = spectrum_to_ciexyz(spectrum, self._resampled_xyz)
         self._xyz.add_sample(0, x)

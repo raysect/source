@@ -143,11 +143,11 @@ cdef class SpectralPixelProcessor(PixelProcessor):
     def __init__(self, SpectralSlice slice):
         self.bins = StatsArray1D(slice.bins)
 
-    cpdef object add_sample(self, Spectrum spectrum):
+    cpdef object add_sample(self, Spectrum spectrum, double etendue):
 
         cdef int index
         for index in range(self.bins.length):
-            self.bins.add_sample(index, spectrum.samples_mv[index])
+            self.bins.add_sample(index, spectrum.samples_mv[index] * etendue)
 
     cpdef tuple pack_results(self):
         return self.bins.mean, self.bins.variance

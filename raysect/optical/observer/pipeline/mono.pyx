@@ -417,7 +417,7 @@ cdef class MonoPixelProcessor(PixelProcessor):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef object add_sample(self, Spectrum spectrum):
+    cpdef object add_sample(self, Spectrum spectrum, double etendue):
 
         cdef:
             int index
@@ -426,7 +426,7 @@ cdef class MonoPixelProcessor(PixelProcessor):
 
         # apply filter curve and integrate
         for index in range(spectrum.bins):
-            total += spectrum.samples_mv[index] * self.filter[index] * spectrum.delta_wavelength
+            total += spectrum.samples_mv[index] * self.filter[index] * etendue * spectrum.delta_wavelength
 
         self.bin.add_sample(total)
 

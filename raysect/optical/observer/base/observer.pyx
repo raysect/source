@@ -382,13 +382,12 @@ cdef class _ObserverBase(Observer):
             ray.origin = ray.origin.transform(self.to_root())
             ray.direction = ray.direction.transform(self.to_root())
 
-            # TODO - move etendue calculation into pipeline so usr can decide units
-            # sample, apply projection weight and convert to power per nm
+            # sample, apply projection weight
             spectrum = ray.trace(world)
-            spectrum.mul_scalar(projection_weight * etendue)
+            spectrum.mul_scalar(projection_weight)
 
             for processor in pixel_processors:
-                processor.add_sample(spectrum)
+                processor.add_sample(spectrum, etendue)
 
             # accumulate statistics
             ray_count += ray.ray_count
