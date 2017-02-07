@@ -28,26 +28,35 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from time import time
-cimport cython
-cimport numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
-from .colormaps import viridis
+from random import shuffle
 
+cimport cython
+cimport numpy as np
+from raysect.core.math.cython cimport clamp
+from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsArray3D, StatsArray2D, StatsArray1D
 from raysect.optical.colour cimport resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
+
 from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.observer.base.slice cimport SpectralSlice
+from raysect.optical.observer.base.sampler cimport FrameSampler2D
+from libc.math cimport pow
+
+
+_DEFAULT_PIPELINE_NAME = "RGBPipeline Pipeline"
+_DISPLAY_DPI = 100
+_DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
 
 
 cdef class RGBPipeline2D(Pipeline2D):
 
     cdef:
-        public double sensitivity
+        str name
         public bint display_progress
         double _display_timer
-        public double display_update_time
+        double _display_update_time
         public bint accumulate
         readonly StatsArray3D xyz_frame
         double[:,:,::1] _working_mean, _working_variance
@@ -56,14 +65,29 @@ cdef class RGBPipeline2D(Pipeline2D):
         list _resampled_xyz
         tuple _pixels
         int _samples
+        object _display_figure
+        double _display_sensitivity, _display_unsaturated_fraction
+        bint _display_auto_exposure
+        public bint display_persist_figure
 
-    def __init__(self, double sensitivity=1.0, bint display_progress=True, double display_update_time=15, bint accumulate=False):
+    def __init__(self, bint display_progress=True,
+                 double display_update_time=15, bint accumulate=True,
+                 bint display_auto_exposure=True, double display_sensitivity=1.0,
+                 double display_unsaturated_fraction=1.0, str name=None):
 
-        # todo: add validation
-        self.sensitivity = sensitivity
+        self.name = name or _DEFAULT_PIPELINE_NAME
+
         self.display_progress = display_progress
-        self._display_timer = 0
         self.display_update_time = display_update_time
+        self.display_persist_figure = True
+
+        if display_sensitivity <= 0:
+            raise ValueError("Sensitivity must be greater than 0.")
+
+        self._display_sensitivity = display_sensitivity
+        self._display_auto_exposure = display_auto_exposure
+        self.display_unsaturated_fraction = display_unsaturated_fraction
+
         self.accumulate = accumulate
 
         self.xyz_frame = None
@@ -73,6 +97,8 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._working_touched = None
 
         self._display_frame = None
+        self._display_timer = 0
+        self._display_figure = None
 
         self._resampled_xyz = None
 
@@ -80,10 +106,46 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._samples = 0
 
     @property
-    def rgb_frame(self):
-        if self.xyz_frame:
-            return self._generate_srgb_frame(self.xyz_frame)
-        return None
+    def display_sensitivity(self):
+        return self._display_sensitivity
+
+    @display_sensitivity.setter
+    def display_sensitivity(self, value):
+        if value <= 0:
+            raise ValueError("Sensitivity must be greater than 0.")
+        self._display_auto_exposure = False
+        self._display_sensitivity = value
+        self._refresh_display()
+
+    @property
+    def display_auto_exposure(self):
+        return self._display_auto_exposure
+
+    @display_auto_exposure.setter
+    def display_auto_exposure(self, value):
+        self._display_auto_exposure = value
+        self._refresh_display()
+
+    @property
+    def display_unsaturated_fraction(self):
+        return self._display_unsaturated_fraction
+
+    @display_unsaturated_fraction.setter
+    def display_unsaturated_fraction(self, value):
+        if not (0 < value <= 1):
+            raise ValueError('Auto exposure unsaturated fraction must lie in range (0, 1].')
+        self._display_unsaturated_fraction = value
+        self._refresh_display()
+
+    @property
+    def display_update_time(self):
+        return self._display_update_time
+
+    @display_update_time.setter
+    def display_update_time(self, value):
+        if value <= 0:
+            raise ValueError('Display update time must be greater than zero seconds.')
+        self._display_update_time = value
 
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
 
@@ -143,8 +205,8 @@ cdef class RGBPipeline2D(Pipeline2D):
         cdef int x, y
 
         # update final frame with working frame results
-        for x in range(self.xyz_frame.shape[0]):
-            for y in range(self.xyz_frame.shape[1]):
+        for x in range(self.xyz_frame.nx):
+            for y in range(self.xyz_frame.ny):
                 if self._working_touched[x, y] == 1:
                     self.xyz_frame.combine_samples(x, y, 0, self._working_mean[x, y, 0], self._working_variance[x, y, 0], self._samples)
                     self.xyz_frame.combine_samples(x, y, 1, self._working_mean[x, y, 1], self._working_variance[x, y, 1], self._samples)
@@ -153,47 +215,24 @@ cdef class RGBPipeline2D(Pipeline2D):
         if self.display_progress:
             self._render_display(self.xyz_frame)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cpdef _generate_srgb_frame(self, StatsArray3D xyz_frame):
-
-        cdef:
-            int nx, ny, ix, iy
-            np.ndarray rgb_frame
-            double[:,:,::1] rgb_frame_mv
-            tuple rgb_pixel
-
-        # TODO - re-add exposure handlers
-        nx, ny = self._pixels
-        rgb_frame = np.zeros((nx, ny, 3))
-        rgb_frame_mv = rgb_frame
-
-        # Apply sensitivity to each pixel and convert to sRGB colour-space
-        for ix in range(nx):
-            for iy in range(ny):
-
-                rgb_pixel = ciexyz_to_srgb(
-                    xyz_frame.mean_mv[ix, iy, 0] * self.sensitivity,
-                    xyz_frame.mean_mv[ix, iy, 1] * self.sensitivity,
-                    xyz_frame.mean_mv[ix, iy, 2] * self.sensitivity
-                )
-
-                rgb_frame_mv[ix, iy, 0] = rgb_pixel[0]
-                rgb_frame_mv[ix, iy, 1] = rgb_pixel[1]
-                rgb_frame_mv[ix, iy, 2] = rgb_pixel[2]
-
-        return rgb_frame
-
     def _start_display(self):
         """
         Display live render.
         """
 
+        # reset figure handle if we are not persisting across observation runs
+        if not self.display_persist_figure:
+            self._display_figure = None
+
         # populate live frame with current frame state
         self._display_frame = self.xyz_frame.copy()
 
         # display initial frame
-        self._render_display(self._display_frame)
+        self._render_display(self._display_frame, 'rendering...')
+
+        # workaround for interactivity for QT backend
+        plt.pause(0.1)
+
         self._display_timer = time()
 
     @cython.boundscheck(False)
@@ -215,88 +254,266 @@ cdef class RGBPipeline2D(Pipeline2D):
         # update live render display
         if (time() - self._display_timer) > self.display_update_time:
 
-            print("RGBPipeline2D updating display...")
-            self._render_display(self._display_frame)
+            print("{} - updating display...".format(self.name))
+            self._render_display(self._display_frame, 'rendering...')
+
+            # workaround for interactivity for QT backend
+            plt.pause(0.1)
+
             self._display_timer = time()
 
-    def _render_display(self, display_frame):
+    def _refresh_display(self):
+        """
+        Refreshes the display window (if active) and frame data is present.
+
+        This method is called when display attributes are changed to refresh
+        the display according to the new settings.
+        """
+
+        # there must be frame data present
+        if not self.xyz_frame:
+            return
+
+        # is there a figure present (only present if display() called or display progress was on during render)?
+        if not self._display_figure:
+            return
+
+        # does the figure have an active window?
+        if not plt.fignum_exists(self._display_figure.number):
+            return
+
+        self._render_display(self.xyz_frame)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _render_display(self, frame, status=None):
 
         INTERPOLATION = 'nearest'
 
-        rgb_frame = self._generate_srgb_frame(display_frame)
+        # generate display image
+        image = self._generate_display_image(frame)
 
-        plt.figure(1)
-        plt.clf()
-        plt.imshow(np.transpose(rgb_frame, (1, 0, 2)), aspect="equal", origin="upper", interpolation=INTERPOLATION)
-        plt.draw()
+        # create a fresh figure if the existing figure window has gone missing
+        if not self._display_figure or not plt.fignum_exists(self._display_figure.number):
+            self._display_figure = plt.figure(facecolor=(0.5, 0.5, 0.5), figsize=_DISPLAY_SIZE, dpi=_DISPLAY_DPI)
+        fig = self._display_figure
 
-        # plot standard error
-        plt.figure(2)
-        plt.clf()
-        plt.imshow(np.transpose(self.xyz_frame.errors().max(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
-        plt.colorbar()
-        plt.draw()
+        # set window title
+        if status:
+            fig.canvas.set_window_title("{} - {}".format(self.name, status))
+        else:
+            fig.canvas.set_window_title(self.name)
 
-        # # plot samples
-        # plt.figure(3)
-        # plt.clf()
-        # plt.imshow(np.transpose(self.xyz_frame.samples.mean(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
-        # plt.colorbar()
-        # plt.draw()
-
-        # plot normalised error
-        plt.figure(4)
-        plt.clf()
-        error_frame = self.xyz_frame.errors()
-        magnitude_frame = self.xyz_frame.mean.copy()
-        invalid = magnitude_frame <= 0
-        error_frame[invalid] = 0
-        magnitude_frame[invalid] = 1
-        normalised = error_frame / magnitude_frame
-        plt.imshow(np.transpose(normalised.max(axis=2)), aspect="equal", origin="upper", interpolation=INTERPOLATION, cmap=viridis)
-        plt.colorbar()
-        plt.draw()
+        # populate figure
+        fig.clf()
+        ax = fig.add_axes([0,0,1,1])
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        ax.imshow(np.transpose(image, (1, 0, 2)), aspect="equal", origin="upper", interpolation=INTERPOLATION)
+        fig.canvas.draw_idle()
         plt.show()
 
-        # workaround for interactivity for QT backend
-        plt.pause(0.1)
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _generate_display_image(self, StatsArray3D frame):
+
+        cdef:
+            int x, y, c
+            np.ndarray xyz_image, rgb_image
+            double[:,:,::1] xyz_image_mv
+            double gamma_exponent
+
+        if self.display_auto_exposure:
+            self._display_sensitivity = self._calculate_sensitivity(frame.mean)
+
+        xyz_image = frame.mean.copy()
+        xyz_image_mv = xyz_image
+
+        # apply sensitivity
+        for x in range(frame.nx):
+            for y in range(frame.ny):
+                for c in range(frame.nz):
+                    xyz_image_mv[x, y, c] *= self._display_sensitivity
+
+        # convert XYZ to sRGB
+        rgb_image = self._generate_srgb_image(xyz_image_mv)
+
+        return rgb_image
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def _calculate_sensitivity(self, np.ndarray image):
+
+        cdef:
+            int nx, ny, pixels, x, y, i
+            double peak_luminance
+            np.ndarray luminance
+            double[:,:,::1] imv
+            double[::1] lmv
+
+        nx = image.shape[0]
+        ny = image.shape[1]
+        imv = image  # memory view
+
+        pixels = nx * ny
+        luminance = np.zeros(pixels)
+        lmv = luminance  # memory view
+
+        # TODO - should really consider X and Z when working out brightness
+        # calculate luminance values for frame (XYZ Y component is luminance)
+        for x in range(nx):
+            for y in range(ny):
+                lmv[y*nx + x] = imv[x, y, 1]
+
+        # sort by luminance
+        luminance.sort()
+
+        # if all pixels black, return default sensitivity
+        for i in range(pixels):
+            if lmv[i] > 0:
+                break
+
+        # return default sensitivity
+        if i == pixels:
+            return 1.0
+
+        # identify luminance at threshold
+        peak_luminance = lmv[<int> min(pixels - 1, pixels * self._display_unsaturated_fraction)]
+
+        # return default sensitivity
+        if peak_luminance == 0:
+            return 1.0
+
+        return 1 / peak_luminance
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef _generate_srgb_image(self, double[:,:,::1] xyz_image_mv):
+
+        cdef:
+            int nx, ny, ix, iy
+            np.ndarray rgb_image
+            double[:,:,::1] rgb_image_mv
+            tuple rgb_pixel
+
+        nx, ny = self._pixels
+        rgb_image = np.zeros((nx, ny, 3))
+        rgb_image_mv = rgb_image
+
+        # convert to sRGB colour space
+        for ix in range(nx):
+            for iy in range(ny):
+
+                rgb_pixel = ciexyz_to_srgb(
+                    xyz_image_mv[ix, iy, 0],
+                    xyz_image_mv[ix, iy, 1],
+                    xyz_image_mv[ix, iy, 2]
+                )
+
+                rgb_image_mv[ix, iy, 0] = rgb_pixel[0]
+                rgb_image_mv[ix, iy, 1] = rgb_pixel[1]
+                rgb_image_mv[ix, iy, 2] = rgb_pixel[2]
+
+        return rgb_image
 
     def display(self):
-        if self.xyz_frame:
-            self._render_display(self.xyz_frame)
-        raise ValueError("There is no frame to display.")
+        if not self.xyz_frame:
+            raise ValueError("There is no frame to display.")
+        self._render_display(self.xyz_frame)
 
     def save(self, filename):
         """
-        Save the collected samples in the camera frame to file.
-        :param str filename: Filename and path for camera frame output file.
+        Saves the display image to a png file.
+
+        The current display settings (exposure, gamma, etc..) are used to
+        process the image prior saving.
+
+        :param str filename: Image path and filename.
         """
 
-        rgb_frame = self._generate_srgb_frame(self.xyz_frame)
-        plt.imsave(filename, np.transpose(rgb_frame, (1, 0, 2)))
+        if not self.xyz_frame:
+            raise ValueError("There is no frame to save.")
+
+        image = self._generate_display_image(self.xyz_frame)
+        plt.imsave(filename, np.transpose(image, (1, 0, 2)))
 
 
 cdef class XYZPixelProcessor(PixelProcessor):
 
     cdef:
-        np.ndarray _resampled_xyz
-        StatsArray1D _xyz
+        np.ndarray resampled_xyz
+        StatsArray1D xyz
 
     def __init__(self, np.ndarray resampled_xyz):
-        self._resampled_xyz = resampled_xyz
-        self._xyz = StatsArray1D(3)
+        self.resampled_xyz = resampled_xyz
+        self.xyz = StatsArray1D(3)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef object add_sample(self, Spectrum spectrum, double etendue):
 
         cdef double x, y, z
 
-        # TODO - note this needs to be in radiance
         # convert spectrum to CIE XYZ and add sample to pixel buffer
-        x, y, z = spectrum_to_ciexyz(spectrum, self._resampled_xyz)
-        self._xyz.add_sample(0, x)
-        self._xyz.add_sample(1, y)
-        self._xyz.add_sample(2, z)
+        x, y, z = spectrum_to_ciexyz(spectrum, self.resampled_xyz)
+        self.xyz.add_sample(0, x * etendue)
+        self.xyz.add_sample(1, y * etendue)
+        self.xyz.add_sample(2, z * etendue)
 
     cpdef tuple pack_results(self):
-        return self._xyz.mean, self._xyz.variance
+        return self.xyz.mean, self.xyz.variance
 
+
+# cdef class MonoAdaptiveSampler2D(FrameSampler2D):
+#
+#     def __init__(self, MonoPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
+#
+#         # todo: validation
+#         self.pipeline = pipeline
+#         self.fraction = fraction
+#         self.ratio = ratio
+#         self.min_samples = min_samples
+#         self.cutoff = cutoff
+#
+#     @cython.boundscheck(False)
+#     @cython.wraparound(False)
+#     cpdef generate_tasks(self, tuple pixels):
+#
+#         cdef:
+#             int nx, ny, x, y
+#             np.ndarray normalised
+#             double[:,::1] error, normalised_mv
+#             double percentile_error
+#             list tasks
+#
+#         nx, ny = pixels
+#         frame = self.pipeline.frame
+#         min_samples = max(self.min_samples, frame.samples.max() / self.ratio)
+#         error = frame.errors()
+#         normalised = np.zeros((nx, ny))
+#         normalised_mv = normalised
+#
+#         # calculated normalised standard error
+#         for x in range(nx):
+#             for y in range(ny):
+#                 if frame.mean_mv[x, y] <= 0:
+#                     normalised_mv[x, y] = 0
+#                 else:
+#                     normalised_mv[x, y] = error[x, y] / frame.mean_mv[x, y]
+#
+#         # locate error value corresponding to fraction of frame to process
+#         percentile_error = np.percentile(normalised, (1 - self.fraction) * 100)
+#
+#         # build tasks
+#         tasks = []
+#         for x in range(nx):
+#             for y in range(ny):
+#                 if frame.samples_mv[x, y] < min_samples or normalised_mv[x, y] > max(self.cutoff, percentile_error):
+#                     tasks.append((x, y))
+#
+#         # perform tasks in random order so that image is assembled randomly rather than sequentially
+#         shuffle(tasks)
+#
+#         return tasks

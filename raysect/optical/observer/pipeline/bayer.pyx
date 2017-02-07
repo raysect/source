@@ -218,7 +218,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         filter_id = self._bayer_mosaic[index]
         filter = self._resampled_filters[filter_id][slice_id]
 
-        return MonoPixelProcessor(x, y, filter)
+        return MonoPixelProcessor(filter)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -248,8 +248,8 @@ cdef class BayerPipeline2D(Pipeline2D):
         cdef int x, y
 
         # update final frame with working frame results
-        for x in range(self.frame.shape[0]):
-            for y in range(self.frame.shape[1]):
+        for x in range(self.frame.nx):
+            for y in range(self.frame.ny):
                 if self._working_touched[x, y] == 1:
                     self.frame.combine_samples(x, y, self._working_mean[x, y], self._working_variance[x, y], self._samples)
 
@@ -400,7 +400,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         luminance = np.zeros(pixels)
         lmv = luminance  # memory view
 
-        # calculate luminance values for frame (XYZ Y component is luminance)
+        # calculate luminance values for frame
         for x in range(nx):
             for y in range(ny):
                 lmv[y*nx + x] = max(imv[x, y] - self._display_black_point, 0)

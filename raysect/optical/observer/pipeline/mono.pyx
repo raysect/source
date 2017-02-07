@@ -181,7 +181,7 @@ cdef class MonoPipeline2D(Pipeline2D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
-        return MonoPixelProcessor(x, y, self._resampled_filter[slice_id])
+        return MonoPixelProcessor(self._resampled_filter[slice_id])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -211,8 +211,8 @@ cdef class MonoPipeline2D(Pipeline2D):
         cdef int x, y
 
         # update final frame with working frame results
-        for x in range(self.frame.shape[0]):
-            for y in range(self.frame.shape[1]):
+        for x in range(self.frame.nx):
+            for y in range(self.frame.ny):
                 if self._working_touched[x, y] == 1:
                     self.frame.combine_samples(x, y, self._working_mean[x, y], self._working_variance[x, y], self._samples)
 
@@ -363,7 +363,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         luminance = np.zeros(pixels)
         lmv = luminance  # memory view
 
-        # calculate luminance values for frame (XYZ Y component is luminance)
+        # calculate luminance values for frame
         for x in range(nx):
             for y in range(ny):
                 lmv[y*nx + x] = max(imv[x, y] - self._display_black_point, 0)
@@ -411,7 +411,7 @@ cdef class MonoPipeline2D(Pipeline2D):
 
 cdef class MonoPixelProcessor(PixelProcessor):
 
-    def __init__(self, int x, int y, double[::1] filter):
+    def __init__(self, double[::1] filter):
         self.bin = StatsBin()
         self.filter = filter
 
