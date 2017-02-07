@@ -450,6 +450,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
     cpdef generate_tasks(self, tuple pixels):
 
         cdef:
+            StatsArray2D frame
             int nx, ny, x, y
             np.ndarray normalised
             double[:,::1] error, normalised_mv

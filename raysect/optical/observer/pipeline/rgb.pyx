@@ -466,54 +466,66 @@ cdef class XYZPixelProcessor(PixelProcessor):
         return self.xyz.mean, self.xyz.variance
 
 
-# cdef class MonoAdaptiveSampler2D(FrameSampler2D):
-#
-#     def __init__(self, MonoPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
-#
-#         # todo: validation
-#         self.pipeline = pipeline
-#         self.fraction = fraction
-#         self.ratio = ratio
-#         self.min_samples = min_samples
-#         self.cutoff = cutoff
-#
-#     @cython.boundscheck(False)
-#     @cython.wraparound(False)
-#     cpdef generate_tasks(self, tuple pixels):
-#
-#         cdef:
-#             int nx, ny, x, y
-#             np.ndarray normalised
-#             double[:,::1] error, normalised_mv
-#             double percentile_error
-#             list tasks
-#
-#         nx, ny = pixels
-#         frame = self.pipeline.frame
-#         min_samples = max(self.min_samples, frame.samples.max() / self.ratio)
-#         error = frame.errors()
-#         normalised = np.zeros((nx, ny))
-#         normalised_mv = normalised
-#
-#         # calculated normalised standard error
-#         for x in range(nx):
-#             for y in range(ny):
-#                 if frame.mean_mv[x, y] <= 0:
-#                     normalised_mv[x, y] = 0
-#                 else:
-#                     normalised_mv[x, y] = error[x, y] / frame.mean_mv[x, y]
-#
-#         # locate error value corresponding to fraction of frame to process
-#         percentile_error = np.percentile(normalised, (1 - self.fraction) * 100)
-#
-#         # build tasks
-#         tasks = []
-#         for x in range(nx):
-#             for y in range(ny):
-#                 if frame.samples_mv[x, y] < min_samples or normalised_mv[x, y] > max(self.cutoff, percentile_error):
-#                     tasks.append((x, y))
-#
-#         # perform tasks in random order so that image is assembled randomly rather than sequentially
-#         shuffle(tasks)
-#
-#         return tasks
+cdef class RGBAdaptiveSampler2D(FrameSampler2D):
+
+    cdef:
+        RGBPipeline2D pipeline
+        double fraction, ratio, cutoff
+        int min_samples
+
+    def __init__(self, RGBPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
+
+        # todo: validation
+        self.pipeline = pipeline
+        self.fraction = fraction
+        self.ratio = ratio
+        self.min_samples = min_samples
+        self.cutoff = cutoff
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef generate_tasks(self, tuple pixels):
+
+        cdef:
+            StatsArray3D frame
+            int nx, ny, x, y, c
+            np.ndarray normalised, pixel_normalised
+            double[:,:,::1] error
+            double[:,::1] normalised_mv
+            double percentile_error
+            list tasks
+            double[::1] pixel_normalised_mv
+
+        nx, ny = pixels
+        frame = self.pipeline.xyz_frame
+        min_samples = max(self.min_samples, frame.samples.max() / self.ratio)
+        error = frame.errors()
+        normalised = np.zeros((nx, ny))
+        normalised_mv = normalised
+        pixel_normalised = np.zeros(3)
+        pixel_normalised_mv = pixel_normalised
+
+        # calculated normalised standard error
+        for x in range(nx):
+            for y in range(ny):
+                for c in range(3):
+                    if frame.mean_mv[x, y, c] <= 0:
+                        pixel_normalised_mv[c] = 0
+                    else:
+                        pixel_normalised_mv[c] = error[x, y, c] / frame.mean_mv[x, y, c]
+                normalised_mv[x, y] = pixel_normalised.max()
+
+        # locate error value corresponding to fraction of frame to process
+        percentile_error = np.percentile(normalised, (1 - self.fraction) * 100)
+
+        # build tasks
+        tasks = []
+        for x in range(nx):
+            for y in range(ny):
+                if frame.samples[x, y, :].min() < min_samples or normalised_mv[x, y] > max(self.cutoff, percentile_error):
+                    tasks.append((x, y))
+
+        # perform tasks in random order so that image is assembled randomly rather than sequentially
+        shuffle(tasks)
+
+        return tasks
