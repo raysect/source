@@ -108,12 +108,12 @@ cdef class SpectralPipeline2D(Pipeline2D):
         for index in range(slice.bins):
             self.frame.combine_samples(x, y, slice.offset + index, mean[index], variance[index], self._samples)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cpdef object finalise(self):
         pass
 
-    def display_pixel(self, x, y):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def display_pixel(self, int x, int y):
 
         cdef:
             np.ndarray errors
@@ -143,6 +143,8 @@ cdef class SpectralPixelProcessor(PixelProcessor):
     def __init__(self, SpectralSlice slice):
         self.bins = StatsArray1D(slice.bins)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef object add_sample(self, Spectrum spectrum, double etendue):
 
         cdef int index
