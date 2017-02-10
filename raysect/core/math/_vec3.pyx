@@ -142,7 +142,6 @@ cdef class _Vec3:
         # if current length is zero, problem is ill defined
         t = self.x * self.x + self.y * self.y + self.z * self.z
         if t == 0.0:
-
             raise ZeroDivisionError("A zero length vector can not be rescaled as the direction of a zero length vector is undefined.")
 
         # normalise and rescale vector

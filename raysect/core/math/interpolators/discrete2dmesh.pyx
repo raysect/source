@@ -307,7 +307,7 @@ cdef class Discrete2DMesh(Function2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
 
         cdef:
             np.int32_t triangle_id

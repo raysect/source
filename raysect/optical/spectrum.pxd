@@ -71,4 +71,4 @@ cdef class Spectrum(SpectralFunction):
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int bins)
 
 
-cpdef double photon_energy(double wavelength) except *
+cpdef double photon_energy(double wavelength) except -1

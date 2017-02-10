@@ -431,7 +431,7 @@ cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int bin
 
 
 @cython.cdivision(True)
-cpdef double photon_energy(double wavelength) except *:
+cpdef double photon_energy(double wavelength) except -1:
     """
     Returns the energy of a photon with the specified wavelength.
 

@@ -57,4 +57,4 @@ cdef class Discrete2DMesh(Function2D):
         bint _limit
         double _default_value
 
-    cdef double evaluate(self, double x, double y) except *
+    cdef double evaluate(self, double x, double y) except? -1e999

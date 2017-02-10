@@ -31,7 +31,7 @@
 
 cdef class Function2D:
 
-    cdef double evaluate(self, double x, double y) except *
+    cdef double evaluate(self, double x, double y) except? -1e999
 
 
 cdef class PythonFunction2D(Function2D):
