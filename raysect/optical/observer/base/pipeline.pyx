@@ -30,8 +30,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class Pipeline2D:
-    """
-    """
 
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")

@@ -207,7 +207,7 @@ cdef class _ObserverBase(Observer):
         slices = self._slice_spectrum()
         templates = self._generate_templates(slices)
 
-        # initialise pipelines for rendering, must occur before task generation as
+        # initialise pipelines for rendering
         self._initialise_pipelines(self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
 
         # initialise statistics with total task count

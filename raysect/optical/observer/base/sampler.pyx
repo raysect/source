@@ -30,9 +30,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class FrameSampler2D:
-    """
-
-    """
 
     cpdef list generate_tasks(self, tuple pixels):
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")

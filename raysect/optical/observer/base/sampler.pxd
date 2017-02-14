@@ -30,4 +30,5 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class FrameSampler2D:
+
     cpdef list generate_tasks(self, tuple pixels)
