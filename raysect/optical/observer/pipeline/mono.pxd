@@ -68,3 +68,5 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
         MonoPipeline2D pipeline
         double fraction, ratio, cutoff
         int min_samples
+
+    cpdef list _full_frame(self, tuple pixels)

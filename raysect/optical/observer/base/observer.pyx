@@ -34,7 +34,7 @@ from raysect.core.workflow import RenderEngine, MulticoreEngine
 
 cimport cython
 from raysect.optical cimport World, Spectrum
-from raysect.optical.observer.base.pipeline cimport _PipelineBase, Pipeline2D
+from raysect.optical.observer.base.pipeline cimport Pipeline2D
 from raysect.optical.observer.base.sampler cimport FrameSampler2D
 from raysect.optical.observer.base.processor cimport PixelProcessor
 from raysect.optical.observer.base.slice cimport SpectralSlice
@@ -69,25 +69,19 @@ cdef class _ObserverBase(Observer):
         - save state for each pipeline as required.
     """
 
-    def __init__(self, pixels, frame_sampler, pipelines,
-                 parent=None, transform=None, name=None,
-                 render_engine=None, pixel_samples=None, spectral_rays=None, spectral_bins=None,
+    def __init__(self, parent=None, transform=None, name=None, render_engine=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
         super().__init__(parent, transform, name)
 
         self.render_engine = render_engine or MulticoreEngine()
-        self.pixel_samples = pixel_samples or 100
 
         # preset internal values to satisfy property dependencies
         self._min_wavelength = 0
         self._ray_extinction_min_depth = 0
 
         # ray configuration (order matters due to property dependencies)
-        self.pixels = pixels
-        self.frame_sampler = frame_sampler
-        self.pipelines = pipelines
         self.spectral_bins = spectral_bins or 15
         self.spectral_rays = spectral_rays or 1
         self.max_wavelength = max_wavelength or 740.0
@@ -100,55 +94,6 @@ cdef class _ObserverBase(Observer):
 
         # flag indicating if the frame sampler is not supplying any tasks (in which case the rendering process is over)
         self.render_complete = False
-
-    def _validate_pixels(self, pixels):
-        raise NotImplementedError("To be defined in subclass.")
-
-    def _validate_frame_sampler(self, frame_sampler):
-        raise NotImplementedError("To be defined in subclass.")
-
-    def _validate_pipelines(self, pipelines):
-        raise NotImplementedError("To be defined in subclass.")
-
-    @property
-    def pixels(self):
-        return self._pixels
-
-    @pixels.setter
-    def pixels(self, value):
-        pixels = tuple(value)
-        self._validate_pixels(pixels)
-        self._pixels = pixels
-
-    @property
-    def frame_sampler(self):
-        return self._frame_sampler
-
-    @frame_sampler.setter
-    def frame_sampler(self, value):
-        self._validate_frame_sampler(value)
-        self._frame_sampler = value
-
-    @property
-    def pipelines(self):
-        return self._pipelines
-
-    @pipelines.setter
-    def pipelines(self, value):
-
-        pipelines = tuple(value)
-        self._validate_pipelines(pipelines)
-        self._pipelines = pipelines
-
-    @property
-    def pixel_samples(self):
-        return self._pixel_samples
-
-    @pixel_samples.setter
-    def pixel_samples(self, value):
-        if value <= 0:
-            raise ValueError("The number of pixel samples must be greater than 0.")
-        self._pixel_samples = value
 
     @property
     def spectral_bins(self):
@@ -241,7 +186,6 @@ cdef class _ObserverBase(Observer):
 
         cdef:
             list slices, templates, tasks
-            _PipelineBase pipeline
             int slice_id
             Ray template
 
@@ -251,21 +195,20 @@ cdef class _ObserverBase(Observer):
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
-        # generate spectral configuration and ray templates
-        slices = self._slice_spectrum()
-        templates = self._generate_templates(slices)
-
-        # initialise pipelines for rendering
-        for pipeline in self._pipelines:
-            pipeline._base_initialise(self._pixels, self._pixel_samples, self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
-
         # request render tasks and escape early if there is no work to perform
         # if there is no work to perform then the render is considered "complete"
-        tasks = self._frame_sampler.generate_tasks(self._pixels)
+        tasks = self._generate_tasks()
         if not tasks:
             self.render_complete = True
             print("Render complete - No render tasks were generated.")
             return
+
+        # generate spectral configuration and ray templates
+        slices = self._slice_spectrum()
+        templates = self._generate_templates(slices)
+
+        # initialise pipelines for rendering, must occur before task generation as
+        self._initialise_pipelines(self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)
@@ -279,14 +222,11 @@ cdef class _ObserverBase(Observer):
                 update_args=(slice_id, )
             )
 
-        # close pipelines
-        for pipeline in self._pipelines:
-            pipeline._base_finalise()
-
-        # close statistics
+        # close pipelines and statistics
+        self._finalise_pipelines()
         self._finalise_statistics()
 
-    cdef inline list _slice_spectrum(self):
+    cpdef list _slice_spectrum(self):
         """
         Sub-divides the spectral range into smaller wavelength slices.
 
@@ -317,7 +257,7 @@ cdef class _ObserverBase(Observer):
         # build slices
         return [SpectralSlice(self._min_wavelength, self._max_wavelength, self._spectral_bins, end - start, start) for start, end in ranges]
 
-    cdef inline list _generate_templates(self, list slices):
+    cpdef list _generate_templates(self, list slices):
 
         return [
             Ray(
@@ -338,7 +278,7 @@ cdef class _ObserverBase(Observer):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef object _render_pixel(self, tuple pixel_id, int slice_id, Ray template):
+    cpdef object _render_pixel(self, tuple task, int slice_id, Ray template):
         """
         - passed in are ray_template and pipeline object references
         - unpack task ID (pixel id)
@@ -354,7 +294,6 @@ cdef class _ObserverBase(Observer):
         cdef:
             World world
             list rays, pixel_processors
-            _PipelineBase pipeline
             PixelProcessor processor
             int ray_count
             double etendue, projection_weight
@@ -366,14 +305,14 @@ cdef class _ObserverBase(Observer):
         world = self.root
 
         # generate rays and obtain pixel processors from each pipeline
-        rays = self._base_generate_rays(pixel_id, template, self._pixel_samples)
-        pixel_processors = [pipeline._base_pixel_processor(pixel_id, slice_id) for pipeline in self._pipelines]
+        rays = self._obtain_rays(task, template)
+        pixel_processors = self._obtain_pixel_processors(task, slice_id)
 
         # initialise ray statistics
         ray_count = 0
 
         # obtain pixel etendue to convert spectral radiance to spectral power
-        etendue = self._base_pixel_etendue(pixel_id)
+        etendue = self._obtain_etendue(task)
 
         # launch rays and accumulate spectral samples
         for ray, projection_weight in rays:
@@ -395,17 +334,15 @@ cdef class _ObserverBase(Observer):
         # acquire results from pixel processors
         results = [processor.pack_results() for processor in pixel_processors]
 
-        return pixel_id, results, ray_count
+        return task, results, ray_count
 
     ###################
     # CONSUMER THREAD #
     ###################
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cpdef object _update_state(self, tuple packed_result, int slice_id):
         """
-        - unpack pixel ID and pipeline result tuples.
+        - unpack task configuration and pipeline result tuples.
         - pass results to each pipeline to update pipelines internal state
         - print workflow statistics and any statistics for each pipeline.
         - display visual imagery for each pipeline as required
@@ -415,19 +352,31 @@ cdef class _ObserverBase(Observer):
         """
 
         cdef:
-            tuple pixel_id, result
+            tuple task
             list results
             int ray_count
-            _PipelineBase pipeline
 
         # unpack worker results
-        pixel_id, results, ray_count = packed_result
+        task, results, ray_count = packed_result
 
-        for result, pipeline in zip(results, self._pipelines):
-            pipeline._base_update(pixel_id, slice_id, result)
-
-        # update users
+        # update pipelines and statistics
+        self._update_pipelines(task, results, slice_id)
         self._update_statistics(ray_count)
+
+    cpdef list _generate_tasks(self):
+        raise NotImplementedError("To be defined in subclass.")
+
+    cpdef list _obtain_pixel_processors(self, tuple task, int slice_id):
+        raise NotImplementedError("To be defined in subclass.")
+
+    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices):
+        raise NotImplementedError("To be defined in subclass.")
+
+    cpdef object _update_pipelines(self, tuple task, list results, int slice_id):
+        raise NotImplementedError("To be defined in subclass.")
+
+    cpdef object _finalise_pipelines(self):
+        raise NotImplementedError("To be defined in subclass.")
 
     cpdef object _initialise_statistics(self, list tasks):
         """
@@ -470,9 +419,9 @@ cdef class _ObserverBase(Observer):
         print("Render complete - time elapsed {:0.3f}s - {:0.1f}k rays/s".format(
             elapsed_time, mean_rays_per_sec / 1000))
 
-    cpdef list _base_generate_rays(self, tuple pixel_id, Ray template, int ray_count):
+    cpdef list _obtain_rays(self, tuple task, Ray template):
         """
-        Generate a list of Rays that sample over the etendue of the pixel.
+        Returns a list of Rays that sample over the etendue of the pixel.
 
         This is a virtual method to be implemented by derived classes.
 
@@ -481,22 +430,20 @@ cdef class _ObserverBase(Observer):
 
         This method must return a list of tuples, with each tuple containing
         a Ray object and a corresponding weighting, typically the projected
-        area/direction cosine. The number of rays returned must be equal to
-        ray_count otherwise pipeline statistics will be incorrectly calculated.
+        area/direction cosine.
 
         If the projected area weight is not required (due to the ray sampling
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
 
-        :param tuple pixel_id: The pixel id.
+        :param tuple task: The render task configuration.
         :param Ray template: The template ray from which all rays should be generated.
-        :param int ray_count: The number of rays to be generated.
         :return list: A list of tuples of (ray, weight)
         """
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _base_pixel_etendue(self, tuple pixel_id):
+    cpdef double _obtain_etendue(self, tuple task):
         """
 
         :param pixel_id:
@@ -513,15 +460,34 @@ cdef class Observer2D(_ObserverBase):
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
 
+        self.pixel_samples = pixel_samples or 100
+        self.pixels = pixels
+        self.frame_sampler = frame_sampler
+        self.pipelines = pipelines
+
         super().__init__(
-            pixels, frame_sampler, pipelines, parent, transform, name, render_engine,
-            pixel_samples, spectral_rays, spectral_bins,
+            parent, transform, name, render_engine, spectral_rays, spectral_bins,
             min_wavelength, max_wavelength, ray_extinction_prob, ray_extinction_min_depth,
             ray_max_depth, ray_importance_sampling, ray_important_path_weight
         )
 
-    def _validate_pixels(self, pixels):
+    @property
+    def pixel_samples(self):
+        return self._pixel_samples
 
+    @pixel_samples.setter
+    def pixel_samples(self, value):
+        if value <= 0:
+            raise ValueError("The number of pixel samples must be greater than 0.")
+        self._pixel_samples = value
+
+    @property
+    def pixels(self):
+        return self._pixels
+
+    @pixels.setter
+    def pixels(self, value):
+        pixels = tuple(value)
         if len(pixels) != 2:
             raise ValueError("Pixels must be a 2 element tuple defining the x and y resolution.")
         x, y = pixels
@@ -529,26 +495,60 @@ cdef class Observer2D(_ObserverBase):
             raise ValueError("Number of x pixels must be greater than 0.")
         if y <= 0:
             raise ValueError("Number of y pixels must be greater than 0.")
+        self._pixels = pixels
 
-    def _validate_frame_sampler(self, frame_sampler):
+    @property
+    def frame_sampler(self):
+        return self._frame_sampler
 
-        if not isinstance(frame_sampler, FrameSampler2D):
+    @frame_sampler.setter
+    def frame_sampler(self, value):
+        if not isinstance(value, FrameSampler2D):
             raise TypeError("The frame sampler for a 2d observer must be a subclass of FrameSampler2D.")
+        self._frame_sampler = value
 
-    def _validate_pipelines(self, pipelines):
+    @property
+    def pipelines(self):
+        return self._pipelines
 
+    @pipelines.setter
+    def pipelines(self, value):
+        pipelines = tuple(value)
         if len(pipelines) < 1:
             raise ValueError("At least one processing pipeline must be provided.")
         for pipeline in pipelines:
             if not isinstance(pipeline, Pipeline2D):
                 raise TypeError("Processing pipelines for a 2d observer must be a subclass of Pipeline2D.")
+        self._pipelines = pipelines
 
-    cpdef list _base_generate_rays(self, tuple pixel_id, Ray template, int ray_count):
+    cpdef list _generate_tasks(self):
+        return self._frame_sampler.generate_tasks(self._pixels)
+
+    cpdef list _obtain_pixel_processors(self, tuple pixel_id, int slice_id):
         cdef int x, y
         x, y = pixel_id
-        return self._generate_rays(x, y, template, ray_count)
+        return [pipeline.pixel_processor(x, y, slice_id) for pipeline in self._pipelines]
 
-    cpdef double _base_pixel_etendue(self, tuple pixel_id):
+    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices):
+        for pipeline in self._pipelines:
+            pipeline.initialise(self._pixels, self._pixel_samples, self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
+
+    cpdef object _update_pipelines(self, tuple pixel_id, list results, int slice_id):
+        cdef int x, y
+        x, y = pixel_id
+        for result, pipeline in zip(results, self._pipelines):
+            pipeline.update(x, y, slice_id, result)
+
+    cpdef object _finalise_pipelines(self):
+        for pipeline in self._pipelines:
+            pipeline.finalise()
+
+    cpdef list _obtain_rays(self, tuple pixel_id, Ray template):
+        cdef int x, y
+        x, y = pixel_id
+        return self._generate_rays(x, y, template, self._pixel_samples)
+
+    cpdef double _obtain_etendue(self, tuple pixel_id):
         cdef int x, y
         x, y = pixel_id
         return self._pixel_etendue(x, y)

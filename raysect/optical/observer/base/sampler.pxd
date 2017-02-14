@@ -29,11 +29,5 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class _FrameSamplerBase:
-
-    cpdef generate_tasks(self, tuple pixels)
-
-
-cdef class FrameSampler2D(_FrameSamplerBase):
-
-    pass
+cdef class FrameSampler2D:
+    cpdef list generate_tasks(self, tuple pixels)

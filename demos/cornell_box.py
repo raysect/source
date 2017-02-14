@@ -1,5 +1,4 @@
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
-# from raysect.optical.observer import PinholeCamera, AutoExposure
 from raysect.optical.material import Lambert, UniformSurfaceEmitter
 from raysect.optical.library import *
 from raysect.primitive import Sphere, Box
@@ -88,15 +87,15 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
               material=Lambert(green_reflectivity))
 
 # ceiling light
-# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
-#             parent=enclosure,
-#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-#             material=UniformSurfaceEmitter(light_spectrum, 2))
-
 light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
             parent=enclosure,
             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-            material=UniformSurfaceEmitter(d65_white, 2))
+            material=UniformSurfaceEmitter(light_spectrum, 2))
+
+# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+#             parent=enclosure,
+#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
+#             material=UniformSurfaceEmitter(d65_white, 2))
 
 # back_light = Sphere(0.1,
 #     parent=enclosure,
@@ -114,7 +113,7 @@ box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
 sphere = Sphere(0.4,
     parent=world,
     transform=translate(-0.4, -0.6 + 1e-6, -0.4)*rotate(0, 0, 0),
-    # material=RoughCopper(0.6))
+    # material=RoughGold(0.1))
     # material=Lambert())
     # material=Titanium())
     material=schott("N-BK7"))
@@ -124,6 +123,7 @@ from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
 from raysect.optical.observer.ccd import CCDArray
 from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D, MonoPipeline2D
 from raysect.optical.observer.pipeline.mono import MonoAdaptiveSampler2D
+from raysect.optical.observer.pipeline.rgb import RGBAdaptiveSampler2D
 from raysect.core.workflow import SerialEngine
 
 filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
@@ -140,8 +140,7 @@ mono_green.display_update_time = 15
 mono_red = MonoPipeline2D(filter=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
 mono_red.display_update_time = 15
 
-# rgb = RGBPipeline2D()
-# rgb.accumulate = True
+rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
 
 bayer = BayerPipeline2D(filter_red, filter_green, filter_blue, display_unsaturated_fraction=0.96, name="Bayer Filter")
 bayer.display_update_time = 15
@@ -149,10 +148,13 @@ bayer.display_update_time = 15
 spectral = SpectralPipeline2D()
 
 # pipelines = [mono, rgb, bayer, spectral]
-pipelines = [mono_unfiltered, mono_green, mono_red, bayer, spectral]
-sampler = MonoAdaptiveSampler2D(mono_unfiltered, ratio=5, fraction=0.2, min_samples=500, cutoff=0.01)
+# pipelines = [mono_unfiltered] #, mono_green, mono_red, bayer]#, spectral]
+pipelines = [rgb, mono_unfiltered]
+# sampler = MonoAdaptiveSampler2D(mono_unfiltered, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
+sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
 
-camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+# camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+camera = PinholeCamera((64, 64), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 # camera = CCDArray((64, 64), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 camera.frame_sampler = sampler
 camera.pixel_samples = 100
@@ -174,16 +176,17 @@ while not camera.render_complete:
 
     camera.observe()
 
+    rgb.save('cornell_box_rgb_pass_{:04d}.png'.format(p))
     mono_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
-    mono_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
-    mono_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
-    bayer.save('cornell_box_bayer_pass_{:04d}.png'.format(p))
+    # mono_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
+    # mono_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
+    # bayer.save('cornell_box_bayer_pass_{:04d}.png'.format(p))
 
-    spectral.display_pixel(28, 70)
+    # spectral.display_pixel(28, 70)
 
-    print("total power:", mono_unfiltered.frame.mean.sum(), "+/-", np.sqrt(np.sum(mono_unfiltered.frame.variance**2)))
+    #print("total power:", mono_unfiltered.frame.mean.sum(), "+/-", np.sqrt(np.sum(mono_unfiltered.frame.variance**2)))
     print()
     p += 1
 
 ioff()
-camera.pipelines[0].display()
+rgb.display()

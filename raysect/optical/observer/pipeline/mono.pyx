@@ -447,26 +447,33 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef generate_tasks(self, tuple pixels):
+    cpdef list generate_tasks(self, tuple pixels):
 
         cdef:
             StatsArray2D frame
-            int nx, ny, x, y
+            int x, y
             np.ndarray normalised
             double[:,::1] error, normalised_mv
             double percentile_error
             list tasks
 
-        nx, ny = pixels
         frame = self.pipeline.frame
+        if frame is None:
+            # no frame data available, generate tasks for the full frame
+            return self._full_frame(pixels)
+
+        # sanity check
+        if pixels != frame.shape:
+            raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the pipeline frame size.')
+
         min_samples = max(self.min_samples, frame.samples.max() / self.ratio)
         error = frame.errors()
-        normalised = np.zeros((nx, ny))
+        normalised = np.zeros((frame.nx, frame.ny))
         normalised_mv = normalised
 
         # calculated normalised standard error
-        for x in range(nx):
-            for y in range(ny):
+        for x in range(frame.nx):
+            for y in range(frame.ny):
                 if frame.mean_mv[x, y] <= 0:
                     normalised_mv[x, y] = 0
                 else:
@@ -477,10 +484,27 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
 
         # build tasks
         tasks = []
-        for x in range(nx):
-            for y in range(ny):
+        for x in range(frame.nx):
+            for y in range(frame.ny):
                 if frame.samples_mv[x, y] < min_samples or normalised_mv[x, y] > max(self.cutoff, percentile_error):
                     tasks.append((x, y))
+
+        # perform tasks in random order so that image is assembled randomly rather than sequentially
+        shuffle(tasks)
+
+        return tasks
+
+    cpdef list _full_frame(self, tuple pixels):
+
+        cdef:
+            list tasks
+            int nx, ny, x, y
+
+        tasks = []
+        nx, ny = pixels
+        for x in range(nx):
+            for y in range(ny):
+                tasks.append((x, y))
 
         # perform tasks in random order so that image is assembled randomly rather than sequentially
         shuffle(tasks)

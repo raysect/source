@@ -46,28 +46,3 @@ class FullFrameSampler2D(FrameSampler2D):
 
         return tasks
 
-
-# TODO - add Adaptive Sampler
-# class AdaptiveSampler2D(FrameSampler):
-#
-#     def generate_tasks(self, pixels):
-#
-#         # build task list -> task is simply the pixel location
-#         tasks = []
-#         nx, ny = pixels
-#         f = self.xyz_frame
-#         i = f.value > 0
-#         norm_frame_var = np.zeros((pixels[0], pixels[1], 3))
-#         norm_frame_var[i] = f.variance[i]
-#         # norm_frame_var[i] = np.minimum(f.variance[i], f.variance[i] / f.value[i]**2)
-#         max_frame_samples = f.samples.max()
-#         percentile_frame_variance = np.percentile(norm_frame_var, 80)
-#         for iy in range(ny):
-#             for ix in range(nx):
-#                 min_pixel_samples = self.xyz_frame.samples[ix, iy, :].min()
-#                 max_pixel_variance = norm_frame_var[ix, iy, :].max()
-#                 if min_pixel_samples < 1000*self.spectral_rays or \
-#                     min_pixel_samples <= 0.1 * max_frame_samples or \
-#                     max_pixel_variance >= percentile_frame_variance:
-#                     tasks.append((ix, iy))
-
