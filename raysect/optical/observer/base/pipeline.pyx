@@ -29,6 +29,36 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cdef class Pipeline0D:
+
+    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+    cpdef PixelProcessor pixel_processor(self, int slice_id):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+    cpdef object update(self, int slice_id, tuple packed_result, int samples):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+    cpdef object finalise(self):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+
+cdef class Pipeline1D:
+
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+    cpdef PixelProcessor pixel_processor(self, int pixel, int slice_id):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+    cpdef object update(self, int pixel, int slice_id, tuple packed_result):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+    cpdef object finalise(self):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+
 cdef class Pipeline2D:
 
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):

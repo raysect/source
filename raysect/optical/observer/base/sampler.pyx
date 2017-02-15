@@ -29,6 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cdef class FrameSampler1D:
+
+    cpdef list generate_tasks(self, int pixels):
+        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+
+
 cdef class FrameSampler2D:
 
     cpdef list generate_tasks(self, tuple pixels):

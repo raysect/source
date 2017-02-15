@@ -31,7 +31,7 @@
 
 from raysect.optical cimport Ray
 from raysect.optical cimport Observer
-from raysect.optical.observer.base.sampler cimport FrameSampler2D
+from raysect.optical.observer.base.sampler cimport FrameSampler1D, FrameSampler2D
 
 
 cdef class _ObserverBase(Observer):
@@ -81,6 +81,31 @@ cdef class _ObserverBase(Observer):
     cpdef double _obtain_etendue(self, tuple task)
 
 
+cdef class Observer0D(_ObserverBase):
+
+    cdef:
+        tuple _pipelines
+        int _pixel_samples
+        int _samples_per_task
+
+    cpdef list _generate_rays(self, Ray template, int ray_count)
+
+    cpdef double _pixel_etendue(self)
+
+
+cdef class Observer1D(_ObserverBase):
+
+    cdef:
+        int _pixels
+        FrameSampler1D _frame_sampler
+        tuple _pipelines
+        int _pixel_samples
+
+    cpdef list _generate_rays(self, int pixel, Ray template, int ray_count)
+
+    cpdef double _pixel_etendue(self, int pixel)
+
+
 cdef class Observer2D(_ObserverBase):
 
     cdef:
@@ -92,3 +117,5 @@ cdef class Observer2D(_ObserverBase):
     cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count)
 
     cpdef double _pixel_etendue(self, int x, int y)
+
+
