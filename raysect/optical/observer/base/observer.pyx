@@ -465,7 +465,7 @@ cdef class Observer0D(_ObserverBase):
 
         self.pixel_samples = pixel_samples or 1000
         self.samples_per_task = samples_per_task or 250
-        self._pipelines = pipelines
+        self.pipelines = pipelines
 
         super().__init__(
             parent, transform, name, render_engine, spectral_rays, spectral_bins,
