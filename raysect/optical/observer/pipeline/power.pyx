@@ -43,12 +43,12 @@ from raysect.optical.observer.base.sampler cimport FrameSampler2D
 from libc.math cimport pow
 
 
-_DEFAULT_PIPELINE_NAME = "Monochromatic Pipeline"
+_DEFAULT_PIPELINE_NAME = "Power Pipeline"
 _DISPLAY_DPI = 100
 _DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
 
 
-cdef class MonoPipeline2D(Pipeline2D):
+cdef class PowerPipeline2D(Pipeline2D):
 
     def __init__(self, SpectralFunction filter=None, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
@@ -181,7 +181,7 @@ cdef class MonoPipeline2D(Pipeline2D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
-        return MonoPixelProcessor(self._resampled_filter[slice_id])
+        return PowerPixelProcessor(self._resampled_filter[slice_id])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -409,7 +409,7 @@ cdef class MonoPipeline2D(Pipeline2D):
         plt.imsave(filename, np.transpose(image), cmap='gray', vmin=0.0)
 
 
-cdef class MonoPixelProcessor(PixelProcessor):
+cdef class PowerPixelProcessor(PixelProcessor):
 
     def __init__(self, double[::1] filter):
         self.bin = StatsBin()
@@ -434,9 +434,9 @@ cdef class MonoPixelProcessor(PixelProcessor):
         return self.bin.mean, self.bin.variance
 
 
-cdef class MonoAdaptiveSampler2D(FrameSampler2D):
+cdef class PowerAdaptiveSampler2D(FrameSampler2D):
 
-    def __init__(self, MonoPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
+    def __init__(self, PowerPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
 
         # todo: validation
         self.pipeline = pipeline

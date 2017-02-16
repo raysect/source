@@ -37,7 +37,7 @@ from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsArray2D
-from raysect.optical.observer.pipeline.mono cimport MonoPixelProcessor
+from raysect.optical.observer.pipeline.power cimport PowerPixelProcessor
 from libc.math cimport pow
 
 
@@ -218,7 +218,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         filter_id = self._bayer_mosaic[index]
         filter = self._resampled_filters[filter_id][slice_id]
 
-        return MonoPixelProcessor(filter)
+        return PowerPixelProcessor(filter)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

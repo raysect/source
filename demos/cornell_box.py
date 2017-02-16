@@ -121,8 +121,8 @@ sphere = Sphere(0.4,
 
 from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
 from raysect.optical.observer.ccd import CCDArray
-from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D, MonoPipeline2D
-from raysect.optical.observer.pipeline.mono import MonoAdaptiveSampler2D
+from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D, PowerPipeline2D
+from raysect.optical.observer.pipeline.power import PowerAdaptiveSampler2D
 from raysect.optical.observer.pipeline.rgb import RGBAdaptiveSampler2D
 from raysect.core.workflow import SerialEngine
 
@@ -131,14 +131,14 @@ filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0]
 filter_blue = InterpolatedSF([100, 480, 490, 500, 510, 800], [0, 0, 1, 1, 0, 0])
 
 # create and setup the camera
-mono_unfiltered = MonoPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
-mono_unfiltered.display_update_time = 15
+power_unfiltered = PowerPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
+power_unfiltered.display_update_time = 15
 
-mono_green = MonoPipeline2D(filter=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
-mono_green.display_update_time = 15
+power_green = PowerPipeline2D(filter=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
+power_green.display_update_time = 15
 
-mono_red = MonoPipeline2D(filter=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
-mono_red.display_update_time = 15
+power_red = PowerPipeline2D(filter=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
+power_red.display_update_time = 15
 
 rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
 
@@ -147,10 +147,10 @@ bayer.display_update_time = 15
 
 spectral = SpectralPipeline2D()
 
-# pipelines = [mono, rgb, bayer, spectral]
-# pipelines = [mono_unfiltered] #, mono_green, mono_red, bayer]#, spectral]
-pipelines = [rgb, mono_unfiltered]
-# sampler = MonoAdaptiveSampler2D(mono_unfiltered, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
+# pipelines = [power, rgb, bayer, spectral]
+# pipelines = [power_unfiltered] #, power_green, power_red, bayer]#, spectral]
+pipelines = [rgb, power_unfiltered]
+# sampler = powerAdaptiveSampler2D(power_unfiltered, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
 sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
 
 # camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
@@ -177,14 +177,14 @@ while not camera.render_complete:
     camera.observe()
 
     rgb.save('cornell_box_rgb_pass_{:04d}.png'.format(p))
-    mono_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
-    # mono_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
-    # mono_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
+    power_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
+    # power_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
+    # power_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
     # bayer.save('cornell_box_bayer_pass_{:04d}.png'.format(p))
 
     # spectral.display_pixel(28, 70)
 
-    #print("total power:", mono_unfiltered.frame.mean.sum(), "+/-", np.sqrt(np.sum(mono_unfiltered.frame.variance**2)))
+    #print("total power:", power_unfiltered.frame.mean.sum(), "+/-", np.sqrt(np.sum(power_unfiltered.frame.variance**2)))
     print()
     p += 1
 
