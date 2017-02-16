@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,27 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.base.observer cimport Observer0D, Observer1D, Observer2D
-from raysect.optical.observer.base.pipeline cimport Pipeline0D, Pipeline1D, Pipeline2D
-from raysect.optical.observer.base.processor cimport PixelProcessor
-from raysect.optical.observer.base.sampler cimport FrameSampler1D, FrameSampler2D
-from raysect.optical.observer.base.slice cimport SpectralSlice
+from raysect.optical cimport Ray, new_point3d, new_vector3d
+from raysect.optical.observer.base cimport Observer0D
 
+
+cdef class SightLine(Observer0D):
+    """
+    An observer that fires rays along the observers z axis.
+    Inherits arguments and attributes from the base NonImaging sensor class. Fires a single ray oriented along the
+    observer's z axis in world space.
+    """
+
+    cpdef list _generate_rays(self, Ray template, int ray_count):
+
+        cdef:
+            list rays
+            int n
+
+        rays = []
+        for n in range(ray_count):
+            rays.append((template.copy(new_point3d(0, 0, 0), new_vector3d(0, 0, 1)), 1.0))
+        return rays
+
+    cpdef double _pixel_etendue(self):
+        return 1.0

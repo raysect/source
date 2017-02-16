@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.base.observer cimport Observer0D, Observer1D, Observer2D
-from raysect.optical.observer.base.pipeline cimport Pipeline0D, Pipeline1D, Pipeline2D
-from raysect.optical.observer.base.processor cimport PixelProcessor
-from raysect.optical.observer.base.sampler cimport FrameSampler1D, FrameSampler2D
-from raysect.optical.observer.base.slice cimport SpectralSlice
+from raysect.optical.observer.nonimaging.sightline cimport SightLine
+from raysect.optical.observer.nonimaging.fibreoptic cimport FibreOptic
 
