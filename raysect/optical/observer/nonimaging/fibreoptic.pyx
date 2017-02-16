@@ -51,7 +51,7 @@ cdef class FibreOptic(Observer0D):
     """
 
     cdef:
-        double _acceptance_angle, _radius
+        double _acceptance_angle, _radius, _solid_angle, _collection_area
         DiskSampler _point_sampler
         ConeSampler _vector_sampler
 
@@ -83,7 +83,7 @@ cdef class FibreOptic(Observer0D):
             raise RuntimeError("Acceptance angle must be between 0 and 90 degrees.")
         self._acceptance_angle = value
         self._vector_sampler = ConeSampler(value)
-        self._solid_angle = 2 * pi * (1 - cos(self._acceptance_angle/180*pi))
+        self._solid_angle = 2 * pi * (1 - cos(value/180*pi))
 
     @property
     def radius(self):
@@ -95,7 +95,7 @@ cdef class FibreOptic(Observer0D):
             raise RuntimeError("Fibre radius must be greater than 0.")
         self._radius = value
         self._point_sampler = DiskSampler(value)
-        self._collection_area = pi * self._acceptance_angle * self._acceptance_angle
+        self._collection_area = pi * value * value
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

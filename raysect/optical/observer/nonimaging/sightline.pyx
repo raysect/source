@@ -33,6 +33,7 @@ from raysect.optical cimport Ray, new_point3d, new_vector3d
 from raysect.optical.observer.base cimport Observer0D
 
 
+# TODO - add etendue to __init__
 cdef class SightLine(Observer0D):
     """
     An observer that fires rays along the observers z axis.

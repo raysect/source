@@ -36,8 +36,8 @@ cimport cython
 cimport numpy as np
 from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
-from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
-from raysect.core.math cimport StatsBin, StatsArray2D
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
+from raysect.core.math cimport StatsBin, StatsArray1D, StatsArray2D
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.observer.base.sampler cimport FrameSampler2D
 from libc.math cimport pow
@@ -46,6 +46,79 @@ from libc.math cimport pow
 _DEFAULT_PIPELINE_NAME = "Power Pipeline"
 _DISPLAY_DPI = 100
 _DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
+
+
+cdef class PowerPipeline0D(Pipeline0D):
+
+    cdef:
+        str name
+        public SpectralFunction filter
+        public bint accumulate
+        readonly StatsBin value
+        StatsArray1D _working_buffer
+        list _resampled_filter
+
+    def __init__(self, SpectralFunction filter=None, bint accumulate=True, str name=None):
+
+        self.name = name or _DEFAULT_PIPELINE_NAME
+        self.filter = filter or ConstantSF(1.0)
+        self.accumulate = accumulate
+        self.value = StatsBin()
+
+        self._working_buffer = None
+        self._resampled_filter = None
+
+    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+
+        if not self.accumulate:
+            self.value.clear()
+
+        # reset working buffer
+        self._working_buffer = StatsArray1D(len(spectral_slices))
+
+        # generate pixel processor configurations for each spectral slice
+        self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef PixelProcessor pixel_processor(self, int slice_id):
+        return PowerPixelProcessor(self._resampled_filter[slice_id])
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object update(self, int slice_id, tuple packed_result, int samples):
+
+        cdef:
+            double mean, variance
+
+        # obtain result
+        mean, variance = packed_result
+
+        # accumulate samples for this slice
+        self._working_buffer.combine_samples(slice_id, mean, variance, samples)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object finalise(self):
+
+        cdef:
+            double mean, variance
+            int slice_id, samples
+
+        mean = 0
+        variance = 0
+        samples = self._working_buffer.samples_mv[0]
+
+        # combine sampled distributions for each spectral slice into the total
+        for slice_id in range(self._working_buffer.length):
+            mean += self._working_buffer.mean_mv[slice_id]
+            variance += self._working_buffer.variance_mv[slice_id]
+            if self._working_buffer.samples_mv[slice_id] != samples:
+                raise ValueError("Samples for each spectral slice are inconsistent for PowerPipeline0D.")
+
+        self.value.combine_samples(mean, variance, samples)
+
+        print("{} - incident power: {:.4G} +/- {:.4G}".format(self.name, self.value.mean, self.value.error()))
 
 
 cdef class PowerPipeline2D(Pipeline2D):
