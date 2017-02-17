@@ -119,11 +119,9 @@ sphere = Sphere(0.4,
     material=schott("N-BK7"))
 
 
-from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
-from raysect.optical.observer.ccd import CCDArray
-from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D, PowerPipeline2D
-from raysect.optical.observer.pipeline.power import PowerAdaptiveSampler2D
-from raysect.optical.observer.pipeline.rgb import RGBAdaptiveSampler2D
+from raysect.optical.observer import PinholeCamera, CCDArray
+from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D, PowerPipeline2D
+from raysect.optical.observer import PowerAdaptiveSampler2D, RGBAdaptiveSampler2D
 from raysect.core.workflow import SerialEngine
 
 filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])

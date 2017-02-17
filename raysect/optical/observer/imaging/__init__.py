@@ -29,3 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from .ccd import CCDArray
+from .orthographic import OrthographicCamera
+from .pinhole import PinholeCamera
+from .vector import VectorCamera
