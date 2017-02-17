@@ -117,11 +117,11 @@ d65_white = InterpolatedSF(d65_wavelength_samples, d65_white_samples)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int num_samples):
+cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int bins):
 
     cdef ndarray xyz
 
-    if num_samples < 1:
+    if bins < 1:
 
         raise("Number of samples can not be less than 1.")
 
@@ -133,10 +133,10 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
 
         raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
-    xyz = zeros((num_samples, 3))
-    xyz[:, 0] = ciexyz_x.sample(min_wavelength, max_wavelength, num_samples)
-    xyz[:, 1] = ciexyz_y.sample(min_wavelength, max_wavelength, num_samples)
-    xyz[:, 2] = ciexyz_z.sample(min_wavelength, max_wavelength, num_samples)
+    xyz = zeros((bins, 3))
+    xyz[:, 0] = ciexyz_x.sample(min_wavelength, max_wavelength, bins)
+    xyz[:, 1] = ciexyz_y.sample(min_wavelength, max_wavelength, bins)
+    xyz[:, 2] = ciexyz_z.sample(min_wavelength, max_wavelength, bins)
 
     return xyz
 
@@ -152,7 +152,7 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
 
     if resampled_xyz is not None:
 
-        if resampled_xyz.ndim != 2 or resampled_xyz.shape[0] != spectrum.num_samples or resampled_xyz.shape[1] != 3:
+        if resampled_xyz.ndim != 2 or resampled_xyz.shape[0] != spectrum.bins or resampled_xyz.shape[1] != 3:
 
             raise ValueError("The supplied resampled_xyz array size is inconsistent with the number of spectral bins or channel count.")
 
@@ -169,7 +169,7 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
     y = 0
     z = 0
 
-    for index in range(spectrum.num_samples):
+    for index in range(spectrum.bins):
 
         # treat samples as average value across bin
         x += spectrum.delta_wavelength * samples_view[index] * xyz_view[index, 0]

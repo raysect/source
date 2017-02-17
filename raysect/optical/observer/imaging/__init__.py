@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,19 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-cdef class PointGenerator:
-    cpdef list sample(self, int samples)
-
-
-cdef class SinglePoint(PointGenerator):
-    pass
-
-
-cdef class Disk(PointGenerator):
-    cdef public double radius
-
-
-cdef class Rectangle(PointGenerator):
-    cdef public double width, height
-
+from .ccd import CCDArray
+from .orthographic import OrthographicCamera
+from .pinhole import PinholeCamera
+from .vector import VectorCamera

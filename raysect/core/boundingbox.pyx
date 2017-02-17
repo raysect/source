@@ -334,7 +334,7 @@ cdef class BoundingBox3D:
             new_point3d(self.upper.x, self.upper.y, self.upper.z),
         ]
 
-    cpdef double extent(self, int axis) except *:
+    cpdef double extent(self, int axis) except -1:
         """
         Returns the spatial extend of this bounding box along the given dimension.
 
@@ -540,7 +540,7 @@ cdef class BoundingBox2D:
             new_point2d(self.upper.x, self.upper.y),
         ]
 
-    cpdef double extent(self, int axis) except *:
+    cpdef double extent(self, int axis) except -1:
         """
         Returns the spatial extend of this bounding box along the given dimension.
 

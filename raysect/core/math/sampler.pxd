@@ -30,29 +30,33 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-cdef class VectorGenerator:
+cdef class PointSampler:
     cpdef list sample(self, int samples)
 
 
-cdef class SingleRay(VectorGenerator):
-    pass
+cdef class VectorSampler:
+    cpdef list sample(self, int samples)
 
 
-cdef class ConeUniform(VectorGenerator):
+cdef class DiskSampler(PointSampler):
+    cdef public double radius
+
+
+cdef class RectangleSampler(PointSampler):
+    cdef public double width, height
+
+
+cdef class ConeSampler(VectorSampler):
     cdef public double angle
 
 
-cdef class SphereUniform(VectorGenerator):
+cdef class SphereSampler(VectorSampler):
     pass
 
 
-cdef class HemisphereUniform(VectorGenerator):
+cdef class HemisphereUniformSampler(VectorSampler):
     pass
 
 
-cdef class HemisphereCosine(VectorGenerator):
+cdef class HemisphereCosineSampler(VectorSampler):
     pass
-
-
-# cdef class CosineHemisphereWithForwardBias(VectorGenerator):
-#     cpdef double forward_bias

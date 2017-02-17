@@ -47,7 +47,7 @@ cdef class Function2D:
     that accepts a function object.
     """
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         raise NotImplementedError("The evaluate() method has not been implemented.")
 
     def __call__(self, double x, double y):
@@ -142,7 +142,7 @@ cdef class PythonFunction2D(Function2D):
     def __init__(self, object function):
         self.function = function
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self.function(x, y)
 
 
@@ -177,7 +177,7 @@ cdef class AddFunction2D(Function2D):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._function1.evaluate(x, y) + self._function2.evaluate(x, y)
 
 
@@ -195,7 +195,7 @@ cdef class SubtractFunction2D(Function2D):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._function1.evaluate(x, y) - self._function2.evaluate(x, y)
 
 
@@ -214,7 +214,7 @@ cdef class MultiplyFunction2D(Function2D):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._function1.evaluate(x, y) * self._function2.evaluate(x, y)
 
 
@@ -234,7 +234,7 @@ cdef class DivideFunction2D(Function2D):
         self._function2 = autowrap_function2d(function2)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         cdef double denominator = self._function2.evaluate(x, y)
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
@@ -256,7 +256,7 @@ cdef class AddScalar2D(Function2D):
         self._value = value
         self._function = autowrap_function2d(function)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._value + self._function.evaluate(x, y)
 
 
@@ -275,7 +275,7 @@ cdef class SubtractScalar2D(Function2D):
         self._value = value
         self._function = autowrap_function2d(function)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._value - self._function.evaluate(x, y)
 
 
@@ -294,7 +294,7 @@ cdef class MultiplyScalar2D(Function2D):
         self._value = value
         self._function = autowrap_function2d(function)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._value * self._function.evaluate(x, y)
 
 
@@ -314,7 +314,7 @@ cdef class DivideScalar2D(Function2D):
         self._function = autowrap_function2d(function)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         cdef double denominator = self._function.evaluate(x, y)
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")

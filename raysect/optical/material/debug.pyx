@@ -71,5 +71,5 @@ cdef class Light(NullVolume):
         spectrum = ray.new_spectrum()
         if self.intensity != 0.0:
             diffuse_intensity = self.intensity * max(0, -self.light_direction.transform(world_to_primitive).dot(normal))
-            spectrum.samples[:] = diffuse_intensity * self.spectrum.sample(ray.min_wavelength, ray.max_wavelength, ray.num_samples)
+            spectrum.samples[:] = diffuse_intensity * self.spectrum.sample(ray.min_wavelength, ray.max_wavelength, ray.bins)
         return spectrum

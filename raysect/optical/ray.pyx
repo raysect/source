@@ -50,16 +50,16 @@ cdef class Ray(CoreRay):
                  Vector3D direction = Vector3D(0, 0, 1),
                  double min_wavelength = 375,
                  double max_wavelength = 785,
-                 int num_samples = 40,
+                 int bins = 40,
                  double max_distance = INFINITY,
                  double extinction_prob = 0.1,
-                 int min_depth = 3,
+                 int extinction_min_depth = 3,
                  int max_depth = 100,
                  bint importance_sampling=True,
                  double important_path_weight=0.25):
 
-        if num_samples < 1:
-            raise ValueError("Number of samples can not be less than 1.")
+        if bins < 1:
+            raise ValueError("Number of bins cannot be less than 1.")
 
         if min_wavelength <= 0.0 or max_wavelength <= 0.0:
             raise ValueError("Wavelength must be greater than to zero.")
@@ -72,12 +72,12 @@ cdef class Ray(CoreRay):
 
         super().__init__(origin, direction, max_distance)
 
-        self._num_samples = num_samples
+        self._bins = bins
         self._min_wavelength = min_wavelength
         self._max_wavelength = max_wavelength
 
         self.extinction_prob = extinction_prob
-        self.min_depth = min_depth
+        self.extinction_min_depth = extinction_min_depth
         self.max_depth = max_depth
         self.depth = 0
 
@@ -93,11 +93,11 @@ cdef class Ray(CoreRay):
 
         return (
             super().__getstate__(),
-            self._num_samples,
+            self._bins,
             self._min_wavelength,
             self._max_wavelength,
             self._extinction_prob,
-            self._min_depth,
+            self._extinction_min_depth,
             self._max_depth,
             self.depth,
             self.importance_sampling,
@@ -110,11 +110,11 @@ cdef class Ray(CoreRay):
         """Decodes state for pickling."""
 
         (super_state,
-         self._num_samples,
+         self._bins,
          self._min_wavelength,
          self._max_wavelength,
          self._extinction_prob,
-         self._min_depth,
+         self._extinction_min_depth,
          self._max_depth,
          self.depth,
          self.importance_sampling,
@@ -124,20 +124,20 @@ cdef class Ray(CoreRay):
 
         super().__setstate__(super_state)
 
-    property num_samples:
+    property bins:
 
         def __get__(self):
-            return self._num_samples
+            return self._bins
 
-        def __set__(self, int num_samples):
+        def __set__(self, int bins):
 
-            if num_samples < 1:
-                raise ValueError("Number of samples can not be less than 1.")
+            if bins < 1:
+                raise ValueError("Number of bins cannot be less than 1.")
 
-            self._num_samples = num_samples
+            self._bins = bins
 
-    cdef inline int get_num_samples(self):
-        return self._num_samples
+    cdef inline int get_bins(self):
+        return self._bins
 
     property min_wavelength:
 
@@ -183,15 +183,15 @@ cdef class Ray(CoreRay):
         def __set__(self, double extinction_prob):
             self._extinction_prob = clamp(extinction_prob, 0.0, 1.0)
 
-    property min_depth:
+    property extinction_min_depth:
 
         def __get__(self):
-            return self._min_depth
+            return self._extinction_min_depth
 
-        def __set__(self, int min_depth):
-            if min_depth <= 1:
-                raise ValueError("The minimum depth cannot be less than 1.")
-            self._min_depth = min_depth
+        def __set__(self, int extinction_min_depth):
+            if extinction_min_depth <= 1:
+                raise ValueError("The minimum extinction depth cannot be less than 1.")
+            self._extinction_min_depth = extinction_min_depth
 
     property max_depth:
 
@@ -199,7 +199,7 @@ cdef class Ray(CoreRay):
             return self._max_depth
 
         def __set__(self, int max_depth):
-            if max_depth < self._min_depth:
+            if max_depth < self._extinction_min_depth:
                 raise ValueError("The maximum depth cannot be less than the minimum depth.")
             self._max_depth = max_depth
 
@@ -221,7 +221,7 @@ cdef class Ray(CoreRay):
         Returns a new Spectrum compatible with the ray spectral settings.
         """
 
-        return new_spectrum(self._min_wavelength, self._max_wavelength, self._num_samples)
+        return new_spectrum(self._min_wavelength, self._max_wavelength, self._bins)
 
     @cython.cdivision(True)
     cpdef Spectrum trace(self, World world, bint keep_alive=False):
@@ -253,7 +253,7 @@ cdef class Ray(CoreRay):
 
         # limit ray recursion depth with Russian roulette
         # set normalisation to ensure the sampling remains unbiased
-        if keep_alive or self.depth < self._min_depth:
+        if keep_alive or self.depth < self._extinction_min_depth:
             normalisation = 1.0
         else:
             if self.depth >= self._max_depth or probability(self._extinction_prob):
@@ -372,12 +372,12 @@ cdef class Ray(CoreRay):
 
         ray.origin = origin
         ray.direction = direction
-        ray._num_samples = self._num_samples
+        ray._bins = self._bins
         ray._min_wavelength = self._min_wavelength
         ray._max_wavelength = self._max_wavelength
         ray.max_distance = self.max_distance
         ray._extinction_prob = self._extinction_prob
-        ray._min_depth = self._min_depth
+        ray._extinction_min_depth = self._extinction_min_depth
         ray._max_depth = self._max_depth
         ray.importance_sampling = self.importance_sampling
         ray._important_path_weight = self._important_path_weight
@@ -409,9 +409,9 @@ cdef class Ray(CoreRay):
 
         return new_ray(
             origin, direction,
-            self._min_wavelength, self._max_wavelength, self._num_samples,
+            self._min_wavelength, self._max_wavelength, self._bins,
             self.max_distance,
-            self._extinction_prob, self._min_depth, self._max_depth,
+            self._extinction_prob, self._extinction_min_depth, self._max_depth,
             self.importance_sampling,
             self._important_path_weight
         )

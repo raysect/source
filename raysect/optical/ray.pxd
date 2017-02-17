@@ -40,11 +40,11 @@ cdef class Ray(CoreRay):
         public bint importance_sampling
         double _important_path_weight
         public bint following_important_path
-        int _num_samples
+        int _bins
         double _min_wavelength
         double _max_wavelength
         double _extinction_prob
-        int _min_depth
+        int _extinction_min_depth
         int _max_depth
         public int depth
         readonly int ray_count
@@ -54,7 +54,7 @@ cdef class Ray(CoreRay):
     cpdef Spectrum trace(self, World world, bint keep_alive=*)
     cpdef Spectrum sample(self, World world, int samples)
     cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction)
-    cdef inline int get_num_samples(self)
+    cdef inline int get_bins(self)
     cdef inline double get_min_wavelength(self)
     cdef inline double get_max_wavelength(self)
     cdef inline double get_important_path_weight(self)
@@ -63,10 +63,10 @@ cdef class Ray(CoreRay):
 
 
 cdef inline Ray new_ray(Point3D origin, Vector3D direction,
-             double min_wavelength, double max_wavelength, int num_samples,
-             double max_distance,
-             double extinction_prob, int min_depth, int max_depth,
-             bint importance_sampling, double important_path_weight):
+                        double min_wavelength, double max_wavelength, int bins,
+                        double max_distance,
+                        double extinction_prob, int extinction_min_depth, int max_depth,
+                        bint importance_sampling, double important_path_weight):
 
     cdef Ray ray
 
@@ -74,14 +74,14 @@ cdef inline Ray new_ray(Point3D origin, Vector3D direction,
     ray.origin = origin
     ray.direction = direction
     ray.max_distance = max_distance
-    ray._num_samples = num_samples
+    ray._bins = bins
     ray._min_wavelength = min_wavelength
     ray._max_wavelength = max_wavelength
     ray.importance_sampling = importance_sampling
     ray._important_path_weight = important_path_weight
 
     ray._extinction_prob = extinction_prob
-    ray._min_depth = min_depth
+    ray._extinction_min_depth = extinction_min_depth
     ray._max_depth = max_depth
     ray.depth = 0
 

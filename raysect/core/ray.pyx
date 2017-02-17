@@ -30,10 +30,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math cimport new_point3d
+cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
 
+
+@cython.freelist(256)
 cdef class Ray:
     """
     Describes a line in space with an origin and direction.
