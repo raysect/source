@@ -1,4 +1,6 @@
-# Copyright (c) 2017, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,9 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .power import PowerPipeline0D, PowerPipeline2D
-from .rgb import RGBPipeline2D
-from .bayer import BayerPipeline2D
-from .spectral import SpectralPipeline0D, SpectralPipeline2D
-
-
+from raysect.optical.observer.base cimport *
+from raysect.optical.observer.pipeline cimport *
+from raysect.optical.observer.imaging cimport *
+from raysect.optical.observer.nonimaging cimport *

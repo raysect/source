@@ -118,7 +118,7 @@ cdef class PowerPipeline0D(Pipeline0D):
 
         self.value.combine_samples(mean, variance, samples)
 
-        print("{} - incident power: {:.4G} +/- {:.4G}".format(self.name, self.value.mean, self.value.error()))
+        print("{} - incident power: {:.4G} +/- {:.4G} W".format(self.name, self.value.mean, self.value.error()))
 
 
 cdef class PowerPipeline2D(Pipeline2D):

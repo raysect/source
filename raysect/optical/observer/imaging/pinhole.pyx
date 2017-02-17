@@ -35,7 +35,7 @@ from raysect.optical cimport Ray
 from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
 
-
+# TODO - add etendue to __init__
 cdef class PinholeCamera(Observer2D):
     """
     An observer that models an idealised pinhole camera.

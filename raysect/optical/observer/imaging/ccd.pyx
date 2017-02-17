@@ -1,4 +1,6 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,29 +29,38 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate, RectangleSampler, PointSampler
+from raysect.core cimport RectangleSampler, HemisphereCosineSampler, VectorSampler, PointSampler
+from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate
 from raysect.optical cimport Ray
+from libc.math cimport M_PI as pi
 from raysect.optical.observer.base cimport Observer2D
 
 
-cdef class OrthographicCamera(Observer2D):
+cdef class CCDArray(Observer2D):
     """
-    A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
+    An observer that models an idealised CCD-like imaging sensor.
+
+    The CCD is a regular array of square pixels. Each pixel samples red, green
+    and blue channels (behaves like a Foveon imaging sensor). The CCD sensor
+    width is specified with the width parameter. The CCD height is calculated
+    from the width and the number of vertical and horizontal pixels. The
+    default width and sensor ratio approximates a 35mm camera sensor.
 
     Arguments and attributes are inherited from the base Imaging sensor class.
 
-    :param double width: width of the orthographic area to observe in meters, the height is deduced from the 'pixels'
-       attribute.
+    :param double width: The width in metres of the sensor (default is 0.035m).
     """
 
     cdef:
-        double image_delta, image_start_x, image_start_y, _width
+        double _width, _pixel_area, image_delta, image_start_x, image_start_y
         PointSampler point_sampler
+        VectorSampler vector_sampler
 
-    def __init__(self, pixels, width=1, parent=None, transform=None, name=None, pipelines=None):
+    def __init__(self, pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
 
         pipelines = pipelines or [RGBPipeline2D()]
 
@@ -57,14 +68,18 @@ cdef class OrthographicCamera(Observer2D):
                          parent=parent, transform=transform, name=name)
 
         self.width = width
+        self.vector_sampler = HemisphereCosineSampler()
+
+    @property
+    def pixels(self):
+        return self._pixels
+
+    @pixels.setter
+    def pixels(self, value):
+        pixels = tuple(value)
+        self._validate_pixels(pixels)
+        self._pixels = pixels
         self._update_image_geometry()
-
-    cdef inline object _update_image_geometry(self):
-
-        self.image_delta = self._width / self._pixels[0]
-        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
-        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
-        self._point_sampler = RectangleSampler(self.image_delta, self.image_delta)
 
     @property
     def width(self):
@@ -75,7 +90,15 @@ cdef class OrthographicCamera(Observer2D):
         if width <= 0:
             raise ValueError("width can not be less than or equal to 0 meters.")
         self._width = width
+        self._pixel_area = (width / self._pixels[0])**2
         self._update_image_geometry()
+
+    cdef inline object _update_image_geometry(self):
+
+        self.image_delta = self._width / self._pixels[0]
+        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
+        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
+        self.point_sampler = RectangleSampler(self.image_delta, self.image_delta)
 
     cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
 
@@ -92,24 +115,24 @@ cdef class OrthographicCamera(Observer2D):
         to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
-        points = self._point_sampler(self._pixel_samples)
+        origin_points = self.point_sampler(ray_count)
+        direction_vectors = self.vector_sampler(ray_count)
 
         # assemble rays
         rays = []
-        for origin in zip(points):
+        for origin, direction in zip(origin_points, direction_vectors):
 
             # transform to local space from pixel space
             origin = origin.transform(to_local)
             direction = direction.transform(to_local)
 
-            ray = template.copy(origin, new_vector3d(0, 0, 1))
+            ray = template.copy(origin, direction)
 
-            # rays fired along normal hence projected area weight is 1.0
+            # cosine weighted distribution, projected area weight is
+            # implicit in distribution, so set weight to 1.0
             rays.append((ray, 1.0))
 
         return rays
 
-    cpdef double _pixel_etendue(self, int ix, int iy):
-        return 1.0
-
-
+    cpdef double _pixel_etendue(self, int x, int y):
+        return self._pixel_area * 2 * pi

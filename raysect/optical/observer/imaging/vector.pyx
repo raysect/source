@@ -34,7 +34,7 @@ from raysect.core cimport Point3D, Vector3D
 from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer2D
 
-
+# TODO - add etendue to __init__
 cdef class VectorCamera(Observer2D):
     """
     An observer that uses a specified set of pixel vectors.
