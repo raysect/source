@@ -29,8 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .observer import Observer2D
-from .pipeline import Pipeline2D
+from .observer import Observer0D, Observer1D, Observer2D
+from .pipeline import Pipeline0D, Pipeline1D, Pipeline2D
 from .processor import PixelProcessor
-from .sampler import FrameSampler2D
+from .sampler import FrameSampler1D, FrameSampler2D
 from .slice import SpectralSlice
