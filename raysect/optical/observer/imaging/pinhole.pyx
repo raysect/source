@@ -43,22 +43,22 @@ cdef class PinholeCamera(Observer2D):
     A simple camera that launches rays from the observer's origin point over a
     specified field of view.
 
-    Arguments and attributes are inherited from the base Imaging sensor class.
-
     :param double fov: The field of view of the camera in degrees (default is 90 degrees).
     """
 
     cdef:
-        double _fov, image_delta, image_start_x, image_start_y
+        double _etendue, _fov, image_delta, image_start_x, image_start_y
         PointSampler point_sampler
 
-    def __init__(self, pixels, parent=None, transform=None, name=None, pipelines=None):
+    def __init__(self, pixels, etendue=None, parent=None, transform=None, name=None, frame_sampler=None, pipelines=None):
 
         pipelines = pipelines or [RGBPipeline2D()]
+        frame_sampler = frame_sampler or FullFrameSampler2D()
 
-        super().__init__(pixels, FullFrameSampler2D(), pipelines,
+        super().__init__(pixels, frame_sampler, pipelines,
                          parent=parent, transform=transform, name=name)
 
+        self._etendue = etendue or 1.0
         self._fov = 45
         self._update_image_geometry()
 
@@ -83,7 +83,7 @@ cdef class PinholeCamera(Observer2D):
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
 
-    cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
+    cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count):
 
         cdef:
             double pixel_x, pixel_y
@@ -93,8 +93,8 @@ cdef class PinholeCamera(Observer2D):
             Ray ray
 
         # generate pixel transform
-        pixel_x = self.image_start_x - self.image_delta * ix
-        pixel_y = self.image_start_y - self.image_delta * iy
+        pixel_x = self.image_start_x - self.image_delta * x
+        pixel_y = self.image_start_y - self.image_delta * y
         pixel_centre = new_point3d(pixel_x, pixel_y, 1)
 
         points = self.point_sampler(ray_count)
@@ -119,5 +119,5 @@ cdef class PinholeCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, int ix, int iy):
-        return 1.0
+    cpdef double _pixel_etendue(self, int x, int y):
+        return self._etendue
