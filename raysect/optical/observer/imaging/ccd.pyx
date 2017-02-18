@@ -77,7 +77,13 @@ cdef class CCDArray(Observer2D):
     @pixels.setter
     def pixels(self, value):
         pixels = tuple(value)
-        self._validate_pixels(pixels)
+        if len(pixels) != 2:
+            raise ValueError("Pixels must be a 2 element tuple defining the x and y resolution.")
+        x, y = pixels
+        if x <= 0:
+            raise ValueError("Number of x pixels must be greater than 0.")
+        if y <= 0:
+            raise ValueError("Number of y pixels must be greater than 0.")
         self._pixels = pixels
         self._update_image_geometry()
 

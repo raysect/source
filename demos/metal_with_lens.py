@@ -2,13 +2,13 @@
 from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
 from raysect.primitive import Sphere, Box, Cylinder, Subtract
 from raysect.primitive.lens.spherical import BiConvex
-from raysect.optical.observer.ccd import CCDArray
 from raysect.optical.library.metal import Gold, Silver, Copper, Titanium, Aluminium, Beryllium
 from raysect.optical.material import Lambert, UniformSurfaceEmitter, AbsorbingSurface
 from raysect.optical.library import schott
 from raysect.core import print_scenegraph
 from matplotlib.pyplot import *
-from raysect.optical.observer.pipeline import RGBPipeline2D, SpectralPipeline2D
+from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, CCDArray, RGBAdaptiveSampler2D
+from raysect.optical.colour import ciexyz_x, ciexyz_y, ciexyz_z
 
 world = World()
 
@@ -22,22 +22,18 @@ Sphere(0.5, world, transform=translate(0, 0.5001, -1.8), material=Beryllium())
 Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=Lambert(ConstantSF(1.0)))
 Cylinder(3.0, 8.0, world, transform=translate(4, 8, 0) * rotate(90, 0, 0), material=UniformSurfaceEmitter(d65_white, 1.0))
 
+rgb = RGBPipeline2D(display_unsaturated_fraction=0.98, name="sRGB")
+bayer = BayerPipeline2D(ciexyz_x, ciexyz_y, ciexyz_z, display_unsaturated_fraction=0.98, name="Bayer Filter")
 
-spectral = SpectralPipeline2D()
-spectral.accumulate = True
-
-rgb = RGBPipeline2D()
-rgb.accumulate = True
-rgb.sensitivity = 67351773 * 25
-
-# pipelines = [mono, rgb, bayer, spectral]
-pipelines = [rgb, spectral]
+sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
+pipelines = [rgb, bayer]
 
 camera = CCDArray(parent=world, transform=translate(0, 4, -3.5) * rotate(0, -48, 180), pipelines=pipelines)
+camera.frame_sampler = sampler
+camera.pixels = (180*5, 120*5)  # (360, 240)
+camera.pixel_samples = 250
 camera.spectral_rays = 1
 camera.spectral_bins = 20
-camera.pixels = (360, 240)  # (360, 240)
-camera.pixel_samples = 200
 
 # b = BiConvex(0.0508, 0.0036, 1.0295, 1.0295, parent=camera, transform=translate(0, 0, 0.1), material=schott("N-BK7"))
 # b = BiConvex(0.0508, 0.0062, 0.205, 0.205, parent=camera, transform=translate(0, 0, 0.05), material=schott("N-BK7"))
@@ -54,12 +50,14 @@ c = Subtract(
     material=AbsorbingSurface()
 )
 
-print_scenegraph(b)
+# print_scenegraph(b)
 
 # start ray tracing
 ion()
-for p in range(1, 2):
+p = 1
+while not camera.render_complete:
     print("Rendering pass {}...".format(p))
     camera.observe()
     # camera.save("demo_metal_lens_test_{}_samples.png".format(camera.accumulated_samples))
     print()
+    p += 1
