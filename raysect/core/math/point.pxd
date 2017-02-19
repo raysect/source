@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math._vec3 cimport _Vec3
-from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.vector cimport Vector2D, Vector3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 cdef class Point3D:
@@ -74,15 +74,15 @@ cdef class Point2D:
 
     cdef public double x, y
 
-    # cpdef Vector3D vector_to(self, Point3D p)
+    cpdef Vector2D vector_to(self, Point2D p)
 
     cpdef double distance_to(self, Point2D p)
 
     # cpdef Point3D transform(self, AffineMatrix3D m)
 
-    # cdef inline Point3D add(self, _Vec3 v)
-    #
-    # cdef inline Point3D sub(self, _Vec3 v)
+    cdef inline Point2D add(self, Vector2D v)
+
+    cdef inline Point2D sub(self, Vector2D v)
 
     cpdef Point2D copy(self)
 
