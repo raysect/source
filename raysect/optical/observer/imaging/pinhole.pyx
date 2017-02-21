@@ -28,14 +28,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
-from raysect.optical.observer.pipeline import RGBPipeline2D
+from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
 
 from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, PointSampler, RectangleSampler
 from raysect.optical cimport Ray
 from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
 
-# TODO - add etendue to __init__
+
+# todo: complete docstrings
 cdef class PinholeCamera(Observer2D):
     """
     An observer that models an idealised pinhole camera.
@@ -43,23 +44,30 @@ cdef class PinholeCamera(Observer2D):
     A simple camera that launches rays from the observer's origin point over a
     specified field of view.
 
-    :param double fov: The field of view of the camera in degrees (default is 90 degrees).
+    :param double fov: The field of view of the camera in degrees (default: 45 degrees).
+    :param double etendue: The etendue of each pixel (default: 1.0)
     """
 
     cdef:
         double _etendue, _fov, image_delta, image_start_x, image_start_y
         PointSampler point_sampler
 
-    def __init__(self, pixels, etendue=None, parent=None, transform=None, name=None, frame_sampler=None, pipelines=None):
+    def __init__(self, pixels, fov=None, etendue=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
-        pipelines = pipelines or [RGBPipeline2D()]
-        frame_sampler = frame_sampler or FullFrameSampler2D()
+        # defaults to an adaptively sampled RGB pipeline
+        if not pipelines and not frame_sampler:
+            rgb = RGBPipeline2D()
+            pipelines = [rgb]
+            frame_sampler = RGBAdaptiveSampler2D(rgb)
+        else:
+            pipelines = pipelines or [RGBPipeline2D()]
+            frame_sampler = frame_sampler or FullFrameSampler2D()
 
-        super().__init__(pixels, frame_sampler, pipelines,
-                         parent=parent, transform=transform, name=name)
+        super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name)
 
         self._etendue = etendue or 1.0
-        self._fov = 45
+        self._fov = 45 or None
+
         self._update_image_geometry()
 
     cdef inline object _update_image_geometry(self):
