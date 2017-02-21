@@ -66,7 +66,7 @@ cdef class PinholeCamera(Observer2D):
         super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name)
 
         self._etendue = etendue or 1.0
-        self._fov = 45 or None
+        self._fov = fov or 45
 
         self._update_image_geometry()
 
