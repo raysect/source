@@ -271,9 +271,13 @@ cdef class InterpolatedSF(SpectralFunction):
     ends are extrapolated. must set ends to zero if you want function to end!
     """
 
-    def __init__(self, object wavelengths, object samples):
+    def __init__(self, object wavelengths, object samples, normalise=False):
         """
         wavelengths and samples will be sorted during initialisation.
+
+        If normalise is set to True the data is rescaled so the integrated area
+        of the spectral function over the full range of the input data is
+        normalised to 1.0.
 
         :param wavelengths: 1D array of wavelengths in nanometers.
         :param samples: 1D array of spectral samples.
@@ -295,12 +299,14 @@ cdef class InterpolatedSF(SpectralFunction):
         self.wavelengths = self.wavelengths[indices]
         self.samples = self.samples[indices]
 
+        if normalise:
+            self.samples /= self.integrate(self.wavelengths.min(), self.wavelengths.max())
+
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         return integrate(self.wavelengths, self.samples, min_wavelength, max_wavelength)
 
     def __call__(self, double wavelength):
         return interpolate(self.wavelengths, self.samples, wavelength)
-
 
 
 cdef class ConstantSF(SpectralFunction):
