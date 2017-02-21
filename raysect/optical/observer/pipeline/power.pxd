@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
 from raysect.core.math cimport StatsBin, StatsArray2D
 from raysect.optical.observer.base.sampler cimport FrameSampler2D
 
