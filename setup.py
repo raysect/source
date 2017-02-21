@@ -37,14 +37,14 @@ else:
 
 setup(
     name="raysect",
-    version="0.2.0",
+    version="0.3.0",
     url="http://www.raysect.org",
     author="Dr Alex Meakins",
     author_email="developers@raysect.org",
     description='A Ray-tracing Framework for Science and Engineering',
     license="BSD",
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Education",
         "Intended Audience :: Developers",
