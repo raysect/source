@@ -29,17 +29,37 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.optical.observer import PowerPipeline0D
+
 from raysect.optical cimport Ray, new_point3d, new_vector3d
 from raysect.optical.observer.base cimport Observer0D
 
 
-# TODO - add etendue to __init__
+# TODO: complete docstrings
 cdef class SightLine(Observer0D):
     """
     An observer that fires rays along the observers z axis.
     Inherits arguments and attributes from the base NonImaging sensor class. Fires a single ray oriented along the
     observer's z axis in world space.
     """
+
+    cdef double _etendue
+
+    def __init__(self, etendue=None, pipelines=None, parent=None, transform=None, name=None):
+
+        pipelines = pipelines or [PowerPipeline0D()]
+        super().__init__(pipelines, parent=parent, transform=transform, name=name)
+        self.etendue = etendue or 1.0
+
+    @property
+    def etendue(self):
+        return self._etendue
+
+    @etendue.setter
+    def etendue(self, value):
+        if value <= 0:
+            raise ValueError('Etendue must be greater than zero.')
+        self._etendue = value
 
     cpdef list _generate_rays(self, Ray template, int ray_count):
 
@@ -53,4 +73,4 @@ cdef class SightLine(Observer0D):
         return rays
 
     cpdef double _pixel_etendue(self):
-        return 1.0
+        return self._etendue

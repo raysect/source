@@ -37,6 +37,7 @@ from raysect.optical.observer.base cimport Observer2D
 
 
 # todo: complete docstrings
+# todo: add properties
 cdef class PinholeCamera(Observer2D):
     """
     An observer that models an idealised pinhole camera.
@@ -65,10 +66,30 @@ cdef class PinholeCamera(Observer2D):
 
         super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name)
 
-        self._etendue = etendue or 1.0
-        self._fov = fov or 45
+        # note that the fov property triggers a call to _update_image_geometry()
+        self.fov = fov or 45
+        self.etendue = etendue or 1.0
 
+    @property
+    def fov(self):
+        return self._fov
+
+    @fov.setter
+    def fov(self, value):
+        if value <= 0 or value > 90:
+            raise ValueError("The field-of-view angle must lie in the range (0, 90].")
+        self._fov = value
         self._update_image_geometry()
+
+    @property
+    def etendue(self):
+        return self._etendue
+
+    @etendue.setter
+    def etendue(self, value):
+        if value <= 0:
+            raise ValueError("Etendue must be greater than zero.")
+        self._etendue = value
 
     cdef inline object _update_image_geometry(self):
 

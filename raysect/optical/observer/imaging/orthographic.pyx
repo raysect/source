@@ -28,11 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
-from raysect.optical.observer.pipeline import RGBPipeline2D
+from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
 
 from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate, RectangleSampler, PointSampler
 from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer2D
+
 
 # TODO - add etendue to __init__
 cdef class OrthographicCamera(Observer2D):
@@ -49,22 +50,21 @@ cdef class OrthographicCamera(Observer2D):
         double image_delta, image_start_x, image_start_y, _width
         PointSampler point_sampler
 
-    def __init__(self, pixels, width=1, parent=None, transform=None, name=None, pipelines=None):
+    def __init__(self, pixels, width, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
-        pipelines = pipelines or [RGBPipeline2D()]
+        # defaults to an adaptively sampled RGB pipeline
+        if not pipelines and not frame_sampler:
+            rgb = RGBPipeline2D()
+            pipelines = [rgb]
+            frame_sampler = RGBAdaptiveSampler2D(rgb)
+        else:
+            pipelines = pipelines or [RGBPipeline2D()]
+            frame_sampler = frame_sampler or FullFrameSampler2D()
 
-        super().__init__(pixels, FullFrameSampler2D(), pipelines,
-                         parent=parent, transform=transform, name=name)
+        super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name)
 
         self.width = width
         self._update_image_geometry()
-
-    cdef inline object _update_image_geometry(self):
-
-        self.image_delta = self._width / self._pixels[0]
-        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
-        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
-        self._point_sampler = RectangleSampler(self.image_delta, self.image_delta)
 
     @property
     def width(self):
@@ -73,9 +73,16 @@ cdef class OrthographicCamera(Observer2D):
     @width.setter
     def width(self, width):
         if width <= 0:
-            raise ValueError("width can not be less than or equal to 0 meters.")
+            raise ValueError("Width must be greater than 0.")
         self._width = width
         self._update_image_geometry()
+
+    cdef inline object _update_image_geometry(self):
+
+        self.image_delta = self._width / self._pixels[0]
+        self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
+        self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
+        self._point_sampler = RectangleSampler(self.image_delta, self.image_delta)
 
     cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
 
