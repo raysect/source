@@ -36,10 +36,8 @@ cimport cython
 cimport numpy as np
 from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
-from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
 from raysect.core.math cimport StatsBin, StatsArray1D, StatsArray2D
 from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.observer.base.sampler cimport FrameSampler2D
 from libc.math cimport pow
 
 
