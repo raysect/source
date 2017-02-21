@@ -45,7 +45,7 @@ purple = InterpolatedSF([100, 419.6, 420.6, 425.6, 426.6, 800], [0, 0, 1, 1, 0, 
 
 blue = InterpolatedSF([100, 465.7, 466.7, 471.7, 472.7, 800], [0, 0, 1, 1, 0, 0], normalise=True)
 
-light_blue = InterpolatedSF([100, 477.3, 478.3, 483.3, 484.3, 800], [0, 0, 1, 1, 0, 0], normalise=True)
+light_blue = InterpolatedSF([100, 475.3, 476.3, 481.3, 482.3, 800], [0, 0, 1, 1, 0, 0], normalise=True)
 
 cyan = InterpolatedSF([100, 488.8, 489.8, 494.8, 495.8, 800], [0, 0, 1, 1, 0, 0], normalise=True)
 

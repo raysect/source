@@ -27,7 +27,6 @@ for i in range(9):
 # diffuse ground plane
 Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=Lambert(ConstantSF(1/1000)))
 
-
 # four strip lights
 Cylinder(0.5, 1.0, world, transform=translate(0.5, 5, 8) * rotate(90, 0, 0),
          material=UniformSurfaceEmitter(d65_white, 1.0))
@@ -39,12 +38,10 @@ Cylinder(0.5, 1.0, world, transform=translate(0.5, 5, 2) * rotate(90, 0, 0),
          material=UniformSurfaceEmitter(d65_white, 1.0))
 
 rgb = RGBPipeline2D(name="sRGB")
-
-sampler = RGBAdaptiveSampler2D(rgb, ratio=100, fraction=0.2, min_samples=250, cutoff=0.05)
+sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
 
 # observer
-camera = PinholeCamera((256, 128), fov=42, parent=world, transform=translate(0, 3.3, 0) * rotate(0, -47, 0), pipelines=[rgb])
-camera.frame_sampler = sampler
+camera = PinholeCamera((512, 256), fov=42, parent=world, transform=translate(0, 3.3, 0) * rotate(0, -47, 0), pipelines=[rgb], frame_sampler=sampler)
 camera.spectral_bins = 25
 camera.pixel_samples = 250
 
