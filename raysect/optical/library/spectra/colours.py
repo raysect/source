@@ -31,22 +31,26 @@
 
 from raysect.optical.spectralfunction import InterpolatedSF
 
-yellow = InterpolatedSF([100, 569.6, 570.6, 575.6, 576.6, 800], [0, 0, 1, 1, 0, 0], normalise=True)
 
-orange = InterpolatedSF([100, 581.1, 582.1, 587.1, 588.1, 800], [0, 0, 1, 1, 0, 0], normalise=True)
+def _top_hat_spectralfn(center, width, rolloff):
 
-red_orange = InterpolatedSF([100, 592.6, 593.6, 598.6, 599.6, 800], [0, 0, 1, 1, 0, 0], normalise=True)
+    start = 0
+    end = 1000
+    half_width = width / 2
+    top_min = center - half_width
+    top_max = center + half_width
+    base_min = top_min - rolloff
+    base_max = top_max + rolloff
 
-red = InterpolatedSF([100, 627.3, 628.3, 633.3, 634.3, 800], [0, 0, 1, 1, 0, 0], normalise=True)
+    return InterpolatedSF([start, base_min, top_min, top_max, base_max, end], [0, 0, 1, 1, 0, 0], normalise=True)
 
-maroon = InterpolatedSF([100, 673.4, 674.4, 679.4, 680.4, 800], [0, 0, 1, 1, 0, 0], normalise=True)
-
-purple = InterpolatedSF([100, 419.6, 420.6, 425.6, 426.6, 800], [0, 0, 1, 1, 0, 0], normalise=True)
-
-blue = InterpolatedSF([100, 465.7, 466.7, 471.7, 472.7, 800], [0, 0, 1, 1, 0, 0], normalise=True)
-
-light_blue = InterpolatedSF([100, 475.3, 476.3, 481.3, 482.3, 800], [0, 0, 1, 1, 0, 0], normalise=True)
-
-cyan = InterpolatedSF([100, 488.8, 489.8, 494.8, 495.8, 800], [0, 0, 1, 1, 0, 0], normalise=True)
-
-green = InterpolatedSF([100, 534.96, 535.96, 540.96, 541.96, 800], [0, 0, 1, 1, 0, 0], normalise=True)
+purple = _top_hat_spectralfn(423.1, 5.0, 1.0)
+blue = _top_hat_spectralfn(469.2, 5.0, 1.0)
+light_blue = _top_hat_spectralfn(478.8, 5.0, 1.0)
+cyan = _top_hat_spectralfn(492.3, 5.0, 1.0)
+green = _top_hat_spectralfn(538.5, 5.0, 1.0)
+yellow = _top_hat_spectralfn(571.1, 5.0, 1.0)
+orange = _top_hat_spectralfn(584.6, 5.0, 1.0)
+red_orange = _top_hat_spectralfn(596.1, 5.0, 1.0)
+red = _top_hat_spectralfn(630.8, 5.0, 1.0)
+maroon = _top_hat_spectralfn(676.9, 5.0, 1.0)
