@@ -195,6 +195,13 @@ cdef class _ObserverBase(Observer):
         if not isinstance(self.root, World):
             raise TypeError("Observer is not connected to a scene graph containing a World object.")
 
+        # generate spectral configuration and ray templates
+        slices = self._slice_spectrum()
+        templates = self._generate_templates(slices)
+
+        # initialise pipelines for rendering
+        self._initialise_pipelines(self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
+
         # request render tasks and escape early if there is no work to perform
         # if there is no work to perform then the render is considered "complete"
         tasks = self._generate_tasks()
@@ -202,13 +209,6 @@ cdef class _ObserverBase(Observer):
             self.render_complete = True
             print("Render complete - No render tasks were generated.")
             return
-
-        # generate spectral configuration and ray templates
-        slices = self._slice_spectrum()
-        templates = self._generate_templates(slices)
-
-        # initialise pipelines for rendering
-        self._initialise_pipelines(self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
 
         # initialise statistics with total task count
         self._initialise_statistics(tasks)
