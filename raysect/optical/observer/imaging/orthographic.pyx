@@ -30,12 +30,11 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
 
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate, RectangleSampler, PointSampler
+from raysect.core cimport Point3D, Vector3D, new_vector3d, translate, RectangleSampler, PointSampler
 from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer2D
 
 
-# TODO - add etendue to __init__
 cdef class OrthographicCamera(Observer2D):
     """
     A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
@@ -47,10 +46,10 @@ cdef class OrthographicCamera(Observer2D):
     """
 
     cdef:
-        double image_delta, image_start_x, image_start_y, _width
-        PointSampler point_sampler
+        double image_delta, image_start_x, image_start_y, _width, _etendue
+        PointSampler _point_sampler
 
-    def __init__(self, pixels, width, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
+    def __init__(self, pixels, width, etendue=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
         # defaults to an adaptively sampled RGB pipeline
         if not pipelines and not frame_sampler:
@@ -63,6 +62,7 @@ cdef class OrthographicCamera(Observer2D):
 
         super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name)
 
+        self.etendue = etendue or 1.0
         self.width = width
         self._update_image_geometry()
 
@@ -76,6 +76,16 @@ cdef class OrthographicCamera(Observer2D):
             raise ValueError("Width must be greater than 0.")
         self._width = width
         self._update_image_geometry()
+
+    @property
+    def etendue(self):
+        return self._etendue
+
+    @etendue.setter
+    def etendue(self, value):
+        if value <= 0:
+            raise ValueError("Etendue must be greater than zero.")
+        self._etendue = value
 
     cdef inline object _update_image_geometry(self):
 
@@ -117,6 +127,6 @@ cdef class OrthographicCamera(Observer2D):
         return rays
 
     cpdef double _pixel_etendue(self, int ix, int iy):
-        return 1.0
+        return self._etendue
 
 
