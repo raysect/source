@@ -1,0 +1,14 @@
+Contributing to Raysect
+-----------------------
+
+Pull requests are welcome and encouraged. When submitting code please be aware of the following conditions:
+
+1) Code quality:
+
+Please ensure code fits in with the existing code style of the repository and that, where possible, unit tests and documentation are provided.
+
+2) Copyright, attribution and licensing:
+
+All contributed code will be licensed under Raysect's license (see LICENSE.txt).
+
+Please be careful when using third party code. The licensing and copyright conditions for any third party code must be compatible with Raysect copyright and license terms.
