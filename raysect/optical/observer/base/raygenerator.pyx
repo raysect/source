@@ -29,13 +29,41 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class FrameSampler1D:
+cdef class RayGenerator:
+    """
+    An immutable class that generates rays.
 
-    cpdef list generate_tasks(self, int pixels):
-        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+    When implementing a new observer a ray generator is provided to generate
+    new rays for sampling over an observer collection area. The object is
+    immutable once constructed, preventing observer developers from
+    accidentally modifying the ray template held in the observer.
 
+    A ray instance, appropriately configured, is used as the template for
+    new rays. When a new ray is requested, a copy of the template, with
+    spectral properties, origin and direction appropriately adjusted, will
+    be returned.
 
-cdef class FrameSampler2D:
+    :param template: An optical ray instance.
+    :param min_wavelength: Lower end of spectral wavelength range.
+    :param max_wavelength: Upper end of spectral wavelength range.
+    :param bins: Number of spectral bins across wavelength range.
+    """
 
-    cpdef list generate_tasks(self, tuple pixels):
-        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+    def __init__(self, Ray template not None, double min_wavelength, double max_wavelength, int bins):
+
+        # copy template ray and configure spectral properties
+        template = template.copy()
+        template.wavelength_range = (min_wavelength, max_wavelength)
+        template.bins = bins
+        self._template = template
+
+    cpdef Ray new_ray(self, Point3D origin, Vector3D direction):
+        """
+        Returns a new ray with the specified origin and direction.
+
+        :param origin: The ray origin point.
+        :param direction: The ray direction vector.
+        :return: An optical ray instance.
+        """
+
+        return self._template.copy(origin, direction)

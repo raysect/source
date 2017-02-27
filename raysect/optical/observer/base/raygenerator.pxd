@@ -29,13 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class FrameSampler1D:
+from raysect.optical cimport Ray, Point3D, Vector3D
 
-    cpdef list generate_tasks(self, int pixels):
-        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
+cdef class RayGenerator:
 
+    cdef Ray _template
 
-cdef class FrameSampler2D:
+    cpdef Ray new_ray(self, Point3D origin, Vector3D direction)
 
-    cpdef list generate_tasks(self, tuple pixels):
-        raise NotImplementedError("Virtual method must be implemented by a sub-class.")
