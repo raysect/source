@@ -62,20 +62,14 @@ emitter = Box(Point3D(-0.10 + glass_thickness + padding, -0.02 + glass_thickness
 
 # CAMERA
 ion()
-camera = PinholeCamera(fov=40, parent=world, transform=translate(0, 0.16, -0.4) * rotate(0, -12, 0))
-camera.ray_min_depth = 3
-camera.ray_max_depth = 500
-camera.ray_extinction_prob = 0.01
+camera = PinholeCamera((256, 256), fov=40, parent=world, transform=translate(0, 0.16, -0.4) * rotate(0, -12, 0))
 camera.pixel_samples = 50
-camera.rays = 10
-camera.spectral_samples = 2
-camera.pixels = (256, 256)
-camera.display_progress = True
-camera.display_update_time = 15
+camera.spectral_rays = 10
+camera.spectral_bins = 2
 camera.observe()
 
 ioff()
-camera.save("stanford_bunny_{}.png".format(time.strftime("%Y-%m-%d_%H-%M-%S")))
+# camera.save("stanford_bunny_{}.png".format(time.strftime("%Y-%m-%d_%H-%M-%S")))
 camera.display()
 show()
 

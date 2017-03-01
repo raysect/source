@@ -28,12 +28,9 @@ target = Intersect(sphere, cube, parent=world, transform=translate(0, 0, 0)*rota
 
 
 # create and setup the camera
-camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -6) * rotate(0, 0, 0))
-camera.ray_max_depth = 15
-camera.rays = 9
-camera.spectral_samples = 3
-camera.pixels = (256, 256)
-camera.display_progress = False
+camera = PinholeCamera((256, 256), fov=45, parent=world, transform=translate(0, 0, -6) * rotate(0, 0, 0))
+camera.spectral_rays = 9
+camera.spectral_bins = 3
 
 
 # for each frame rotate the CSG primitive and re-render
@@ -47,6 +44,6 @@ for frame in range(num_frames):
     target.transform = rotate(rotation, 25, 5)
 
     camera.observe()
-    camera.save("frame{:04}.png".format(frame))
+    # camera.save("frame{:04}.png".format(frame))
     camera.display()
     plt.show()
