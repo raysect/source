@@ -54,7 +54,6 @@ cdef class Ray(CoreRay):
     cpdef Spectrum trace(self, World world, bint keep_alive=*)
     cpdef Spectrum sample(self, World world, int samples)
     cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction)
-    cpdef Ray copy(self, Point3D origin=*, Vector3D direction=*)
     cdef inline int get_bins(self)
     cdef inline double get_min_wavelength(self)
     cdef inline double get_max_wavelength(self)
