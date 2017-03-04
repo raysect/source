@@ -57,7 +57,7 @@ class ObservingSphere(Observer0D):
 samples = 100000
 
 emitting_sphere_radius = 0.5
-collection_sphere_radius = 1.0
+collection_sphere_radius = 5.0
 
 min_wl = 400
 max_wl = 401
@@ -93,6 +93,8 @@ observer.observe()
 measured_volume_emission = power.value.mean
 measured_volume_error = power.value.error()
 
+volume_deviation = (measured_volume_emission - calculated_volume_emission) / measured_volume_error
+
 # Emitter is a sphere surface emitter located at the origin
 # Surface area of the sphere is 4 * Pi * r^2, emission over 2 * pi
 # UniformSurfaceEmitter is configured to emit 1W/str/m^2/ x nm, where x is the wavelength interval
@@ -106,13 +108,16 @@ observer.observe()
 measured_surface_emission = power.value.mean
 measured_surface_error = power.value.error()
 
+surface_deviation = (measured_surface_emission - calculated_surface_emission) / measured_surface_error
+
 print()
 print('Expected volume emission => {:0.2f} W'.format(calculated_volume_emission))
 print('Measured volume emission => {:0.2f} +/- {:0.2f} W'.format(measured_volume_emission, measured_volume_error))
+print('Deviation: {:0.2f}'.format(volume_deviation))
 
 print()
 print('Expected surface emission => {:0.2f} W'.format(calculated_surface_emission))
 print('Measured surface emission => {:0.2f} +/- {:0.2f} W'.format(measured_surface_emission, measured_surface_error))
-
+print('Deviation: {:0.2f}'.format(surface_deviation))
 
 
