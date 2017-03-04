@@ -47,7 +47,7 @@ cdef class Function2D:
     that accepts a function object.
     """
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         raise NotImplementedError("The evaluate() method has not been implemented.")
 
     def __call__(self, double x, double y):
@@ -135,12 +135,14 @@ cdef class PythonFunction2D(Function2D):
     Function2D object it should be wrapped using this class for internal use.
 
     See also: autowrap_function2d()
-    """
 
+    :param object function: the python function to wrap, __call__() function must
+    be implemented on the object.
+    """
     def __init__(self, object function):
         self.function = function
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self.function(x, y)
 
 
@@ -168,15 +170,14 @@ cdef class AddFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of an __add__() call on a
     Function2D object.
 
-    :param function1: A Function2D object.
-    :param function2: A Function2D object.
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
     """
-
     def __init__(self, Function2D function1, Function2D function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._function1.evaluate(x, y) + self._function2.evaluate(x, y)
 
 
@@ -187,15 +188,14 @@ cdef class SubtractFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __sub__() call on a
     Function2D object.
 
-    :param function1: A Function2D object.
-    :param function2: A Function2D object.
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
     """
-
     def __init__(self, Function2D function1, Function2D function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._function1.evaluate(x, y) - self._function2.evaluate(x, y)
 
 
@@ -206,15 +206,15 @@ cdef class MultiplyFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __mul__() call on a
     Function2D object.
 
-    :param function1: A Function2D object.
-    :param function2: A Function2D object.
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
     """
 
     def __init__(self, function1, function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._function1.evaluate(x, y) * self._function2.evaluate(x, y)
 
 
@@ -225,8 +225,8 @@ cdef class DivideFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __truediv__() call on a
     Function2D object.
 
-    :param function1: A Function2D object.
-    :param function2: A Function2D object.
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
     """
 
     def __init__(self, function1, function2):
@@ -234,7 +234,7 @@ cdef class DivideFunction2D(Function2D):
         self._function2 = autowrap_function2d(function2)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         cdef double denominator = self._function2.evaluate(x, y)
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
@@ -248,15 +248,15 @@ cdef class AddScalar2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of an __add__() call on a
     Function2D object.
 
-    :param value: A double value.
-    :param function: A Function2D object.
+    :param float value: A double value.
+    :param Function2D function: A Function2D object.
     """
 
     def __init__(self, double value, Function2D function):
         self._value = value
         self._function = autowrap_function2d(function)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._value + self._function.evaluate(x, y)
 
 
@@ -275,7 +275,7 @@ cdef class SubtractScalar2D(Function2D):
         self._value = value
         self._function = autowrap_function2d(function)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._value - self._function.evaluate(x, y)
 
 
@@ -294,7 +294,7 @@ cdef class MultiplyScalar2D(Function2D):
         self._value = value
         self._function = autowrap_function2d(function)
 
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         return self._value * self._function.evaluate(x, y)
 
 
@@ -314,7 +314,7 @@ cdef class DivideScalar2D(Function2D):
         self._function = autowrap_function2d(function)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
         cdef double denominator = self._function.evaluate(x, y)
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")

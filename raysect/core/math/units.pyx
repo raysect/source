@@ -35,7 +35,7 @@ cpdef inline double km(double v):
     """
     Converts kilometers to meters.
 
-    :param v: Length in kilometers.
+    :param float v: Length in kilometers.
     :return: Length in meters.
     """
     return v * 1e3
@@ -44,7 +44,7 @@ cpdef inline double cm(double v):
     """
     Converts centimeters to meters.
 
-    :param v: Length in centimeters.
+    :param float v: Length in centimeters.
     :return: Length in meters.
     """
     return v * 1e-2
@@ -53,7 +53,7 @@ cpdef inline double mm(double v):
     """
     Converts millimeters to meters.
 
-    :param v: Length in millimeters.
+    :param float v: Length in millimeters.
     :return: Length in meters.
     """
     return v * 1e-3
@@ -62,7 +62,7 @@ cpdef inline double um(double v):
     """
     Converts micrometers to meters.
 
-    :param v: Length in micrometers.
+    :param float v: Length in micrometers.
     :return: Length in meters.
     """
     return v * 1e-6
@@ -71,7 +71,7 @@ cpdef inline double nm(double v):
     """
     Converts nanometers to meters.
 
-    :param v: Length in nanometers.
+    :param float v: Length in nanometers.
     :return: Length in meters.
     """
     return v * 1e-9
@@ -80,7 +80,7 @@ cpdef inline double mile(double v):
     """
     Converts miles to meters.
 
-    :param v: Length in miles.
+    :param float v: Length in miles.
     :return: Length in meters.
     """
     return v * 1609.34
@@ -89,7 +89,7 @@ cpdef inline double yard(double v):
     """
     Converts yards to meters.
 
-    :param v: Length in yards.
+    :param float v: Length in yards.
     :return: Length in meters.
     """
     return v * 0.9144
@@ -98,7 +98,7 @@ cpdef inline double foot(double v):
     """
     Converts feet to meters.
 
-    :param v: Length in feet.
+    :param float v: Length in feet.
     :return: Length in meters.
     """
     return v * 0.3048
@@ -107,7 +107,7 @@ cpdef inline double inch(double v):
     """
     Converts inches to meters.
 
-    :param v: Length in inches.
+    :param float v: Length in inches.
     :return: Length in meters.
     """
     return v * 0.0254
@@ -116,7 +116,7 @@ cpdef inline double mil(double v):
     """
     Converts mils (thousandths of an inch) to meters.
 
-    :param v: Length in mils.
+    :param float v: Length in mils.
     :return: Length in meters.
     """
     return v * 2.54e-5
@@ -125,7 +125,7 @@ cpdef inline radian(double v):
     """
     Converts radians to degrees.
 
-    :param v: Angle in radians.
+    :param float v: Angle in radians.
     :return: Angle in degrees.
     """
     return v * 180 * M_1_PI

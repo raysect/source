@@ -70,3 +70,52 @@ cdef inline Vector3D new_vector3d(double x, double y, double z):
     v.z = z
     return v
 
+
+cdef class Vector2D:
+
+    cdef public double x, y
+
+    cpdef double dot(self, Vector2D v)
+
+    cdef inline double get_length(self)
+
+    cdef inline void set_length(self, double v) except *
+
+    cdef inline double get_index(self, int index)
+
+    cdef inline void set_index(self, int index, double value)
+
+    cpdef double cross(self, Vector2D v)
+
+    cpdef Vector2D normalise(self)
+
+    # cpdef Vector2D transform(self, AffineMatrix2D m):
+
+    cdef inline Vector2D neg(self)
+
+    cdef inline Vector2D add(self, Vector2D v)
+
+    cdef inline Vector2D sub(self, Vector2D v)
+
+    cdef inline Vector2D mul(self, double m)
+
+    cdef inline Vector3D div(self, double d)
+
+    cpdef Vector2D copy(self)
+
+    cpdef Vector2D orthogonal(self)
+
+
+cdef inline Vector2D new_vector2d(double x, double y):
+    """
+    Vector2D factory function.
+
+    Creates a new Vector2D object with less overhead than the equivalent Python
+    call. This function is callable from cython only.
+    """
+
+    cdef Vector2D v
+    v = Vector2D.__new__(Vector2D)
+    v.x = x
+    v.y = y
+    return v

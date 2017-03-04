@@ -29,9 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
 from raysect.core cimport Material, new_intersection, BoundingBox3D, new_point3d, new_normal3d, Normal3D, AffineMatrix3D
 from libc.math cimport sqrt
 cimport cython
+
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9
@@ -39,21 +41,22 @@ DEF BOX_PADDING = 1e-9
 # additional ray distance to avoid re-hitting the same surface point
 DEF EPSILON = 1e-9
 
+
 cdef class Sphere(Primitive):
     """
     A sphere primitive.
 
     The sphere is centered at the origin of the local co-ordinate system.
+
+    :param float radius: Radius of the sphere in meters (default = 0.5).
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the sphere's material (default = None).
+    :param str name: A string specifying a user-friendly name for the sphere (default = "").
+
     """
 
     def __init__(self, double radius=0.5, object parent=None, AffineMatrix3D transform not None=AffineMatrix3D(), Material material not None=Material(), str name=None):
-        """
-        :param radius: Radius of the sphere in meters (default = 0.5).
-        :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
-        :param material: A Material object defining the sphere's material (default = None).
-        :param name: A string specifying a user-friendly name for the sphere (default = "").
-        """
 
         super().__init__(parent, transform, material, name)
 
@@ -71,9 +74,15 @@ cdef class Sphere(Primitive):
         self._cached_ray = None
 
     property radius:
+        """
+        The radius of this sphere.
+
+        :getter: Returns this sphere's radius.
+        :setter: Sets this sphere's radius.
+        :rtype: float
+        """
 
         def __get__(self):
-
             return self._radius
 
         def __set__(self, double radius):

@@ -30,9 +30,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .point import Point2D, Point3D
-from .vector import Vector3D
+from .vector import Vector2D, Vector3D
 from .normal import Normal3D
 from .affinematrix import AffineMatrix3D
 from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis
 from .units import *
 from .interpolators import Interpolator2DMesh, Discrete2DMesh
+from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
+from .sampler import *
+

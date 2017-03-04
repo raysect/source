@@ -8,6 +8,5 @@ The core module of raysect is made up of math, acceleration, and scenegraph clas
    core_classes
    math
    raysect_core_scenegraph
-   raysect_core_kdtree
 
 

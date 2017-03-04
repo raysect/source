@@ -37,21 +37,23 @@ cdef class Spectrum(SpectralFunction):
     cdef:
         readonly double min_wavelength
         readonly double max_wavelength
-        readonly int num_samples
+        readonly int bins
         readonly double delta_wavelength
         public ndarray samples
         ndarray _wavelengths
+        double[::1] samples_mv
 
     cdef inline void _wavelength_check(self, double min_wavelength, double max_wavelength)
     cdef inline void _attribute_check(self)
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int num_samples)
+    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int bins)
     cdef inline void _populate_wavelengths(self)
 
-    cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int num_samples)
+    cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int bins)
     cpdef bint is_zero(self)
     cpdef double total(self)
     cpdef ndarray to_photons(self)
     cpdef Spectrum new_spectrum(self)
+    cpdef Spectrum copy(self)
 
     cdef inline void add_scalar(self, double value)
     cdef inline void sub_scalar(self, double value)
@@ -66,7 +68,7 @@ cdef class Spectrum(SpectralFunction):
     cdef inline void mad_array(self, double[::1] a, double[::1] b)
 
 
-cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int num_samples)
+cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int bins)
 
 
-cpdef double photon_energy(double wavelength) except *
+cpdef double photon_energy(double wavelength) except -1

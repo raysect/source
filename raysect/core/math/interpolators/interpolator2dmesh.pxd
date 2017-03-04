@@ -58,6 +58,6 @@ cdef class Interpolator2DMesh(Function2D):
         bint _limit
         double _default_value
 
-    cdef double evaluate(self, double x, double y) except *
+    cdef double evaluate(self, double x, double y) except? -1e999
 
     cdef inline double _interpolate_triangle(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double alpha, double beta, double gamma) nogil

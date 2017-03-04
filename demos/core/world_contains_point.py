@@ -10,8 +10,8 @@ from raysect.primitive import Sphere
 
 
 """
-Demo - World contains point
----------------------------
+World contains point
+--------------------
 
 This demo shows how the world.contains() method can be used to query the world for
 all primitives that intersect the test point. This simple scene contains a Sphere

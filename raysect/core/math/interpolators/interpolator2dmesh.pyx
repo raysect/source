@@ -235,18 +235,11 @@ cdef class Interpolator2DMesh(Function2D):
     will avoid the cost in memory and time of rebuilding an identical
     acceleration structure.
 
-        An array of vertex coordinates with shape (num of vertices, 2). For each vertex
-        # there must be a (u, v) coordinate.
-        # :param ndarray vertex_data: An array of data points at each vertex with shape (num of vertices).
-        # :param ndarray triangles: An array of triangles with shape (num of triangles, 3). For each triangle, there must
-        # be three indices that identify the three corresponding vertices in vertex_coords that make up this triangle.
-
-
-    :param vertex_coords: An array of vertex coordinates (x, y) with shape Nx2.
-    :param vertex_data: An array containing data for each vertex of shape Nx1.
-    :param triangles: An array of vertex indices defining the mesh triangles, with shape Mx3.
-    :param limit: Raise an exception outside mesh limits - True (default) or False.
-    :param default_value: The value to return outside the mesh limits if limit is set to False.
+    :param ndarray vertex_coords: An array of vertex coordinates (x, y) with shape Nx2.
+    :param ndarray vertex_data: An array containing data for each vertex of shape Nx1.
+    :param ndarray triangles: An array of vertex indices defining the mesh triangles, with shape Mx3.
+    :param bool limit: Raise an exception outside mesh limits - True (default) or False.
+    :param float default_value: The value to return outside the mesh limits if limit is set to False.
     """
 
     def __init__(self, object vertex_coords not None, object vertex_data not None, object triangles not None, bint limit=True, double default_value=0.0):
@@ -283,11 +276,12 @@ cdef class Interpolator2DMesh(Function2D):
         repeated rebuilding of the mesh acceleration structures by sharing the
         geometry data between multiple interpolator objects.
 
-        :param instance: Interpolator2DMesh object.
-        :param vertex_data: An array containing data for each vertex of shape Nx1 (default None).
-        :param limit: Raise an exception outside mesh limits - True (default) or False (default None).
-        :param default_value: The value to return outside the mesh limits if limit is set to False (default None).
+        :param Interpolator2DMesh instance: Interpolator2DMesh object.
+        :param ndarray vertex_data: An array containing data for each vertex of shape Nx1 (default None).
+        :param bool limit: Raise an exception outside mesh limits - True (default) or False (default None).
+        :param float default_value: The value to return outside the mesh limits if limit is set to False (default None).
         :return: An Interpolator2DMesh object.
+        :rtype: Interpolator2DMesh
         """
 
         cdef Interpolator2DMesh m
@@ -320,7 +314,7 @@ cdef class Interpolator2DMesh(Function2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef double evaluate(self, double x, double y) except *:
+    cdef double evaluate(self, double x, double y) except? -1e999:
 
         cdef:
             np.int32_t i1, i2, i3

@@ -24,7 +24,11 @@ A demo of Ray intersection hit points
 
 Rays are launched in the same way as the pinhole camera. The simple scene consists
 of the Stanford bunny model sitting on a platform. For every ray that is launched,
-the hit point in the scene is recorded.
+the cartesian hit point of the ray with the materials in the scene (rabit and floor)
+is recorded. In Figure 1 the 3D hit point for each ray in the camera is plotted in
+3D space. In Figure 2 the z coordinate of each hit point is scaled and plotted to
+indicate distance from the camera. Both methods allow simple visualisation of a
+scene and extraction of intersection geometry data.
 
 Bunny model source:
   Stanford University Computer Graphics Laboratory
@@ -90,7 +94,7 @@ for ix in range(num_pixels):
         intersection = world.hit(CoreRay(origin, direction))
 
         if intersection is not None:
-            hit_point = intersection.hit_point.transform(intersection.to_world)
+            hit_point = intersection.hit_point.transform(intersection.primitive_to_world)
             x_points.append(hit_point.z)
             y_points.append(hit_point.x)
             z_points.append(hit_point.y)

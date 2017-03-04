@@ -31,24 +31,27 @@
 
 cimport cython
 from libc.math cimport sqrt
-from raysect.core.math.vector cimport new_vector3d
+from raysect.core.math.vector cimport new_vector2d, new_vector3d
 from raysect.core.math._vec3 cimport _Vec3
 
-cdef class Point3D:
-    """
-    Represents a point in 3D affine space.
 
-    A point is a location in 3D space which is defined by its x, y and z coordinates in a given coordinate system.
-    Vectors can be added/subtracted from Points yielding another Vector3D. You can also find the Vector3D and distance
-    between two Points, and transform a Point3D from one coordinate system to another.
-    """
+@cython.freelist(256)
+cdef class Point3D:
 
     def __init__(self, double x=0.0, double y=0.0, double z=0.0):
         """
-        Point3D constructor.
+        Represents a point in 3D affine space.
+
+        A point is a location in 3D space which is defined by its x, y and z coordinates in a given coordinate system.
+        Vectors can be added/subtracted from Points yielding another Vector3D. You can also find the Vector3D and distance
+        between two Points, and transform a Point3D from one coordinate system to another.
 
         If no initial values are passed, Point3D defaults to the origin:
         Point3D(0.0, 0.0, 0.0)
+
+        :param float x: initial x coordinate, defaults to x = 0.0.
+        :param float y: initial y coordinate, defaults to y = 0.0.
+        :param float z: initial z coordinate, defaults to z = 0.0.
         """
 
         self.x = x
@@ -186,6 +189,9 @@ cdef class Point3D:
     cpdef Vector3D vector_to(self, Point3D p):
         """
         Returns a vector from this point to the passed point.
+
+        :param Point3D p: the point to which a vector will be calculated.
+        :rtype: Vector3D
         """
 
         return new_vector3d(p.x - self.x,
@@ -195,6 +201,9 @@ cdef class Point3D:
     cpdef double distance_to(self, Point3D p):
         """
         Returns the distance between this point and the passed point.
+
+        :param Point3D p: the point to which the distance will be calculated
+        :rtype: float
         """
 
         cdef double x, y, z
@@ -216,6 +225,10 @@ cdef class Point3D:
 
         This method expects a valid affine transform. For speed reasons, minimal
         checks are performed on the matrix.
+
+        :param AffineMatrix3D m: The affine matrix describing the required coordinate transformation.
+        :return: A new instance of this point that has been transformed with the supplied Affine Matrix.
+        :rtype: Point3D
         """
 
         cdef double w
@@ -260,6 +273,8 @@ cdef class Point3D:
     cpdef Point3D copy(self):
         """
         Returns a copy of the point.
+
+        :rtype: Point3D
         """
 
         return new_point3d(self.x,
@@ -301,22 +316,20 @@ cdef class Point3D:
             self.z = value
 
 
-# TODO: rewrite docstring
 cdef class Point2D:
-    """
-    Represents a point in 2D affine space.
-
-    A 2D point is a location in 2D space which is defined by its x and y coordinates in a given coordinate system.
-    Vector2D objects can be added/subtracted from Point2D yielding another Vector2D. You can also find the Vector2D and distance
-    between two Point2Ds, and transform a Point2D from one coordinate system to another.
-    """
 
     def __init__(self, double x=0.0, double y=0.0):
         """
-        Point2D constructor.
+        Represents a point in 2D affine space.
 
-        If no initial values are passed, Point2D defaults to the origin:
-        Point2D(0.0, 0.0)
+        A 2D point is a location in 2D space which is defined by its x and y coordinates in a given coordinate system.
+        Vector2D objects can be added/subtracted from Point2D yielding another Vector2D. You can also find the Vector2D
+        and distance between two Point2Ds, and transform a Point2D from one coordinate system to another.
+
+        If no initial values are passed, Point2D defaults to the origin: Point2D(0.0, 0.0)
+
+        :param float x: initial x coordinate, defaults to x = 0.0.
+        :param float y: initial y coordinate, defaults to y = 0.0.
         """
 
         self.x = x
@@ -365,43 +378,37 @@ cdef class Point2D:
 
     def __add__(object x, object y):
         """Addition operator."""
-        raise NotImplemented
 
-        # cdef Point3D p
-        # cdef _Vec3 v
-        #
-        # if isinstance(x, Point3D) and isinstance(y, _Vec3):
-        #
-        #     p = <Point3D>x
-        #     v = <_Vec3>y
-        #
-        # else:
-        #
-        #     return NotImplemented
-        #
-        # return new_point3d(p.x + v.x,
-        #                  p.y + v.y,
-        #                  p.z + v.z)
+        cdef Point2D p
+        cdef Vector2D v
+
+        if isinstance(x, Point2D) and isinstance(y, Vector2D):
+
+            p = <Point2D>x
+            v = <Vector2D>y
+
+        else:
+
+            return NotImplemented
+
+        return new_point2d(p.x + v.x, p.y + v.y)
 
     def __sub__(object x, object y):
         """Subtraction operator."""
-        raise NotImplemented
 
-        # cdef Point3D p
-        # cdef _Vec3 v
-        #
-        # if isinstance(x, Point3D) and isinstance(y, _Vec3):
-        #
-        #     p = <Point3D>x
-        #     v = <_Vec3>y
-        #
-        #     return new_point3d(p.x - v.x,
-        #                      p.y - v.y,
-        #                      p.z - v.z)
-        #
-        # else:
-        #
-        #     return NotImplemented
+        cdef Point2D p
+        cdef Vector2D v
+
+        if isinstance(x, Point2D) and isinstance(y, Vector2D):
+
+            p = <Point2D>x
+            v = <Vector2D>y
+
+            return new_point2d(p.x - v.x, p.y - v.y)
+
+        else:
+
+            return NotImplemented
 
     @cython.cdivision(True)
     def __mul__(object x, object y):
@@ -443,18 +450,19 @@ cdef class Point2D:
         self.x = state[0]
         self.y = state[1]
 
-    # cpdef Vector3D vector_to(self, Point3D p):
-    #     """
-    #     Returns a vector from this point to the passed point.
-    #     """
-    #
-    #     return new_vector3d(p.x - self.x,
-    #                       p.y - self.y,
-    #                       p.z - self.z)
+    cpdef Vector2D vector_to(self, Point2D p):
+        """
+        Returns a vector from this point to the passed point.
+        """
+
+        return new_vector2d(p.x - self.x, p.y - self.y)
 
     cpdef double distance_to(self, Point2D p):
         """
         Returns the distance between this point and the passed point.
+
+        :param Point2D p: the point to which the distance will be calculated
+        :rtype: float
         """
 
         cdef double x, y
@@ -492,33 +500,31 @@ cdef class Point2D:
     #                      (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
     #                      (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
 
-    # cdef inline Point3D add(self, _Vec3 v):
-    #     """
-    #     Fast addition operator.
-    #
-    #     This is a cython only function and is substantially faster than a call
-    #     to the equivalent python operator.
-    #     """
-    #
-    #     return new_point3d(self.x + v.x,
-    #                      self.y + v.y,
-    #                      self.z + v.z)
+    cdef inline Point2D add(self, Vector2D v):
+        """
+        Fast addition operator.
 
-    # cdef inline Point3D sub(self, _Vec3 v):
-    #     """
-    #     Fast subtraction operator.
-    #
-    #     This is a cython only function and is substantially faster than a call
-    #     to the equivalent python operator.
-    #     """
-    #
-    #     return new_point3d(self.x - v.x,
-    #                      self.y - v.y,
-    #                      self.z - v.z)
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
+
+        return new_point2d(self.x + v.x, self.y + v.y)
+
+    cdef inline Point2D sub(self, Vector2D v):
+        """
+        Fast subtraction operator.
+
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
+
+        return new_point2d(self.x - v.x, self.y - v.y)
 
     cpdef Point2D copy(self):
         """
         Returns a copy of the point.
+
+        :rtype: Point2D
         """
         return new_point2d(self.x, self.y)
 

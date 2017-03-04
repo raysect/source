@@ -243,7 +243,7 @@ cpdef double uniform():
 
     Values are uniformly distributed.
 
-    :return: Random double.
+    :returns: Random double.
     """
 
     return (_rand_uint64() >> 11) * (1.0 / 9007199254740992.0)
@@ -260,9 +260,9 @@ cpdef double normal(double mean, double stddev):
 
     The mean and standard deviation of the distribution must be specified.
 
-    :param mean: The distribution mean.
-    :param stddev: The distribution standard deviation.
-    :return: Random double.
+    :param float mean: The distribution mean.
+    :param float stddev: The distribution standard deviation.
+    :returns: Random double.
     """
 
     global _normal_generate, _normal_c1, _normal_c2
@@ -292,6 +292,7 @@ cpdef bint probability(double prob):
 
     :param double prob: A probability from [0, 1].
     :return: True or False.
+    :rtype: bool
     """
 
     return uniform() < prob
@@ -301,7 +302,7 @@ cpdef Point2D point_disk():
     """
     Returns a random point on a disk of unit radius.
 
-    :return: A Point2D on the disk.
+    :rtype: Point2D
     """
 
     cdef double r = sqrt(uniform())
@@ -313,7 +314,7 @@ cpdef Point2D point_square():
     """
     Returns a random point on a square of unit radius.
 
-    :return: A Point2D on the square.
+    :rtype: Point2D
     """
 
     return new_point2d(uniform(), uniform())
@@ -323,7 +324,7 @@ cpdef Vector3D vector_sphere():
     """
     Generates a random vector on a unit sphere.
 
-    :return: A random Vector3D on the unit sphere.
+    :rtype: Vector3D
     """
 
     cdef double z = 1.0 - 2.0 * uniform()
@@ -341,7 +342,7 @@ cpdef Vector3D vector_hemisphere_uniform():
     The hemisphere is aligned along the z-axis - the plane that forms the
     hemisphere base lies in the x-y plane.
 
-    :return: A random Vector3D on the unit hemisphere.
+    :rtype: Vector3D
     """
 
     cdef double z = uniform()
@@ -359,7 +360,7 @@ cpdef Vector3D vector_hemisphere_cosine():
     The hemisphere is aligned along the z-axis - the plane that forms the
     hemisphere base lies in the x-y plane.
 
-    :return: A unit Vector3D.
+    :rtype: Vector3D
     """
 
     cdef double r = sqrt(uniform())
@@ -377,8 +378,9 @@ cpdef Vector3D vector_cone(double theta):
     checks are performs on the theta parameter, it is up to user to ensure the
     angle is sensible.
 
-    :param theta: An angle between 0 and 90 degrees.
-    :return: A random Vector3D in the cone defined by theta.
+    :param float theta: An angle between 0 and 90 degrees.
+    :returns: A random Vector3D in the cone defined by theta.
+    :rtype: Vector3D
     """
 
     theta *= 0.017453292519943295 # PI / 180

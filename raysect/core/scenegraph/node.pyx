@@ -45,7 +45,7 @@ cdef class Node(_NodeBase):
 
     :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
     :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
-    :param name: A string defining the node name.
+    :param str name: A string defining the node name.
     """
 
     def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None):
@@ -66,6 +66,13 @@ cdef class Node(_NodeBase):
         self._track_modifications = True
 
     property parent:
+        """
+        The parent of this node in the scenegraph.
+
+        :getter: Returns this node's parent node.
+        :setter: Sets this node's parent.
+        :rtype: Node
+        """
 
         def __get__(self):
             return self._parent
@@ -113,6 +120,13 @@ cdef class Node(_NodeBase):
                     self._update()
 
     property transform:
+        """
+        The transform for this node's coordinate system in relation to the parent node.
+
+        :getter: Returns this node's affine transform matrix.
+        :setter: Sets this node's affine transform matrix.
+        :rtype: AffineMatrix3D
+        """
 
         def __get__(self):
             return self._transform
@@ -122,6 +136,13 @@ cdef class Node(_NodeBase):
             self._update()
 
     property name:
+        """
+        The name of this node.
+
+        :getter: Returns this node's name.
+        :setter: Sets this node's name.
+        :rtype: str
+        """
 
         def __get__(self):
             return self._name
@@ -142,6 +163,7 @@ cdef class Node(_NodeBase):
 
         :param _NodeBase node: The target node.
         :return: An AffineMatrix3D describing the coordinate transform.
+        :rtyoe: AffineMatrix3D
         """
 
         if self.root is node.root:
@@ -150,7 +172,19 @@ cdef class Node(_NodeBase):
             raise ValueError("The target node must be in the same scene-graph.")
 
     cpdef AffineMatrix3D to_local(self):
+        """
+        Returns an affine transform from world space into this nodes local
+        coordinate space.
+
+        :rtype: AffineMatrix3D
+        """
         return self._root_transform_inverse
 
     cpdef AffineMatrix3D to_root(self):
+        """
+        Returns an affine transform from local space into the parent node's
+        coordinate space.
+
+        :rtype: AffineMatrix3D
+        """
         return self._root_transform

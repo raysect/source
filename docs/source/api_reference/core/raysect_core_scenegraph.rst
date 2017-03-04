@@ -14,6 +14,5 @@ Scenegraph Module
 .. automodule:: raysect.core.scenegraph.world
    :members:
 
-.. automodule:: raysect.core.scenegraph.utility
-   :members:
+.. autofunction:: raysect.core.scenegraph.utility.print_scenegraph
 

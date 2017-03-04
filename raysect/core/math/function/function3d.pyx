@@ -47,7 +47,7 @@ cdef class Function3D:
     that accepts a function object.
     """
 
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         raise NotImplementedError("The evaluate() method has not been implemented.")
 
     def __call__(self, double x, double y, double z):
@@ -140,7 +140,7 @@ cdef class PythonFunction3D(Function3D):
     def __init__(self, object function):
         self.function = function
 
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return self.function(x, y, z)
 
 
@@ -176,7 +176,7 @@ cdef class AddFunction3D(Function3D):
         self._function1 = autowrap_function3d(function1)
         self._function2 = autowrap_function3d(function2)
 
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return self._function1.evaluate(x, y, z) + self._function2.evaluate(x, y, z)
 
 
@@ -195,7 +195,7 @@ cdef class SubtractFunction3D(Function3D):
         self._function1 = autowrap_function3d(function1)
         self._function2 = autowrap_function3d(function2)
 
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return self._function1.evaluate(x, y, z) - self._function2.evaluate(x, y, z)
 
 
@@ -214,7 +214,7 @@ cdef class MultiplyFunction3D(Function3D):
         self._function1 = autowrap_function3d(function1)
         self._function2 = autowrap_function3d(function2)
 
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return self._function1.evaluate(x, y, z) * self._function2.evaluate(x, y, z)
 
 
@@ -234,7 +234,7 @@ cdef class DivideFunction3D(Function3D):
         self._function2 = autowrap_function3d(function2)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         cdef double denominator = self._function2.evaluate(x, y, z)
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
@@ -256,7 +256,7 @@ cdef class AddScalar3D(Function3D):
         self._value = value
         self._function = autowrap_function3d(function)
 
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return self._value + self._function.evaluate(x, y, z)
 
 
@@ -275,7 +275,7 @@ cdef class SubtractScalar3D(Function3D):
         self._value = value
         self._function = autowrap_function3d(function)
 
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return self._value - self._function.evaluate(x, y, z)
 
 
@@ -294,7 +294,7 @@ cdef class MultiplyScalar3D(Function3D):
         self._value = value
         self._function = autowrap_function3d(function)
 
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return self._value * self._function.evaluate(x, y, z)
 
 
@@ -314,7 +314,7 @@ cdef class DivideScalar3D(Function3D):
         self._function = autowrap_function3d(function)
 
     @cython.cdivision(True)
-    cdef double evaluate(self, double x, double y, double z) except *:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
         cdef double denominator = self._function.evaluate(x, y, z)
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")

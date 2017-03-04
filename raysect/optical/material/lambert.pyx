@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -83,7 +83,7 @@ cdef class Lambert(ContinuousBSDF):
         spectrum = reflected.trace(world)
 
         # obtain samples of reflectivity
-        reflectivity = self.reflectivity.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        reflectivity = self.reflectivity.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
         # combine and normalise
         spectrum.mul_array(reflectivity)

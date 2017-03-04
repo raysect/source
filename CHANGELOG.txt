@@ -1,0 +1,34 @@
+Raysect Changelog
+=================
+
+Release 0.3.0 (TBD)
+-------------------
+
+New:
+* Added multiple importance sampling (MIS).
+* Added micro-facet based materials.
+* Added 2D kd-tree and 2D mesh utilities
+* Added parabola primitive.
+* Added spherical lens primitives.
+* Added render engine workflow model with engines targetting single core and multicore rendering.
+* Added StatsBin and StatsArray objects.
+* Added a set of utility containers (linked-lists etc..) for use in cython.
+* Added metals and coloured emission spectra to the optical library.
+
+Changes:
+* Completely re-engineered optical observers.
+  - New pipeline architecture.
+  - Adaptive sampling.
+  - Framework simplifies development of new observers.
+* Re-engineered spectral functions (API changes are minimal).
+* Renamed num_samples and spectral_samples to bins and spectral_bins.
+* Renamed ray_min_depth to ray_extinction_min_depth.
+* Optimised the codebase for greater rendering performance.
+* Updated lambert material to support MIS.
+* Tidied up numerous internal interfaces.
+
+
+Release 0.1.0 (16 Aug 2015) / Release 0.2.0 (2 Feb 2016)
+--------------------------------------------------------
+
+* initial development releases

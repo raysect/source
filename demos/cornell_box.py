@@ -1,5 +1,4 @@
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
-from raysect.optical.observer import PinholeCamera, AutoExposure
 from raysect.optical.material import Lambert, UniformSurfaceEmitter
 from raysect.optical.library import *
 from raysect.primitive import Sphere, Box
@@ -88,71 +87,104 @@ e_right = Box(Point3D(-1, -1, 0), Point3D(1, 1, 0),
               material=Lambert(green_reflectivity))
 
 # ceiling light
-# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
-#             parent=enclosure,
-#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-#             material=UniformSurfaceEmitter(light_spectrum, 2))
-
 light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
             parent=enclosure,
             transform=translate(0, 1, 0) * rotate(0, 90, 0),
-            material=UniformSurfaceEmitter(d65_white, 2))
+            material=UniformSurfaceEmitter(light_spectrum, 2))
+
+# light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
+#             parent=enclosure,
+#             transform=translate(0, 1, 0) * rotate(0, 90, 0),
+#             material=UniformSurfaceEmitter(d65_white, 2))
 
 # back_light = Sphere(0.1,
 #     parent=enclosure,
 #     transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
-#     material=UniformSurfaceEmitter(light_spectrum, 100.0))
+#     material=UniformSurfaceEmitter(light_spectrum, 10.0))
 
 # objects in enclosure
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
           parent=world,
           transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
-          material=RoughTungsten(0.5))
+          # material=RoughTungsten(0.5))
           # material=Lambert())
-          # material=schott("N-BK7"))
+          material=schott("N-BK7"))
 
 sphere = Sphere(0.4,
     parent=world,
     transform=translate(-0.4, -0.6 + 1e-6, -0.4)*rotate(0, 0, 0),
-    material=RoughCopper(0.6))
+    # material=RoughGold(0.1))
     # material=Lambert())
     # material=Titanium())
-    # material=schott("N-BK7"))
+    material=schott("N-BK7"))
 
+
+from raysect.optical.observer import PinholeCamera, CCDArray
+from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D, PowerPipeline2D
+from raysect.optical.observer import PowerAdaptiveSampler2D, RGBAdaptiveSampler2D
+from raysect.core.workflow import SerialEngine
+
+filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
+filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
+filter_blue = InterpolatedSF([100, 480, 490, 500, 510, 800], [0, 0, 1, 1, 0, 0])
 
 # create and setup the camera
-camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -3.4) * rotate(0, 0, 0))
-camera.ray_importance_sampling = True
-camera.ray_important_path_weight = 0.1
-camera.ray_min_depth = 3
-camera.ray_max_depth = 500
-camera.ray_extinction_prob = 0.01
+power_unfiltered = PowerPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
+power_unfiltered.display_update_time = 15
+
+power_green = PowerPipeline2D(filter=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
+power_green.display_update_time = 15
+
+power_red = PowerPipeline2D(filter=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
+power_red.display_update_time = 15
+
+rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
+
+bayer = BayerPipeline2D(filter_red, filter_green, filter_blue, display_unsaturated_fraction=0.96, name="Bayer Filter")
+bayer.display_update_time = 15
+
+spectral = SpectralPipeline2D()
+
+# pipelines = [power, rgb, bayer, spectral]
+# pipelines = [power_unfiltered] #, power_green, power_red, bayer]#, spectral]
+pipelines = [rgb, power_unfiltered]
+# sampler = PowerAdaptiveSampler2D(power_unfiltered, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
+sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
+
+# camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+camera = PinholeCamera((64, 64), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+# camera = CCDArray((64, 64), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+camera.frame_sampler = sampler
+camera.pixel_samples = 100
+camera.spectral_bins = 15
 camera.spectral_rays = 1
-camera.spectral_samples = 21
-camera.pixels = (256, 256)
-camera.pixel_samples = 50
-camera.display_progress = True
-camera.display_update_time = 10
-camera.accumulate = True
-camera.exposure_handler = AutoExposure(0.97)
-
-
-# camera.process_count = 1
+camera.ray_importance_sampling = True
+camera.ray_important_path_weight = 0.25
+camera.ray_max_depth = 500
+camera.ray_extinction_min_depth = 3
+camera.ray_extinction_prob = 0.01
+# camera.render_engine = SerialEngine()
 
 # start ray tracing
 ion()
-for p in range(1, 5000):
-    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.spectral_rays))
+p = 1
+while not camera.render_complete:
+
+    print("Rendering pass {}...".format(p))
+
     camera.observe()
-    if camera.ray_importance_sampling:
-        name = "cornell_box_mis_{}_samples.png"
-    else:
-        name = "cornell_box_normal_{}_samples.png"
-    camera.save(name.format(camera.accumulated_samples))
+
+    rgb.save('cornell_box_rgb_pass_{:04d}.png'.format(p))
+    power_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
+    # power_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
+    # power_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
+    # bayer.save('cornell_box_bayer_pass_{:04d}.png'.format(p))
+
+    # spectral.display_pixel(28, 70)
+
+    #print("total power:", power_unfiltered.frame.mean.sum(), "+/-", np.sqrt(np.sum(power_unfiltered.frame.variance**2)))
     print()
+    p += 1
 
-# display final result
 ioff()
-camera.display()
-show()
-
+rgb.display()

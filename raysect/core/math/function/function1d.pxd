@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class Function1D:
-    cdef double evaluate(self, double x) except *
+    cdef double evaluate(self, double x) except? -1e999
 
 
 cdef class PythonFunction1D(Function1D):

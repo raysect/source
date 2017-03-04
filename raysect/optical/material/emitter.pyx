@@ -63,13 +63,13 @@ cdef class UniformSurfaceEmitter(NullVolume):
             int index
 
         spectrum = ray.new_spectrum()
-        emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
         # obtain memoryviews
         s_view = spectrum.samples
         e_view = emission
 
-        for index in range(spectrum.num_samples):
+        for index in range(spectrum.bins):
             s_view[index] = e_view[index] * self.scale
 
         return spectrum
@@ -118,7 +118,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         direction = direction.normalise()
 
         # obtain emission density from emission function (W/m^3/str)
-        emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
         # emission function specifies direction from ray origin to hit-point
         emission = self.emission_function(direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
@@ -132,7 +132,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         s_view = spectrum.samples
 
         # integrate emission density along ray path
-        for index in range(spectrum.num_samples):
+        for index in range(spectrum.bins):
             s_view[index] += e_view[index] * length
 
         return spectrum
@@ -192,7 +192,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         integration_direction = integration_direction.normalise()
         ray_direction = -integration_direction
 
-        emission_previous = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        emission_previous = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         emission_previous = self.emission_function(start, ray_direction, emission_previous, world, ray, primitive, world_to_primitive, primitive_to_world)
 
         # sanity check as bounds checking is disabled
@@ -213,7 +213,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
                 start.z + t * integration_direction.z
             )
 
-            emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+            emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
             emission = self.emission_function(sample_point, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
 
             # sanity check as bounds checking is disabled
@@ -225,7 +225,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
             e2_view = emission_previous.samples
 
             # trapezium rule integration
-            for index in range(spectrum.num_samples):
+            for index in range(spectrum.bins):
                 s_view[index] += c * (e1_view[index] + e2_view[index])
 
             emission_previous = emission
@@ -234,7 +234,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         # step back to process any length that remains
         t -= self._step
 
-        emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         emission = self.emission_function(end, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
 
         # sanity check as bounds checking is disabled
@@ -247,7 +247,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
         # trapezium rule integration of remainder
         c = 0.5 * (length - t)
-        for index in range(spectrum.num_samples):
+        for index in range(spectrum.bins):
             s_view[index] += c * (e1_view[index] + e2_view[index])
 
         return spectrum
@@ -304,13 +304,13 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
             double[::1] s_view, e_view
             int index
 
-        emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+        emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
         # obtain memoryviews
         s_view = spectrum.samples
         e_view = emission
 
-        for index in range(spectrum.num_samples):
+        for index in range(spectrum.bins):
             s_view[index] += e_view[index] * self.scale
 
         return spectrum
@@ -371,15 +371,15 @@ cdef class Checkerboard(NullVolume):
         s_view = spectrum.samples
 
         if v:
-            emission = self.emission_spectrum1.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+            emission = self.emission_spectrum1.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
             e_view = emission
             scale = self.scale1
         else:
-            emission = self.emission_spectrum2.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.num_samples)
+            emission = self.emission_spectrum2.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
             e_view = emission
             scale = self.scale2
 
-        for index in range(spectrum.num_samples):
+        for index in range(spectrum.bins):
             s_view[index] = e_view[index] * scale
 
         return spectrum
