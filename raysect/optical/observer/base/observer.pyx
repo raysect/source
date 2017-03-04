@@ -78,6 +78,7 @@ cdef class _ObserverBase(Observer):
         self.render_engine = render_engine or MulticoreEngine()
 
         # preset internal values to satisfy property dependencies
+        self._spectral_rays = 1
         self._min_wavelength = 0
         self._ray_extinction_min_depth = 0
 
@@ -102,7 +103,9 @@ cdef class _ObserverBase(Observer):
     @spectral_bins.setter
     def spectral_bins(self, value):
         if value <= 0:
-            raise ValueError("The number of spectral samples must be greater than 0.")
+            raise ValueError("The number of spectral bins must be greater than 0.")
+        if value < self.spectral_rays:
+            raise ValueError("The number of spectral bins cannot be less than the number of spectral rays (currently {}).".format(self.spectral_rays))
         self._spectral_bins = value
 
     @property
