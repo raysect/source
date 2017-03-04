@@ -110,7 +110,6 @@ cdef class Pixel(Observer0D):
 
         rays = []
         for n in range(ray_count):
-
             rays.append((template.copy(origins[n], directions[n]), 1.0))
 
         return rays

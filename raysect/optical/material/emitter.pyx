@@ -291,7 +291,6 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
         super().__init__()
         self.emission_spectrum = emission_spectrum
         self.scale = scale
-        self.importance = 1.0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
