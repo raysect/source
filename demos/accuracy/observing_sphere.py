@@ -1,11 +1,13 @@
 from raysect.core import Point3D, translate, rotate_basis
-from raysect.core.math.sampler import HemisphereCosineSampler, SphereSampler
+from raysect.core.math.sampler import HemisphereCosineSampler, SphereSampler, HemisphereUniformSampler
 from raysect.primitive import Sphere
 from raysect.optical import World, ConstantSF
 from raysect.optical.observer import PowerPipeline0D, Observer0D
 from raysect.optical.material.emitter import UnityVolumeEmitter, UniformSurfaceEmitter, UniformVolumeEmitter
 from math import pi
 
+
+# TODO: OH DEAR, IT LOOKS LIKE IT IS THE VECTOR SAMPLER.... HOW ON EARTH....SWAPPING IT OUT FIXES EVERYTHING
 
 class ObservingSphere(Observer0D):
 
@@ -22,6 +24,7 @@ class ObservingSphere(Observer0D):
                          ray_important_path_weight=ray_important_path_weight)
 
         self._radius = radius or 1.0
+        # self._vector_sampler = HemisphereUniformSampler()
         self._vector_sampler = HemisphereCosineSampler()
         self._sphere_sampler = SphereSampler()
         self._solid_angle = 2 * pi
@@ -36,7 +39,7 @@ class ObservingSphere(Observer0D):
         for n in range(ray_count):
 
             # calculate surface point
-            origin = origin_vectors[n]
+            origin = origin_vectors[n].copy()
             origin.length = self._radius
             origin = Point3D(*origin)
 
@@ -46,6 +49,7 @@ class ObservingSphere(Observer0D):
             # transform sampling direction from surface space
             direction = directions[n].transform(rotate_basis(normal, normal.orthogonal()))
 
+            # rays.append((template.copy(origin , direction), normal.dot(direction)))
             rays.append((template.copy(origin , direction), 1.0))
 
         return rays
@@ -57,7 +61,7 @@ class ObservingSphere(Observer0D):
 samples = 100000
 
 emitting_sphere_radius = 0.5
-collection_sphere_radius = 5.0
+collection_sphere_radius = 1.0
 
 min_wl = 400
 max_wl = 401
