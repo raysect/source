@@ -39,7 +39,6 @@ cdef class Ray(CoreRay):
     cdef:
         public bint importance_sampling
         double _important_path_weight
-        public bint following_important_path
         int _bins
         double _min_wavelength
         double _max_wavelength
