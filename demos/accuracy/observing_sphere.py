@@ -24,8 +24,8 @@ class ObservingSphere(Observer0D):
                          ray_important_path_weight=ray_important_path_weight)
 
         self._radius = radius or 1.0
-        # self._vector_sampler = HemisphereUniformSampler()
-        self._vector_sampler = HemisphereCosineSampler()
+        self._vector_sampler = HemisphereUniformSampler()
+        # self._vector_sampler = HemisphereCosineSampler()
         self._sphere_sampler = SphereSampler()
         self._solid_angle = 2 * pi
         self._collection_area = 4 * pi * self._radius**2
@@ -49,8 +49,12 @@ class ObservingSphere(Observer0D):
             # transform sampling direction from surface space
             direction = directions[n].transform(rotate_basis(normal, normal.orthogonal()))
 
-            # rays.append((template.copy(origin , direction), normal.dot(direction)))
-            rays.append((template.copy(origin , direction), 1.0))
+            # USE WITH HEMISPHEREUNIFORMSAMPLER
+            projection_weight = directions[n].z
+            rays.append((template.copy(origin, direction), projection_weight))
+
+            # USE WITH HEMISPHERECOSINESAMPLER
+            # rays.append((template.copy(origin , direction), 1.0))
 
         return rays
 
@@ -61,7 +65,7 @@ class ObservingSphere(Observer0D):
 samples = 100000
 
 emitting_sphere_radius = 0.5
-collection_sphere_radius = 1.0
+collection_sphere_radius = 5
 
 min_wl = 400
 max_wl = 401
@@ -74,14 +78,14 @@ power = PowerPipeline0D(accumulate=False)
 
 # set-up scenegraph
 world = World()
-emitter = Sphere(radius=emitting_sphere_radius, parent=world, transform=translate(0, 0, 0))
+emitter = Sphere(radius=emitting_sphere_radius, parent=world, transform=translate(4, 0, 0))
 observer = ObservingSphere([power], radius=collection_sphere_radius,
                            min_wavelength=min_wl, max_wavelength=max_wl,
                            spectral_bins=1, pixel_samples=samples,
                            parent=world)
 
-# from raysect.core.workflow import SerialEngine
-# observing_plane.render_engine = SerialEngine()
+from raysect.core.workflow import SerialEngine
+observer.render_engine = SerialEngine()
 
 # Emitter is a sphere volume emitter located at the origin
 # Volume of the sphere is 4/3 * Pi * r^3, emission over 4 * pi
