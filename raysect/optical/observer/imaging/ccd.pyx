@@ -135,8 +135,9 @@ cdef class CCDArray(Observer2D):
             ray = template.copy(origin, direction)
 
             # cosine weighted distribution, projected area weight is
-            # implicit in distribution, so set weight to 1.0
-            rays.append((ray, 1.0))
+            # implicit in distribution, so set weight appropriately
+            # todo: check derivation, this should be a factor of 2 out cf uniform sampling due to pi vs 2*pi in denominator of pdf
+            rays.append((ray, 0.5))
 
         return rays
 

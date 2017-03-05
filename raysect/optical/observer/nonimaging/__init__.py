@@ -31,3 +31,5 @@
 
 from .sightline import SightLine
 from .fibreoptic import FibreOptic
+from .pixel import Pixel
+
