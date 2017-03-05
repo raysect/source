@@ -99,25 +99,19 @@ cdef class OrthographicCamera(Observer2D):
         cdef:
             double pixel_x, pixel_y
             list points, rays
-            Point3D pixel_centre, point, origin
-            Vector3D direction
+            Point3D origin
             Ray ray
 
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
         pixel_y = self.image_start_y - self.image_delta * iy
-        to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
         points = self._point_sampler(self._pixel_samples)
 
         # assemble rays
         rays = []
-        for origin in zip(points):
-
-            # transform to local space from pixel space
-            origin = origin.transform(to_local)
-            direction = direction.transform(to_local)
+        for origin in points:
 
             ray = template.copy(origin, new_vector3d(0, 0, 1))
 
