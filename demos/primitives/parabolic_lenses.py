@@ -8,11 +8,6 @@ from raysect.optical.library import schott, Gold, RoughCopper
 from raysect.primitive import Box, Sphere
 from raysect.primitive.parabola import Parabola
 from matplotlib.pyplot import *
-import sys
-sys.ps1 = 'SOMETHING'
-
-# Import the new lens classes
-from raysect.primitive.lens.spherical import *
 
 rotation = 90.0
 
@@ -33,17 +28,10 @@ Box(Point3D(-50.0, -50.0, 50), Point3D(50.0, 50.0, 50.1), world, material=Checke
 
 # Instantiate camera object, and configure its settings.
 ion()
-camera = PinholeCamera(fov=45, parent=world, transform=translate(0.5, 0, -0.5) * rotate(45, 0, 0))
+camera = PinholeCamera((256, 256), fov=45, parent=world, transform=translate(0.5, 0, -0.5) * rotate(45, 0, 0))
 camera.pixel_samples = 50
 camera.spectral_rays = 1
-camera.spectral_samples = 20
-camera.pixels = (256, 256)
-camera.display_progress = True
-camera.ray_importance_sampling = False
+camera.spectral_bins = 20
 
 # Start ray tracing
 camera.observe()
-
-ioff()
-camera.display()
-show()

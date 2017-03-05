@@ -1,6 +1,6 @@
 from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.primitive import Sphere, Box, Cylinder
-from raysect.optical.observer import PinholeCamera, AutoExposure
+from raysect.optical.observer import PinholeCamera, RGBPipeline2D
 from raysect.optical.material import Lambert, UniformSurfaceEmitter, Roughen
 from raysect.optical.library import *
 from matplotlib.pyplot import *
@@ -49,31 +49,27 @@ Cylinder(0.5, 1.0, world, transform=translate(0.5, 5, 6) * rotate(90, 0, 0), mat
 Cylinder(0.5, 1.0, world, transform=translate(0.5, 5, 4) * rotate(90, 0, 0), material=UniformSurfaceEmitter(d65_white, 1.0))
 Cylinder(0.5, 1.0, world, transform=translate(0.5, 5, 2) * rotate(90, 0, 0), material=UniformSurfaceEmitter(d65_white, 1.0))
 
+rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
+# sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
+
 # observer
-camera = PinholeCamera(parent=world, transform=translate(0, 3.3, 0) * rotate(0, -47, 0), fov=42)
-camera.ray_min_depth = 3
+camera = PinholeCamera((1024, 512), fov=42, pipelines=[rgb], transform=translate(0, 3.3, 0) * rotate(0, -47, 0), parent=world)
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
 camera.spectral_rays = 1
-camera.spectral_samples = 15
-camera.pixels = (1024, 512)
+camera.spectral_bins = 15
 camera.pixel_samples = 50
-camera.display_progress = True
-camera.display_update_time = 10
-camera.accumulate = True
-camera.exposure_handler = AutoExposure(0.97)
-# camera.ray_importance_sampling = False
 
 
 # start ray tracing
 ion()
 for p in range(1, 1000):
-    print("Rendering pass {} ({} samples/pixel)...".format(p, camera.accumulated_samples + camera.pixel_samples * camera.spectral_rays))
+    print("Rendering pass {}".format(p))
     camera.observe()
-    camera.save("demo_roughen_{}_samples.png".format(camera.accumulated_samples))
+    camera.pipelines[0].save("demo_roughen_{}_samples.png".format(p))
     print()
 
 # display final result
 ioff()
-camera.display()
+camera.pipelines[0].display()
 show()

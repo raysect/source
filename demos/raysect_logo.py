@@ -33,22 +33,19 @@ Box(Point3D(-0.5, 0, -2.5), Point3D(0.5, 0.25, 0.5), node, rotate(0, 0, 180) * t
 Box(Point3D(-0.5, 0, -2.5), Point3D(0.5, 0.25, 0.5), node, rotate(0, 0, 240) * translate(0, 1, -0.500001), blue_glass)
 Box(Point3D(-0.5, 0, -2.5), Point3D(0.5, 0.25, 0.5), node, rotate(0, 0, 300) * translate(0, 1, -0.500001), purple_glass)
 
-camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -6.5) * rotate(0, 0, 0))
+camera = PinholeCamera((256, 256), fov=45, parent=world, transform=translate(0, 0, -6.5) * rotate(0, 0, 0))
 
 ion()
-camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
-camera.pixel_samples = 1000
-camera.rays = 1
-camera.spectral_samples = 21
-camera.pixels = (256, 256)
-camera.display_progress = True
-camera.display_update_time = 10
+camera.pixel_samples = 100
+camera.spectral_rays = 1
+camera.spectral_bins = 21
+
 camera.observe()
 
 ioff()
-camera.save("raysect_logo.png")
-camera.display()
+camera.pipelines[0].save("raysect_logo.png")
+camera.pipelines[0].display()
 show()
 

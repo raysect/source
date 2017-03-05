@@ -40,7 +40,6 @@ Box(Point3D(-100, -100, -100), Point3D(100, 100, 100), world, material=UniformSu
 
 ion()
 camera = OrthographicCamera((256, 256), width=10.0, parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0))
-camera.render_engine = SerialEngine()
 camera.pixel_samples = 50
 camera.spectral_bins = 15
 
