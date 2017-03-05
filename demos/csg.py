@@ -8,6 +8,8 @@ from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
 from matplotlib.pyplot import *
 from numpy import array
 
+from raysect.optical.observer import PinholeCamera, RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D
+
 red_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
                        transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0])*0.7))
 
@@ -38,23 +40,15 @@ Box(Point3D(-50, -50, 50), Point3D(50, 50, 50.1), world, material=Checkerboard(4
 Box(Point3D(-100, -100, -100), Point3D(100, 100, 100), world, material=UniformSurfaceEmitter(d65_white, 0.1))
 
 ion()
-from raysect.optical.observer.pinhole2d_prototype import PinholeCamera
-from raysect.optical.observer.pipeline import RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D
-
-
-from raysect.core.workflow import SerialEngine
 
 # create and setup the camera
 rgb = RGBPipeline2D()
 rgb.accumulate = True
 
-bayer = BayerPipeline2D()
-bayer.accumulate = True
-
 spectral = SpectralPipeline2D()
 spectral.accumulate = True
 
-pipelines = [rgb] #, bayer, spectral]
+pipelines = [rgb] #, spectral]
 
 camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -4) * rotate(0, 0, 0), pipelines=pipelines)
 camera.pixel_samples = 150
@@ -65,7 +59,7 @@ camera.spectral_rays = 1
 camera.observe()
 
 ioff()
-# camera.save("render.png")
+# camera.pipelines[0].save("render.png")
 camera.pipelines[0].display()
 show()
 

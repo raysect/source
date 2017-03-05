@@ -65,11 +65,12 @@ ion()
 camera = PinholeCamera((256, 256), fov=40, parent=world, transform=translate(0, 0.16, -0.4) * rotate(0, -12, 0))
 camera.pixel_samples = 50
 camera.spectral_rays = 10
-camera.spectral_bins = 2
+camera.spectral_bins = 50
 camera.observe()
 
 ioff()
-# camera.save("stanford_bunny_{}.png".format(time.strftime("%Y-%m-%d_%H-%M-%S")))
-camera.display()
+rgb = camera.pipelines[0]
+rgb.save("stanford_bunny_{}.png".format(time.strftime("%Y-%m-%d_%H-%M-%S")))
+
 show()
 
