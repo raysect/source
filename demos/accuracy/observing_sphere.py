@@ -24,8 +24,8 @@ class ObservingSphere(Observer0D):
                          ray_important_path_weight=ray_important_path_weight)
 
         self._radius = radius or 1.0
-        self._vector_sampler = HemisphereUniformSampler()
-        # self._vector_sampler = HemisphereCosineSampler()
+        # self._vector_sampler = HemisphereUniformSampler()
+        self._vector_sampler = HemisphereCosineSampler()
         self._sphere_sampler = SphereSampler()
         self._solid_angle = 2 * pi
         self._collection_area = 4 * pi * self._radius**2
@@ -50,11 +50,14 @@ class ObservingSphere(Observer0D):
             direction = directions[n].transform(rotate_basis(normal, normal.orthogonal()))
 
             # USE WITH HEMISPHEREUNIFORMSAMPLER
-            projection_weight = directions[n].z
-            rays.append((template.copy(origin, direction), projection_weight))
+            # projection_weight = directions[n].z
+            # rays.append((template.copy(origin, direction), projection_weight))
 
             # USE WITH HEMISPHERECOSINESAMPLER
-            # rays.append((template.copy(origin , direction), 1.0))
+            # cosine weighted distribution, projected area weight is
+            # implicit in distribution, so set weight appropriately
+            # todo: check derivation, this should be a factor of 2 out cf uniform sampling due to pi vs 2*pi in denominator of pdf
+            rays.append((template.copy(origin , direction), 0.5))
 
         return rays
 

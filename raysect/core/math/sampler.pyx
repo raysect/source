@@ -33,6 +33,8 @@
 # Classes for generating vectors and points which sample over a pixel's acceptance cone. These classes are split into
 # two categories based on the way they sample areas of the pixel surface, and solid angles.
 
+# TODO: these should really also return the probability of the given sample (pdf)
+
 from libc.math cimport M_PI as PI
 from raysect.core.math import Vector3D
 from raysect.core.math cimport Point2D, new_point3d

@@ -110,7 +110,11 @@ cdef class Pixel(Observer0D):
 
         rays = []
         for n in range(ray_count):
-            rays.append((template.copy(origins[n], directions[n]), 1.0))
+
+            # cosine weighted distribution, projected area weight is
+            # implicit in distribution, so set weight appropriately
+            # todo: check derivation, this should be a factor of 2 out cf uniform sampling due to pi vs 2*pi in denominator of pdf
+            rays.append((template.copy(origins[n], directions[n]), 0.5))
 
         return rays
 
