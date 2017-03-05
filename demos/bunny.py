@@ -64,8 +64,8 @@ emitter = Box(Point3D(-0.10 + glass_thickness + padding, -0.02 + glass_thickness
 ion()
 camera = PinholeCamera((256, 256), fov=40, parent=world, transform=translate(0, 0.16, -0.4) * rotate(0, -12, 0))
 camera.pixel_samples = 50
-camera.spectral_rays = 10
-camera.spectral_bins = 50
+camera.spectral_rays = 15
+camera.spectral_bins = 15
 camera.observe()
 
 ioff()
