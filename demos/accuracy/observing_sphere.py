@@ -74,8 +74,8 @@ min_wl = 400
 max_wl = 401
 
 # sanity check!
-# if collection_sphere_radius <= emitting_sphere_radius:
-#     raise ValueError("The collecting sphere radius must be larger that the emitting sphere.")
+if collection_sphere_radius <= emitting_sphere_radius:
+    raise ValueError("The collecting sphere radius must be larger that the emitting sphere.")
 
 power = PowerPipeline0D(accumulate=False)
 
