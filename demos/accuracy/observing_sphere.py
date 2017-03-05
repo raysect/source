@@ -7,8 +7,6 @@ from raysect.optical.material.emitter import UnityVolumeEmitter, UniformSurfaceE
 from math import pi
 
 
-# TODO: OH DEAR, IT LOOKS LIKE IT IS THE VECTOR SAMPLER.... HOW ON EARTH....SWAPPING IT OUT FIXES EVERYTHING
-
 class ObservingSphere(Observer0D):
 
     def __init__(self, pipelines, radius=None, parent=None, transform=None, name=None,
