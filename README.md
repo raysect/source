@@ -15,7 +15,7 @@ Please note, this code is currently under heavy development and subject to chang
 
 Raysect currently only supports Linux. Windows support will come at a later stage.
 
-Please note, for legal reasons we require the copyright to any contributed code to be passed to the Raysect project.
+Please note, for legal reasons we require the copyright to any contributed code to be passed to the Raysect project. Please see CONTRIBUTING.txt in the repository.
 
 The Raysect Development Team:
 -----------------------------
