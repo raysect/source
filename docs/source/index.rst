@@ -49,7 +49,7 @@ built with scientific ray-tracing in mind. Some of its features include:
    api_reference/optical/optical
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
