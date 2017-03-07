@@ -1,3 +1,0 @@
-cython==0.25
-numpy==1.9
-matplotlib==1.5.3
