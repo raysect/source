@@ -1,3 +1,4 @@
+.. title:: Home
 
 .. image:: RaysectLogo_small.png
    :align: center
@@ -48,7 +49,7 @@ built with scientific ray-tracing in mind. Some of its features include:
    api_reference/primitives/primitives
    api_reference/optical/optical
 
-Indices and tables
+Indices and Tables
 ------------------
 
 * :ref:`genindex`
