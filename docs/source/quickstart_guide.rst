@@ -32,27 +32,18 @@ Add Observer
 Add an observer and configure its sampling settings. All of these camera settings have sensible defaults, The camera
 settings will be explained in detail in another section::
 
+    # processing pipeline (human vision like camera response)
+    rgb = RGBPipeline2D()
+
     # camera
-    camera = PinholeCamera(transform=translate(0, 10, -10) * rotate(0, -45, 0))
+    camera = PinholeCamera(pixels=(512, 512), fov=45, pipeline=[rgb], transform=translate(0, 10, -10) * rotate(0, -45, 0))
 
     # camera - pixel sampling settings
-    camera.fov = 45
-    camera.pixels = (512, 512)
     camera.pixel_samples = 250
-    camera.sub_sample = True
-
-    # camera - ray sampling settings
-    camera.rays = 1
-    camera.spectral_samples = 20
-    camera.ray_min_depth = 3
-    camera.ray_max_depth = 100
-    camera.ray_extinction_prob = 0.1
     camera.min_wavelength = 375.0
     camera.max_wavelength = 740.0
-
-    # camera- progress update settings
-    camera.display_progress = True
-    camera.display_update_time = 10
+    camera.spectral_bins = 15
+    camera.spectral_rays = 1
 
 
 ================
@@ -79,8 +70,8 @@ Call observe() on an Observer or trace a ray manually::
     camera.observe()
 
     plt.ioff()
-    camera.save("render.png")
-    camera.display()
+    rgb.save("render.png")
+    rgb.display()
 
 The resulting image should render like this.
 
@@ -98,10 +89,17 @@ Lets simulate measuring a spectrum by launching a single ray::
               direction=Vector3D(0, 0, 1),
               min_wavelength=375,
               max_wavelength=785,
-              num_samples=100)
+              bins=100)
+
+    ray.trace(world)
 
 The resulting plot should look something like this.
 
 .. image:: images/example_spectra.png
    :align: center
 
+Due to the statistical nature of the path tracer, you may need to run the trace command more than once until you find a path that intersects with the light source.
+
+You can ask the ray to trace repeatedly using the sample method instead. This will combine the results of multiple paths::
+
+    ray.sample(world, 10000)
