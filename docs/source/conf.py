@@ -38,7 +38,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['ntemplates']
+#templates_path = ['_templates']
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -111,6 +111,9 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
     html_theme = 'sphinx_rtd_theme'
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
+    # html_theme = 'raysect_theme'
+    # html_theme_path = ['./raysect_theme']
+
 # otherwise, readthedocs.org uses their theme by default, so no need to specify it
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -147,12 +150,12 @@ html_favicon = "RaysectLogo_web.ico"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['static']
 
-# html_context = {'css_files': [
-#     '_static/theme_overrides.css',  # override wide tables in RTD theme
-#     ]
-# }
+html_static_path = ['static']
+html_context = {'css_files': [
+    '_static/style.css',  # override wide tables in RTD theme
+    ]
+}
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
