@@ -34,7 +34,8 @@ This module contains materials to aid with debugging.
 """
 
 from raysect.optical import d65_white
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Spectrum, World, Primitive, Ray
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Spectrum, World, Primitive, Ray, new_vector3d
+cimport cython
 
 
 cdef class Light(NullVolume):
@@ -71,5 +72,73 @@ cdef class Light(NullVolume):
         spectrum = ray.new_spectrum()
         if self.intensity != 0.0:
             diffuse_intensity = self.intensity * max(0, -self.light_direction.transform(world_to_primitive).dot(normal))
-            spectrum.samples[:] = diffuse_intensity * self.spectrum.sample(ray.min_wavelength, ray.max_wavelength, ray.bins)
+            spectrum.samples[:] = diffuse_intensity * self.spectrum.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
         return spectrum
+
+
+cdef class PerfectReflectingSurface(Material):
+    """
+    A material that is perfectly reflecting.
+    """
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            Vector3D incident, reflected
+            double temp, ci
+            Ray reflected_ray
+            Spectrum spectrum
+            double[::1] s_view, n_view, k_view
+            int i
+
+        # convert ray direction normal to local coordinates
+        incident = ray.direction.transform(world_to_primitive)
+
+        # ensure vectors are normalised for reflection calculation
+        incident = incident.normalise()
+        normal = normal.normalise()
+
+        # calculate cosine of angle between incident and normal
+        ci = normal.dot(incident)
+
+        # reflection
+        temp = 2 * ci
+        reflected = new_vector3d(incident.x - temp * normal.x,
+                                 incident.y - temp * normal.y,
+                                 incident.z - temp * normal.z)
+
+        # convert reflected ray direction to world space
+        reflected = reflected.transform(primitive_to_world)
+
+        # spawn reflected ray and trace
+        # note, we do not use the supplied exiting parameter as the normal is
+        # not guaranteed to be perpendicular to the surface for meshes
+        if ci > 0.0:
+
+            # incident ray is pointing out of surface, reflection is therefore inside
+            reflected_ray = ray.spawn_daughter(inside_point.transform(primitive_to_world), reflected)
+
+        else:
+
+            # incident ray is pointing in to surface, reflection is therefore outside
+            reflected_ray = ray.spawn_daughter(outside_point.transform(primitive_to_world), reflected)
+
+        spectrum = reflected_ray.trace(world)
+
+        return spectrum
+
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
+                                   Ray ray, Primitive primitive,
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # do nothing!
+        return spectrum
+

@@ -5,7 +5,6 @@ from raysect.primitive.lens.spherical import BiConvex
 from raysect.optical.library.metal import Gold, Silver, Copper, Titanium, Aluminium, Beryllium
 from raysect.optical.material import Lambert, UniformSurfaceEmitter, AbsorbingSurface
 from raysect.optical.library import schott
-from raysect.core import print_scenegraph
 from matplotlib.pyplot import *
 from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, CCDArray, RGBAdaptiveSampler2D
 from raysect.optical.colour import ciexyz_x, ciexyz_y, ciexyz_z
@@ -50,14 +49,12 @@ c = Subtract(
     material=AbsorbingSurface()
 )
 
-# print_scenegraph(b)
-
 # start ray tracing
 ion()
 p = 1
 while not camera.render_complete:
     print("Rendering pass {}...".format(p))
     camera.observe()
-    # camera.save("demo_metal_lens_test_{}_samples.png".format(camera.accumulated_samples))
+    # camera.pipelines[0].save("demo_metal_lens_{}.png".format(p))
     print()
     p += 1

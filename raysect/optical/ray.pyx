@@ -124,94 +124,112 @@ cdef class Ray(CoreRay):
 
         super().__setstate__(super_state)
 
-    property bins:
+    @property
+    def bins(self):
+        return self._bins
 
-        def __get__(self):
-            return self._bins
+    @bins.setter
+    def bins(self, int bins):
 
-        def __set__(self, int bins):
+        if bins < 1:
+            raise ValueError("Number of bins cannot be less than 1.")
 
-            if bins < 1:
-                raise ValueError("Number of bins cannot be less than 1.")
-
-            self._bins = bins
+        self._bins = bins
 
     cdef inline int get_bins(self):
         return self._bins
 
-    property min_wavelength:
+    @property
+    def min_wavelength(self):
+        return self._min_wavelength
 
-        def __get__(self):
-            return self._min_wavelength
+    @min_wavelength.setter
+    def min_wavelength(self, double min_wavelength):
 
-        def __set__(self, double min_wavelength):
+        if min_wavelength <= 0.0:
+            raise ValueError("Wavelength must be greater than zero.")
 
-            if min_wavelength <= 0.0:
-                raise ValueError("Wavelength can not be less than or equal to zero.")
+        if min_wavelength > self._max_wavelength:
+            raise ValueError("Maximum wavelength must be greater than minimum wavelength.")
 
-            if min_wavelength >= self._max_wavelength:
-                raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
-
-            self._min_wavelength = min_wavelength
+        self._min_wavelength = min_wavelength
 
     cdef inline double get_min_wavelength(self):
         return self._min_wavelength
 
-    property max_wavelength:
+    @property
+    def max_wavelength(self):
+        return self._max_wavelength
 
-        def __get__(self):
-            return self._max_wavelength
+    def max_wavelength(self, double max_wavelength):
 
-        def __set__(self, double max_wavelength):
+        if max_wavelength <= 0.0:
+            raise ValueError("Wavelength must be greater than zero.")
 
-            if max_wavelength <= 0.0:
-                raise ValueError("Wavelength can not be less than or equal to zero.")
+        if self.min_wavelength > max_wavelength:
+            raise ValueError("Maximum wavelength must be greater than minimum wavelength.")
 
-            if self.min_wavelength >= max_wavelength:
-                raise ValueError("Maximum wavelength can not be less than or equal to the minimum wavelength.")
-
-            self._max_wavelength = max_wavelength
+        self._max_wavelength = max_wavelength
 
     cdef inline double get_max_wavelength(self):
         return self._max_wavelength
 
-    property extinction_prob:
+    @property
+    def wavelength_range(self):
+        return self._min_wavelength, self._max_wavelength
 
-        def __get__(self):
-            return self._extinction_prob
+    @wavelength_range.setter
+    def wavelength_range(self, tuple range):
 
-        def __set__(self, double extinction_prob):
-            self._extinction_prob = clamp(extinction_prob, 0.0, 1.0)
+        min_wavelength, max_wavelength = range
+        if min_wavelength <=0.0 or max_wavelength <= 0.0:
+            raise ValueError("Wavelength must be greater than zero.")
 
-    property extinction_min_depth:
+        if self.min_wavelength > max_wavelength:
+            raise ValueError("Maximum wavelength must be greater than minimum wavelength.")
 
-        def __get__(self):
-            return self._extinction_min_depth
+        self._min_wavelength = min_wavelength
+        self._max_wavelength = max_wavelength
 
-        def __set__(self, int extinction_min_depth):
-            if extinction_min_depth <= 1:
-                raise ValueError("The minimum extinction depth cannot be less than 1.")
-            self._extinction_min_depth = extinction_min_depth
+    @property
+    def extinction_prob(self):
+        return self._extinction_prob
 
-    property max_depth:
+    @extinction_prob.setter
+    def extinction_prob(self, double extinction_prob):
+        self._extinction_prob = clamp(extinction_prob, 0.0, 1.0)
 
-        def __get__(self):
-            return self._max_depth
+    @property
+    def extinction_min_depth(self):
+        return self._extinction_min_depth
 
-        def __set__(self, int max_depth):
-            if max_depth < self._extinction_min_depth:
-                raise ValueError("The maximum depth cannot be less than the minimum depth.")
-            self._max_depth = max_depth
+    @extinction_min_depth.setter
+    def extinction_min_depth(self, int extinction_min_depth):
+        if extinction_min_depth <= 1:
+            raise ValueError("The minimum extinction depth cannot be less than 1.")
+        self._extinction_min_depth = extinction_min_depth
 
-    property important_path_weight:
+    @property
+    def max_depth(self):
+        return self._max_depth
 
-        def __get__(self):
-            return self._important_path_weight
+    @max_depth.setter
+    def max_depth(self, int max_depth):
+        if max_depth < self._extinction_min_depth:
+            raise ValueError("The maximum depth cannot be less than the minimum depth.")
+        self._max_depth = max_depth
 
-        def __set__(self, double important_path_weight):
-            if important_path_weight < 0 or important_path_weight > 1.0:
-                raise ValueError("Important path weight must be in the range [0, 1].")
-            self._important_path_weight = important_path_weight
+    @property
+    def important_path_weight(self):
+        return self._important_path_weight
+
+    @important_path_weight.setter
+    def important_path_weight(self, double important_path_weight):
+
+        if important_path_weight < 0 or important_path_weight > 1.0:
+            raise ValueError("Important path weight must be in the range [0, 1].")
+
+        self._important_path_weight = important_path_weight
 
     cdef inline double get_important_path_weight(self):
         return self._important_path_weight

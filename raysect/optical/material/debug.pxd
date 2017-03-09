@@ -30,7 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical cimport SpectralFunction, Vector3D
-from raysect.optical.material cimport NullVolume
+from raysect.optical.material cimport NullVolume, Material
+
 
 cdef class Light(NullVolume):
 
@@ -38,3 +39,8 @@ cdef class Light(NullVolume):
         Vector3D light_direction
         double intensity
         SpectralFunction spectrum
+
+
+cdef class PerfectReflectingSurface(Material):
+
+    pass

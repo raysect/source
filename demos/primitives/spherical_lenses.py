@@ -6,8 +6,6 @@ from raysect.optical.library import schott
 
 from raysect.primitive import Box
 from matplotlib.pyplot import *
-import sys
-sys.ps1 = 'SOMETHING'
 
 # Import the new lens classes
 from raysect.primitive.lens.spherical import *
@@ -29,21 +27,12 @@ Box(Point3D(-50.0, -50.0, 0.1), Point3D(50.0, 50.0, 0.2), world, material=Checke
 
 # Instantiate camera object, and configure its settings.
 ion()
-camera = PinholeCamera(fov=45, parent=world, transform=translate(0, 0, -0.1) * rotate(0, 0, 0))
-camera.ray_min_depth = 3
-camera.ray_max_depth = 200
-camera.ray_extinction_prob = 0.01
+camera = PinholeCamera((512, 512), fov=45, parent=world, transform=translate(0, 0, -0.1) * rotate(0, 0, 0))
 camera.pixel_samples = 100
-camera.rays = 1
-camera.spectral_samples = 20
-camera.pixels = (256, 256)
-camera.display_progress = True
-camera.display_update_time = 10
+camera.spectral_rays = 1
+camera.spectral_bins = 20
 
 # Start ray tracing
 camera.observe()
 
-ioff()
-camera.save("lens_render.png")
-camera.display()
-show()
+camera.pipelines[0].save("lens_render.png")

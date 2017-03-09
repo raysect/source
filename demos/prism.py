@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 # Raysect imports
 from raysect.optical import World, Node, Point3D, translate, rotate, d65_white, ConstantSF
-from raysect.optical.observer import PinholeCamera
+from raysect.optical.observer import PinholeCamera, RGBPipeline2D
 from raysect.optical.material import Lambert
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.library import schott
@@ -92,38 +92,28 @@ top_light = Sphere(0.5, parent=world, transform=translate(0, 2, -1),
 # Give the prism a high importance to ensure adequate sampling
 prism.material.importance = 9
 
+rgb = RGBPipeline2D()
 
 # create and setup the camera
-camera = PinholeCamera(fov=45, parent=world)
+camera = PinholeCamera((512, 256), fov=45, parent=world, pipelines=[rgb])
 camera.transform = translate(0, 0.05, -0.05) * rotate(180, -65, 0) * translate(0, 0, -0.75)
 camera.ray_importance_sampling = True
 camera.ray_important_path_weight = 0.75
-camera.ray_min_depth = 3
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
+camera.spectral_bins = 32
 camera.spectral_rays = 32
-camera.spectral_samples = 32
-camera.pixels = (512, 256)
 camera.pixel_samples = 100
-camera.display_progress = True
-camera.display_update_time = 10
-camera.accumulate = True
-
 
 # start ray tracing
 plt.ion()
 for p in range(0, 1000):
-    print("Rendering pass {} ({} samples/pixel)..."
-          "".format(p+1, camera.accumulated_samples + camera.pixel_samples * camera.spectral_rays))
+    print("Rendering pass {}".format(p+1))
     camera.observe()
-    camera.save("prisms_{}_samples.png".format(camera.accumulated_samples))
+    rgb.save("prisms_{}.png".format(p+1))
     print()
-
 
 # display final result
 plt.ioff()
-camera.display()
+rgb.display()
 plt.show()
-
-
-

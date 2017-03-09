@@ -30,7 +30,7 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
 
-from raysect.core cimport Point3D, Vector3D, new_vector3d, translate, RectangleSampler, PointSampler
+from raysect.core cimport Point3D, Vector3D, new_vector3d, translate, RectangleSampler, PointSampler, AffineMatrix3D
 from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer2D
 
@@ -64,7 +64,6 @@ cdef class OrthographicCamera(Observer2D):
 
         self.etendue = etendue or 1.0
         self.width = width
-        self._update_image_geometry()
 
     @property
     def width(self):
@@ -99,9 +98,9 @@ cdef class OrthographicCamera(Observer2D):
         cdef:
             double pixel_x, pixel_y
             list points, rays
-            Point3D pixel_centre, point, origin
-            Vector3D direction
+            Point3D origin
             Ray ray
+            AffineMatrix3D to_local
 
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
@@ -113,12 +112,10 @@ cdef class OrthographicCamera(Observer2D):
 
         # assemble rays
         rays = []
-        for origin in zip(points):
+        for origin in points:
 
             # transform to local space from pixel space
             origin = origin.transform(to_local)
-            direction = direction.transform(to_local)
-
             ray = template.copy(origin, new_vector3d(0, 0, 1))
 
             # rays fired along normal hence projected area weight is 1.0
