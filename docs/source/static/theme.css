@@ -1,5 +1,4 @@
-
-* {
+﻿* {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box
@@ -4298,7 +4297,7 @@ input[type="radio"][disabled], input[type="checkbox"][disabled] {
 }
 
 .wy-table-responsive table td, .wy-table-responsive table th {
-    white-space: normal
+    white-space: nowrap
 }
 
 a {
@@ -5627,11 +5626,6 @@ footer span.commit code, footer span.commit .rst-content tt, .rst-content footer
     .rst-versions.shift {
         display: block
     }
-
-    img {
-        width: 100%;
-        height: auto
-    }
 }
 
 .rst-content img {
@@ -5955,6 +5949,7 @@ footer span.commit code, footer span.commit .rst-content tt, .rst-content footer
 .rst-content tt.download, .rst-content code.download {
     background: inherit;
     padding: inherit;
+    font-weight: normal;
     font-family: inherit;
     font-size: inherit;
     color: inherit;
@@ -5962,8 +5957,22 @@ footer span.commit code, footer span.commit .rst-content tt, .rst-content footer
     white-space: inherit
 }
 
+.rst-content tt.download span:first-child, .rst-content code.download span:first-child {
+    -webkit-font-smoothing: subpixel-antialiased
+}
+
 .rst-content tt.download span:first-child:before, .rst-content code.download span:first-child:before {
     margin-right: 4px
+}
+
+.rst-content .guilabel {
+    border: 1px solid #7fbbe3;
+    background: #e7f2fa;
+    font-size: 80%;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 2.4px 6px;
+    margin: auto 2px
 }
 
 @media screen and (max-width: 480px) {
@@ -6020,6 +6029,10 @@ span[id*='MathJax-Span'] {
     font-style: normal;
     font-weight: 700;
     src: local("Roboto Slab Bold"), local("RobotoSlab-Bold"), url(../fonts/RobotoSlab-Bold.ttf) format("truetype")
+}
+
+.wy-table-responsive table td,.wy-table-responsive table th {
+	white-space:normal !important;
 }
 
 /*# sourceMappingURL=theme.css.map */
