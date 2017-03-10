@@ -14,7 +14,7 @@ higher is recommended. Raysect has not been tested on Python 2, currently suppor
 2 is not planned. IPython is recommended for interactive use.
 
 Installation
-------------
+~~~~~~~~~~~~
 
 Raysect is available from the python package repository `pypi <https://pypi.python.org/pypi/raysect>`_. The easiest way to install Raysect is using `pip <https://pip.pypa.io/en/stable/>`_::
 
@@ -38,8 +38,3 @@ should run all of these tests to completion without errors or failures.
 
 Many of the demos used throughout the Raysect documentation are distributed with the source code in
 the ``demo`` folder.
-
-License
-=======
-
-.. literalinclude:: license.rst
