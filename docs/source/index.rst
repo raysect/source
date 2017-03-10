@@ -18,7 +18,20 @@ Welcome to Raysect, an OOP ray-tracing framework for Python. Raysect has been bu
 * Easily extensible, written with user customisation of materials and emissive sources in mind.
 * Different observer types supported such as Pinhole cameras and optical fibres.
 
-The Raysect development repository is hosted on `github <https://github.com/raysect/source>`_.
+Installation
+------------
+
+Raysect is available from the python package repository `pypi <https://pypi.python.org/pypi/raysect>`_. The easiest way to install Raysect is using `pip <https://pip.pypa.io/en/stable/>`_::
+
+    pip install raysect
+
+If pip is not available, the source files can be downloaded from `pypi <https://pypi.python.org/pypi/raysect>`_ or from our `development repository <https://github.com/raysect/source>`_. Once you have the source files, locate the folder containing setup.py and run::
+
+    python setup.py install
+
+If all the required dependencies are present (cython, numpy, scipy and matplotlib), this should start the Raysect compilation and installation process.
+
+If you would like to play with the bleeding-edge code or contribute to development, please see the Raysect development repository on `github <https://github.com/raysect/source>`_.
 
 .. toctree::
    :maxdepth: 2
