@@ -9,24 +9,25 @@ Downloading and Installation
 Prerequisites
 ~~~~~~~~~~~~~
 
-The Raysect package requires Python 3, Numpy, Scipy and Matplotlib. Scipy version 0.13 or
+The Raysect package requires Python 3.3+, numpy, scipy and matplotlib. Scipy version 0.13 or
 higher is recommended. Raysect has not been tested on Python 2, currently support for Python
 2 is not planned. IPython is recommended for interactive use.
 
-Downloads
-~~~~~~~~~
-
-The latest stable version of Raysect is tagged as release v0.1 and available from
-`github <https://github.com/raysect/>`_.
-
 Installation
-~~~~~~~~~~~~
+------------
 
-Download the source, unpack it and install with::
+Raysect is available from the python package repository `pypi <https://pypi.python.org/pypi/raysect>`_. The easiest way to install Raysect is using `pip <https://pip.pypa.io/en/stable/>`_::
+
+    pip install raysect
+
+If pip is not available, the source files can be downloaded from `pypi <https://pypi.python.org/pypi/raysect>`_ or from our `development repository <https://github.com/raysect/source>`_. Once you have the source files, locate the folder containing setup.py and run::
 
     python setup.py install
 
-Installation with pip and setup tools is not currently supported but will be with a future version.
+If all the required dependencies are present (cython, numpy, scipy and matplotlib), this should start the Raysect compilation and installation process.
+
+If you would like to play with the bleeding-edge code or contribute to development, please see the Raysect development repository on `github <https://github.com/raysect/source>`_.
+
 
 Testing
 ~~~~~~~
