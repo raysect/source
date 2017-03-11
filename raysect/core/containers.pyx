@@ -56,6 +56,10 @@ cdef class LinkedList:
     Basic implementation of a Linked List for fast container operations in cython.
 
     :param object initial_items: Optional iterable for initialising container.
+
+    :ivar int length: number of items in the container
+    :ivar first: starting element of container
+    :ivar last: final element of container
     """
 
     cdef:

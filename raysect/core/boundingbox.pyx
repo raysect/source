@@ -64,6 +64,9 @@ cdef class BoundingBox3D:
 
     For optimal speed the bounding box is aligned with the world space axes. As
     rays are propagated in world space, co-ordinate transforms can be avoided.
+
+    :param Point3D lower: (optional) starting point for lower box corner
+    :param Point3D upper: (optional) starting point for upper box corner
     """
 
     def __init__(self, Point3D lower=None, Point3D upper=None):
@@ -422,6 +425,9 @@ cdef class BoundingBox3D:
 cdef class BoundingBox2D:
     """
     Axis-aligned 2D bounding box.
+
+    :param Point2D lower: (optional) starting point for lower box corner
+    :param Point2D upper: (optional) starting point for upper box corner
     """
     def __init__(self, Point2D lower=None, Point2D upper=None):
 
