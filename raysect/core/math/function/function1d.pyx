@@ -52,6 +52,11 @@ cdef class Function1D:
         raise NotImplementedError("The evaluate() method has not been implemented.")
 
     def __call__(self, double x):
+        """ Evaluate the function f(x)
+
+        :param float x: function parameter x
+        :rtype: float
+        """
         return self.evaluate(x)
 
     def __add__(object a, object b):
