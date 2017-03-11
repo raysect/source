@@ -56,6 +56,10 @@ cdef class LinkedList:
     Basic implementation of a Linked List for fast container operations in cython.
 
     :param object initial_items: Optional iterable for initialising container.
+
+    :ivar int length: number of items in the container
+    :ivar first: starting element of container
+    :ivar last: final element of container
     """
 
     cdef:
@@ -102,7 +106,10 @@ cdef class LinkedList:
             return True
 
     cpdef add(self, object value):
-        """ Add an item to the end of the container. """
+        """ Add an item to the end of the container.
+
+        :param object value: The item to add to the end of the container.
+        """
 
         cdef _Item new_item
 
@@ -117,7 +124,11 @@ cdef class LinkedList:
         self.length += 1
 
     cpdef add_items(self, object iterable):
-        """ Extend this container with another iterable container. """
+        """ Extend this container with another iterable container.
+
+        :param object iterable: Iterable object such as a list or ndarray with
+          which to extend this container.
+        """
 
         for item in iterable:
             self.add(item)
@@ -220,9 +231,16 @@ cdef class LinkedList:
 
 
 cdef class Stack(LinkedList):
+    """
+    Basic implementation of a Stack container for fast container operations in cython.
+    Inherits attributes and methods from LinkedList.
+    """
 
     cpdef push(self, object value):
-        """ Adds an item to the top of the stack """
+        """ Adds an item to the top of the stack
+
+        :param object value: Object that will be pushed to top of the stack
+        """
 
         cdef _Item last, new_item
 
@@ -239,7 +257,10 @@ cdef class Stack(LinkedList):
         self.length += 1
 
     cpdef object pop(self):
-        """ Removes the most recently added item from the stack """
+        """ Removes and returns the most recently added item from the stack
+
+        :rtype: object
+        """
 
         cdef _Item last, previous
 
@@ -260,8 +281,16 @@ cdef class Stack(LinkedList):
 
 cdef class Queue(LinkedList):
 
+    """
+    Basic implementation of a Queue container for fast container operations in cython.
+    Inherits attributes and methods from LinkedList.
+    """
+
     cpdef object next_in_queue(self):
-        """ Returns the next object in the queue """
+        """ Returns the next object in the queue
+
+        :rtype: object
+        """
 
         cdef _Item first, second
 
