@@ -123,9 +123,6 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {'cssfiles': ['https://media.readthedocs.org/css/sphinx_rtd_theme.css',
-                                   'https://media.readthedocs.org/css/readthedocs-doc-embed.css',
-                                   'static/theme_overrides.css']}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
