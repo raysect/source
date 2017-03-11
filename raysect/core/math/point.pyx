@@ -37,22 +37,27 @@ from raysect.core.math._vec3 cimport _Vec3
 
 @cython.freelist(256)
 cdef class Point3D:
+    """
+    Represents a point in 3D affine space.
+
+    A point is a location in 3D space which is defined by its x, y and z coordinates in a given coordinate system.
+    Vectors can be added/subtracted from Points yielding another Vector3D. You can also find the Vector3D and distance
+    between two Points, and transform a Point3D from one coordinate system to another.
+
+    If no initial values are passed, Point3D defaults to the origin:
+    Point3D(0.0, 0.0, 0.0)
+
+    :param float x: initial x coordinate, defaults to x = 0.0.
+    :param float y: initial y coordinate, defaults to y = 0.0.
+    :param float z: initial z coordinate, defaults to z = 0.0.
+
+    :ivar float x: x-coordinate
+    :ivar float y: y-coordinate
+    :ivar float z: z-coordinate
+
+    """
 
     def __init__(self, double x=0.0, double y=0.0, double z=0.0):
-        """
-        Represents a point in 3D affine space.
-
-        A point is a location in 3D space which is defined by its x, y and z coordinates in a given coordinate system.
-        Vectors can be added/subtracted from Points yielding another Vector3D. You can also find the Vector3D and distance
-        between two Points, and transform a Point3D from one coordinate system to another.
-
-        If no initial values are passed, Point3D defaults to the origin:
-        Point3D(0.0, 0.0, 0.0)
-
-        :param float x: initial x coordinate, defaults to x = 0.0.
-        :param float y: initial y coordinate, defaults to y = 0.0.
-        :param float z: initial z coordinate, defaults to z = 0.0.
-        """
 
         self.x = x
         self.y = y
@@ -80,7 +85,12 @@ cdef class Point3D:
             return NotImplemented
 
     def __getitem__(self, int i):
-        """Returns the point coordinates by index ([0,1,2] -> [x,y,z])."""
+        """Returns the point coordinates by index ([0,1,2] -> [x,y,z]).
+
+            >>> a = Point3D(1, 0, 0)
+            >>> a[0]
+            1
+        """
 
         if i == 0:
             return self.x
@@ -92,7 +102,13 @@ cdef class Point3D:
             raise IndexError("Index out of range [0, 2].")
 
     def __setitem__(self, int i, double value):
-        """Sets the point coordinates by index ([0,1,2] -> [x,y,z])."""
+        """Sets the point coordinates by index ([0,1,2] -> [x,y,z]).
+
+            >>> a = Point3D(1, 0, 0)
+            >>> a[1] = 2
+            >>> a
+            Point3D(1.0, 2.0, 0.0)
+        """
 
         if i == 0:
             self.x = value
@@ -104,12 +120,17 @@ cdef class Point3D:
             raise IndexError("Index out of range [0, 2].")
 
     def __iter__(self):
+        """ Iterates over the coordinates (x, y, z) """
         yield self.x
         yield self.y
         yield self.z
 
     def __add__(object x, object y):
-        """Addition operator."""
+        """Addition operator.
+
+            >>> Point3D(1, 0, 0) + Vector3D(0, 1, 0)
+            Point3D(1.0, 1.0, 0.0)
+        """
 
         cdef Point3D p
         cdef _Vec3 v
@@ -128,7 +149,11 @@ cdef class Point3D:
                            p.z + v.z)
 
     def __sub__(object x, object y):
-        """Subtraction operator."""
+        """Subtraction operator.
+
+            >>> Point3D(1, 0, 0) - Vector3D(0, 1, 0)
+            Point3D(1.0, -1.0, 0.0)
+        """
 
         cdef Point3D p
         cdef _Vec3 v
@@ -148,7 +173,13 @@ cdef class Point3D:
 
     @cython.cdivision(True)
     def __mul__(object x, object y):
-        """Multiply operator."""
+        """Multiplication operator.
+
+        :param AffineMatrix3D x: transformation matrix x
+        :param Point3D y: point to transform
+        :return: Matrix multiplication of a 3D transformation matrix with the input point.
+        :rtype: Point3D
+        """
 
         cdef AffineMatrix3D m
         cdef Point3D v
@@ -317,20 +348,23 @@ cdef class Point3D:
 
 
 cdef class Point2D:
+    """
+    Represents a point in 2D affine space.
+
+    A 2D point is a location in 2D space which is defined by its x and y coordinates in a given coordinate system.
+    Vector2D objects can be added/subtracted from Point2D yielding another Vector2D. You can also find the Vector2D
+    and distance between two Point2Ds, and transform a Point2D from one coordinate system to another.
+
+    If no initial values are passed, Point2D defaults to the origin: Point2D(0.0, 0.0)
+
+    :param float x: initial x coordinate, defaults to x = 0.0.
+    :param float y: initial y coordinate, defaults to y = 0.0.
+
+    :ivar float x: x-coordinate
+    :ivar float y: y-coordinate
+    """
 
     def __init__(self, double x=0.0, double y=0.0):
-        """
-        Represents a point in 2D affine space.
-
-        A 2D point is a location in 2D space which is defined by its x and y coordinates in a given coordinate system.
-        Vector2D objects can be added/subtracted from Point2D yielding another Vector2D. You can also find the Vector2D
-        and distance between two Point2Ds, and transform a Point2D from one coordinate system to another.
-
-        If no initial values are passed, Point2D defaults to the origin: Point2D(0.0, 0.0)
-
-        :param float x: initial x coordinate, defaults to x = 0.0.
-        :param float y: initial y coordinate, defaults to y = 0.0.
-        """
 
         self.x = x
         self.y = y
@@ -357,7 +391,12 @@ cdef class Point2D:
             return NotImplemented
 
     def __getitem__(self, int i):
-        """Returns the point coordinates by index ([0,1] -> [x,y])."""
+        """Returns the point coordinates by index ([0,1] -> [x,y]).
+
+            >>> a = Point2D(1, 0)
+            >>> a[0]
+            1
+        """
 
         if i == 0:
             return self.x
@@ -367,7 +406,13 @@ cdef class Point2D:
             raise IndexError("Index out of range [0, 1].")
 
     def __setitem__(self, int i, double value):
-        """Sets the point coordinates by index ([0,1] -> [x,y])."""
+        """Sets the point coordinates by index ([0,1] -> [x,y]).
+
+            >>> a = Point2D(1, 0)
+            >>> a[1] = 2
+            >>> a
+            Point2D(1.0, 2.0)
+        """
 
         if i == 0:
             self.x = value
@@ -376,8 +421,17 @@ cdef class Point2D:
         else:
             raise IndexError("Index out of range [0, 1].")
 
+    def __iter__(self):
+        """ Iterates over the coordinates (x, y) """
+        yield self.x
+        yield self.y
+
     def __add__(object x, object y):
-        """Addition operator."""
+        """Addition operator.
+
+            >>> Point32D(1, 0) + Vector2D(0, 1)
+            Point2D(1.0, 1.0)
+        """
 
         cdef Point2D p
         cdef Vector2D v
@@ -394,7 +448,11 @@ cdef class Point2D:
         return new_point2d(p.x + v.x, p.y + v.y)
 
     def __sub__(object x, object y):
-        """Subtraction operator."""
+        """Subtraction operator.
+
+            >>> Point2D(1, 0) - Vector2D(0, 1)
+            Point2D(1.0, -1.0)
+        """
 
         cdef Point2D p
         cdef Vector2D v
@@ -453,6 +511,9 @@ cdef class Point2D:
     cpdef Vector2D vector_to(self, Point2D p):
         """
         Returns a vector from this point to the passed point.
+
+        :param Point2D p: point to which a vector will be calculated
+        :rtype: Vector2D
         """
 
         return new_vector2d(p.x - self.x, p.y - self.y)
