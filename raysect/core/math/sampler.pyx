@@ -49,6 +49,7 @@ cdef class PointSampler:
     def __call__(self, samples):
         """
         :param int samples: Number of points to generate.
+        :rtype: list
         """
 
         return self.sample(samples)
@@ -56,6 +57,7 @@ cdef class PointSampler:
     cpdef list sample(self, int samples):
         """
         :param int samples: Number of points to generate.
+        :rtype: list
         """
         raise NotImplemented("The method sample() is not implemented for this point generator.")
 
@@ -68,12 +70,14 @@ cdef class VectorSampler:
     def __call__(self, samples):
         """
         :param int samples: Number of vectors to generate.
+        :rtype: list
         """
         return self.sample(samples)
 
     cpdef list sample(self, int samples):
         """
         :param int samples: Number of vectors to generate.
+        :rtype: list
         """
         raise NotImplemented("The method sample() is not implemented for this vector generator.")
 

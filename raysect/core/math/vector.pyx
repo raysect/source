@@ -35,22 +35,26 @@ from libc.math cimport sqrt, fabs
 
 
 cdef class Vector3D(_Vec3):
+    """
+    Represents a vector in 3D affine space.
+
+    Vectors are described by their (x, y, z) coordinates in the chosen coordinate system. Standard Vector3D operations are
+    supported such as addition, subtraction, scaling, dot product, cross product, normalisation and coordinate
+    transformations.
+
+    If no initial values are passed, Vector3D defaults to a unit vector
+    aligned with the z-axis: Vector3D(0.0, 0.0, 1.0)
+
+    :param float x: initial x coordinate, defaults to x = 0.0.
+    :param float y: initial y coordinate, defaults to y = 0.0.
+    :param float z: initial z coordinate, defaults to z = 0.0.
+
+    :ivar float x: x-coordinate
+    :ivar float y: y-coordinate
+    :ivar float z: z-coordinate
+    """
 
     def __init__(self, double x=0.0, double y=0.0, double z=1.0):
-        """
-        Represents a vector in 3D affine space.
-
-        Vectors are described by their (x, y, z) coordinates in the chosen coordinate system. Standard Vector3D operations are
-        supported such as addition, subtraction, scaling, dot product, cross product, normalisation and coordinate
-        transformations.
-
-        If no initial values are passed, Vector3D defaults to a unit vector
-        aligned with the z-axis: Vector3D(0.0, 0.0, 1.0)
-
-        :param float x: initial x coordinate, defaults to x = 0.0.
-        :param float y: initial y coordinate, defaults to y = 0.0.
-        :param float z: initial z coordinate, defaults to z = 0.0.
-        """
 
         self.x = x
         self.y = y
@@ -77,6 +81,47 @@ cdef class Vector3D(_Vec3):
         else:
             return NotImplemented
 
+    def __getitem__(self, int i):
+        """Returns the vector coordinates by index ([0,1,2] -> [x,y,z]).
+
+            >>> a = Vector3D(1, 0, 0)
+            >>> a[0]
+            1
+        """
+
+        if i == 0:
+            return self.x
+        elif i == 1:
+            return self.y
+        elif i == 2:
+            return self.z
+        else:
+            raise IndexError("Index out of range [0, 2].")
+
+    def __setitem__(self, int i, double value):
+        """Sets the vector coordinates by index ([0,1,2] -> [x,y,z]).
+
+            >>> a = Vector3D(1, 0, 0)
+            >>> a[1] = 2
+            >>> a
+            Vector3D(1.0, 2.0, 0.0)
+        """
+
+        if i == 0:
+            self.x = value
+        elif i == 1:
+            self.y = value
+        elif i == 2:
+            self.z = value
+        else:
+            raise IndexError("Index out of range [0, 2].")
+
+    def __iter__(self):
+        """ Iterates over the vector coordinates (x, y, z) """
+        yield self.x
+        yield self.y
+        yield self.z
+
     def __neg__(self):
         """Returns a vector with the reverse orientation (negation operator)."""
 
@@ -85,7 +130,11 @@ cdef class Vector3D(_Vec3):
                             -self.z)
 
     def __add__(object x, object y):
-        """Addition operator."""
+        """Addition operator.
+
+            >>> Vector3D(1, 0, 0) + Vector3D(0, 1, 0)
+            Vector3D(1.0, 1.0, 0.0)
+        """
 
         cdef _Vec3 vx, vy
 
@@ -103,7 +152,11 @@ cdef class Vector3D(_Vec3):
             return NotImplemented
 
     def __sub__(object x, object y):
-        """Subtraction operator."""
+        """Subtraction operator.
+
+            >>> Vector3D(1, 0, 0) - Vector3D(0, 1, 0)
+            Vector3D(1.0, -1.0, 0.0)
+        """
 
         cdef _Vec3 vx, vy
 
@@ -121,7 +174,15 @@ cdef class Vector3D(_Vec3):
             return NotImplemented
 
     def __mul__(object x, object y):
-        """Multiplication operator."""
+        """Multiplication operator.
+
+        3D vectors can be multiplied with both scalars and transformation matrices.
+
+            >>> 2 * Vector3D(1, 2, 3)
+            Vector3D(2.0, 4.0, 6.0)
+            >>> rotate_x(90) * Vector3D(0, 0, 1)
+            Vector3D(0.0, -1.0, 0.0)
+        """
 
         cdef double s
         cdef Vector3D v
@@ -160,7 +221,11 @@ cdef class Vector3D(_Vec3):
 
     @cython.cdivision(True)
     def __truediv__(object x, object y):
-        """Division operator."""
+        """Division operator.
+
+            >>> Vector3D(1, 1, 1) / 2
+            Vector3D(0.5, 0.5, 0.5)
+        """
 
         cdef double d
         cdef Vector3D v
@@ -189,7 +254,7 @@ cdef class Vector3D(_Vec3):
         """
         Calculates the cross product between this vector and the supplied vector
 
-        C = A.cross(B) <=> C = A x B
+        C = A.cross(B) <=> :math:`\\vec{C} = \\vec{A} \\times \\vec{B}`
 
         :param Vector3D v: An input vector with which to calculate the cross product.
         :rtype: Vector3D
@@ -230,6 +295,10 @@ cdef class Vector3D(_Vec3):
 
         The vector is transformed by pre-multiplying the vector by the affine
         matrix.
+
+        .. math::
+
+            \\vec{C} = \\textbf{A} \\times \\vec{B}
 
         This method is substantially faster than using the multiplication
         operator of AffineMatrix3D when called from cython code.
@@ -350,20 +419,23 @@ cdef class Vector3D(_Vec3):
 
 
 cdef class Vector2D:
+    """
+    Represents a vector in 2D space.
+
+    2D vectors are described by their (x, y) coordinates. Standard Vector2D operations are
+    supported such as addition, subtraction, scaling, dot product, cross product and normalisation.
+
+    If no initial values are passed, Vector2D defaults to a unit vector
+    aligned with the x-axis: Vector2D(1.0, 0.0)
+
+    :param float x: initial x coordinate, defaults to x = 0.0.
+    :param float y: initial y coordinate, defaults to y = 0.0.
+
+    :ivar float x: x-coordinate
+    :ivar float y: y-coordinate
+    """
 
     def __init__(self, double x=1.0, double y=0.0):
-        """
-        Represents a vector in 2D space.
-
-        2D vectors are described by their (x, y) coordinates. Standard Vector2D operations are
-        supported such as addition, subtraction, scaling, dot product, cross product and normalisation.
-
-        If no initial values are passed, Vector2D defaults to a unit vector
-        aligned with the x-axis: Vector2D(1.0, 0.0)
-
-        :param float x: initial x coordinate, defaults to x = 0.0.
-        :param float y: initial y coordinate, defaults to y = 0.0.
-        """
 
         self.x = x
         self.y = y
@@ -389,13 +461,53 @@ cdef class Vector2D:
         else:
             return NotImplemented
 
+    def __getitem__(self, int i):
+        """Returns the vector coordinates by index ([0,1] -> [x,y]).
+
+            >>> a = Vector2D(1, 0)
+            >>> a[0]
+            1
+        """
+
+        if i == 0:
+            return self.x
+        elif i == 1:
+            return self.y
+        else:
+            raise IndexError("Index out of range [0, 1].")
+
+    def __setitem__(self, int i, double value):
+        """Sets the vector coordinates by index ([0,1] -> [x,y]).
+
+            >>> a = Vector2D(1, 0)
+            >>> a[1] = 2
+            >>> a
+            Vector2D(1.0, 2.0)
+        """
+
+        if i == 0:
+            self.x = value
+        elif i == 1:
+            self.y = value
+        else:
+            raise IndexError("Index out of range [0, 1].")
+
+    def __iter__(self):
+        """ Iterates over the vector coordinates (x, y) """
+        yield self.x
+        yield self.y
+
     def __neg__(self):
         """Returns a vector with the reverse orientation (negation operator)."""
 
         return new_vector2d(-self.x, -self.y)
 
     def __add__(object x, object y):
-        """Addition operator."""
+        """Addition operator.
+
+            >>> Vector2D(1, 0) + Vector2D(0, 1)
+            Vector2D(1.0, 1.0)
+        """
 
         cdef Vector2D vx, vy
 
@@ -411,7 +523,11 @@ cdef class Vector2D:
             return NotImplemented
 
     def __sub__(object x, object y):
-        """Subtraction operator."""
+        """Subtraction operator.
+
+            >>> Vector2D(1, 0) - Vector2D(0, 1)
+            Vector2D(1.0, -1.0)
+        """
 
         cdef Vector2D vx, vy
 
@@ -428,7 +544,11 @@ cdef class Vector2D:
 
     # TODO - add 2D affine transformations
     def __mul__(object x, object y):
-        """Multiplication operator."""
+        """Multiplication operator.
+
+            >>> 2 * Vector3D(1, 2)
+            Vector2D(2.0, 4.0)
+        """
 
         cdef double s
         cdef Vector2D v
@@ -463,7 +583,11 @@ cdef class Vector2D:
 
     @cython.cdivision(True)
     def __truediv__(object x, object y):
-        """Division operator."""
+        """Division operator.
+
+            >>> Vector2D(1, 1) / 2
+            Vector2D(0.5, 0.5)
+        """
 
         cdef double d
         cdef Vector2D v
