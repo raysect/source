@@ -2,32 +2,36 @@ import time
 from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
 from raysect.primitive import Sphere, Box, Cylinder, import_obj
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
-from raysect.optical.library import RoughIron
-from raysect.optical.material import Lambert, UniformVolumeEmitter, Dielectric, Sellmeier
+from raysect.optical.library import RoughIron, RoughGold, RoughTitanium
+from raysect.optical.material import Lambert, UniformSurfaceEmitter, UniformVolumeEmitter, Dielectric, Sellmeier
 from matplotlib.pyplot import *
 
 # DIAMOND MATERIAL
 diamond_material = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0), ConstantSF(1))
-diamond_material.importance = 1
+diamond_material.importance = 2
 
 world = World()
 
-diamond = import_obj("./resources/diamond.obj", scaling=0.01, smoothing=False, parent=world,
-                     transform=translate(0.0, 0.713001, 0.0)*rotate(-25, 0, 0), material=diamond_material)
+# the diamond
+diamond = import_obj("resources/diamond.obj", scaling=0.01, smoothing=False, parent=world,
+                     transform=translate(0.0, 0.713001, 0.0)*rotate(-10, 0, 0), material=diamond_material)
 
-Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=RoughIron(0.04))
+# floor
+Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=RoughTitanium(0.1))
 
-# Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=Lambert(ConstantSF(0.5)))
+# front light
+Sphere(5, world, transform=translate(1, 8, -10), material=UniformVolumeEmitter(d65_white, 1.0))
 
-Sphere(0.5, world, transform=translate(-1, 4, -4), material=UniformVolumeEmitter(d65_white, 1.0))
+# fill light
+Sphere(10, world, transform=translate(7, 20, 20), material=UniformSurfaceEmitter(d65_white, 0.15))
 
-rgb_pipeline = RGBPipeline2D(display_update_time=15, display_unsaturated_fraction=0.985)
-sampler = RGBAdaptiveSampler2D(rgb_pipeline, min_samples=500)
-
-camera = PinholeCamera((512, 512), parent=world, transform=translate(0, 4, -3.5) * rotate(0, -46, 0), pipelines=[rgb_pipeline], frame_sampler=sampler)
-camera.spectral_bins = 16
-camera.spectral_rays = 8
-camera.pixel_samples = 250
+# camera
+rgb_pipeline = RGBPipeline2D(display_update_time=15, display_unsaturated_fraction=0.998)
+sampler = RGBAdaptiveSampler2D(rgb_pipeline, min_samples=400, fraction=0.1)
+camera = PinholeCamera((1024, 1024), parent=world, transform=translate(0, 4, -3.5) * rotate(0, -46, 0), pipelines=[rgb_pipeline], frame_sampler=sampler)
+camera.spectral_bins = 18
+camera.spectral_rays = 9
+camera.pixel_samples = 200
 
 # start ray tracing
 ion()
