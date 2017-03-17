@@ -1,8 +1,18 @@
 Raysect Changelog
 =================
 
-Release 0.3.0 (TBD)
--------------------
+Release 0.3.1 (17 Mar 2017)
+---------------------------
+
+Fixed:
+* max_wavelength property of optical ray was broken.
+
+New:
+* Diamond demo.
+
+
+Release 0.3.0 (8 Mar 2017)
+--------------------------
 
 New:
 * Added multiple importance sampling (MIS).
