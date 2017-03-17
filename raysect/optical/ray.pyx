@@ -161,6 +161,7 @@ cdef class Ray(CoreRay):
     def max_wavelength(self):
         return self._max_wavelength
 
+    @max_wavelength.setter
     def max_wavelength(self, double max_wavelength):
 
         if max_wavelength <= 0.0:
