@@ -41,20 +41,20 @@ cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1)
 cdef inline double average(double[::1] x, double[::1] y, double x0, double x1)
 
 cdef inline double clamp(double v, double minimum, double maximum):
-
     if v < minimum:
-
         return minimum
-
     if v > maximum:
-
         return maximum
-
     return v
 
+cdef inline void swap(double *a, double *b):
+    cdef temp
+    temp = a[0]
+    a[0] = b[0]
+    b[0] = temp
 
 @cython.cdivision(True)
 cdef inline double lerp(double x0, double x1, double y0, double y1, double x):
-
     return ((y1 - y0) / (x1 - x0)) * (x - x0) + y0
 
+cdef inline bint solve_quadratic(double a, double b, double c, double *t0, double *t1)

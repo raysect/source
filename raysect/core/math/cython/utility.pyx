@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from libc.math cimport sqrt
 cimport cython
 
 #TODO: Write unit tests!
@@ -298,3 +299,37 @@ cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
             x1 = temp
 
         return integrate(x, y, x0, x1) / (x1 - x0)
+
+
+@cython.cdivision(True)
+cdef inline bint solve_quadratic(double a, double b, double c, double *t0, double *t1):
+    """
+
+    :param double a:
+    :param double b:
+    :param double c:
+    :param double t0:
+    :param double t1:
+    :return:
+    :rtype: bint
+    """
+
+    cdef double d, q
+
+    # calculate discriminant
+    d = b*b - 4*a*c
+
+    # are there any real roots of the quadratic?
+    if d < 0:
+        return False
+
+    # calculate roots using method described in the book:
+    # "Physically Based Rendering - 2nd Edition", Elsevier 2010
+    # this method is more numerically stable than the usual root equation
+    if b < 0:
+        q = -0.5 * (b - sqrt(d))
+    else:
+        q = -0.5 * (b + sqrt(d))
+    t0[0] = q / a
+    t1[0] = c / q
+    return True
