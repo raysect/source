@@ -46,10 +46,23 @@ cdef class CSGPrimitive(Primitive):
     Constructive Solid Geometry (CSG) Primitive base class.
 
     This is an abstract base class and can not be used directly.
+
+    CSG is a modeling technique that uses Boolean operations like union
+    and intersection to combine 3D solids. For example, the volumes of a
+    sphere and box could be unified with the 'union' operation to create a
+    primitive with the combined volume of the underlying primitives.
+
+    :param Primitive primitive_a: Component primitive A of the compound primitive.
+    :param Primitive primitive_b: Component primitive B of the compound primitive.
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate
+      system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the CSG primitive's
+      material (default = None).
     """
 
     def __init__(self, Primitive primitive_a not None = NullPrimitive(),
-                 Primitive primitive_b not None = NullPrimitive(), object parent = None,
+                 Primitive primitive_b not None = NullPrimitive(), object parent=None,
                  AffineMatrix3D transform not None = AffineMatrix3D(),
                  Material material not None = Material(), str name=None):
 
@@ -74,6 +87,11 @@ cdef class CSGPrimitive(Primitive):
         self._cache_invalid = False
 
     property primitive_a:
+        """
+        Component primitive A of the compound CSG primitive.
+
+        :rtype: Primitive
+        """
 
         def __get__(self):
             return self._primitive_a.primitive
@@ -91,6 +109,11 @@ cdef class CSGPrimitive(Primitive):
             self._cache_invalid = True
 
     property primitive_b:
+        """
+        Component primitive B of the compound CSG primitive.
+
+        :rtype: Primitive
+        """
 
         def __get__(self):
             return self._primitive_b.primitive
@@ -263,6 +286,19 @@ cdef class CSGRoot(Node):
 
 
 cdef class Union(CSGPrimitive):
+    """
+    CSGPrimitive that is the volumetric union of primitives A and B.
+
+    All of the original volume from A and B will be in the new primitive.
+
+    :param Primitive primitive_a: Component primitive A of the union operation.
+    :param Primitive primitive_b: Component primitive B of the union operation.
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate
+      system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the new CSG primitive's
+      material (default = None).
+    """
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
@@ -319,6 +355,20 @@ cdef class Union(CSGPrimitive):
 
 
 cdef class Intersect(CSGPrimitive):
+    """
+    CSGPrimitive that is the volumetric intersection of primitives A and B.
+
+    Only volumes that are present in both primtives will be present in the new
+    CSG primitive.
+
+    :param Primitive primitive_a: Component primitive A of the intersection operation.
+    :param Primitive primitive_b: Component primitive B of the intersection operation.
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate
+      system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the new CSG primitive's
+      material (default = None).
+    """
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
@@ -381,6 +431,20 @@ cdef class Intersect(CSGPrimitive):
 
 
 cdef class Subtract(CSGPrimitive):
+    """
+    CSGPrimitive that is the remaining volume of primitive A minus volume B.
+
+    Only volumes that are unique to primitive A and don't overlap with primitive
+    B will be in the new CSG primitive.
+
+    :param Primitive primitive_a: Component primitive A of the intersection operation.
+    :param Primitive primitive_b: Component primitive B of the intersection operation.
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate
+      system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the new CSG primitive's
+      material (default = None).
+    """
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 

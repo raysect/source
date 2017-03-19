@@ -40,11 +40,12 @@ class OBJHandler:
         """
         Create a mesh instance from a Wavefront OBJ mesh file (.obj).
 
+        Some engineering meshes are exported in different units (mm for example)
+        whereas Raysect units are in m. Applying a scale factor of 0.001 would
+        convert the mesh into m for use in Raysect.
+
         :param str filename: Mesh file path.
-        :param double scaling: Scale the mesh by this factor (m). For example,
-          some engineering meshes are exported in mm whereas Raysect units are
-          in m. Applying a scale factor of 0.001 would convert the mesh into m
-          for use in Raysect.
+        :param double scaling: Scale the mesh by this factor (default=1.0).
         :param **kwargs: Accepts optional keyword arguments from the Mesh class.
         :rtype: Mesh
         """

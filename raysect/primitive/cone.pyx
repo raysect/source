@@ -61,7 +61,8 @@ cdef class Cone(Primitive):
     :param float radius: Radius of the cone in meters in x-y plane (default = 0.5).
     :param float height: Height of the cone in meters (default = 1.0).
     :param Node parent: Scene-graph parent node or None (default = None).
-    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate
+      system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the cone's material (default = None).
     :param str name: A string specifying a user-friendly name for the cone (default = "").
     """
