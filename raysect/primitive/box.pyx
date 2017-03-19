@@ -60,17 +60,16 @@ cdef class Box(Primitive):
 
     The box is defined by lower and upper points in the local co-ordinate
     system.
+
+    :param Point3D lower: Lower point of the box (default = Point3D(-0.5, -0.5, -0.5)).
+    :param Point3D upper: Upper point of the box (default = Point3D(0.5, 0.5, 0.5)).
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the box's material (default = None).
+    :param str name: A string specifying a user-friendly name for the box (default = "").
     """
 
     def __init__(self, Point3D lower=None, Point3D upper=None, object parent = None, AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(), str name=None):
-        """
-        :param lower: Lower point of the box (default = Point3D(-0.5, -0.5, -0.5)).
-        :param upper: Upper point of the box (default = Point3D(0.5, 0.5, 0.5)).
-        :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
-        :param material: A Material object defining the box's material (default = None).
-        :param name: A string specifying a user-friendly name for the box (default = "").
-        """
 
         super().__init__(parent, transform, material, name)
 
@@ -103,6 +102,11 @@ cdef class Box(Primitive):
         self._cached_axis = NO_AXIS
 
     property lower:
+        """
+        Lower 3D coordinate of the box in primitive's local coordinates.
+
+        :rtype: Point3D
+        """
 
         def __get__(self):
 
@@ -123,6 +127,11 @@ cdef class Box(Primitive):
             self.notify_geometry_change()
 
     property upper:
+        """
+        Upper 3D coordinate of the box in primitive's local coordinates.
+
+        :rtype: Point3D
+        """
 
         def __get__(self):
 

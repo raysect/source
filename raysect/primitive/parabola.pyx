@@ -58,21 +58,21 @@ cdef class Parabola(Primitive):
     and extends over the z range [0, height]. The base of the parabola is
     capped with a disk forming a closed surface. The base of the parabola lies
     on the x-y plane, the parabola vertex (tip) lies at z=height.
+
+    :param float radius: Radius of the parabola in meters (default = 0.5).
+    :param float height: Height of the parabola in meters (default = 1.0).
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the parabola's material (default = None).
+    :param str name: A string specifying a user-friendly name for the parabola (default = "").
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
                  AffineMatrix3D transform=None, Material material=None,
                  str name=None):
         """
-        Radius is radius of the parabola base in x-y plane.
-        Height of parabola is its extent along the z-axis [0, height].
 
-        :param radius: Radius of the parabola in meters (default = 0.5).
-        :param height: Height of the parabola in meters (default = 1.0).
-        :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
-        :param material: A Material object defining the parabola's material (default = None).
-        :param name: A string specifying a user-friendly name for the parabola (default = "").
+
         """
 
         super().__init__(parent, transform, material, name)
@@ -94,6 +94,11 @@ cdef class Parabola(Primitive):
         self._cached_type = NO_TYPE
 
     property radius:
+        """
+        Radius of the parabola base in x-y plane.
+
+        :rtype: float
+        """
         def __get__(self):
             return self._radius
 
@@ -109,6 +114,11 @@ cdef class Parabola(Primitive):
             self.notify_geometry_change()
 
     property height:
+        """
+        The parabola's extent along the z-axis [0, height].
+
+        :rtype: float
+        """
         def __get__(self):
             return self._height
 
