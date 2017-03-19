@@ -31,7 +31,7 @@
 
 
 from raysect.core cimport Material, new_intersection, BoundingBox3D, new_point3d, new_normal3d, Normal3D, AffineMatrix3D
-from raysect.core.math.cython cimport solve_quadratic, swap
+from raysect.core.math.cython cimport solve_quadratic, swap_double
 from libc.math cimport sqrt
 cimport cython
 
@@ -54,7 +54,6 @@ cdef class Sphere(Primitive):
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the sphere's material (default = None).
     :param str name: A string specifying a user-friendly name for the sphere (default = "").
-
     """
 
     def __init__(self, double radius=0.5, object parent=None, AffineMatrix3D transform not None=AffineMatrix3D(), Material material not None=Material(), str name=None):
@@ -62,7 +61,6 @@ cdef class Sphere(Primitive):
         super().__init__(parent, transform, material, name)
 
         if radius < 0.0:
-
             raise ValueError("Sphere radius cannot be less than zero.")
 
         self._radius = radius
@@ -86,14 +84,12 @@ cdef class Sphere(Primitive):
 
         def __set__(self, double radius):
 
+            # don't do anything if the value is unchanged
             if radius == self._radius:
-
                 return
 
             if radius < 0.0:
-
                 raise ValueError("Sphere radius cannot be less than zero.")
-
             self._radius = radius
 
             # the next intersection cache has been invalidated by the radius change
@@ -116,18 +112,18 @@ cdef class Sphere(Primitive):
         direction = ray.direction.transform(self.to_local())
 
         # coefficients of quadratic equation and discriminant
-        a = (direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
+        a = direction.x * direction.x + direction.y * direction.y + direction.z * direction.z
         b = 2 * (direction.x * origin.x + direction.y * origin.y + direction.z * origin.z)
-        c = (origin.x * origin.x + origin.y * origin.y + origin.z * origin.z - self._radius * self._radius)
+        c = origin.x * origin.x + origin.y * origin.y + origin.z * origin.z - self._radius * self._radius
 
         # calculate intersection distances by solving the quadratic equation
-        # ray misses sphere if there are no real roots of the quadratic
+        # ray misses if there are no real roots of the quadratic
         if not solve_quadratic(a, b, c, &t0, &t1):
             return None
 
         # ensure t0 is always smaller than t1
         if t0 > t1:
-            swap(&t0, &t1)
+            swap_double(&t0, &t1)
 
         # test the intersection points inside the ray search range [0, max_distance]
         if t0 > ray.max_distance or t1 < 0.0:

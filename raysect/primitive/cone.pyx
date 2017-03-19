@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core cimport new_point3d, Point3D, new_normal3d, AffineMatrix3D, Material, new_intersection, BoundingBox3D
+from raysect.core.math.cython cimport solve_quadratic, swap_double, swap_int
 from libc.math cimport sqrt
 cimport cython
 
@@ -157,26 +158,26 @@ cdef class Cone(Primitive):
         k = radius / height
         k = k * k
         a = direction.x * direction.x + direction.y * direction.y - k * direction.z * direction.z
-        b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z - height) )
+        b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z - height))
         c = origin.x * origin.x + origin.y * origin.y - k * (origin.z - height) * (origin.z - height)
 
-        # Solve quadratic equation
-        d = b * b - 4 * a * c
-
-        if d < 0:
-
-            # ray misses cone if there are no real roots of the quadratic
+        # calculate intersection distances by solving the quadratic equation
+        # ray misses if there are no real roots of the quadratic
+        if not solve_quadratic(a, b, c, &t0, &t1):
             return None
 
-        elif d > 0:
+        if t0 == t1:
+
+            # ray intersects the tip of the cone
+            t0 = -b / (2.0 * a)
+            t0_type = CONE
+
+            t1 = -origin.z / direction.z
+            t1_type = BASE
+
+        else:
 
             # ray hits full cone quadratic twice
-
-            # calculate intersections
-            d = sqrt(d)
-            temp_d = 1 / (2.0 * a)
-            t0 = -(d + b) * temp_d
-            t1 = (d - b) * temp_d
 
             # calculate z height of intersection points
             t0_z = origin.z + t0 * direction.z
@@ -212,27 +213,10 @@ cdef class Cone(Primitive):
                 t0_type = CONE
                 t1_type = CONE
 
-        else:
-
-            # ray intersects the tip of the cone
-            t0 = -b / (2.0 * a)
-            t0_type = CONE
-
-            t1 = -origin.z / direction.z
-            t1_type = BASE
-
         # ensure t0 is always smaller (closer) than t1
         if t0 > t1:
-
-            # swap ray distance
-            temp_d = t0
-            t0 = t1
-            t1 = temp_d
-
-            # swap intersection type
-            temp_i = t0_type
-            t0_type = t1_type
-            t1_type = temp_i
+            swap_double(&t0, &t1)
+            swap_int(&t0_type, &t1_type)
 
         # are there any intersections inside the ray search range?
         if t0 > ray.max_distance or t1 < 0.0:
@@ -255,7 +239,6 @@ cdef class Cone(Primitive):
         elif t1 <= ray.max_distance:
             closest_intersection = t1
             closest_type = t1_type
-
         else:
             return None
 
@@ -268,7 +251,6 @@ cdef class Cone(Primitive):
 
         # this is the 2nd and therefore last intersection
         self._further_intersection = False
-
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_type)
 
     @cython.cdivision(True)

@@ -301,6 +301,7 @@ cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
         return integrate(x, y, x0, x1) / (x1 - x0)
 
 
+#TODO: docstring
 @cython.cdivision(True)
 cdef inline bint solve_quadratic(double a, double b, double c, double *t0, double *t1):
     """

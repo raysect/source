@@ -47,8 +47,14 @@ cdef inline double clamp(double v, double minimum, double maximum):
         return maximum
     return v
 
-cdef inline void swap(double *a, double *b):
-    cdef temp
+cdef inline void swap_double(double *a, double *b):
+    cdef double temp
+    temp = a[0]
+    a[0] = b[0]
+    b[0] = temp
+
+cdef inline void swap_int(int *a, int *b):
+    cdef int temp
     temp = a[0]
     a[0] = b[0]
     b[0] = temp
