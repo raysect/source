@@ -84,12 +84,34 @@ DEF RSM_VERSION_MINOR = 0
 # TODO: the following code really is a bit opaque, needs a general tidy up
 # TODO: move load/save code to C?
 
+
 cdef class MeshData(KDTree3DCore):
     """
     Holds the mesh data and acceleration structures.
 
     The Mesh primitive is a thin wrapper around a MeshData object. This
     arrangement simplifies mesh instancing and the load/dump methods.
+
+    :param object vertices: A list/array or triangle vertices with shape Nx3,
+      where N is the number of vertices.
+    :param object triangles: A list/array of triangles with shape Nx3 where N is
+      the number of triangles in the mesh. For each triangle there must be three
+      integers identifying the triangle vertices in the vertices array.
+    :param object normals: Optional array of triangle normals (default=None).
+    :param bool smoothing: Turns on smoothing of triangle surface normals when
+      calculating ray intersections (default=True).
+    :param bool closed: Whether this mesh should be treated as a closed surface,
+      i.e. no holes. (default=True)
+    :param bool tolerant: Toggles filtering out of degenerant triangles
+      (default=True).
+    :param int max_depth: Maximum kd-Tree depth for this mesh (automatic if set to
+      0, default=0).
+    :param int min_items: The item count threshold for forcing creation of a
+      new leaf node in the kdTree (default=1).
+    :param double hit_cost: The relative computational cost of item hit evaluations
+      vs kd-tree traversal (default=20.0).
+    :param double empty_bonus: The bonus applied to node splits that generate empty
+      kd-Tree leaves (default=0.2).
     """
 
     cdef:
@@ -104,7 +126,9 @@ cdef class MeshData(KDTree3DCore):
         float _u, _v, _w, _t
         int32_t _i
 
-    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True, bint closed=True, bint tolerant=True, int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
+    def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True,
+                 bint closed=True, bint tolerant=True, int max_depth=0, int min_items=1,
+                 double hit_cost=20.0, double empty_bonus=0.2):
 
         self.smoothing = smoothing
         self.closed = closed
@@ -677,6 +701,11 @@ cdef class MeshData(KDTree3DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def save(self, object file):
+        """
+        Save the mesh's kd-Tree representation to a binary Raysect mesh file (.rsm).
+
+        :param object file: File stream or string file name to save state.
+        """
 
         cdef:
             int32_t i, j
@@ -747,6 +776,11 @@ cdef class MeshData(KDTree3DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def load(self, object file):
+        """
+        Load a mesh with its kd-Tree representation from Raysect mesh binary file (.rsm).
+
+        :param object file: File stream or string file name to save state.
+        """
 
         cdef:
             int32_t i, j
@@ -831,6 +865,11 @@ cdef class MeshData(KDTree3DCore):
 
     @classmethod
     def from_file(cls, file):
+        """
+        Load a mesh with its kd-Tree representation from Raysect mesh binary file (.rsm).
+
+        :param object file: File stream or string file name to save state.
+        """
 
         m = MeshData.__new__(MeshData)
         m.load(file)
@@ -909,22 +948,30 @@ cdef class Mesh(Primitive):
     used by the kd-tree must be controlled. This may occur if very large meshes
     are used.
 
-    :param vertices: An N x 3 list of vertices.
-    :param triangles: An M x 3 or N x 6 list of vertex/normal indicies defining the mesh triangles.
-    :param normals: An K x 3 list of vertex normals or None.
-    :param smoothing: True to enable normal interpolation, False to disable.
-    :param closed: True is the mesh defines a closed volume, False otherwise.
-    :param tolerant: Mesh will automatically correct meshes with degenerate triangles if set to True (default).
-    :param instance: The Mesh to become an instance of.
-    :param kdtree_max_depth: The maximum tree depth (automatic if set to 0, default is 0).
-    :param kdtree_min_items: The item count threshold for forcing creation of a new leaf node (default 1).
-    :param kdtree_hit_cost: The relative computational cost of item hit evaluations vs kd-tree traversal (default 20.0).
-    :param kdtree_empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
-    :param parent: Attaches the mesh to the specified scene-graph node.
-    :param transform: The co-ordinate transform between the mesh and its parent.
-    :param material: The surface/volume material.
-    :param name: A human friendly name to identity the mesh in the scene-graph.
-    :return:
+    :param object vertices: An N x 3 list of vertices.
+    :param object triangles: An M x 3 or N x 6 list of vertex/normal indices
+      defining the mesh triangles.
+    :param object normals: An K x 3 list of vertex normals or None (default=None).
+    :param bool smoothing: True to enable normal interpolation (default=True).
+    :param bool closed: True is the mesh defines a closed volume (default=True).
+    :param bool tolerant: Mesh will automatically correct meshes with degenerate
+      triangles if set to True (default=True).
+    :param Mesh instance: The Mesh to become an instance of (default=None).
+    :param int kdtree_max_depth: The maximum tree depth (automatic if set to 0, default=0).
+    :param int kdtree_min_items: The item count threshold for forcing creation of
+      a new leaf node (default=1).
+    :param double kdtree_hit_cost: The relative computational cost of item hit
+      evaluations vs kd-tree traversal (default=20.0).
+    :param double kdtree_empty_bonus: The bonus applied to node splits that
+      generate empty leaves (default=0.2).
+    :param Node parent: Attaches the mesh to the specified scene-graph
+      node (default=None).
+    :param AffineMatrix3D transform: The co-ordinate transform between
+      the mesh and its parent (default=unity matrix).
+    :param Material material: The surface/volume material
+      (default=Material() instance).
+    :param str name: A human friendly name to identity the mesh in the
+      scene-graph (default="").
     """
 
     cdef:
@@ -935,7 +982,12 @@ cdef class Mesh(Primitive):
         double _ray_distance
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, object vertices=None, object triangles=None, object normals=None, bint smoothing=True, bint closed=True, tolerant=True, Mesh instance=None, int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0, double kdtree_empty_bonus=0.25, object parent=None, AffineMatrix3D transform not None=AffineMatrix3D(), Material material not None=Material(), unicode name not None=""):
+    def __init__(self, object vertices=None, object triangles=None, object normals=None,
+                 bint smoothing=True, bint closed=True, bint tolerant=True, Mesh instance=None,
+                 int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0,
+                 double kdtree_empty_bonus=0.25, object parent=None,
+                 AffineMatrix3D transform not None=AffineMatrix3D(),
+                 Material material not None=Material(), unicode name not None=""):
 
         super().__init__(parent, transform, material, name)
 
@@ -1138,18 +1190,20 @@ cdef class Mesh(Primitive):
         self._ray_distance = 0
 
     @classmethod
-    def from_file(cls, object file, object parent=None, AffineMatrix3D transform=AffineMatrix3D(), Material material=Material(), unicode name=""):
+    def from_file(cls, object file, object parent=None,
+                  AffineMatrix3D transform=AffineMatrix3D(),
+                  Material material=Material(), unicode name=""):
         """
         Instances a new Mesh using data from a file object or filename.
 
         The mesh must be stored in a RaySect Mesh (RSM) format file. RSM files
         are created with the Mesh save() method.
 
-        :param file: File object or string path.
-        :param parent: Attaches the mesh to the specified scene-graph node.
-        :param transform: The co-ordinate transform between the mesh and its parent.
-        :param material: The surface/volume material.
-        :param name: A human friendly name to identity the mesh in the scene-graph.
+        :param object file: File object or string path.
+        :param Node parent: Attaches the mesh to the specified scene-graph node.
+        :param AffineMatrix3D transform: The co-ordinate transform between the mesh and its parent.
+        :param Material material: The surface/volume material.
+        :param str name: A human friendly name to identity the mesh in the scene-graph.
         """
 
         m = Mesh.__new__(Mesh)

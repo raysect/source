@@ -150,7 +150,7 @@ html_favicon = "RaysectLogo_web.ico"
 
 html_static_path = ['static']
 html_context = {'css_files': [
-    '_static/style.css',  # override wide tables in RTD theme
+    '_static/theme.css',  # override wide tables in RTD theme
     ]
 }
 
