@@ -77,8 +77,6 @@ cdef class Sphere(Primitive):
         """
         The radius of this sphere.
 
-        :getter: Returns this sphere's radius.
-        :setter: Sets this sphere's radius.
         :rtype: float
         """
 
@@ -241,13 +239,13 @@ cdef class Sphere(Primitive):
         return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
                                 normal, exiting, self.to_local(), self.to_root())
 
-    cpdef bint contains(self, Point3D p) except -1:
+    cpdef bint contains(self, Point3D point) except -1:
 
         cdef Point3D local_point
         cdef double distance_sqr
 
         # convert world space point to local space
-        local_point = p.transform(self.to_local())
+        local_point = point.transform(self.to_local())
 
         # calculate squared distance of the point from the sphere origin
         distance_sqr = (local_point.x * local_point.x

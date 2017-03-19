@@ -60,20 +60,19 @@ cdef class Cylinder(Primitive):
     The cylinder is defined by a radius and height. It lies along the z-axis
     and extends over the z range [0, height]. The ends of the cylinder are
     capped with disks forming a closed surface.
+
+    :param float radius: Radius of the cylinder in meters (default = 0.5).
+    :param float height: Height of the cylinder in meters (default = 1.0).
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate
+      system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the cylinder's material (default = None).
+    :param str name: A string specifying a user-friendly name for the cylinder (default = "").
     """
 
-    def __init__(self, double radius=0.5, double height=1.0, object parent = None, AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(), str name=None):
-        """
-        Radius is radius of the cylinder in x-y plane.
-        Height of cylinder is defines extent along z-axis [0, height].
-
-        :param radius: Radius of the cylinder in meters (default = 0.5).
-        :param height: Height of the cylinder in meters (default = 1.0).
-        :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
-        :param material: A Material object defining the cylinder's material (default = None).
-        :param name: A string specifying a user-friendly name for the cylinder (default = "").
-        """
+    def __init__(self, double radius=0.5, double height=1.0, object parent = None,
+                 AffineMatrix3D transform not None = AffineMatrix3D(),
+                 Material material not None = Material(), str name=None):
 
         super().__init__(parent, transform, material, name)
 
@@ -98,6 +97,11 @@ cdef class Cylinder(Primitive):
         self._cached_type = NO_TYPE
 
     property radius:
+        """
+        Radius of the cylinder in x-y plane.
+
+        :rtype: float
+        """
 
         def __get__(self):
 
@@ -118,6 +122,9 @@ cdef class Cylinder(Primitive):
             self.notify_geometry_change()
 
     property height:
+        """
+        Extent of the cylinder along the z-axis.
+        """
 
         def __get__(self):
 

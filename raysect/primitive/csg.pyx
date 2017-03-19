@@ -40,6 +40,7 @@ DEF BOX_PADDING = 1e-9
 # cython doesn't have a built in infinity definition
 DEF INFINITY = 1e999
 
+
 cdef class CSGPrimitive(Primitive):
     """
     Constructive Solid Geometry (CSG) Primitive base class.
@@ -47,10 +48,10 @@ cdef class CSGPrimitive(Primitive):
     This is an abstract base class and can not be used directly.
     """
 
-    def __init__(self, Primitive primitive_a not None = NullPrimitive(), Primitive primitive_b not None = NullPrimitive(), object parent = None, AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(), str name=None):
-        """
-        Initialisation method.
-        """
+    def __init__(self, Primitive primitive_a not None = NullPrimitive(),
+                 Primitive primitive_b not None = NullPrimitive(), object parent = None,
+                 AffineMatrix3D transform not None = AffineMatrix3D(),
+                 Material material not None = Material(), str name=None):
 
         super().__init__(parent, transform, material, name)
 
