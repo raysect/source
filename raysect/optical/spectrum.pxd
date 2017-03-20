@@ -55,17 +55,17 @@ cdef class Spectrum(SpectralFunction):
     cpdef Spectrum new_spectrum(self)
     cpdef Spectrum copy(self)
 
-    cdef inline void add_scalar(self, double value)
-    cdef inline void sub_scalar(self, double value)
-    cdef inline void mul_scalar(self, double value)
-    cdef inline void div_scalar(self, double value)
-    cdef inline void mad_scalar(self, double scalar, double[::1] array)
+    cdef inline void add_scalar(self, double value) nogil
+    cdef inline void sub_scalar(self, double value) nogil
+    cdef inline void mul_scalar(self, double value) nogil
+    cdef inline void div_scalar(self, double value) nogil
+    cdef inline void mad_scalar(self, double scalar, double[::1] array) nogil
 
-    cdef inline void add_array(self, double[::1] array)
-    cdef inline void sub_array(self, double[::1] array)
-    cdef inline void mul_array(self, double[::1] array)
-    cdef inline void div_array(self, double[::1] array)
-    cdef inline void mad_array(self, double[::1] a, double[::1] b)
+    cdef inline void add_array(self, double[::1] array) nogil
+    cdef inline void sub_array(self, double[::1] array) nogil
+    cdef inline void mul_array(self, double[::1] array) nogil
+    cdef inline void div_array(self, double[::1] array) nogil
+    cdef inline void mad_array(self, double[::1] a, double[::1] b) nogil
 
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int bins)
