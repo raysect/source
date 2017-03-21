@@ -1,15 +1,32 @@
 
-Optical Classes
-===============
+Main Optical Classes
+====================
 
-.. automodule:: raysect.optical.ray
+.. autoclass:: raysect.optical.ray.Ray
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.spectralfunction.SpectralFunction
    :members:
 
-.. automodule:: raysect.optical.spectrum
+.. autoclass:: raysect.optical.spectralfunction.NumericallyIntegratedSF
    :members:
+   :show-inheritance:
 
-.. automodule:: raysect.optical.spectralfunction
+.. autoclass:: raysect.optical.spectralfunction.InterpolatedSF
    :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.spectralfunction.ConstantSF
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.spectrum.Spectrum
+   :members:
+   :show-inheritance:
+
+.. autofunction:: raysect.optical.spectrum.photon_energy
+
 
 .. automodule:: raysect.optical.colour
    :members:

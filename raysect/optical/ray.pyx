@@ -44,6 +44,27 @@ DEF INFINITY = 1e999
 
 
 cdef class Ray(CoreRay):
+    """
+    Optical Ray class for optical applications, inherits from core Ray class.
+
+    :param Point3D origin: Point defining ray’s origin (default=Point3D(0, 0, 0))
+    :param Vector3D direction: Vector defining ray’s direction (default=Vector3D(0, 0, 1))
+    :param float min_wavelength: Lower wavelength bound for observed spectrum
+    :param float max_wavelength: Upper wavelength bound for observed spectrum
+    :param int bins: Number of samples to use over the spectral range
+    :param float max_distance: The terminating distance of the ray
+    :param float extinction_prob: Probability of path extinction at every
+      material surface interaction (default=0.1)
+    :param int extinction_min_depth: Minimum number of paths before triggering
+      extinction probability (default=3)
+    :param int max_depth: Maximum number of material interactions before
+      terminating ray trajectory.
+    :param bool importance_sampling: Toggles use of importance sampling for
+      important primitives. See help documentation on importance sampling,
+      (default=True).
+    :param float important_path_weight: Weight to use for important paths when
+      using importance sampling.
+    """
 
     def __init__(self,
                  Point3D origin = Point3D(0, 0, 0),
@@ -126,6 +147,11 @@ cdef class Ray(CoreRay):
 
     @property
     def bins(self):
+        """
+        Number of spectral bins across wavelength range.
+
+        :rtype: int
+        """
         return self._bins
 
     @bins.setter
@@ -141,6 +167,11 @@ cdef class Ray(CoreRay):
 
     @property
     def min_wavelength(self):
+        """
+        Lower bound on wavelength range.
+
+        :rtype: float
+        """
         return self._min_wavelength
 
     @min_wavelength.setter
@@ -159,6 +190,11 @@ cdef class Ray(CoreRay):
 
     @property
     def max_wavelength(self):
+        """
+        Upper bound on wavelength range.
+
+        :rtype: float
+        """
         return self._max_wavelength
 
     @max_wavelength.setter
@@ -177,6 +213,11 @@ cdef class Ray(CoreRay):
 
     @property
     def wavelength_range(self):
+        """
+        Upper and lower wavelength range.
+
+        :rtype: tuple
+        """
         return self._min_wavelength, self._max_wavelength
 
     @wavelength_range.setter
@@ -194,6 +235,11 @@ cdef class Ray(CoreRay):
 
     @property
     def extinction_prob(self):
+        """
+        Probability of path extinction at every material surface interaction.
+
+        :rtype: float
+        """
         return self._extinction_prob
 
     @extinction_prob.setter
@@ -202,6 +248,11 @@ cdef class Ray(CoreRay):
 
     @property
     def extinction_min_depth(self):
+        """
+        Minimum number of paths before triggering extinction probability.
+
+        :rtype: int
+        """
         return self._extinction_min_depth
 
     @extinction_min_depth.setter
@@ -212,6 +263,11 @@ cdef class Ray(CoreRay):
 
     @property
     def max_depth(self):
+        """
+        Maximum number of material interactions before terminating ray trajectory.
+
+        :rtype: int
+        """
         return self._max_depth
 
     @max_depth.setter
@@ -222,6 +278,11 @@ cdef class Ray(CoreRay):
 
     @property
     def important_path_weight(self):
+        """
+        Weight to use for important paths when using importance sampling.
+
+        :rtype: float
+        """
         return self._important_path_weight
 
     @important_path_weight.setter
@@ -238,6 +299,8 @@ cdef class Ray(CoreRay):
     cpdef Spectrum new_spectrum(self):
         """
         Returns a new Spectrum compatible with the ray spectral settings.
+
+        :rtype: Spectrum
         """
 
         return new_spectrum(self._min_wavelength, self._max_wavelength, self._bins)
@@ -247,9 +310,10 @@ cdef class Ray(CoreRay):
         """
         Traces a single ray path through the world.
 
-        :param world: World object defining the scene.
-        :param keep_alive: If true, disables Russian roulette termination of the ray.
-        :return: A Spectrum object.
+        :param World world: World object defining the scene.
+        :param bool keep_alive: If true, disables Russian roulette termination of the ray.
+        :return: The resulting Spectrum object collected by the ray.
+        :rtype: Spectrum
         """
 
         cdef:
@@ -352,9 +416,10 @@ cdef class Ray(CoreRay):
         parameter specifies the number of samples to obtain. The mean spectrum
         accumulated from these samples is returned.
 
-        :param world: World object defining the scene.
-        :param count: Number of samples to take.
-        :return: A Spectrum object.
+        :param World world: World object defining the scene.
+        :param int count: Number of samples to take.
+        :return: The accumulated spectrum collected by the ray.
+        :rtype: Spectrum
         """
 
         cdef:
@@ -380,9 +445,10 @@ cdef class Ray(CoreRay):
         A daughter ray has the same spectral configuration as the source ray,
         however the ray depth is increased by 1.
 
-        :param origin: A Point3D defining the ray origin.
-        :param direction: A vector defining the ray direction.
-        :return: A Ray object.
+        :param Point3D origin: A Point3D defining the ray origin.
+        :param Vector3D direction: A vector defining the ray direction.
+        :return: A daughter Ray object.
+        :rtype: Ray
         """
 
         cdef Ray ray
@@ -419,6 +485,13 @@ cdef class Ray(CoreRay):
 
     # TODO: PROFILE ME, ray--> cython new_ray for optical ray
     cpdef Ray copy(self, Point3D origin=None, Vector3D direction=None):
+        """
+        Obtain a new Ray object with the same configuration settings.
+
+        :param Point3D origin: New Ray's origin position.
+        :param Vector3D direction: New Ray's direction.
+        :rtype: Ray
+        """
 
         if origin is None:
             origin = self.origin.copy()
