@@ -37,12 +37,18 @@ from raysect.optical.observer.base cimport Observer2D
 
 cdef class OrthographicCamera(Observer2D):
     """
-    A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
+    A camera observing an orthogonal (orthographic) projection of the scene,
+    avoiding perspective effects.
 
-    Arguments and attributes are inherited from the base Imaging sensor class.
-
-    :param double width: width of the orthographic area to observe in meters, the height is deduced from the 'pixels'
-       attribute.
+    :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
+    :param double width: width of the orthographic area to observe in meters,
+      the height is deduced from the 'pixels' attribute.
+    :param float etendue: The etendue of each pixel (default=1.0)
+    :param FrameSampler2D frame_sampler: The frame sampling strategy
+      (default=FullFrameSampler2D()).
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      at each pixel by the camera (default=RGBPipeline2D()).
+    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
     cdef:
@@ -67,6 +73,12 @@ cdef class OrthographicCamera(Observer2D):
 
     @property
     def width(self):
+        """
+        The width of the orthographic area to observe in meters, the height is
+        deduced from the 'pixels' attribute.
+
+        :rtype: float
+        """
         return self._width
 
     @width.setter
@@ -78,6 +90,13 @@ cdef class OrthographicCamera(Observer2D):
 
     @property
     def etendue(self):
+        """
+        The etendue applied to each pixel.
+
+        If etendue=1.0 all spectral units are in radiance.
+
+        :rtype: float
+        """
         return self._etendue
 
     @etendue.setter

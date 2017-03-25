@@ -47,6 +47,20 @@ _DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
 
 
 cdef class PowerPipeline0D(Pipeline0D):
+    """
+    A power pipeline for 0D observers.
+
+    The raw spectrum collected by the observer is multiplied by a spectra filter
+    and integrated to give to total power collected.
+
+    The measured value and error are accessed at self.value.mean and self.value.error
+    respectively.
+
+    :param SpectralFunction filter: A filter function to be multiplied with the
+     measured spectrum.
+    :param bool accumulate:
+    :param str name: User friendly name for this pipeline.
+    """
 
     cdef:
         str name
@@ -120,6 +134,34 @@ cdef class PowerPipeline0D(Pipeline0D):
 
 
 cdef class PowerPipeline2D(Pipeline2D):
+    """
+    A power pipeline for 2D observers.
+
+    The raw spectrum collected at each pixel by the observer is multiplied by
+    a spectral filter and integrated to give to total power collected at that
+    pixel.
+
+    The measured value and error for each pixel are accessed at self.frame.mean and self.frame.error
+    respectively.
+
+    :param SpectralFunction filter: A filter function to be multiplied with the
+     measured spectrum.
+    :param bool display_progress: Toggles the display of live render progress
+      (default=True).
+    :param float display_update_time: Time in seconds between preview display
+      updates (default=15 seconds).
+    :param bool accumulate: Whether to accumulate samples with subsequent calls
+      to observe() (default=True).
+    :param bool display_auto_exposure: Toggles the use of automatic exposure of
+      final images (default=True).
+    :param float display_black_point:
+    :param float display_white_point:
+    :param float display_unsaturated_fraction: Fraction of pixels that must not
+      be saturated. Display values will be scaled to satisfy this value
+      (default=1.0).
+    :param float display_gamma:
+    :param str name: User friendly name for this pipeline.
+    """
 
     def __init__(self, SpectralFunction filter=None, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
@@ -201,6 +243,11 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @property
     def display_auto_exposure(self):
+        """
+        Toggles the use of automatic exposure on final image.
+
+        :rtype: bool
+        """
         return self._display_auto_exposure
 
     @display_auto_exposure.setter
@@ -210,6 +257,12 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @property
     def display_unsaturated_fraction(self):
+        """
+        Fraction of pixels that must not be saturated. Display values will
+        be scaled to satisfy this value.
+
+        :rtype: float
+        """
         return self._display_unsaturated_fraction
 
     @display_unsaturated_fraction.setter
@@ -221,6 +274,11 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @property
     def display_update_time(self):
+        """
+        Time in seconds between preview display updates.
+
+        :rtype: float
+        """
         return self._display_update_time
 
     @display_update_time.setter
@@ -481,6 +539,11 @@ cdef class PowerPipeline2D(Pipeline2D):
 
 
 cdef class PowerPixelProcessor(PixelProcessor):
+    """
+    PixelProcessor that converts each pixel's spectrum into total power by
+    integrating over the spectrum and multiplying the resulting radiance
+    value by the pixel's etendue.
+    """
 
     def __init__(self, double[::1] filter):
         self.bin = StatsBin()
@@ -506,6 +569,22 @@ cdef class PowerPixelProcessor(PixelProcessor):
 
 
 cdef class PowerAdaptiveSampler2D(FrameSampler2D):
+    """
+    FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
+    level in each pixel's power value.
+
+    Pixels that have high noise levels will receive extra samples until the desired
+    noise threshold is achieve across the whole image.
+
+    :param PowerPipeline2D pipeline: The specific power pipeline to use for feedback control.
+    :param float fraction: The fraction of frame pixels to receive extra sampling
+      (default=0.2).
+    :param float ratio:
+    :param int min_samples: Minimum number of pixel samples across the image before
+      turning on adaptive sampling (default=1000).
+    :param double cutoff: Noise threshold at which extra sampling will be aborted and
+      rendering will complete (default=0.0).
+    """
 
     def __init__(self, PowerPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
 

@@ -36,8 +36,6 @@ from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
 
 
-# todo: complete docstrings
-# todo: add properties
 cdef class PinholeCamera(Observer2D):
     """
     An observer that models an idealised pinhole camera.
@@ -45,8 +43,14 @@ cdef class PinholeCamera(Observer2D):
     A simple camera that launches rays from the observer's origin point over a
     specified field of view.
 
-    :param double fov: The field of view of the camera in degrees (default: 45 degrees).
-    :param double etendue: The etendue of each pixel (default: 1.0)
+    :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
+    :param float fov: The field of view of the camera in degrees (default=45 degrees).
+    :param float etendue: The etendue of each pixel (default=1.0)
+    :param FrameSampler2D frame_sampler: The frame sampling strategy, defaults to adaptive
+      sampling (i.e. extra samples for noisier pixels).
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      at each pixel by the camera (default=RGBPipeline2D()).
+    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
     cdef:
@@ -72,6 +76,11 @@ cdef class PinholeCamera(Observer2D):
 
     @property
     def fov(self):
+        """
+        The field of view of the camera in degrees.
+
+        :rtype: float
+        """
         return self._fov
 
     @fov.setter
@@ -83,6 +92,13 @@ cdef class PinholeCamera(Observer2D):
 
     @property
     def etendue(self):
+        """
+        The etendue applied to each pixel.
+
+        If etendue=1.0 all spectral units are in radiance.
+
+        :rtype: float
+        """
         return self._etendue
 
     @etendue.setter

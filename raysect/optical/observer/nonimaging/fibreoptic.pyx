@@ -34,6 +34,7 @@ from libc.math cimport cos, M_PI as pi
 from raysect.core.math.sampler cimport DiskSampler, ConeSampler
 from raysect.optical cimport Ray, new_point3d, new_vector3d
 from raysect.optical.observer.base cimport Observer0D
+from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
 cimport cython
 
 
@@ -42,12 +43,17 @@ cimport cython
 cdef class FibreOptic(Observer0D):
     """
     An optical fibre observer that samples rays from an acceptance cone and circular area at the fibre tip.
-    Inherits arguments and attributes from the base NonImaging sensor class. Rays are sampled over a circular area at
-    the fibre tip and a conical solid angle defined by the acceptance_angle parameter.
+
+    Rays are sampled over a circular area at the fibre tip and a conical solid angle
+    defined by the acceptance_angle parameter.
+
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      by this optical fibre (default=SpectralPipeline0D()).
     :param float acceptance_angle: The angle in degrees between the z axis and the cone surface which defines the fibres
-       soild angle sampling area.
+       solid angle sampling area.
     :param float radius: The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
        which will be sampled over.
+    :param kwargs: **kwargs from Observer0D and _ObserverBase
     """
 
     cdef:
@@ -55,10 +61,12 @@ cdef class FibreOptic(Observer0D):
         DiskSampler _point_sampler
         ConeSampler _vector_sampler
 
-    def __init__(self, pipelines, acceptance_angle=None, radius=None, parent=None, transform=None, name=None,
+    def __init__(self, pipelines=None, acceptance_angle=None, radius=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+
+        pipelines = pipelines or [SpectralPipeline0D()]
 
         super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
                          pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
@@ -75,6 +83,12 @@ cdef class FibreOptic(Observer0D):
 
     @property
     def acceptance_angle(self):
+        """
+        The angle in degrees between the z axis and the cone surface which defines the fibres
+        solid angle sampling area.
+
+        :rtype: float
+        """
         return self._acceptance_angle
 
     @acceptance_angle.setter
@@ -87,6 +101,12 @@ cdef class FibreOptic(Observer0D):
 
     @property
     def radius(self):
+        """
+        The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
+        which will be sampled over.
+
+        :rtype: float
+        """
         return self._radius
 
     @radius.setter
@@ -118,6 +138,33 @@ cdef class FibreOptic(Observer0D):
             rays.append((template.copy(origins[n], directions[n]), weight))
 
         return rays
+
+    @property
+    def collection_area(self):
+        """
+        The fibre's collection area in m^2.
+
+        :rtype: float
+        """
+        return self._collection_area
+
+    @property
+    def solid_angle(self):
+        """
+        The fibre's solid angle in steradians str.
+
+        :rtype: float
+        """
+        return self._solid_angle
+
+    @property
+    def etendue(self):
+        """
+        The fibre's etendue measured in units of per area per solid angle (m^-2 str^-1).
+
+        :rtype: float
+        """
+        return self._pixel_etendue()
 
     cpdef double _pixel_etendue(self):
         return self._solid_angle * self._collection_area

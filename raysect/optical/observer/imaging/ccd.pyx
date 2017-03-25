@@ -50,9 +50,12 @@ cdef class CCDArray(Observer2D):
     from the width and the number of vertical and horizontal pixels. The
     default width and sensor ratio approximates a 35mm camera sensor.
 
-    Arguments and attributes are inherited from the base Imaging sensor class.
-
-    :param double width: The width in metres of the sensor (default is 0.035m).
+    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(512, 512)).
+    :param float width: The CCD sensor x-width in metres (default=35mm).
+    :param float etendue: The etendue of each pixel (default=1.0)
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      at each pixel by the camera (default=RGBPipeline2D()).
+    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
     cdef:
@@ -89,6 +92,11 @@ cdef class CCDArray(Observer2D):
 
     @property
     def width(self):
+        """
+        The CCD sensor x-width in metres.
+
+        :rtype: float
+        """
         return self._width
 
     @width.setter

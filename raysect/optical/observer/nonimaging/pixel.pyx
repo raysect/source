@@ -34,6 +34,7 @@ from libc.math cimport cos, M_PI as pi
 from raysect.core.math.sampler cimport RectangleSampler, HemisphereCosineSampler
 from raysect.optical cimport Ray, new_point3d, new_vector3d
 from raysect.optical.observer.base cimport Observer0D
+from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
 cimport cython
 
 
@@ -41,10 +42,13 @@ cdef class Pixel(Observer0D):
     """
     A pixel observer that samples rays from a hemisphere and rectangular area.
 
-    Inherits arguments and attributes from the base NonImaging sensor class.
-
-    :param float x_width: The rectangular collection area's width along the x-axis in local coordinates.
-    :param float y_width: The rectangular collection area's width along the y-axis in local coordinates.
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      by this pixel (default=SpectralPipeline0D()).
+    :param float x_width: The rectangular collection area's width along the
+      x-axis in local coordinates (default=1cm).
+    :param float y_width: The rectangular collection area's width along the
+      y-axis in local coordinates (default=1cm).
+    :param kwargs: **kwargs from Observer0D and _ObserverBase
     """
 
     cdef:
@@ -52,10 +56,12 @@ cdef class Pixel(Observer0D):
         RectangleSampler _point_sampler
         HemisphereCosineSampler _vector_sampler
 
-    def __init__(self, pipelines, x_width=None, y_width=None, parent=None, transform=None, name=None,
+    def __init__(self, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+
+        pipelines = pipelines or [SpectralPipeline0D()]
 
         super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
                          pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
@@ -74,6 +80,11 @@ cdef class Pixel(Observer0D):
 
     @property
     def x_width(self):
+        """
+        The rectangular collection area's width along the x-axis in local coordinates.
+
+        :rtype: float
+        """
         return self._x_width
 
     @x_width.setter
@@ -86,6 +97,11 @@ cdef class Pixel(Observer0D):
 
     @property
     def y_width(self):
+        """
+        The rectangular collection area's width along the y-axis in local coordinates.
+
+        :rtype: float
+        """
         return self._y_width
 
     @y_width.setter
@@ -95,6 +111,33 @@ cdef class Pixel(Observer0D):
         self._y_width = value
         self._point_sampler = RectangleSampler(width=self._x_width, height=self._y_width)
         self._collection_area = self._x_width * self._y_width
+
+    @property
+    def collection_area(self):
+        """
+        The pixel's collection area in m^2.
+
+        :rtype: float
+        """
+        return self._collection_area
+
+    @property
+    def solid_angle(self):
+        """
+        The pixel's solid angle in steradians str.
+
+        :rtype: float
+        """
+        return self._solid_angle
+
+    @property
+    def etendue(self):
+        """
+        The pixel's etendue measured in units of per area per solid angle (m^-2 str^-1).
+
+        :rtype: float
+        """
+        return self._pixel_etendue()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

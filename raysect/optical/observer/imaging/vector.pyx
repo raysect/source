@@ -36,7 +36,7 @@ from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer2D
 cimport numpy as np
 
-# TODO: complete docstrings
+
 cdef class VectorCamera(Observer2D):
     """
     An observer that uses a specified set of pixel vectors.
@@ -44,7 +44,15 @@ cdef class VectorCamera(Observer2D):
     A simple camera that uses calibrated vectors for each pixel to sample the scene.
     Arguments and attributes are inherited from the base Observer2D sensor class.
 
-    :param double fov: The field of view of the camera in degrees (default is 90 degrees).
+    :param np.ndarray pixel_origins: Numpy array of Point3Ds describing the origin points
+      of each pixel. Must have same shape as the pixel dimensions.
+    :param np.ndarray pixel_directions: Numpy array of Vector3Ds describing the sampling
+      direction vectors of each pixel. Must have same shape as the pixel dimensions.
+    :param float etendue: The etendue of each pixel (default=1.0)
+    :param FrameSampler2D frame_sampler: The frame sampling strategy (default=FullFrameSampler2D()).
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      at each pixel by the camera (default=RGBPipeline2D()).
+    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
     cdef:
@@ -82,6 +90,13 @@ cdef class VectorCamera(Observer2D):
 
     @property
     def etendue(self):
+        """
+        The etendue applied to each pixel.
+
+        If etendue=1.0 all spectral units are in radiance.
+
+        :rtype: float
+        """
         return self._etendue
 
     @etendue.setter

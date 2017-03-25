@@ -40,33 +40,59 @@ from raysect.optical.observer.base.processor cimport PixelProcessor
 from raysect.optical.observer.base.slice cimport SpectralSlice
 
 
+# """
+# - Needs to know about mean, max, min wavelength, number of samples, rays.
+# - Things it will do:
+#     - initialise statistics between each pipeline and this object
+#     - generate the pixel rendering tasks using the frame sampler to select
+#     which pixels to render and how.
+#     - implement render_pixel() and update_frame() of the render engine. Then
+#     start the render engine.
+#     - finally closes the stats and makes final display.
+#
+# - inside render_pixel()
+#     - passed in are ray_template and pipeline object references
+#     - unpack task ID (pixel id)
+#     - launch the rays and sample pixel using pixel_sampler() and ray_template,
+#     returns a frame 1D object representing a spectrum with variance and sample count
+#     for each bin.
+#     - passes frame 1D to each pipeline object for pixel processing. Each of those
+#     returns a custum tuple of data tied to details of that pipeline.
+#     - All results packaged together with pixel ID and returned to consumer.
+#
+# - inside update_frame()
+#     - unpack pixel ID and pipeline result tuples.
+#     - pass results to each pipeline to update pipelines internal state
+#     - print workflow statistics and any statistics for each pipeline.
+#     - display visual imagery for each pipeline as required
+#     - save state for each pipeline as required.
+# """
 cdef class _ObserverBase(Observer):
     """
-    - Needs to know about mean, max, min wavelength, number of samples, rays.
-    - Things it will do:
-        - initialise statistics between each pipeline and this object
-        - generate the pixel rendering tasks using the frame sampler to select
-        which pixels to render and how.
-        - implement render_pixel() and update_frame() of the render engine. Then
-        start the render engine.
-        - finally closes the stats and makes final display.
+    Observer base class.
 
-    - inside render_pixel()
-        - passed in are ray_template and pipeline object references
-        - unpack task ID (pixel id)
-        - launch the rays and sample pixel using pixel_sampler() and ray_template,
-        returns a frame 1D object representing a spectrum with variance and sample count
-        for each bin.
-        - passes frame 1D to each pipeline object for pixel processing. Each of those
-        returns a custum tuple of data tied to details of that pipeline.
-        - All results packaged together with pixel ID and returned to consumer.
+    This is an abstract class and cannot be used for observing.
 
-    - inside update_frame()
-        - unpack pixel ID and pipeline result tuples.
-        - pass results to each pipeline to update pipelines internal state
-        - print workflow statistics and any statistics for each pipeline.
-        - display visual imagery for each pipeline as required
-        - save state for each pipeline as required.
+    :param Node parent: The parent node in the scenegraph. Observers will only observe items
+      in the same scenegraph as them.
+    :param AffineMatrix3D transform: Affine matrix describing the location and orientation of
+      this observer in the world.
+    :param str name: User friendly name for this observer.
+    :param object render_engine: A workflow manager for controlling whether tasks will be
+      executed in serial, parallel or on a cluster (default=MulticoreEngine()).
+    :param int spectral_rays: The number of smaller sub-spectrum rays the full spectrum will
+      be divided into (default=1).
+    :param int spectral_bins: The number of spectral samples over the wavelength range (default=15).
+    :param float min_wavelength: Lower wavelength bound for sampled spectral range (default=375nm).
+    :param float max_wavelength: Upper wavelength bound for sampled spectral range (default=740nm).
+    :param float ray_extinction_prob: Probability of ray extinction after every material
+      intersection (default=0.01).
+    :param int ray_extinction_min_depth: Minimum number of paths before russian roulette style
+      ray extinction (default=3).
+    :param int ray_max_depth: Maximum number of Ray paths before terminating Ray (default=500).
+    :param bool ray_importance_sampling: Toggle importance sampling behaviour (default=True).
+    :param float ray_important_path_weight: Relative weight of important path sampling
+      (default=0.2).
     """
 
     def __init__(self, parent=None, transform=None, name=None, render_engine=None, spectral_rays=None, spectral_bins=None,
@@ -98,6 +124,11 @@ cdef class _ObserverBase(Observer):
 
     @property
     def spectral_bins(self):
+        """
+        The number of spectral samples over the wavelength range.
+
+        :rtype: int
+        """
         return self._spectral_bins
 
     @spectral_bins.setter
@@ -110,6 +141,19 @@ cdef class _ObserverBase(Observer):
 
     @property
     def spectral_rays(self):
+        """
+        The number of smaller sub-spectrum rays the full spectrum will be divided into.
+
+        This setting is important for scenes with dispersive elements such as glass prisms. This
+        setting allows the parent spectrum to be divided into N smaller sub-regions that will be
+        individually sampled. This allows rays with different active wavelength ranges to take
+        different paths when passing through materials wit different refractive indexes.
+
+        Note that the number of spectral rays cannot be greater than the number of spectral
+        bins.
+
+        :rtype: int
+        """
         return self._spectral_rays
 
     @spectral_rays.setter
@@ -120,6 +164,11 @@ cdef class _ObserverBase(Observer):
 
     @property
     def min_wavelength(self):
+        """
+        Lower wavelength bound for sampled spectral range.
+
+        :rtype: float
+        """
         return self._min_wavelength
 
     @min_wavelength.setter
@@ -132,6 +181,11 @@ cdef class _ObserverBase(Observer):
 
     @property
     def max_wavelength(self):
+        """
+        Upper wavelength bound for sampled spectral range.
+
+        :rtype: float
+        """
         return self._max_wavelength
 
     @max_wavelength.setter
@@ -144,6 +198,11 @@ cdef class _ObserverBase(Observer):
 
     @property
     def ray_extinction_prob(self):
+        """
+        Probability of ray extinction after every material intersection.
+
+        :rtype: float
+        """
         return self._ray_extinction_prob
 
     @ray_extinction_prob.setter
@@ -154,6 +213,11 @@ cdef class _ObserverBase(Observer):
 
     @property
     def ray_extinction_min_depth(self):
+        """
+        Minimum number of paths before russian roulette style ray extinction.
+
+        :rtype: int
+        """
         return self._ray_extinction_min_depth
 
     @ray_extinction_min_depth.setter
@@ -164,6 +228,11 @@ cdef class _ObserverBase(Observer):
 
     @property
     def ray_max_depth(self):
+        """
+        Maximum number of Ray paths before terminating Ray.
+
+        :rtype: int
+        """
         return self._ray_max_depth
 
     @ray_max_depth.setter
@@ -174,6 +243,11 @@ cdef class _ObserverBase(Observer):
 
     @property
     def ray_important_path_weight(self):
+        """
+        Relative weight of important path sampling.
+
+        :rtype: float
+        """
         return self._ray_important_path_weight
 
     @ray_important_path_weight.setter
@@ -458,7 +532,16 @@ cdef class _ObserverBase(Observer):
 
 cdef class Observer0D(_ObserverBase):
     """
+    0D observer base class.
 
+    This is an abstract class and cannot be used for observing.
+
+    :param list pipelines: A list of pipelines that will process the resulting spectra
+      from this observer.
+    :param int pixel_samples: Number of samples to generate per pixel with one call to
+      observe() (default=1000).
+    :param int samples_per_task: Minimum number of samples to request per task (default=250).
+    :param kwargs: **kwargs from _ObserverBase.
     """
 
     def __init__(self, pipelines, parent=None, transform=None, name=None,
@@ -478,6 +561,11 @@ cdef class Observer0D(_ObserverBase):
 
     @property
     def pixel_samples(self):
+        """
+        The number of samples to take per pixel.
+
+        :rtype: int
+        """
         return self._pixel_samples
 
     @pixel_samples.setter
@@ -488,6 +576,13 @@ cdef class Observer0D(_ObserverBase):
 
     @property
     def samples_per_task(self):
+        """
+        Minimum number of samples to request per task.
+
+        For efficiency reasons this should not be set below 100 samples.
+
+        :rtype: int
+        """
         return self._samples_per_task
 
     @samples_per_task.setter
@@ -498,6 +593,11 @@ cdef class Observer0D(_ObserverBase):
 
     @property
     def pipelines(self):
+        """
+        A list of pipelines to process the output spectra of these observations.
+
+        :rtype: list
+        """
         return self._pipelines
 
     @pipelines.setter
@@ -594,9 +694,6 @@ cdef class Observer0D(_ObserverBase):
 
 
 cdef class Observer1D(_ObserverBase):
-    """
-
-    """
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, spectral_rays=None, spectral_bins=None,
@@ -739,7 +836,17 @@ cdef class Observer1D(_ObserverBase):
 
 cdef class Observer2D(_ObserverBase):
     """
+    2D observer base class.
 
+    This is an abstract class and cannot be used for observing.
+
+    :param tuple pixels: A tuple of pixel dimensions for this observer, i.e. (512, 512).
+    :param FrameSampler2D frame_sampler: A frame sampler class.
+    :param list pipelines: A list of pipelines that will process the resulting spectra
+      from this observer.
+    :param int pixel_samples: Number of samples to generate per pixel with one call to
+      observe() (default=1000).
+    :param kwargs: **kwargs from _ObserverBase.
     """
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
@@ -760,6 +867,11 @@ cdef class Observer2D(_ObserverBase):
 
     @property
     def pixel_samples(self):
+        """
+        The number of samples to take per pixel.
+
+        :rtype: int
+        """
         return self._pixel_samples
 
     @pixel_samples.setter
@@ -770,6 +882,11 @@ cdef class Observer2D(_ObserverBase):
 
     @property
     def pixels(self):
+        """
+        Tuple describing the pixel dimensions for this observer (nx, ny), i.e. (512, 512).
+
+        :rtype: tuple
+        """
         return self._pixels
 
     @pixels.setter
@@ -786,6 +903,11 @@ cdef class Observer2D(_ObserverBase):
 
     @property
     def frame_sampler(self):
+        """
+        The FrameSampler2D class for this observer.
+
+        :rtype: FrameSampler2D
+        """
         return self._frame_sampler
 
     @frame_sampler.setter
@@ -796,6 +918,11 @@ cdef class Observer2D(_ObserverBase):
 
     @property
     def pipelines(self):
+        """
+        A list of pipelines to process the output spectra of these observations.
+
+        :rtype: list
+        """
         return self._pipelines
 
     @pipelines.setter

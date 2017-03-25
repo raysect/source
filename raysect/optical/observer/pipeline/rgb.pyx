@@ -52,6 +52,30 @@ _DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
 
 
 cdef class RGBPipeline2D(Pipeline2D):
+    """
+    2D pipeline of sRGB colour values.
+
+    Converts the measured spectrum from each pixel into sRGB
+    colour space values. See the colour module for more
+    information. The RGBPipeline2D class is the workhorse
+    pipeline for visualisation of scenes with Raysect and the
+    default pipeline for most 2D observers.
+
+    :param bool display_progress: Toggles the display of live render progress
+      (default=True).
+    :param float display_update_time: Time in seconds between preview display
+      updates (default=15 seconds).
+    :param bool accumulate: Whether to accumulate samples with subsequent calls
+      to observe() (default=True).
+    :param bool display_auto_exposure: Toggles the use of automatic exposure of
+      final images (default=True).
+    :param float display_sensitivity: The sensitivity of the camera, effectively
+      inverse of the exposure time (default=1.0).
+    :param float display_unsaturated_fraction: Fraction of pixels that must not
+      be saturated. Display values will be scaled to satisfy this value
+      (default=1.0).
+    :param str name: User friendly name for this pipeline.
+    """
 
     cdef:
         str name
@@ -108,6 +132,11 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @property
     def display_sensitivity(self):
+        """
+        The sensitivity of the camera, effectively inverse of the exposure time.
+
+        :rtype: float
+        """
         return self._display_sensitivity
 
     @display_sensitivity.setter
@@ -120,6 +149,11 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @property
     def display_auto_exposure(self):
+        """
+        Toggles the use of automatic exposure on final image.
+
+        :rtype: bool
+        """
         return self._display_auto_exposure
 
     @display_auto_exposure.setter
@@ -129,6 +163,12 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @property
     def display_unsaturated_fraction(self):
+        """
+        Fraction of pixels that must not be saturated. Display values will
+        be scaled to satisfy this value.
+
+        :rtype: float
+        """
         return self._display_unsaturated_fraction
 
     @display_unsaturated_fraction.setter
@@ -140,6 +180,11 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @property
     def display_update_time(self):
+        """
+        Time in seconds between preview display updates.
+
+        :rtype: float
+        """
         return self._display_update_time
 
     @display_update_time.setter
@@ -442,6 +487,10 @@ cdef class RGBPipeline2D(Pipeline2D):
 
 
 cdef class XYZPixelProcessor(PixelProcessor):
+    """
+    PixelProcessor that converts each pixel's spectrum into three
+    XYZ colourspace values.
+    """
 
     cdef:
         np.ndarray resampled_xyz
@@ -468,6 +517,22 @@ cdef class XYZPixelProcessor(PixelProcessor):
 
 
 cdef class RGBAdaptiveSampler2D(FrameSampler2D):
+    """
+    FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
+    level in each RGB pixel value.
+
+    Pixels that have high noise levels will receive extra samples until the desired
+    noise threshold is achieve across the whole image.
+
+    :param RGBPipeline2D pipeline: The specific RGB pipeline to use for feedback control.
+    :param float fraction: The fraction of frame pixels to receive extra sampling
+      (default=0.2).
+    :param float ratio:
+    :param int min_samples: Minimum number of pixel samples across the image before
+      turning on adaptive sampling (default=1000).
+    :param double cutoff: Noise threshold at which extra sampling will be aborted and
+      rendering will complete (default=0.0).
+    """
 
     cdef:
         RGBPipeline2D pipeline

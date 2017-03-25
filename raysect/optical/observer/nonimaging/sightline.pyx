@@ -29,30 +29,53 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer import PowerPipeline0D
+from raysect.optical.observer import SpectralPipeline0D
 
-from raysect.optical cimport Ray, new_point3d, new_vector3d
+from raysect.optical cimport Ray, new_point3d, new_vector3d, Point3D, Vector3D
 from raysect.optical.observer.base cimport Observer0D
 
 
 # TODO: complete docstrings
 cdef class SightLine(Observer0D):
     """
-    An observer that fires rays along the observers z axis.
-    Inherits arguments and attributes from the base NonImaging sensor class. Fires a single ray oriented along the
-    observer's z axis in world space.
-    """
+    A simple line of sight observer.
 
-    cdef double _etendue
+    Fires a single ray oriented along the observer's z axis in world space.
+
+    :param float etendue: Optional user specified etendue. Defaults to etendue=1.0
+      in which case the returned units will always be in radiance (W/m^2/str/nm)
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      by this line of sight (default=SpectralPipeline0D()).
+    :param kwargs: **kwargs and instance properties from Observer0D and _ObserverBase
+    """
+    # :param Point3D position: The origin position of this sight line
+    #   (default=Point3D(0, 0, 0)).
+    # :param Vector3D direction: The observing direction of this sight line
+    #   (default=Vector3D(0, 0, 1)).
+
+    cdef:
+        double _etendue
+        # Point3D _position
+        # Vector3D _direction
 
     def __init__(self, etendue=None, pipelines=None, parent=None, transform=None, name=None):
 
-        pipelines = pipelines or [PowerPipeline0D()]
+        pipelines = pipelines or [SpectralPipeline0D()]
         super().__init__(pipelines, parent=parent, transform=transform, name=name)
+
         self.etendue = etendue or 1.0
+        # self.position = position or Point3D(0, 0, 0)
+        # self.direction = direction or Vector3D(0, 0, 1)
 
     @property
     def etendue(self):
+        """
+        User specified etendue (str^-1/m^-2)
+
+        If etendue=1.0 the spectral units will always be in radiance (W/m^2/str/nm)
+
+        :rtype: float
+        """
         return self._etendue
 
     @etendue.setter
