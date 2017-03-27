@@ -333,6 +333,17 @@ cdef class Spectrum(SpectralFunction):
 
         return photons
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef void clear(self):
+        """
+        Resets the sample values in the spectrum to zero.
+        """
+
+        cdef npy_intp index
+        for index in range(self.bins):
+            self.samples_mv[index] = 0
+
     cpdef Spectrum new_spectrum(self):
         """
         Returns a new Spectrum compatible with the same spectral settings.

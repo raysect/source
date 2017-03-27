@@ -55,6 +55,8 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D to_local, AffineMatrix3D to_world)
 
+    cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1
+
 
 cdef class UnityVolumeEmitter(VolumeEmitterHomogeneous):
 
