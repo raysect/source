@@ -164,6 +164,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
@@ -173,8 +174,7 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
             Point3D start, end
             Vector3D integration_direction, ray_direction
             double length, t, c
-            Spectrum emission, emission_previous
-            double[::1] e1_view, e2_view, s_view
+            Spectrum emission, emission_previous, temp
             int index
 
         # convert start and end points to local space
@@ -190,17 +190,15 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
             return spectrum
 
         integration_direction = integration_direction.normalise()
-        ray_direction = -integration_direction
+        ray_direction = integration_direction.neg()
 
+        # create working buffers
+        emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         emission_previous = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+
+        # sample point and sanity check as bounds checking is disabled
         emission_previous = self.emission_function(start, ray_direction, emission_previous, world, ray, primitive, world_to_primitive, primitive_to_world)
-
-        # sanity check as bounds checking is disabled
-        if emission_previous.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission_previous.samples.shape[0] != spectrum.samples.shape[0]:
-            raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
-
-        # assign memoryview for fast element access to output spectrum
-        s_view = spectrum.samples
+        self._check_dimensions(emission_previous, spectrum.bins)
 
         # numerical integration
         t = self._step
@@ -213,44 +211,39 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
                 start.z + t * integration_direction.z
             )
 
-            emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+            # sample point and sanity check as bounds checking is disabled
             emission = self.emission_function(sample_point, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
-
-            # sanity check as bounds checking is disabled
-            if emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]:
-                raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
-
-            # memoryviews used for fast element access
-            e1_view = emission.samples
-            e2_view = emission_previous.samples
+            self._check_dimensions(emission, spectrum.bins)
 
             # trapezium rule integration
             for index in range(spectrum.bins):
-                s_view[index] += c * (e1_view[index] + e2_view[index])
+                spectrum.samples_mv[index] += c * (emission.samples_mv[index] + emission_previous.samples_mv[index])
 
+            # swap buffers and clear the active buffer
+            temp = emission_previous
             emission_previous = emission
+            emission = temp
+            emission.clear()
+
             t += self._step
 
         # step back to process any length that remains
         t -= self._step
 
-        emission = new_spectrum(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        # sample point and sanity check as bounds checking is disabled
         emission = self.emission_function(end, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
-
-        # sanity check as bounds checking is disabled
-        if emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]:
-            raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
-
-        # memoryviews used for fast element access
-        e1_view = emission.samples
-        e2_view = emission_previous.samples
+        self._check_dimensions(emission, spectrum.bins)
 
         # trapezium rule integration of remainder
         c = 0.5 * (length - t)
         for index in range(spectrum.bins):
-            s_view[index] += c * (e1_view[index] + e2_view[index])
+            spectrum.samples_mv[index] += c * (emission.samples_mv[index] + emission_previous.samples_mv[index])
 
         return spectrum
+
+    cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1:
+        if spectrum.samples.ndim != 1 or spectrum.samples.shape[0] != bins:
+            raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
