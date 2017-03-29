@@ -34,12 +34,24 @@ from raysect.optical cimport new_affinematrix3d
 
 
 cdef class Material(CoreMaterial):
+    """
+    Base class for optical material classes.
+
+    Derived classes must implement the evaluate_surface() and evaluate_volume() methods.
+    """
 
     def __init__(self):
         super().__init__()
         self._importance = 0.0
 
     property importance:
+        """
+        Importance sampling weight for this material.
+
+        Only effective if importance sampling is turned on.
+
+        :rtype: float
+        """
 
         def __get__(self):
             return self._importance
@@ -53,15 +65,61 @@ cdef class Material(CoreMaterial):
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        """
+        Virtual method for evaluating the spectrum at a material surface.
+
+        :param World world: The world scenegraph belonging to this material.
+        :param Ray ray: The ray incident at the material surface.
+        :param Primitive primitive: The geometric shape the holds this material
+          (i.e. mesh, cylinder, etc.).
+        :param Point3D hit_point: The point where the ray is incident on the
+          primitive surface.
+        :param bool exiting: Boolean toggle indicating if this ray is exiting or
+          entering the material surface (True means ray is exiting).
+        :param Point3D inside_point:
+        :param Point3D outside_point:
+        :param Normal3D normal: The surface normal vector at location of hit_point.
+        :param AffineMatrix3D world_to_primitive: Affine matrix defining transformation
+          from world space to local primitive space.
+        :param AffineMatrix3D primitive_to_world: Affine matrix defining transformation
+          from local primitive space to world space.
+        """
         raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
                                    AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        """
+        Virtual method for evaluating the spectrum emitted/absorbed along the rays trajectory
+        through a material surface.
+
+
+        :param Spectrum spectrum: The spectrum already accumulated along the ray path.
+          Don't overwrite this array, add the materials emission/absorption to the existing
+          spectrum.
+        :param World world: The world scenegraph belonging to this material.
+        :param Ray ray: The ray incident at the material surface.
+        :param Primitive primitive: The geometric shape the holds this material
+          (i.e. mesh, cylinder, etc.).
+        :param Point3D start_point: The starting point of the ray's trajectory
+          through the material.
+        :param Point3D end_point: The end point of the ray's trajectory through
+          the material.
+        :param AffineMatrix3D world_to_primitive: Affine matrix defining transformation
+          from world space to local primitive space.
+        :param AffineMatrix3D primitive_to_world: Affine matrix defining transformation
+          from local primitive space to world space.
+        """
         raise NotImplementedError("Material virtual method evaluate_volume() has not been implemented.")
 
 
 cdef class NullSurface(Material):
+    """
+    A base class for materials that have volume properties such as emission/absorption
+    but no surface properties (e.g. a plasma). This material will launch a new ray after
+    the initial ray has transited the material primitive's volume. evaluate_volume() must be
+    implemented by the deriving class.
+    """
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
@@ -87,6 +145,11 @@ cdef class NullSurface(Material):
 
 
 cdef class NullVolume(Material):
+    """
+    A base class for materials that have surface properties such as reflection
+    but no volume properties (e.g. a metallic mirror). evaluate_surface() must be
+    implemented by the deriving class.
+    """
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
@@ -96,23 +159,24 @@ cdef class NullVolume(Material):
         return spectrum
 
 
+# Surface space
+#
+# to simplify maths:
+# normal aligned (flipped) to sit on same side of surface as incoming ray
+# incoming ray vector is aligned to point out of the surface
+# surface space normal is aligned to lie along +ve Z-axis i.e. Normal3D(0, 0, 1)
+#
+# The w_reflection_origin and w_transmission_origin points are provided as
+# ray launch points. These points are guaranteed to prevent same-surface
+# re-intersections. The reflection origin lies on the same side of the
+# surface as the incoming ray, the transmission origin lies on the opposite
+# side of the surface.
+#
+# back_face is true if the ray is on the back side of the primitive surface,
+# true if on the front side (ie on the side of the primitive surface normal)
 cdef class DiscreteBSDF(Material):
     """
-    Surface space
-
-    to simplify maths:
-    normal aligned (flipped) to sit on same side of surface as incoming ray
-    incoming ray vector is aligned to point out of the surface
-    surface space normal is aligned to lie along +ve Z-axis i.e. Normal3D(0, 0, 1)
-
-    The w_reflection_origin and w_transmission_origin points are provided as
-    ray launch points. These points are guaranteed to prevent same-surface
-    re-intersections. The reflection origin lies on the same side of the
-    surface as the incoming ray, the transmission origin lies on the opposite
-    side of the surface.
-
-    back_face is true if the ray is on the back side of the primitive surface,
-    true if on the front side (ie on the side of the primitive surface normal)
+    A base class for materials implementing a discrete BSDF.
     """
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D p_hit_point,
@@ -158,23 +222,24 @@ cdef class DiscreteBSDF(Material):
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
 
 
+# Surface space
+#
+# to simplify maths:
+# normal aligned (flipped) to sit on same side of surface as incoming ray
+# incoming ray vector is aligned to point out of the surface
+# surface space normal is aligned to lie along +ve Z-axis i.e. Normal3D(0, 0, 1)
+#
+# The w_reflection_origin and w_transmission_origin points are provided as
+# ray launch points. These points are guaranteed to prevent same-surface
+# re-intersections. The reflection origin lies on the same side of the
+# surface as the incoming ray, the transmission origin lies on the opposite
+# side of the surface.
+#
+# back_face is true if the ray is on the back side of the primitive surface,
+# true if on the front side (ie on the side of the primitive surface normal)
 cdef class ContinuousBSDF(Material):
     """
-    Surface space
-
-    to simplify maths:
-    normal aligned (flipped) to sit on same side of surface as incoming ray
-    incoming ray vector is aligned to point out of the surface
-    surface space normal is aligned to lie along +ve Z-axis i.e. Normal3D(0, 0, 1)
-
-    The w_reflection_origin and w_transmission_origin points are provided as
-    ray launch points. These points are guaranteed to prevent same-surface
-    re-intersections. The reflection origin lies on the same side of the
-    surface as the incoming ray, the transmission origin lies on the opposite
-    side of the surface.
-
-    back_face is true if the ray is on the back side of the primitive surface,
-    true if on the front side (ie on the side of the primitive surface normal)
+    A base class for materials implementing a continuous BSDF.
     """
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D p_hit_point,

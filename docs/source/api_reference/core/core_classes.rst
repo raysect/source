@@ -14,4 +14,7 @@ Core Classes
 .. automodule:: raysect.core.boundingbox
    :members:
 
+.. automodule:: raysect.core.material
+   :members:
+
 
