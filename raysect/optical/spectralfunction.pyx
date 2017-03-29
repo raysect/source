@@ -298,9 +298,14 @@ cdef class InterpolatedSF(SpectralFunction):
         self.wavelengths = self.wavelengths[indices]
         self.samples = self.samples[indices]
 
+        # obtain memory views
+        self.wavelengths_mv = self.wavelengths
+        self.samples_mv = self.samples
+
         if normalise:
             self.samples /= self.integrate(self.wavelengths.min(), self.wavelengths.max())
 
+    @cython.initializedcheck(False)
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         """
         Calculates the integrated radiance over the specified spectral range.
@@ -310,10 +315,11 @@ cdef class InterpolatedSF(SpectralFunction):
         :return: Integrated radiance in W/m^2/str
         :rtype: float
         """
-        return integrate(self.wavelengths, self.samples, min_wavelength, max_wavelength)
+        return integrate(self.wavelengths_mv, self.samples_mv, min_wavelength, max_wavelength)
 
+    @cython.initializedcheck(False)
     def __call__(self, double wavelength):
-        return interpolate(self.wavelengths, self.samples, wavelength)
+        return interpolate(self.wavelengths_mv, self.samples_mv, wavelength)
 
 
 cdef class ConstantSF(SpectralFunction):
