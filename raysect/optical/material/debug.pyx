@@ -91,9 +91,6 @@ cdef class PerfectReflectingSurface(Material):
             Vector3D incident, reflected
             double temp, ci
             Ray reflected_ray
-            Spectrum spectrum
-            double[::1] s_view, n_view, k_view
-            int i
 
         # convert ray direction normal to local coordinates
         incident = ray.direction.transform(world_to_primitive)
@@ -127,9 +124,7 @@ cdef class PerfectReflectingSurface(Material):
             # incident ray is pointing in to surface, reflection is therefore outside
             reflected_ray = ray.spawn_daughter(outside_point.transform(primitive_to_world), reflected)
 
-        spectrum = reflected_ray.trace(world)
-
-        return spectrum
+        return reflected_ray.trace(world)
 
 
     @cython.boundscheck(False)
