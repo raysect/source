@@ -68,7 +68,6 @@ cdef class Sellmeier(NumericallyIntegratedSF):
                       + (self.b3 * w2) / (w2 - self.c3))
 
 
-# TODO: consider carefully the impact of changes made to support mesh normal interpolation
 cdef class Dielectric(Material):
 
     def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None, bint transmission_only=False):
@@ -244,6 +243,7 @@ cdef class Dielectric(Material):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
@@ -251,16 +251,13 @@ cdef class Dielectric(Material):
 
         cdef:
             double length
-            ndarray transmission
-            double[::1] s_view, t_view
+            double[::1] transmission
             int index
 
         length = start_point.vector_to(end_point).get_length()
         transmission = self.transmission.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
-        s_view = spectrum.samples
-        t_view = transmission
         for index in range(spectrum.bins):
-            s_view[index] *= cpow(t_view[index], length)
+            spectrum.samples_mv[index] *= cpow(transmission[index], length)
 
         return spectrum
 

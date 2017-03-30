@@ -2,20 +2,23 @@
 Observers
 =========
 
-.. automodule:: raysect.optical.observer.sensor
+.. autoclass:: raysect.optical.observer.imaging.pinhole.PinholeCamera
    :members:
 
-.. automodule:: raysect.optical.observer.pinhole
+.. autoclass:: raysect.optical.observer.imaging.orthographic.OrthographicCamera
    :members:
 
-.. automodule:: raysect.optical.observer.orthographic
+.. autoclass:: raysect.optical.observer.imaging.ccd.CCDArray
    :members:
 
-.. automodule:: raysect.optical.observer.ccd
+.. autoclass:: raysect.optical.observer.imaging.vector.VectorCamera
    :members:
 
-.. automodule:: raysect.optical.observer.vector_camera
+.. autoclass:: raysect.optical.observer.nonimaging.fibreoptic.FibreOptic
    :members:
 
-.. automodule:: raysect.optical.observer.nonimaging
+.. autoclass:: raysect.optical.observer.nonimaging.pixel.Pixel
+   :members:
+
+.. autoclass:: raysect.optical.observer.nonimaging.sightline.SightLine
    :members:

@@ -69,22 +69,17 @@ cdef class SpectralFunction:
         self._sample_cache_init()
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
-        """
-
-        :param min_wavelength:
-        :param max_wavelength:
-        :return:
-        """
 
         raise NotImplementedError("Virtual method integrate() not implemented.")
 
     @cython.cdivision(True)
     cpdef double average(self, double min_wavelength, double max_wavelength):
         """
+        Average radiance over the requested spectral range (W/m^2/sr/nm).
 
-        :param min_wavelength:
-        :param max_wavelength:
-        :return:
+        :param float min_wavelength: lower wavelength for calculation
+        :param float max_wavelength: upper wavelength for calculation
+        :rtype: float
         """
 
         # is a cached average already available?
@@ -128,11 +123,12 @@ cdef class SpectralFunction:
     @cython.cdivision(True)
     cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int bins):
         """
+        Re-sample the spectral function with a new wavelength range and resolution.
 
-        :param min_wavelength:
-        :param max_wavelength:
-        :param bins:
-        :return:
+        :param float min_wavelength: lower wavelength for calculation
+        :param float max_wavelength: upper wavelength for calculation
+        :param int bins: The number of spectral bins
+        :rtype: ndarray
         """
 
         cdef:
@@ -221,10 +217,12 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         """
+        Calculates the integrated radiance over the specified spectral range.
 
-        :param min_wavelength:
-        :param max_wavelength:
-        :return:
+        :param float min_wavelength: The minimum wavelength in nanometers
+        :param float max_wavelength: The maximum wavelength in nanometers
+        :return: Integrated radiance in W/m^2/str
+        :rtype: float
         """
 
         cdef:
@@ -266,22 +264,23 @@ cdef class InterpolatedSF(SpectralFunction):
     """
     Linearly interpolated spectral function.
 
-    spectral function defined by samples of regular or irregular spacing
+    Spectral function defined by samples of regular or irregular spacing, ends
+    are extrapolated. You must set the ends to zero if you want the function to
+    go to zero at the edges!
 
-    ends are extrapolated. must set ends to zero if you want function to end!
+    wavelengths and samples will be sorted during initialisation.
+
+    If normalise is set to True the data is rescaled so the integrated area
+    of the spectral function over the full range of the input data is
+    normalised to 1.0.
+
+    :param object wavelengths: 1D array of wavelengths in nanometers.
+    :param object samples: 1D array of spectral samples.
+    :param bool normalise: True/false toggle for whether to normalise the
+      spectral function so its integral equals 1.
     """
 
     def __init__(self, object wavelengths, object samples, normalise=False):
-        """
-        wavelengths and samples will be sorted during initialisation.
-
-        If normalise is set to True the data is rescaled so the integrated area
-        of the spectral function over the full range of the input data is
-        normalised to 1.0.
-
-        :param wavelengths: 1D array of wavelengths in nanometers.
-        :param samples: 1D array of spectral samples.
-        """
 
         super().__init__()
 
@@ -299,19 +298,35 @@ cdef class InterpolatedSF(SpectralFunction):
         self.wavelengths = self.wavelengths[indices]
         self.samples = self.samples[indices]
 
+        # obtain memory views
+        self.wavelengths_mv = self.wavelengths
+        self.samples_mv = self.samples
+
         if normalise:
             self.samples /= self.integrate(self.wavelengths.min(), self.wavelengths.max())
 
+    @cython.initializedcheck(False)
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
-        return integrate(self.wavelengths, self.samples, min_wavelength, max_wavelength)
+        """
+        Calculates the integrated radiance over the specified spectral range.
 
+        :param float min_wavelength: The minimum wavelength in nanometers
+        :param float max_wavelength: The maximum wavelength in nanometers
+        :return: Integrated radiance in W/m^2/str
+        :rtype: float
+        """
+        return integrate(self.wavelengths_mv, self.samples_mv, min_wavelength, max_wavelength)
+
+    @cython.initializedcheck(False)
     def __call__(self, double wavelength):
-        return interpolate(self.wavelengths, self.samples, wavelength)
+        return interpolate(self.wavelengths_mv, self.samples_mv, wavelength)
 
 
 cdef class ConstantSF(SpectralFunction):
     """
     Constant value spectral function
+
+    :param float value: Constant radiance value
     """
 
     def __init__(self, double value):
@@ -320,12 +335,35 @@ cdef class ConstantSF(SpectralFunction):
         self.value = value
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
+        """
+        Calculates the integrated radiance over the specified spectral range.
+
+        :param float min_wavelength: The minimum wavelength in nanometers
+        :param float max_wavelength: The maximum wavelength in nanometers
+        :return: Integrated radiance in W/m^2/str
+        :rtype: float
+        """
         return self.value * (max_wavelength - min_wavelength)
 
     cpdef double average(self, double min_wavelength, double max_wavelength):
+        """
+        Average radiance over the requested spectral range (W/m^2/sr/nm).
+
+        :param float min_wavelength: lower wavelength for calculation
+        :param float max_wavelength: upper wavelength for calculation
+        :rtype: float
+        """
         return self.value
 
     cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int bins):
+        """
+        Re-sample the spectral function with a new wavelength range and resolution.
+
+        :param float min_wavelength: lower wavelength for calculation
+        :param float max_wavelength: upper wavelength for calculation
+        :param int bins: The number of spectral bins
+        :rtype: ndarray
+        """
 
         cdef:
             ndarray samples

@@ -52,6 +52,7 @@ cdef class Spectrum(SpectralFunction):
     cpdef bint is_zero(self)
     cpdef double total(self)
     cpdef ndarray to_photons(self)
+    cpdef void clear(self)
     cpdef Spectrum new_spectrum(self)
     cpdef Spectrum copy(self)
 

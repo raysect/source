@@ -55,6 +55,8 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D to_local, AffineMatrix3D to_world)
 
+    cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1
+
 
 cdef class UnityVolumeEmitter(VolumeEmitterHomogeneous):
 
@@ -80,4 +82,4 @@ cdef class Checkerboard(NullVolume):
         public double scale1
         public double scale2
 
-    cdef inline bint _flip(self, bint v, double p)
+    cdef inline bint _flip(self, bint v, double p) nogil
