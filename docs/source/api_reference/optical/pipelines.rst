@@ -1,10 +1,42 @@
 
-Pipelines
-=========
+Frame Samples and Pipelines
+===========================
 
 
-Pipeline Base classes
----------------------
+Base Classes
+------------
+
+
+Frame Sampler
+^^^^^^^^^^^^^
+
+For the higher dimensional observers (>0D) frame samplers determine how the individual
+pixels that make up the observers frame are sampled. For example, sample the full frame
+or adaptively select pixels to sample based on their noise level.
+
+.. autoclass:: raysect.optical.observer.base.sampler.FrameSampler1D
+   :members:
+
+.. autoclass:: raysect.optical.observer.base.sampler.FrameSampler2D
+   :members:
+
+
+Pixel Processor
+^^^^^^^^^^^^^^^
+
+A pixel processor handles the processing of the spectra for each pixel sampled by the
+observer.
+
+.. autoclass:: raysect.optical.observer.base.processor.PixelProcessor
+   :members:
+
+
+Pipeline
+^^^^^^^^
+
+Pipelines define how spectra are processed by observers and presented to the user.
+The following sections define the various pipelines available and their
+associated utility classes.
 
 .. autoclass:: raysect.optical.observer.base.pipeline.Pipeline0D
    :members:
@@ -15,14 +47,9 @@ Pipeline Base classes
 .. autoclass:: raysect.optical.observer.base.pipeline.Pipeline2D
    :members:
 
-.. autoclass:: raysect.optical.observer.base.processor.PixelProcessor
-   :members:
 
-.. autoclass:: raysect.optical.observer.base.sampler.FrameSampler1D
-   :members:
 
-.. autoclass:: raysect.optical.observer.base.sampler.FrameSampler2D
-   :members:
+
 
 
 RGB

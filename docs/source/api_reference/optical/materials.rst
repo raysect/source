@@ -2,8 +2,8 @@
 Optical Materials
 =================
 
-Optical Material Base Classes
------------------------------
+Base Classes
+------------
 
 The Bidirectional Scattering Distribution Function (BSDF) function describes how
 incoming light is split into the reflected (bidirectional reflectance distribution

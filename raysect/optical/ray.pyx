@@ -47,6 +47,8 @@ cdef class Ray(CoreRay):
     """
     Optical Ray class for optical applications, inherits from core Ray class.
 
+    Provides the trace(world) method.
+
     :param Point3D origin: Point defining ray’s origin (default=Point3D(0, 0, 0))
     :param Vector3D direction: Vector defining ray’s direction (default=Vector3D(0, 0, 1))
     :param float min_wavelength: Lower wavelength bound for observed spectrum

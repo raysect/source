@@ -15,6 +15,10 @@ Spectral Functions
 .. autoclass:: raysect.optical.spectralfunction.SpectralFunction
    :members:
 
+.. autoclass:: raysect.optical.spectrum.Spectrum
+   :members:
+   :show-inheritance:
+
 .. autoclass:: raysect.optical.spectralfunction.NumericallyIntegratedSF
    :members:
    :show-inheritance:
@@ -24,10 +28,6 @@ Spectral Functions
    :show-inheritance:
 
 .. autoclass:: raysect.optical.spectralfunction.ConstantSF
-   :members:
-   :show-inheritance:
-
-.. autoclass:: raysect.optical.spectrum.Spectrum
    :members:
    :show-inheritance:
 
@@ -75,7 +75,7 @@ see `Wikipedia <https://en.wikipedia.org/wiki/SRGB>`_.
 
 .. autofunction:: raysect.optical.colour.ciexyz_to_srgb
 
-.. autofunction:: raysect.optical.colour.ciexyz_to_srgb
+.. autofunction:: raysect.optical.colour.srgb_to_ciexyz
 
 
 Optical Scenegraph
