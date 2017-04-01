@@ -465,6 +465,9 @@ cdef class RGBPipeline2D(Pipeline2D):
         return rgb_image
 
     def display(self):
+        """
+        Plot the RGB frame.
+        """
         if not self.xyz_frame:
             raise ValueError("There is no frame to display.")
         self._render_display(self.xyz_frame)
