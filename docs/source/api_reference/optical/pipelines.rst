@@ -34,9 +34,10 @@ observer.
 Pipeline
 ^^^^^^^^
 
-Pipelines define how spectra are processed by observers and presented to the user.
-The following sections define the various pipelines available and their
-associated utility classes.
+Pipelines define how spectra are processed by observers into the form desired by the user.
+For example, the power pipelines define how the measured spectra is integrated over the
+spectral range to give the overall power in W arriving at the observing surfaces. The also
+control the display and visualisation of results.
 
 .. autoclass:: raysect.optical.observer.base.pipeline.Pipeline0D
    :members:
@@ -46,10 +47,6 @@ associated utility classes.
 
 .. autoclass:: raysect.optical.observer.base.pipeline.Pipeline2D
    :members:
-
-
-
-
 
 
 RGB
