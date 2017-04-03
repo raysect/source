@@ -32,6 +32,7 @@
 from numpy import zeros, float64, int32
 
 from libc.math cimport sqrt
+from raysect.core.math.cython.utility cimport swap_int, swap_double
 cimport cython
 
 
@@ -55,13 +56,9 @@ cdef class StatsBin:
         obj.samples = self.samples
         return obj
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cpdef object add_sample(self, double sample):
         _add_sample(sample, &self.mean, &self.variance, &self.samples)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cpdef object combine_samples(self, double mean, double variance, int sample_count):
 
         cdef:
@@ -118,15 +115,17 @@ cdef class StatsArray1D:
     cpdef object clear(self):
         self._new_buffers()
 
+    @cython.initializedcheck(False)
     cpdef StatsArray1D copy(self):
         obj = StatsArray1D(self.length)
-        obj.mean[:] = self.mean[:]
-        obj.variance[:] = self.variance[:]
-        obj.samples[:] = self.samples[:]
+        obj.mean_mv[:] = self.mean_mv[:]
+        obj.variance_mv[:] = self.variance_mv[:]
+        obj.samples_mv[:] = self.samples_mv[:]
         return obj
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object add_sample(self, int x, double sample):
         cdef:
             int n
@@ -149,6 +148,7 @@ cdef class StatsArray1D:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object combine_samples(self, int x, double mean, double variance, int sample_count):
 
         cdef:
@@ -185,11 +185,16 @@ cdef class StatsArray1D:
         self.variance_mv[x] = vt
         self.samples_mv[x] = nt
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef double error(self, int x):
+        self._bounds_check(x)
         return _std_error(self.variance_mv[x], self.samples_mv[x])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef ndarray errors(self):
 
         cdef:
@@ -198,11 +203,9 @@ cdef class StatsArray1D:
             double[::1] errors_mv
 
         errors = zeros((self.length,), dtype=float64)
-
         errors_mv = errors
         for x in range(self.length):
             errors_mv[x] = _std_error(self.variance_mv[x], self.samples_mv[x])
-
         return errors
 
     cdef inline void _new_buffers(self):
@@ -214,7 +217,6 @@ cdef class StatsArray1D:
         self.samples_mv = self.samples
 
     cdef inline object _bounds_check(self, int x):
-
         if x < 0 or x >= self.length:
             raise ValueError("Index is out of range.")
 
@@ -242,15 +244,17 @@ cdef class StatsArray2D:
     cpdef object clear(self):
         self._new_buffers()
 
+    @cython.initializedcheck(False)
     cpdef StatsArray2D copy(self):
         obj = StatsArray2D(self.nx, self.ny)
-        obj.mean[:] = self.mean[:]
-        obj.variance[:] = self.variance[:]
-        obj.samples[:] = self.samples[:]
+        obj.mean_mv[:] = self.mean_mv[:]
+        obj.variance_mv[:] = self.variance_mv[:]
+        obj.samples_mv[:] = self.samples_mv[:]
         return obj
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object add_sample(self, int x, int y, double sample):
         cdef:
             int n
@@ -273,6 +277,7 @@ cdef class StatsArray2D:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object combine_samples(self, int x, int y, double mean, double variance, int sample_count):
 
         cdef:
@@ -309,11 +314,16 @@ cdef class StatsArray2D:
         self.variance_mv[x, y] = vt
         self.samples_mv[x, y] = nt
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef double error(self, int x, int y):
+        self._bounds_check(x, y)
         return _std_error(self.variance_mv[x, y], self.samples_mv[x, y])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef ndarray errors(self):
 
         cdef:
@@ -322,12 +332,10 @@ cdef class StatsArray2D:
             double[:,::1] errors_mv
 
         errors = zeros((self.nx, self.ny), dtype=float64)
-
         errors_mv = errors
         for x in range(self.nx):
             for y in range(self.ny):
                 errors_mv[x, y] = _std_error(self.variance_mv[x, y], self.samples_mv[x, y])
-
         return errors
 
     cdef inline void _new_buffers(self):
@@ -374,15 +382,19 @@ cdef class StatsArray3D:
     cpdef object clear(self):
         self._new_buffers()
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef StatsArray3D copy(self):
         obj = StatsArray3D(self.nx, self.ny, self.nz)
-        obj.mean[:] = self.mean[:]
-        obj.variance[:] = self.variance[:]
-        obj.samples[:] = self.samples[:]
+        obj.mean_mv[:] = self.mean_mv[:]
+        obj.variance_mv[:] = self.variance_mv[:]
+        obj.samples_mv[:] = self.samples_mv[:]
         return obj
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object add_sample(self, int x, int y, int z, double sample):
         cdef:
             int n
@@ -405,6 +417,7 @@ cdef class StatsArray3D:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object combine_samples(self, int x, int y, int z, double mean, double variance, int sample_count):
 
         cdef:
@@ -441,11 +454,16 @@ cdef class StatsArray3D:
         self.variance_mv[x, y, z] = vt
         self.samples_mv[x, y, z] = nt
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef double error(self, int x, int y, int z):
+        self._bounds_check(x, y, z)
         return _std_error(self.variance_mv[x, y, z], self.samples_mv[x, y, z])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef ndarray errors(self):
 
         cdef:
@@ -454,13 +472,11 @@ cdef class StatsArray3D:
             double[:,:,::1] errors_mv
 
         errors = zeros((self.nx, self.ny, self.nz), dtype=float64)
-
         errors_mv = errors
         for x in range(self.nx):
             for y in range(self.ny):
                 for z in range(self.nz):
                     errors_mv[x, y, z] = _std_error(self.variance_mv[x, y, z], self.samples_mv[x, y, z])
-
         return errors
 
     cdef inline void _new_buffers(self):
@@ -484,7 +500,7 @@ cdef class StatsArray3D:
 
 
 @cython.cdivision(True)
-cdef inline double _std_error(double v, int n):
+cdef inline double _std_error(double v, int n) nogil:
     """
     Calculates the standard error from the variance.
 
@@ -499,7 +515,7 @@ cdef inline double _std_error(double v, int n):
 
 
 @cython.cdivision(True)
-cdef inline void _add_sample(double sample, double *m, double *v, int *n):
+cdef inline void _add_sample(double sample, double *m, double *v, int *n) nogil:
     """
     Updates the mean, variance and sample count with the supplied sample value.
 
@@ -535,9 +551,8 @@ cdef inline void _add_sample(double sample, double *m, double *v, int *n):
         v[0] = (prev_v * (prev_n - 1) + (sample - prev_m)*(sample - m[0])) / (n[0] - 1)
 
 
-# todo: move to core
 @cython.cdivision(True)
-cdef inline void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt):
+cdef inline void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt) nogil:
     """
     Computes the combined statistics of two sets of samples specified by mean, variance and sample count.
 
@@ -556,9 +571,9 @@ cdef inline void _combine_samples(double mx, double vx, int nx, double my, doubl
 
     # ensure set x is the largest set
     if nx < ny:
-        _swap_int(&nx, &ny)
-        _swap_double(&mx, &my)
-        _swap_double(&vx, &vy)
+        swap_int(&nx, &ny)
+        swap_double(&mx, &my)
+        swap_double(&vx, &vy)
 
     # most common case first
     if nx > 1 and ny > 1:
@@ -617,21 +632,3 @@ cdef inline void _combine_samples(double mx, double vx, int nx, double my, doubl
 
             # single sample from set y
             _add_sample(my, mt, vt, nt)
-
-
-# todo: move to core
-cdef inline void _swap_int(int *a, int *b):
-
-        cdef int temp
-        temp = a[0]
-        a[0] = b[0]
-        b[0] = temp
-
-
-# todo: move to core
-cdef inline void _swap_double(double *a, double *b):
-
-        cdef double temp
-        temp = a[0]
-        a[0] = b[0]
-        b[0] = temp

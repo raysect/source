@@ -74,6 +74,8 @@ cdef class InterpolatedSF(SpectralFunction):
         ndarray wavelengths
         ndarray samples
         ndarray cache_samples
+        double[::1] wavelengths_mv
+        double[::1] samples_mv
 
 
 cdef class ConstantSF(SpectralFunction):

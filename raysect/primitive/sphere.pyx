@@ -31,6 +31,7 @@
 
 
 from raysect.core cimport Material, new_intersection, BoundingBox3D, new_point3d, new_normal3d, Normal3D, AffineMatrix3D
+from raysect.core.math.cython cimport solve_quadratic, swap_double
 from libc.math cimport sqrt
 cimport cython
 
@@ -53,7 +54,6 @@ cdef class Sphere(Primitive):
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the sphere's material (default = None).
     :param str name: A string specifying a user-friendly name for the sphere (default = "").
-
     """
 
     def __init__(self, double radius=0.5, object parent=None, AffineMatrix3D transform not None=AffineMatrix3D(), Material material not None=Material(), str name=None):
@@ -61,7 +61,6 @@ cdef class Sphere(Primitive):
         super().__init__(parent, transform, material, name)
 
         if radius < 0.0:
-
             raise ValueError("Sphere radius cannot be less than zero.")
 
         self._radius = radius
@@ -85,14 +84,12 @@ cdef class Sphere(Primitive):
 
         def __set__(self, double radius):
 
+            # don't do anything if the value is unchanged
             if radius == self._radius:
-
                 return
 
             if radius < 0.0:
-
                 raise ValueError("Sphere radius cannot be less than zero.")
-
             self._radius = radius
 
             # the next intersection cache has been invalidated by the radius change
@@ -105,7 +102,7 @@ cdef class Sphere(Primitive):
 
         cdef Point3D origin
         cdef Vector3D direction
-        cdef double a, b, c, d, q, t0, t1, temp, t_closest
+        cdef double a, b, c, t0, t1, t_closest
 
         # reset further intersection state
         self._further_intersection = False
@@ -115,72 +112,34 @@ cdef class Sphere(Primitive):
         direction = ray.direction.transform(self.to_local())
 
         # coefficients of quadratic equation and discriminant
-        a = (direction.x * direction.x
-           + direction.y * direction.y
-           + direction.z * direction.z)
+        a = direction.x * direction.x + direction.y * direction.y + direction.z * direction.z
+        b = 2 * (direction.x * origin.x + direction.y * origin.y + direction.z * origin.z)
+        c = origin.x * origin.x + origin.y * origin.y + origin.z * origin.z - self._radius * self._radius
 
-        b = 2 * (direction.x * origin.x
-               + direction.y * origin.y
-               + direction.z * origin.z)
-
-        c = (origin.x * origin.x
-           + origin.y * origin.y
-           + origin.z * origin.z
-           - self._radius * self._radius)
-
-        d = b*b - 4*a*c
-
-        # ray misses sphere if there are no real roots of the quadratic
-        if d < 0:
-
+        # calculate intersection distances by solving the quadratic equation
+        # ray misses if there are no real roots of the quadratic
+        if not solve_quadratic(a, b, c, &t0, &t1):
             return None
-
-        # calculate intersection distances using method described in the book:
-        # "Physically Based Rendering - 2nd Edition", Elsevier 2010
-        # this method is more numerically stable than the usual root equation
-        if b < 0:
-
-            q = -0.5 * (b - sqrt(d))
-
-        else:
-
-            q = -0.5 * (b + sqrt(d))
-
-        with cython.cdivision(True):
-
-            t0 = q / a
-            t1 = c / q
 
         # ensure t0 is always smaller than t1
         if t0 > t1:
-
-            # swap
-            temp = t0
-            t0 = t1
-            t1 = temp
+            swap_double(&t0, &t1)
 
         # test the intersection points inside the ray search range [0, max_distance]
-        if (t0 > ray.max_distance) or (t1 < 0.0):
-
+        if t0 > ray.max_distance or t1 < 0.0:
             return None
 
         if t0 >= 0.0:
-
             t_closest = t0
             if t1 <= ray.max_distance:
-
                 self._further_intersection = True
                 self._cached_ray = ray
                 self._cached_origin = origin
                 self._cached_direction = direction
                 self._next_t = t1
-
         elif t1 <= ray.max_distance:
-
             t_closest = t1
-
         else:
-
             return None
 
         return self._generate_intersection(ray, origin, direction, t_closest)
@@ -188,12 +147,10 @@ cdef class Sphere(Primitive):
     cpdef Intersection next_intersection(self):
 
         if not self._further_intersection:
-
             return None
 
         # this is the 2nd and therefore last intersection
         self._further_intersection = False
-
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t)
 
     cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance):
@@ -219,22 +176,11 @@ cdef class Sphere(Primitive):
         delta_y = EPSILON * normal.y
         delta_z = EPSILON * normal.z
 
-        inside_point = new_point3d(hit_point.x - delta_x,
-                                   hit_point.y - delta_y,
-                                   hit_point.z - delta_z)
-
-        outside_point = new_point3d(hit_point.x + delta_x,
-                                    hit_point.y + delta_y,
-                                    hit_point.z + delta_z)
+        inside_point = new_point3d(hit_point.x - delta_x, hit_point.y - delta_y, hit_point.z - delta_z)
+        outside_point = new_point3d(hit_point.x + delta_x, hit_point.y + delta_y, hit_point.z + delta_z)
 
         # is ray exiting surface
-        if direction.dot(normal) >= 0.0:
-
-            exiting = True
-
-        else:
-
-            exiting = False
+        exiting = direction.dot(normal) >= 0.0
 
         return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
                                 normal, exiting, self.to_local(), self.to_root())
@@ -248,17 +194,11 @@ cdef class Sphere(Primitive):
         local_point = point.transform(self.to_local())
 
         # calculate squared distance of the point from the sphere origin
-        distance_sqr = (local_point.x * local_point.x
-                      + local_point.y * local_point.y
-                      + local_point.z * local_point.z)
+        distance_sqr = (local_point.x * local_point.x + local_point.y * local_point.y + local_point.z * local_point.z)
 
         # point is outside sphere if point distance is greater than the radius
         # compare squares to avoid costly square root calculation
-        if distance_sqr > self._radius * self._radius:
-
-            return False
-
-        return True
+        return distance_sqr <= self._radius * self._radius
 
     cpdef BoundingBox3D bounding_box(self):
 

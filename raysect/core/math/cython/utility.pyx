@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from libc.math cimport sqrt
 cimport cython
 
 #TODO: Write unit tests!
@@ -36,7 +37,7 @@ cimport cython
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline int find_index(double[::1] x, double v):
+cdef inline int find_index(double[::1] x, double v) nogil:
     """
     Locates the lower index or the range that contains the specified value.
 
@@ -73,7 +74,7 @@ cdef inline int find_index(double[::1] x, double v):
         # value is lower than the lowest value in the array
         return -1
 
-    top_index = len(x) - 1
+    top_index = x.shape[0] - 1
     if v >= x[top_index]:
 
         # value is above or equal to the highest value in the array
@@ -93,7 +94,7 @@ cdef inline int find_index(double[::1] x, double v):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double interpolate(double[::1] x, double[::1] y, double p):
+cdef inline double interpolate(double[::1] x, double[::1] y, double p) nogil:
     """
     Linearly interpolates sampled data onto the specified point.
 
@@ -134,7 +135,7 @@ cdef inline double interpolate(double[::1] x, double[::1] y, double p):
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1):
+cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil:
     """
     Integrates a linearly interpolated function between two points.
 
@@ -180,7 +181,7 @@ cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1)
         return y[0] * (x1 - x0)
 
     # are both points beyond the top of the array?
-    top_index = len(x) - 1
+    top_index = x.shape[0] - 1
     if lower_index > top_index:
 
         # extrapolate from last array value (nearest-neighbour)
@@ -244,7 +245,7 @@ cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1)
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
+cdef inline double average(double[::1] x, double[::1] y, double x0, double x1) nogil:
     """
     Returns the average value of a linearly interpolated function between two
     points.
@@ -278,7 +279,7 @@ cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
         if index == -1:
             return y[0]
 
-        top_index = len(x) - 1
+        top_index = x.shape[0] - 1
 
         # is point above array?
         if index == top_index:
@@ -298,3 +299,38 @@ cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
             x1 = temp
 
         return integrate(x, y, x0, x1) / (x1 - x0)
+
+
+#TODO: docstring
+@cython.cdivision(True)
+cdef inline bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil:
+    """
+
+    :param double a:
+    :param double b:
+    :param double c:
+    :param double t0:
+    :param double t1:
+    :return:
+    :rtype: bint
+    """
+
+    cdef double d, q
+
+    # calculate discriminant
+    d = b*b - 4*a*c
+
+    # are there any real roots of the quadratic?
+    if d < 0:
+        return False
+
+    # calculate roots using method described in the book:
+    # "Physically Based Rendering - 2nd Edition", Elsevier 2010
+    # this method is more numerically stable than the usual root equation
+    if b < 0:
+        q = -0.5 * (b - sqrt(d))
+    else:
+        q = -0.5 * (b + sqrt(d))
+    t0[0] = q / a
+    t1[0] = c / q
+    return True

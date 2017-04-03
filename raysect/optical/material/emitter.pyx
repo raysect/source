@@ -32,7 +32,7 @@
 from raysect.optical.colour import d65_white
 
 from numpy cimport ndarray
-from libc.math cimport round
+from libc.math cimport round, fabs
 from raysect.optical cimport new_point3d, Normal3D, new_spectrum
 cimport cython
 
@@ -52,26 +52,20 @@ cdef class UniformSurfaceEmitter(NullVolume):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Spectrum spectrum
-            ndarray emission
-            double[::1] s_view, e_view
+            double[::1] emission
             int index
 
         spectrum = ray.new_spectrum()
         emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
-
-        # obtain memoryviews
-        s_view = spectrum.samples
-        e_view = emission
-
         for index in range(spectrum.bins):
-            s_view[index] = e_view[index] * self.scale
-
+            spectrum.samples_mv[index] = emission[index] * self.scale
         return spectrum
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
@@ -90,6 +84,7 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
@@ -100,7 +95,6 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
             Vector3D direction
             double length
             Spectrum emission
-            double[::1] e_view, s_view
             int index
 
         # convert start and end points to local space
@@ -127,13 +121,9 @@ cdef class VolumeEmitterHomogeneous(NullSurface):
         if emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]:
             raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
 
-        # memoryviews used for fast element access
-        e_view = emission.samples
-        s_view = spectrum.samples
-
         # integrate emission density along ray path
         for index in range(spectrum.bins):
-            s_view[index] += e_view[index] * length
+            spectrum.samples_mv[index] += emission.samples_mv[index] * length
 
         return spectrum
 
@@ -238,7 +228,6 @@ cdef class VolumeEmitterInhomogeneous(NullSurface):
         c = 0.5 * (length - t)
         for index in range(spectrum.bins):
             spectrum.samples_mv[index] += c * (emission.samples_mv[index] + emission_previous.samples_mv[index])
-
         return spectrum
 
     cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1:
@@ -266,10 +255,11 @@ cdef class UnityVolumeEmitter(VolumeEmitterHomogeneous):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-        spectrum.samples[:] = 1.0
+        spectrum.samples_mv[:] = 1.0
         return spectrum
 
 
@@ -287,23 +277,18 @@ cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
-            ndarray emission
-            double[::1] s_view, e_view
+            double[::1] emission
             int index
 
         emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
-
-        # obtain memoryviews
-        s_view = spectrum.samples
-        e_view = emission
-
         for index in range(spectrum.bins):
-            s_view[index] += e_view[index] * self.scale
+            spectrum.samples_mv[index] += emission[index] * self.scale
 
         return spectrum
 
@@ -339,14 +324,14 @@ cdef class Checkerboard(NullVolume):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                 bint exiting, Point3D inside_point, Point3D outside_point,
                                 Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Spectrum spectrum
-            ndarray emission
-            double[::1] s_view, e_view
+            double[::1] emission
             bint v
             int index
             double scale
@@ -360,30 +345,27 @@ cdef class Checkerboard(NullVolume):
 
         # select emission
         spectrum = ray.new_spectrum()
-        s_view = spectrum.samples
 
         if v:
             emission = self.emission_spectrum1.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
-            e_view = emission
             scale = self.scale1
         else:
             emission = self.emission_spectrum2.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
-            e_view = emission
             scale = self.scale2
 
         for index in range(spectrum.bins):
-            s_view[index] = e_view[index] * scale
+            spectrum.samples_mv[index] = emission[index] * scale
 
         return spectrum
 
     @cython.cdivision(True)
-    cdef inline bint _flip(self, bint v, double p):
+    cdef inline bint _flip(self, bint v, double p) nogil:
 
         # round to avoid numerical precision issues (rounds to nearest nanometer)
         p = round(p * 1e9) / 1e9
 
         # generates check pattern from [0, inf]
-        if abs(self._rwidth * p) % 2 >= 1.0:
+        if fabs(self._rwidth * p) % 2 >= 1.0:
             v = not v
 
         # invert pattern for negative
