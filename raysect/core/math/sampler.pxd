@@ -60,3 +60,7 @@ cdef class HemisphereUniformSampler(VectorSampler):
 
 cdef class HemisphereCosineSampler(VectorSampler):
     pass
+
+
+cdef class ConeCosineSampler(VectorSampler):
+    cdef public double angle

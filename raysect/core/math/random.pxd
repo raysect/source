@@ -52,3 +52,4 @@ cpdef Vector3D vector_hemisphere_cosine()
 
 cpdef Vector3D vector_cone(double theta)
 
+cpdef Vector3D vector_cosine_cone(double theta)
