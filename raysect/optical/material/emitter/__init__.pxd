@@ -27,6 +27,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.emitter.emitter cimport UniformSurfaceEmitter, VolumeEmitterHomogeneous, VolumeEmitterInhomogeneous, UniformVolumeEmitter, Checkerboard
+from raysect.optical.material.emitter.uniform cimport UniformSurfaceEmitter, UniformVolumeEmitter
+from raysect.optical.material.emitter.unity cimport UnityVolumeEmitter
+from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
+from raysect.optical.material.emitter.inhomogeneous cimport InhomogeneousVolumeEmitter
+from raysect.optical.material.emitter.checkerboard cimport Checkerboard
 
 

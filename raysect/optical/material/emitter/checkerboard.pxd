@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -27,10 +29,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .uniform import UniformSurfaceEmitter, UniformVolumeEmitter
-from .unity import UnityVolumeEmitter
-from .homogeneous import HomogeneousVolumeEmitter
-from .inhomogeneous import InhomogeneousVolumeEmitter
-from .checkerboard import Checkerboard
+from raysect.optical cimport SpectralFunction
+from raysect.optical.material.material cimport NullVolume
 
 
+cdef class Checkerboard(NullVolume):
+
+    cdef:
+        double _width
+        double _rwidth
+        public SpectralFunction emission_spectrum1
+        public SpectralFunction emission_spectrum2
+        public double scale1
+        public double scale2
+
+    cdef inline bint _flip(self, bint v, double p) nogil

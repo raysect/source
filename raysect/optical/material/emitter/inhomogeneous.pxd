@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -27,10 +29,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .uniform import UniformSurfaceEmitter, UniformVolumeEmitter
-from .unity import UnityVolumeEmitter
-from .homogeneous import HomogeneousVolumeEmitter
-from .inhomogeneous import InhomogeneousVolumeEmitter
-from .checkerboard import Checkerboard
+from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
+from raysect.optical.material.material cimport NullSurface
 
 
+cdef class InhomogeneousVolumeEmitter(NullSurface):
+
+    cdef double _step
+
+    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world)
+
+    cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1
