@@ -40,7 +40,6 @@ For more detailed installation instructions see :any:`installation`.
    primitives
    materials
    conventions
-   references
    license
    help
 
