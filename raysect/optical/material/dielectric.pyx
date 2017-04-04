@@ -36,11 +36,22 @@ from libc.math cimport sqrt, pow as cpow
 from raysect.core.math.random cimport probability
 from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
 
+
 # TODO: double check these changes with the original code, make sure the results are the same!
 cdef class Sellmeier(NumericallyIntegratedSF):
+    """
+    Material with refractive index defined by `Sellmeier equation <https://en.wikipedia.org/wiki/Sellmeier_equation>`_
+
+    :param float b1: Sellmeier :math:`B_1` coefficient.
+    :param float b2: Sellmeier :math:`B_2` coefficient.
+    :param float b3: Sellmeier :math:`B_3` coefficient.
+    :param float c1: Sellmeier :math:`C_1` coefficient.
+    :param float c2: Sellmeier :math:`C_2` coefficient.
+    :param float c3: Sellmeier :math:`B_1` coefficient.
+    :param float sample_resolution: The numerical sampling resolution in nanometers.
+    """
 
     def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, double sample_resolution=10):
-
         super().__init__(sample_resolution)
 
         self.b1 = b1
@@ -57,8 +68,9 @@ cdef class Sellmeier(NumericallyIntegratedSF):
         Returns a sample of the three term Sellmeier equation at the specified
         wavelength.
 
-        :param wavelength: Wavelength in nm.
+        :param float wavelength: Wavelength in nm.
         :return: Refractive index sample.
+        :rtype: float
         """
 
         # wavelength in Sellmeier eqn. is specified in micrometers
@@ -69,9 +81,17 @@ cdef class Sellmeier(NumericallyIntegratedSF):
 
 
 cdef class Dielectric(Material):
+    """
+    An ideal dielectric material.
+
+    :param SpectralFunction index: Refractive index as a function of wavelength.
+    :param SpectralFunction transmission: Transmission per metre as a function of wavelength.
+    :param SpectralFunction external_index: Refractive index of the external material at the interface,
+      defaults to a vacuum (n=1).
+    :param bool transmission_only: toggles transmission only, no reflection (default=False).
+    """
 
     def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None, bint transmission_only=False):
-
         super().__init__()
         self.index = index
         self.transmission = transmission

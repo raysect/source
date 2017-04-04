@@ -34,6 +34,14 @@ cimport cython
 
 
 cdef class HomogeneousVolumeEmitter(NullSurface):
+    """
+    Base class for homogeneous volume emitters.
+
+    Total power output of the light from each point is constant,
+    but not necessarily isotropic.
+
+    The deriving class must implement the emission_function() method.
+    """
 
     def __init__(self):
         super().__init__()
@@ -87,5 +95,22 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
     cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        """
+        The emission function for the material.
+
+        This is a virtual method and must be implemented in a sub class.
+
+        :param Vector3D direction: The emission direction vector in local coordinates.
+        :param Spectrum spectrum: Spectrum measured so far along ray path. Add your emission
+        to this spectrum, don't override it.
+        :param World world: The world scene-graph.
+        :param Ray ray: The ray being traced.
+        :param Primitive primitive: The geometric primitive to which this material belongs
+          (i.e. a cylinder or a mesh).
+        :param AffineMatrix3D world_to_primitive: Affine matrix defining the coordinate
+          transform from world space to the primitive's local space.
+        :param AffineMatrix3D primitive_to_world: Affine matrix defining the coordinate
+          transform from the primitive's local space to world space.
+        """
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")

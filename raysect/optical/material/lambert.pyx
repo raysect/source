@@ -37,6 +37,15 @@ from libc.math cimport M_1_PI
 
 
 cdef class Lambert(ContinuousBSDF):
+    """
+    An ideal Lambertian surface material.
+
+    A Lambertian is a perfectly diffuse surface that scatters light equally in
+    all directions. It is a good approximation to many real world surfaces.
+
+    :param SpectralFunction reflectivity: Reflectance function which defines the
+      fraction of light scattered at each wavelength.
+    """
 
     cdef SpectralFunction reflectivity
 

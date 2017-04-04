@@ -6,7 +6,8 @@ Optical Module
    main_optical_classes
    observers
    pipelines
-   materials
-
+   optical_material_base_classes
+   optical_surfaces
+   optical_volumes
 
 

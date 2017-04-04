@@ -32,16 +32,42 @@
 cimport cython
 
 
-cdef class UnityVolumeEmitter(HomogeneousVolumeEmitter):
+cdef class UnitySurfaceEmitter(NullVolume):
+    """
+    Uniform and isotropic surface emitter with emission 1W/str/m^2/ x nm,
+    where x is the spectrum's wavelength interval.
+
+    This material is useful for general purpose debugging and testing energy
+    conservation.
+    """
 
     def __init__(self):
-        """
-        Uniform, isotropic volume emitter with emission 1W/str/m^3/ x nm, where x is the spectrum's wavelength interval.
+        super().__init__()
 
-        This material is useful for general purpose debugging and evaluating the coupling coefficients between cameras
-        and emitting volumes.
-        """
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
+        cdef Spectrum spectrum
+
+        spectrum = ray.new_spectrum()
+        spectrum.samples_mv[:] = 1.0
+        return spectrum
+
+
+cdef class UnityVolumeEmitter(HomogeneousVolumeEmitter):
+    """
+    Uniform, isotropic volume emitter with emission 1W/str/m^3/ x nm,
+    where x is the spectrum's wavelength interval.
+
+    This material is useful for general purpose debugging and evaluating the coupling
+    coefficients between cameras and emitting volumes.
+    """
+
+    def __init__(self):
         super().__init__()
 
     @cython.boundscheck(False)

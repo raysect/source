@@ -47,9 +47,10 @@ cdef class Light(NullVolume):
     and emission spectrum may be supplied. By default the light spectrum is the
     D65 white point spectrum.
 
-    :param light_direction: A world space Vector3D defining the light direction.
-    :param intensity: The light intensity (default is 1.0).
-    :param spectrum: A SpectralFunction defining the light spectrum (default is D65 white).
+    :param Vector3D light_direction: A world space Vector3D defining the light direction.
+    :param float intensity: The light intensity in units of radiance (default is 1.0).
+    :param SpectralFunction spectrum: A SpectralFunction defining the light's
+      emission spectrum (default is D65 white).
     """
 
     def __init__(self, Vector3D light_direction, double intensity=1.0, SpectralFunction spectrum=None):

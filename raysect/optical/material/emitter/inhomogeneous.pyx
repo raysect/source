@@ -35,18 +35,49 @@ cimport cython
 
 
 cdef class VolumeIntegrator:
+    """
+    Base class for integrators in InhomogeneousVolumeEmitter materials.
+
+    The deriving class must implement the integrate() method.
+    """
 
     cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                              InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
                              AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        """
+        Performs a customised integration of the emission through a volume emitter.
+
+        This is a virtual method and must be implemented in a sub class.
+
+        :param Spectrum spectrum: Spectrum measured so far along ray path. Add your emission
+        to this spectrum, don't override it.
+        :param World world: The world scene-graph.
+        :param Ray ray: The ray being traced.
+        :param Primitive primitive: The geometric primitive to which this material belongs
+          (i.e. a cylinder or a mesh).
+        :param InhomogeneousVolumeEmitter material: The material whose emission needs to be
+          integrated.
+        :param Point3D start_point: The start point for integration in world space.
+        :param Point3D end_point: The end point for integration in world space.
+        :param AffineMatrix3D world_to_primitive: Affine matrix defining the coordinate
+          transform from world space to the primitive's local space.
+        :param AffineMatrix3D primitive_to_world: Affine matrix defining the coordinate
+          transform from the primitive's local space to world space.
+        """
 
         raise NotImplementedError("Virtual method integrate() has not been implemented.")
 
 
 cdef class NumericalIntegrator(VolumeIntegrator):
+    """
+    A basic implementation of the trapezium integration scheme for volume emitters.
 
-    def __init__(self, step, min_samples=5):
+    :param float step: The step size for numerical integration in metres.
+    :param int min_samples: The minimum number of samples to use over integration
+      range (default=5).
+    """
 
+    def __init__(self, float step, int min_samples=5):
         self._step = step
         self._min_samples = min_samples
 
@@ -148,9 +179,19 @@ cdef class NumericalIntegrator(VolumeIntegrator):
 
 
 cdef class InhomogeneousVolumeEmitter(NullSurface):
+    """
+    Base class for inhomogeneous volume emitters.
+
+    The integration technique can be changed by the user, but defaults to
+    a basic numerical integration scheme.
+
+    The deriving class must implement the emission_function() method.
+
+    :param VolumeIntegrator integrator: Integration object, defaults to
+      NumericalIntegrator(step=0.01, min_samples=5).
+    """
 
     def __init__(self, VolumeIntegrator integrator=None):
-
         super().__init__()
         self.integrator = integrator or NumericalIntegrator(step=0.01, min_samples=5)
         self.importance = 1.0
@@ -167,6 +208,24 @@ cdef class InhomogeneousVolumeEmitter(NullSurface):
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        """
+        The emission function for the material at a given sample point.
+
+        This is a virtual method and must be implemented in a sub class.
+
+        :param Point3D point: Requested sample point in local coordinates.
+        :param Vector3D direction: The emission direction in local coordinates.
+        :param Spectrum spectrum: Spectrum measured so far along ray path. Add your emission
+        to this spectrum, don't override it.
+        :param World world: The world scene-graph.
+        :param Ray ray: The ray being traced.
+        :param Primitive primitive: The geometric primitive to which this material belongs
+          (i.e. a cylinder or a mesh).
+        :param AffineMatrix3D world_to_primitive: Affine matrix defining the coordinate
+          transform from world space to the primitive's local space.
+        :param AffineMatrix3D primitive_to_world: Affine matrix defining the coordinate
+          transform from the primitive's local space to world space.
+        """
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
 

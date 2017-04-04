@@ -37,14 +37,21 @@ cimport cython
 
 
 cdef class Checkerboard(NullVolume):
+    """
+    Isotropic checkerboard surface emitter
 
-    def __init__(self, double width=1.0, SpectralFunction emission_spectrum1=d65_white, SpectralFunction emission_spectrum2=d65_white, double scale1=0.25, double scale2=0.5):
-        """
-        Isotropic checkerboard surface emitter
+    Defines a plane of alternating squares of emission forming a checkerboard
+    pattern. Useful in debugging and as a light source in test scenes.
 
-        emission1 and emission2 is spectral radiance: W/m2/str/nm
-        scale in meters
-        """
+    :param float width: The width of the squares in metres.
+    :param SpectralFunction emission_spectrum1: Emission spectrum for square one.
+    :param SpectralFunction emission_spectrum2: Emission spectrum for square two.
+    :param float scale1: Intensity of square one emission.
+    :param float scale2: Intensity of square two emission.
+    """
+
+    def __init__(self, double width=1.0, SpectralFunction emission_spectrum1=d65_white,
+                 SpectralFunction emission_spectrum2=d65_white, double scale1=0.25, double scale2=0.5):
 
         super().__init__()
         self._width = width
@@ -57,6 +64,11 @@ cdef class Checkerboard(NullVolume):
 
     @property
     def width(self):
+        """
+        The width of the squares in metres.
+
+        :rtype: float
+        """
         return self._width
 
     @width.setter

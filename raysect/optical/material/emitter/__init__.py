@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .uniform import UniformSurfaceEmitter, UniformVolumeEmitter
-from .unity import UnityVolumeEmitter
+from .unity import UnitySurfaceEmitter, UnityVolumeEmitter
 from .homogeneous import HomogeneousVolumeEmitter
 from .inhomogeneous import InhomogeneousVolumeEmitter
 from .checkerboard import Checkerboard

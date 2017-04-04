@@ -47,8 +47,10 @@ cdef class Conductor(Material):
     use the material, the complex refractive index of the conductor must be
     supplied.
 
-    :param SpectralFunction index: Real component of refractive index - $n(\lambda)$.
-    :param extinction: Imaginary component of refractive index (extinction) - $k(\lambda)$.
+    :param SpectralFunction index: Real component of the refractive
+      index - :math:`n(\lambda)`.
+    :param SpectralFunction extinction: Imaginary component of the
+      refractive index (extinction) - :math:`k(\lambda)`.
     """
 
     def __init__(self, SpectralFunction index, SpectralFunction extinction):
@@ -146,6 +148,13 @@ cdef class RoughConductor(ContinuousBSDF):
     This is implementing Cook-Torrence with conducting fresnel microfacets.
 
     Smith shadowing and GGX facet distribution used to model roughness.
+
+    :param SpectralFunction index: Real component of the refractive
+      index - :math:`n(\lambda)`.
+    :param SpectralFunction extinction: Imaginary component of the
+      refractive index (extinction) - :math:`k(\lambda)`.
+    :param float roughness: The roughness parameter in range (0, 1]. 0 is
+      perfectly specular, 1 is perfectly rough.
     """
 
     def __init__(self, SpectralFunction index, SpectralFunction extinction, double roughness):

@@ -23,7 +23,9 @@ Random samplers
 
 .. autofunction:: raysect.core.math.random.vector_hemisphere_cosine
 
-.. autofunction:: raysect.core.math.random.vector_cone
+.. autofunction:: raysect.core.math.random.vector_cone_uniform
+
+.. autofunction:: raysect.core.math.random.vector_cone_cosine
 
 
 Bulk sampling

@@ -34,13 +34,17 @@ cimport cython
 
 
 cdef class UniformSurfaceEmitter(NullVolume):
+    """
+    Uniform and isotropic surface emitter.
+
+    Uniform emission will be given by the emission_spectrum multiplied by the
+    emission scale.
+
+    :param SpectralFunction emission_spectrum: The surface's emission function.
+    :param float scale: Scale of the emission function (default = 1 W/m^2/str/nm).
+    """
 
     def __init__(self, SpectralFunction emission_spectrum, double scale = 1.0):
-        """
-        Uniform and isotropic surface emitter
-
-        emission is spectral radiance: W/m2/str/nm"""
-
         super().__init__()
         self.emission_spectrum = emission_spectrum
         self.scale = scale
@@ -73,13 +77,17 @@ cdef class UniformSurfaceEmitter(NullVolume):
 
 
 cdef class UniformVolumeEmitter(HomogeneousVolumeEmitter):
+    """
+    Uniform, homogeneous and isotropic volume emitter.
+
+    Uniform emission will be given by the emission_spectrum multiplied by the
+    emission scale in radiance.
+
+    :param SpectralFunction emission_spectrum: The volume's emission function.
+    :param float scale: Scale of the emission function (default = 1 W/m^3/str/nm).
+    """
 
     def __init__(self, SpectralFunction emission_spectrum, double scale=1.0):
-        """
-        Uniform, homogeneous and isotropic volume emitter
-
-        emission is spectral volume radiance: W/m^3/str/nm ie spectral radiance per meter"""
-
         super().__init__()
         self.emission_spectrum = emission_spectrum
         self.scale = scale
