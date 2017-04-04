@@ -45,10 +45,6 @@ Bulk sampling
    :members:
    :special-members: __call__
 
-.. autoclass:: raysect.core.math.sampler.ConeSampler
-   :members:
-   :show-inheritance:
-
 .. autoclass:: raysect.core.math.sampler.SphereSampler
    :members:
    :show-inheritance:
@@ -58,5 +54,13 @@ Bulk sampling
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.sampler.HemisphereCosineSampler
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.sampler.ConeUniformSampler
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.sampler.ConeCosineSampler
    :members:
    :show-inheritance:

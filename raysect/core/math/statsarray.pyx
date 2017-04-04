@@ -32,6 +32,7 @@
 from numpy import zeros, float64, int32
 
 from libc.math cimport sqrt
+from raysect.core.math.cython.utility cimport swap_int, swap_double
 cimport cython
 
 
@@ -570,9 +571,9 @@ cdef inline void _combine_samples(double mx, double vx, int nx, double my, doubl
 
     # ensure set x is the largest set
     if nx < ny:
-        _swap_int(&nx, &ny)
-        _swap_double(&mx, &my)
-        _swap_double(&vx, &vy)
+        swap_int(&nx, &ny)
+        swap_double(&mx, &my)
+        swap_double(&vx, &vy)
 
     # most common case first
     if nx > 1 and ny > 1:
@@ -631,21 +632,3 @@ cdef inline void _combine_samples(double mx, double vx, int nx, double my, doubl
 
             # single sample from set y
             _add_sample(my, mt, vt, nt)
-
-
-# todo: move to core
-cdef inline void _swap_int(int *a, int *b) nogil:
-
-        cdef int temp
-        temp = a[0]
-        a[0] = b[0]
-        b[0] = temp
-
-
-# todo: move to core
-cdef inline void _swap_double(double *a, double *b) nogil:
-
-        cdef double temp
-        temp = a[0]
-        a[0] = b[0]
-        b[0] = temp

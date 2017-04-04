@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,30 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.ray cimport *
-from raysect.core.intersection cimport *
-from raysect.core.material cimport *
-from raysect.core.boundingbox cimport *
-from raysect.core.math cimport *
-from raysect.core.scenegraph cimport *
-from raysect.core.containers cimport *
+from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
+from raysect.optical.material.material cimport NullSurface
+
+
+cdef class VolumeIntegrator:
+
+    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+
+
+cdef class NumericalIntegrator(VolumeIntegrator):
+
+    cdef:
+        double _step
+        int _min_samples
+
+    cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1
+
+
+cdef class InhomogeneousVolumeEmitter(NullSurface):
+
+    cdef public VolumeIntegrator integrator
+
+    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D to_local, AffineMatrix3D to_world)

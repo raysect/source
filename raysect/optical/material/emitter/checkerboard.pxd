@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.ray cimport *
-from raysect.core.intersection cimport *
-from raysect.core.material cimport *
-from raysect.core.boundingbox cimport *
-from raysect.core.math cimport *
-from raysect.core.scenegraph cimport *
-from raysect.core.containers cimport *
+from raysect.optical cimport SpectralFunction
+from raysect.optical.material.material cimport NullVolume
+
+
+cdef class Checkerboard(NullVolume):
+
+    cdef:
+        double _width
+        double _rwidth
+        public SpectralFunction emission_spectrum1
+        public SpectralFunction emission_spectrum2
+        public double scale1
+        public double scale2
+
+    cdef inline bint _flip(self, bint v, double p) nogil

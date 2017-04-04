@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.ray cimport *
-from raysect.core.intersection cimport *
-from raysect.core.material cimport *
-from raysect.core.boundingbox cimport *
-from raysect.core.math cimport *
-from raysect.core.scenegraph cimport *
-from raysect.core.containers cimport *
+from raysect.optical cimport SpectralFunction
+from raysect.optical.material.material cimport NullVolume
+from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
+
+
+cdef class UniformSurfaceEmitter(NullVolume):
+
+    cdef:
+        public SpectralFunction emission_spectrum
+        public double scale
+
+
+cdef class UniformVolumeEmitter(HomogeneousVolumeEmitter):
+
+    cdef:
+        public SpectralFunction emission_spectrum
+        public double scale
+

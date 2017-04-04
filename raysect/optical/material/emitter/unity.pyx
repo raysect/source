@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.ray cimport *
-from raysect.core.intersection cimport *
-from raysect.core.material cimport *
-from raysect.core.boundingbox cimport *
-from raysect.core.math cimport *
-from raysect.core.scenegraph cimport *
-from raysect.core.containers cimport *
+cimport cython
+
+
+cdef class UnityVolumeEmitter(HomogeneousVolumeEmitter):
+
+    def __init__(self):
+        """
+        Uniform, isotropic volume emitter with emission 1W/str/m^3/ x nm, where x is the spectrum's wavelength interval.
+
+        This material is useful for general purpose debugging and evaluating the coupling coefficients between cameras
+        and emitting volumes.
+        """
+
+        super().__init__()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        spectrum.samples_mv[:] = 1.0
+        return spectrum

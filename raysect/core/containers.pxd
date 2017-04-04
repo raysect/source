@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,10 +29,42 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.ray cimport *
-from raysect.core.intersection cimport *
-from raysect.core.material cimport *
-from raysect.core.boundingbox cimport *
-from raysect.core.math cimport *
-from raysect.core.scenegraph cimport *
-from raysect.core.containers cimport *
+
+cdef class _Item:
+
+    cdef:
+        _Item previous
+        _Item next
+        object value
+
+
+cdef class LinkedList:
+
+    cdef:
+        readonly int length
+        _Item first
+        _Item last
+
+    cpdef bint is_empty(self)
+
+    cpdef add(self, object value)
+
+    cpdef add_items(self, object iterable)
+
+    cpdef object get_index(self, int index)
+
+    cpdef insert(self, object value, int index)
+
+    cpdef object remove(self, int index)
+
+
+cdef class Stack(LinkedList):
+
+    cpdef push(self, object value)
+
+    cpdef object pop(self)
+
+
+cdef class Queue(LinkedList):
+
+    cpdef object next_in_queue(self)

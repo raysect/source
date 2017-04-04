@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core cimport new_point3d, Point3D, new_normal3d, AffineMatrix3D, Material, new_intersection, BoundingBox3D
+from raysect.core.math.cython cimport solve_quadratic, swap_double, swap_int
 from libc.math cimport sqrt
 cimport cython
 
@@ -70,10 +71,6 @@ cdef class Parabola(Primitive):
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
                  AffineMatrix3D transform=None, Material material=None,
                  str name=None):
-        """
-
-
-        """
 
         super().__init__(parent, transform, material, name)
 
@@ -140,8 +137,8 @@ cdef class Parabola(Primitive):
             Point3D origin
             Vector3D direction
             double radius, height
-            double a, b, c, d, k, t0, t1, t0_z, t1_z, temp_d
-            int t0_type, t1_type, temp_i
+            double a, b, c, k, t0, t1, t0_z, t1_z
+            int t0_type, t1_type
             bint t0_outside, t1_outside
             double closest_intersection
             int closest_type
@@ -163,23 +160,10 @@ cdef class Parabola(Primitive):
         b = 2 * k * (direction.x * origin.x + direction.y * origin.y) + direction.z
         c = k * (origin.x * origin.x + origin.y * origin.y) - (height - origin.z)
 
-        # Solve quadratic equation
-        d = b*b - 4*a*c
-
-        # ray misses parabola if there are no real roots of the quadratic
-        if d < 0:
+        # calculate intersection distances by solving the quadratic equation
+        # ray misses if there are no real roots of the quadratic
+        if not solve_quadratic(a, b, c, &t0, &t1):
             return None
-
-        # calculate intersection distances using method described in the book:
-        # "Physically Based Rendering - 2nd Edition", Elsevier 2010
-        # this method is more numerically stable than the usual root equation
-        if b < 0:
-            q = -0.5 * (b - sqrt(d))
-        else:
-            q = -0.5 * (b + sqrt(d))
-
-        t0 = q / a
-        t1 = c / q
 
         # calculate z height of intersection points
         t0_z = origin.z + t0 * direction.z
@@ -217,16 +201,8 @@ cdef class Parabola(Primitive):
 
         # ensure t0 is always smaller (closer) than t1
         if t0 > t1:
-
-            # swap ray distance
-            temp_d = t0
-            t0 = t1
-            t1 = temp_d
-
-            # swap intersection type
-            temp_i = t0_type
-            t0_type = t1_type
-            t1_type = temp_i
+            swap_double(&t0, &t1)
+            swap_int(&t0_type, &t1_type)
 
         # are there any intersections inside the ray search range?
         if t0 > ray.max_distance or t1 < 0.0:
