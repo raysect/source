@@ -46,10 +46,6 @@ cdef class RectangleSampler(PointSampler):
     cdef public double width, height
 
 
-cdef class ConeSampler(VectorSampler):
-    cdef public double angle
-
-
 cdef class SphereSampler(VectorSampler):
     pass
 
@@ -60,6 +56,10 @@ cdef class HemisphereUniformSampler(VectorSampler):
 
 cdef class HemisphereCosineSampler(VectorSampler):
     pass
+
+
+cdef class ConeUniformSampler(VectorSampler):
+    cdef public double angle
 
 
 cdef class ConeCosineSampler(VectorSampler):

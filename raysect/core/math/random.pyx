@@ -370,7 +370,7 @@ cpdef Vector3D vector_hemisphere_cosine():
     return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 
 
-cpdef Vector3D vector_cone(double theta):
+cpdef Vector3D vector_cone_uniform(double theta):
     """
     Generates a random vector in a cone along the z-axis.
 
@@ -393,7 +393,7 @@ cpdef Vector3D vector_cone(double theta):
     return new_vector3d(x, y, z)
 
 
-cpdef Vector3D vector_cosine_cone(double theta):
+cpdef Vector3D vector_cone_cosine(double theta):
     """
     Generates a cosine-weighted random vector on a cone along the z-axis.
 

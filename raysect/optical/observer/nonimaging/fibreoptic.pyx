@@ -31,7 +31,7 @@
 
 from libc.math cimport cos, M_PI as pi
 
-from raysect.core.math.sampler cimport DiskSampler, ConeSampler
+from raysect.core.math.sampler cimport DiskSampler, ConeUniformSampler
 from raysect.optical cimport Ray, new_point3d, new_vector3d
 from raysect.optical.observer.base cimport Observer0D
 cimport cython
@@ -53,7 +53,7 @@ cdef class FibreOptic(Observer0D):
     cdef:
         double _acceptance_angle, _radius, _solid_angle, _collection_area
         DiskSampler _point_sampler
-        ConeSampler _vector_sampler
+        ConeUniformSampler _vector_sampler
 
     def __init__(self, pipelines, acceptance_angle=None, radius=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
@@ -82,7 +82,7 @@ cdef class FibreOptic(Observer0D):
         if not 0 <= value <= 90:
             raise RuntimeError("Acceptance angle must be between 0 and 90 degrees.")
         self._acceptance_angle = value
-        self._vector_sampler = ConeSampler(value)
+        self._vector_sampler = ConeUniformSampler(value)
         self._solid_angle = 2 * pi * (1 - cos(value/180*pi))
 
     @property

@@ -34,7 +34,7 @@ from raysect.core.scenegraph.signal import MATERIAL
 
 from raysect.core cimport BoundingBox3D, AffineMatrix3D, _NodeBase, ChangeSignal
 from raysect.core.acceleration cimport BoundPrimitive
-from raysect.core.math.random cimport uniform, vector_sphere, vector_cone
+from raysect.core.math.random cimport uniform, vector_sphere, vector_cone_uniform
 from raysect.core.math.cython cimport find_index, rotate_basis
 from libc.math cimport M_PI as PI, asin, sqrt
 cimport cython
@@ -137,7 +137,7 @@ cdef class ImportanceManager:
         angular_radius = asin(radius / distance)
 
         # sample a vector from a cone of half angle equal to the angular radius
-        sample = vector_cone(angular_radius * 180 / PI)
+        sample = vector_cone_uniform(angular_radius * 180 / PI)
 
         # rotate cone to lie along vector from observation point to sphere centre
         direction = direction.normalise()
