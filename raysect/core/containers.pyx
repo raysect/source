@@ -39,11 +39,6 @@ cdef class _Item:
     :param _Item next_item: Reference to the next container item, will be None if this is the last item.
     """
 
-    cdef:
-        _Item previous
-        _Item next
-        object value
-
     def __init__(self, _Item previous, object value, _Item next_item=None):
 
         self.previous = previous
@@ -61,11 +56,6 @@ cdef class LinkedList:
     :ivar first: starting element of container
     :ivar last: final element of container
     """
-
-    cdef:
-        readonly int length
-        _Item first
-        _Item last
 
     def __init__(self, initial_items=None):
 

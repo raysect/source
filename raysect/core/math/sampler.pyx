@@ -38,7 +38,7 @@
 from libc.math cimport M_PI as PI
 from raysect.core.math import Vector3D
 from raysect.core.math cimport Point2D, new_point3d
-from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone, vector_sphere, point_disk, uniform
+from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone, vector_sphere, point_disk, uniform, vector_cosine_cone
 
 
 cdef class PointSampler:
@@ -209,4 +209,30 @@ cdef class HemisphereCosineSampler(VectorSampler):
         results = []
         for i in range(samples):
             results.append(vector_hemisphere_cosine())
+        return results
+
+
+cdef class ConeCosineSampler(VectorSampler):
+    """
+    Generates a list of random unit Vector3D objects inside a cone with cosine weighting.
+
+    The cone is aligned along the z-axis.
+
+    :param angle: Angle of the cone in degrees.
+    """
+
+    def __init__(self, double angle=45):
+
+        super().__init__()
+        if not 0 <= angle <= 90:
+            raise RuntimeError("The cone angle must be between 0 and 90 degrees.")
+        self.angle = angle
+
+    cpdef list sample(self, int samples):
+        cdef list results
+        cdef int i
+
+        results = []
+        for i in range(samples):
+            results.append(vector_cosine_cone(self.angle))
         return results

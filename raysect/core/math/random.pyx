@@ -91,7 +91,7 @@
 from os import urandom as _urandom
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.point cimport new_point2d
-from libc.math cimport cos, sin, log, fabs, sqrt, M_PI as PI
+from libc.math cimport cos, sin, asin, log, fabs, sqrt, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
 cimport cython
 
@@ -391,6 +391,28 @@ cpdef Vector3D vector_cone(double theta):
     cdef double x = r * cos(phi)
     cdef double y = r * sin(phi)
     return new_vector3d(x, y, z)
+
+
+cpdef Vector3D vector_cosine_cone(double theta):
+    """
+    Generates a cosine-weighted random vector on a cone along the z-axis.
+
+    The angle of the cone is specified with the theta parameter. For speed, no
+    checks are performs on the theta parameter, it is up to user to ensure the
+    angle is sensible.
+
+    :param float theta: An angle between 0 and 90 degrees.
+    :returns: A random Vector3D in the cone defined by theta.
+    :rtype: Vector3D
+    """
+
+    theta *= 0.017453292519943295 # PI / 180
+    cdef double r_max_scaled = asin(theta)
+    cdef double r = sqrt(uniform()) * r_max_scaled
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 
 
 # initialise random number generator
