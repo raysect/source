@@ -30,16 +30,25 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical cimport new_point3d
+from libc.math cimport floor
 cimport cython
 
 
-cdef class InhomogeneousVolumeEmitter(NullSurface):
+cdef class VolumeIntegrator:
 
-    def __init__(self, double step = 0.01):
+    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-        super().__init__()
+        raise NotImplementedError("Virtual method integrate() has not been implemented.")
+
+
+cdef class NumericalIntegrator(VolumeIntegrator):
+
+    def __init__(self, step, min_samples=5):
+
         self._step = step
-        self.importance = 1.0
+        self._min_samples = min_samples
 
     @property
     def step(self):
@@ -51,20 +60,30 @@ cdef class InhomogeneousVolumeEmitter(NullSurface):
             raise ValueError("Numerical integration step size can not be less than or equal to zero")
         self._step = value
 
+    @property
+    def min_samples(self):
+        return self._min_samples
+
+    @min_samples.setter
+    def min_samples(self, int value):
+        if value < 2:
+            raise ValueError("At least two samples are required to perform the numerical integration.")
+        self._step = value
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Point3D start, end
             Vector3D integration_direction, ray_direction
-            double length, t, c
+            double length, step, t, c
             Spectrum emission, emission_previous, temp
-            int index
+            int intervals, interval, index
 
         # convert start and end points to local space
         start = start_point.transform(world_to_primitive)
@@ -75,25 +94,32 @@ cdef class InhomogeneousVolumeEmitter(NullSurface):
         length = integration_direction.get_length()
 
         # nothing to contribute?
-        if length == 0:
+        if length == 0.0:
             return spectrum
 
         integration_direction = integration_direction.normalise()
         ray_direction = integration_direction.neg()
+
+        # calculate number of complete intervals (samples - 1)
+        intervals = max(self._min_samples - 1, <int> floor(length / self._step))
+
+        # adjust (increase) step size to absorb any remainder and maintain equal interval spacing
+        step = length / intervals
 
         # create working buffers
         emission = ray.new_spectrum()
         emission_previous = ray.new_spectrum()
 
         # sample point and sanity check as bounds checking is disabled
-        emission_previous = self.emission_function(start, ray_direction, emission_previous, world, ray, primitive, world_to_primitive, primitive_to_world)
+        emission_previous = material.emission_function(start, ray_direction, emission_previous, world, ray, primitive, world_to_primitive, primitive_to_world)
         self._check_dimensions(emission_previous, spectrum.bins)
 
         # numerical integration
-        t = self._step
-        c = 0.5 * self._step
-        while t <= length:
+        c = 0.5 * step
+        for interval in range(1, intervals):
 
+            # calculate location of new sample point
+            t = interval * step
             sample_point = new_point3d(
                 start.x + t * integration_direction.x,
                 start.y + t * integration_direction.y,
@@ -101,7 +127,7 @@ cdef class InhomogeneousVolumeEmitter(NullSurface):
             )
 
             # sample point and sanity check as bounds checking is disabled
-            emission = self.emission_function(sample_point, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
+            emission = material.emission_function(sample_point, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
             self._check_dimensions(emission, spectrum.bins)
 
             # trapezium rule integration
@@ -114,27 +140,33 @@ cdef class InhomogeneousVolumeEmitter(NullSurface):
             emission = temp
             emission.clear()
 
-            t += self._step
-
-        # step back to process any length that remains
-        t -= self._step
-
-        # sample point and sanity check as bounds checking is disabled
-        emission = self.emission_function(end, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
-        self._check_dimensions(emission, spectrum.bins)
-
-        # trapezium rule integration of remainder
-        c = 0.5 * (length - t)
-        for index in range(spectrum.bins):
-            spectrum.samples_mv[index] += c * (emission.samples_mv[index] + emission_previous.samples_mv[index])
         return spectrum
 
     cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1:
         if spectrum.samples.ndim != 1 or spectrum.samples.shape[0] != bins:
             raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
+
+cdef class InhomogeneousVolumeEmitter(NullSurface):
+
+    def __init__(self, VolumeIntegrator integrator=None):
+
+        super().__init__()
+        self.integrator = integrator or NumericalIntegrator(step=0.01, min_samples=5)
+        self.importance = 1.0
+
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
+                                   Ray ray, Primitive primitive,
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # pass to volume integrator class
+        return self.integrator.integrate(spectrum, world, ray, primitive, self, start_point, end_point,
+                                         world_to_primitive, primitive_to_world)
+
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         raise NotImplementedError("Virtual method emission_function() has not been implemented.")
+

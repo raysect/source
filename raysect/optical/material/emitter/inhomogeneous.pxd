@@ -33,12 +33,26 @@ from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D,
 from raysect.optical.material.material cimport NullSurface
 
 
+cdef class VolumeIntegrator:
+
+    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+
+
+cdef class NumericalIntegrator(VolumeIntegrator):
+
+    cdef:
+        double _step
+        int _min_samples
+
+    cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1
+
+
 cdef class InhomogeneousVolumeEmitter(NullSurface):
 
-    cdef double _step
+    cdef public VolumeIntegrator integrator
 
     cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D to_local, AffineMatrix3D to_world)
-
-    cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1
