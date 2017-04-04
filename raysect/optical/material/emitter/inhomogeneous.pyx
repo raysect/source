@@ -68,7 +68,7 @@ cdef class NumericalIntegrator(VolumeIntegrator):
     def min_samples(self, int value):
         if value < 2:
             raise ValueError("At least two samples are required to perform the numerical integration.")
-        self._step = value
+        self._min_samples = value
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

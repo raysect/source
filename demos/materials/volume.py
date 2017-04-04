@@ -5,17 +5,20 @@ from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSa
 from raysect.optical.library import RoughIron, RoughGold, RoughTitanium
 from raysect.optical.material import InhomogeneousVolumeEmitter
 from matplotlib.pyplot import *
-from math import sqrt, cos
+from numpy import sqrt, cos
 
 
 class CosGlow(InhomogeneousVolumeEmitter):
 
     def emission_function(self, point, direction, spectrum, world, ray, primitive, to_local, to_world):
 
-        r = sqrt(point.x**2 + point.y**2)
-        v = cos(5 * r)**4
-        spectrum.samples += v
+        wvl_centre = 0.5 * (spectrum.max_wavelength + spectrum.min_wavelength)
+        wvl_range = spectrum.min_wavelength - spectrum.max_wavelength
+        shift = 2 * (spectrum.wavelengths - wvl_centre) / wvl_range
+        radius = sqrt(point.x**2 + point.y**2)
+        spectrum.samples += cos((shift + 5) * radius)**4
         return spectrum
+
 
 # scene
 world = World()
@@ -24,11 +27,11 @@ floor = Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=Rou
 
 # camera
 rgb_pipeline = RGBPipeline2D(display_update_time=5)
-sampler = RGBAdaptiveSampler2D(rgb_pipeline, min_samples=400, fraction=0.1)
+sampler = RGBAdaptiveSampler2D(rgb_pipeline, min_samples=100, fraction=0.2)
 camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 4, -3.5) * rotate(0, -45, 0), pipelines=[rgb_pipeline], frame_sampler=sampler)
 camera.spectral_bins = 15
 camera.spectral_rays = 1
-camera.pixel_samples = 250
+camera.pixel_samples = 200
 
 # integration resolution
 emitter.material.integrator.step = 0.05
