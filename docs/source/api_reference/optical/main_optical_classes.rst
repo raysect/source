@@ -81,9 +81,9 @@ see `Wikipedia <https://en.wikipedia.org/wiki/SRGB>`_.
 Optical Scenegraph
 ------------------
 
-.. automodule:: raysect.optical.scenegraph.world
+.. autoclass:: raysect.optical.scenegraph.world.World
    :members:
-   :show-inheritance:
 
-
+.. autoclass:: raysect.optical.scenegraph.world.ImportanceManager
+   :members:
 
