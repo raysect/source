@@ -31,7 +31,7 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt, fabs
+from libc.math cimport sqrt, fabs, NAN
 
 
 cdef class Vector3D(_Vec3):
@@ -636,7 +636,7 @@ cdef class Vector2D:
 
         return self.x * v.x + self.y * v.y
 
-    cdef inline double get_length(self):
+    cdef inline double get_length(self) nogil:
         """
         Fast function to obtain the vectors length.
 
@@ -648,7 +648,7 @@ cdef class Vector2D:
         return sqrt(self.x * self.x + self.y * self.y)
 
     @cython.cdivision(True)
-    cdef inline void set_length(self, double v) except *:
+    cdef inline object set_length(self, double v):
         """
         Fast function to set the vectors length.
 
@@ -670,7 +670,7 @@ cdef class Vector2D:
         self.x = self.x * t
         self.y = self.y * t
 
-    cdef inline double get_index(self, int index):
+    cdef inline double get_index(self, int index) nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -684,9 +684,9 @@ cdef class Vector2D:
         elif index == 1:
             return self.y
         else:
-            return float("NaN")
+            return NAN
 
-    cdef inline void set_index(self, int index, double value):
+    cdef inline void set_index(self, int index, double value) nogil:
         """
         Fast setting of coordinates via indexing.
 

@@ -42,7 +42,6 @@ cdef class BoundPrimitive:
     cdef inline Intersection hit(self, Ray ray):
 
         if self.box.hit(ray):
-
             self._primitive_tested = True
             return self.primitive.hit(ray)
 
@@ -57,15 +56,11 @@ cdef class BoundPrimitive:
         # this is required to prevent intersections from previous hits erroneously
         # being reported for a hit that a failed bounding box hit
         if self._primitive_tested:
-
             return self.primitive.next_intersection()
-
         return None
 
     cdef inline bint contains(self, Point3D point):
 
         if self.box.contains(point):
-
             return self.primitive.contains(point)
-
         return False

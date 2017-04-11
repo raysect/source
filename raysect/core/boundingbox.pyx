@@ -194,7 +194,7 @@ cdef class BoundingBox3D:
         return True
 
     @cython.cdivision(True)
-    cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection):
+    cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) nogil:
 
         cdef double reciprocal, tmin, tmax
 

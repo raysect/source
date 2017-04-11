@@ -49,9 +49,9 @@ cdef class Point3D:
 
     cpdef Point3D copy(self)
 
-    cdef inline double get_index(self, int index)
+    cdef inline double get_index(self, int index) nogil
 
-    cdef inline void set_index(self, int index, double value)
+    cdef inline void set_index(self, int index, double value) nogil
 
 
 cdef inline Point3D new_point3d(double x, double y, double z):
@@ -86,9 +86,9 @@ cdef class Point2D:
 
     cpdef Point2D copy(self)
 
-    cdef inline double get_index(self, int index)
+    cdef inline double get_index(self, int index) nogil
 
-    cdef inline void set_index(self, int index, double value)
+    cdef inline void set_index(self, int index, double value) nogil
 
 
 cdef inline Point2D new_point2d(double x, double y):
