@@ -540,7 +540,7 @@ cdef class KDTree3DCore:
             double min_range, max_range
 
         # check tree bounds
-        hit, min_range, max_range = self.bounds.full_intersection(ray)
+        hit = self.bounds.intersect(ray, &min_range, &max_range)
         if not hit:
             return None
 
