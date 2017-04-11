@@ -595,7 +595,7 @@ cdef class MeshData(KDTree3DCore):
                 self._u * self.vertex_normals[n1, X] + self._v * self.vertex_normals[n2, X] + self._w * self.vertex_normals[n3, X],
                 self._u * self.vertex_normals[n1, Y] + self._v * self.vertex_normals[n2, Y] + self._w * self.vertex_normals[n3, Y],
                 self._u * self.vertex_normals[n1, Z] + self._v * self.vertex_normals[n2, Z] + self._w * self.vertex_normals[n3, Z]
-            )
+            ).normalise()
 
         else:
 
