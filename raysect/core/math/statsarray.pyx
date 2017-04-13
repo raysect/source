@@ -37,6 +37,9 @@ cimport cython
 
 
 cdef class StatsBin:
+    """
+    Class for storing a single numerical sampling result and its associated statistics.
+    """
 
     def __init__(self):
 

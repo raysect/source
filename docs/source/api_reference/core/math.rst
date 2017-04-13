@@ -7,4 +7,5 @@ Math Module
    affinematrix
    functions
    random
+   statistics_arrays
    units
