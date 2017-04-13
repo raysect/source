@@ -167,18 +167,22 @@ cdef class LinkedList:
 
         previous_item = None
         current_item = self.first
+
         while i != index:
             previous_item = current_item
             current_item = current_item.next
             i += 1
 
-        if previous_item:
-            new_item = _Item(previous_item, value, next_item=current_item)
-            previous_item.next = new_item
-        else:
-            new_item = _Item(None, value)
+        new_item = _Item(previous_item, value, next_item=current_item)
 
-        current_item.previous = new_item
+        if previous_item:
+            previous_item.next = new_item
+        if current_item:
+            current_item.previous = new_item
+        if index == 0:
+            self.first = new_item
+        elif index == self.length - 1:
+            self.last = new_item
 
         self.length += 1
 
