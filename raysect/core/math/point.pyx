@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from libc.math cimport sqrt
+from libc.math cimport sqrt, NAN
 from raysect.core.math.vector cimport new_vector2d, new_vector3d
 from raysect.core.math._vec3 cimport _Vec3
 
@@ -312,7 +312,7 @@ cdef class Point3D:
                            self.y,
                            self.z)
 
-    cdef inline double get_index(self, int index):
+    cdef inline double get_index(self, int index) nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -328,9 +328,9 @@ cdef class Point3D:
         elif index == 2:
             return self.z
         else:
-            return float("NaN")
+            return NAN
 
-    cdef inline void set_index(self, int index, double value):
+    cdef inline void set_index(self, int index, double value) nogil:
         """
         Fast setting of coordinates via indexing.
 
@@ -589,7 +589,7 @@ cdef class Point2D:
         """
         return new_point2d(self.x, self.y)
 
-    cdef inline double get_index(self, int index):
+    cdef inline double get_index(self, int index) nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -602,9 +602,9 @@ cdef class Point2D:
         elif index == 1:
             return self.y
         else:
-            return float("NaN")
+            return NAN
 
-    cdef inline void set_index(self, int index, double value):
+    cdef inline void set_index(self, int index, double value) nogil:
         """
         Fast setting of coordinates via indexing.
 

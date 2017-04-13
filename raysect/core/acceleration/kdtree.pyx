@@ -153,7 +153,6 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 cdef class KDTree(_Accelerator):
 
     cpdef build(self, list primitives):
-
         self._kdtree = _PrimitiveKDTree(primitives)
 
     cpdef Intersection hit(self, Ray ray):

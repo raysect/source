@@ -1,6 +1,18 @@
 Raysect Changelog
 =================
 
+Release 1.0.0 (TBD)
+-------------------
+
+API Changes:
+* VolumeEmitterHomogeneous renamed HomogeneousVolumeEmitter
+* VolumeEmitterInhomogeneous renamed InhomogeneousVolumeEmitter
+
+New:
+* InhomogeneousVolumeEmitter integrator now pluggable.
+* Added cosine weighted cone random vector sampler.
+
+
 Release 0.3.1 (17 Mar 2017)
 ---------------------------
 

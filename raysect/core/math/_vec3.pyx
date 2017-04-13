@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from libc.math cimport sqrt
+from libc.math cimport sqrt, NAN
 
 
 @cython.freelist(512)
@@ -116,7 +116,7 @@ cdef class _Vec3:
 
         return self.x * v.x + self.y * v.y + self.z * v.z
 
-    cdef inline double get_length(self):
+    cdef inline double get_length(self) nogil:
         """
         Fast function to obtain the vectors length.
 
@@ -128,7 +128,7 @@ cdef class _Vec3:
         return sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
 
     @cython.cdivision(True)
-    cdef inline void set_length(self, double v) except *:
+    cdef inline object set_length(self, double v):
         """
         Fast function to set the vectors length.
 
@@ -151,7 +151,7 @@ cdef class _Vec3:
         self.y = self.y * t
         self.z = self.z * t
 
-    cdef inline double get_index(self, int index):
+    cdef inline double get_index(self, int index) nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -167,9 +167,9 @@ cdef class _Vec3:
         elif index == 2:
             return self.z
         else:
-            return float("NaN")
+            return NAN
 
-    cdef inline void set_index(self, int index, double value):
+    cdef inline void set_index(self, int index, double value) nogil:
         """
         Fast setting of coordinates via indexing.
 

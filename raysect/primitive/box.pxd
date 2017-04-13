@@ -43,8 +43,8 @@ cdef class Box(Primitive):
     cdef int _cached_face
     cdef int _cached_axis
 
-    cdef inline void _slab(self, int axis, double origin, double direction, double lower, double upper, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_axis, int *far_axis)
+    cdef inline void _slab(self, int axis, double origin, double direction, double lower, double upper, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_axis, int *far_axis) nogil
 
     cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int axis)
 
-    cdef inline double _interior_offset(self, double hit_point, double lower, double upper)
+    cdef inline double _interior_offset(self, double hit_point, double lower, double upper) nogil

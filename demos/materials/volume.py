@@ -1,11 +1,13 @@
 import time
-from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
-from raysect.primitive import Sphere, Box, Cylinder, import_obj
-from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
-from raysect.optical.library import RoughIron, RoughGold, RoughTitanium
-from raysect.optical.material import InhomogeneousVolumeEmitter
+
 from matplotlib.pyplot import *
 from numpy import sqrt, cos
+
+from raysect.optical import World, translate, rotate, Point3D
+from raysect.optical.library import RoughTitanium
+from raysect.optical.material import InhomogeneousVolumeEmitter
+from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
+from raysect.primitive import Box
 
 
 class CosGlow(InhomogeneousVolumeEmitter):
@@ -28,7 +30,7 @@ floor = Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=Rou
 # camera
 rgb_pipeline = RGBPipeline2D(display_update_time=5)
 sampler = RGBAdaptiveSampler2D(rgb_pipeline, min_samples=100, fraction=0.2)
-camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 4, -3.5) * rotate(0, -45, 0), pipelines=[rgb_pipeline], frame_sampler=sampler)
+camera = PinholeCamera((512, 512), parent=world, transform=translate(0, 4, -3.5) * rotate(0, -45, 0), pipelines=[rgb_pipeline], frame_sampler=sampler)
 camera.spectral_bins = 15
 camera.spectral_rays = 1
 camera.pixel_samples = 200
