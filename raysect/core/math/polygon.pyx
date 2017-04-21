@@ -70,19 +70,19 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices):
         int[:,::1] triangles_mv
 
     vertices = np.array(vertices, dtype=np.float64)
-    vertices_mv = vertices
 
     # validate shape of array
     if vertices.ndim != 2 or vertices.shape[1] != 2:
         raise ValueError("Vertex array must be an Nx2 array.")
 
-    # ensure winding order is clockwise
-    if not winding2d(vertices):
-        vertices = vertices[::-1, :]
-        vertices_mv = vertices
+    vertices_mv = vertices
 
     # active vertices stores index of the vertices that haven't yet been processed.
     active_vertices = list(range(vertices.shape[0]))
+
+    # ensure winding order is clockwise
+    if not winding2d(vertices):
+        active_vertices.reverse()
 
     # create array to hold output triangles
     triangles = np.empty((vertices.shape[0] - 2, 3), dtype=np.int32)
