@@ -65,4 +65,9 @@ cdef inline double lerp(double x0, double x1, double y0, double y1, double x) no
 
 cdef inline bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil
 
-cdef inline bint polygon_winding_2d(double[:,::1] vertices) nogil
+cdef inline bint winding2d(double[:,::1] vertices) nogil
+
+cdef inline bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
+                                 double v3x, double v3y, double px, double py) nogil
+
+
