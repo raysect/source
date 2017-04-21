@@ -93,11 +93,13 @@ cdef class _ObserverBase(Observer):
     :param bool ray_importance_sampling: Toggle importance sampling behaviour (default=True).
     :param float ray_important_path_weight: Relative weight of important path sampling
       (default=0.2).
+    :param bool display_progress: Toggles printing of observer performance statistics and completion
+      (default=True).
     """
 
     def __init__(self, parent=None, transform=None, name=None, render_engine=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, display_progress=True):
 
         super().__init__(parent, transform, name)
 
@@ -121,6 +123,8 @@ cdef class _ObserverBase(Observer):
 
         # flag indicating if the frame sampler is not supplying any tasks (in which case the rendering process is over)
         self.render_complete = False
+
+        self.display_progress = display_progress
 
     @property
     def spectral_bins(self):
@@ -284,7 +288,8 @@ cdef class _ObserverBase(Observer):
         tasks = self._generate_tasks()
         if not tasks:
             self.render_complete = True
-            print("Render complete - No render tasks were generated.")
+            if self.display_progress:
+                print("Render complete - No render tasks were generated.")
             return
 
         # initialise statistics with total task count
@@ -460,41 +465,47 @@ cdef class _ObserverBase(Observer):
         Initialise statistics.
         """
 
-        self._stats_ray_count = 0
-        self._stats_total_rays = 0
-        self._stats_start_time = time()
-        self._stats_progress_timer = time()
-        self._stats_total_tasks = len(tasks) * self.spectral_rays
-        self._stats_completed_tasks = 0
+        if self.display_progress:
+
+            self._stats_ray_count = 0
+            self._stats_total_rays = 0
+            self._stats_start_time = time()
+            self._stats_progress_timer = time()
+            self._stats_total_tasks = len(tasks) * self.spectral_rays
+            self._stats_completed_tasks = 0
 
     cpdef object _update_statistics(self, int sample_ray_count):
         """
         Display progress statistics.
         """
 
-        self._stats_completed_tasks += 1
-        self._stats_ray_count += sample_ray_count
-        self._stats_total_rays += sample_ray_count
+        if self.display_progress:
 
-        if (time() - self._stats_progress_timer) > 1.0:
+            self._stats_completed_tasks += 1
+            self._stats_ray_count += sample_ray_count
+            self._stats_total_rays += sample_ray_count
 
-            current_time = time() - self._stats_start_time
-            completion = 100 * self._stats_completed_tasks / self._stats_total_tasks
-            print("Render time: {:0.3f}s ({:0.2f}% complete, {:0.1f}k rays)".format(
-                current_time, completion, self._stats_ray_count / 1000))
+            if (time() - self._stats_progress_timer) > 1.0:
 
-            self._stats_ray_count = 0
-            self._stats_progress_timer = time()
+                current_time = time() - self._stats_start_time
+                completion = 100 * self._stats_completed_tasks / self._stats_total_tasks
+                print("Render time: {:0.3f}s ({:0.2f}% complete, {:0.1f}k rays)".format(
+                    current_time, completion, self._stats_ray_count / 1000))
+
+                self._stats_ray_count = 0
+                self._stats_progress_timer = time()
 
     cpdef object _finalise_statistics(self):
         """
         Final statistics output.
         """
 
-        elapsed_time = time() - self._stats_start_time
-        mean_rays_per_sec = self._stats_total_rays / elapsed_time
-        print("Render complete - time elapsed {:0.3f}s - {:0.1f}k rays/s".format(
-            elapsed_time, mean_rays_per_sec / 1000))
+        if self.display_progress:
+
+            elapsed_time = time() - self._stats_start_time
+            mean_rays_per_sec = self._stats_total_rays / elapsed_time
+            print("Render complete - time elapsed {:0.3f}s - {:0.1f}k rays/s".format(
+                elapsed_time, mean_rays_per_sec / 1000))
 
     cpdef list _obtain_rays(self, tuple task, Ray template):
         """
