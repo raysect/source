@@ -33,7 +33,6 @@
 import numpy as np
 cimport numpy as np
 
-from raysect.core cimport Point2D, new_point2d
 from raysect.core.math.cython cimport winding2d, inside_triangle
 
 cimport cython
