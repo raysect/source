@@ -75,9 +75,8 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices):
     if not polygon_winding_2d(vertices):
         vertices = vertices[::-1, :]
 
-    active_vertices = []
-    for i in range(vertices.shape[0]):
-        active_vertices.append(new_point2d(vertices[i, 0], vertices[i, 1]))
+    # active vertices stores index of the vertices that haven't yet been processed.
+    active_vertices = list(range(vertices.shape[0]))
 
     # create array to hold output triangles
     triangles = np.empty((vertices.shape[0] - 2, 3), dtype=np.int32)
@@ -85,7 +84,7 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices):
     i = 0
     while len(active_vertices) > 3:
 
-        ear_index = _locate_ear(active_vertices)
+        ear_index = _locate_ear(active_vertices, vertices)
 
         # store new triangle
         triangles[i, 0] = active_vertices[(ear_index - 1) % len(active_vertices)]
@@ -97,29 +96,53 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices):
         # remove vertex from active vertex list
         active_vertices.pop(ear_index)
 
+    # add the last triangle
+    triangles[i, 0] = active_vertices[0]
+    triangles[i, 1] = active_vertices[1]
+    triangles[i, 2] = active_vertices[2]
+
     return triangles
 
 
-cpdef int _locate_ear(list vertices) except -1:
+cpdef int _locate_ear(list active_vertices, np.ndarray vertices) except -1:
 
     cdef:
-        int ear_vertex, length, n, n_previous, n_next
+        int ear_vertex, length, n, v1i, v2i, v3i, n_previous, n_next
 
-    length = len(vertices)
+    length = len(active_vertices)
     for n in range(length):
 
         n_previous = (n - 1) % length
         n_next = (n + 1) % length
 
+        # obtain selected vertex indices and vertex coordinates
+        v1i = active_vertices[n_previous]
+        v1x = vertices[v1i, 0]
+        v1y = vertices[v1i, 1]
+
+        v2i = active_vertices[n]
+        v2x = vertices[v2i, 0]
+        v2y = vertices[v2i, 1]
+
+        v3i = active_vertices[n_next]
+        v3x = vertices[v3i, 0]
+        v3y = vertices[v3i, 1]
+
         # non-convex points cannot be ears by definition
-        if not _is_convex(vertices[n_previous], vertices[n], vertices[n_next]):
+        if not _is_convex(v1x, v1y, v2x, v2y, v3x, v3y):
             continue
 
         # do any other vertex points lie inside the triangle formed by these three points
         for m in range(length):
             if m == n or m == n_previous or m == n_next:
                 continue
-            if _inside_triangle(vertices[n_previous], vertices[n], vertices[n_next], vertices[m]):
+
+            # obtain vertex index and coordinates of test point
+            pi = active_vertices[m]
+            px = vertices[pi, 0]
+            py = vertices[pi, 1]
+
+            if _inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, px, py):
                 break
         else:
             # if code reaches here, n is the index of the first valid ear, since no points where inside triangle
@@ -129,7 +152,7 @@ cpdef int _locate_ear(list vertices) except -1:
                        "Please check the polygon data describes a simple polygon.")
 
 
-cdef inline bint _is_convex(Point2D a, Point2D b, Point2D c):
+cdef inline bint _is_convex(double v1x, double v1y, double v2x, double v2y, double v3x, double v3y) nogil:
     """
     Returns True if vertex is convex.
     """
@@ -137,41 +160,30 @@ cdef inline bint _is_convex(Point2D a, Point2D b, Point2D c):
     cdef double ux, uy, vx, vy
 
     # calculate vectors
-    ux = b.x - a.x
-    uy = b.y - a.y
+    ux = v2x - v1x
+    uy = v2y - v1y
 
-    vx = c.x - b.x
-    vy = c.y - b.y
+    vx = v3x - v2x
+    vy = v3y - v2y
 
     # calculate z component of cross product of vectors between vertices
     # vertex is convex if z component of u.cross(v) is negative
     return (ux * vy - vx * uy) < 0
 
 
-cdef inline bint _inside_triangle(Point2D v1, Point2D v2, Point2D v3, Point2D p):
+cdef inline bint _inside_triangle(double v1x, double v1y, double v2x, double v2y,
+                                  double v3x, double v3y, double px, double py) nogil:
     """Returns True if test point is inside triangle."""
 
     cdef:
         double ux, uy, vx, vy
 
     # calculate vectors
-    ux = v2.x - v1.x
-    uy = v2.y - v1.y
+    ux = v2x - v1x
+    uy = v2y - v1y
 
-    vx = p.x - v1.x
-    vy = p.y - v1.y
-
-    # calculate z component of cross product of vectors between vertices
-    # vertex is convex if z component of u.cross(v) is negative
-    if (ux * vy - vx * uy) > 0:
-        return False
-
-    # calculate vectors
-    ux = v3.x - v2.x
-    uy = v3.y - v2.y
-
-    vx = p.x - v2.x
-    vy = p.y - v2.y
+    vx = px - v1x
+    vy = py - v1y
 
     # calculate z component of cross product of vectors between vertices
     # vertex is convex if z component of u.cross(v) is negative
@@ -179,11 +191,23 @@ cdef inline bint _inside_triangle(Point2D v1, Point2D v2, Point2D v3, Point2D p)
         return False
 
     # calculate vectors
-    ux = v1.x - v3.x
-    uy = v1.y - v3.y
+    ux = v3x - v2x
+    uy = v3y - v2y
 
-    vx = p.x - v3.x
-    vy = p.y - v3.y
+    vx = px - v2x
+    vy = py - v2y
+
+    # calculate z component of cross product of vectors between vertices
+    # vertex is convex if z component of u.cross(v) is negative
+    if (ux * vy - vx * uy) > 0:
+        return False
+
+    # calculate vectors
+    ux = v1x - v3x
+    uy = v1y - v3y
+
+    vx = px - v3x
+    vy = py - v3y
 
     # calculate z component of cross product of vectors between vertices
     # vertex is convex if z component of u.cross(v) is negative
@@ -201,3 +225,49 @@ cdef inline bint _inside_triangle(Point2D v1, Point2D v2, Point2D v3, Point2D p)
 #
 # In [7]: _locate_ear([Point2D(0, 0), Point2D(0, 1), Point2D(0.01, 0.5), Point2D(1, 0)])
 # Out[7]: 1
+
+# In [1]: from raysect.core.math.polygon import triangulate2d
+#
+# In [2]: import numpy as np
+#
+# In [3]: v = np.array([[0, 0], [0, 1], [1,1], [0.01, 0.5], [1, 0]])
+#
+# In [4]: triangulate2d(v)
+# Out[4]:
+# array([[1, 2, 3],
+#        [0, 1, 3],
+#        [0, 3, 4]], dtype=int32)
+
+# In [3]: _inside_triangle(Point2D(0, 0), Point2D(1, 1), Point2D(1, 0), Point2D(1, 1))
+# Out[3]: True
+#
+# In [4]: _inside_triangle(Point2D(0, 0), Point2D(1, 1), Point2D(1, 0), Point2D(0.5, 0.5))
+# Out[4]: True
+#
+# In [5]: _inside_triangle(Point2D(0, 0), Point2D(1, 1), Point2D(1, 0), Point2D(0.5, 0.500000005))
+# Out[5]: False
+
+# In [2]: from raysect.core.math.polygon import _is_convex
+#
+# In [3]: _is_convex(Point2D(0, 0), Point2D(0, 1), Point2D(1, 0))
+# Out[3]: True
+#
+# In [4]: _is_convex(Point2D(0, 0), Point2D(0, 1), Point2D(-1, 0))
+# Out[4]: False
+#
+# In [5]: _is_convex(Point2D(0, 0), Point2D(0, -1), Point2D(1, 0))
+# Out[5]: False
+#
+# In [6]: _is_convex(Point2D(0, 0), Point2D(0, -1), Point2D(1, -1))
+# Out[6]: False
+#
+# In [7]: _is_convex(Point2D(0, 0), Point2D(0, -1), Point2D(-1, -1))
+# Out[7]: True
+#
+# In [8]: _is_convex(Point2D(0, 0), Point2D(1, 1), Point2D(2, 2))
+# Out[8]: False
+#
+# In [9]: _is_convex(Point2D(0, 0), Point2D(1, 1), Point2D(0, 0))
+# Out[9]: False
+
+
