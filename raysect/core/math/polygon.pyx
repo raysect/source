@@ -81,7 +81,7 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices):
     active_vertices = list(range(vertices.shape[0]))
 
     # ensure winding order is clockwise
-    if not winding2d(vertices):
+    if not winding2d(vertices_mv):
         active_vertices.reverse()
 
     # create array to hold output triangles
