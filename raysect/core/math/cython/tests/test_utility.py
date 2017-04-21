@@ -1,6 +1,4 @@
-# cython: language_level=3
-
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,40 +27,33 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy cimport ndarray
-cimport cython
+"""
+Unit tests for the Vector3D object.
+"""
 
-cdef inline int find_index(double[::1] x, double v) nogil
+import unittest
+import numpy as np
+from raysect.core.math.cython.utility import _test_polygon_winding_2d as polygon_winding_2d
 
-cdef inline double interpolate(double[::1] x, double[::1] y, double p) nogil
 
-cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil
+class TestUtility(unittest.TestCase):
 
-cdef inline double average(double[::1] x, double[::1] y, double x0, double x1) nogil
+    def test_clockwise_polygon_winding(self):
+        """Tests the algorithm returns True (clockwise) for a clockwise polygon."""
 
-cdef inline double clamp(double v, double minimum, double maximum) nogil:
-    if v < minimum:
-        return minimum
-    if v > maximum:
-        return maximum
-    return v
+        poly = np.array([[1,1], [1,2],[2,2],[2,1]], dtype=np.double)
+        self.assertTrue(polygon_winding_2d(poly))
 
-cdef inline void swap_double(double *a, double *b) nogil:
-    cdef double temp
-    temp = a[0]
-    a[0] = b[0]
-    b[0] = temp
+    def test_anticlockwise_polygon_winding(self):
+        """Tests the algorithm returns False (anti-clockwise) for an anti-clockwise polygon."""
 
-cdef inline void swap_int(int *a, int *b) nogil:
-    cdef int temp
-    temp = a[0]
-    a[0] = b[0]
-    b[0] = temp
+        poly = np.array([[1,1], [1,2],[2,2],[2,1]], dtype=np.double)
+        poly = np.array(poly[::-1])
+        self.assertFalse(polygon_winding_2d(poly))
 
-@cython.cdivision(True)
-cdef inline double lerp(double x0, double x1, double y0, double y1, double x) nogil:
-    return ((y1 - y0) / (x1 - x0)) * (x - x0) + y0
 
-cdef inline bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil
+if __name__ == "__main__":
+    unittest.main()
 
-cdef inline bint polygon_winding_2d(double[:,::1] vertices) nogil
+
+

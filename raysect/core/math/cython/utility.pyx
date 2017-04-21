@@ -334,3 +334,41 @@ cdef inline bint solve_quadratic(double a, double b, double c, double *t0, doubl
     t0[0] = q / a
     t1[0] = c / q
     return True
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline bint polygon_winding_2d(double[:,::1] vertices) nogil:
+    """
+    Returns True if clockwise, false if anti-clockwise.
+
+    Must be a simple polygon (none of the segments cross each other). Polygon
+    points must be ordered. This method is only valid for closed polygons,
+    i.e. the first point is connected to the last point.
+
+    Vertices must be a Nx2 array, this is not checked.
+
+    .. WARNING:: For speed, this function does not perform any type or bounds
+       checking. Supplying malformed data may result in data corruption or a
+       segmentation fault.
+
+    :rtype: bool
+    """
+
+    cdef:
+        double sum = 0
+        int i, length
+
+    # Work out the signed area of the polygon (note: this is double the area because we need sign of magnitude
+    # and can avoid dividing by 2).
+    length = vertices.shape[0]
+    for i in range(length - 1):
+        sum += (vertices[i, 1] + vertices[i + 1, 1]) * (vertices[i + 1, 0] - vertices[i, 0])
+    sum += (vertices[0, 1] + vertices[length - 1, 1]) * (vertices[0, 0] - vertices[length - 1, 0])
+    return sum > 0
+
+
+def _test_polygon_winding_2d(p):
+    """Expose cython function for testing."""
+    return polygon_winding_2d(p)
+
