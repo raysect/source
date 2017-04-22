@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -334,3 +334,95 @@ cdef inline bint solve_quadratic(double a, double b, double c, double *t0, doubl
     t0[0] = q / a
     t1[0] = c / q
     return True
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline bint winding2d(double[:,::1] vertices) nogil:
+    """
+    Identifies the winding direction of a simple 2D polygon.
+
+    Must be a simple polygon (none of the segments cross each other).
+    This method is only valid for closed polygons,
+    i.e. the first point is connected to the last point.
+
+    Returns True if clockwise, false if anti-clockwise.
+
+    Vertices must be a Nx2 array, this is not checked.
+
+    .. WARNING:: For speed, this function does not perform any type or bounds
+       checking. Supplying malformed data may result in data corruption or a
+       segmentation fault.
+
+    :rtype: bool
+    """
+
+    cdef:
+        double sum = 0
+        int i, length
+
+    # Work out the signed area of the polygon (note: this is double the area because we need sign of magnitude
+    # and can avoid dividing by 2).
+    length = vertices.shape[0]
+    for i in range(length - 1):
+        sum += (vertices[i, 1] + vertices[i + 1, 1]) * (vertices[i + 1, 0] - vertices[i, 0])
+    sum += (vertices[0, 1] + vertices[length - 1, 1]) * (vertices[0, 0] - vertices[length - 1, 0])
+    return sum > 0
+
+
+def _test_winding2d(p):
+    """Expose cython function for testing."""
+    return winding2d(p)
+
+
+cdef inline bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
+                                 double v3x, double v3y, double px, double py) nogil:
+    """Returns True if test point is inside triangle."""
+
+    cdef:
+        double ux, uy, vx, vy
+
+    # calculate vectors
+    ux = v2x - v1x
+    uy = v2y - v1y
+
+    vx = px - v1x
+    vy = py - v1y
+
+    # calculate z component of cross product of vectors between vertices
+    # vertex is convex if z component of u.cross(v) is negative
+    if (ux * vy - vx * uy) > 0:
+        return False
+
+    # calculate vectors
+    ux = v3x - v2x
+    uy = v3y - v2y
+
+    vx = px - v2x
+    vy = py - v2y
+
+    # calculate z component of cross product of vectors between vertices
+    # vertex is convex if z component of u.cross(v) is negative
+    if (ux * vy - vx * uy) > 0:
+        return False
+
+    # calculate vectors
+    ux = v1x - v3x
+    uy = v1y - v3y
+
+    vx = px - v3x
+    vy = py - v3y
+
+    # calculate z component of cross product of vectors between vertices
+    # vertex is convex if z component of u.cross(v) is negative
+    if (ux * vy - vx * uy) > 0:
+        return False
+
+    return True
+
+
+def _test_inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, px, py):
+    """Expose cython function for testing."""
+    return inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, px, py)
+
+

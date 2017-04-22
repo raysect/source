@@ -11,6 +11,8 @@ API Changes:
 New:
 * InhomogeneousVolumeEmitter integrator now pluggable.
 * Added cosine weighted cone random vector sampler.
+* Added cython utility for determining polygon winding order for n-sided polygons.
+* Added triangulate2d function for splitting N-sided polygon into triangles.
 
 
 Release 0.3.1 (17 Mar 2017)
