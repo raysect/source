@@ -34,7 +34,7 @@ from raysect.optical.observer.base.processor cimport PixelProcessor
 
 cdef class Pipeline0D:
 
-    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices)
+    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet)
 
     cpdef PixelProcessor pixel_processor(self, int slice_id)
 
@@ -45,7 +45,7 @@ cdef class Pipeline0D:
 
 cdef class Pipeline1D:
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices)
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet)
 
     cpdef PixelProcessor pixel_processor(self, int pixel, int slice_id)
 
@@ -56,7 +56,7 @@ cdef class Pipeline1D:
 
 cdef class Pipeline2D:
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices)
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet)
 
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id)
 

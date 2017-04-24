@@ -83,7 +83,7 @@ cdef class SpectralPipeline0D(Pipeline0D):
 
         self._display_figure = None
 
-    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         self._spectral_slices = spectral_slices
         self.min_wavelength = min_wavelength
@@ -203,7 +203,7 @@ cdef class SpectralPipeline2D(Pipeline2D):
         self.delta_wavelength = 0
         self.wavelengths = None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         nx, ny = pixels
         self._pixels = pixels

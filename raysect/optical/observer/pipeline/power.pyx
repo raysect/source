@@ -69,6 +69,7 @@ cdef class PowerPipeline0D(Pipeline0D):
         readonly StatsBin value
         StatsArray1D _working_buffer
         list _resampled_filter
+        bint _quiet
 
     def __init__(self, SpectralFunction filter=None, bint accumulate=True, str name=None):
 
@@ -80,7 +81,9 @@ cdef class PowerPipeline0D(Pipeline0D):
         self._working_buffer = None
         self._resampled_filter = None
 
-    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+        self._quiet = False
+
+    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         if not self.accumulate:
             self.value.clear()
@@ -90,6 +93,8 @@ cdef class PowerPipeline0D(Pipeline0D):
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+
+        self._quiet = quiet
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -130,7 +135,8 @@ cdef class PowerPipeline0D(Pipeline0D):
 
         self.value.combine_samples(mean, variance, samples)
 
-        print("{} - incident power: {:.4G} +/- {:.4G} W".format(self.name, self.value.mean, self.value.error()))
+        if not self._quiet:
+            print("{} - incident power: {:.4G} +/- {:.4G} W".format(self.name, self.value.mean, self.value.error()))
 
 
 cdef class PowerPipeline2D(Pipeline2D):
@@ -204,6 +210,8 @@ cdef class PowerPipeline2D(Pipeline2D):
 
         self._pixels = None
         self._samples = 0
+
+        self._quiet = False
 
     @property
     def display_white_point(self):
@@ -287,7 +295,7 @@ cdef class PowerPipeline2D(Pipeline2D):
             raise ValueError('Display update time must be greater than zero seconds.')
         self._display_update_time = value
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -303,6 +311,8 @@ cdef class PowerPipeline2D(Pipeline2D):
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+
+        self._quiet = quiet
 
         if self.display_progress:
             self._start_display()
@@ -385,7 +395,9 @@ cdef class PowerPipeline2D(Pipeline2D):
         # update live render display
         if (time() - self._display_timer) > self.display_update_time:
 
-            print("{} - updating display...".format(self.name))
+            if not self._quiet:
+                print("{} - updating display...".format(self.name))
+
             self._render_display(self._display_frame, 'rendering...')
 
             # workaround for interactivity for QT backend

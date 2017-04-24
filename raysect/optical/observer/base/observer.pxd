@@ -51,7 +51,7 @@ cdef class _ObserverBase(Observer):
         int _stats_total_tasks
         int _stats_completed_tasks
         readonly bint render_complete
-        public bint display_progress
+        public bint quiet
 
     cpdef list _slice_spectrum(self)
 
@@ -65,7 +65,7 @@ cdef class _ObserverBase(Observer):
 
     cpdef list _obtain_pixel_processors(self, tuple task, int slice_id)
 
-    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices)
+    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices, bint quiet)
 
     cpdef object _update_pipelines(self, tuple task, list results, int slice_id)
 

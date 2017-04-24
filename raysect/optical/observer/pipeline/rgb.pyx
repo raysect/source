@@ -94,6 +94,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         double _display_sensitivity, _display_unsaturated_fraction
         bint _display_auto_exposure
         public bint display_persist_figure
+        bint _quiet
 
     def __init__(self, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
@@ -129,6 +130,8 @@ cdef class RGBPipeline2D(Pipeline2D):
 
         self._pixels = None
         self._samples = 0
+
+        self._quiet = False
 
     @property
     def display_sensitivity(self):
@@ -193,7 +196,7 @@ cdef class RGBPipeline2D(Pipeline2D):
             raise ValueError('Display update time must be greater than zero seconds.')
         self._display_update_time = value
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -209,6 +212,8 @@ cdef class RGBPipeline2D(Pipeline2D):
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+
+        self._quiet = quiet
 
         if self.display_progress:
             self._start_display()
@@ -300,7 +305,9 @@ cdef class RGBPipeline2D(Pipeline2D):
         # update live render display
         if (time() - self._display_timer) > self.display_update_time:
 
-            print("{} - updating display...".format(self.name))
+            if not self._quiet:
+                print("{} - updating display...".format(self.name))
+
             self._render_display(self._display_frame, 'rendering...')
 
             # workaround for interactivity for QT backend
