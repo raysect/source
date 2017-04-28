@@ -93,11 +93,13 @@ cdef class _ObserverBase(Observer):
     :param bool ray_importance_sampling: Toggle importance sampling behaviour (default=True).
     :param float ray_important_path_weight: Relative weight of important path sampling
       (default=0.2).
+    :param bool quiet: When True, suppresses the printing of observer performance statistics and completion
+      (default=False).
     """
 
     def __init__(self, parent=None, transform=None, name=None, render_engine=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=None):
 
         super().__init__(parent, transform, name)
 
@@ -121,6 +123,8 @@ cdef class _ObserverBase(Observer):
 
         # flag indicating if the frame sampler is not supplying any tasks (in which case the rendering process is over)
         self.render_complete = False
+
+        self.quiet = quiet or False
 
     @property
     def spectral_bins(self):
@@ -277,14 +281,15 @@ cdef class _ObserverBase(Observer):
         templates = self._generate_templates(slices)
 
         # initialise pipelines for rendering
-        self._initialise_pipelines(self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
+        self._initialise_pipelines(self._min_wavelength, self._max_wavelength, self._spectral_bins, slices, self.quiet)
 
         # request render tasks and escape early if there is no work to perform
         # if there is no work to perform then the render is considered "complete"
         tasks = self._generate_tasks()
         if not tasks:
+            if not self.quiet:
+                print("Render complete - No render tasks were generated.")
             self.render_complete = True
-            print("Render complete - No render tasks were generated.")
             return
 
         # initialise statistics with total task count
@@ -446,7 +451,7 @@ cdef class _ObserverBase(Observer):
     cpdef list _obtain_pixel_processors(self, tuple task, int slice_id):
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices):
+    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices, bint quiet):
         raise NotImplementedError("To be defined in subclass.")
 
     cpdef object _update_pipelines(self, tuple task, list results, int slice_id):
@@ -460,6 +465,9 @@ cdef class _ObserverBase(Observer):
         Initialise statistics.
         """
 
+        if self.quiet:
+            return
+
         self._stats_ray_count = 0
         self._stats_total_rays = 0
         self._stats_start_time = time()
@@ -471,6 +479,9 @@ cdef class _ObserverBase(Observer):
         """
         Display progress statistics.
         """
+
+        if self.quiet:
+            return
 
         self._stats_completed_tasks += 1
         self._stats_ray_count += sample_ray_count
@@ -490,6 +501,9 @@ cdef class _ObserverBase(Observer):
         """
         Final statistics output.
         """
+
+        if self.quiet:
+            return
 
         elapsed_time = time() - self._stats_start_time
         mean_rays_per_sec = self._stats_total_rays / elapsed_time
@@ -547,7 +561,7 @@ cdef class Observer0D(_ObserverBase):
     def __init__(self, pipelines, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=None):
 
         self.pixel_samples = pixel_samples or 1000
         self.samples_per_task = samples_per_task or 250
@@ -556,7 +570,7 @@ cdef class Observer0D(_ObserverBase):
         super().__init__(
             parent, transform, name, render_engine, spectral_rays, spectral_bins,
             min_wavelength, max_wavelength, ray_extinction_prob, ray_extinction_min_depth,
-            ray_max_depth, ray_importance_sampling, ray_important_path_weight
+            ray_max_depth, ray_importance_sampling, ray_important_path_weight, quiet
         )
 
     @property
@@ -630,10 +644,10 @@ cdef class Observer0D(_ObserverBase):
     cpdef list _obtain_pixel_processors(self, tuple task, int slice_id):
         return [pipeline.pixel_processor(slice_id) for pipeline in self._pipelines]
 
-    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices):
+    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices, bint quiet):
         cdef Pipeline0D pipeline
         for pipeline in self._pipelines:
-            pipeline.initialise(self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
+            pipeline.initialise(self._min_wavelength, self._max_wavelength, self._spectral_bins, slices, quiet)
 
     cpdef object _update_pipelines(self, tuple task, list results, int slice_id):
 
@@ -698,7 +712,7 @@ cdef class Observer1D(_ObserverBase):
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=None):
 
         self.pixel_samples = pixel_samples or 100
         self.pixels = pixels
@@ -767,10 +781,10 @@ cdef class Observer1D(_ObserverBase):
         pixel, = task
         return [pipeline.pixel_processor(pixel, slice_id) for pipeline in self._pipelines]
 
-    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices):
+    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices, bint quiet):
         cdef Pipeline1D pipeline
         for pipeline in self._pipelines:
-            pipeline.initialise(self._pixels, self._pixel_samples, self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
+            pipeline.initialise(self._pixels, self._pixel_samples, self._min_wavelength, self._max_wavelength, self._spectral_bins, slices, quiet)
 
     cpdef object _update_pipelines(self, tuple task, list results, int slice_id):
 
@@ -852,7 +866,7 @@ cdef class Observer2D(_ObserverBase):
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=None):
 
         self.pixel_samples = pixel_samples or 100
         self.pixels = pixels
@@ -947,10 +961,10 @@ cdef class Observer2D(_ObserverBase):
         x, y = task
         return [pipeline.pixel_processor(x, y, slice_id) for pipeline in self._pipelines]
 
-    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices):
+    cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices, bint quiet):
         cdef Pipeline2D pipeline
         for pipeline in self._pipelines:
-            pipeline.initialise(self._pixels, self._pixel_samples, self._min_wavelength, self._max_wavelength, self._spectral_bins, slices)
+            pipeline.initialise(self._pixels, self._pixel_samples, self._min_wavelength, self._max_wavelength, self._spectral_bins, slices, quiet)
 
     cpdef object _update_pipelines(self, tuple task, list results, int slice_id):
 

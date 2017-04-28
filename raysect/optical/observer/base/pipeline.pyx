@@ -34,7 +34,7 @@ cdef class Pipeline0D:
     The base class for 0D pipelines.
     """
 
-    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
         """
         Initialises containers for the pipeline's processing output.
 
@@ -48,6 +48,7 @@ cdef class Pipeline0D:
         :param int spectral_bins: Number of spectral samples across wavelength range.
         :param list spectral_slices: List of spectral sub-ranges for cases where spectral
           rays is > 1 (i.e. dispersion effects turned on).
+        :param bool quiet: When True, suppresses output to the terminal.
         """
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
@@ -108,7 +109,7 @@ cdef class Pipeline1D:
     The base class for 1D pipelines.
     """
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
         """
         Initialises containers for the pipeline's processing output.
 
@@ -126,6 +127,7 @@ cdef class Pipeline1D:
         :param int spectral_bins: Number of spectral samples across wavelength range.
         :param list spectral_slices: List of spectral sub-ranges for cases where spectral
           rays is > 1 (i.e. dispersion effects turned on).
+        :param bool quiet: When True, suppresses output to the terminal.
         """
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 
@@ -187,7 +189,7 @@ cdef class Pipeline2D:
     The base class for 2D pipelines.
     """
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
         """
         Initialises containers for the pipeline's processing output.
 
@@ -205,6 +207,7 @@ cdef class Pipeline2D:
         :param int spectral_bins: Number of spectral samples across wavelength range.
         :param list spectral_slices: List of spectral sub-ranges for cases where spectral
           rays is > 1 (i.e. dispersion effects turned on).
+        :param bool quiet: When True, suppresses output to the terminal.          
         """
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 

@@ -161,10 +161,9 @@ cdef class Ray(CoreRay):
 
         if bins < 1:
             raise ValueError("Number of bins cannot be less than 1.")
-
         self._bins = bins
 
-    cdef inline int get_bins(self):
+    cdef inline int get_bins(self) nogil:
         return self._bins
 
     @property
@@ -187,7 +186,7 @@ cdef class Ray(CoreRay):
 
         self._min_wavelength = min_wavelength
 
-    cdef inline double get_min_wavelength(self):
+    cdef inline double get_min_wavelength(self) nogil:
         return self._min_wavelength
 
     @property
@@ -210,7 +209,7 @@ cdef class Ray(CoreRay):
 
         self._max_wavelength = max_wavelength
 
-    cdef inline double get_max_wavelength(self):
+    cdef inline double get_max_wavelength(self) nogil:
         return self._max_wavelength
 
     @property
@@ -295,7 +294,7 @@ cdef class Ray(CoreRay):
 
         self._important_path_weight = important_path_weight
 
-    cdef inline double get_important_path_weight(self):
+    cdef inline double get_important_path_weight(self) nogil:
         return self._important_path_weight
 
     cpdef Spectrum new_spectrum(self):
@@ -333,24 +332,24 @@ cdef class Ray(CoreRay):
             # this is the primary ray, count starts at 1 as the primary ray is the first ray
             self.ray_count = 1
 
-        # create a new spectrum object compatible with the ray
-        spectrum = self.new_spectrum()
-
         # limit ray recursion depth with Russian roulette
         # set normalisation to ensure the sampling remains unbiased
         if keep_alive or self.depth < self._extinction_min_depth:
             normalisation = 1.0
         else:
             if self.depth >= self._max_depth or probability(self._extinction_prob):
-                return spectrum
+                return self.new_spectrum()
             else:
                 normalisation = 1 / (1 - self._extinction_prob)
 
         # does the ray intersect with any of the primitives in the world?
         intersection = world.hit(self)
-        if intersection is not None:
-            spectrum = self._sample_surface(intersection, world)
-            spectrum = self._sample_volumes(spectrum, intersection, world)
+        if intersection is None:
+            return self.new_spectrum()
+
+        # sample material
+        spectrum = self._sample_surface(intersection, world)
+        spectrum = self._sample_volumes(spectrum, intersection, world)
 
         # apply normalisation to ensure the sampling remains unbiased
         spectrum.mul_scalar(normalisation)

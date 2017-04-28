@@ -51,7 +51,11 @@ cdef class ImportanceManager:
 
     def __init__(self, primitives):
 
+        # The sum of importance weights on all important primitives in this scene-graph.
         self._total_importance = 0
+
+        # A list of tuples defining the bounding spheres of all important primitives in the scene-graph.
+        # Each tuple has the structure (sphere_centre, sphere_radius, primitive_importance).
         self._spheres = []
 
         if len(primitives) == 0:
@@ -65,40 +69,9 @@ cdef class ImportanceManager:
             self._cdf = None
             return
 
+        # Populate numpy array storing the normalised cumulative importance weights of all important primitives.
+        # Used for selecting a random primitive proportional to their respective weights.
         self._calculate_cdf()
-
-    @property
-    def total_importance(self):
-        """
-        The sum of importance weights on all important primitives in this
-        scene-graph.
-
-        :rtype: float
-        """
-        return self._total_importance
-
-    @property
-    def spheres(self):
-        """
-        A list of tuples defining the bounding spheres of all important primitives
-        in the scene-graph.
-
-        Each tuple has the structure (sphere_centre, sphere_radius, primitive_importance).
-
-        :rtype: list
-        """
-        return self._total_importance
-
-    @property
-    def cdf(self):
-        """
-        A numpy array storing the normalised cumulative importance weights of all important
-        primitives. Used for selecting a random primitive proportional to their respective
-        weights.
-
-        :rtype: ndarray
-        """
-        return self._total_importance
 
     cdef object _process_primitives(self, list primitives):
         """

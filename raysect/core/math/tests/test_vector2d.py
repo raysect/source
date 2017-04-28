@@ -232,7 +232,7 @@ class TestVector2D(unittest.TestCase):
         self.assertAlmostEqual(r.y, 0.12 / l, 14, "Normalise failed [Y].")
 
         # attempting to normalise a zero length vector should raise a ZeroDivisionError
-        v = Vector2D(0.0, 0.0, 0.0)
+        v = Vector2D(0.0, 0.0)
         with self.assertRaises(ZeroDivisionError, msg="Normalising a zero length vector did not raise a ZeroDivisionError."):
 
             r = v.normalise()
@@ -278,8 +278,6 @@ class TestVector2D(unittest.TestCase):
 
         r1 = a.cross(b)
         r2 = b.cross(a)
-
-        self.assertTrue(isinstance(r1, Vector2D), "Cross did not return a Vector2D.")
 
         self.assertEqual(r1, 4*2 - 2*-1, "Cross product failed.")
 

@@ -99,6 +99,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         double _display_black_point, _display_white_point, _display_unsaturated_fraction, _display_gamma
         bint _display_auto_exposure
         public bint display_persist_figure
+        bint _quiet
 
     def __init__(self, SpectralFunction red_filter, SpectralFunction green_filter,
                  SpectralFunction blue_filter, bint display_progress=True,
@@ -148,6 +149,8 @@ cdef class BayerPipeline2D(Pipeline2D):
 
         self._pixels = None
         self._samples = 0
+
+        self._quiet = False
 
     @property
     def display_white_point(self):
@@ -254,7 +257,7 @@ cdef class BayerPipeline2D(Pipeline2D):
             raise ValueError('Display update time must be greater than zero seconds.')
         self._display_update_time = value
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -273,6 +276,8 @@ cdef class BayerPipeline2D(Pipeline2D):
         resampled_green_filter = [self.green_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
         resampled_blue_filter = [self.blue_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
         self._resampled_filters = [resampled_red_filter, resampled_green_filter, resampled_blue_filter]
+
+        self._quiet = quiet
 
         if self.display_progress:
             self._start_display()
@@ -364,7 +369,9 @@ cdef class BayerPipeline2D(Pipeline2D):
         # update live render display
         if (time() - self._display_timer) > self.display_update_time:
 
-            print("{} - updating display...".format(self.name))
+            if not self._quiet:
+                print("{} - updating display...".format(self.name))
+
             self._render_display(self._display_frame, 'rendering...')
 
             # workaround for interactivity for QT backend

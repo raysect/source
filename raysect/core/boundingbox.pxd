@@ -45,7 +45,7 @@ cdef class BoundingBox3D:
 
     cdef inline bint intersect(self, Ray ray, double *front_intersection, double *back_intersection)
 
-    cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection)
+    cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) nogil
 
     cpdef bint contains(self, Point3D point)
 

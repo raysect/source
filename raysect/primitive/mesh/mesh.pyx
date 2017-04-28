@@ -196,31 +196,26 @@ cdef class MeshData(KDTree3DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef object _filter_triangles(self):
 
         cdef:
-            float32_t[:, ::1] vertices
-            int32_t[:, ::1] triangles
             int32_t i, valid
             int32_t i1, i2, i3
             Point3D p1, p2, p3
             Vector3D v1, v2, v3
 
-        # assign locally to avoid repeated memory view validity checks
-        vertices = self.vertices
-        triangles = self.triangles
-
         # scan triangles and make valid triangles contiguous
         valid = 0
         for i in range(self.triangles.shape[0]):
 
-            i1 = triangles[i, V1]
-            i2 = triangles[i, V2]
-            i3 = triangles[i, V3]
+            i1 = self.triangles[i, V1]
+            i2 = self.triangles[i, V2]
+            i3 = self.triangles[i, V3]
 
-            p1 = new_point3d(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
-            p2 = new_point3d(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
-            p3 = new_point3d(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
+            p1 = new_point3d(self.vertices[i1, X], self.vertices[i1, Y], self.vertices[i1, Z])
+            p2 = new_point3d(self.vertices[i2, X], self.vertices[i2, Y], self.vertices[i2, Z])
+            p3 = new_point3d(self.vertices[i3, X], self.vertices[i3, Y], self.vertices[i3, Z])
 
             # the cross product of two edge vectors of a degenerate triangle
             # (where 2 or more vertices are coincident or lie on the same line)
@@ -234,14 +229,15 @@ cdef class MeshData(KDTree3DCore):
                 continue
 
             # shift triangles
-            triangles[valid, :] = triangles[i, :]
+            self.triangles[valid, :] = self.triangles[i, :]
             valid += 1
 
         # reslice array to contain only valid triangles
-        self.triangles = triangles[:valid, :]
+        self.triangles = self.triangles[:valid, :]
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef object _generate_face_normals(self):
         """
         Calculate the triangles face normals from the vertices.
@@ -253,27 +249,21 @@ cdef class MeshData(KDTree3DCore):
         """
 
         cdef:
-            float32_t[:, ::1] vertices
-            int32_t[:, ::1] triangles
             int32_t i
             int32_t i1, i2, i3
             Point3D p1, p2, p3
             Vector3D v1, v2, v3
 
-        # assign locally to avoid repeated memory view validity checks
-        vertices = self.vertices
-        triangles = self.triangles
-
         self.face_normals = zeros((self.triangles.shape[0], 3), dtype=float32)
         for i in range(self.face_normals.shape[0]):
 
-            i1 = triangles[i, V1]
-            i2 = triangles[i, V2]
-            i3 = triangles[i, V3]
+            i1 = self.triangles[i, V1]
+            i2 = self.triangles[i, V2]
+            i3 = self.triangles[i, V3]
 
-            p1 = new_point3d(vertices[i1, X], vertices[i1, Y], vertices[i1, Z])
-            p2 = new_point3d(vertices[i2, X], vertices[i2, Y], vertices[i2, Z])
-            p3 = new_point3d(vertices[i3, X], vertices[i3, Y], vertices[i3, Z])
+            p1 = new_point3d(self.vertices[i1, X], self.vertices[i1, Y], self.vertices[i1, Z])
+            p2 = new_point3d(self.vertices[i2, X], self.vertices[i2, Y], self.vertices[i2, Z])
+            p3 = new_point3d(self.vertices[i3, X], self.vertices[i3, Y], self.vertices[i3, Z])
 
             v1 = p1.vector_to(p2)
             v2 = p1.vector_to(p3)
@@ -285,6 +275,7 @@ cdef class MeshData(KDTree3DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef BoundingBox3D _generate_bounding_box(self, int32_t i):
         """
         Generates a bounding box for the specified triangle.
@@ -297,29 +288,23 @@ cdef class MeshData(KDTree3DCore):
         """
 
         cdef:
-            float32_t[:, ::1] vertices
-            int32_t[:, ::1] triangles
             int32_t i1, i2, i3
             BoundingBox3D bbox
 
-        # assign locally to avoid repeated memory view validity checks
-        vertices = self.vertices
-        triangles = self.triangles
-
-        i1 = triangles[i, V1]
-        i2 = triangles[i, V2]
-        i3 = triangles[i, V3]
+        i1 = self.triangles[i, V1]
+        i2 = self.triangles[i, V2]
+        i3 = self.triangles[i, V3]
 
         bbox = new_boundingbox3d(
             new_point3d(
-                min(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
-                min(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
-                min(vertices[i1, Z], vertices[i2, Z], vertices[i3, Z]),
+                min(self.vertices[i1, X], self.vertices[i2, X], self.vertices[i3, X]),
+                min(self.vertices[i1, Y], self.vertices[i2, Y], self.vertices[i3, Y]),
+                min(self.vertices[i1, Z], self.vertices[i2, Z], self.vertices[i3, Z]),
             ),
             new_point3d(
-                max(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
-                max(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
-                max(vertices[i1, Z], vertices[i2, Z], vertices[i3, Z]),
+                max(self.vertices[i1, X], self.vertices[i2, X], self.vertices[i3, X]),
+                max(self.vertices[i1, Y], self.vertices[i2, Y], self.vertices[i3, Y]),
+                max(self.vertices[i1, Z], self.vertices[i2, Z], self.vertices[i3, Z]),
             ),
         )
         bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
@@ -435,6 +420,7 @@ cdef class MeshData(KDTree3DCore):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data):
 
         # This code is a Python port of the code listed in appendix A of
@@ -442,8 +428,6 @@ cdef class MeshData(KDTree3DCore):
         #  Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
 
         cdef:
-            float32_t[:, ::1] vertices
-            int32_t[:, ::1] triangles
             int32_t i1, i2, i3
             int32_t ix, iy, iz
             float sx, sy, sz
@@ -454,27 +438,23 @@ cdef class MeshData(KDTree3DCore):
             float t, u, v, w
             float det, det_reciprocal
 
-        # assign locally to avoid repeated memory view validity checks
-        vertices = self.vertices
-        triangles = self.triangles
-
         # obtain vertex ids
-        i1 = triangles[i, V1]
-        i2 = triangles[i, V2]
-        i3 = triangles[i, V3]
+        i1 = self.triangles[i, V1]
+        i2 = self.triangles[i, V2]
+        i3 = self.triangles[i, V3]
 
         # center coordinate space on ray origin
-        v1[X] = vertices[i1, X] - ray.origin.x
-        v1[Y] = vertices[i1, Y] - ray.origin.y
-        v1[Z] = vertices[i1, Z] - ray.origin.z
+        v1[X] = self.vertices[i1, X] - ray.origin.x
+        v1[Y] = self.vertices[i1, Y] - ray.origin.y
+        v1[Z] = self.vertices[i1, Z] - ray.origin.z
 
-        v2[X] = vertices[i2, X] - ray.origin.x
-        v2[Y] = vertices[i2, Y] - ray.origin.y
-        v2[Z] = vertices[i2, Z] - ray.origin.z
+        v2[X] = self.vertices[i2, X] - ray.origin.x
+        v2[Y] = self.vertices[i2, Y] - ray.origin.y
+        v2[Z] = self.vertices[i2, Z] - ray.origin.z
 
-        v3[X] = vertices[i3, X] - ray.origin.x
-        v3[Y] = vertices[i3, Y] - ray.origin.y
-        v3[Z] = vertices[i3, Z] - ray.origin.z
+        v3[X] = self.vertices[i3, X] - ray.origin.x
+        v3[Y] = self.vertices[i3, Y] - ray.origin.y
+        v3[Z] = self.vertices[i3, Z] - ray.origin.z
 
         # obtain ray transform
         ix = self._ix
@@ -542,6 +522,7 @@ cdef class MeshData(KDTree3DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef Intersection calc_intersection(self, Ray ray):
 
         cdef:
@@ -590,6 +571,7 @@ cdef class MeshData(KDTree3DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef Normal3D _intersection_normal(self):
         """
         Returns the surface normal for the last triangle hit.
@@ -601,43 +583,31 @@ cdef class MeshData(KDTree3DCore):
         :return: The surface normal at the specified coordinate.
         """
 
-        cdef:
-            int32_t[:, ::1] triangles
-            float32_t[:, ::1] vertex_normals
-            float32_t[:, ::1] face_normals
-            int32_t n1, n2, n3
+        cdef int32_t n1, n2, n3
 
-        # assign locally to avoid repeated memory view validity checks
-        vertex_normals = self.vertex_normals
+        if self.smoothing and self.vertex_normals is not None:
 
-        if self.smoothing and vertex_normals is not None:
-
-            # assign locally to avoid repeated memory view validity checks
-            triangles = self.triangles
-
-            n1 = triangles[self._i, N1]
-            n2 = triangles[self._i, N2]
-            n3 = triangles[self._i, N3]
+            n1 = self.triangles[self._i, N1]
+            n2 = self.triangles[self._i, N2]
+            n3 = self.triangles[self._i, N3]
 
             return new_normal3d(
-                self._u * vertex_normals[n1, X] + self._v * vertex_normals[n2, X] + self._w * vertex_normals[n3, X],
-                self._u * vertex_normals[n1, Y] + self._v * vertex_normals[n2, Y] + self._w * vertex_normals[n3, Y],
-                self._u * vertex_normals[n1, Z] + self._v * vertex_normals[n2, Z] + self._w * vertex_normals[n3, Z]
-            )
+                self._u * self.vertex_normals[n1, X] + self._v * self.vertex_normals[n2, X] + self._w * self.vertex_normals[n3, X],
+                self._u * self.vertex_normals[n1, Y] + self._v * self.vertex_normals[n2, Y] + self._w * self.vertex_normals[n3, Y],
+                self._u * self.vertex_normals[n1, Z] + self._v * self.vertex_normals[n2, Z] + self._w * self.vertex_normals[n3, Z]
+            ).normalise()
 
         else:
 
-            # assign locally to avoid repeated memory view validity checks
-            face_normals = self.face_normals
-
             return new_normal3d(
-                face_normals[self._i, X],
-                face_normals[self._i, Y],
-                face_normals[self._i, Z]
+                self.face_normals[self._i, X],
+                self.face_normals[self._i, Y],
+                self.face_normals[self._i, Z]
             )
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef bint contains(self, Point3D p):
         """
         Tests if a point is contained by the mesh.
@@ -667,6 +637,7 @@ cdef class MeshData(KDTree3DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef BoundingBox3D bounding_box(self, AffineMatrix3D to_world):
         """
         Returns a bounding box that encloses the mesh.
@@ -680,19 +651,15 @@ cdef class MeshData(KDTree3DCore):
         """
 
         cdef:
-            float32_t[:, ::1] vertices
             int32_t i
             BoundingBox3D bbox
             Point3D vertex
 
-        # assign locally to avoid repeated memory view validity checks
-        vertices = self.vertices
-
         # TODO: padding should really be a function of mesh extent
         # convert vertices to world space and grow a bounding box around them
         bbox = BoundingBox3D()
-        for i in range(vertices.shape[0]):
-            vertex = new_point3d(vertices[i, X], vertices[i, Y], vertices[i, Z])
+        for i in range(self.vertices.shape[0]):
+            vertex = new_point3d(self.vertices[i, X], self.vertices[i, Y], self.vertices[i, Z])
             bbox.extend(vertex.transform(to_world), BOX_PADDING)
 
         return bbox
@@ -1064,7 +1031,7 @@ cdef class Mesh(Primitive):
         if self._seek_next_intersection:
 
             # do we hit the mesh again?
-            if self._data.hit(self._next_local_ray):
+            if self._data.trace(self._next_local_ray):
                 return self._process_intersection(self._next_world_ray, self._next_local_ray)
 
             # there was no intersection so disable further searching
