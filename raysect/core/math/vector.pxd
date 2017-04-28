@@ -54,6 +54,10 @@ cdef class Vector3D(_Vec3):
 
     cpdef Vector3D orthogonal(self)
 
+    cpdef Vector3D lerp(self, _Vec3 b, double t)
+
+    cpdef Vector3D spherical_lerp(self, _Vec3 b, double t)
+
 
 cdef inline Vector3D new_vector3d(double x, double y, double z):
     """

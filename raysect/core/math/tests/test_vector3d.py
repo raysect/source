@@ -33,7 +33,7 @@ Unit tests for the Vector3D object.
 
 import unittest
 from raysect.core.math import Vector3D, AffineMatrix3D
-from math import sqrt
+from math import sqrt, degrees, acos
 
 # TODO: Port to Cython to allow testing of the Cython API
 
@@ -376,6 +376,51 @@ class TestVector3D(unittest.TestCase):
         self.assertEqual(r.x, 1.0, "Copy failed [X].")
         self.assertEqual(r.y, 2.0, "Copy failed [Y].")
         self.assertEqual(r.z, 3.0, "Copy failed [Z].")
+
+    def test_lerp(self):
+        """Testing method lerp()."""
+
+        a = Vector3D(1, 0, 0)
+        b = Vector3D(0, 1, 0)
+
+        self.assertEqual(a.lerp(b, 0), Vector3D(1, 0, 0), "Lerp (linear vector interpolation) operation failed.")
+        self.assertEqual(a.lerp(b, 1), Vector3D(0, 1, 0), "Lerp (linear vector interpolation) operation failed.")
+        self.assertEqual(a.lerp(b, 0.5), Vector3D(0.5, 0.5, 0.0), "Lerp (linear vector interpolation) operation failed.")
+
+    def test_spherical_lerp(self):
+        """Testing method spherical_lerp()."""
+
+        a = Vector3D(1, 0, 0)
+        b = Vector3D(0, 1, 0)
+
+        c = a.spherical_lerp(b, 0)
+        self.assertAlmostEqual(c.x, 1.0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.z, 0, msg='Spherical lerp operation failed.')
+
+        c = a.spherical_lerp(b, 1)
+        self.assertAlmostEqual(c.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.y, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.z, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.length, 1, msg='Spherical lerp operation failed.')
+
+        c = a.spherical_lerp(b, 0.5)
+        theta = degrees(acos(a.dot(c)))
+        self.assertAlmostEqual(c.x, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.y, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.z, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 45, msg='Spherical lerp operation failed.')
+
+        b = Vector3D(-0.5, 0.5, 0).normalise()
+        c = a.spherical_lerp(b, 2/3)
+        theta = degrees(acos(a.dot(c)))
+        self.assertAlmostEqual(c.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.y, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.z, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(c.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 90, msg='Spherical lerp operation failed.')
+
 
 if __name__ == "__main__":
     unittest.main()
