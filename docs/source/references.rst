@@ -3,7 +3,7 @@
 References
 ==========
 
-A short collections of recommended ray-tracing references.
+A short collection of recommended ray-tracing references.
 
 
 Books
