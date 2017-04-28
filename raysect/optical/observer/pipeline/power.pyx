@@ -594,8 +594,9 @@ cdef class PowerAdaptiveSampler2D(FrameSampler2D):
     :param float ratio:
     :param int min_samples: Minimum number of pixel samples across the image before
       turning on adaptive sampling (default=1000).
-    :param double cutoff: Noise threshold at which extra sampling will be aborted and
-      rendering will complete (default=0.0).
+    :param double cutoff: Normalised noise threshold at which extra sampling will be aborted and
+      rendering will complete (default=0.0). The standard error is normalised to 1 so that a
+      cutoff of 0.01 corresponds to 1% standard error.
     """
 
     def __init__(self, PowerPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
