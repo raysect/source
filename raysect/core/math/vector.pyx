@@ -31,7 +31,7 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt, fabs, NAN
+from libc.math cimport sqrt, fabs, NAN, acos, cos, sin
 
 
 cdef class Vector3D(_Vec3):
@@ -416,6 +416,109 @@ cdef class Vector3D(_Vec3):
         v = v.normalise()
 
         return v
+
+    cpdef Vector3D lerp(self, _Vec3 b, double t):
+        """
+        Returns the linear interpolation between this vector and the supplied vector.
+
+        .. math::
+
+            v = t \\times \\vec{a} + (1-t) \\times \\vec{b}
+
+        :param Vector3D b: The other vector that bounds the interpolation.
+        :param double t: The parametric interpolation point t in (0, 1).
+        """
+
+        cdef double t_minus
+
+        if not 0 <= t <= 1:
+            raise ValueError("Vector lerp parameter t must be in range (0, 1).")
+
+        t_minus = 1 - t
+
+        return new_vector3d(self.x * t_minus + b.x * t, self.y * t_minus + b.y * t, self.z * t_minus + b.z * t)
+
+    cpdef Vector3D spherical_lerp(self, _Vec3 b, double t):
+        """
+        Performs spherical vector interpolation between two vectors.
+
+        The difference between this function and lerp (linear interpolation) is that the
+        vectors are treated as directions and their angles and magnitudes are interpolated
+        separately.
+
+        Let :math:`\\theta_0` be the angle between two arbitrary vectors :math:`\\vec{a}`
+        and :math:`\\vec{b}`. :math:`\\theta_0` can be calculated through the dot product
+        relationship.
+
+        .. math::
+
+            \\theta_0 = \\cos{^{-1}(\\vec{a} \\cdot \\vec{b})}
+
+        The interpolated vector, :math:`\\vec{v}`, has angle :math:`\\theta` measured from
+        :math:`\\vec{a}`.
+
+        .. math::
+
+            \\theta = t \\times \\theta_0
+
+        Next we need to find the basis vector :math:`\\hat{e}` such that {:math:`\\hat{a}`,
+        :math:`\\hat{e}`} form an orthonormal basis in the same plane as {:math:`\\vec{a}`,
+        :math:`\\vec{b}`}.
+
+        .. math::
+
+            \\hat{e} = \\frac{\\vec{b} - \\vec{a} \\times (\\vec{a} \\cdot \\vec{b})}{|\\vec{b} - \\vec{a} \\times (\\vec{a} \\cdot \\vec{b})|}
+
+        The resulting interpolated direction vector can now be defined as
+
+        .. math::
+
+            \\hat{v} = \\hat{a} \\times \\cos{\\theta} + \\hat{e} \\times \\sin{\\theta}.
+
+        Finally, the magnitude can be interpolated separately by linearly interpolating the original
+        vector magnitudes.
+
+        .. math::
+
+            \\vec{v} = \\hat{v} \\times (t \\times |\\vec{a}| + (1-t) \\times |\\vec{b}|)
+
+        :param Vector3D b: The other vector that bounds the interpolation.
+        :param double t: The parametric interpolation point t in (0, 1).
+        """
+
+        cdef:
+            double theta, theta_0, magnitude_a, magnitude_b
+            Vector3D a_normalised, b_normalised, e_vec, v_vec
+
+        if not 0 <= t <= 1:
+            raise ValueError("Spherical lerp parameter t must be in range (0, 1).")
+
+        a_normalised = self.normalise()
+        b_normalised = b.normalise()
+        magnitude_a = self.get_length()
+        magnitude_b = b.get_length()
+
+        # Let v2 = Normalize(v1 - (v0 . v1)v0)
+        # return v0cosθ + v2sinθ
+
+        # Calculate angle between vectors a and b through dot product
+        theta_0 = acos(a_normalised.dot(b_normalised))
+
+        # Calculate interpolated angle theta
+        theta = t * theta_0
+
+        # Calculate new orthogonal basis vector e
+        e_vec = b_normalised - a_normalised * a_normalised.dot(b_normalised)
+        if e_vec.get_length() == 0:
+            raise ValueError("Vectors a and b are parallel, the spherical lerp operation is "
+                             "undefined for these vectors.")
+        e_vec = e_vec.normalise()
+
+        # calculate direction of interpolated vector
+        v_vec = a_normalised * cos(theta) + e_vec * sin(theta)
+
+        # scale by the interpolated magnitudes
+        return v_vec * (magnitude_a * (1 - t) + t * magnitude_b)
 
 
 cdef class Vector2D:

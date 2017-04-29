@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-17, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,44 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from raysect.core.math cimport Vector3D
+from raysect.core cimport Point2D
 
-
-cdef class PointSampler:
-    cpdef list sample(self, int samples)
-
-
-cdef class VectorSampler:
-    cpdef list sample(self, int samples)
-
-
-cdef class DiskSampler(PointSampler):
-    cdef public double radius
-
-
-cdef class RectangleSampler(PointSampler):
-    cdef public double width, height
-
-
-cdef class SphereSampler(VectorSampler):
-    pass
-
-
-cdef class HemisphereUniformSampler(VectorSampler):
-    pass
-
-
-cdef class HemisphereCosineSampler(VectorSampler):
-    pass
-
-
-cdef class ConeUniformSampler(VectorSampler):
-    cdef public double angle
-
-
-cdef class ConeCosineSampler(VectorSampler):
-    cdef public double angle
-
-
-cdef class QuadVectorSampler(VectorSampler):
-    cdef public Vector3D v1, v2, v3, v4
+cdef inline void calc_barycentric_coords(Point2D v1, Point2D v2, Point2D v3, Point2D test_point,
+                                         double *alpha, double *beta, double *gamma) nogil
