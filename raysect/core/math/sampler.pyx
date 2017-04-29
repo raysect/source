@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-17, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,9 +36,10 @@
 # TODO: these should really also return the probability of the given sample (pdf)
 
 from libc.math cimport M_PI as PI
-from raysect.core.math import Vector3D
-from raysect.core.math cimport Point2D, new_point3d
-from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone_uniform, vector_sphere, point_disk, uniform, vector_cone_cosine
+from raysect.core.math cimport Point2D, new_point2d, Point3D, new_point3d, Vector3D, new_vector3d
+from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone_uniform, \
+    vector_sphere, point_disk, uniform, vector_cone_cosine, point_square
+from raysect.core.math.triangle cimport calc_barycentric_coords
 
 
 cdef class PointSampler:
@@ -236,3 +237,66 @@ cdef class ConeCosineSampler(VectorSampler):
         for i in range(samples):
             results.append(vector_cone_cosine(self.angle))
         return results
+
+
+cdef class QuadVectorSampler(VectorSampler):
+    """
+    Generates a list of random unit Vector3D objects sampled on a quadrangle.
+
+    Useful for sub-sampling pixels on non-physical cameras where only the central pixel
+    vectors are available. The vectors at each corner of the quad are supplied. The sampler
+    generates a random sample point on the quad, linear vector interpolation is used
+    between the corners.
+
+    .. Warning::
+        For best results, the vectors at each corner should be close in angle. Results will
+        be not be sensible for cases where vectors have large angle separation
+        (i.e. > 90 degrees).
+
+    :param Vector3D v1: Vector in lower left corner.
+    :param Vector3D v2: Vector in upper left corner.
+    :param Vector3D v3: Vector in upper right corner.
+    :param Vector3D v4: Vector in lower right corner.
+    """
+
+    def __init__(self, Vector3D v1, Vector3D v2, Vector3D v3, Vector3D v4):
+
+        super().__init__()
+
+        self.v1 = v1.normalise()
+        self.v2 = v2.normalise()
+        self.v3 = v3.normalise()
+        self.v4 = v4.normalise()
+
+    cpdef list sample(self, int samples):
+        cdef:
+            list results
+            int i
+            Point2D sample_point, p1, p2, p3, p4
+            double alpha, beta, gamma
+
+        p1 = new_point2d(0, 0)
+        p2 = new_point2d(0, 1)
+        p3 = new_point2d(1, 1)
+        p4 = new_point2d(1, 0)
+
+        results = []
+        for i in range(samples):
+
+            # Generate new sample point in unit square
+            sample_point = point_square()
+
+            # Test if point is in upper triangle
+            if sample_point.y > sample_point.x:
+                calc_barycentric_coords(p1, p2, p3, sample_point, &alpha, &beta, &gamma)
+                sample_vector = self.v1.mul(alpha) + self.v2.mul(beta) + self.v3.mul(gamma)
+                results.append(sample_vector.normalise())
+
+            # Point must be in lower triangle
+            else:
+                calc_barycentric_coords(p3, p4, p1, sample_point, &alpha, &beta, &gamma)
+                sample_vector = self.v3.mul(alpha) + self.v4.mul(beta) + self.v1.mul(gamma)
+                results.append(sample_vector.normalise())
+
+        return results
+

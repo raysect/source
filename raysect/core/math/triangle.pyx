@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-17, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,45 +29,43 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-from raysect.core.math cimport Vector3D
-
-
-cdef class PointSampler:
-    cpdef list sample(self, int samples)
+cimport cython
 
 
-cdef class VectorSampler:
-    cpdef list sample(self, int samples)
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef inline void calc_barycentric_coords(Point2D v1, Point2D v2, Point2D v3, Point2D test_point,
+                                         double *alpha, double *beta, double *gamma) nogil:
+    """
+    Cython utility for calculating the barycentric coordinates of a test point.
 
+    :param Point2D v1: Triangle vertex 1.
+    :param Point2D v2: Triangle vertex 2.
+    :param Point2D v3: Triangle vertex 3.
+    :param Point2D test_point: The point for which barycentric coordinates
+      should be calculated.
+    :param double alpha: returned coordinate alpha
+    :param double beta: returned coordinate beta
+    :param double gamma: returned coordinate gamma
+    """
 
-cdef class DiskSampler(PointSampler):
-    cdef public double radius
+    cdef:
+        double x1, x2, x3, y1, y2, y3
+        double norm
 
+    # compute common values
+    x1 = v1.x - v3.x
+    x2 = v3.x - v2.x
+    x3 = test_point.x - v3.x
 
-cdef class RectangleSampler(PointSampler):
-    cdef public double width, height
+    y1 = v1.y - v3.y
+    y2 = v2.y - v3.y
+    y3 = test_point.y - v3.y
 
+    norm = 1 / (x1 * y2 + y1 * x2)
 
-cdef class SphereSampler(VectorSampler):
-    pass
-
-
-cdef class HemisphereUniformSampler(VectorSampler):
-    pass
-
-
-cdef class HemisphereCosineSampler(VectorSampler):
-    pass
-
-
-cdef class ConeUniformSampler(VectorSampler):
-    cdef public double angle
-
-
-cdef class ConeCosineSampler(VectorSampler):
-    cdef public double angle
-
-
-cdef class QuadVectorSampler(VectorSampler):
-    cdef public Vector3D v1, v2, v3, v4
+    # compute barycentric coordinates
+    alpha[0] = norm * (x2 * y3 + y2 * x3)
+    beta[0] = norm * (x1 * y3 - y1 * x3)
+    gamma[0] = 1.0 - alpha[0] - beta[0]
