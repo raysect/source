@@ -113,8 +113,34 @@ class MulticoreEngine(RenderEngine):
     """
     A render engine for distributing work across multiple CPU cores.
 
-    By default this will use all available CPU cores on the host machine.
+    The number of processes spawned by this render engine is controlled via
+    the processes attribute. This can also be set at object initialisation.
+   
+    If the processes attribute is set to None (the default), the render engine
+    will automatically set the number pf processes to be equal to the number
+    of CPU cores detected on the machine.
+    
+    :param processes: The number of worker processes, or None to use all available cores (default).
     """
+
+    def __init__(self, processes=None):
+        super().__init__()
+        self._processes = -1
+        self.processes = processes
+
+    @property
+    def processes(self):
+        return self.processes
+
+    @processes.setter
+    def processes(self, value):
+        if value is None:
+            self._processes = cpu_count()
+        else:
+            value = int(value)
+            if value <= 0:
+                raise ValueError('Number of concurrent worker processes must be greater than zero.')
+            self._processes = value
 
     def run(self, tasks, render, update, render_args=(), render_kwargs={}, update_args=(), update_kwargs={}):
 
@@ -128,7 +154,7 @@ class MulticoreEngine(RenderEngine):
 
         # start worker processes
         workers = []
-        for pid in range(cpu_count()):
+        for pid in range(self._processes):
             p = Process(target=self._worker, args=(render, render_args, render_kwargs, task_queue, result_queue))
             p.start()
             workers.append(p)
@@ -143,7 +169,7 @@ class MulticoreEngine(RenderEngine):
             task_queue.put(None)
 
     def worker_count(self):
-        return cpu_count()
+        return self._processes
 
     def _producer(self, tasks, task_queue):
         for task in tasks:
