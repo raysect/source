@@ -34,7 +34,23 @@ cimport cython
 
 cdef inline bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
                                  double v3x, double v3y, double px, double py) nogil:
-    """Returns True if test point is inside triangle."""
+    """
+    Cython utility for testing if point is inside a triangle.
+
+    Note if you have barycentric coordinates available, it is quicker to use
+    barycentric_inside_triangle().
+
+    :param double v1x: x coord of triangle vertex 1.
+    :param double v1y: y coord of triangle vertex 1.
+    :param double v2x: x coord of triangle vertex 2.
+    :param double v2y: y coord of triangle vertex 2.
+    :param double v3x: x coord of triangle vertex 3.
+    :param double v3y: y coord of triangle vertex 3.
+    :param double px: x coord of test point.
+    :param double py: y coord of test point.
+    :return: True if point is inside triangle, False otherwise.
+    :rtype: bool
+    """
 
     cdef:
         double ux, uy, vx, vy
@@ -86,19 +102,23 @@ def _test_inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, px, py):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef inline void calc_barycentric_coords(Point2D v1, Point2D v2, Point2D v3, Point2D test_point,
-                                         double *alpha, double *beta, double *gamma) nogil:
+cdef inline void barycentric_coords(double v1x, double v1y, double v2x, double v2y,
+                                    double v3x, double v3y, double px, double py,
+                                    double *alpha, double *beta, double *gamma) nogil:
     """
     Cython utility for calculating the barycentric coordinates of a test point.
 
-    :param Point2D v1: Triangle vertex 1.
-    :param Point2D v2: Triangle vertex 2.
-    :param Point2D v3: Triangle vertex 3.
-    :param Point2D test_point: The point for which barycentric coordinates
-      should be calculated.
-    :param double alpha: returned coordinate alpha
-    :param double beta: returned coordinate beta
-    :param double gamma: returned coordinate gamma
+    :param double v1x: x coord of triangle vertex 1.
+    :param double v1y: y coord of triangle vertex 1.
+    :param double v2x: x coord of triangle vertex 2.
+    :param double v2y: y coord of triangle vertex 2.
+    :param double v3x: x coord of triangle vertex 3.
+    :param double v3y: y coord of triangle vertex 3.
+    :param double px: x coord of test point.
+    :param double py: y coord of test point.
+    :param double* alpha: returned coordinate alpha.
+    :param double* beta: returned coordinate beta.
+    :param double* gamma: returned coordinate gamma.
     """
 
     cdef:
@@ -106,13 +126,13 @@ cdef inline void calc_barycentric_coords(Point2D v1, Point2D v2, Point2D v3, Poi
         double norm
 
     # compute common values
-    x1 = v1.x - v3.x
-    x2 = v3.x - v2.x
-    x3 = test_point.x - v3.x
+    x1 = v1x - v3x
+    x2 = v3x - v2x
+    x3 = px - v3x
 
-    y1 = v1.y - v3.y
-    y2 = v2.y - v3.y
-    y3 = test_point.y - v3.y
+    y1 = v1y - v3y
+    y2 = v2y - v3y
+    y3 = py - v3y
 
     norm = 1 / (x1 * y2 + y1 * x2)
 
@@ -120,3 +140,34 @@ cdef inline void calc_barycentric_coords(Point2D v1, Point2D v2, Point2D v3, Poi
     alpha[0] = norm * (x2 * y3 + y2 * x3)
     beta[0] = norm * (x1 * y3 - y1 * x3)
     gamma[0] = 1.0 - alpha[0] - beta[0]
+
+
+cdef inline bint barycentric_inside_triangle(double alpha, double beta, double gamma) nogil:
+    """
+    Cython utility for testing if a barycentric point lies inside a triangle.
+
+    :param double alpha: barycentric coordinate alpha.
+    :param double beta: barycentric coordinate beta.
+    :param double gamma: barycentric coordinate gamma.
+    :rtype: bool
+    """
+
+    # Point is inside triangle if all coordinates lie in range [0, 1]
+    # if all are > 0 then none can be > 1 from definition of barycentric coordinates
+    return alpha >= 0 and beta >= 0 and gamma >= 0
+
+
+cdef inline double barycentric_interpolation(double alpha, double beta, double gamma,
+                                             double va, double vb, double vc) nogil:
+    """
+    Cython utility for interpolation of data at triangle vertices.
+
+    :param double alpha: Vertex 1 barycentric coordinate.
+    :param double beta: Vertex 2 barycentric coordinate.
+    :param double gamma: Vertex 3 barycentric coordinate.
+    :param double va: Data point at Vertex 1.
+    :param double vb: Data point at Vertex 2.
+    :param double vc: Data point at Vertex 3.
+    :rtype: double
+    """
+    return alpha * va + beta * vb + gamma * vc

@@ -39,7 +39,7 @@ from libc.math cimport M_PI as PI
 from raysect.core.math cimport Point2D, new_point2d, Point3D, new_point3d, Vector3D, new_vector3d
 from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone_uniform, \
     vector_sphere, point_disk, uniform, vector_cone_cosine, point_square
-from raysect.core.math.cython cimport calc_barycentric_coords
+from raysect.core.math.cython cimport barycentric_coords
 
 
 cdef class PointSampler:
@@ -272,13 +272,8 @@ cdef class QuadVectorSampler(VectorSampler):
         cdef:
             list results
             int i
-            Point2D sample_point, p1, p2, p3, p4
+            Point2D sample_point
             double alpha, beta, gamma
-
-        p1 = new_point2d(0, 0)
-        p2 = new_point2d(0, 1)
-        p3 = new_point2d(1, 1)
-        p4 = new_point2d(1, 0)
 
         results = []
         for i in range(samples):
@@ -288,13 +283,15 @@ cdef class QuadVectorSampler(VectorSampler):
 
             # Test if point is in upper triangle
             if sample_point.y > sample_point.x:
-                calc_barycentric_coords(p1, p2, p3, sample_point, &alpha, &beta, &gamma)
+                # coordinates are p1 (0, 0), p2 (0, 1), p3 (1, 1)
+                barycentric_coords(0, 0, 0, 1, 1, 1, sample_point.x, sample_point.y, &alpha, &beta, &gamma)
                 sample_vector = self.v1.mul(alpha) + self.v2.mul(beta) + self.v3.mul(gamma)
                 results.append(sample_vector.normalise())
 
             # Point must be in lower triangle
             else:
-                calc_barycentric_coords(p3, p4, p1, sample_point, &alpha, &beta, &gamma)
+                # coordinates are p3 (1, 1), p4 (1, 0), p1 (0, 0)
+                barycentric_coords(1, 1, 1, 0, 0, 0, sample_point.x, sample_point.y, &alpha, &beta, &gamma)
                 sample_vector = self.v3.mul(alpha) + self.v4.mul(beta) + self.v1.mul(gamma)
                 results.append(sample_vector.normalise())
 

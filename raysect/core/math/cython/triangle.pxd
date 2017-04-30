@@ -30,12 +30,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from raysect.core cimport Point2D
-
-
 cdef inline bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
                                  double v3x, double v3y, double px, double py) nogil
 
 
-cdef inline void calc_barycentric_coords(Point2D v1, Point2D v2, Point2D v3, Point2D test_point,
-                                         double *alpha, double *beta, double *gamma) nogil
+cdef inline void barycentric_coords(double v1x, double v1y, double v2x, double v2y,
+                                    double v3x, double v3y, double px, double py,
+                                    double *alpha, double *beta, double *gamma) nogil
+
+
+cdef inline bint barycentric_inside_triangle(double alpha, double beta, double gamma) nogil
+
+
+cdef inline double barycentric_interpolation(double alpha, double beta, double gamma,
+                                             double va, double vb, double vc) nogil
