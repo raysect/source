@@ -498,9 +498,6 @@ cdef class Vector3D(_Vec3):
         magnitude_a = self.get_length()
         magnitude_b = b.get_length()
 
-        # Let v2 = Normalize(v1 - (v0 . v1)v0)
-        # return v0cosθ + v2sinθ
-
         # Calculate angle between vectors a and b through dot product
         theta_0 = acos(a_normalised.dot(b_normalised))
 
