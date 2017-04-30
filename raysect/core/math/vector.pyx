@@ -417,7 +417,7 @@ cdef class Vector3D(_Vec3):
 
         return v
 
-    cpdef Vector3D lerp(self, _Vec3 b, double t):
+    cpdef Vector3D lerp(self, Vector3D b, double t):
         """
         Returns the linear interpolation between this vector and the supplied vector.
 
@@ -438,7 +438,7 @@ cdef class Vector3D(_Vec3):
 
         return new_vector3d(self.x * t_minus + b.x * t, self.y * t_minus + b.y * t, self.z * t_minus + b.z * t)
 
-    cpdef Vector3D slerp(self, _Vec3 b, double t):
+    cpdef Vector3D slerp(self, Vector3D b, double t):
         """
         Performs spherical vector interpolation between two vectors.
 
@@ -487,7 +487,7 @@ cdef class Vector3D(_Vec3):
         """
 
         cdef:
-            double theta, theta_0, magnitude_a, magnitude_b
+            double theta, theta_0, magnitude_a, magnitude_b, dot_product, ctheta, stheta
             Vector3D a_normalised, b_normalised, e_vec, v_vec
 
         if not 0 <= t <= 1:
@@ -505,17 +505,30 @@ cdef class Vector3D(_Vec3):
         theta = t * theta_0
 
         # Calculate new orthogonal basis vector e
-        e_vec = b_normalised - a_normalised * a_normalised.dot(b_normalised)
+        dot_product = a_normalised.dot(b_normalised)
+        e_vec = new_vector3d(
+            b_normalised.x - a_normalised.x * dot_product,
+            b_normalised.y - a_normalised.y * dot_product,
+            b_normalised.z - a_normalised.z * dot_product
+        )
+
         if e_vec.get_length() == 0:
             raise ValueError("Vectors a and b are parallel, the spherical lerp operation is "
                              "undefined for these vectors.")
         e_vec = e_vec.normalise()
 
         # calculate direction of interpolated vector
-        v_vec = a_normalised * cos(theta) + e_vec * sin(theta)
+        # v_vec = a_normalised * cos(theta) + e_vec * sin(theta)
+        ctheta = cos(theta)
+        stheta = sin(theta)
+        v_vec = new_vector3d(
+            a_normalised.x * ctheta + e_vec.x * stheta,
+            a_normalised.y * ctheta + e_vec.y * stheta,
+            a_normalised.z * ctheta + e_vec.z * stheta
+        )
 
         # scale by the interpolated magnitudes
-        return v_vec * (magnitude_a * (1 - t) + t * magnitude_b)
+        return v_vec.mul(magnitude_a * (1 - t) + t * magnitude_b)
 
 
 cdef class Vector2D:
