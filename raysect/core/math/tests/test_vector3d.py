@@ -387,38 +387,98 @@ class TestVector3D(unittest.TestCase):
         self.assertEqual(a.lerp(b, 1), Vector3D(0, 1, 0), "Lerp (linear vector interpolation) operation failed.")
         self.assertEqual(a.lerp(b, 0.5), Vector3D(0.5, 0.5, 0.0), "Lerp (linear vector interpolation) operation failed.")
 
-    def test_spherical_lerp(self):
-        """Testing method spherical_lerp()."""
+    def test_slerp(self):
+        """Testing method slerp()."""
 
         a = Vector3D(1, 0, 0)
         b = Vector3D(0, 1, 0)
+        c = Vector3D(0, 0, 1)
+        d = Vector3D(-0.5, 0.5, 0).normalise()
+        e = Vector3D(-0.5, 0, 0.5).normalise()
+        f = Vector3D(0, -0.5, 0.5).normalise()
 
-        c = a.spherical_lerp(b, 0)
-        self.assertAlmostEqual(c.x, 1.0, msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.y, 0, msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.z, 0, msg='Spherical lerp operation failed.')
+        # Test x-y plane
+        r = a.slerp(b, 0)
+        self.assertAlmostEqual(r.x, 1.0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
 
-        c = a.spherical_lerp(b, 1)
-        self.assertAlmostEqual(c.x, 0, msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.y, 1, msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.z, 0, msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.length, 1, msg='Spherical lerp operation failed.')
+        r = a.slerp(b, 1)
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
 
-        c = a.spherical_lerp(b, 0.5)
-        theta = degrees(acos(a.dot(c)))
-        self.assertAlmostEqual(c.x, 1/sqrt(2), msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.y, 1/sqrt(2), msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.z, 0, msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.length, 1, msg='Spherical lerp operation failed.')
+        r = a.slerp(b, 0.5)
+        theta = degrees(acos(a.dot(r)))
+        self.assertAlmostEqual(r.x, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
         self.assertAlmostEqual(theta, 45, msg='Spherical lerp operation failed.')
 
-        b = Vector3D(-0.5, 0.5, 0).normalise()
-        c = a.spherical_lerp(b, 2/3)
-        theta = degrees(acos(a.dot(c)))
-        self.assertAlmostEqual(c.x, 0, msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.y, 1, msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.z, 0, msg='Spherical lerp operation failed.')
-        self.assertAlmostEqual(c.length, 1, msg='Spherical lerp operation failed.')
+        r = a.slerp(d, 2/3)
+        theta = degrees(acos(a.dot(r)))
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 90, msg='Spherical lerp operation failed.')
+
+        # Test x-z plane
+        r = a.slerp(c, 0)
+        self.assertAlmostEqual(r.x, 1.0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+
+        r = a.slerp(c, 1)
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+
+        r = a.slerp(c, 0.5)
+        theta = degrees(acos(a.dot(r)))
+        self.assertAlmostEqual(r.x, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 45, msg='Spherical lerp operation failed.')
+
+        r = a.slerp(e, 2/3)
+        theta = degrees(acos(a.dot(r)))
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 90, msg='Spherical lerp operation failed.')
+
+        # Test y-z plane
+        r = b.slerp(c, 0)
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+
+        r = b.slerp(c, 1)
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+
+        r = b.slerp(c, 0.5)
+        theta = degrees(acos(b.dot(r)))
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 45, msg='Spherical lerp operation failed.')
+
+        r = b.slerp(f, 2/3)
+        theta = degrees(acos(b.dot(r)))
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
         self.assertAlmostEqual(theta, 90, msg='Spherical lerp operation failed.')
 
 

@@ -438,7 +438,7 @@ cdef class Vector3D(_Vec3):
 
         return new_vector3d(self.x * t_minus + b.x * t, self.y * t_minus + b.y * t, self.z * t_minus + b.z * t)
 
-    cpdef Vector3D spherical_lerp(self, _Vec3 b, double t):
+    cpdef Vector3D slerp(self, _Vec3 b, double t):
         """
         Performs spherical vector interpolation between two vectors.
 

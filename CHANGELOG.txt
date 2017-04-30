@@ -13,7 +13,7 @@ New:
 * Added cosine weighted cone random vector sampler.
 * Added cython utility for determining polygon winding order for n-sided polygons.
 * Added triangulate2d function for splitting N-sided polygon into triangles.
-
+* Added lerp and slerp functions to Vector3D.
 
 Release 0.3.1 (17 Mar 2017)
 ---------------------------
