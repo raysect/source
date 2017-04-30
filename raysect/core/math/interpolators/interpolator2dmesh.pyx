@@ -35,6 +35,7 @@ from raysect.core.boundingbox cimport BoundingBox2D, new_boundingbox2d
 from raysect.core.math.function.function2d cimport Function2D
 from raysect.core.math.point cimport Point2D, new_point2d
 from raysect.core.math.spatial.kdtree2d cimport KDTree2DCore, Item2D
+from raysect.core.math.cython cimport barycentric_inside_triangle, barycentric_interpolation, barycentric_coords
 cimport cython
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
@@ -79,6 +80,7 @@ cdef class _MeshKDTree(KDTree2DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef inline BoundingBox2D _generate_bounding_box(self, np.int32_t triangle):
         """
         Generates a bounding box for the specified triangle.
@@ -91,27 +93,21 @@ cdef class _MeshKDTree(KDTree2DCore):
         """
 
         cdef:
-            double[:, ::1] vertices
-            np.int32_t[:, ::1] triangles
             np.int32_t i1, i2, i3
             BoundingBox2D bbox
 
-        # assign locally to avoid repeated memory view validity checks
-        vertices = self._vertices
-        triangles = self._triangles
-
-        i1 = triangles[triangle, V1]
-        i2 = triangles[triangle, V2]
-        i3 = triangles[triangle, V3]
+        i1 = self._triangles[triangle, V1]
+        i2 = self._triangles[triangle, V2]
+        i3 = self._triangles[triangle, V3]
 
         bbox = new_boundingbox2d(
             new_point2d(
-                min(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
-                min(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
+                min(self._vertices[i1, X], self._vertices[i2, X], self._vertices[i3, X]),
+                min(self._vertices[i1, Y], self._vertices[i2, Y], self._vertices[i3, Y]),
             ),
             new_point2d(
-                max(vertices[i1, X], vertices[i2, X], vertices[i3, X]),
-                max(vertices[i1, Y], vertices[i2, Y], vertices[i3, Y]),
+                max(self._vertices[i1, X], self._vertices[i2, X], self._vertices[i3, X]),
+                max(self._vertices[i1, Y], self._vertices[i2, Y], self._vertices[i3, Y]),
             ),
         )
         bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
@@ -120,26 +116,28 @@ cdef class _MeshKDTree(KDTree2DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef bint _is_contained_leaf(self, np.int32_t id, Point2D point):
 
         cdef:
             np.int32_t index, triangle, i1, i2, i3
             double alpha, beta, gamma
 
-        # cache locally to avoid pointless memory view checks
-        triangles = self._triangles
-
         # identify the first triangle that contains the point, if any
         for index in range(self._nodes[id].count):
 
             # obtain vertex indices
             triangle = self._nodes[id].items[index]
-            i1 = triangles[triangle, V1]
-            i2 = triangles[triangle, V2]
-            i3 = triangles[triangle, V3]
+            i1 = self._triangles[triangle, V1]
+            i2 = self._triangles[triangle, V2]
+            i3 = self._triangles[triangle, V3]
 
-            self._calc_barycentric_coords(i1, i2, i3, point.x, point.y, &alpha, &beta, &gamma)
-            if self._hit_triangle(alpha, beta, gamma):
+            barycentric_coords(self._vertices[i1, X], self._vertices[i1, Y],
+                               self._vertices[i2, X], self._vertices[i2, Y],
+                               self._vertices[i3, X], self._vertices[i3, Y],
+                               point.x, point.y, &alpha, &beta, &gamma)
+
+            if barycentric_inside_triangle(alpha, beta, gamma):
 
                 # store vertex indices and barycentric coords
                 self.i1 = i1
@@ -152,53 +150,6 @@ cdef class _MeshKDTree(KDTree2DCore):
                 return True
 
         return False
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cdef inline void _calc_barycentric_coords(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double *alpha, double *beta, double *gamma) nogil:
-
-        cdef:
-            np.int32_t[:, ::1] triangles
-            double[:, ::1] vertices
-            double v1x, v2x, v3x, v1y, v2y, v3y
-            double x1, x2, x3, y1, y2, y3
-            double norm
-
-        # cache locally to avoid pointless memory view checks
-        vertices = self._vertices
-
-        # obtain the vertex coords
-        v1x = vertices[i1, X]
-        v1y = vertices[i1, Y]
-
-        v2x = vertices[i2, X]
-        v2y = vertices[i2, Y]
-
-        v3x = vertices[i3, X]
-        v3y = vertices[i3, Y]
-
-        # compute common values
-        x1 = v1x - v3x
-        x2 = v3x - v2x
-        x3 = px - v3x
-
-        y1 = v1y - v3y
-        y2 = v2y - v3y
-        y3 = py - v3y
-
-        norm = 1 / (x1 * y2 + y1 * x2)
-
-        # compute barycentric coordinates
-        alpha[0] = norm * (x2 * y3 + y2 * x3)
-        beta[0] = norm * (x1 * y3 - y1 * x3)
-        gamma[0] = 1.0 - alpha[0] - beta[0]
-
-    cdef inline bint _hit_triangle(self, double alpha, double beta, double gamma) nogil:
-
-        # Point is inside triangle if all coordinates lie in range [0, 1]
-        # if all are > 0 then none can be > 1 from definition of barycentric coordinates
-        return alpha >= 0 and beta >= 0 and gamma >= 0
 
 
 cdef class Interpolator2DMesh(Function2D):
@@ -314,6 +265,7 @@ cdef class Interpolator2DMesh(Function2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double x, double y) except? -1e999:
 
         cdef:
@@ -330,28 +282,11 @@ cdef class Interpolator2DMesh(Function2D):
             beta = self._kdtree.beta
             gamma = self._kdtree.gamma
 
-            return self._interpolate_triangle(i1, i2, i3, x, y, alpha, beta, gamma)
+            return barycentric_interpolation(alpha, beta, gamma,
+                                             self._vertex_data[i1], self._vertex_data[i2], self._vertex_data[i3])
 
         if not self._limit:
             return self._default_value
 
         raise ValueError("Requested value outside mesh bounds.")
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cdef inline double _interpolate_triangle(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double alpha, double beta, double gamma) nogil:
-
-        cdef:
-            double[::1] vertex_data
-            double v1, v2, v3
-
-        # cache locally to avoid pointless memory view checks
-        vertex_data = self._vertex_data
-
-        # obtain the vertex data
-        v1 = vertex_data[i1]
-        v2 = vertex_data[i2]
-        v3 = vertex_data[i3]
-
-        # barycentric interpolation
-        return alpha * v1 + beta * v2 + gamma * v3
