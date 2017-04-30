@@ -32,6 +32,57 @@
 cimport cython
 
 
+cdef inline bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
+                                 double v3x, double v3y, double px, double py) nogil:
+    """Returns True if test point is inside triangle."""
+
+    cdef:
+        double ux, uy, vx, vy
+
+    # calculate vectors
+    ux = v2x - v1x
+    uy = v2y - v1y
+
+    vx = px - v1x
+    vy = py - v1y
+
+    # calculate z component of cross product of vectors between vertices
+    # vertex is convex if z component of u.cross(v) is negative
+    if (ux * vy - vx * uy) > 0:
+        return False
+
+    # calculate vectors
+    ux = v3x - v2x
+    uy = v3y - v2y
+
+    vx = px - v2x
+    vy = py - v2y
+
+    # calculate z component of cross product of vectors between vertices
+    # vertex is convex if z component of u.cross(v) is negative
+    if (ux * vy - vx * uy) > 0:
+        return False
+
+    # calculate vectors
+    ux = v1x - v3x
+    uy = v1y - v3y
+
+    vx = px - v3x
+    vy = py - v3y
+
+    # calculate z component of cross product of vectors between vertices
+    # vertex is convex if z component of u.cross(v) is negative
+    if (ux * vy - vx * uy) > 0:
+        return False
+
+    return True
+
+
+def _test_inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, px, py):
+    """Expose cython function for testing."""
+    return inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, px, py)
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)

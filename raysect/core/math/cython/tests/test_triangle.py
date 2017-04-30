@@ -33,23 +33,37 @@ Unit tests for the Vector3D object.
 
 import unittest
 import numpy as np
-from raysect.core.math.cython.utility import _test_winding2d as winding2d
+from raysect.core.math.cython.triangle import _test_inside_triangle as inside_triangle
 
 
-class TestUtility(unittest.TestCase):
+class TestTriangle(unittest.TestCase):
 
-    def test_clockwise_polygon_winding(self):
-        """Tests the algorithm returns True (clockwise) for a clockwise polygon."""
+    def test_inside_triangle(self):
+        """Tests the inside triangle algorithm."""
 
-        poly = np.array([[1,1], [1,2],[2,2],[2,1]], dtype=np.double)
-        self.assertTrue(winding2d(poly))
+        # defining triangle vertices
+        v1x, v1y = 0, 0
+        v2x, v2y = 1, 1
+        v3x, v3y = 1, 0
 
-    def test_anticlockwise_polygon_winding(self):
-        """Tests the algorithm returns False (anti-clockwise) for an anti-clockwise polygon."""
+        # test vertices are inside
+        self.assertTrue(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, v1x, v1y))
+        self.assertTrue(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, v2x, v2y))
+        self.assertTrue(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, v3x, v3y))
 
-        poly = np.array([[1,1], [1,2],[2,2],[2,1]], dtype=np.double)
-        poly = np.array(poly[::-1])
-        self.assertFalse(winding2d(poly))
+        # check line segments are inside
+        self.assertTrue(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, 0.5, 0))
+        self.assertTrue(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, 1, 0.5))
+        self.assertTrue(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, 0.5, 0.5))
+
+        # check an interior point
+        self.assertTrue(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, 0.5, 0.1))
+
+        # check an exterior point
+        self.assertFalse(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, -0.5, -0.5))
+        self.assertFalse(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, 0.5, -0.01))
+        self.assertFalse(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, 1.01, 0.5))
+        self.assertFalse(inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, 0.49999, 0.5001))
 
 
 if __name__ == "__main__":

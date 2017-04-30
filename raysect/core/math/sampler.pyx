@@ -39,7 +39,7 @@ from libc.math cimport M_PI as PI
 from raysect.core.math cimport Point2D, new_point2d, Point3D, new_point3d, Vector3D, new_vector3d
 from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone_uniform, \
     vector_sphere, point_disk, uniform, vector_cone_cosine, point_square
-from raysect.core.math.triangle cimport calc_barycentric_coords
+from raysect.core.math.cython cimport calc_barycentric_coords
 
 
 cdef class PointSampler:

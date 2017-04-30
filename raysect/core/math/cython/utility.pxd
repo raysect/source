@@ -67,7 +67,4 @@ cdef inline bint solve_quadratic(double a, double b, double c, double *t0, doubl
 
 cdef inline bint winding2d(double[:,::1] vertices) nogil
 
-cdef inline bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
-                                 double v3x, double v3y, double px, double py) nogil
-
 

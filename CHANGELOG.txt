@@ -15,6 +15,7 @@ New:
 * Added triangulate2d function for splitting N-sided polygon into triangles.
 * Added lerp and slerp functions to Vector3D.
 
+
 Release 0.3.1 (17 Mar 2017)
 ---------------------------
 
