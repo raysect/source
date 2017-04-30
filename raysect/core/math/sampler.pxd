@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from raysect.core.math cimport Vector3D
+from raysect.core.math cimport Point3D, Vector3D
 
 
 cdef class PointSampler:
@@ -47,6 +47,14 @@ cdef class DiskSampler(PointSampler):
 
 cdef class RectangleSampler(PointSampler):
     cdef public double width, height
+
+
+cdef class TriangleSampler(PointSampler):
+
+    cdef public Point3D v1, v2, v3
+
+    # TODO - move to base class
+    cpdef double pdf(self)
 
 
 cdef class SphereSampler(VectorSampler):

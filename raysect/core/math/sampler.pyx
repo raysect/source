@@ -35,11 +35,11 @@
 
 # TODO: these should really also return the probability of the given sample (pdf)
 
-from libc.math cimport M_PI as PI
+from libc.math cimport M_PI as PI, sqrt
 from raysect.core.math cimport Point2D, new_point2d, Point3D, new_point3d, Vector3D, new_vector3d
 from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone_uniform, \
     vector_sphere, point_disk, uniform, vector_cone_cosine, point_square
-from raysect.core.math.cython cimport barycentric_coords
+from raysect.core.math.cython cimport barycentric_coords, barycentric_interpolation
 
 
 cdef class PointSampler:
@@ -137,6 +137,52 @@ cdef class RectangleSampler(PointSampler):
             results.append(new_point3d(u, v, 0))
 
         return results
+
+
+cdef class TriangleSampler(PointSampler):
+    """
+    Generates a random Point3D on a triangle.
+
+    :param Point3D v1: Triangle vertex 1.
+    :param Point3D v2: Triangle vertex 2.
+    :param Point3D v3: Triangle vertex 3.
+    """
+
+    def __init__(self, Point3D v1, Point3D v2, Point3D v3):
+        super().__init__()
+        self.v1 = v1
+        self.v2 = v2
+        self.v3 = v3
+
+    cpdef list sample(self, int samples):
+
+        cdef list results
+        cdef int i
+        cdef double temp, alpha, beta, gamma
+
+        results = []
+        for i in range(samples):
+
+            # generate barycentric coordinate
+            temp = sqrt(uniform())
+            alpha = 1 - temp
+            beta = uniform() * temp
+            gamma = 1 - alpha - beta
+
+            # interpolate vertex coordinates to generate sample point coordinate
+            results.append(
+                new_point3d(
+                    barycentric_interpolation(alpha, beta, gamma, self.v1.x, self.v2.x, self.v3.x),
+                    barycentric_interpolation(alpha, beta, gamma, self.v1.y, self.v2.y, self.v3.y),
+                    barycentric_interpolation(alpha, beta, gamma, self.v1.z, self.v2.z, self.v3.z)
+                )
+            )
+
+        return results
+
+    # TODO - implement me (1 / area of triangle)
+    cpdef double pdf(self):
+        raise NotImplementedError()
 
 
 cdef class SphereSampler(VectorSampler):
