@@ -44,10 +44,6 @@ cdef class _MeshKDTree(KDTree2DCore):
 
     cdef inline BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)
 
-    cdef inline void _calc_barycentric_coords(self, np.int32_t i1, np.int32_t i2, np.int32_t i3, double px, double py, double *alpha, double *beta, double *gamma) nogil
-
-    cdef inline bint _hit_triangle(self, double alpha, double beta, double gamma) nogil
-
 
 cdef class Discrete2DMesh(Function2D):
 
