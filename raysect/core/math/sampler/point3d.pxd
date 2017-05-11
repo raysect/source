@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
 from raysect.core.math cimport Point3D, Vector3D
 
 
@@ -55,41 +54,3 @@ cdef class TriangleSampler(PointSampler):
 
     # TODO - move to base class
     cpdef double pdf(self)
-
-
-cdef class SphereSampler(VectorSampler):
-    pass
-
-
-cdef class HemisphereUniformSampler(VectorSampler):
-    pass
-
-
-cdef class HemisphereCosineSampler(VectorSampler):
-    pass
-
-
-cdef class ConeUniformSampler(VectorSampler):
-    cdef public double angle
-
-
-cdef class ConeCosineSampler(VectorSampler):
-    cdef public double angle
-
-
-cdef class QuadVectorSampler(VectorSampler):
-    cdef public Vector3D v1, v2, v3, v4
-
-# cpdef Point2D point_disk()
-#
-# cpdef Point2D point_square()
-#
-# cpdef Vector3D vector_sphere()
-#
-# cpdef Vector3D vector_hemisphere_uniform()
-#
-# cpdef Vector3D vector_hemisphere_cosine()
-#
-# cpdef Vector3D vector_cone_uniform(double theta)
-#
-# cpdef Vector3D vector_cone_cosine(double theta)
