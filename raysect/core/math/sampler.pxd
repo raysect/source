@@ -79,3 +79,17 @@ cdef class ConeCosineSampler(VectorSampler):
 
 cdef class QuadVectorSampler(VectorSampler):
     cdef public Vector3D v1, v2, v3, v4
+
+# cpdef Point2D point_disk()
+#
+# cpdef Point2D point_square()
+#
+# cpdef Vector3D vector_sphere()
+#
+# cpdef Vector3D vector_hemisphere_uniform()
+#
+# cpdef Vector3D vector_hemisphere_cosine()
+#
+# cpdef Vector3D vector_cone_uniform(double theta)
+#
+# cpdef Vector3D vector_cone_cosine(double theta)
