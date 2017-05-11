@@ -29,11 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI as PI, sqrt
-from raysect.core.math cimport Point2D, new_point2d, Point3D, new_point3d, Vector3D, new_vector3d
-from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphere_cosine, vector_cone_uniform, \
-    vector_sphere, point_disk, uniform, vector_cone_cosine, point_square
-from raysect.core.math.cython cimport barycentric_coords, barycentric_interpolation
+from libc.math cimport M_PI as PI, sqrt, sin, cos
+
+from raysect.core.math cimport Point3D, new_point3d, Vector3D
+from raysect.core.math.random cimport uniform
+from raysect.core.math.cython cimport barycentric_interpolation
 
 
 cdef class SamplerPoint3D:
@@ -127,126 +127,185 @@ cdef class SamplerPoint3D:
         raise NotImplemented("The method samples_with_pdfs() is not implemented for this sampler.")
 
 
-cdef class DiskSampler(PointSampler):
+cdef class DiskSampler(SamplerPoint3D):
     """
-    Generates a random Point3D on a disk.
+    Generates Point3D samples from a disk centred in the x-y plane.
 
-    :param double radius: The radius of the disk.
+    :param double radius: The radius of the disk in metres (default=1).
     """
 
-    def __init__(self, radius=1):
+    cdef:
+        readonly double radius, area
+        double _area_inv
+
+    # TODO - validation
+    def __init__(self, double radius=1.0):
         super().__init__()
         self.radius = radius
+        self.area = PI * self.radius * self.radius
+        self._area_inv = 1 / self.area
 
-    cpdef list sample(self, int samples):
+    cpdef double pdf(self, Point3D sample):
+        return self._area_inv
+
+    cdef Point3D sample(self):
+        cdef double r = sqrt(uniform())
+        cdef double theta = 2.0 * PI * uniform()
+        return new_point3d(r * cos(theta), r * sin(theta), 0)
+
+    cdef tuple sample_with_pdf(self):
+        return self.sample(), self.pdf(None)
+
+    # TODO - make this used stratified sampling rather than random
+    cdef list samples(self, int samples):
 
         cdef list results
         cdef int i
-        cdef Point2D random_point
 
         results = []
         for i in range(samples):
-            random_point = point_disk()
-            results.append(new_point3d(random_point.x * self.radius, random_point.y * self.radius, 0))
+            results.append(self.sample())
+        return results
 
+    # TODO - make this used stratified sampling rather than random
+    cdef list samples_with_pdfs(self, int samples):
+
+        cdef list results
+        cdef int i
+
+        results = []
+        for i in range(samples):
+            results.append(self.sample_with_pdf())
         return results
 
 
-cdef class RectangleSampler(PointSampler):
+cdef class RectangleSampler(SamplerPoint3D):
     """
-    Generates a random Point3D on a rectangle.
+    Generates Point3D samples from a rectangle centred in the x-y plane.
 
-    :param double width: The width of the rectangular sampling area of this observer.
-    :param double height: The height of the rectangular sampling area of this observer.
+    :param double width: The width of the rectangle.
+    :param double height: The height of the rectangle.
     """
 
-    def __init__(self, width=1, height=1):
+    cdef:
+        readonly double width, height, area
+        double _area_inv, _width_offset, _height_offset
+
+    # TODO - validation
+    def __init__(self, double width=1, double height=1):
 
         super().__init__()
         self.width = width
         self.height = height
+        self.area = width * height
+        self._area_inv = 1 / self.area
+        self._width_offset = 0.5 * width
+        self._height_offset = 0.5 * height
 
-    cpdef list sample(self, int samples):
+    cpdef double pdf(self, Point3D sample):
+        return self._area_inv
+
+    cdef Point3D sample(self):
+        return new_point3d(uniform() * self.width - self._width_offset, uniform() * self.height - self._height_offset, 0)
+
+    cdef tuple sample_with_pdf(self):
+        return self.sample(), self.pdf(None)
+
+    # TODO - make this used stratified sampling rather than random
+    cdef list samples(self, int samples):
 
         cdef list results
         cdef int i
-        cdef double u, v
-        cdef double width_offset = 0.5 * self.width
-        cdef double height_offset = 0.5 * self.height
 
         results = []
         for i in range(samples):
-            u = uniform() * self.width - width_offset
-            v = uniform() * self.height - height_offset
-            results.append(new_point3d(u, v, 0))
+            results.append(self.sample())
+        return results
 
+    # TODO - make this used stratified sampling rather than random
+    cdef list samples_with_pdfs(self, int samples):
+
+        cdef list results
+        cdef int i
+
+        results = []
+        for i in range(samples):
+            results.append(self.sample_with_pdf())
         return results
 
 
-cdef class TriangleSampler(PointSampler):
+cdef class TriangleSampler(SamplerPoint3D):
     """
-    Generates a random Point3D on a triangle.
+    Generates Point3D samples from a triangle in 3D space.
 
     :param Point3D v1: Triangle vertex 1.
     :param Point3D v2: Triangle vertex 2.
     :param Point3D v3: Triangle vertex 3.
     """
 
+    cdef:
+        Point3D _v1, _v2, _v3
+        readonly double area
+        double _area_inv
+
+    # TODO - add validation
     def __init__(self, Point3D v1, Point3D v2, Point3D v3):
         super().__init__()
-        self.v1 = v1
-        self.v2 = v2
-        self.v3 = v3
+        self._v1 = v1
+        self._v2 = v2
+        self._v3 = v3
 
-    cpdef list sample(self, int samples):
+        self.area = self._calculate_area(v1, v2, v3)
+        self._area_inv = 1 / self.area
+
+    # TODO - please test me
+    cdef double _calculate_area(self, Point3D v1, Point3D v2, Point3D v3):
+        cdef Vector3D e1 = v1.vector_to(v2)
+        cdef Vector3D e2 = v1.vector_to(v3)
+        return 0.5 * e1.cross(e2).get_length()
+
+    cpdef double pdf(self, Point3D sample):
+        return self._area_inv
+
+    cdef Point3D sample(self):
+
+        cdef double temp, alpha, beta, gamma
+
+        # generate barycentric coordinate
+        temp = sqrt(uniform())
+        alpha = 1 - temp
+        beta = uniform() * temp
+        gamma = 1 - alpha - beta
+
+        # interpolate vertex coordinates to generate sample point coordinate
+        return new_point3d(
+            barycentric_interpolation(alpha, beta, gamma, self._v1.x, self._v2.x, self._v3.x),
+            barycentric_interpolation(alpha, beta, gamma, self._v1.y, self._v2.y, self._v3.y),
+            barycentric_interpolation(alpha, beta, gamma, self._v1.z, self._v2.z, self._v3.z)
+        )
+
+    cdef tuple sample_with_pdf(self):
+        return self.sample(), self.pdf(None)
+
+    # TODO - make this used stratified sampling rather than random
+    cdef list samples(self, int samples):
 
         cdef list results
         cdef int i
-        cdef double temp, alpha, beta, gamma
 
         results = []
         for i in range(samples):
-
-            # generate barycentric coordinate
-            temp = sqrt(uniform())
-            alpha = 1 - temp
-            beta = uniform() * temp
-            gamma = 1 - alpha - beta
-
-            # interpolate vertex coordinates to generate sample point coordinate
-            results.append(
-                new_point3d(
-                    barycentric_interpolation(alpha, beta, gamma, self.v1.x, self.v2.x, self.v3.x),
-                    barycentric_interpolation(alpha, beta, gamma, self.v1.y, self.v2.y, self.v3.y),
-                    barycentric_interpolation(alpha, beta, gamma, self.v1.z, self.v2.z, self.v3.z)
-                )
-            )
-
+            results.append(self.sample())
         return results
 
-    # TODO - implement me (1 / area of triangle)
-    cpdef double pdf(self):
-        raise NotImplementedError()
+    # TODO - make this used stratified sampling rather than random
+    cdef list samples_with_pdfs(self, int samples):
 
+        cdef list results
+        cdef int i
 
-# cpdef Point2D point_disk():
-#     """
-#     Returns a random point on a disk of unit radius.
-#
-#     :rtype: Point2D
-#     """
-#
-#     cdef double r = sqrt(uniform())
-#     cdef double theta = 2.0 * PI * uniform()
-#     return new_point2d(r * cos(theta), r * sin(theta))
-#
-#
-# cpdef Point2D point_square():
-#     """
-#     Returns a random point on a square of unit radius.
-#
-#     :rtype: Point2D
-#     """
-#
-#     return new_point2d(uniform(), uniform())
+        results = []
+        for i in range(samples):
+            results.append(self.sample_with_pdf())
+        return results
 
