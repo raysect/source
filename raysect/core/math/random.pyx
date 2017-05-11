@@ -296,6 +296,7 @@ cpdef bint probability(double prob):
     """
 
     return uniform() < prob
-\
+
+
 # initialise random number generator
 seed()
