@@ -33,7 +33,7 @@ Unit tests for the Vector3D object.
 
 import unittest
 import numpy as np
-from raysect.core.math.cython.utility import _test_winding2d as winding2d
+from raysect.core.math.cython.utility import _test_winding2d as winding2d, _point_inside_polygon as point_inside_polygon
 
 
 class TestUtility(unittest.TestCase):
@@ -41,19 +41,27 @@ class TestUtility(unittest.TestCase):
     def test_clockwise_polygon_winding(self):
         """Tests the algorithm returns True (clockwise) for a clockwise polygon."""
 
-        poly = np.array([[1,1], [1,2],[2,2],[2,1]], dtype=np.double)
+        poly = np.array([[1, 1], [1, 2], [2, 2], [2, 1]], dtype=np.double)
         self.assertTrue(winding2d(poly))
 
     def test_anticlockwise_polygon_winding(self):
         """Tests the algorithm returns False (anti-clockwise) for an anti-clockwise polygon."""
 
-        poly = np.array([[1,1], [1,2],[2,2],[2,1]], dtype=np.double)
+        poly = np.array([[1, 1], [1, 2], [2, 2], [2, 1]], dtype=np.double)
         poly = np.array(poly[::-1])
         self.assertFalse(winding2d(poly))
+
+    def test_point_inside_polygon(self):
+        """Tests points inside and outside a polygon are correctly identified."""
+
+        poly = np.array([[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]], dtype=np.double)
+
+        self.assertTrue(point_inside_polygon(poly, 0.5, 0.5))
+        self.assertTrue(point_inside_polygon(poly, 0.0000001, 0.00000001))
+        self.assertFalse(point_inside_polygon(poly, -0.5, 0.5))
+        self.assertFalse(point_inside_polygon(poly, -0.5, -0.5))
+        self.assertFalse(point_inside_polygon(poly, 1.000001, 1.000001))
 
 
 if __name__ == "__main__":
     unittest.main()
-
-
-
