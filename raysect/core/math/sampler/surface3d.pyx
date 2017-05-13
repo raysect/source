@@ -36,9 +36,9 @@ from raysect.core.math.random cimport uniform
 from raysect.core.math.cython cimport barycentric_interpolation
 
 
-cdef class SamplerPoint3D:
+cdef class SamplerSurface3D:
     """
-    Base class for an object that generates a list of Point3D objects.
+    Base class for an object that generates samples from a surface in 3D.
     """
 
     def __call__(self, object samples=None, bint pdf=False):
@@ -66,15 +66,6 @@ cdef class SamplerPoint3D:
             if pdf:
                 return self.sample_with_pdf()
             return self.sample()
-
-    cpdef double pdf(self, Point3D sample):
-        """
-        Generates a pdf for a given sample value.
-
-        :param Point3D sample: The sample point at which to get the pdf.
-        :rtype: float
-        """
-        raise NotImplemented("The method pdf() is not implemented for this sampler.")
 
     cdef Point3D sample(self):
         """
@@ -127,7 +118,7 @@ cdef class SamplerPoint3D:
         raise NotImplemented("The method samples_with_pdfs() is not implemented for this sampler.")
 
 
-cdef class DiskSampler(SamplerPoint3D):
+cdef class DiskSampler3D(SamplerSurface3D):
     """
     Generates Point3D samples from a disk centred in the x-y plane.
 
@@ -145,16 +136,13 @@ cdef class DiskSampler(SamplerPoint3D):
         self.area = PI * self.radius * self.radius
         self._area_inv = 1 / self.area
 
-    cpdef double pdf(self, Point3D sample):
-        return self._area_inv
-
     cdef Point3D sample(self):
         cdef double r = sqrt(uniform())
         cdef double theta = 2.0 * PI * uniform()
         return new_point3d(r * cos(theta), r * sin(theta), 0)
 
     cdef tuple sample_with_pdf(self):
-        return self.sample(), self.pdf(None)
+        return self.sample(), self._area_inv
 
     # TODO - make this used stratified sampling rather than random
     cdef list samples(self, int samples):
@@ -179,7 +167,7 @@ cdef class DiskSampler(SamplerPoint3D):
         return results
 
 
-cdef class RectangleSampler(SamplerPoint3D):
+cdef class RectangleSampler3D(SamplerSurface3D):
     """
     Generates Point3D samples from a rectangle centred in the x-y plane.
 
@@ -202,14 +190,11 @@ cdef class RectangleSampler(SamplerPoint3D):
         self._width_offset = 0.5 * width
         self._height_offset = 0.5 * height
 
-    cpdef double pdf(self, Point3D sample):
-        return self._area_inv
-
     cdef Point3D sample(self):
         return new_point3d(uniform() * self.width - self._width_offset, uniform() * self.height - self._height_offset, 0)
 
     cdef tuple sample_with_pdf(self):
-        return self.sample(), self.pdf(None)
+        return self.sample(), self._area_inv
 
     # TODO - make this used stratified sampling rather than random
     cdef list samples(self, int samples):
@@ -234,7 +219,7 @@ cdef class RectangleSampler(SamplerPoint3D):
         return results
 
 
-cdef class TriangleSampler(SamplerPoint3D):
+cdef class TriangleSampler3D(SamplerSurface3D):
     """
     Generates Point3D samples from a triangle in 3D space.
 
@@ -264,9 +249,6 @@ cdef class TriangleSampler(SamplerPoint3D):
         cdef Vector3D e2 = v1.vector_to(v3)
         return 0.5 * e1.cross(e2).get_length()
 
-    cpdef double pdf(self, Point3D sample):
-        return self._area_inv
-
     cdef Point3D sample(self):
 
         cdef double temp, alpha, beta, gamma
@@ -285,7 +267,7 @@ cdef class TriangleSampler(SamplerPoint3D):
         )
 
     cdef tuple sample_with_pdf(self):
-        return self.sample(), self.pdf(None)
+        return self.sample(), self._area_inv
 
     # TODO - make this used stratified sampling rather than random
     cdef list samples(self, int samples):

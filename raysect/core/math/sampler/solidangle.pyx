@@ -36,9 +36,9 @@ from raysect.core.math.random cimport vector_hemisphere_uniform, vector_hemisphe
 from raysect.core.math.cython cimport barycentric_coords, barycentric_interpolation
 
 
-cdef class SamplerVector3D:
+cdef class SamplerSolidAngle:
     """
-    Base class for an object that generates a list of Vector3D objects.
+    Base class for an object that generates samples over a solid angle.
     """
 
     def __call__(self, object samples=None, bint pdf=False):
@@ -127,7 +127,7 @@ cdef class SamplerVector3D:
         raise NotImplemented("The method samples_with_pdfs() is not implemented for this sampler.")
 
 
-cdef class SphereSampler(VectorSampler):
+cdef class SphereSampler(SamplerSolidAngle):
     """
     Generates a random vector on a unit sphere.
     """
@@ -141,7 +141,7 @@ cdef class SphereSampler(VectorSampler):
         return results
 
 
-cdef class HemisphereUniformSampler(VectorSampler):
+cdef class HemisphereUniformSampler(SamplerSolidAngle):
     """
     Generates a random vector on a unit hemisphere.
 
@@ -158,7 +158,7 @@ cdef class HemisphereUniformSampler(VectorSampler):
         return results
 
 
-cdef class HemisphereCosineSampler(VectorSampler):
+cdef class HemisphereCosineSampler(SamplerSolidAngle):
     """
     Generates a cosine-weighted random vector on a unit hemisphere.
 
@@ -201,7 +201,7 @@ cdef class ConeUniformSampler(VectorSampler):
         return results
 
 
-cdef class ConeCosineSampler(VectorSampler):
+cdef class ConeCosineSampler(SamplerSolidAngle):
     """
     Generates a list of random unit Vector3D objects inside a cone with cosine weighting.
 
@@ -227,7 +227,7 @@ cdef class ConeCosineSampler(VectorSampler):
         return results
 
 
-cdef class QuadVectorSampler(VectorSampler):
+cdef class QuadVectorSampler(SamplerSolidAngle):
     """
     Generates a list of random unit Vector3D objects sampled on a quadrangle.
 
