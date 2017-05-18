@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-17, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,5 +29,43 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .solidangle import *
-from .surface3d import *
+from libc.math cimport M_PI as PI, sqrt, sin, cos
+
+from raysect.core.math cimport Point3D, new_point3d, Vector3D
+from raysect.core.math.random cimport uniform
+from raysect.core.math.cython cimport barycentric_interpolation
+
+
+cdef class SamplerSurface3D:
+
+    cdef Point3D sample(self)
+
+    cdef tuple sample_with_pdf(self)
+
+    cdef list samples(self, int samples)
+
+    cdef list samples_with_pdfs(self, int samples)
+
+
+cdef class DiskSampler3D(SamplerSurface3D):
+
+    cdef:
+        readonly double radius, area
+        double _area_inv
+
+
+cdef class RectangleSampler3D(SamplerSurface3D):
+
+    cdef:
+        readonly double width, height, area
+        double _area_inv, _width_offset, _height_offset
+
+
+cdef class TriangleSampler3D(SamplerSurface3D):
+
+    cdef:
+        Point3D _v1, _v2, _v3
+        readonly double area
+        double _area_inv
+
+    cdef double _calculate_area(self, Point3D v1, Point3D v2, Point3D v3)

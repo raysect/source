@@ -52,7 +52,7 @@ cdef class SamplerSurface3D:
 
         :param int samples: Number of points to generate (default=None).
         :param bool pdf: Toggle for returning associated sample pdfs (default=False).
-        :return: A Point3D or list of Point3D objects.
+        :return: A Point3D, tuple or list.
         """
 
         if samples:
@@ -100,7 +100,14 @@ cdef class SamplerSurface3D:
         :param int samples: Number of points to generate.
         :rtype: list
         """
-        raise NotImplemented("The method samples() is not implemented for this sampler.")
+
+        cdef list results
+        cdef int i
+
+        results = []
+        for i in range(samples):
+            results.append(self.sample())
+        return results
 
     cdef list samples_with_pdfs(self, int samples):
         """
@@ -115,19 +122,23 @@ cdef class SamplerSurface3D:
         :param int samples: Number of points to generate.
         :rtype: list
         """
-        raise NotImplemented("The method samples_with_pdfs() is not implemented for this sampler.")
+
+        cdef list results
+        cdef int i
+
+        results = []
+        for i in range(samples):
+            results.append(self.sample_with_pdf())
+        return results
 
 
+# TODO - implement stratified sampling for samples and samples_with_pdfs
 cdef class DiskSampler3D(SamplerSurface3D):
     """
     Generates Point3D samples from a disk centred in the x-y plane.
 
     :param double radius: The radius of the disk in metres (default=1).
     """
-
-    cdef:
-        readonly double radius, area
-        double _area_inv
 
     # TODO - validation
     def __init__(self, double radius=1.0):
@@ -144,29 +155,8 @@ cdef class DiskSampler3D(SamplerSurface3D):
     cdef tuple sample_with_pdf(self):
         return self.sample(), self._area_inv
 
-    # TODO - make this used stratified sampling rather than random
-    cdef list samples(self, int samples):
 
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample())
-        return results
-
-    # TODO - make this used stratified sampling rather than random
-    cdef list samples_with_pdfs(self, int samples):
-
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample_with_pdf())
-        return results
-
-
+# TODO - implement stratified sampling for samples and samples_with_pdfs
 cdef class RectangleSampler3D(SamplerSurface3D):
     """
     Generates Point3D samples from a rectangle centred in the x-y plane.
@@ -174,10 +164,6 @@ cdef class RectangleSampler3D(SamplerSurface3D):
     :param double width: The width of the rectangle.
     :param double height: The height of the rectangle.
     """
-
-    cdef:
-        readonly double width, height, area
-        double _area_inv, _width_offset, _height_offset
 
     # TODO - validation
     def __init__(self, double width=1, double height=1):
@@ -196,29 +182,8 @@ cdef class RectangleSampler3D(SamplerSurface3D):
     cdef tuple sample_with_pdf(self):
         return self.sample(), self._area_inv
 
-    # TODO - make this used stratified sampling rather than random
-    cdef list samples(self, int samples):
 
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample())
-        return results
-
-    # TODO - make this used stratified sampling rather than random
-    cdef list samples_with_pdfs(self, int samples):
-
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample_with_pdf())
-        return results
-
-
+# TODO - implement stratified sampling for samples and samples_with_pdfs
 cdef class TriangleSampler3D(SamplerSurface3D):
     """
     Generates Point3D samples from a triangle in 3D space.
@@ -227,11 +192,6 @@ cdef class TriangleSampler3D(SamplerSurface3D):
     :param Point3D v2: Triangle vertex 2.
     :param Point3D v3: Triangle vertex 3.
     """
-
-    cdef:
-        Point3D _v1, _v2, _v3
-        readonly double area
-        double _area_inv
 
     # TODO - add validation
     def __init__(self, Point3D v1, Point3D v2, Point3D v3):
@@ -268,26 +228,3 @@ cdef class TriangleSampler3D(SamplerSurface3D):
 
     cdef tuple sample_with_pdf(self):
         return self.sample(), self._area_inv
-
-    # TODO - make this used stratified sampling rather than random
-    cdef list samples(self, int samples):
-
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample())
-        return results
-
-    # TODO - make this used stratified sampling rather than random
-    cdef list samples_with_pdfs(self, int samples):
-
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample_with_pdf())
-        return results
-

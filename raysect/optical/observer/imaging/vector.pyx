@@ -124,8 +124,7 @@ cdef class VectorCamera(Observer2D):
 
             ray = template.copy(origin, direction)
 
-            # projected area weight is normal.incident which simplifies
-            # to incident.z here as the normal is (0, 0 ,1)
+            # non-physical camera, use 1.0 for pdf
             rays.append((ray, 1.0))
 
         return rays

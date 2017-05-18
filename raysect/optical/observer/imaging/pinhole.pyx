@@ -30,7 +30,7 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
 
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, PointSampler, RectangleSampler
+from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, SamplerSurface3D, RectangleSampler3D
 from raysect.optical cimport Ray
 from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
@@ -55,7 +55,7 @@ cdef class PinholeCamera(Observer2D):
 
     cdef:
         double _etendue, _fov, image_delta, image_start_x, image_start_y
-        PointSampler point_sampler
+        SamplerSurface3D point_sampler
 
     def __init__(self, pixels, fov=None, etendue=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
@@ -123,7 +123,7 @@ cdef class PinholeCamera(Observer2D):
             self.image_start_y = 0.5 * self.pixels[1] * image_delta
 
             # rebuild point generator
-            self.point_sampler = RectangleSampler(self.image_delta, self.image_delta)
+            self.point_sampler = RectangleSampler3D(self.image_delta, self.image_delta)
 
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
@@ -142,7 +142,7 @@ cdef class PinholeCamera(Observer2D):
         pixel_y = self.image_start_y - self.image_delta * y
         pixel_centre = new_point3d(pixel_x, pixel_y, 1)
 
-        points = self.point_sampler(ray_count)
+        points = self.point_sampler.samples(ray_count)
 
         # assemble rays
         rays = []
@@ -158,9 +158,8 @@ cdef class PinholeCamera(Observer2D):
 
             ray = template.copy(origin, direction)
 
-            # projected area weight is normal.incident which simplifies
-            # to incident.z here as the normal is (0, 0 ,1)
-            rays.append((ray, direction.z))
+            # non-physical camera, use 1.0 for pdf
+            rays.append((ray, 1.0))
 
         return rays
 
