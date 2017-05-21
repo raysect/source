@@ -61,3 +61,17 @@ cdef class HemisphereUniformSampler(SamplerSolidAngle):
 
 cdef class HemisphereCosineSampler(SamplerSolidAngle):
     pass
+
+
+cdef class ConeUniformSampler(SamplerSolidAngle):
+
+    cdef:
+        readonly double angle
+        double _angle_radians, _angle_cosine, _solid_angle, _solid_angle_inv
+
+
+# cdef class ConeCosineSampler(SamplerSolidAngle):
+#
+#     cdef:
+#         readonly double angle
+#         double _angle_radians, _angle_cosine, _solid_angle, _solid_angle_inv

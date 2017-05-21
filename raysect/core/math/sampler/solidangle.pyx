@@ -29,13 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI, M_1_PI, sqrt, sin, cos
-from raysect.core.math cimport Point2D, new_point2d, Point3D, new_point3d, Vector3D, new_vector3d
+from libc.math cimport M_PI, M_1_PI, sqrt, sin, cos, asin
+from raysect.core.math cimport Vector3D, new_vector3d
 from raysect.core.math.random cimport uniform
-from raysect.core.math.cython cimport barycentric_coords, barycentric_interpolation
 
 DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 DEF R_4_PI = 0.07957747154594767  # 1 / (4 * pi)
+
+# TODO: add tests - idea: solve the lighting equation with a uniform emitting surface with each sampler and check the mean radiance is unity
 
 
 cdef class SamplerSolidAngle:
@@ -215,181 +216,80 @@ cdef class HemisphereCosineSampler(SamplerSolidAngle):
         return sample, M_1_PI * sample.z
 
 
-# cdef class ConeUniformSampler(VectorSampler):
-#     """
-#     Generates a list of random unit Vector3D objects inside a cone.
-#
-#     The cone is aligned along the z-axis.
-#
-#     :param angle: Angle of the cone in degrees.
-#     """
-#
-#     def __init__(self, double angle=45):
-#
-#         super().__init__()
-#         if not 0 <= angle <= 90:
-#             raise RuntimeError("The cone angle must be between 0 and 90 degrees.")
-#         self.angle = angle
-#
-#     cpdef list sample(self, int samples):
-#         cdef list results
-#         cdef int i
-#
-#         results = []
-#         for i in range(samples):
-#             results.append(vector_cone_uniform(self.angle))
-#         return results
-#
-#
+cdef class ConeUniformSampler(SamplerSolidAngle):
+    """
+    Generates a uniform weighted random vector from a cone.
+
+    The cone is aligned along the z-axis.
+    
+    :param angle: Angle of the cone in degrees (default=45).
+    """
+
+    def __init__(self, double angle=45):
+
+        super().__init__()
+        if not 0 < angle <= 90:
+            raise ValueError("The cone angle must be between 0 and 90 degrees.")
+        self.angle = angle
+        self._angle_radians = angle / 180 * M_PI
+        self._angle_cosine = cos(self._angle_radians)
+        self._solid_angle = 2 * M_PI * (1 - self._angle_cosine)
+        self._solid_angle_inv = 1 / self._solid_angle
+
+    cpdef double pdf(self, Vector3D sample):
+        if sample.z >= self._angle_cosine:
+            return self._solid_angle_inv
+        return 0.0
+
+    cdef Vector3D sample(self):
+        cdef double phi = 2.0 * M_PI * uniform()
+        cdef double cos_theta = cos(self._angle_radians)
+        cdef double z = uniform()*(1 - cos_theta) + cos_theta
+        cdef double r = sqrt(max(0, 1.0 - z*z))
+        cdef double x = r * cos(phi)
+        cdef double y = r * sin(phi)
+        return new_vector3d(x, y, z)
+
+    cdef tuple sample_with_pdf(self):
+        return self.sample(), self._solid_angle_inv
+
+
 # cdef class ConeCosineSampler(SamplerSolidAngle):
 #     """
-#     Generates a list of random unit Vector3D objects inside a cone with cosine weighting.
+#     Generates a cosine weighted random vector from a cone.
 #
 #     The cone is aligned along the z-axis.
 #
-#     :param angle: Angle of the cone in degrees.
+#     :param angle: Angle of the cone in degrees (default=45).
 #     """
 #
 #     def __init__(self, double angle=45):
 #
 #         super().__init__()
-#         if not 0 <= angle <= 90:
-#             raise RuntimeError("The cone angle must be between 0 and 90 degrees.")
+#         if not 0 < angle <= 90:
+#             raise ValueError("The cone angle must be between 0 and 90 degrees.")
 #         self.angle = angle
+#         self._angle_radians = angle / 180 * M_PI
+#         self._angle_cosine = cos(self._angle_radians)
+#         # self._solid_angle = 2 * M_PI * (1 - self._angle_cosine)
+#         # self._solid_angle_inv = 1 / self._solid_angle
 #
-#     cpdef list sample(self, int samples):
-#         cdef list results
-#         cdef int i
-#
-#         results = []
-#         for i in range(samples):
-#             results.append(vector_cone_cosine(self.angle))
-#         return results
-#
-#
-# cdef class QuadVectorSampler(SamplerSolidAngle):
-#     """
-#     Generates a list of random unit Vector3D objects sampled on a quadrangle.
-#
-#     Useful for sub-sampling pixels on non-physical cameras where only the central pixel
-#     vectors are available. The vectors at each corner of the quad are supplied. The sampler
-#     generates a random sample point on the quad, linear vector interpolation is used
-#     between the corners.
-#
-#     .. Warning::
-#         For best results, the vectors at each corner should be close in angle. Results will
-#         be not be sensible for cases where vectors have large angle separation
-#         (i.e. > 90 degrees).
-#
-#     :param Vector3D v1: Vector in lower left corner.
-#     :param Vector3D v2: Vector in upper left corner.
-#     :param Vector3D v3: Vector in upper right corner.
-#     :param Vector3D v4: Vector in lower right corner.
-#     """
-#
-#     def __init__(self, Vector3D v1, Vector3D v2, Vector3D v3, Vector3D v4):
-#
-#         super().__init__()
-#
-#         self.v1 = v1.normalise()
-#         self.v2 = v2.normalise()
-#         self.v3 = v3.normalise()
-#         self.v4 = v4.normalise()
-#
-#     cpdef list sample(self, int samples):
-#         cdef:
-#             list results
-#             int i
-#             Point2D sample_point
-#             double alpha, beta, gamma
-#
-#         results = []
-#         for i in range(samples):
-#
-#             # Generate new sample point in unit square
-#             sample_point = point_square()
-#
-#             # Test if point is in upper triangle
-#             if sample_point.y > sample_point.x:
-#                 # coordinates are p1 (0, 0), p2 (0, 1), p3 (1, 1)
-#                 barycentric_coords(0, 0, 0, 1, 1, 1, sample_point.x, sample_point.y, &alpha, &beta, &gamma)
-#                 sample_vector = self.v1.mul(alpha) + self.v2.mul(beta) + self.v3.mul(gamma)
-#                 results.append(sample_vector.normalise())
-#
-#             # Point must be in lower triangle
-#             else:
-#                 # coordinates are p3 (1, 1), p4 (1, 0), p1 (0, 0)
-#                 barycentric_coords(1, 1, 1, 0, 0, 0, sample_point.x, sample_point.y, &alpha, &beta, &gamma)
-#                 sample_vector = self.v3.mul(alpha) + self.v4.mul(beta) + self.v1.mul(gamma)
-#                 results.append(sample_vector.normalise())
-#
-#         return results
-
-
-
-
-# cpdef Vector3D vector_cone_uniform(double theta):
-#     """
-#     Generates a random vector in a cone along the z-axis.
-#
-#     The angle of the cone is specified with the theta parameter. For speed, no
-#     checks are performs on the theta parameter, it is up to user to ensure the
-#     angle is sensible.
-#
-#     :param float theta: An angle between 0 and 90 degrees.
-#     :returns: A random Vector3D in the cone defined by theta.
-#     :rtype: Vector3D
-#     """
-#
-#     theta *= 0.017453292519943295 # PI / 180
-#     cdef double phi = 2.0 * PI * uniform()
-#     cdef double cos_theta = cos(theta)
-#     cdef double z = uniform()*(1 - cos_theta) + cos_theta
-#     cdef double r = sqrt(max(0, 1.0 - z*z))
-#     cdef double x = r * cos(phi)
-#     cdef double y = r * sin(phi)
-#     return new_vector3d(x, y, z)
-#
-#
-# cpdef Vector3D vector_cone_cosine(double theta):
-#     """
-#     Generates a cosine-weighted random vector on a cone along the z-axis.
-#
-#     The angle of the cone is specified with the theta parameter. For speed, no
-#     checks are performs on the theta parameter, it is up to user to ensure the
-#     angle is sensible.
-#
-#     :param float theta: An angle between 0 and 90 degrees.
-#     :returns: A random Vector3D in the cone defined by theta.
-#     :rtype: Vector3D
-#     """
-#
-#     theta *= 0.017453292519943295 # PI / 180
-#     cdef double r_max_scaled = asin(theta)
-#     cdef double r = sqrt(uniform()) * r_max_scaled
-#     cdef double phi = 2.0 * PI * uniform()
-#     cdef double x = r * cos(phi)
-#     cdef double y = r * sin(phi)
-#     return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
-
-
-
-# cdef class SphereSampler(SamplerSolidAngle):
-#     """
-#     Generates a random vector on a unit sphere.
-#     """
-#
-#     cpdef double pdf(self, Vector3D sample):
-#         return 0.07957747154594767  # 1 / (4 * pi)
+#     # cpdef double pdf(self, Vector3D sample):
+#     #     if sample.z >= self._angle_cosine:
+#     #         # todo: write me!
+#     #         raise NotImplementedError
+#     #     return 0.0
 #
 #     cdef Vector3D sample(self):
-#         pass
+#         cdef double r_max_scaled = asin(self._angle_radians)
+#         cdef double r = sqrt(uniform()) * r_max_scaled
+#         cdef double phi = 2.0 * M_PI * uniform()
+#         cdef double x = r * cos(phi)
+#         cdef double y = r * sin(phi)
+#         return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 #
-#     cdef tuple sample_with_pdf(self):
-#         pass
-#
-#     cdef list samples(self, int samples):
-#         pass
-#
-#     cdef list samples_with_pdfs(self, int samples):
-#         pass
+#     # cdef tuple sample_with_pdf(self):
+#         # todo: need correct pdf
+#         # return self.sample(), PDF_GOES_HERE
+
+
