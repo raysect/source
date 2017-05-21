@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport Ray, Vector3D
+from raysect.optical cimport Ray
 from raysect.optical cimport Observer
 from raysect.optical.observer.base.sampler cimport FrameSampler1D, FrameSampler2D
 
@@ -80,8 +80,6 @@ cdef class _ObserverBase(Observer):
     cpdef list _obtain_rays(self, tuple task, Ray template)
 
     cpdef double _obtain_etendue(self, tuple task)
-
-    cpdef double _sample_weight(self, Vector3D direction, double pdf)
 
 
 cdef class Observer0D(_ObserverBase):

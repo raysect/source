@@ -33,14 +33,11 @@ from time import time
 from raysect.core.workflow import RenderEngine, MulticoreEngine
 
 cimport cython
-from raysect.optical cimport World, Spectrum, Vector3D
+from raysect.optical cimport World, Spectrum
 from raysect.optical.observer.base.sampler cimport FrameSampler1D, FrameSampler2D
 from raysect.optical.observer.base.pipeline cimport Pipeline0D, Pipeline1D, Pipeline2D
 from raysect.optical.observer.base.processor cimport PixelProcessor
 from raysect.optical.observer.base.slice cimport SpectralSlice
-
-DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
-
 
 
 # """
@@ -70,7 +67,6 @@ DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 #     - display visual imagery for each pipeline as required
 #     - save state for each pipeline as required.
 # """
-
 cdef class _ObserverBase(Observer):
     """
     Observer base class.
@@ -382,7 +378,7 @@ cdef class _ObserverBase(Observer):
             list rays, pixel_processors
             PixelProcessor processor
             int ray_count
-            double etendue, pdf, sample_weight
+            double etendue, projection_weight
             Ray ray
             Spectrum spectrum
             list results
@@ -401,18 +397,15 @@ cdef class _ObserverBase(Observer):
         etendue = self._obtain_etendue(task)
 
         # launch rays and accumulate spectral samples
-        for ray, pdf in rays:
-
-            # obtain sample weight (projected area / pdf)
-            sample_weight = self._sample_weight(ray.direction, pdf)
+        for ray, projection_weight in rays:
 
             # convert ray from local space to world space
             ray.origin = ray.origin.transform(self.to_root())
             ray.direction = ray.direction.transform(self.to_root())
 
-            # sample, apply weight and convert to radiance
+            # sample, apply projection weight
             spectrum = ray.trace(world)
-            spectrum.mul_scalar(R_2_PI * sample_weight)
+            spectrum.mul_scalar(projection_weight)
 
             for processor in pixel_processors:
                 processor.add_sample(spectrum, etendue)
@@ -549,23 +542,6 @@ cdef class _ObserverBase(Observer):
         """
 
         raise NotImplementedError("To be defined in subclass.")
-
-    cpdef double _sample_weight(self, Vector3D direction, double pdf):
-        """
-        Calculates the weight constant for the sample.
-        
-        The weight constant is the projected area over the pdf. See the
-        lighting equation.
-        
-        This method should be overridden if cosine sampling is used. This will
-        avoid unnecessary calculation of terms that cancel out.
-        
-        :param direction: Ray direction in local space.
-        :param pdf: The pdf associated with the sample direction.
-        :return: The sample weight.
-        """
-
-        return direction.z / pdf
 
 
 cdef class Observer0D(_ObserverBase):
