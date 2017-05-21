@@ -89,8 +89,10 @@
 # -----------------------------------------------------------------------------
 
 from os import urandom as _urandom
-from libc.math cimport cos, sin, log, sqrt, M_PI as PI
-from libc.stdint cimport uint64_t
+from raysect.core.math.vector cimport new_vector3d
+from raysect.core.math.point cimport new_point2d
+from libc.math cimport cos, sin, asin, log, fabs, sqrt, M_PI as PI
+from libc.stdint cimport uint64_t, int64_t
 cimport cython
 
 DEF NN = 312
@@ -294,6 +296,123 @@ cpdef bint probability(double prob):
     """
 
     return uniform() < prob
+
+
+cdef inline Point2D point_disk():
+    """
+    Returns a random point on a disk of unit radius.
+
+    :rtype: Point2D
+    """
+
+    cdef double r = sqrt(uniform())
+    cdef double theta = 2.0 * PI * uniform()
+    return new_point2d(r * cos(theta), r * sin(theta))
+
+
+cdef inline Point2D point_square():
+    """
+    Returns a random point on a square of unit radius.
+
+    :rtype: Point2D
+    """
+
+    return new_point2d(uniform(), uniform())
+
+
+cdef inline Vector3D vector_sphere():
+    """
+    Generates a random vector on a unit sphere.
+
+    :rtype: Vector3D
+    """
+
+    cdef double z = 1.0 - 2.0 * uniform()
+    cdef double r = sqrt(max(0, 1.0 - z*z))
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, z)
+
+
+cdef inline Vector3D vector_hemisphere_uniform():
+    """
+    Generates a random vector on a unit hemisphere.
+
+    The hemisphere is aligned along the z-axis - the plane that forms the
+    hemisphere base lies in the x-y plane.
+
+    :rtype: Vector3D
+    """
+
+    cdef double z = uniform()
+    cdef double r = sqrt(max(0, 1.0 - z*z))
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, z)
+
+
+cdef inline Vector3D vector_hemisphere_cosine():
+    """
+    Generates a cosine-weighted random vector on a unit hemisphere.
+
+    The hemisphere is aligned along the z-axis - the plane that forms the
+    hemisphere base lies in the x-y plane.
+
+    :rtype: Vector3D
+    """
+
+    cdef double r = sqrt(uniform())
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
+
+
+cdef inline Vector3D vector_cone_uniform(double theta):
+    """
+    Generates a random vector in a cone along the z-axis.
+
+    The angle of the cone is specified with the theta parameter. For speed, no
+    checks are performs on the theta parameter, it is up to user to ensure the
+    angle is sensible.
+
+    :param float theta: An angle between 0 and 90 degrees.
+    :returns: A random Vector3D in the cone defined by theta.
+    :rtype: Vector3D
+    """
+
+    theta *= 0.017453292519943295 # PI / 180
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double cos_theta = cos(theta)
+    cdef double z = uniform()*(1 - cos_theta) + cos_theta
+    cdef double r = sqrt(max(0, 1.0 - z*z))
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, z)
+
+
+cdef inline Vector3D vector_cone_cosine(double theta):
+    """
+    Generates a cosine-weighted random vector on a cone along the z-axis.
+
+    The angle of the cone is specified with the theta parameter. For speed, no
+    checks are performs on the theta parameter, it is up to user to ensure the
+    angle is sensible.
+
+    :param float theta: An angle between 0 and 90 degrees.
+    :returns: A random Vector3D in the cone defined by theta.
+    :rtype: Vector3D
+    """
+
+    theta *= 0.017453292519943295 # PI / 180
+    cdef double r_max_scaled = asin(theta)
+    cdef double r = sqrt(uniform()) * r_max_scaled
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 
 
 # initialise random number generator

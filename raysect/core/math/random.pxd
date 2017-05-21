@@ -29,6 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.point cimport Point2D
+
 cpdef seed(object d=*)
 
 cpdef double uniform()
@@ -36,3 +39,17 @@ cpdef double uniform()
 cpdef double normal(double mean, double sigma)
 
 cpdef bint probability(double prob)
+
+cdef inline Point2D point_disk()
+
+cdef inline Point2D point_square()
+
+cdef inline Vector3D vector_sphere()
+
+cdef inline Vector3D vector_hemisphere_uniform()
+
+cdef inline Vector3D vector_hemisphere_cosine()
+
+cdef inline Vector3D vector_cone_uniform(double theta)
+
+cdef inline Vector3D vector_cone_cosine(double theta)
