@@ -36,7 +36,7 @@ from raysect.core.math.random cimport uniform
 from raysect.core.math.cython cimport barycentric_interpolation
 
 
-cdef class SamplerSurface3D:
+cdef class SurfaceSampler3D:
     """
     Base class for an object that generates samples from a surface in 3D.
     """
@@ -133,7 +133,7 @@ cdef class SamplerSurface3D:
 
 
 # TODO - implement stratified sampling for samples and samples_with_pdfs
-cdef class DiskSampler3D(SamplerSurface3D):
+cdef class DiskSampler3D(SurfaceSampler3D):
     """
     Generates Point3D samples from a disk centred in the x-y plane.
 
@@ -157,7 +157,7 @@ cdef class DiskSampler3D(SamplerSurface3D):
 
 
 # TODO - implement stratified sampling for samples and samples_with_pdfs
-cdef class RectangleSampler3D(SamplerSurface3D):
+cdef class RectangleSampler3D(SurfaceSampler3D):
     """
     Generates Point3D samples from a rectangle centred in the x-y plane.
 
@@ -184,7 +184,7 @@ cdef class RectangleSampler3D(SamplerSurface3D):
 
 
 # TODO - implement stratified sampling for samples and samples_with_pdfs
-cdef class TriangleSampler3D(SamplerSurface3D):
+cdef class TriangleSampler3D(SurfaceSampler3D):
     """
     Generates Point3D samples from a triangle in 3D space.
 

@@ -30,7 +30,7 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
 
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, SamplerSurface3D, RectangleSampler3D
+from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, SurfaceSampler3D, RectangleSampler3D
 from raysect.optical cimport Ray
 from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
@@ -55,7 +55,7 @@ cdef class PinholeCamera(Observer2D):
 
     cdef:
         double _etendue, _fov, image_delta, image_start_x, image_start_y
-        SamplerSurface3D point_sampler
+        SurfaceSampler3D point_sampler
 
     def __init__(self, pixels, fov=None, etendue=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 

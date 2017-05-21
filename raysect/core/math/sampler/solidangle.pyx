@@ -33,13 +33,13 @@ from libc.math cimport M_PI, M_1_PI, sqrt, sin, cos, asin
 from raysect.core.math cimport Vector3D, new_vector3d
 from raysect.core.math.random cimport uniform
 
+# TODO: add tests - idea: solve the lighting equation with a uniform emitting surface with each sampler and check the mean radiance is unity
+
 DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 DEF R_4_PI = 0.07957747154594767  # 1 / (4 * pi)
 
-# TODO: add tests - idea: solve the lighting equation with a uniform emitting surface with each sampler and check the mean radiance is unity
 
-
-cdef class SamplerSolidAngle:
+cdef class SolidAngleSampler:
     """
     Base class for an object that generates samples over a solid angle.
     """
@@ -146,7 +146,7 @@ cdef class SamplerSolidAngle:
         return results
 
 
-cdef class SphereSampler(SamplerSolidAngle):
+cdef class SphereSampler(SolidAngleSampler):
     """
     Generates a random vector on a unit sphere.
     """
@@ -166,7 +166,7 @@ cdef class SphereSampler(SamplerSolidAngle):
         return self.sample(), R_4_PI
 
 
-cdef class HemisphereUniformSampler(SamplerSolidAngle):
+cdef class HemisphereUniformSampler(SolidAngleSampler):
     """
     Generates a random vector on a unit hemisphere.
 
@@ -191,7 +191,7 @@ cdef class HemisphereUniformSampler(SamplerSolidAngle):
         return self.sample(), R_2_PI
 
 
-cdef class HemisphereCosineSampler(SamplerSolidAngle):
+cdef class HemisphereCosineSampler(SolidAngleSampler):
     """
     Generates a cosine-weighted random vector on a unit hemisphere.
 
@@ -216,7 +216,7 @@ cdef class HemisphereCosineSampler(SamplerSolidAngle):
         return sample, M_1_PI * sample.z
 
 
-cdef class ConeUniformSampler(SamplerSolidAngle):
+cdef class ConeUniformSampler(SolidAngleSampler):
     """
     Generates a uniform weighted random vector from a cone.
 
@@ -254,7 +254,7 @@ cdef class ConeUniformSampler(SamplerSolidAngle):
         return self.sample(), self._solid_angle_inv
 
 
-# cdef class ConeCosineSampler(SamplerSolidAngle):
+# cdef class ConeCosineSampler(SolidAngleSampler):
 #     """
 #     Generates a cosine weighted random vector from a cone.
 #

@@ -30,7 +30,7 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
 
-from raysect.core cimport Point3D, Vector3D, new_vector3d, translate, SamplerSurface3D, RectangleSampler3D, AffineMatrix3D
+from raysect.core cimport Point3D, new_vector3d, translate, SurfaceSampler3D, RectangleSampler3D, AffineMatrix3D
 from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer2D
 
@@ -53,7 +53,7 @@ cdef class OrthographicCamera(Observer2D):
 
     cdef:
         double image_delta, image_start_x, image_start_y, _width, _etendue
-        SamplerSurface3D _point_sampler
+        SurfaceSampler3D _point_sampler
 
     def __init__(self, pixels, width, etendue=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 

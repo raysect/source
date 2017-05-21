@@ -33,8 +33,8 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
-from raysect.core cimport RectangleSampler3D, HemisphereCosineSampler, SamplerSolidAngle, SamplerSurface3D
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate
+from raysect.core cimport RectangleSampler3D, HemisphereCosineSampler, SolidAngleSampler, SurfaceSampler3D
+from raysect.core cimport Point3D, Vector3D, translate
 from raysect.optical cimport Ray
 from libc.math cimport M_PI
 from raysect.optical.observer.base cimport Observer2D
@@ -60,8 +60,8 @@ cdef class CCDArray(Observer2D):
 
     cdef:
         double _width, _pixel_area, image_delta, image_start_x, image_start_y
-        SamplerSurface3D point_sampler
-        SamplerSolidAngle vector_sampler
+        SurfaceSampler3D point_sampler
+        SolidAngleSampler vector_sampler
 
     def __init__(self, pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
 

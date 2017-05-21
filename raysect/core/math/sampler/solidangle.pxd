@@ -38,7 +38,7 @@ DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 DEF R_4_PI = 0.07957747154594767  # 1 / (4 * pi)
 
 
-cdef class SamplerSolidAngle:
+cdef class SolidAngleSampler:
 
     cpdef double pdf(self, Vector3D sample)
 
@@ -51,26 +51,26 @@ cdef class SamplerSolidAngle:
     cdef list samples_with_pdfs(self, int samples)
 
 
-cdef class SphereSampler(SamplerSolidAngle):
+cdef class SphereSampler(SolidAngleSampler):
     pass
 
 
-cdef class HemisphereUniformSampler(SamplerSolidAngle):
+cdef class HemisphereUniformSampler(SolidAngleSampler):
     pass
 
 
-cdef class HemisphereCosineSampler(SamplerSolidAngle):
+cdef class HemisphereCosineSampler(SolidAngleSampler):
     pass
 
 
-cdef class ConeUniformSampler(SamplerSolidAngle):
+cdef class ConeUniformSampler(SolidAngleSampler):
 
     cdef:
         readonly double angle
         double _angle_radians, _angle_cosine, _solid_angle, _solid_angle_inv
 
 
-# cdef class ConeCosineSampler(SamplerSolidAngle):
+# cdef class ConeCosineSampler(SolidAngleSampler):
 #
 #     cdef:
 #         readonly double angle

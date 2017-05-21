@@ -29,14 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI as PI, sqrt, sin, cos
-
-from raysect.core.math cimport Point3D, new_point3d, Vector3D
-from raysect.core.math.random cimport uniform
-from raysect.core.math.cython cimport barycentric_interpolation
+from raysect.core.math cimport Point3D
 
 
-cdef class SamplerSurface3D:
+cdef class SurfaceSampler3D:
 
     cdef Point3D sample(self)
 
@@ -47,21 +43,21 @@ cdef class SamplerSurface3D:
     cdef list samples_with_pdfs(self, int samples)
 
 
-cdef class DiskSampler3D(SamplerSurface3D):
+cdef class DiskSampler3D(SurfaceSampler3D):
 
     cdef:
         readonly double radius, area
         double _area_inv
 
 
-cdef class RectangleSampler3D(SamplerSurface3D):
+cdef class RectangleSampler3D(SurfaceSampler3D):
 
     cdef:
         readonly double width, height, area
         double _area_inv, _width_offset, _height_offset
 
 
-cdef class TriangleSampler3D(SamplerSurface3D):
+cdef class TriangleSampler3D(SurfaceSampler3D):
 
     cdef:
         Point3D _v1, _v2, _v3
