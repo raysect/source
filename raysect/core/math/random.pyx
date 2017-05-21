@@ -89,10 +89,8 @@
 # -----------------------------------------------------------------------------
 
 from os import urandom as _urandom
-from raysect.core.math.vector cimport new_vector3d
-from raysect.core.math.point cimport new_point2d
-from libc.math cimport cos, sin, asin, log, fabs, sqrt, M_PI as PI
-from libc.stdint cimport uint64_t, int64_t
+from libc.math cimport cos, sin, log, sqrt, M_PI as PI
+from libc.stdint cimport uint64_t
 cimport cython
 
 DEF NN = 312
