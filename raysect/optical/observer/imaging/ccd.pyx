@@ -33,10 +33,10 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
-from raysect.core cimport RectangleSampler, HemisphereCosineSampler, VectorSampler, PointSampler
+from raysect.core cimport RectangleSampler3D, HemisphereCosineSampler, SolidAngleSampler, SurfaceSampler3D
 from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate
 from raysect.optical cimport Ray
-from libc.math cimport M_PI as pi
+from libc.math cimport M_PI
 from raysect.optical.observer.base cimport Observer2D
 
 
@@ -60,8 +60,8 @@ cdef class CCDArray(Observer2D):
 
     cdef:
         double _width, _pixel_area, image_delta, image_start_x, image_start_y
-        PointSampler point_sampler
-        VectorSampler vector_sampler
+        SurfaceSampler3D point_sampler
+        SolidAngleSampler vector_sampler
 
     def __init__(self, pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
 
@@ -112,7 +112,7 @@ cdef class CCDArray(Observer2D):
         self.image_delta = self._width / self._pixels[0]
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
         self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
-        self.point_sampler = RectangleSampler(self.image_delta, self.image_delta)
+        self.point_sampler = RectangleSampler3D(self.image_delta, self.image_delta)
 
     cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
 
@@ -129,8 +129,8 @@ cdef class CCDArray(Observer2D):
         to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
-        origin_points = self.point_sampler(ray_count)
-        direction_vectors = self.vector_sampler(ray_count)
+        origin_points = self.point_sampler.samples(ray_count)
+        direction_vectors = self.vector_sampler.samples(ray_count)
 
         # assemble rays
         rays = []
@@ -142,12 +142,12 @@ cdef class CCDArray(Observer2D):
 
             ray = template.copy(origin, direction)
 
-            # cosine weighted distribution, projected area weight is
-            # implicit in distribution, so set weight appropriately
-            # todo: check derivation, this should be a factor of 2 out cf uniform sampling due to pi vs 2*pi in denominator of pdf
+            # cosine weighted distribution
+            # projected area cosine is implicit in distribution
+            # weight = (1 / 2*pi) * (pi / cos(theta)) * cos(theta) = 0.5
             rays.append((ray, 0.5))
 
         return rays
 
     cpdef double _pixel_etendue(self, int x, int y):
-        return self._pixel_area * 2 * pi
+        return self._pixel_area * 2 * M_PI
