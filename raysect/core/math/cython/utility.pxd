@@ -67,4 +67,4 @@ cdef inline bint solve_quadratic(double a, double b, double c, double *t0, doubl
 
 cdef inline bint winding2d(double[:,::1] vertices) nogil
 
-
+cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty)

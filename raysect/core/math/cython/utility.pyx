@@ -375,4 +375,63 @@ def _test_winding2d(p):
     return winding2d(p)
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty):
+    """
+    Cython utility for testing if a 2D point (ptx, pty) is inside a 2D polygon defined by
+    the two memory views px_mv[:] and py_mv[:].
+
+    This function implements the winding number method for testing if points are inside or
+    outside an arbitrary polygon. Returns True if the test point is inside the specified
+    polygon.
+
+    .. WARNING:: For speed, this function does not perform any type or bounds
+       checking. Supplying malformed data may result in data corruption or a
+       segmentation fault.
+
+    :param double vertices: Memory view of polygon's x,y coordinates with shape (N,2)
+      where N is the number of points in the polygon.
+    :param double ptx: the x coordinate of the test point.
+    :param double pty: the y coordinate of the test point.
+    :rtype: bool
+    """
+
+    cdef:
+        int i, winding_number = 0
+        double side
+
+    for i in range(vertices.shape[0] - 1):
+
+        # start case where first polygon edge y is less than test-point's y
+        if vertices[i, 1] <= pty:
+            # test for case of upward crossing
+            if vertices[i+1, 1] > pty:
+
+                # Test if point is on left side of line
+                side = (vertices[i+1, 0] - vertices[i, 0]) * (pty - vertices[i, 1]) - (ptx -  vertices[i, 0]) * (vertices[i+1, 1] - vertices[i, 1])
+                if side > 0:
+                    winding_number += 1
+
+
+        # else we must be considering case where first polygon edge point's y is greater than test point y
+        else:
+            if vertices[i+1, 1] <= pty:
+
+                # Test if point is on right side of line
+                side = (vertices[i+1, 0] - vertices[i, 0]) * (pty - vertices[i, 1]) - (ptx -  vertices[i, 0]) * (vertices[i+1, 1] - vertices[i, 1])
+                if side < 0:
+                    winding_number -= 1
+
+    if winding_number == 0:
+        return False
+    else:
+        return True
+
+
+def _point_inside_polygon(vertices, ptx, pty):
+    """Expose cython function for testing."""
+
+    return point_inside_polygon(vertices, ptx, pty)
+
 
