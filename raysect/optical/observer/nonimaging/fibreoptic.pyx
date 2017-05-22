@@ -37,8 +37,6 @@ from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
 cimport cython
 
-DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
-
 
 # TODO - provide a function for angular fall off for collection, instead of acceptance cone.
 # TODO - current samples the cone with uniform sampling, need a cosine weighted cone sampler.
@@ -77,7 +75,7 @@ cdef class FibreOptic(Observer0D):
                          ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
                          ray_important_path_weight=ray_important_path_weight)
 
-        acceptance_angle = acceptance_angle or 5
+        acceptance_angle = acceptance_angle or 5.0
         radius = radius or 0.001
 
         self.acceptance_angle = acceptance_angle
@@ -95,7 +93,7 @@ cdef class FibreOptic(Observer0D):
 
     @acceptance_angle.setter
     def acceptance_angle(self, value):
-        if not 0 <= value <= 90:
+        if not 0 < value <= 90:
             raise RuntimeError("Acceptance angle must be between 0 and 90 degrees.")
         self._acceptance_angle = value
         self._vector_sampler = ConeUniformSampler(value)
@@ -126,7 +124,6 @@ cdef class FibreOptic(Observer0D):
         cdef:
             list rays, origins, directions
             int n
-            double weight
 
         origins = self._point_sampler.samples(ray_count)
         directions = self._vector_sampler.samples(ray_count)
@@ -136,10 +133,7 @@ cdef class FibreOptic(Observer0D):
 
             # projected area weight is normal.incident which simplifies
             # to incident.z here as the normal is (0, 0 ,1)
-            # TODO: need to double check the maths here....
-            # weight = directions[n].z * self._solid_angle * R_2_PI
-            weight = directions[n].z
-            rays.append((template.copy(origins[n], directions[n]), weight))
+            rays.append((template.copy(origins[n], directions[n]), directions[n].z))
 
         return rays
 
