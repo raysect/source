@@ -29,13 +29,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport cos, M_PI as pi
+from libc.math cimport cos, M_PI as PI
 
-from raysect.core.math.sampler cimport DiskSampler, ConeUniformSampler
-from raysect.optical cimport Ray, new_point3d, new_vector3d
+from raysect.core.math.sampler cimport DiskSampler3D, ConeUniformSampler
+from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
 cimport cython
+
+DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 
 # TODO - provide a function for angular fall off for collection, instead of acceptance cone.
@@ -58,7 +60,7 @@ cdef class FibreOptic(Observer0D):
 
     cdef:
         double _acceptance_angle, _radius, _solid_angle, _collection_area
-        DiskSampler _point_sampler
+        DiskSampler3D _point_sampler
         ConeUniformSampler _vector_sampler
 
     def __init__(self, pipelines=None, acceptance_angle=None, radius=None, parent=None, transform=None, name=None,
@@ -97,7 +99,7 @@ cdef class FibreOptic(Observer0D):
             raise RuntimeError("Acceptance angle must be between 0 and 90 degrees.")
         self._acceptance_angle = value
         self._vector_sampler = ConeUniformSampler(value)
-        self._solid_angle = 2 * pi * (1 - cos(value/180*pi))
+        self._solid_angle = 2 * PI * (1 - cos(value / 180 * PI))
 
     @property
     def radius(self):
@@ -114,8 +116,8 @@ cdef class FibreOptic(Observer0D):
         if value <= 0:
             raise RuntimeError("Fibre radius must be greater than 0.")
         self._radius = value
-        self._point_sampler = DiskSampler(value)
-        self._collection_area = pi * value * value
+        self._point_sampler = DiskSampler3D(value)
+        self._collection_area = PI * value * value
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -126,14 +128,16 @@ cdef class FibreOptic(Observer0D):
             int n
             double weight
 
-        origins = self._point_sampler(ray_count)
-        directions = self._vector_sampler(ray_count)
+        origins = self._point_sampler.samples(ray_count)
+        directions = self._vector_sampler.samples(ray_count)
 
         rays = []
         for n in range(ray_count):
 
             # projected area weight is normal.incident which simplifies
             # to incident.z here as the normal is (0, 0 ,1)
+            # TODO: need to double check the maths here....
+            # weight = directions[n].z * self._solid_angle * R_2_PI
             weight = directions[n].z
             rays.append((template.copy(origins[n], directions[n]), weight))
 

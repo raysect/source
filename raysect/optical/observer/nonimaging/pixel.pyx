@@ -29,9 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport cos, M_PI as pi
+from libc.math cimport cos, M_PI as PI
 
-from raysect.core.math.sampler cimport RectangleSampler, HemisphereCosineSampler
+from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler
 from raysect.optical cimport Ray, new_point3d, new_vector3d
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
@@ -53,7 +53,7 @@ cdef class Pixel(Observer0D):
 
     cdef:
         double _x_width, _y_width, _solid_angle, _collection_area
-        RectangleSampler _point_sampler
+        RectangleSampler3D _point_sampler
         HemisphereCosineSampler _vector_sampler
 
     def __init__(self, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
@@ -73,7 +73,7 @@ cdef class Pixel(Observer0D):
         self._x_width = 0.01
         self._y_width = 0.01
         self._vector_sampler = HemisphereCosineSampler()
-        self._solid_angle = 2 * pi
+        self._solid_angle = 2 * PI
 
         self.x_width = x_width or 0.01
         self.y_width = y_width or 0.01
@@ -92,7 +92,7 @@ cdef class Pixel(Observer0D):
         if value <= 0:
             raise RuntimeError("Pixel x-width must be greater than zero.")
         self._x_width = value
-        self._point_sampler = RectangleSampler(width=self._x_width, height=self._y_width)
+        self._point_sampler = RectangleSampler3D(width=self._x_width, height=self._y_width)
         self._collection_area = self._x_width * self._y_width
 
     @property
@@ -109,7 +109,7 @@ cdef class Pixel(Observer0D):
         if value <= 0:
             raise RuntimeError("Pixel y-width must be greater than zero.")
         self._y_width = value
-        self._point_sampler = RectangleSampler(width=self._x_width, height=self._y_width)
+        self._point_sampler = RectangleSampler3D(width=self._x_width, height=self._y_width)
         self._collection_area = self._x_width * self._y_width
 
     @property
@@ -154,9 +154,9 @@ cdef class Pixel(Observer0D):
         rays = []
         for n in range(ray_count):
 
-            # cosine weighted distribution, projected area weight is
-            # implicit in distribution, so set weight appropriately
-            # todo: check derivation, this should be a factor of 2 out cf uniform sampling due to pi vs 2*pi in denominator of pdf
+            # cosine weighted distribution
+            # projected area cosine is implicit in distribution
+            # weight = (1 / 2*pi) * (pi / cos(theta)) * cos(theta) = 0.5
             rays.append((template.copy(origins[n], directions[n]), 0.5))
 
         return rays
