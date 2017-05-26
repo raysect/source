@@ -408,18 +408,20 @@ cdef class BoundingBox3D:
         self.upper.y = self.upper.y + padding
         self.upper.z = self.upper.z + padding
 
-    cpdef double enclosing_sphere(self):
+    cpdef BoundingSphere3D enclosing_sphere(self):
         """
-        Returns the radius of a sphere guaranteed to enclose the bounding box.
+        Returns a BoundingSphere3D guaranteed to enclose the bounding box.
 
         The sphere is centred at the box centre. A small degree of padding is
         added to avoid numerical accuracy issues.
 
-        :return: Radius of sphere.
-        :rtype: float
+        :return: A BoundingSphere3D object.
+        :rtype: BoundingSphere3D
         """
 
-        return self.lower.distance_to(self.get_centre()) * SPHERE_PADDING
+        cdef Point3D centre = self.get_centre()
+        cdef double radius = self.lower.distance_to(centre) * SPHERE_PADDING
+        return BoundingSphere3D(centre, radius)
 
 
 cdef class BoundingBox2D:

@@ -167,6 +167,29 @@ cdef class Primitive(Node):
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
 
+    cpdef BoundingSphere3D bounding_sphere(self):
+        """
+        When the primitive is connected to a scene-graph containing a World
+        object at its root, this method should return a bounding sphere that
+        fully encloses the primitive's surface (plus a small margin to
+        avoid numerical accuracy problems). The bounding sphere must be
+        defined in the world's coordinate space.
+
+        If this method is called when the primitive is not connected to a
+        scene-graph with a World object at its root, it must throw a TypeError
+        exception.
+        
+        The default implementation is to wrap the the primitive's bounding box
+        with a sphere. If the bounding sphere can be more optimally calculated
+        for the primitive, it should override this method.
+
+        :return: A world space BoundingSphere3D object.
+        :rtype: BoundingSphere3D
+        """
+
+        return self.bounding_box().enclosing_sphere()
+
+
     cpdef object notify_geometry_change(self):
         """
         Notifies the scene-graph root of a change to the primitive's geometry.

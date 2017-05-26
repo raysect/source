@@ -29,8 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.boundingsphere import BoundingSphere3D
 from raysect.core.math cimport Point3D, Point2D
 from raysect.core.ray cimport Ray
+
 
 cdef class BoundingBox3D:
 
@@ -67,7 +69,7 @@ cdef class BoundingBox3D:
 
     cpdef object pad(self, double padding)
 
-    cpdef double enclosing_sphere(self)
+    cpdef BoundingSphere3D enclosing_sphere(self)
 
 
 cdef inline BoundingBox3D new_boundingbox3d(Point3D lower, Point3D upper):
