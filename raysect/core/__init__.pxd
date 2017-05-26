@@ -33,6 +33,7 @@ from raysect.core.ray cimport *
 from raysect.core.intersection cimport *
 from raysect.core.material cimport *
 from raysect.core.boundingbox cimport *
+from raysect.core.boundingsphere cimport *
 from raysect.core.math cimport *
 from raysect.core.scenegraph cimport *
 from raysect.core.containers cimport *
