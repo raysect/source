@@ -31,8 +31,8 @@
 
 cimport cython
 from libc.math cimport M_PI
+from raysect.core cimport Vector3D, new_vector3d
 from raysect.core.math.cython cimport solve_quadratic, swap_double
-from raysect.optical cimport Ray, Vector3D, Point3D, new_vector3d
 
 
 cdef class BoundingSphere3D:
@@ -170,6 +170,10 @@ cdef class BoundingSphere3D:
             double centre_distance, radius
             Vector3D smaller_to_larger
             Point3D centre
+
+        # Do nothing if trying to union with ourself.
+        if sphere is self:
+            return
 
         # Identify which sphere is smaller
         if sphere.radius > self.radius:
