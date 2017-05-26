@@ -31,7 +31,6 @@
 
 from raysect.core.scenegraph.signal import GEOMETRY, MATERIAL
 from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core cimport BoundingSphere3D
 
 
 cdef class Primitive(Node):

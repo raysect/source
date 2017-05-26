@@ -32,7 +32,7 @@
 from numpy import zeros
 from raysect.core.scenegraph.signal import MATERIAL
 
-from raysect.core cimport BoundingBox3D, AffineMatrix3D, _NodeBase, ChangeSignal
+from raysect.core cimport BoundingBox3D, BoundingSphere3D, AffineMatrix3D, _NodeBase, ChangeSignal
 from raysect.core.acceleration cimport BoundPrimitive
 from raysect.core.math.random cimport uniform, vector_sphere, vector_cone_uniform
 from raysect.core.math.cython cimport find_index, rotate_basis
@@ -87,16 +87,11 @@ cdef class ImportanceManager:
         for primitive in primitives:
             if primitive.material.importance > 0:
 
-                # generate bounding box
-                box = primitive.bounding_box()
-
-                # obtain bounding sphere and importance
-                centre = box.centre
-                radius = box.enclosing_sphere()
+                sphere = primitive.bounding_sphere()
                 importance = primitive.material.importance
 
                 self._total_importance += importance
-                self._spheres.append((centre, radius, importance))
+                self._spheres.append((sphere, importance))
 
     cdef object _calculate_cdf(self):
         """
@@ -108,7 +103,7 @@ cdef class ImportanceManager:
 
         self._cdf = zeros(len(self._spheres))
         for index, sphere_data in enumerate(self._spheres):
-            _, _, importance = sphere_data
+            _, importance = sphere_data
             if index == 0:
                 self._cdf[index] = importance
             else:
@@ -147,27 +142,29 @@ cdef class ImportanceManager:
         # generate a random direction towards that projection
 
         cdef:
-            Point3D centre
-            double radius, importance, distance, angular_radius
+            BoundingSphere3D sphere
+            double importance, distance, angular_radius
             Vector3D direction, sample
             AffineMatrix3D rotation
+
+        # TODO: move the projection code to a projection method on BoundingSphere3D
 
         if self._cdf is None:
             raise ImportanceError("Attempted to sample important direction when no important primitives have been"
                                   "specified.")
 
-        centre, radius, importance = self._pick_sphere()
+        sphere, importance = self._pick_sphere()
 
-        direction = origin.vector_to(centre)
+        direction = origin.vector_to(sphere.centre)
         distance = direction.get_length()
 
         # is point inside sphere?
-        if distance == 0 or distance < radius:
+        if distance == 0 or distance < sphere.radius:
             # the point lies inside the sphere, sample random direction from full sphere
             return vector_sphere()
 
         # calculate the angular radius and solid angle projection of the sphere
-        angular_radius = asin(radius / distance)
+        angular_radius = asin(sphere.radius / distance)
 
         # sample a vector from a cone of half angle equal to the angular radius
         sample = vector_cone_uniform(angular_radius * 180 / PI)
@@ -188,20 +185,20 @@ cdef class ImportanceManager:
         """
 
         cdef:
-            double radius, importance, distance, solid_angle, angular_radius_cos, t
+            BoundingSphere3D sphere
+            double importance, distance, solid_angle, angular_radius_cos, t
             double pdf_all, pdf_sphere, selection_weight
-            Point3D centre
             Vector3D cone_axis
             AffineMatrix3D rotation
 
         pdf_all = 0
-        for centre, radius, importance in self._spheres:
+        for sphere, importance in self._spheres:
 
-            cone_axis = origin.vector_to(centre)
+            cone_axis = origin.vector_to(sphere.centre)
             distance = cone_axis.get_length()
 
             # is point inside sphere?
-            if distance == 0 or distance < radius:
+            if distance == 0 or distance < sphere.radius:
 
                 # the point lies inside the sphere, the projection is a full sphere
                 solid_angle = 4 * PI
@@ -209,7 +206,7 @@ cdef class ImportanceManager:
             else:
 
                 # calculate cosine of angular radius of cone
-                t = radius / distance
+                t = sphere.radius / distance
                 angular_radius_cos = sqrt(1 - t * t)
 
                 # does the direction lie inside the cone of projection
@@ -239,7 +236,6 @@ cdef class ImportanceManager:
         return self._total_importance > 0
 
 
-# # TODO: update docstrings
 cdef class World(CoreWorld):
     """
     The root node of the optical scene-graph.
@@ -297,6 +293,7 @@ cdef class World(CoreWorld):
         :return: The vector along which to sample.
         :rtype: Vector3D
         """
+
         self.build_importance()
         return self._importance.sample(origin)
 
@@ -308,6 +305,7 @@ cdef class World(CoreWorld):
         :param Vector3D direction: The sample direction.
         :rtype: float
         """
+
         self.build_importance()
         return self._importance.pdf(origin, direction)
 
@@ -317,5 +315,6 @@ cdef class World(CoreWorld):
 
         :rtype: bool
         """
+
         self.build_importance()
         return self._importance.has_primitives()
