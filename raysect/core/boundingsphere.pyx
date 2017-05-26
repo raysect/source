@@ -29,36 +29,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
 cimport cython
-
 from libc.math cimport M_PI
-
-from raysect.core cimport Point3D
-from raysect.core.math cimport new_point3d, new_point2d
-
-
-# TODO - use cmath infinity definition
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
-
-# axis defines
-DEF X_AXIS = 0
-DEF Y_AXIS = 1
-DEF Z_AXIS = 2
-
-# defines the padding on the sphere which encloses the BoundingBox3D.
-DEF SPHERE_PADDING = 1.000001
+from raysect.core.math.cython cimport solve_quadratic, swap_double
+from raysect.optical cimport Ray, Vector3D, Point3D, new_vector3d
 
 
 cdef class BoundingSphere3D:
 
-    def __init__(self, Point3D centre, double radius):
+    cdef double radius
+    cdef Point3D centre
 
-        self.centre = centre
+    def __init__(self, Point3D centre, double radius):
 
         if radius <= 0:
             raise ValueError("The radius of the bounding sphere must be greater than zero.")
+
+        self.centre = centre
         self.radius = radius
 
     def __repr__(self):
@@ -105,9 +92,7 @@ cdef class BoundingSphere3D:
         :rtype: boolean
         """
 
-        cdef:
-            double front_intersection, back_intersection
-
+        cdef double front_intersection, back_intersection
         return self.intersect(ray, &front_intersection, &back_intersection)
 
     cpdef tuple full_intersection(self, Ray ray):
@@ -128,7 +113,6 @@ cdef class BoundingSphere3D:
             bint hit
 
         hit = self.intersect(ray, &front_intersection, &back_intersection)
-
         return hit, front_intersection, back_intersection
 
     cdef inline bint intersect(self, Ray ray, double *front_intersection, double *back_intersection):
@@ -151,7 +135,7 @@ cdef class BoundingSphere3D:
         # calculate intersection distances by solving the quadratic equation
         # ray misses if there are no real roots of the quadratic
         if not solve_quadratic(a, b, c, &t0, &t1):
-            return None
+            return False
 
         # ensure t0 is always smaller than t1
         if t0 > t1:
@@ -184,6 +168,12 @@ cdef class BoundingSphere3D:
         :param BoundingSphere3D sphere: A bounding sphere instance to union with this bounding sphere instance.
         """
 
+        cdef:
+            BoundingSphere3D smaller, larger
+            double centre_distance, radius
+            Vector3D smaller_to_larger
+            Point3D centre
+
         # Identify which sphere is smaller
         if sphere.radius > self.radius:
             larger = sphere
@@ -202,12 +192,11 @@ cdef class BoundingSphere3D:
 
         # The spheres either partially overlap or not at all.
         # Calculate new diameter for unioned bounding sphere.
-        diameter = centre_distance + smaller.radius + larger.radius
-        radius = diameter / 2.0
+        radius = 0.5 * (centre_distance + smaller.radius + larger.radius)
 
         # Calculate new centre
         smaller_to_larger = smaller.centre.vector_to(larger.centre).normalise()
-        centre = smaller.centre.add(smaller_to_larger * (radius - smaller.radius))
+        centre = smaller.centre.add(smaller_to_larger.mul(radius - smaller.radius))
 
         # update values
         self.radius = radius
@@ -224,18 +213,21 @@ cdef class BoundingSphere3D:
         :param float padding: optional padding parameter, gives extra margin around the new point.
         """
 
+        cdef:
+            double radius
+            Vector3D centre_to_point
+            Point3D centre
+
         # Does point lie inside current sphere?
         if self.contains(point):
             return
 
         # Calculate new diameter for bounding sphere that includes the point.
-        distance = self.centre.distance_to(point)
-        diameter = distance + self.radius
-        radius = diameter / 2.0
+        radius = 0.5 * (self.centre.distance_to(point) + self.radius)
 
         # Calculate new centre
         centre_to_point = self.centre.vector_to(point).normalise()
-        centre = self.centre.add(centre_to_point * (radius - self.radius))
+        centre = self.centre.add(centre_to_point.mul(radius - self.radius))
 
         # update values
         self.radius = radius
@@ -266,17 +258,3 @@ cdef class BoundingSphere3D:
         """
 
         self.radius = self.radius + padding
-
-    # cpdef double enclosing_sphere(self):
-    #     """
-    #     Returns the radius of a sphere guaranteed to enclose the bounding box.
-    #
-    #     The sphere is centred at the box centre. A small degree of padding is
-    #     added to avoid numerical accuracy issues.
-    #
-    #     :return: Radius of sphere.
-    #     :rtype: float
-    #     """
-    #
-    #     return self.lower.distance_to(self.get_centre()) * SPHERE_PADDING
-
