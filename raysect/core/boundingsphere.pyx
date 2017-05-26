@@ -37,9 +37,6 @@ from raysect.optical cimport Ray, Vector3D, Point3D, new_vector3d
 
 cdef class BoundingSphere3D:
 
-    cdef double radius
-    cdef Point3D centre
-
     def __init__(self, Point3D centre, double radius):
 
         if radius <= 0:
