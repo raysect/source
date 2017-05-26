@@ -87,7 +87,6 @@ cdef class Primitive(Node):
     cdef inline Material get_material(self):
         return self._material
 
-    # TODO - question name - could be clearer (hits?, primitive.hit_by(ray)?, primitiive.intersects(ray)?)
     cpdef Intersection hit(self, Ray ray):
         """
         Virtual method - to be implemented by derived classes.
