@@ -189,7 +189,6 @@ cdef class Primitive(Node):
 
         return self.bounding_box().enclosing_sphere()
 
-
     cpdef object notify_geometry_change(self):
         """
         Notifies the scene-graph root of a change to the primitive's geometry.
