@@ -95,45 +95,45 @@ cdef class Cylinder(Primitive):
         self._cached_face = NO_FACE
         self._cached_type = NO_TYPE
 
-    property radius:
+    @property
+    def radius(self):
         """
         Radius of the cylinder in x-y plane.
 
         :rtype: float
         """
+        return self._radius
 
-        def __get__(self):
-            return self._radius
+    @radius.setter
+    def radius(self, double value):
+        if value < 0.0:
+            raise ValueError("Cylinder radius cannot be less than zero.")
+        self._radius = value
 
-        def __set__(self, double value):
-            if value < 0.0:
-                raise ValueError("Cylinder radius cannot be less than zero.")
-            self._radius = value
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
-
-    property height:
+    @property
+    def height(self):
         """
         Extent of the cylinder along the z-axis.
         """
+        return self._height
 
-        def __get__(self):
-            return self._height
+    @height.setter
+    def height(self, double value):
+        if value < 0.0:
+            raise ValueError("Cylinder height cannot be less than zero.")
+        self._height = value
 
-        def __set__(self, double value):
-            if value < 0.0:
-                raise ValueError("Cylinder height cannot be less than zero.")
-            self._height = value
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
-
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):

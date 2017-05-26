@@ -90,45 +90,47 @@ cdef class Parabola(Primitive):
         self._cached_ray = None
         self._cached_type = NO_TYPE
 
-    property radius:
+    @property
+    def radius(self):
         """
         Radius of the parabola base in x-y plane.
 
         :rtype: float
         """
-        def __get__(self):
-            return self._radius
+        return self._radius
 
-        def __set__(self, double value):
-            if value <= 0.0:
-                raise ValueError("Parabola radius cannot be less than or equal to zero.")
-            self._radius = value
+    @radius.setter
+    def radius(self, double value):
+        if value <= 0.0:
+            raise ValueError("Parabola radius cannot be less than or equal to zero.")
+        self._radius = value
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
-    property height:
+    @property
+    def height(self):
         """
         The parabola's extent along the z-axis [0, height].
 
         :rtype: float
         """
-        def __get__(self):
-            return self._height
+        return self._height
 
-        def __set__(self, double value):
-            if value <= 0.0:
-                raise ValueError("Parabola height cannot be less than or equal to zero.")
-            self._height = value
+    @height.setter
+    def height(self, double value):
+        if value <= 0.0:
+            raise ValueError("Parabola height cannot be less than or equal to zero.")
+        self._height = value
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):

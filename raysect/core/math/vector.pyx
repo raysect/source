@@ -723,7 +723,8 @@ cdef class Vector2D:
 
             raise TypeError("Unsupported operand type. Expects a real number.")
 
-    property length:
+    @property
+    def length(self):
         """
         The vector's length.
 
@@ -731,14 +732,11 @@ cdef class Vector2D:
         a zero length vector. The direction of a zero length vector is
         undefined hence it can not be lengthened.
         """
+        return self.get_length()
 
-        def __get__(self):
-
-            return self.get_length()
-
-        def __set__(self, double v):
-
-            self.set_length(v)
+    @length.setter
+    def length(self, double v):
+        self.set_length(v)
 
     cpdef double dot(self, Vector2D v):
         """

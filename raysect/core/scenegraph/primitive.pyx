@@ -58,7 +58,8 @@ cdef class Primitive(Node):
 
         self.material = material
 
-    property material:
+    @property
+    def material(self):
         """
         The material class for this primitive.
 
@@ -66,22 +67,21 @@ cdef class Primitive(Node):
         :setter: Sets this primitive's material.
         :rtype: Material
         """
+        return self._material
 
-        def __get__(self):
-            return self._material
+    @material.setter
+    def material(self, Material value not None):
 
-        def __set__(self, Material value not None):
+        # remove any reverse reference from existing material
+        if self._material is not None:
+            self._material.primitives.remove(self)
 
-            # remove any reverse reference from existing material
-            if self._material is not None:
-                self._material.primitives.remove(self)
+        # assign new material and provide it with a reverse reference
+        self._material = value
+        self._material.primitives.append(self)
 
-            # assign new material and provide it with a reverse reference
-            self._material = value
-            self._material.primitives.append(self)
-
-            # inform the scene-graph root that a material change has occurred
-            self.notify_material_change()
+        # inform the scene-graph root that a material change has occurred
+        self.notify_material_change()
 
     cdef inline Material get_material(self):
         return self._material

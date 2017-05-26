@@ -164,15 +164,15 @@ cdef class RoughConductor(ContinuousBSDF):
         self.extinction = extinction
         self.roughness = roughness
 
-    property roughness:
+    @property
+    def roughness(self):
+        return self._roughness
 
-        def __get__(self):
-            return self._roughness
-
-        def __set__(self, value):
-            if value <= 0 or value > 1:
-                raise ValueError("Surface roughness must lie in the range (0, 1].")
-            self._roughness = value
+    @roughness.setter
+    def roughness(self, value):
+        if value <= 0 or value > 1:
+            raise ValueError("Surface roughness must lie in the range (0, 1].")
+        self._roughness = value
 
     @cython.cdivision(True)
     cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):

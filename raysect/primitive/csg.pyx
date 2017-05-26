@@ -86,49 +86,49 @@ cdef class CSGPrimitive(Primitive):
         self._cache_last_intersection = None
         self._cache_invalid = False
 
-    property primitive_a:
+    @property
+    def primitive_a(self):
         """
         Component primitive A of the compound CSG primitive.
 
         :rtype: Primitive
         """
+        return self._primitive_a.primitive
 
-        def __get__(self):
-            return self._primitive_a.primitive
+    @primitive_a.setter
+    def primitive_a(self, Primitive primitive not None):
 
-        def __set__(self, Primitive primitive not None):
+        # remove old primitive from scenegraph
+        self._primitive_a.primitive.parent = None
 
-            # remove old primitive from scenegraph
-            self._primitive_a.primitive.parent = None
+        # insert new primitive into scenegraph
+        self._primitive_a = BoundPrimitive(primitive)
+        primitive.parent = self._csgroot
 
-            # insert new primitive into scenegraph
-            self._primitive_a = BoundPrimitive(primitive)
-            primitive.parent = self._csgroot
+        # invalidate next_intersection cache
+        self._cache_invalid = True
 
-            # invalidate next_intersection cache
-            self._cache_invalid = True
-
-    property primitive_b:
+    @property
+    def primitive_b(self):
         """
         Component primitive B of the compound CSG primitive.
-
+    
         :rtype: Primitive
         """
+        return self._primitive_b.primitive
 
-        def __get__(self):
-            return self._primitive_b.primitive
+    @primitive_b.setter
+    def primitive_b(self, Primitive primitive not None):
 
-        def __set__(self, Primitive primitive not None):
+        # remove old primitive from scenegraph
+        self._primitive_b.primitive.parent = None
 
-            # remove old primitive from scenegraph
-            self._primitive_b.primitive.parent = None
+        # insert new primitive into scenegraph
+        self._primitive_b = BoundPrimitive(primitive)
+        primitive.parent = self._csgroot
 
-            # insert new primitive into scenegraph
-            self._primitive_b = BoundPrimitive(primitive)
-            primitive.parent = self._csgroot
-
-            # invalidate next_intersection cache
-            self._cache_invalid = True
+        # invalidate next_intersection cache
+        self._cache_invalid = True
 
     cpdef Intersection hit(self, Ray ray):
 

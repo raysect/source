@@ -44,7 +44,8 @@ cdef class Material(CoreMaterial):
         super().__init__()
         self._importance = 0.0
 
-    property importance:
+    @property
+    def importance(self):
         """
         Importance sampling weight for this material.
 
@@ -52,15 +53,14 @@ cdef class Material(CoreMaterial):
 
         :rtype: float
         """
+        return self._importance
 
-        def __get__(self):
-            return self._importance
-
-        def __set__(self, value):
-            if value < 0:
-                raise ValueError("Material sampling importance cannot be less than zero.")
-            self._importance = value
-            self.notify_material_change()
+    @importance.setter
+    def importance(self, value):
+        if value < 0:
+            raise ValueError("Material sampling importance cannot be less than zero.")
+        self._importance = value
+        self.notify_material_change()
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,

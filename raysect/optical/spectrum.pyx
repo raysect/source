@@ -104,16 +104,16 @@ cdef class Spectrum(SpectralFunction):
         # wavelengths is populated on demand
         self._wavelengths = None
 
-    property wavelengths:
+    @property
+    def wavelengths(self):
         """
         Wavelength array in nm
 
         :rtype: ndarray
         """
 
-        def __get__(self):
-            self._populate_wavelengths()
-            return self._wavelengths
+        self._populate_wavelengths()
+        return self._wavelengths
 
     def __len__(self):
         """

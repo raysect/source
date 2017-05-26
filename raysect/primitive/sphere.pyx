@@ -72,31 +72,31 @@ cdef class Sphere(Primitive):
         self._cached_direction = None
         self._cached_ray = None
 
-    property radius:
+    @property
+    def radius(self):
         """
         The radius of this sphere.
 
         :rtype: float
         """
+        return self._radius
 
-        def __get__(self):
-            return self._radius
+    @radius.setter
+    def radius(self, double radius):
 
-        def __set__(self, double radius):
+        # don't do anything if the value is unchanged
+        if radius == self._radius:
+            return
 
-            # don't do anything if the value is unchanged
-            if radius == self._radius:
-                return
+        if radius < 0.0:
+            raise ValueError("Sphere radius cannot be less than zero.")
+        self._radius = radius
 
-            if radius < 0.0:
-                raise ValueError("Sphere radius cannot be less than zero.")
-            self._radius = radius
+        # the next intersection cache has been invalidated by the radius change
+        self._further_intersection = False
 
-            # the next intersection cache has been invalidated by the radius change
-            self._further_intersection = False
-
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
     cpdef Intersection hit(self, Ray ray):
 

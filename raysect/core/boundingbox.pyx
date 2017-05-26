@@ -82,7 +82,6 @@ cdef class BoundingBox3D:
             self.upper = upper
 
     def __repr__(self):
-
         return "BoundingBox3D({}, {})".format(self.lower, self.upper)
 
     def __getstate__(self):
@@ -95,38 +94,41 @@ cdef class BoundingBox3D:
 
         self.lower, self.upper = state
 
-    property lower:
+    @property
+    def lower(self):
         """
         The point defining the lower corner of the bounding box.
 
         :rtype: Point3D
         """
-        def __get__(self):
-            return self.lower
+        return self.lower
 
-        def __set__(self, Point3D value not None):
-            self.lower = value
+    @lower.setter
+    def lower(self, Point3D value not None):
+        self.lower = value
 
-    property upper:
+    @property
+    def upper(self):
         """
         The point defining the upper corner of the bounding box.
 
         :rtype: Point3D
         """
-        def __get__(self):
-            return self.upper
 
-        def __set__(self, Point3D value not None):
-            self.upper = value
+        return self.upper
 
-    property centre:
+    @upper.setter
+    def upper(self, Point3D value not None):
+        self.upper = value
+
+    @property
+    def centre(self):
         """
         The point defining the geometric centre of the bounding box.
 
         :rtype: Point3D
         """
-        def __get__(self):
-            return self.get_centre()
+        return self.get_centre()
 
     cdef inline Point3D get_centre(self):
         """
@@ -457,29 +459,31 @@ cdef class BoundingBox2D:
 
         self.lower, self.upper = state
 
-    property lower:
+    @property
+    def lower(self):
         """
         The point defining the lower corner of the bounding box.
 
         :rtype: Point2D
         """
-        def __get__(self):
-            return self.lower
+        return self.lower
 
-        def __set__(self, Point2D value not None):
-            self.lower = value
+    @lower.setter
+    def lower(self, Point2D value not None):
+        self.lower = value
 
-    property upper:
+    @property
+    def upper(self):
         """
         The point defining the upper corner of the bounding box.
 
         :rtype: Point2D
         """
-        def __get__(self):
-            return self.upper
+        return self.upper
 
-        def __set__(self, Point2D value not None):
-            self.upper = value
+    @upper.setter
+    def upper(self, Point2D value not None):
+        self.upper = value
 
     cpdef bint contains(self, Point2D point):
         """

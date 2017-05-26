@@ -33,7 +33,7 @@ from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 cdef class _NodeBase:
 
-    cdef unicode _name
+    cdef str _name
     cdef object _parent
     cdef readonly object children
     cdef readonly _NodeBase root
