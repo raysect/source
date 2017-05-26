@@ -30,14 +30,13 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-from raysect.core cimport Material, new_intersection, BoundingBox3D, new_point3d, new_normal3d, Normal3D, AffineMatrix3D
+from raysect.core cimport Material, new_intersection, BoundingBox3D, BoundingSphere3D, new_point3d, new_normal3d, Normal3D, AffineMatrix3D
 from raysect.core.math.cython cimport solve_quadratic, swap_double
-from libc.math cimport sqrt
-cimport cython
 
 
-# bounding box is padded by a small amount to avoid numerical accuracy issues
+# bounding box and sphere are padded by small amounts to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9
+DEF SPHERE_PADDING = 1.000000001
 
 # additional ray distance to avoid re-hitting the same surface point
 DEF EPSILON = 1e-9
@@ -214,3 +213,7 @@ cdef class Sphere(Primitive):
         upper = new_point3d(origin.x + extent, origin.y + extent, origin.z + extent)
 
         return BoundingBox3D(lower, upper)
+
+    cpdef BoundingSphere3D bounding_sphere(self):
+        cdef Point3D centre = new_point3d(0, 0, 0).transform(self.to_root())
+        return BoundingSphere3D(centre, self._radius * SPHERE_PADDING)
