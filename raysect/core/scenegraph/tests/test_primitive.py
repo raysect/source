@@ -132,6 +132,14 @@ class TestPrimitive(unittest.TestCase):
         with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
             n.bounding_box()
 
+    def test_bounding_sphere(self):
+        """Method bounding_sphere() by default calls bounding_box() and should raise an exception if called."""
+
+        n = Primitive()
+
+        with self.assertRaises(NotImplementedError, msg="Method did not raise NotImplementedError exception when called."):
+            n.bounding_sphere()
+
     def test_material(self):
         """Setting and getting material."""
 
