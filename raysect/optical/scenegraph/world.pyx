@@ -55,7 +55,7 @@ cdef class ImportanceManager:
         self._total_importance = 0
 
         # A list of tuples defining the bounding spheres of all important primitives in the scene-graph.
-        # Each tuple has the structure (sphere_centre, sphere_radius, primitive_importance).
+        # Each tuple has the structure (bounding_sphere, primitive_importance).
         self._spheres = []
 
         if len(primitives) == 0:
