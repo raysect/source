@@ -76,6 +76,11 @@ camera.ray_importance_sampling = True
 camera.ray_important_path_weight = 0.5
 camera.observe()
 
+# save results
+light_sampling.save('mis_light_sampling.png')
+brdf_sampling.save('mis_brdf_sampling.png')
+mis_sampling.save('mis_combined_sampling.png')
+
 # final display
 light_sampling.display()
 brdf_sampling.display()
