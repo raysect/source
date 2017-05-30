@@ -16,7 +16,6 @@ Veach, E., 1997. Robust Monte Carlo methods for lighting simulation
 (Doctoral dissertation, Ph. D. thesis, Stanford University).
 """
 
-
 pixels = (128*4, 72*4)
 # pixels = (1280, 720)
 samples = 5
@@ -31,8 +30,9 @@ world = World()
 
 # emitting spheres
 Sphere(radius=0.5, parent=world, transform=translate(-2, 3, 2), material=UniformSurfaceEmitter(light_blue))
-Sphere(radius=0.2, parent=world, transform=translate(0, 3, 2), material=UniformSurfaceEmitter(green))
-Sphere(radius=0.05, parent=world, transform=translate(2, 3, 2), material=UniformSurfaceEmitter(orange))
+Sphere(radius=0.2, parent=world, transform=translate(-0.667, 3, 2), material=UniformSurfaceEmitter(green, scale=0.5**2/0.2**2))
+Sphere(radius=0.05, parent=world, transform=translate(0.667, 3, 2), material=UniformSurfaceEmitter(orange, scale=0.5**2/0.05**2))
+Sphere(radius=0.008, parent=world, transform=translate(2, 3, 2), material=UniformSurfaceEmitter(red, scale=0.5**2/0.008**2))
 
 # reflecting plates
 Box(lower=Point3D(-3, -0.1, -0.5), upper=Point3D(3, 0.1, 0.5), parent=world,
