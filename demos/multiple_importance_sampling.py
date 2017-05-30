@@ -16,9 +16,8 @@ Veach, E., 1997. Robust Monte Carlo methods for lighting simulation
 (Doctoral dissertation, Ph. D. thesis, Stanford University).
 """
 
-pixels = (128*4, 72*4)
-# pixels = (1280, 720)
-samples = 5
+pixels = (1280, 720)
+samples = 100
 
 # set-up scenegraph
 world = World()
