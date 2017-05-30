@@ -111,6 +111,9 @@ cdef class MeshPixel(Observer0D):
         self._solid_angle = 2 * M_PI
         self._calculate_areas()
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef object _calculate_areas(self):
         cdef:
             int32_t i, v1i, v2i, v3i
@@ -220,7 +223,7 @@ cdef class MeshPixel(Observer0D):
             surface_to_local = self._surface_to_local(normal)
 
             # rotate direction sample so z aligned with face normal
-            direction = directions[n].transform(surface_to_local)
+            direction = (<Vector3D> directions[n]).transform(surface_to_local)
 
             # cosine weighted distribution
             # projected area cosine is implicit in distribution
@@ -229,13 +232,14 @@ cdef class MeshPixel(Observer0D):
 
         return rays
 
+    @cython.initializedcheck(False)
     cdef inline int32_t _pick_triangle(self):
         """
         Pick a triangle such that sample points are uniform across the surface area.
         """
 
         # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
-        return find_index(self._cdf, uniform()) + 1
+        return find_index(self._cdf_mv, uniform()) + 1
 
     cdef inline AffineMatrix3D _surface_to_local(self, Vector3D normal):
         """
