@@ -1,9 +1,9 @@
 
-from raysect.optical import World, translate, rotate, Point3D
+from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D
-from raysect.optical.material import UniformSurfaceEmitter, Lambert
+from raysect.optical.material import UniformSurfaceEmitter
 from raysect.optical.library import *
-from raysect.primitive import Sphere, Box, Cylinder
+from raysect.primitive import Sphere, Box
 from matplotlib.pyplot import *
 
 """
@@ -22,10 +22,9 @@ samples = 100
 # set-up scenegraph
 world = World()
 
-# floor, wall and fill light
-# Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, transform=translate(0, -1, 0), material=Lambert(ConstantSF(1.0)))
-# Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, transform=translate(0, 0, 15) * rotate(0, 90, 0), material=Lambert(ConstantSF(1.0)))
-# Cylinder(3.0, 8.0, world, transform=translate(4, 10, -8) * rotate(90, 0, 0), material=UniformSurfaceEmitter(d65_white, 0.005))
+# background
+wall = Box(Point3D(-10, -8, 0), Point3D(10, 8, 0.1), world, transform=translate(0, -1, 10), material=UniformSurfaceEmitter(d65_white, 0.00005))
+wall.material.importance = 0
 
 # emitting spheres
 Sphere(radius=0.5, parent=world, transform=translate(-2, 3, 2), material=UniformSurfaceEmitter(light_blue))
@@ -80,5 +79,7 @@ camera.observe()
 # final display
 light_sampling.display()
 brdf_sampling.display()
-ioff()
 mis_sampling.display()
+
+ioff()
+show()
