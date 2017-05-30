@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -79,6 +79,7 @@ DEF NO_INTERSECTION = -1
 DEF RSM_VERSION_MAJOR = 1
 DEF RSM_VERSION_MINOR = 0
 
+# TODO: expose triangles, vertices, etc, as attributes on Mesh and modify MeshPixel to stop using internals of this class
 # TODO: fire exceptions if degenerate triangles are found and tolerant mode is not enabled (the face normal call will fail @ normalisation)
 # TODO: tidy up the internal storage of triangles - separate the triangle reference arrays for vertices, normals etc...
 # TODO: the following code really is a bit opaque, needs a general tidy up
@@ -113,18 +114,6 @@ cdef class MeshData(KDTree3DCore):
     :param double empty_bonus: The bonus applied to node splits that generate empty
       kd-Tree leaves (default=0.2).
     """
-
-    cdef:
-        float32_t[:, ::1] vertices
-        float32_t[:, ::1] vertex_normals
-        float32_t[:, ::1] face_normals
-        int32_t[:, ::1] triangles
-        public bint smoothing
-        public bint closed
-        int32_t _ix, _iy, _iz
-        float _sx, _sy, _sz
-        float _u, _v, _w, _t
-        int32_t _i
 
     def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True,
                  bint closed=True, bint tolerant=True, int max_depth=0, int min_items=1,
@@ -940,13 +929,6 @@ cdef class Mesh(Primitive):
     :param str name: A human friendly name to identity the mesh in the
       scene-graph (default="").
     """
-
-    cdef:
-        MeshData _data
-        bint _seek_next_intersection
-        Ray _next_world_ray
-        Ray _next_local_ray
-        double _ray_distance
 
     # TODO: calculate or measure triangle hit cost vs split traversal
     def __init__(self, object vertices=None, object triangles=None, object normals=None,

@@ -90,7 +90,8 @@
 
 from os import urandom as _urandom
 from raysect.core.math.vector cimport new_vector3d
-from raysect.core.math.point cimport new_point2d
+from raysect.core.math.point cimport new_point2d, Point3D, new_point3d
+from raysect.core.math.cython cimport barycentric_interpolation
 from libc.math cimport cos, sin, asin, log, fabs, sqrt, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
 cimport cython
@@ -318,6 +319,24 @@ cdef inline Point2D point_square():
     """
 
     return new_point2d(uniform(), uniform())
+
+
+cdef inline Point3D point_triangle(Point3D v1, Point3D v2, Point3D v3):
+
+    cdef double temp, alpha, beta, gamma
+
+    # generate barycentric coordinate
+    temp = sqrt(uniform())
+    alpha = 1 - temp
+    beta = uniform() * temp
+    gamma = 1 - alpha - beta
+
+    # interpolate vertex coordinates to generate sample point coordinate
+    return new_point3d(
+        barycentric_interpolation(alpha, beta, gamma, v1.x, v2.x, v3.x),
+        barycentric_interpolation(alpha, beta, gamma, v1.y, v2.y, v3.y),
+        barycentric_interpolation(alpha, beta, gamma, v1.z, v2.z, v3.z)
+    )
 
 
 cdef inline Vector3D vector_sphere():

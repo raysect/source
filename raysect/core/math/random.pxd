@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.point cimport Point2D
+from raysect.core.math.point cimport Point2D, Point3D
 
 cpdef seed(object d=*)
 
@@ -43,6 +43,8 @@ cpdef bint probability(double prob)
 cdef inline Point2D point_disk()
 
 cdef inline Point2D point_square()
+
+cdef inline Point3D point_triangle(Point3D v1, Point3D v2, Point3D v3)
 
 cdef inline Vector3D vector_sphere()
 
