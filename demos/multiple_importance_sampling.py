@@ -36,16 +36,16 @@ Sphere(radius=0.008, parent=world, transform=translate(2, 3, 2), material=Unifor
 
 # reflecting plates
 Box(lower=Point3D(-3, -0.1, -0.5), upper=Point3D(3, 0.1, 0.5), parent=world,
-    transform=translate(0, 1.5, 2)*rotate(0, 45.5, 0), material=RoughAluminium(0.001))
+    transform=translate(0, 1.5, 2)*rotate(0, 45.5, 0), material=RoughAluminium(0.0003))
 
 Box(lower=Point3D(-3, -0.1, -0.5), upper=Point3D(3, 0.1, 0.5), parent=world,
-    transform=translate(0, 0.7, 1)*rotate(0, 32, 0), material=RoughAluminium(0.01))
+    transform=translate(0, 0.7, 1)*rotate(0, 32, 0), material=RoughAluminium(0.005))
 
 Box(lower=Point3D(-3, -0.1, -0.5), upper=Point3D(3, 0.1, 0.5), parent=world,
-    transform=translate(0, 0.05, 0)*rotate(0, 24.5, 0), material=RoughAluminium(0.04))
+    transform=translate(0, 0.05, 0)*rotate(0, 24.5, 0), material=RoughAluminium(0.03))
 
 Box(lower=Point3D(-3, -0.1, -0.5), upper=Point3D(3, 0.1, 0.5), parent=world,
-    transform=translate(0, -0.5, -1)*rotate(0, 19, 0), material=RoughAluminium(0.12))
+    transform=translate(0, -0.5, -1)*rotate(0, 19, 0), material=RoughAluminium(0.1))
 
 ion()
 
