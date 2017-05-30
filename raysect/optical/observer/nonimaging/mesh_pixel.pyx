@@ -29,17 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport cos, M_PI as PI
+import numpy as np
+cimport numpy as np
+from libc.math cimport M_PI
 from numpy cimport float32_t, int32_t
 
 from raysect.core.math.random cimport uniform, point_triangle
 from raysect.core.math.sampler cimport HemisphereCosineSampler
+from raysect.core.math.cython cimport find_index
 from raysect.optical cimport Ray, Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
-cimport cython
-
 from raysect.primitive.mesh.mesh cimport Mesh
+cimport cython
 
 # convenience defines
 DEF X = 0
@@ -53,18 +55,21 @@ DEF V3 = 2
 
 cdef class MeshPixel(Observer0D):
     """
-    Uses a suplied mesh surface as a pixel.
+    Uses a supplied mesh surface as a pixel.
 
     Warning: you must be careful when using this camera to not double count radiance. For example,
     if you have a concave mesh its possible for two surfaces to see the same emission. In cases
     like this, the mesh should have an absorbing surface to prevent double counting.
 
-    A pixel observer that samples rays from a hemisphere and rectangular area.
+    This observer samples over the surface defined by a triangular mesh. At each point on the surface
+    the incoming radiance over a hemisphere is sampled.
 
-    Option to set mesh surface offset for cases were observer is used with a coincident absorbing mesh.
+    A mesh surface offset can be set to ensure sample don't collide with a coincident primitive. When set,
+    the surface offset specifies the distance along the surface normal that the ray launch origin is shifted.
 
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this pixel (default=SpectralPipeline0D()).
+    :param float surface_offset: The offset from the mesh surface (default=0).
     :param kwargs: **kwargs from Observer0D and _ObserverBase
     """
 
@@ -73,16 +78,14 @@ cdef class MeshPixel(Observer0D):
         float32_t[:, ::1] _vertices_mv
         float32_t[:, ::1] _face_normals_mv
         int32_t[:, ::1] _triangles_mv
-
+        np.ndarray _cdf
+        double [::1] _cdf_mv
         HemisphereCosineSampler _vector_sampler
 
     def __init__(self, Mesh mesh not None, surface_offset=None, pipelines=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
-
-        # takes in an instanced mesh object
-
 
         pipelines = pipelines or [SpectralPipeline0D()]
 
@@ -105,82 +108,103 @@ cdef class MeshPixel(Observer0D):
         self._triangles_mv = mesh._data.triangles
 
         self._vector_sampler = HemisphereCosineSampler()
-        self._solid_angle = 2 * PI
-        self._calc_total_area()
+        self._solid_angle = 2 * M_PI
+        self._calculate_areas()
 
-    cdef object _calc_total_area(self):
+    cdef object _calculate_areas(self):
         cdef:
             int32_t i, v1i, v2i, v3i
 
+        # initialise area attributes
         self._collection_area = 0.0
+        self._cdf = np.zeros(self._triangles_mv.shape[0])
+        self._cdf_mv = self._cdf
+        
+        # calculate cumulative and total area simultaneously 
         for i in range(self._triangles_mv.shape[0]):
+
+            # obtain vertex indices
             v1i = self._triangles_mv[i, V1]
             v2i = self._triangles_mv[i, V2]
             v3i = self._triangles_mv[i, V3]
-            self._collection_area += self._triangle_area(
+
+            # obtain area and accumulate
+            triangle_area = self._triangle_area(
                 new_point3d(self._vertices_mv[v1i, X], self._vertices_mv[v1i, Y], self._vertices_mv[v1i, Z]),
                 new_point3d(self._vertices_mv[v2i, X], self._vertices_mv[v2i, Y], self._vertices_mv[v2i, Z]),
                 new_point3d(self._vertices_mv[v3i, X], self._vertices_mv[v3i, Y], self._vertices_mv[v3i, Z])
             )
+            self._collection_area += triangle_area
+            self._cdf_mv[i] = self._collection_area
+        
+        # normalise cumulative area to make cdf
+        self._cdf /= self._collection_area
 
     cdef double _triangle_area(self, Point3D v1, Point3D v2, Point3D v3):
         cdef Vector3D e1 = v1.vector_to(v2)
         cdef Vector3D e2 = v1.vector_to(v3)
         return 0.5 * e1.cross(e2).get_length()
 
+    @property
+    def collection_area(self):
+        """
+        The pixel's collection area in m^2.
 
-    # @property
-    # def collection_area(self):
-    #     """
-    #     The pixel's collection area in m^2.
-    #
-    #     :rtype: float
-    #     """
-    #     return self._collection_area
-    #
-    # @property
-    # def solid_angle(self):
-    #     """
-    #     The pixel's solid angle in steradians str.
-    #
-    #     :rtype: float
-    #     """
-    #     return self._solid_angle
-    #
-    # @property
-    # def etendue(self):
-    #     """
-    #     The pixel's etendue measured in units of per area per solid angle (m^-2 str^-1).
-    #
-    #     :rtype: float
-    #     """
-    #     return self._pixel_etendue()
+        :rtype: float
+        """
+        return self._collection_area
+
+    @property
+    def solid_angle(self):
+        """
+        The pixel's solid angle in steradians str.
+
+        :rtype: float
+        """
+        return self._solid_angle
+
+    @property
+    def etendue(self):
+        """
+        The pixel's etendue measured in units of per area per solid angle (m^-2 str^-1).
+
+        :rtype: float
+        """
+        return self._pixel_etendue()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef list _generate_rays(self, Ray template, int ray_count):
 
         cdef:
             list rays, origins, directions
             Point3D origin
-            Vector3D direction
+            Vector3D normal, direction
             int n
             double weight
             AffineMatrix3D surface_to_local
             int32_t triangle, v1i, v2i, v3i
-
-        # TODO - add offset
 
         directions = self._vector_sampler(ray_count)
 
         rays = []
         for n in range(ray_count):
 
-            # pick triangle and unpack vertices
+            # pick triangle
             triangle = self._pick_triangle()
+
+            # unpack vertex indices
             v1i = self._triangles_mv[triangle, V1]
             v2i = self._triangles_mv[triangle, V2]
             v3i = self._triangles_mv[triangle, V3]
+
+            # obtain face normal
+            normal = new_vector3d(
+                self._face_normals_mv[triangle, X],
+                self._face_normals_mv[triangle, Y],
+                self._face_normals_mv[triangle, Z]
+            )
 
             # sample triangle surface to get origin point in local space
             origin = point_triangle(
@@ -189,14 +213,11 @@ cdef class MeshPixel(Observer0D):
                 new_point3d(self._vertices_mv[v3i, X], self._vertices_mv[v3i, Y], self._vertices_mv[v3i, Z])
             )
 
+            # shift origin point forward along normal by distance in surface_offset
+            origin = origin.add(normal.mul(self._surface_offset))
+
             # generate the transform from the triangle surface normal to local (z-axis aligned)
-            surface_to_local = self._surface_to_local(
-                new_vector3d(
-                    self._face_normals_mv[triangle, X],
-                    self._face_normals_mv[triangle, Y],
-                    self._face_normals_mv[triangle, Z]
-                )
-            )
+            surface_to_local = self._surface_to_local(normal)
 
             # rotate direction sample so z aligned with face normal
             direction = directions[n].transform(surface_to_local)
@@ -209,9 +230,12 @@ cdef class MeshPixel(Observer0D):
         return rays
 
     cdef inline int32_t _pick_triangle(self):
-        # TODO - replace this with area uniform sampling
-        return <int> uniform() * self._triangles_mv.shape[0]
+        """
+        Pick a triangle such that sample points are uniform across the surface area.
+        """
 
+        # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
+        return find_index(self._cdf, uniform()) + 1
 
     cdef inline AffineMatrix3D _surface_to_local(self, Vector3D normal):
         """
