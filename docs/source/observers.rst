@@ -23,6 +23,9 @@ rays become increasingly parallel to the surface.
 .. figure:: images/pixel_sampling.png
    :align: center
 
+   **Caption:** Example sampling geometry for a pixel in a camera. (Image credit: Carr, M.,
+   Meakins, A., et. al. (2017))
+
 =======================
 Monte-Carlo Integration
 =======================
