@@ -13,56 +13,50 @@ Random samplers
 
 .. autofunction:: raysect.core.math.random.probability
 
-.. autofunction:: raysect.core.math.random.point_disk
 
-.. autofunction:: raysect.core.math.random.point_square
+3D Surface Samplers
+-------------------
 
-.. autofunction:: raysect.core.math.random.vector_sphere
-
-.. autofunction:: raysect.core.math.random.vector_hemisphere_uniform
-
-.. autofunction:: raysect.core.math.random.vector_hemisphere_cosine
-
-.. autofunction:: raysect.core.math.random.vector_cone_uniform
-
-.. autofunction:: raysect.core.math.random.vector_cone_cosine
-
-
-Bulk sampling
--------------
-
-.. autoclass:: raysect.core.math.sampler.PointSampler
+.. autoclass:: raysect.core.math.sampler.surface3d.SurfaceSampler3D
    :members:
    :special-members: __call__
 
-.. autoclass:: raysect.core.math.sampler.DiskSampler
+.. autoclass:: raysect.core.math.sampler.surface3d.DiskSampler3D
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.core.math.sampler.RectangleSampler
+.. autoclass:: raysect.core.math.sampler.surface3d.RectangleSampler3D
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.core.math.sampler.VectorSampler
+.. autoclass:: raysect.core.math.sampler.surface3d.TriangleSampler3D
+   :members:
+   :show-inheritance:
+
+
+Solid Angle Samplers
+--------------------
+
+.. autoclass:: raysect.core.math.sampler.solidangle.SolidAngleSampler
    :members:
    :special-members: __call__
 
-.. autoclass:: raysect.core.math.sampler.SphereSampler
+.. autoclass:: raysect.core.math.sampler.solidangle.SphereSampler
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.core.math.sampler.HemisphereUniformSampler
+.. autoclass:: raysect.core.math.sampler.solidangle.HemisphereUniformSampler
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.core.math.sampler.HemisphereCosineSampler
+.. autoclass:: raysect.core.math.sampler.solidangle.HemisphereCosineSampler
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.core.math.sampler.ConeUniformSampler
+.. autoclass:: raysect.core.math.sampler.solidangle.ConeUniformSampler
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.core.math.sampler.ConeCosineSampler
+.. .. autoclass:: raysect.core.math.sampler.ConeCosineSampler
    :members:
    :show-inheritance:

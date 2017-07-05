@@ -47,6 +47,7 @@ For more detailed installation instructions see :any:`installation`.
    quickstart_guide
    primitives
    materials
+   observers
    conventions
    references
    license

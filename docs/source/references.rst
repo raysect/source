@@ -23,8 +23,17 @@ Papers & Reports
 * Woop, S., Benthin, C., & Wald, I. (2013). *Watertight ray/triangle intersection.* Journal of Computer Graphics Techniques (JCGT), 2(1), 65-82.
 * Shoemake, K. (1985). *Animating rotation with quaternion curves*. In ACM SIGGRAPH computer graphics (Vol. 19, No. 3, pp. 245-254). ACM.
 
+
+Conference Proceedings
+----------------------
+
+* Carr, M., Meakins, A., et. al. (2017). *Towards integrated data analysis of divertor diagnostics with ray-tracing.*
+  44th EPS Conference on Plasma Physics, 26 - 30 June 2017, Belfast, Northern Ireland (UK).
+
+
 Websites
 --------
 
+* https://refractiveindex.info
 * https://www.scratchapixel.com/index.php
 
