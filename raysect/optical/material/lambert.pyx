@@ -29,14 +29,25 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.random cimport vector_hemisphere_cosine
+from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF
 from raysect.optical.material cimport ContinuousBSDF
 from numpy cimport ndarray
-from libc.math cimport M_1_PI
+
+
+cdef HemisphereCosineSampler hemisphere_sampler = HemisphereCosineSampler()
 
 
 cdef class Lambert(ContinuousBSDF):
+    """
+    An ideal Lambertian surface material.
+
+    A Lambertian is a perfectly diffuse surface that scatters light equally in
+    all directions. It is a good approximation to many real world surfaces.
+
+    :param SpectralFunction reflectivity: Reflectance function which defines the
+      fraction of light scattered at each wavelength.
+    """
 
     cdef SpectralFunction reflectivity
 
@@ -48,20 +59,10 @@ cdef class Lambert(ContinuousBSDF):
         self.reflectivity = reflectivity
 
     cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
-
-        cdef double cos_theta
-
-        # normal is aligned with +ve Z so dot products with the normal are simply the z component of the other vector
-        cos_theta = s_outgoing.z
-
-        # clamp probability to zero on far side of surface
-        if cos_theta < 0:
-            return 0
-
-        return cos_theta * M_1_PI
+        return hemisphere_sampler.pdf(s_outgoing)
 
     cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):
-        return vector_hemisphere_cosine()
+        return hemisphere_sampler.sample()
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
@@ -71,11 +72,13 @@ cdef class Lambert(ContinuousBSDF):
             Spectrum spectrum
             Ray reflected
             ndarray reflectivity
+            double pdf
 
         # outgoing ray is sampling incident light so s_outgoing = incident
 
         # lambert material does not transmit
-        if s_outgoing.z < 0:
+        pdf = hemisphere_sampler.pdf(s_outgoing)
+        if pdf == 0.0:
             return ray.new_spectrum()
 
         # generate and trace ray
@@ -87,7 +90,7 @@ cdef class Lambert(ContinuousBSDF):
 
         # combine and normalise
         spectrum.mul_array(reflectivity)
-        spectrum.mul_scalar(s_outgoing.z * M_1_PI)
+        spectrum.mul_scalar(pdf)
         return spectrum
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,

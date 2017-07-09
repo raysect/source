@@ -30,24 +30,30 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
 
-from raysect.core cimport Point3D, Vector3D, new_vector3d, translate, RectangleSampler, PointSampler, AffineMatrix3D
+from raysect.core cimport Point3D, new_vector3d, translate, RectangleSampler3D, AffineMatrix3D
 from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer2D
 
 
 cdef class OrthographicCamera(Observer2D):
     """
-    A camera observing an orthogonal (orthographic) projection of the scene, avoiding perspective effects.
+    A camera observing an orthogonal (orthographic) projection of the scene,
+    avoiding perspective effects.
 
-    Arguments and attributes are inherited from the base Imaging sensor class.
-
-    :param double width: width of the orthographic area to observe in meters, the height is deduced from the 'pixels'
-       attribute.
+    :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
+    :param double width: width of the orthographic area to observe in meters,
+      the height is deduced from the 'pixels' attribute.
+    :param float etendue: The etendue of each pixel (default=1.0)
+    :param FrameSampler2D frame_sampler: The frame sampling strategy
+      (default=FullFrameSampler2D()).
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      at each pixel by the camera (default=RGBPipeline2D()).
+    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
     cdef:
         double image_delta, image_start_x, image_start_y, _width, _etendue
-        PointSampler _point_sampler
+        RectangleSampler3D _point_sampler
 
     def __init__(self, pixels, width, etendue=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
@@ -67,6 +73,12 @@ cdef class OrthographicCamera(Observer2D):
 
     @property
     def width(self):
+        """
+        The width of the orthographic area to observe in meters, the height is
+        deduced from the 'pixels' attribute.
+
+        :rtype: float
+        """
         return self._width
 
     @width.setter
@@ -78,6 +90,13 @@ cdef class OrthographicCamera(Observer2D):
 
     @property
     def etendue(self):
+        """
+        The etendue applied to each pixel.
+
+        If etendue=1.0 all spectral units are in radiance.
+
+        :rtype: float
+        """
         return self._etendue
 
     @etendue.setter
@@ -91,7 +110,7 @@ cdef class OrthographicCamera(Observer2D):
         self.image_delta = self._width / self._pixels[0]
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
         self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
-        self._point_sampler = RectangleSampler(self.image_delta, self.image_delta)
+        self._point_sampler = RectangleSampler3D(self.image_delta, self.image_delta)
 
     cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
 
@@ -108,7 +127,7 @@ cdef class OrthographicCamera(Observer2D):
         to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
-        points = self._point_sampler(self._pixel_samples)
+        points = self._point_sampler.samples(self._pixel_samples)
 
         # assemble rays
         rays = []
@@ -118,7 +137,7 @@ cdef class OrthographicCamera(Observer2D):
             origin = origin.transform(to_local)
             ray = template.copy(origin, new_vector3d(0, 0, 1))
 
-            # rays fired along normal hence projected area weight is 1.0
+            # non-physical camera samples radiance directly, rays fired along normal so no projection
             rays.append((ray, 1.0))
 
         return rays

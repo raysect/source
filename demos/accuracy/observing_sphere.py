@@ -54,7 +54,6 @@ class ObservingSphere(Observer0D):
             # USE WITH HEMISPHERECOSINESAMPLER
             # cosine weighted distribution, projected area weight is
             # implicit in distribution, so set weight appropriately
-            # todo: check derivation, this should be a factor of 2 out cf uniform sampling due to pi vs 2*pi in denominator of pdf
             rays.append((template.copy(origin , direction), 0.5))
 
         return rays

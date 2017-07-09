@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.random cimport vector_hemisphere_cosine
+from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.optical cimport Point3D, Vector3D, Normal3D, new_normal3d, AffineMatrix3D, new_affinematrix3d, Primitive, World, Ray, Spectrum
 from raysect.optical.material cimport Material
 
@@ -37,6 +37,9 @@ from raysect.optical.material cimport Material
 # it is highly unlikely (REALLY!) this number will ever be reached, it is just there for my paranoia
 # in the worst case 50% of the random hemisphere will always generate a valid solution... so P(fail) < 0.5^50!
 DEF SAMPLE_ATTEMPTS = 50
+
+
+cdef HemisphereCosineSampler hemisphere_sampler = HemisphereCosineSampler()
 
 
 cdef class Roughen(Material):
@@ -99,7 +102,7 @@ cdef class Roughen(Material):
             # Generate a new normal about the original normal by lerping between a random vector and the original normal.
             # The lerp strength is determined by the roughness. Calculation performed in surface space, so the original
             # normal is aligned with the z-axis.
-            s_random = vector_hemisphere_cosine()
+            s_random = hemisphere_sampler.sample()
             s_normal.x = self.roughness * s_random.x
             s_normal.y = self.roughness * s_random.y
             s_normal.z = self.roughness * s_random.z + (1 - self.roughness)

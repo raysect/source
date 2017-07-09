@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core cimport new_point3d, Point3D, new_normal3d, AffineMatrix3D, Material, new_intersection, BoundingBox3D
+from raysect.core.math.cython cimport solve_quadratic, swap_double, swap_int
 from libc.math cimport sqrt
 cimport cython
 
@@ -57,22 +58,19 @@ cdef class Cone(Primitive):
     and extends over the z range [0, height]. The tip of the cone lies at
     z = height. The base of the cone sits on the x-y plane and is capped
     with a disk, forming a closed surface.
+
+    :param float radius: Radius of the cone in meters in x-y plane (default = 0.5).
+    :param float height: Height of the cone in meters (default = 1.0).
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate
+      system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the cone's material (default = None).
+    :param str name: A string specifying a user-friendly name for the cone (default = "").
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
                  AffineMatrix3D transform=None, Material material=None,
                  str name=None):
-        """
-        Radius is radius of the cone in x-y plane.
-        Height of cone is the extent along z-axis [0, height].
-
-        :param radius: Radius of the cone in meters (default = 0.5).
-        :param height: Height of the cone in meters (default = 1.0).
-        :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
-        :param material: A Material object defining the cone's material (default = None).
-        :param name: A string specifying a user-friendly name for the cone (default = "").
-        """
 
         super().__init__(parent, transform, material, name)
 
@@ -92,35 +90,47 @@ cdef class Cone(Primitive):
         self._cached_ray = None
         self._cached_type = NO_TYPE
 
-    property radius:
-        def __get__(self):
-            return self._radius
+    @property
+    def radius(self):
+        """
+        The radius of the cone base in the x-y plane
 
-        def __set__(self, double value):
-            if value <= 0.0:
-                raise ValueError("Cone radius cannot be less than or equal to zero.")
-            self._radius = value
+        :rtype: float
+        """
+        return self._radius
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+    @radius.setter
+    def radius(self, double value):
+        if value <= 0.0:
+            raise ValueError("Cone radius cannot be less than or equal to zero.")
+        self._radius = value
 
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-    property height:
-        def __get__(self):
-            return self._height
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
-        def __set__(self, double value):
-            if value <= 0.0:
-                raise ValueError("Cone height cannot be less than or equal to zero.")
-            self._height = value
+    @property
+    def height(self):
+        """
+        The extend of the cone along the z-axis
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+        :rtype: float
+        """
+        return self._height
 
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+    @height.setter
+    def height(self, double value):
+        if value <= 0.0:
+            raise ValueError("Cone height cannot be less than or equal to zero.")
+        self._height = value
+
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
+
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):
@@ -150,26 +160,26 @@ cdef class Cone(Primitive):
         k = radius / height
         k = k * k
         a = direction.x * direction.x + direction.y * direction.y - k * direction.z * direction.z
-        b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z - height) )
+        b = 2 * (direction.x * origin.x + direction.y * origin.y - k * direction.z * (origin.z - height))
         c = origin.x * origin.x + origin.y * origin.y - k * (origin.z - height) * (origin.z - height)
 
-        # Solve quadratic equation
-        d = b * b - 4 * a * c
-
-        if d < 0:
-
-            # ray misses cone if there are no real roots of the quadratic
+        # calculate intersection distances by solving the quadratic equation
+        # ray misses if there are no real roots of the quadratic
+        if not solve_quadratic(a, b, c, &t0, &t1):
             return None
 
-        elif d > 0:
+        if t0 == t1:
+
+            # ray intersects the tip of the cone
+            t0 = -b / (2.0 * a)
+            t0_type = CONE
+
+            t1 = -origin.z / direction.z
+            t1_type = BASE
+
+        else:
 
             # ray hits full cone quadratic twice
-
-            # calculate intersections
-            d = sqrt(d)
-            temp_d = 1 / (2.0 * a)
-            t0 = -(d + b) * temp_d
-            t1 = (d - b) * temp_d
 
             # calculate z height of intersection points
             t0_z = origin.z + t0 * direction.z
@@ -205,27 +215,10 @@ cdef class Cone(Primitive):
                 t0_type = CONE
                 t1_type = CONE
 
-        else:
-
-            # ray intersects the tip of the cone
-            t0 = -b / (2.0 * a)
-            t0_type = CONE
-
-            t1 = -origin.z / direction.z
-            t1_type = BASE
-
         # ensure t0 is always smaller (closer) than t1
         if t0 > t1:
-
-            # swap ray distance
-            temp_d = t0
-            t0 = t1
-            t1 = temp_d
-
-            # swap intersection type
-            temp_i = t0_type
-            t0_type = t1_type
-            t1_type = temp_i
+            swap_double(&t0, &t1)
+            swap_int(&t0_type, &t1_type)
 
         # are there any intersections inside the ray search range?
         if t0 > ray.max_distance or t1 < 0.0:
@@ -248,7 +241,6 @@ cdef class Cone(Primitive):
         elif t1 <= ray.max_distance:
             closest_intersection = t1
             closest_type = t1_type
-
         else:
             return None
 
@@ -261,7 +253,6 @@ cdef class Cone(Primitive):
 
         # this is the 2nd and therefore last intersection
         self._further_intersection = False
-
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_type)
 
     @cython.cdivision(True)

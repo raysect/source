@@ -29,11 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport cos, M_PI as pi
+from libc.math cimport cos, M_PI as PI
 
-from raysect.core.math.sampler cimport DiskSampler, ConeSampler
-from raysect.optical cimport Ray, new_point3d, new_vector3d
+from raysect.core.math.sampler cimport DiskSampler3D, ConeUniformSampler
+from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer0D
+from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
 cimport cython
 
 
@@ -42,23 +43,30 @@ cimport cython
 cdef class FibreOptic(Observer0D):
     """
     An optical fibre observer that samples rays from an acceptance cone and circular area at the fibre tip.
-    Inherits arguments and attributes from the base NonImaging sensor class. Rays are sampled over a circular area at
-    the fibre tip and a conical solid angle defined by the acceptance_angle parameter.
+
+    Rays are sampled over a circular area at the fibre tip and a conical solid angle
+    defined by the acceptance_angle parameter.
+
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      by this optical fibre (default=SpectralPipeline0D()).
     :param float acceptance_angle: The angle in degrees between the z axis and the cone surface which defines the fibres
-       soild angle sampling area.
+       solid angle sampling area.
     :param float radius: The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
        which will be sampled over.
+    :param kwargs: **kwargs from Observer0D and _ObserverBase
     """
 
     cdef:
         double _acceptance_angle, _radius, _solid_angle, _collection_area
-        DiskSampler _point_sampler
-        ConeSampler _vector_sampler
+        DiskSampler3D _point_sampler
+        ConeUniformSampler _vector_sampler
 
-    def __init__(self, pipelines, acceptance_angle=None, radius=None, parent=None, transform=None, name=None,
+    def __init__(self, pipelines=None, acceptance_angle=None, radius=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+
+        pipelines = pipelines or [SpectralPipeline0D()]
 
         super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
                          pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
@@ -67,7 +75,7 @@ cdef class FibreOptic(Observer0D):
                          ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
                          ray_important_path_weight=ray_important_path_weight)
 
-        acceptance_angle = acceptance_angle or 5
+        acceptance_angle = acceptance_angle or 5.0
         radius = radius or 0.001
 
         self.acceptance_angle = acceptance_angle
@@ -75,18 +83,30 @@ cdef class FibreOptic(Observer0D):
 
     @property
     def acceptance_angle(self):
+        """
+        The angle in degrees between the z axis and the cone surface which defines the fibres
+        solid angle sampling area.
+
+        :rtype: float
+        """
         return self._acceptance_angle
 
     @acceptance_angle.setter
     def acceptance_angle(self, value):
-        if not 0 <= value <= 90:
+        if not 0 < value <= 90:
             raise RuntimeError("Acceptance angle must be between 0 and 90 degrees.")
         self._acceptance_angle = value
-        self._vector_sampler = ConeSampler(value)
-        self._solid_angle = 2 * pi * (1 - cos(value/180*pi))
+        self._vector_sampler = ConeUniformSampler(value)
+        self._solid_angle = 2 * PI * (1 - cos(value / 180 * PI))
 
     @property
     def radius(self):
+        """
+        The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
+        which will be sampled over.
+
+        :rtype: float
+        """
         return self._radius
 
     @radius.setter
@@ -94,8 +114,8 @@ cdef class FibreOptic(Observer0D):
         if value <= 0:
             raise RuntimeError("Fibre radius must be greater than 0.")
         self._radius = value
-        self._point_sampler = DiskSampler(value)
-        self._collection_area = pi * value * value
+        self._point_sampler = DiskSampler3D(value)
+        self._collection_area = PI * value * value
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -104,20 +124,45 @@ cdef class FibreOptic(Observer0D):
         cdef:
             list rays, origins, directions
             int n
-            double weight
 
-        origins = self._point_sampler(ray_count)
-        directions = self._vector_sampler(ray_count)
+        origins = self._point_sampler.samples(ray_count)
+        directions = self._vector_sampler.samples(ray_count)
 
         rays = []
         for n in range(ray_count):
 
             # projected area weight is normal.incident which simplifies
             # to incident.z here as the normal is (0, 0 ,1)
-            weight = directions[n].z
-            rays.append((template.copy(origins[n], directions[n]), weight))
+            rays.append((template.copy(origins[n], directions[n]), directions[n].z))
 
         return rays
+
+    @property
+    def collection_area(self):
+        """
+        The fibre's collection area in m^2.
+
+        :rtype: float
+        """
+        return self._collection_area
+
+    @property
+    def solid_angle(self):
+        """
+        The fibre's solid angle in steradians str.
+
+        :rtype: float
+        """
+        return self._solid_angle
+
+    @property
+    def etendue(self):
+        """
+        The fibre's etendue measured in units of per area per solid angle (m^-2 str^-1).
+
+        :rtype: float
+        """
+        return self._pixel_etendue()
 
     cpdef double _pixel_etendue(self):
         return self._solid_angle * self._collection_area

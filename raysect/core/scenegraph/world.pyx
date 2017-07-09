@@ -57,22 +57,23 @@ cdef class World(_NodeBase):
         self._rebuild_accelerator = True
         self._accelerator = KDTree()
 
-    property accelerator:
+    @property
+    def accelerator(self):
         """
         The acceleration structure used for this world's scene-graph.
 
         :getter: Returns this world node's acceleration structure.
         :setter: Sets this world node's acceleration structure.
         """
+        return self._accelerator
 
-        def __get__(self):
-            return self._accelerator
+    @accelerator.setter
+    def accelerator(self, Accelerator accelerator not None):
+        self._accelerator = accelerator
+        self._rebuild_accelerator = True
 
-        def __set__(self, Accelerator accelerator not None):
-            self._accelerator = accelerator
-            self._rebuild_accelerator = True
-
-    property name:
+    @property
+    def name(self):
         """
         The name for this world node.
 
@@ -80,34 +81,31 @@ cdef class World(_NodeBase):
         :setter: Sets this world node's name.
         :rtype: str
         """
+        return self._name
 
-        def __get__(self):
-            return self._name
+    @name.setter
+    def name(self, str value not None):
+        self._name = value
 
-        def __set__(self, unicode value not None):
-            self._name = value
-
-    property primitives:
+    @property
+    def primitives(self):
         """
         The list of primitives maintained in this scene-graph.
 
         :getter: Returns this world node's primitive list.
         :rtype: list
         """
+        return self._primitives
 
-        def __get__(self):
-            return self._primitives
-
-    property observers:
+    @property
+    def observers(self):
         """
         The list of observers in this scene-graph.
 
         :getter: Returns this world node's observers.
         :rtype: list
         """
-
-        def __get__(self):
-            return self._observers
+        return self._observers
 
     cpdef AffineMatrix3D to(self, _NodeBase node):
         """

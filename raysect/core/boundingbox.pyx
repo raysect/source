@@ -64,6 +64,9 @@ cdef class BoundingBox3D:
 
     For optimal speed the bounding box is aligned with the world space axes. As
     rays are propagated in world space, co-ordinate transforms can be avoided.
+
+    :param Point3D lower: (optional) starting point for lower box corner
+    :param Point3D upper: (optional) starting point for upper box corner
     """
 
     def __init__(self, Point3D lower=None, Point3D upper=None):
@@ -79,7 +82,6 @@ cdef class BoundingBox3D:
             self.upper = upper
 
     def __repr__(self):
-
         return "BoundingBox3D({}, {})".format(self.lower, self.upper)
 
     def __getstate__(self):
@@ -92,38 +94,41 @@ cdef class BoundingBox3D:
 
         self.lower, self.upper = state
 
-    property lower:
+    @property
+    def lower(self):
         """
         The point defining the lower corner of the bounding box.
 
         :rtype: Point3D
         """
-        def __get__(self):
-            return self.lower
+        return self.lower
 
-        def __set__(self, Point3D value not None):
-            self.lower = value
+    @lower.setter
+    def lower(self, Point3D value not None):
+        self.lower = value
 
-    property upper:
+    @property
+    def upper(self):
         """
         The point defining the upper corner of the bounding box.
 
         :rtype: Point3D
         """
-        def __get__(self):
-            return self.upper
 
-        def __set__(self, Point3D value not None):
-            self.upper = value
+        return self.upper
 
-    property centre:
+    @upper.setter
+    def upper(self, Point3D value not None):
+        self.upper = value
+
+    @property
+    def centre(self):
         """
         The point defining the geometric centre of the bounding box.
 
         :rtype: Point3D
         """
-        def __get__(self):
-            return self.get_centre()
+        return self.get_centre()
 
     cdef inline Point3D get_centre(self):
         """
@@ -191,7 +196,7 @@ cdef class BoundingBox3D:
         return True
 
     @cython.cdivision(True)
-    cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection):
+    cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) nogil:
 
         cdef double reciprocal, tmin, tmax
 
@@ -405,23 +410,28 @@ cdef class BoundingBox3D:
         self.upper.y = self.upper.y + padding
         self.upper.z = self.upper.z + padding
 
-    cpdef double enclosing_sphere(self):
+    cpdef BoundingSphere3D enclosing_sphere(self):
         """
-        Returns the radius of a sphere guaranteed to enclose the bounding box.
+        Returns a BoundingSphere3D guaranteed to enclose the bounding box.
 
         The sphere is centred at the box centre. A small degree of padding is
         added to avoid numerical accuracy issues.
 
-        :return: Radius of sphere.
-        :rtype: float
+        :return: A BoundingSphere3D object.
+        :rtype: BoundingSphere3D
         """
 
-        return self.lower.distance_to(self.get_centre()) * SPHERE_PADDING
+        cdef Point3D centre = self.get_centre()
+        cdef double radius = self.lower.distance_to(centre) * SPHERE_PADDING
+        return BoundingSphere3D(centre, radius)
 
 
 cdef class BoundingBox2D:
     """
     Axis-aligned 2D bounding box.
+
+    :param Point2D lower: (optional) starting point for lower box corner
+    :param Point2D upper: (optional) starting point for upper box corner
     """
     def __init__(self, Point2D lower=None, Point2D upper=None):
 
@@ -449,29 +459,31 @@ cdef class BoundingBox2D:
 
         self.lower, self.upper = state
 
-    property lower:
+    @property
+    def lower(self):
         """
         The point defining the lower corner of the bounding box.
 
         :rtype: Point2D
         """
-        def __get__(self):
-            return self.lower
+        return self.lower
 
-        def __set__(self, Point2D value not None):
-            self.lower = value
+    @lower.setter
+    def lower(self, Point2D value not None):
+        self.lower = value
 
-    property upper:
+    @property
+    def upper(self):
         """
         The point defining the upper corner of the bounding box.
 
         :rtype: Point2D
         """
-        def __get__(self):
-            return self.upper
+        return self.upper
 
-        def __set__(self, Point2D value not None):
-            self.upper = value
+    @upper.setter
+    def upper(self, Point2D value not None):
+        self.upper = value
 
     cpdef bint contains(self, Point2D point):
         """

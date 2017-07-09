@@ -47,6 +47,20 @@ _DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
 
 
 cdef class PowerPipeline0D(Pipeline0D):
+    """
+    A power pipeline for 0D observers.
+
+    The raw spectrum collected by the observer is multiplied by a spectra filter
+    and integrated to give to total power collected.
+
+    The measured value and error are accessed at self.value.mean and self.value.error
+    respectively.
+
+    :param SpectralFunction filter: A filter function to be multiplied with the
+     measured spectrum.
+    :param bool accumulate:
+    :param str name: User friendly name for this pipeline.
+    """
 
     cdef:
         str name
@@ -55,6 +69,7 @@ cdef class PowerPipeline0D(Pipeline0D):
         readonly StatsBin value
         StatsArray1D _working_buffer
         list _resampled_filter
+        bint _quiet
 
     def __init__(self, SpectralFunction filter=None, bint accumulate=True, str name=None):
 
@@ -66,7 +81,9 @@ cdef class PowerPipeline0D(Pipeline0D):
         self._working_buffer = None
         self._resampled_filter = None
 
-    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+        self._quiet = False
+
+    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         if not self.accumulate:
             self.value.clear()
@@ -76,6 +93,8 @@ cdef class PowerPipeline0D(Pipeline0D):
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+
+        self._quiet = quiet
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -116,10 +135,39 @@ cdef class PowerPipeline0D(Pipeline0D):
 
         self.value.combine_samples(mean, variance, samples)
 
-        print("{} - incident power: {:.4G} +/- {:.4G} W".format(self.name, self.value.mean, self.value.error()))
+        if not self._quiet:
+            print("{} - incident power: {:.4G} +/- {:.4G} W".format(self.name, self.value.mean, self.value.error()))
 
 
 cdef class PowerPipeline2D(Pipeline2D):
+    """
+    A power pipeline for 2D observers.
+
+    The raw spectrum collected at each pixel by the observer is multiplied by
+    a spectral filter and integrated to give to total power collected at that
+    pixel.
+
+    The measured value and error for each pixel are accessed at self.frame.mean and self.frame.error
+    respectively.
+
+    :param SpectralFunction filter: A filter function to be multiplied with the
+     measured spectrum.
+    :param bool display_progress: Toggles the display of live render progress
+      (default=True).
+    :param float display_update_time: Time in seconds between preview display
+      updates (default=15 seconds).
+    :param bool accumulate: Whether to accumulate samples with subsequent calls
+      to observe() (default=True).
+    :param bool display_auto_exposure: Toggles the use of automatic exposure of
+      final images (default=True).
+    :param float display_black_point:
+    :param float display_white_point:
+    :param float display_unsaturated_fraction: Fraction of pixels that must not
+      be saturated. Display values will be scaled to satisfy this value
+      (default=1.0).
+    :param float display_gamma:
+    :param str name: User friendly name for this pipeline.
+    """
 
     def __init__(self, SpectralFunction filter=None, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
@@ -163,6 +211,8 @@ cdef class PowerPipeline2D(Pipeline2D):
         self._pixels = None
         self._samples = 0
 
+        self._quiet = False
+
     @property
     def display_white_point(self):
         return self._display_white_point
@@ -201,6 +251,11 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @property
     def display_auto_exposure(self):
+        """
+        Toggles the use of automatic exposure on final image.
+
+        :rtype: bool
+        """
         return self._display_auto_exposure
 
     @display_auto_exposure.setter
@@ -210,6 +265,12 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @property
     def display_unsaturated_fraction(self):
+        """
+        Fraction of pixels that must not be saturated. Display values will
+        be scaled to satisfy this value.
+
+        :rtype: float
+        """
         return self._display_unsaturated_fraction
 
     @display_unsaturated_fraction.setter
@@ -221,6 +282,11 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @property
     def display_update_time(self):
+        """
+        Time in seconds between preview display updates.
+
+        :rtype: float
+        """
         return self._display_update_time
 
     @display_update_time.setter
@@ -229,7 +295,7 @@ cdef class PowerPipeline2D(Pipeline2D):
             raise ValueError('Display update time must be greater than zero seconds.')
         self._display_update_time = value
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -245,6 +311,8 @@ cdef class PowerPipeline2D(Pipeline2D):
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+
+        self._quiet = quiet
 
         if self.display_progress:
             self._start_display()
@@ -327,7 +395,9 @@ cdef class PowerPipeline2D(Pipeline2D):
         # update live render display
         if (time() - self._display_timer) > self.display_update_time:
 
-            print("{} - updating display...".format(self.name))
+            if not self._quiet:
+                print("{} - updating display...".format(self.name))
+
             self._render_display(self._display_frame, 'rendering...')
 
             # workaround for interactivity for QT backend
@@ -481,6 +551,11 @@ cdef class PowerPipeline2D(Pipeline2D):
 
 
 cdef class PowerPixelProcessor(PixelProcessor):
+    """
+    PixelProcessor that converts each pixel's spectrum into total power by
+    integrating over the spectrum and multiplying the resulting radiance
+    value by the pixel's etendue.
+    """
 
     def __init__(self, double[::1] filter):
         self.bin = StatsBin()
@@ -506,6 +581,23 @@ cdef class PowerPixelProcessor(PixelProcessor):
 
 
 cdef class PowerAdaptiveSampler2D(FrameSampler2D):
+    """
+    FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
+    level in each pixel's power value.
+
+    Pixels that have high noise levels will receive extra samples until the desired
+    noise threshold is achieve across the whole image.
+
+    :param PowerPipeline2D pipeline: The specific power pipeline to use for feedback control.
+    :param float fraction: The fraction of frame pixels to receive extra sampling
+      (default=0.2).
+    :param float ratio:
+    :param int min_samples: Minimum number of pixel samples across the image before
+      turning on adaptive sampling (default=1000).
+    :param double cutoff: Normalised noise threshold at which extra sampling will be aborted and
+      rendering will complete (default=0.0). The standard error is normalised to 1 so that a
+      cutoff of 0.01 corresponds to 1% standard error.
+    """
 
     def __init__(self, PowerPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
 

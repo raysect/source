@@ -51,3 +51,9 @@ Examples Gallery
      - .. image:: surface_roughness.jpg
           :height: 150px
           :width: 150px
+   * - :ref:`Energy conservation <demo_energy_conservation>`
+     - Checking all emitted light is collected correctly on a 3D enclosing surface.
+     -
+
+
+

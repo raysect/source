@@ -60,26 +60,23 @@ cdef class Box(Primitive):
 
     The box is defined by lower and upper points in the local co-ordinate
     system.
+
+    :param Point3D lower: Lower point of the box (default = Point3D(-0.5, -0.5, -0.5)).
+    :param Point3D upper: Upper point of the box (default = Point3D(0.5, 0.5, 0.5)).
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the box's material (default = None).
+    :param str name: A string specifying a user-friendly name for the box (default = "").
     """
 
     def __init__(self, Point3D lower=None, Point3D upper=None, object parent = None, AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(), str name=None):
-        """
-        :param lower: Lower point of the box (default = Point3D(-0.5, -0.5, -0.5)).
-        :param upper: Upper point of the box (default = Point3D(0.5, 0.5, 0.5)).
-        :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
-        :param material: A Material object defining the box's material (default = None).
-        :param name: A string specifying a user-friendly name for the box (default = "").
-        """
 
         super().__init__(parent, transform, material, name)
 
         if lower is not None and upper is not None:
 
             if lower.x > upper.x or lower.y > upper.y or lower.z > upper.z:
-
                 raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
-
             self._lower = lower
             self._upper = upper
 
@@ -90,7 +87,6 @@ cdef class Box(Primitive):
             self._upper = new_point3d(0.5, 0.5, 0.5)
 
         else:
-
             raise ValueError("Lower and upper points must both be defined.")
 
         # initialise next intersection caching and control attributes
@@ -102,45 +98,49 @@ cdef class Box(Primitive):
         self._cached_face = NO_FACE
         self._cached_axis = NO_AXIS
 
-    property lower:
+    @property
+    def lower(self):
+        """
+        Lower 3D coordinate of the box in primitive's local coordinates.
 
-        def __get__(self):
+        :rtype: Point3D
+        """
 
-            return self._lower
+        return self._lower
 
-        def __set__(self, Point3D value not None):
+    @lower.setter
+    def lower(self, Point3D value not None):
+        if value.x > self._upper.x or value.y > self._upper.y or value.z > self._upper.z:
+            raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
+        self._lower = value
 
-            if value.x > self._upper.x or value.y > self._upper.y or value.z > self._upper.z:
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-                raise ValueError("The lower point coordinates must be less than or equal to the upper point coordinates.")
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
-            self._lower = value
+    @property
+    def upper(self):
+        """
+        Upper 3D coordinate of the box in primitive's local coordinates.
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+        :rtype: Point3D
+        """
 
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+        return self._upper
 
-    property upper:
+    @upper.setter
+    def upper(self, Point3D value not None):
+        if self._lower.x > value.x or self._lower.y > value.y or self._lower.z > value.z:
+            raise ValueError("The upper point coordinates must be greater than or equal to the lower point coordinates.")
+        self._upper = value
 
-        def __get__(self):
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-            return self._upper
-
-        def __set__(self, Point3D value not None):
-
-            if self._lower.x > value.x or self._lower.y > value.y or self._lower.z > value.z:
-
-                raise ValueError("The upper point coordinates must be greater than or equal to the lower point coordinates.")
-
-            self._upper = value
-
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
-
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
     cpdef Intersection hit(self, Ray ray):
 
@@ -175,12 +175,10 @@ cdef class Box(Primitive):
 
         # does ray intersect box?
         if near_intersection > far_intersection:
-
             return None
 
         # are there any intersections inside the ray search range?
         if near_intersection > ray.max_distance or far_intersection < 0.0:
-
             return None
 
         # identify closest intersection
@@ -207,7 +205,6 @@ cdef class Box(Primitive):
             closest_axis = far_axis
 
         else:
-
             return None
 
         return self._generate_intersection(ray, origin, direction, closest_intersection, closest_face, closest_axis)
@@ -215,7 +212,6 @@ cdef class Box(Primitive):
     cpdef Intersection next_intersection(self):
 
         if not self._further_intersection:
-
             return None
 
         # this is the 2nd and therefore last intersection
@@ -223,7 +219,7 @@ cdef class Box(Primitive):
 
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_axis)
 
-    cdef inline void _slab(self, int axis, double origin, double direction, double lower, double upper, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_axis, int *far_axis):
+    cdef inline void _slab(self, int axis, double origin, double direction, double lower, double upper, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_axis, int *far_axis) nogil:
 
         cdef:
             double reciprocal, tmin, tmax
@@ -233,7 +229,6 @@ cdef class Box(Primitive):
 
             # calculate intersections with slab planes
             with cython.cdivision(True):
-
                 reciprocal = 1.0 / direction
 
             if direction > 0:
@@ -277,13 +272,11 @@ cdef class Box(Primitive):
 
         # calculate slab intersection overlap, store closest dimension and intersected face
         if tmin > near_intersection[0]:
-
             near_intersection[0] = tmin
             near_face[0] = fmin
             near_axis[0] = axis
 
         if tmax < far_intersection[0]:
-
             far_intersection[0] = tmax
             far_face[0] = fmax
             far_axis[0] = axis
@@ -303,11 +296,8 @@ cdef class Box(Primitive):
         # calculate surface normal in local space
         normal = new_normal3d(0, 0, 0)
         if face == LOWER_FACE:
-
             normal.set_index(axis, -1.0)
-
         else:
-
             normal.set_index(axis, 1.0)
 
         # displace hit_point away from surface to generate inner and outer points
@@ -320,19 +310,12 @@ cdef class Box(Primitive):
                                     hit_point.z + EPSILON * normal.z)
 
         # is ray exiting surface
-        if direction.dot(normal) >= 0.0:
-
-            exiting = True
-
-        else:
-
-            exiting = False
+        exiting = direction.dot(normal) >= 0.0
 
         return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
                                 normal, exiting, self.to_local(), self.to_root())
 
-
-    cdef inline double _interior_offset(self, double hit_point, double lower, double upper):
+    cdef inline double _interior_offset(self, double hit_point, double lower, double upper) nogil:
         """
         Calculates an interior offset that ensures the inside_point is away from the primitive surface.
 
@@ -341,13 +324,9 @@ cdef class Box(Primitive):
         """
 
         if fabs(hit_point - lower) < EPSILON:
-
             return EPSILON
-
         elif fabs(hit_point - upper) < EPSILON:
-
             return -EPSILON
-
         return 0.0
 
     cpdef bint contains(self, Point3D point) except -1:
@@ -357,15 +336,12 @@ cdef class Box(Primitive):
 
         # point is inside box if it is inside all slabs
         if (point.x < self._lower.x) or (point.x > self._upper.x):
-
             return False
 
         if (point.y < self._lower.y) or (point.y > self._upper.y):
-
             return False
 
         if (point.z < self._lower.z) or (point.z > self._upper.z):
-
             return False
 
         return True
@@ -393,7 +369,6 @@ cdef class Box(Primitive):
         # a small degree of padding is added to avoid potential numerical accuracy issues
         box = BoundingBox3D()
         for point in points:
-
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box

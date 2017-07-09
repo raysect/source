@@ -30,14 +30,12 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
 
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, PointSampler, RectangleSampler
+from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, RectangleSampler3D
 from raysect.optical cimport Ray
 from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
 
 
-# todo: complete docstrings
-# todo: add properties
 cdef class PinholeCamera(Observer2D):
     """
     An observer that models an idealised pinhole camera.
@@ -45,13 +43,19 @@ cdef class PinholeCamera(Observer2D):
     A simple camera that launches rays from the observer's origin point over a
     specified field of view.
 
-    :param double fov: The field of view of the camera in degrees (default: 45 degrees).
-    :param double etendue: The etendue of each pixel (default: 1.0)
+    :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
+    :param float fov: The field of view of the camera in degrees (default=45 degrees).
+    :param float etendue: The etendue of each pixel (default=1.0)
+    :param FrameSampler2D frame_sampler: The frame sampling strategy, defaults to adaptive
+      sampling (i.e. extra samples for noisier pixels).
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      at each pixel by the camera (default=RGBPipeline2D()).
+    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
     cdef:
         double _etendue, _fov, image_delta, image_start_x, image_start_y
-        PointSampler point_sampler
+        RectangleSampler3D point_sampler
 
     def __init__(self, pixels, fov=None, etendue=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
@@ -72,6 +76,11 @@ cdef class PinholeCamera(Observer2D):
 
     @property
     def fov(self):
+        """
+        The field of view of the camera in degrees.
+
+        :rtype: float
+        """
         return self._fov
 
     @fov.setter
@@ -83,6 +92,13 @@ cdef class PinholeCamera(Observer2D):
 
     @property
     def etendue(self):
+        """
+        The etendue applied to each pixel.
+
+        If etendue=1.0 all spectral units are in radiance.
+
+        :rtype: float
+        """
         return self._etendue
 
     @etendue.setter
@@ -107,7 +123,7 @@ cdef class PinholeCamera(Observer2D):
             self.image_start_y = 0.5 * self.pixels[1] * image_delta
 
             # rebuild point generator
-            self.point_sampler = RectangleSampler(self.image_delta, self.image_delta)
+            self.point_sampler = RectangleSampler3D(self.image_delta, self.image_delta)
 
         else:
             raise RuntimeError("Number of Pinhole camera Pixels must be > 1.")
@@ -126,7 +142,7 @@ cdef class PinholeCamera(Observer2D):
         pixel_y = self.image_start_y - self.image_delta * y
         pixel_centre = new_point3d(pixel_x, pixel_y, 1)
 
-        points = self.point_sampler(ray_count)
+        points = self.point_sampler.samples(ray_count)
 
         # assemble rays
         rays = []
@@ -142,6 +158,7 @@ cdef class PinholeCamera(Observer2D):
 
             ray = template.copy(origin, direction)
 
+            # non-physical camera, samples radiance directly
             # projected area weight is normal.incident which simplifies
             # to incident.z here as the normal is (0, 0 ,1)
             rays.append((ray, direction.z))

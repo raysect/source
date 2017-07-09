@@ -33,7 +33,7 @@ Unit tests for the Vector3D object.
 
 import unittest
 from raysect.core.math import Vector3D, AffineMatrix3D
-from math import sqrt
+from math import sqrt, degrees, acos
 
 # TODO: Port to Cython to allow testing of the Cython API
 
@@ -376,6 +376,111 @@ class TestVector3D(unittest.TestCase):
         self.assertEqual(r.x, 1.0, "Copy failed [X].")
         self.assertEqual(r.y, 2.0, "Copy failed [Y].")
         self.assertEqual(r.z, 3.0, "Copy failed [Z].")
+
+    def test_lerp(self):
+        """Testing method lerp()."""
+
+        a = Vector3D(1, 0, 0)
+        b = Vector3D(0, 1, 0)
+
+        self.assertEqual(a.lerp(b, 0), Vector3D(1, 0, 0), "Lerp (linear vector interpolation) operation failed.")
+        self.assertEqual(a.lerp(b, 1), Vector3D(0, 1, 0), "Lerp (linear vector interpolation) operation failed.")
+        self.assertEqual(a.lerp(b, 0.5), Vector3D(0.5, 0.5, 0.0), "Lerp (linear vector interpolation) operation failed.")
+
+    def test_slerp(self):
+        """Testing method slerp()."""
+
+        a = Vector3D(1, 0, 0)
+        b = Vector3D(0, 1, 0)
+        c = Vector3D(0, 0, 1)
+        d = Vector3D(-0.5, 0.5, 0).normalise()
+        e = Vector3D(-0.5, 0, 0.5).normalise()
+        f = Vector3D(0, -0.5, 0.5).normalise()
+
+        # Test x-y plane
+        r = a.slerp(b, 0)
+        self.assertAlmostEqual(r.x, 1.0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+
+        r = a.slerp(b, 1)
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+
+        r = a.slerp(b, 0.5)
+        theta = degrees(acos(a.dot(r)))
+        self.assertAlmostEqual(r.x, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 45, msg='Spherical lerp operation failed.')
+
+        r = a.slerp(d, 2/3)
+        theta = degrees(acos(a.dot(r)))
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 90, msg='Spherical lerp operation failed.')
+
+        # Test x-z plane
+        r = a.slerp(c, 0)
+        self.assertAlmostEqual(r.x, 1.0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+
+        r = a.slerp(c, 1)
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+
+        r = a.slerp(c, 0.5)
+        theta = degrees(acos(a.dot(r)))
+        self.assertAlmostEqual(r.x, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 45, msg='Spherical lerp operation failed.')
+
+        r = a.slerp(e, 2/3)
+        theta = degrees(acos(a.dot(r)))
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 90, msg='Spherical lerp operation failed.')
+
+        # Test y-z plane
+        r = b.slerp(c, 0)
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 0, msg='Spherical lerp operation failed.')
+
+        r = b.slerp(c, 1)
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+
+        r = b.slerp(c, 0.5)
+        theta = degrees(acos(b.dot(r)))
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1/sqrt(2), msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 45, msg='Spherical lerp operation failed.')
+
+        r = b.slerp(f, 2/3)
+        theta = degrees(acos(b.dot(r)))
+        self.assertAlmostEqual(r.x, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.y, 0, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.z, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(r.length, 1, msg='Spherical lerp operation failed.')
+        self.assertAlmostEqual(theta, 90, msg='Spherical lerp operation failed.')
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -52,6 +52,30 @@ _DISPLAY_SIZE = (512 / _DISPLAY_DPI, 512 / _DISPLAY_DPI)
 
 
 cdef class RGBPipeline2D(Pipeline2D):
+    """
+    2D pipeline of sRGB colour values.
+
+    Converts the measured spectrum from each pixel into sRGB
+    colour space values. See the colour module for more
+    information. The RGBPipeline2D class is the workhorse
+    pipeline for visualisation of scenes with Raysect and the
+    default pipeline for most 2D observers.
+
+    :param bool display_progress: Toggles the display of live render progress
+      (default=True).
+    :param float display_update_time: Time in seconds between preview display
+      updates (default=15 seconds).
+    :param bool accumulate: Whether to accumulate samples with subsequent calls
+      to observe() (default=True).
+    :param bool display_auto_exposure: Toggles the use of automatic exposure of
+      final images (default=True).
+    :param float display_sensitivity: The sensitivity of the camera, effectively
+      inverse of the exposure time (default=1.0).
+    :param float display_unsaturated_fraction: Fraction of pixels that must not
+      be saturated. Display values will be scaled to satisfy this value
+      (default=1.0).
+    :param str name: User friendly name for this pipeline.
+    """
 
     cdef:
         str name
@@ -70,6 +94,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         double _display_sensitivity, _display_unsaturated_fraction
         bint _display_auto_exposure
         public bint display_persist_figure
+        bint _quiet
 
     def __init__(self, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
@@ -106,8 +131,15 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._pixels = None
         self._samples = 0
 
+        self._quiet = False
+
     @property
     def display_sensitivity(self):
+        """
+        The sensitivity of the camera, effectively inverse of the exposure time.
+
+        :rtype: float
+        """
         return self._display_sensitivity
 
     @display_sensitivity.setter
@@ -120,6 +152,11 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @property
     def display_auto_exposure(self):
+        """
+        Toggles the use of automatic exposure on final image.
+
+        :rtype: bool
+        """
         return self._display_auto_exposure
 
     @display_auto_exposure.setter
@@ -129,6 +166,12 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @property
     def display_unsaturated_fraction(self):
+        """
+        Fraction of pixels that must not be saturated. Display values will
+        be scaled to satisfy this value.
+
+        :rtype: float
+        """
         return self._display_unsaturated_fraction
 
     @display_unsaturated_fraction.setter
@@ -140,6 +183,11 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @property
     def display_update_time(self):
+        """
+        Time in seconds between preview display updates.
+
+        :rtype: float
+        """
         return self._display_update_time
 
     @display_update_time.setter
@@ -148,7 +196,7 @@ cdef class RGBPipeline2D(Pipeline2D):
             raise ValueError('Display update time must be greater than zero seconds.')
         self._display_update_time = value
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -164,6 +212,8 @@ cdef class RGBPipeline2D(Pipeline2D):
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+
+        self._quiet = quiet
 
         if self.display_progress:
             self._start_display()
@@ -255,7 +305,9 @@ cdef class RGBPipeline2D(Pipeline2D):
         # update live render display
         if (time() - self._display_timer) > self.display_update_time:
 
-            print("{} - updating display...".format(self.name))
+            if not self._quiet:
+                print("{} - updating display...".format(self.name))
+
             self._render_display(self._display_frame, 'rendering...')
 
             # workaround for interactivity for QT backend
@@ -420,6 +472,9 @@ cdef class RGBPipeline2D(Pipeline2D):
         return rgb_image
 
     def display(self):
+        """
+        Plot the RGB frame.
+        """
         if not self.xyz_frame:
             raise ValueError("There is no frame to display.")
         self._render_display(self.xyz_frame)
@@ -442,6 +497,10 @@ cdef class RGBPipeline2D(Pipeline2D):
 
 
 cdef class XYZPixelProcessor(PixelProcessor):
+    """
+    PixelProcessor that converts each pixel's spectrum into three
+    XYZ colourspace values.
+    """
 
     cdef:
         np.ndarray resampled_xyz
@@ -468,6 +527,22 @@ cdef class XYZPixelProcessor(PixelProcessor):
 
 
 cdef class RGBAdaptiveSampler2D(FrameSampler2D):
+    """
+    FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
+    level in each RGB pixel value.
+
+    Pixels that have high noise levels will receive extra samples until the desired
+    noise threshold is achieve across the whole image.
+
+    :param RGBPipeline2D pipeline: The specific RGB pipeline to use for feedback control.
+    :param float fraction: The fraction of frame pixels to receive extra sampling
+      (default=0.2).
+    :param float ratio:
+    :param int min_samples: Minimum number of pixel samples across the image before
+      turning on adaptive sampling (default=1000).
+    :param double cutoff: Noise threshold at which extra sampling will be aborted and
+      rendering will complete (default=0.0).
+    """
 
     cdef:
         RGBPipeline2D pipeline

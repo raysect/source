@@ -42,8 +42,21 @@ _DEFAULT_PIPELINE_NAME = "Spectral Pipeline"
 _DISPLAY_DPI = 100
 _DISPLAY_SIZE = (800 / _DISPLAY_DPI, 600 / _DISPLAY_DPI)
 
+
 # todo: add rendering display
 cdef class SpectralPipeline0D(Pipeline0D):
+    """
+    A basic spectrum pipeline for 0D observers.
+
+    The raw spectrum for the observer is stored along with the associated
+    error on each wavelength bin.
+
+    Spectral values and errors are available through the self.frame attribute.
+
+    :param bool accumulate: Whether to accumulate samples with subsequent calls
+      to observe() (default=True).
+    :param str name: User friendly name for this pipeline.
+    """
 
     cdef:
         public str name
@@ -70,7 +83,7 @@ cdef class SpectralPipeline0D(Pipeline0D):
 
         self._display_figure = None
 
-    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         self._spectral_slices = spectral_slices
         self.min_wavelength = min_wavelength
@@ -151,6 +164,18 @@ cdef class SpectralPipeline0D(Pipeline0D):
 
 
 cdef class SpectralPipeline2D(Pipeline2D):
+    """
+    A basic spectrum pipeline for 2D observers.
+
+    The raw spectrum for each pixel is stored along with the associated
+    error on each wavelength bin in a 2D frame object.
+
+    Spectral values and errors are available through the self.frame attribute.
+
+    :param bool accumulate: Whether to accumulate samples with subsequent calls
+      to observe() (default=True).
+    :param str name: User friendly name for this pipeline.
+    """
 
     cdef:
         public str name
@@ -178,7 +203,7 @@ cdef class SpectralPipeline2D(Pipeline2D):
         self.delta_wavelength = 0
         self.wavelengths = None
 
-    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices):
+    cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         nx, ny = pixels
         self._pixels = pixels
@@ -246,6 +271,9 @@ cdef class SpectralPipeline2D(Pipeline2D):
 
 
 cdef class SpectralPixelProcessor(PixelProcessor):
+    """
+    PixelProcessor that stores the spectrum observed by each pixel.
+    """
 
     cdef StatsArray1D bins
 

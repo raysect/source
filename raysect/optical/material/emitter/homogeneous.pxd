@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,55 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport World, Primitive, Ray, Spectrum, SpectralFunction, Point3D, Vector3D, AffineMatrix3D
-from raysect.optical.material cimport NullSurface, NullVolume
+from raysect.optical cimport World, Primitive, Ray, Spectrum, Vector3D, AffineMatrix3D
+from raysect.optical.material.material cimport NullSurface
 
 
-cdef class UniformSurfaceEmitter(NullVolume):
-
-    cdef:
-        public SpectralFunction emission_spectrum
-        public double scale
-
-
-cdef class VolumeEmitterHomogeneous(NullSurface):
+cdef class HomogeneousVolumeEmitter(NullSurface):
 
     cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
                                      World world, Ray ray, Primitive primitive,
                                      AffineMatrix3D to_local, AffineMatrix3D to_world)
-
-
-cdef class VolumeEmitterInhomogeneous(NullSurface):
-
-    cdef double _step
-
-    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix3D to_local, AffineMatrix3D to_world)
-
-
-cdef class UnityVolumeEmitter(VolumeEmitterHomogeneous):
-
-    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
-
-
-cdef class UniformVolumeEmitter(VolumeEmitterHomogeneous):
-
-    cdef:
-        public SpectralFunction emission_spectrum
-        public double scale
-
-
-cdef class Checkerboard(NullVolume):
-
-    cdef:
-        double _width
-        double _rwidth
-        public SpectralFunction emission_spectrum1
-        public SpectralFunction emission_spectrum2
-        public double scale1
-        public double scale2
-
-    cdef inline bint _flip(self, bint v, double p)

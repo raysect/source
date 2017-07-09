@@ -30,8 +30,7 @@
 import unittest
 from raysect.core.scenegraph import Primitive, Node
 from raysect.core.math import Point3D, AffineMatrix3D, translate
-from raysect.core import BoundingBox3D
-from raysect.core.ray import Material, Ray
+from raysect.core import Material, Ray
 
 # TODO: Port to Cython to allow testing of the Cython API and allow access to internal structures
 # TODO: Add tests for functionality inherited from Node.
@@ -132,6 +131,14 @@ class TestPrimitive(unittest.TestCase):
 
         with self.assertRaises(NotImplementedError, msg="Virtual method did not raise NotImplementedError exception when called."):
             n.bounding_box()
+
+    def test_bounding_sphere(self):
+        """Method bounding_sphere() by default calls bounding_box() and should raise an exception if called."""
+
+        n = Primitive()
+
+        with self.assertRaises(NotImplementedError, msg="Method did not raise NotImplementedError exception when called."):
+            n.bounding_sphere()
 
     def test_material(self):
         """Setting and getting material."""

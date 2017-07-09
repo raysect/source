@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.point cimport Point2D
+from raysect.core.math.point cimport Point2D, Point3D
 
 cpdef seed(object d=*)
 
@@ -40,15 +40,18 @@ cpdef double normal(double mean, double sigma)
 
 cpdef bint probability(double prob)
 
-cpdef Point2D point_disk()
+cdef inline Point2D point_disk()
 
-cpdef Point2D point_square()
+cdef inline Point2D point_square()
 
-cpdef Vector3D vector_sphere()
+cdef inline Point3D point_triangle(Point3D v1, Point3D v2, Point3D v3)
 
-cpdef Vector3D vector_hemisphere_uniform()
+cdef inline Vector3D vector_sphere()
 
-cpdef Vector3D vector_hemisphere_cosine()
+cdef inline Vector3D vector_hemisphere_uniform()
 
-cpdef Vector3D vector_cone(double theta)
+cdef inline Vector3D vector_hemisphere_cosine()
 
+cdef inline Vector3D vector_cone_uniform(double theta)
+
+cdef inline Vector3D vector_cone_cosine(double theta)

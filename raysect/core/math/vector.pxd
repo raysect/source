@@ -54,6 +54,10 @@ cdef class Vector3D(_Vec3):
 
     cpdef Vector3D orthogonal(self)
 
+    cpdef Vector3D lerp(self, Vector3D b, double t)
+
+    cpdef Vector3D slerp(self, Vector3D b, double t)
+
 
 cdef inline Vector3D new_vector3d(double x, double y, double z):
     """
@@ -77,13 +81,13 @@ cdef class Vector2D:
 
     cpdef double dot(self, Vector2D v)
 
-    cdef inline double get_length(self)
+    cdef inline double get_length(self) nogil
 
-    cdef inline void set_length(self, double v) except *
+    cdef inline object set_length(self, double v)
 
-    cdef inline double get_index(self, int index)
+    cdef inline double get_index(self, int index) nogil
 
-    cdef inline void set_index(self, int index, double value)
+    cdef inline void set_index(self, int index, double value) nogil
 
     cpdef double cross(self, Vector2D v)
 

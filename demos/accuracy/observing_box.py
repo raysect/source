@@ -1,12 +1,10 @@
 
-from raysect.core import Point3D, translate, rotate_x, rotate_basis, Vector3D, rotate
-from raysect.primitive import Sphere, Box, Parabola
-from raysect.primitive.csg import Subtract
+from raysect.core import translate, rotate
+from raysect.primitive import Sphere
 from raysect.optical import World, ConstantSF
-from raysect.optical.material.debug import PerfectReflectingSurface
 from raysect.optical.observer import Pixel, PowerPipeline0D
 from raysect.optical.material.emitter import UnityVolumeEmitter, UniformSurfaceEmitter
-from math import sqrt, pi
+from math import pi
 
 samples = 100000
 

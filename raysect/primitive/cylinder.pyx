@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core cimport AffineMatrix3D, new_normal3d, new_point3d, new_vector3d, Material, new_intersection, BoundingBox3D
+from raysect.core.math.cython cimport solve_quadratic, swap_double
 from libc.math cimport sqrt, fabs
 cimport cython
 
@@ -60,29 +61,26 @@ cdef class Cylinder(Primitive):
     The cylinder is defined by a radius and height. It lies along the z-axis
     and extends over the z range [0, height]. The ends of the cylinder are
     capped with disks forming a closed surface.
+
+    :param float radius: Radius of the cylinder in meters (default = 0.5).
+    :param float height: Height of the cylinder in meters (default = 1.0).
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate
+      system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the cylinder's material (default = None).
+    :param str name: A string specifying a user-friendly name for the cylinder (default = "").
     """
 
-    def __init__(self, double radius=0.5, double height=1.0, object parent = None, AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(), str name=None):
-        """
-        Radius is radius of the cylinder in x-y plane.
-        Height of cylinder is defines extent along z-axis [0, height].
-
-        :param radius: Radius of the cylinder in meters (default = 0.5).
-        :param height: Height of the cylinder in meters (default = 1.0).
-        :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
-        :param material: A Material object defining the cylinder's material (default = None).
-        :param name: A string specifying a user-friendly name for the cylinder (default = "").
-        """
+    def __init__(self, double radius=0.5, double height=1.0, object parent = None,
+                 AffineMatrix3D transform not None = AffineMatrix3D(),
+                 Material material not None = Material(), str name=None):
 
         super().__init__(parent, transform, material, name)
 
         if radius < 0.0:
-
             raise ValueError("Cylinder radius cannot be less than zero.")
 
         if height < 0.0:
-
             raise ValueError("Cylinder height cannot be less than zero.")
 
         self._radius = radius
@@ -97,45 +95,45 @@ cdef class Cylinder(Primitive):
         self._cached_face = NO_FACE
         self._cached_type = NO_TYPE
 
-    property radius:
+    @property
+    def radius(self):
+        """
+        Radius of the cylinder in x-y plane.
 
-        def __get__(self):
+        :rtype: float
+        """
+        return self._radius
 
-            return self._radius
+    @radius.setter
+    def radius(self, double value):
+        if value < 0.0:
+            raise ValueError("Cylinder radius cannot be less than zero.")
+        self._radius = value
 
-        def __set__(self, double value):
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-            if value < 0.0:
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
-                raise ValueError("Cylinder radius cannot be less than zero.")
+    @property
+    def height(self):
+        """
+        Extent of the cylinder along the z-axis.
+        """
+        return self._height
 
-            self._radius = value
+    @height.setter
+    def height(self, double value):
+        if value < 0.0:
+            raise ValueError("Cylinder height cannot be less than zero.")
+        self._height = value
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
-
-    property height:
-
-        def __get__(self):
-
-            return self._height
-
-        def __set__(self, double value):
-
-            if value < 0.0:
-
-                raise ValueError("Cylinder height cannot be less than zero.")
-
-            self._height = value
-
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
-
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):
@@ -144,7 +142,7 @@ cdef class Cylinder(Primitive):
             double near_intersection, far_intersection, closest_intersection
             int near_face, far_face, closest_face
             int near_type, far_type, closest_type
-            double a, b, c, d, t0, t1, temp
+            double a, b, c, t0, t1
             int f0, f1
 
         # reset the next intersection cache
@@ -175,31 +173,19 @@ cdef class Cylinder(Primitive):
 
         else:
 
-            # coefficients of quadratic equation and discriminant
+            # coefficients of quadratic equation
             a = direction.x * direction.x + direction.y * direction.y
             b = 2.0 * (direction.x * origin.x + direction.y * origin.y)
             c = origin.x * origin.x + origin.y * origin.y - self._radius * self._radius
-            d = b * b - 4 * a * c
 
-            # ray misses cylinder if there are no real roots of the quadratic
-            if d < 0:
-
+            # calculate intersection distances by solving the quadratic equation
+            # ray misses if there are no real roots of the quadratic
+            if not solve_quadratic(a, b, c, &t0, &t1):
                 return None
-
-            d = sqrt(d)
-
-            # calculate intersections
-            temp = 1 / (2.0 * a)
-            t0 = -(d + b) * temp
-            t1 = (d - b) * temp
 
             # ensure t0 is always smaller than t1
             if t0 > t1:
-
-                # swap
-                temp = t0
-                t0 = t1
-                t1 = temp
+                swap_double(&t0, &t1)
 
             # set intersection parameters
             near_intersection = t0
@@ -250,23 +236,19 @@ cdef class Cylinder(Primitive):
 
         # does ray intersect cylinder?
         if near_intersection > far_intersection:
-
             return None
 
         # are there any intersections inside the ray search range?
         if near_intersection > ray.max_distance or far_intersection < 0.0:
-
             return None
 
         # identify closest intersection
         if near_intersection >= 0.0:
-
             closest_intersection = near_intersection
             closest_face = near_face
             closest_type = near_type
 
             if far_intersection <= ray.max_distance:
-
                 self._further_intersection = True
                 self._next_t = far_intersection
                 self._cached_origin = origin
@@ -276,13 +258,10 @@ cdef class Cylinder(Primitive):
                 self._cached_type = far_type
 
         elif far_intersection <= ray.max_distance:
-
             closest_intersection = far_intersection
             closest_face = far_face
             closest_type = far_type
-
         else:
-
             return None
 
         return self._generate_intersection(ray, origin, direction, closest_intersection, closest_face, closest_type)
@@ -290,12 +269,10 @@ cdef class Cylinder(Primitive):
     cpdef Intersection next_intersection(self):
 
         if not self._further_intersection:
-
             return None
 
         # this is the 2nd and therefore last intersection
         self._further_intersection = False
-
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_type)
 
     cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int type):
@@ -313,18 +290,12 @@ cdef class Cylinder(Primitive):
 
         # calculate surface normal in local space
         if type == CYLINDER:
-
             normal = new_normal3d(hit_point.x, hit_point.y, 0)
             normal = normal.normalise()
-
         else:
-
             if face == LOWER_FACE:
-
                 normal = new_normal3d(0, 0, -1)
-
             else:
-
                 normal = new_normal3d(0, 0, 1)
 
         # displace hit_point away from surface to generate inner and outer points
@@ -339,13 +310,7 @@ cdef class Cylinder(Primitive):
                                     hit_point.z + EPSILON * normal.z)
 
         # is ray exiting surface
-        if direction.dot(normal) >= 0.0:
-
-            exiting = True
-
-        else:
-
-            exiting = False
+        exiting = direction.dot(normal) >= 0.0
 
         return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
                                 normal, exiting, self.to_local(), self.to_root())
@@ -357,36 +322,24 @@ cdef class Cylinder(Primitive):
 
         # shift away from cylinder surface
         if type == CYLINDER:
-
             x = -EPSILON * normal.x
             y = -EPSILON * normal.y
-
         else:
-
             x = 0
             y = 0
-
             if hit_point.x != 0.0 and hit_point.y != 0.0:
-
                 length = sqrt(hit_point.x * hit_point.x + hit_point.y * hit_point.y)
-
                 if (length - self._radius) < EPSILON:
-
                     length = 1.0 / length
                     x = -EPSILON * length * hit_point.x
                     y = -EPSILON * length * hit_point.y
 
         # shift away from slab surface
         if fabs(hit_point.z) < EPSILON:
-
             z = EPSILON
-
         elif fabs(hit_point.z - self._height) < EPSILON:
-
             z = -EPSILON
-
         else:
-
             z = 0
 
         return new_vector3d(x, y, z)
@@ -395,7 +348,6 @@ cdef class Cylinder(Primitive):
 
         # convert point to local object space
         point = point.transform(self.to_local())
-
         return self._inside_slab(point) and self._inside_cylinder(point)
 
     cdef inline bint _inside_cylinder(self, Point3D point):
@@ -428,7 +380,6 @@ cdef class Cylinder(Primitive):
         # a small degree of padding is added to avoid potential numerical accuracy issues
         box = BoundingBox3D()
         for point in points:
-
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box

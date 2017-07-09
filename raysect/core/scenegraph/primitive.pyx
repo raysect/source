@@ -58,7 +58,8 @@ cdef class Primitive(Node):
 
         self.material = material
 
-    property material:
+    @property
+    def material(self):
         """
         The material class for this primitive.
 
@@ -66,27 +67,25 @@ cdef class Primitive(Node):
         :setter: Sets this primitive's material.
         :rtype: Material
         """
+        return self._material
 
-        def __get__(self):
-            return self._material
+    @material.setter
+    def material(self, Material value not None):
 
-        def __set__(self, Material value not None):
+        # remove any reverse reference from existing material
+        if self._material is not None:
+            self._material.primitives.remove(self)
 
-            # remove any reverse reference from existing material
-            if self._material is not None:
-                self._material.primitives.remove(self)
+        # assign new material and provide it with a reverse reference
+        self._material = value
+        self._material.primitives.append(self)
 
-            # assign new material and provide it with a reverse reference
-            self._material = value
-            self._material.primitives.append(self)
-
-            # inform the scene-graph root that a material change has occurred
-            self.notify_material_change()
+        # inform the scene-graph root that a material change has occurred
+        self.notify_material_change()
 
     cdef inline Material get_material(self):
         return self._material
 
-    # TODO - question name - could be clearer (hits?, primitive.hit_by(ray)?, primitiive.intersects(ray)?)
     cpdef Intersection hit(self, Ray ray):
         """
         Virtual method - to be implemented by derived classes.
@@ -166,6 +165,28 @@ cdef class Primitive(Node):
         """
 
         raise NotImplementedError("Primitive surface has not been defined. Virtual method bounding_box() has not been implemented.")
+
+    cpdef BoundingSphere3D bounding_sphere(self):
+        """
+        When the primitive is connected to a scene-graph containing a World
+        object at its root, this method should return a bounding sphere that
+        fully encloses the primitive's surface (plus a small margin to
+        avoid numerical accuracy problems). The bounding sphere must be
+        defined in the world's coordinate space.
+
+        If this method is called when the primitive is not connected to a
+        scene-graph with a World object at its root, it must throw a TypeError
+        exception.
+        
+        The default implementation is to wrap the the primitive's bounding box
+        with a sphere. If the bounding sphere can be more optimally calculated
+        for the primitive, it should override this method.
+
+        :return: A world space BoundingSphere3D object.
+        :rtype: BoundingSphere3D
+        """
+
+        return self.bounding_box().enclosing_sphere()
 
     cpdef object notify_geometry_change(self):
         """

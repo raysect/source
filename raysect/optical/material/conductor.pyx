@@ -47,8 +47,10 @@ cdef class Conductor(Material):
     use the material, the complex refractive index of the conductor must be
     supplied.
 
-    :param SpectralFunction index: Real component of refractive index - $n(\lambda)$.
-    :param extinction: Imaginary component of refractive index (extinction) - $k(\lambda)$.
+    :param SpectralFunction index: Real component of the refractive
+      index - :math:`n(\lambda)`.
+    :param SpectralFunction extinction: Imaginary component of the
+      refractive index (extinction) - :math:`k(\lambda)`.
     """
 
     def __init__(self, SpectralFunction index, SpectralFunction extinction):
@@ -59,6 +61,7 @@ cdef class Conductor(Material):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
@@ -66,10 +69,10 @@ cdef class Conductor(Material):
         cdef:
             Vector3D incident, reflected
             double temp, ci
-            ndarray n, k, reflection_coefficient
+            ndarray reflection_coefficient
             Ray reflected_ray
             Spectrum spectrum
-            double[::1] s_view, n_view, k_view
+            double[::1] n, k
             int i
 
         # convert ray direction normal to local coordinates
@@ -112,11 +115,8 @@ cdef class Conductor(Material):
 
         # calculate reflection coefficients at each wavelength and apply
         ci = fabs(ci)
-        s_view = spectrum.samples
-        n_view = n
-        k_view = k
         for i in range(spectrum.bins):
-            s_view[i] *= self._fresnel(ci, n_view[i], k_view[i])
+            spectrum.samples_mv[i] *= self._fresnel(ci, n[i], k[i])
 
         return spectrum
 
@@ -133,8 +133,6 @@ cdef class Conductor(Material):
 
         return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
@@ -150,6 +148,13 @@ cdef class RoughConductor(ContinuousBSDF):
     This is implementing Cook-Torrence with conducting fresnel microfacets.
 
     Smith shadowing and GGX facet distribution used to model roughness.
+
+    :param SpectralFunction index: Real component of the refractive
+      index - :math:`n(\lambda)`.
+    :param SpectralFunction extinction: Imaginary component of the
+      refractive index (extinction) - :math:`k(\lambda)`.
+    :param float roughness: The roughness parameter in range (0, 1]. 0 is
+      perfectly specular, 1 is perfectly rough.
     """
 
     def __init__(self, SpectralFunction index, SpectralFunction extinction, double roughness):
@@ -159,15 +164,15 @@ cdef class RoughConductor(ContinuousBSDF):
         self.extinction = extinction
         self.roughness = roughness
 
-    property roughness:
+    @property
+    def roughness(self):
+        return self._roughness
 
-        def __get__(self):
-            return self._roughness
-
-        def __set__(self, value):
-            if value <= 0 or value > 1:
-                raise ValueError("Surface roughness must lie in the range (0, 1].")
-            self._roughness = value
+    @roughness.setter
+    def roughness(self, value):
+        if value <= 0 or value > 1:
+            raise ValueError("Surface roughness must lie in the range (0, 1].")
+        self._roughness = value
 
     @cython.cdivision(True)
     cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
@@ -275,10 +280,11 @@ cdef class RoughConductor(ContinuousBSDF):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal):
 
         cdef:
-            double[::1] s, n, k
+            double[::1] n, k
             double ci
             int i
 
@@ -286,10 +292,9 @@ cdef class RoughConductor(ContinuousBSDF):
         n = self.index.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         k = self.extinction.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
-        s = spectrum.samples
         ci = s_normal.dot(s_outgoing)
         for i in range(spectrum.bins):
-            s[i] *= self._fresnel_conductor(ci, n[i], k[i])
+            spectrum.samples_mv[i] *= self._fresnel_conductor(ci, n[i], k[i])
 
         return spectrum
 

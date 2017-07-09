@@ -53,6 +53,7 @@ cdef class PowerPipeline2D(Pipeline2D):
         double _display_black_point, _display_white_point, _display_unsaturated_fraction, _display_gamma
         bint _display_auto_exposure
         public bint display_persist_figure
+        bint _quiet
 
 
 cdef class PowerPixelProcessor(PixelProcessor):

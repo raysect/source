@@ -42,6 +42,18 @@ class STLHandler:
 
     @classmethod
     def import_stl(cls, filename, scaling=1.0, mode=STL_AUTOMATIC, **kwargs):
+        """
+        Create a mesh instance from a STereoLithography (STL) mesh file (.stl).
+
+        Some engineering meshes are exported in different units (mm for example)
+        whereas Raysect units are in m. Applying a scale factor of 0.001 would
+        convert the mesh into m for use in Raysect.
+
+        :param str filename: Mesh file path.
+        :param double scaling: Scale the mesh by this factor (default=1.0).
+        :param **kwargs: Accepts optional keyword arguments from the Mesh class.
+        :rtype: Mesh
+        """
 
         if mode == STL_ASCII:
             vertices, triangles = cls._load_ascii(filename, scaling)

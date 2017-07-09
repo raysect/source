@@ -32,9 +32,9 @@
 from numpy import zeros
 from raysect.core.scenegraph.signal import MATERIAL
 
-from raysect.core cimport BoundingBox3D, AffineMatrix3D, _NodeBase, ChangeSignal
+from raysect.core cimport BoundingBox3D, BoundingSphere3D, AffineMatrix3D, _NodeBase, ChangeSignal
 from raysect.core.acceleration cimport BoundPrimitive
-from raysect.core.math.random cimport uniform, vector_sphere, vector_cone
+from raysect.core.math.random cimport uniform, vector_sphere, vector_cone_uniform
 from raysect.core.math.cython cimport find_index, rotate_basis
 from libc.math cimport M_PI as PI, asin, sqrt
 cimport cython
@@ -44,55 +44,76 @@ class ImportanceError(Exception):
     pass
 
 
-# TODO: docstrings
 cdef class ImportanceManager:
+    """
+    Specialist class for managing sampling of important primitives.
+    """
 
     def __init__(self, primitives):
 
-        self.total_importance = 0
-        self.spheres = []
+        # The sum of importance weights on all important primitives in this scene-graph.
+        self._total_importance = 0
+
+        # A list of tuples defining the bounding spheres of all important primitives in the scene-graph.
+        # Each tuple has the structure (bounding_sphere, primitive_importance).
+        self._spheres = []
 
         if len(primitives) == 0:
-            self.cdf = None
+            self._cdf = None
             return
 
         self._process_primitives(primitives)
 
-        if self.total_importance == 0:
+        if self._total_importance == 0:
             # no important primitives were found
-            self.cdf = None
+            self._cdf = None
             return
 
+        # Populate numpy array storing the normalised cumulative importance weights of all important primitives.
+        # Used for selecting a random primitive proportional to their respective weights.
         self._calculate_cdf()
 
     cdef object _process_primitives(self, list primitives):
+        """
+        Process all the important primitives in the scene-graph.
+
+        For any primitives with importance > 0, create a bounding sphere
+        for the primitive and add its importance weighting to the
+        cumulative importance value.
+
+        :param list primitives: List of primitives in this scene-graph.
+        """
 
         for primitive in primitives:
             if primitive.material.importance > 0:
 
-                # generate bounding box
-                box = primitive.bounding_box()
-
-                # obtain bounding sphere and importance
-                centre = box.centre
-                radius = box.enclosing_sphere()
+                sphere = primitive.bounding_sphere()
                 importance = primitive.material.importance
 
-                self.total_importance += importance
-                self.spheres.append((centre, radius, importance))
+                self._total_importance += importance
+                self._spheres.append((sphere, importance))
 
     cdef object _calculate_cdf(self):
+        """
+        Calculate the cumulative distribution function for import primitives (CDF).
 
-        self.cdf = zeros(len(self.spheres))
-        for index, sphere_data in enumerate(self.spheres):
-            _, _, importance = sphere_data
+        Stores an array with length equal to the number of important primitives. At
+        each point in the array the normalised cumulative importance weighting is stored.
+        """
+
+        self._cdf = zeros(len(self._spheres))
+        for index, sphere_data in enumerate(self._spheres):
+            _, importance = sphere_data
             if index == 0:
-                self.cdf[index] = importance
+                self._cdf[index] = importance
             else:
-                self.cdf[index] = self.cdf[index-1] + importance
-        self.cdf /= self.total_importance
+                self._cdf[index] = self._cdf[index-1] + importance
+        self._cdf /= self._total_importance
 
     cdef inline tuple _pick_sphere(self):
+        """
+        Find the important primitive bounding sphere corresponding to a uniform random number.
+        """
 
         cdef:
             int index
@@ -100,44 +121,53 @@ cdef class ImportanceManager:
             BoundingBox3D box
             BoundPrimitive bound_primitive
 
-        if self.cdf is None:
+        if self._cdf is None:
             return None
 
         # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
-        index = find_index(self.cdf, uniform()) + 1
-        return self.spheres[index]
+        index = find_index(self._cdf, uniform()) + 1
+        return self._spheres[index]
 
     @cython.cdivision(True)
     cpdef Vector3D sample(self, Point3D origin):
+        """
+        Sample a random important primitive weighted by their importance weight.
+
+        :param Point3D origin: The point from which to sample.
+        :return: The vector along which to sample.
+        :rtype: Vector3D
+        """
 
         # calculate projection of sphere (a disk) as seen from origin point and
         # generate a random direction towards that projection
 
         cdef:
-            Point3D centre
-            double radius, importance, distance, angular_radius
+            BoundingSphere3D sphere
+            double importance, distance, angular_radius
             Vector3D direction, sample
             AffineMatrix3D rotation
 
-        if self.cdf is None:
+        # TODO: move the projection code to a projection method on BoundingSphere3D
+
+        if self._cdf is None:
             raise ImportanceError("Attempted to sample important direction when no important primitives have been"
                                   "specified.")
 
-        centre, radius, importance = self._pick_sphere()
+        sphere, importance = self._pick_sphere()
 
-        direction = origin.vector_to(centre)
+        direction = origin.vector_to(sphere.centre)
         distance = direction.get_length()
 
         # is point inside sphere?
-        if distance == 0 or distance < radius:
+        if distance == 0 or distance < sphere.radius:
             # the point lies inside the sphere, sample random direction from full sphere
             return vector_sphere()
 
         # calculate the angular radius and solid angle projection of the sphere
-        angular_radius = asin(radius / distance)
+        angular_radius = asin(sphere.radius / distance)
 
         # sample a vector from a cone of half angle equal to the angular radius
-        sample = vector_cone(angular_radius * 180 / PI)
+        sample = vector_cone_uniform(angular_radius * 180 / PI)
 
         # rotate cone to lie along vector from observation point to sphere centre
         direction = direction.normalise()
@@ -147,24 +177,28 @@ cdef class ImportanceManager:
     @cython.cdivision(True)
     cpdef double pdf(self, Point3D origin, Vector3D direction):
         """
-        Calculates the value of the PDF in the specified direction.
+        Calculates the value of the PDF for the specified sample point and direction.
+
+        :param Point3D origin: The point from which to sample.
+        :param Vector3D direction: The sample direction.
+        :rtype: float
         """
 
         cdef:
-            double radius, importance, distance, solid_angle, angular_radius_cos, t
+            BoundingSphere3D sphere
+            double importance, distance, solid_angle, angular_radius_cos, t
             double pdf_all, pdf_sphere, selection_weight
-            Point3D centre
             Vector3D cone_axis
             AffineMatrix3D rotation
 
         pdf_all = 0
-        for centre, radius, importance in self.spheres:
+        for sphere, importance in self._spheres:
 
-            cone_axis = origin.vector_to(centre)
+            cone_axis = origin.vector_to(sphere.centre)
             distance = cone_axis.get_length()
 
             # is point inside sphere?
-            if distance == 0 or distance < radius:
+            if distance == 0 or distance < sphere.radius:
 
                 # the point lies inside the sphere, the projection is a full sphere
                 solid_angle = 4 * PI
@@ -172,7 +206,7 @@ cdef class ImportanceManager:
             else:
 
                 # calculate cosine of angular radius of cone
-                t = radius / distance
+                t = sphere.radius / distance
                 angular_radius_cos = sqrt(1 - t * t)
 
                 # does the direction lie inside the cone of projection
@@ -186,7 +220,7 @@ cdef class ImportanceManager:
 
             # calculate probability
             pdf_sphere = 1 / solid_angle
-            selection_weight = importance / self.total_importance
+            selection_weight = importance / self._total_importance
 
             # add contribution to pdf
             pdf_all += selection_weight * pdf_sphere
@@ -194,10 +228,14 @@ cdef class ImportanceManager:
         return pdf_all
 
     cpdef bint has_primitives(self):
-        return self.total_importance > 0
+        """
+        Returns true if any primitives in this scene-graph have an importance weighting.
+
+        :rtype: bool
+        """
+        return self._total_importance > 0
 
 
-# # TODO: update docstrings
 cdef class World(CoreWorld):
     """
     The root node of the optical scene-graph.
@@ -214,46 +252,33 @@ cdef class World(CoreWorld):
         self._importance = None
 
     cpdef build_importance(self, bint force=False):
-        # """
-        # This method manually triggers a rebuild of the Acceleration object.
-        #
-        # If the Acceleration object is already in a consistent state this method
-        # will do nothing unless the force keyword option is set to True.
-        #
-        # The Acceleration object is used to accelerate hit() and contains()
-        # calculations, typically using a spatial sub-division method. If changes are
-        # made to the scene-graph structure, transforms or to a primitive's
-        # geometry the acceleration structures may no longer represent the
-        # geometry of the scene and hence must be rebuilt. This process is
-        # usually performed automatically as part of the first call to hit() or
-        # contains() following a change in the scene-graph. As calculating these
-        # structures can take some time, this method provides the option of
-        # triggering a rebuild outside of hit() and contains() in case the user wants
-        # to be able to perform a benchmark without including the overhead of the
-        # Acceleration object rebuild.
-        #
-        # :param bint force: If set to True, forces rebuilding of acceleration structure.
-        # """
+        """
+        This method manually triggers a rebuild of the importance manager object.
+
+        If the importance manager object is already in a consistent state this method
+        will do nothing unless the force keyword option is set to True.
+
+        :param bint force: If set to True, forces rebuilding of acceleration structure.
+        """
 
         if self._importance is None or force:
             self._importance = ImportanceManager(self.primitives)
 
     def _change(self, _NodeBase node, ChangeSignal change not None):
-        # """
-        # Notifies the World of a change to the scene-graph.
-        #
-        # This method must be called is a change occurs that may have invalidated
-        # any acceleration structures held by the World.
-        #
-        # The node on which the change occurs and a ChangeSignal must be
-        # provided. The ChangeSignal must specify the nature of the change to the
-        # scene-graph.
-        #
-        # The core World object only recognises the GEOMETRY signal. When a
-        # GEOMETRY signal is received, the world will be instructed to rebuild
-        # it's spatial acceleration structures on the next call to any method
-        # that interacts with the scene-graph geometry.
-        # """
+        """
+        Notifies the World of a change to the scene-graph.
+
+        This method must be called if a change occurs that may have invalidated
+        any acceleration structures held by the World, and also the important primitives
+        list maintained be the importance manager.
+
+        The node on which the change occurs and a ChangeSignal must be
+        provided. The ChangeSignal must specify the nature of the change.
+
+        The optical World object only recognises the MATERIAL signal. When a
+        MATERIAL signal is recieved, the ImportanceManager is rebuilt to reflect
+        changes to the important primitive list and their respective weights.
+        """
 
         if change is MATERIAL:
             self._importance = None
@@ -261,13 +286,35 @@ cdef class World(CoreWorld):
         super()._change(node, change)
 
     cpdef Vector3D important_direction_sample(self, Point3D origin):
+        """
+        Get a sample direction of an important primitive.
+
+        :param Point3D origin: The point from which to sample.
+        :return: The vector along which to sample.
+        :rtype: Vector3D
+        """
+
         self.build_importance()
         return self._importance.sample(origin)
 
     cpdef double important_direction_pdf(self, Point3D origin, Vector3D direction):
+        """
+        Calculates the value of the PDF for the specified sample point and direction.
+
+        :param Point3D origin: The point from which to sample.
+        :param Vector3D direction: The sample direction.
+        :rtype: float
+        """
+
         self.build_importance()
         return self._importance.pdf(origin, direction)
 
     cpdef bint has_important_primitives(self):
+        """
+        Returns true if any primitives in this scene-graph have an importance weighting.
+
+        :rtype: bool
+        """
+
         self.build_importance()
         return self._importance.has_primitives()

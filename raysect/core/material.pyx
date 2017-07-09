@@ -30,6 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class Material:
+    """
+    A base class for all Material classes.
+    """
 
     def __init__(self):
         self.primitives = []

@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core cimport new_point3d, Point3D, new_normal3d, AffineMatrix3D, Material, new_intersection, BoundingBox3D
+from raysect.core.math.cython cimport solve_quadratic, swap_double, swap_int
 from libc.math cimport sqrt
 cimport cython
 
@@ -58,22 +59,18 @@ cdef class Parabola(Primitive):
     and extends over the z range [0, height]. The base of the parabola is
     capped with a disk forming a closed surface. The base of the parabola lies
     on the x-y plane, the parabola vertex (tip) lies at z=height.
+
+    :param float radius: Radius of the parabola in meters (default = 0.5).
+    :param float height: Height of the parabola in meters (default = 1.0).
+    :param Node parent: Scene-graph parent node or None (default = None).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+    :param Material material: A Material object defining the parabola's material (default = None).
+    :param str name: A string specifying a user-friendly name for the parabola (default = "").
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
                  AffineMatrix3D transform=None, Material material=None,
                  str name=None):
-        """
-        Radius is radius of the parabola base in x-y plane.
-        Height of parabola is its extent along the z-axis [0, height].
-
-        :param radius: Radius of the parabola in meters (default = 0.5).
-        :param height: Height of the parabola in meters (default = 1.0).
-        :param parent: Scene-graph parent node or None (default = None).
-        :param transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
-        :param material: A Material object defining the parabola's material (default = None).
-        :param name: A string specifying a user-friendly name for the parabola (default = "").
-        """
 
         super().__init__(parent, transform, material, name)
 
@@ -93,35 +90,47 @@ cdef class Parabola(Primitive):
         self._cached_ray = None
         self._cached_type = NO_TYPE
 
-    property radius:
-        def __get__(self):
-            return self._radius
+    @property
+    def radius(self):
+        """
+        Radius of the parabola base in x-y plane.
 
-        def __set__(self, double value):
-            if value <= 0.0:
-                raise ValueError("Parabola radius cannot be less than or equal to zero.")
-            self._radius = value
+        :rtype: float
+        """
+        return self._radius
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+    @radius.setter
+    def radius(self, double value):
+        if value <= 0.0:
+            raise ValueError("Parabola radius cannot be less than or equal to zero.")
+        self._radius = value
 
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
 
-    property height:
-        def __get__(self):
-            return self._height
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
-        def __set__(self, double value):
-            if value <= 0.0:
-                raise ValueError("Parabola height cannot be less than or equal to zero.")
-            self._height = value
+    @property
+    def height(self):
+        """
+        The parabola's extent along the z-axis [0, height].
 
-            # the next intersection cache has been invalidated by the geometry change
-            self._further_intersection = False
+        :rtype: float
+        """
+        return self._height
 
-            # any geometry caching in the root node is now invalid, inform root
-            self.notify_geometry_change()
+    @height.setter
+    def height(self, double value):
+        if value <= 0.0:
+            raise ValueError("Parabola height cannot be less than or equal to zero.")
+        self._height = value
+
+        # the next intersection cache has been invalidated by the geometry change
+        self._further_intersection = False
+
+        # any geometry caching in the root node is now invalid, inform root
+        self.notify_geometry_change()
 
     @cython.cdivision(True)
     cpdef Intersection hit(self, Ray ray):
@@ -130,8 +139,8 @@ cdef class Parabola(Primitive):
             Point3D origin
             Vector3D direction
             double radius, height
-            double a, b, c, d, k, t0, t1, t0_z, t1_z, temp_d
-            int t0_type, t1_type, temp_i
+            double a, b, c, k, t0, t1, t0_z, t1_z
+            int t0_type, t1_type
             bint t0_outside, t1_outside
             double closest_intersection
             int closest_type
@@ -153,23 +162,10 @@ cdef class Parabola(Primitive):
         b = 2 * k * (direction.x * origin.x + direction.y * origin.y) + direction.z
         c = k * (origin.x * origin.x + origin.y * origin.y) - (height - origin.z)
 
-        # Solve quadratic equation
-        d = b*b - 4*a*c
-
-        # ray misses parabola if there are no real roots of the quadratic
-        if d < 0:
+        # calculate intersection distances by solving the quadratic equation
+        # ray misses if there are no real roots of the quadratic
+        if not solve_quadratic(a, b, c, &t0, &t1):
             return None
-
-        # calculate intersection distances using method described in the book:
-        # "Physically Based Rendering - 2nd Edition", Elsevier 2010
-        # this method is more numerically stable than the usual root equation
-        if b < 0:
-            q = -0.5 * (b - sqrt(d))
-        else:
-            q = -0.5 * (b + sqrt(d))
-
-        t0 = q / a
-        t1 = c / q
 
         # calculate z height of intersection points
         t0_z = origin.z + t0 * direction.z
@@ -207,16 +203,8 @@ cdef class Parabola(Primitive):
 
         # ensure t0 is always smaller (closer) than t1
         if t0 > t1:
-
-            # swap ray distance
-            temp_d = t0
-            t0 = t1
-            t1 = temp_d
-
-            # swap intersection type
-            temp_i = t0_type
-            t0_type = t1_type
-            t1_type = temp_i
+            swap_double(&t0, &t1)
+            swap_int(&t0_type, &t1_type)
 
         # are there any intersections inside the ray search range?
         if t0 > ray.max_distance or t1 < 0.0:

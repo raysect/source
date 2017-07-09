@@ -47,9 +47,10 @@ cdef class Light(NullVolume):
     and emission spectrum may be supplied. By default the light spectrum is the
     D65 white point spectrum.
 
-    :param light_direction: A world space Vector3D defining the light direction.
-    :param intensity: The light intensity (default is 1.0).
-    :param spectrum: A SpectralFunction defining the light spectrum (default is D65 white).
+    :param Vector3D light_direction: A world space Vector3D defining the light direction.
+    :param float intensity: The light intensity in units of radiance (default is 1.0).
+    :param SpectralFunction spectrum: A SpectralFunction defining the light's
+      emission spectrum (default is D65 white).
     """
 
     def __init__(self, Vector3D light_direction, double intensity=1.0, SpectralFunction spectrum=None):
@@ -91,9 +92,6 @@ cdef class PerfectReflectingSurface(Material):
             Vector3D incident, reflected
             double temp, ci
             Ray reflected_ray
-            Spectrum spectrum
-            double[::1] s_view, n_view, k_view
-            int i
 
         # convert ray direction normal to local coordinates
         incident = ray.direction.transform(world_to_primitive)
@@ -127,9 +125,7 @@ cdef class PerfectReflectingSurface(Material):
             # incident ray is pointing in to surface, reflection is therefore outside
             reflected_ray = ray.spawn_daughter(outside_point.transform(primitive_to_world), reflected)
 
-        spectrum = reflected_ray.trace(world)
-
-        return spectrum
+        return reflected_ray.trace(world)
 
 
     @cython.boundscheck(False)

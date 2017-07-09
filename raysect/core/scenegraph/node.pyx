@@ -65,7 +65,8 @@ cdef class Node(_NodeBase):
         # re-enable _modified() calls
         self._track_modifications = True
 
-    property parent:
+    @property
+    def parent(self):
         """
         The parent of this node in the scenegraph.
 
@@ -73,53 +74,53 @@ cdef class Node(_NodeBase):
         :setter: Sets this node's parent.
         :rtype: Node
         """
+        return self._parent
 
-        def __get__(self):
-            return self._parent
+    @parent.setter
+    def parent(self, object value):
 
-        def __set__(self, object value):
+        if self._parent is value:
+            # the parent is unchanged, do nothing
+            return
 
-            if self._parent is value:
-                # the parent is unchanged, do nothing
-                return
+        if value is None:
 
-            if value is None:
+            # _parent cannot be None (due to above if statement) so it must be a node, disconnect from current parent
+            self._parent.children.remove(self)
+            self._parent = None
+            self._update()
 
-                # _parent cannot be None (due to above if statement) so it must be a node, disconnect from current parent
-                self._parent.children.remove(self)
-                self._parent = None
+        else:
+
+            if not isinstance(value, _NodeBase):
+                raise TypeError("The specified parent is not a scene-graph node or None (unparented).")
+
+            # prevent cyclic connections
+            self._check_parent(value)
+
+            if self._parent is None:
+
+                # connect to parent
+                self._parent = value
+                self._parent.children.append(self)
+
+                # propagate new state
                 self._update()
 
             else:
 
-                if not isinstance(value, _NodeBase):
-                    raise TypeError("The specified parent is not a scene-graph node or None (unparented).")
+                # disconnect from current parent
+                self._parent.children.remove(self)
 
-                # prevent cyclic connections
-                self._check_parent(value)
+                # connect to parent
+                self._parent = value
+                self._parent.children.append(self)
 
-                if self._parent is None:
+                # propagate new state
+                self._update()
 
-                    # connect to parent
-                    self._parent = value
-                    self._parent.children.append(self)
-
-                    # propagate new state
-                    self._update()
-
-                else:
-
-                    # disconnect from current parent
-                    self._parent.children.remove(self)
-
-                    # connect to parent
-                    self._parent = value
-                    self._parent.children.append(self)
-
-                    # propagate new state
-                    self._update()
-
-    property transform:
+    @property
+    def transform(self):
         """
         The transform for this node's coordinate system in relation to the parent node.
 
@@ -127,15 +128,15 @@ cdef class Node(_NodeBase):
         :setter: Sets this node's affine transform matrix.
         :rtype: AffineMatrix3D
         """
+        return self._transform
 
-        def __get__(self):
-            return self._transform
+    @transform.setter
+    def transform(self, AffineMatrix3D value not None):
+        self._transform = value
+        self._update()
 
-        def __set__(self, AffineMatrix3D value not None):
-            self._transform = value
-            self._update()
-
-    property name:
+    @property
+    def name(self):
         """
         The name of this node.
 
@@ -143,12 +144,11 @@ cdef class Node(_NodeBase):
         :setter: Sets this node's name.
         :rtype: str
         """
+        return self._name
 
-        def __get__(self):
-            return self._name
-
-        def __set__(self, unicode value not None):
-            self._name = value
+    @name.setter
+    def name(self, str value not None):
+        self._name = value
 
     cpdef AffineMatrix3D to(self, _NodeBase node):
         """

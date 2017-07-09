@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,34 +29,20 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-cdef class PointSampler:
-    cpdef list sample(self, int samples)
-
-
-cdef class VectorSampler:
-    cpdef list sample(self, int samples)
+from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, Normal3D, AffineMatrix3D
+from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
+from raysect.optical.material.material cimport NullVolume
 
 
-cdef class DiskSampler(PointSampler):
-    cdef public double radius
+cdef class UnitySurfaceEmitter(NullVolume):
+
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
 
-cdef class RectangleSampler(PointSampler):
-    cdef public double width, height
+cdef class UnityVolumeEmitter(HomogeneousVolumeEmitter):
 
-
-cdef class ConeSampler(VectorSampler):
-    cdef public double angle
-
-
-cdef class SphereSampler(VectorSampler):
-    pass
-
-
-cdef class HemisphereUniformSampler(VectorSampler):
-    pass
-
-
-cdef class HemisphereCosineSampler(VectorSampler):
-    pass
+    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
+                                     World world, Ray ray, Primitive primitive,
+                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)

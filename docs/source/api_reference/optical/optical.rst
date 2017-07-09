@@ -5,7 +5,9 @@ Optical Module
 .. toctree::
    main_optical_classes
    observers
-   materials
-
+   pipelines
+   optical_material_base_classes
+   optical_surfaces
+   optical_volumes
 
 

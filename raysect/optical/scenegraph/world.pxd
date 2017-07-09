@@ -36,9 +36,9 @@ from raysect.core cimport Point3D, Vector3D, World as CoreWorld
 cdef class ImportanceManager:
 
     cdef:
-        ndarray cdf
-        double total_importance
-        list spheres
+        ndarray _cdf
+        double _total_importance
+        list _spheres
 
     cdef object _process_primitives(self, list primitives)
 

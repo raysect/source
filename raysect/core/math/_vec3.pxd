@@ -35,11 +35,11 @@ cdef class _Vec3:
 
     cpdef double dot(self, _Vec3 v)
 
-    cdef inline double get_length(self)
+    cdef inline double get_length(self) nogil
 
-    cdef inline void set_length(self, double v) except *
+    cdef inline object set_length(self, double v)
 
-    cdef inline double get_index(self, int index)
+    cdef inline double get_index(self, int index) nogil
 
-    cdef inline void set_index(self, int index, double value)
+    cdef inline void set_index(self, int index, double value) nogil
 

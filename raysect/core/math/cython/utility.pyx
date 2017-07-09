@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from libc.math cimport sqrt
 cimport cython
 
 #TODO: Write unit tests!
@@ -36,7 +37,7 @@ cimport cython
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline int find_index(double[::1] x, double v):
+cdef inline int find_index(double[::1] x, double v) nogil:
     """
     Locates the lower index or the range that contains the specified value.
 
@@ -73,7 +74,7 @@ cdef inline int find_index(double[::1] x, double v):
         # value is lower than the lowest value in the array
         return -1
 
-    top_index = len(x) - 1
+    top_index = x.shape[0] - 1
     if v >= x[top_index]:
 
         # value is above or equal to the highest value in the array
@@ -93,7 +94,7 @@ cdef inline int find_index(double[::1] x, double v):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double interpolate(double[::1] x, double[::1] y, double p):
+cdef inline double interpolate(double[::1] x, double[::1] y, double p) nogil:
     """
     Linearly interpolates sampled data onto the specified point.
 
@@ -134,7 +135,7 @@ cdef inline double interpolate(double[::1] x, double[::1] y, double p):
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1):
+cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil:
     """
     Integrates a linearly interpolated function between two points.
 
@@ -180,7 +181,7 @@ cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1)
         return y[0] * (x1 - x0)
 
     # are both points beyond the top of the array?
-    top_index = len(x) - 1
+    top_index = x.shape[0] - 1
     if lower_index > top_index:
 
         # extrapolate from last array value (nearest-neighbour)
@@ -244,7 +245,7 @@ cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1)
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
+cdef inline double average(double[::1] x, double[::1] y, double x0, double x1) nogil:
     """
     Returns the average value of a linearly interpolated function between two
     points.
@@ -278,7 +279,7 @@ cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
         if index == -1:
             return y[0]
 
-        top_index = len(x) - 1
+        top_index = x.shape[0] - 1
 
         # is point above array?
         if index == top_index:
@@ -298,3 +299,139 @@ cdef inline double average(double[::1] x, double[::1] y, double x0, double x1):
             x1 = temp
 
         return integrate(x, y, x0, x1) / (x1 - x0)
+
+
+#TODO: docstring
+@cython.cdivision(True)
+cdef inline bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil:
+    """
+
+    :param double a:
+    :param double b:
+    :param double c:
+    :param double t0:
+    :param double t1:
+    :return:
+    :rtype: bint
+    """
+
+    cdef double d, q
+
+    # calculate discriminant
+    d = b*b - 4*a*c
+
+    # are there any real roots of the quadratic?
+    if d < 0:
+        return False
+
+    # calculate roots using method described in the book:
+    # "Physically Based Rendering - 2nd Edition", Elsevier 2010
+    # this method is more numerically stable than the usual root equation
+    if b < 0:
+        q = -0.5 * (b - sqrt(d))
+    else:
+        q = -0.5 * (b + sqrt(d))
+    t0[0] = q / a
+    t1[0] = c / q
+    return True
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef inline bint winding2d(double[:,::1] vertices) nogil:
+    """
+    Identifies the winding direction of a simple 2D polygon.
+
+    Must be a simple polygon (none of the segments cross each other).
+    This method is only valid for closed polygons,
+    i.e. the first point is connected to the last point.
+
+    Returns True if clockwise, false if anti-clockwise.
+
+    Vertices must be a Nx2 array, this is not checked.
+
+    .. WARNING:: For speed, this function does not perform any type or bounds
+       checking. Supplying malformed data may result in data corruption or a
+       segmentation fault.
+
+    :rtype: bool
+    """
+
+    cdef:
+        double sum = 0
+        int i, length
+
+    # Work out the signed area of the polygon (note: this is double the area because we need sign of magnitude
+    # and can avoid dividing by 2).
+    length = vertices.shape[0]
+    for i in range(length - 1):
+        sum += (vertices[i, 1] + vertices[i + 1, 1]) * (vertices[i + 1, 0] - vertices[i, 0])
+    sum += (vertices[0, 1] + vertices[length - 1, 1]) * (vertices[0, 0] - vertices[length - 1, 0])
+    return sum > 0
+
+
+def _test_winding2d(p):
+    """Expose cython function for testing."""
+    return winding2d(p)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty):
+    """
+    Cython utility for testing if a 2D point (ptx, pty) is inside a 2D polygon defined by
+    the two memory views px_mv[:] and py_mv[:].
+
+    This function implements the winding number method for testing if points are inside or
+    outside an arbitrary polygon. Returns True if the test point is inside the specified
+    polygon.
+
+    .. WARNING:: For speed, this function does not perform any type or bounds
+       checking. Supplying malformed data may result in data corruption or a
+       segmentation fault.
+
+    :param double vertices: Memory view of polygon's x,y coordinates with shape (N,2)
+      where N is the number of points in the polygon.
+    :param double ptx: the x coordinate of the test point.
+    :param double pty: the y coordinate of the test point.
+    :rtype: bool
+    """
+
+    cdef:
+        int i, winding_number = 0
+        double side
+
+    for i in range(vertices.shape[0] - 1):
+
+        # start case where first polygon edge y is less than test-point's y
+        if vertices[i, 1] <= pty:
+            # test for case of upward crossing
+            if vertices[i+1, 1] > pty:
+
+                # Test if point is on left side of line
+                side = (vertices[i+1, 0] - vertices[i, 0]) * (pty - vertices[i, 1]) - (ptx -  vertices[i, 0]) * (vertices[i+1, 1] - vertices[i, 1])
+                if side > 0:
+                    winding_number += 1
+
+
+        # else we must be considering case where first polygon edge point's y is greater than test point y
+        else:
+            if vertices[i+1, 1] <= pty:
+
+                # Test if point is on right side of line
+                side = (vertices[i+1, 0] - vertices[i, 0]) * (pty - vertices[i, 1]) - (ptx -  vertices[i, 0]) * (vertices[i+1, 1] - vertices[i, 1])
+                if side < 0:
+                    winding_number -= 1
+
+    if winding_number == 0:
+        return False
+    else:
+        return True
+
+
+def _point_inside_polygon(vertices, ptx, pty):
+    """Expose cython function for testing."""
+
+    return point_inside_polygon(vertices, ptx, pty)
+
+

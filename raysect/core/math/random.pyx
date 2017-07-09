@@ -90,8 +90,9 @@
 
 from os import urandom as _urandom
 from raysect.core.math.vector cimport new_vector3d
-from raysect.core.math.point cimport new_point2d
-from libc.math cimport cos, sin, log, fabs, sqrt, M_PI as PI
+from raysect.core.math.point cimport new_point2d, Point3D, new_point3d
+from raysect.core.math.cython cimport barycentric_interpolation
+from libc.math cimport cos, sin, asin, log, fabs, sqrt, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
 cimport cython
 
@@ -298,7 +299,7 @@ cpdef bint probability(double prob):
     return uniform() < prob
 
 
-cpdef Point2D point_disk():
+cdef inline Point2D point_disk():
     """
     Returns a random point on a disk of unit radius.
 
@@ -310,7 +311,7 @@ cpdef Point2D point_disk():
     return new_point2d(r * cos(theta), r * sin(theta))
 
 
-cpdef Point2D point_square():
+cdef inline Point2D point_square():
     """
     Returns a random point on a square of unit radius.
 
@@ -320,7 +321,25 @@ cpdef Point2D point_square():
     return new_point2d(uniform(), uniform())
 
 
-cpdef Vector3D vector_sphere():
+cdef inline Point3D point_triangle(Point3D v1, Point3D v2, Point3D v3):
+
+    cdef double temp, alpha, beta, gamma
+
+    # generate barycentric coordinate
+    temp = sqrt(uniform())
+    alpha = 1 - temp
+    beta = uniform() * temp
+    gamma = 1 - alpha - beta
+
+    # interpolate vertex coordinates to generate sample point coordinate
+    return new_point3d(
+        barycentric_interpolation(alpha, beta, gamma, v1.x, v2.x, v3.x),
+        barycentric_interpolation(alpha, beta, gamma, v1.y, v2.y, v3.y),
+        barycentric_interpolation(alpha, beta, gamma, v1.z, v2.z, v3.z)
+    )
+
+
+cdef inline Vector3D vector_sphere():
     """
     Generates a random vector on a unit sphere.
 
@@ -335,7 +354,7 @@ cpdef Vector3D vector_sphere():
     return new_vector3d(x, y, z)
 
 
-cpdef Vector3D vector_hemisphere_uniform():
+cdef inline Vector3D vector_hemisphere_uniform():
     """
     Generates a random vector on a unit hemisphere.
 
@@ -353,7 +372,7 @@ cpdef Vector3D vector_hemisphere_uniform():
     return new_vector3d(x, y, z)
 
 
-cpdef Vector3D vector_hemisphere_cosine():
+cdef inline Vector3D vector_hemisphere_cosine():
     """
     Generates a cosine-weighted random vector on a unit hemisphere.
 
@@ -370,7 +389,7 @@ cpdef Vector3D vector_hemisphere_cosine():
     return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 
 
-cpdef Vector3D vector_cone(double theta):
+cdef inline Vector3D vector_cone_uniform(double theta):
     """
     Generates a random vector in a cone along the z-axis.
 
@@ -391,6 +410,28 @@ cpdef Vector3D vector_cone(double theta):
     cdef double x = r * cos(phi)
     cdef double y = r * sin(phi)
     return new_vector3d(x, y, z)
+
+
+cdef inline Vector3D vector_cone_cosine(double theta):
+    """
+    Generates a cosine-weighted random vector on a cone along the z-axis.
+
+    The angle of the cone is specified with the theta parameter. For speed, no
+    checks are performs on the theta parameter, it is up to user to ensure the
+    angle is sensible.
+
+    :param float theta: An angle between 0 and 90 degrees.
+    :returns: A random Vector3D in the cone defined by theta.
+    :rtype: Vector3D
+    """
+
+    theta *= 0.017453292519943295 # PI / 180
+    cdef double r_max_scaled = asin(theta)
+    cdef double r = sqrt(uniform()) * r_max_scaled
+    cdef double phi = 2.0 * PI * uniform()
+    cdef double x = r * cos(phi)
+    cdef double y = r * sin(phi)
+    return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 
 
 # initialise random number generator

@@ -113,24 +113,34 @@ d65_white_samples = array([
      63.382800,  63.843400,  64.304000,  61.877900,  59.451900,  55.705400,
      51.959000,  54.699800,  57.440600,  58.876500,  60.312500]) / 87.1971
 
+#: CIE D65 standard illuminant, normalised to 1.0 over visual range 375-785 nm
 d65_white = InterpolatedSF(d65_wavelength_samples, d65_white_samples)
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int bins):
+    """
+    Pre-calculates samples of XYZ sensitivity curves over desired spectral range.
+
+    Returns ndarray of shape [N, 3] where the last dimension (0, 1, 2) corresponds
+    to (X, Y, Z).
+
+    :param float min_wavelength: Lower wavelength bound on spectrum
+    :param float max_wavelength: Upper wavelength bound on spectrum
+    :param int bins: Number of spectral bins in spectrum
+    :rtype: ndarray
+    """
 
     cdef ndarray xyz
 
     if bins < 1:
-
         raise("Number of samples can not be less than 1.")
 
     if min_wavelength <= 0.0 or max_wavelength <= 0.0:
-
         raise ValueError("Wavelength can not be less than or equal to zero.")
 
     if min_wavelength >= max_wavelength:
-
         raise ValueError("Minimum wavelength can not be greater or equal to the maximum wavelength.")
 
     xyz = zeros((bins, 3))
@@ -140,9 +150,18 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
 
     return xyz
 
+
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
+cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz=None):
+    """
+    Calculates a tuple of CIE X, Y, Z values from an input spectrum
+
+    :param Spectrum spectrum: Spectrum to process
+    :param ndarray resampled_xyz: Pre-calculated XYZ sensitivity curves optimised
+      for this spectral range (default=None).
+    :rtype: tuple
+    """
 
     cdef:
         double x, y, z
@@ -151,13 +170,9 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
         double[:, ::1] xyz_view
 
     if resampled_xyz is not None:
-
         if resampled_xyz.ndim != 2 or resampled_xyz.shape[0] != spectrum.bins or resampled_xyz.shape[1] != 3:
-
             raise ValueError("The supplied resampled_xyz array size is inconsistent with the number of spectral bins or channel count.")
-
     else:
-
         resampled_xyz = resample_ciexyz(spectrum.min_wavelength,
                                         spectrum.max_wavelength,
                                         spectrum.samples)
@@ -170,7 +185,6 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
     z = 0
 
     for index in range(spectrum.bins):
-
         # treat samples as average value across bin
         x += spectrum.delta_wavelength * samples_view[index] * xyz_view[index, 0]
         y += spectrum.delta_wavelength * samples_view[index] * xyz_view[index, 1]
@@ -181,12 +195,31 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = None):
 
 @cython.cdivision(True)
 cpdef inline tuple ciexyy_to_ciexyz(double cx, double cy, double y):
+    """
+    Performs conversion from CIE xyY to CIE XYZ colour space
 
+    Returns a tuple of (X, Y, Z)
+
+    :param float cx: chromaticity x
+    :param float cy: chromaticity y
+    :param float y: tristimulus Y
+    :rtype: tuple
+    """
     return y / cy * cx, y, y / cy * (1 - cx - cy)
 
 
 @cython.cdivision(True)
 cpdef inline tuple ciexyz_to_ciexyy(double x, double y, double z):
+    """
+    Performs conversion from CIE XYZ to CIE xyY colour space
+
+    Returns a tuple of (cx, cy, Y)
+
+    :param float x: tristimulus X
+    :param float y: tristimulus y
+    :param float z: tristimulus Z
+    :rtype: tuple
+    """
 
     cdef double n
 
@@ -208,10 +241,15 @@ cdef inline double srgb_transfer_function(double v):
 
 cpdef inline tuple ciexyz_to_srgb(double x, double y, double z):
     """
-    sRGB specified as per IEC 61966-2-1:1999.
+    Convert CIE XYZ values to sRGB colour space.
 
     x, y, z in range [0, 1]
     r, g, b in range [0, 1]
+
+    :param float x: tristimulus X
+    :param float y: tristimulus y
+    :param float z: tristimulus Z
+    :rtype: tuple
     """
 
     cdef:
@@ -250,10 +288,15 @@ cdef inline double srgb_transfer_function_inverse(double v):
 
 cpdef inline tuple srgb_to_ciexyz(double r, double g, double b):
     """
-    sRGB specified as per IEC 61966-2-1:1999.
+    Convert sRGB values to CIE XYZ colour space.
 
     r, g, b in range [0, 1]
     x, y, z in range [0, 1]
+
+    :param float r: Red value
+    :param float g: Green value
+    :param float b: Blue value
+    :rtype: tuple
     """
 
     cdef:

@@ -2,17 +2,22 @@
 Geometric Primitives
 ====================
 
-.. autoclass:: raysect.primitive.Sphere
-   :members: __init__
-
 .. autoclass:: raysect.primitive.Box
-   :members: __init__
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.primitive.Sphere
+   :members:
+   :show-inheritance:
 
 .. autoclass:: raysect.primitive.Cylinder
-   :members: __init__
+   :members:
+   :show-inheritance:
 
 .. autoclass:: raysect.primitive.Cone
-   :members: __init__
+   :members:
+   :show-inheritance:
 
 .. autoclass:: raysect.primitive.Parabola
-   :members: __init__
+   :members:
+   :show-inheritance:

@@ -38,6 +38,16 @@ cpdef AffineMatrix3D translate(double x, double y, double z):
     """
     Returns an affine matrix representing a translation of the coordinate space.
 
+    Equivalent to the transform matrix, :math:`\\mathbf{T_{AB}}`, where :math:`\\vec{t}`
+    is the vector from the origin of space A to space B.
+
+    .. math::
+
+        \\mathbf{T_{AB}} = \\left( \\begin{array}{cccc} 1 & 0 & 0 & \\vec{t}.x \\\\
+        0 & 1 & 0 & \\vec{t}.y \\\\
+        0 & 0 & 1 & \\vec{t}.z \\\\
+        0 & 0 & 0 & 1 \\end{array} \\right)
+
     :param float x: x-coordinate
     :param float y: y-coordinate
     :param float z: z-coordinate
@@ -58,7 +68,14 @@ cpdef AffineMatrix3D rotate_x(double angle):
 
     The rotation direction is clockwise when looking along the x-axis.
 
-    :param float angle: The angle specified in degrees.
+    .. math::
+
+        \\mathbf{T_{AB}} = \\left( \\begin{array}{cccc} 1 & 0 & 0 & 0 \\\\
+        0 & \\cos{\\theta} & -\\sin{\\theta} & 0 \\\\
+        0 & \\sin{\\theta} & \\cos{\\theta} & 0 \\\\
+        0 & 0 & 0 & 1 \\end{array} \\right)
+
+    :param float angle: The angle :math:`\\theta` specified in degrees.
     :rtype: AffineMatrix3D
     """
 
@@ -79,7 +96,14 @@ cpdef AffineMatrix3D rotate_y(double angle):
 
     The rotation direction is clockwise when looking along the y-axis.
 
-    :param float angle: The angle specified in degrees.
+    .. math::
+
+        \\mathbf{T_{AB}} = \\left( \\begin{array}{cccc} \\cos{\\theta} & 0 & \\sin{\\theta} & 0 \\\\
+        0 & 1 & 0 & 0 \\\\
+        -\\sin{\\theta} & 0 & \\cos{\\theta} & 0 \\\\
+        0 & 0 & 0 & 1 \\end{array} \\right)
+
+    :param float angle: The angle :math:`\\theta` specified in degrees.
     :rtype: AffineMatrix3D
     """
 
@@ -100,7 +124,14 @@ cpdef AffineMatrix3D rotate_z(double angle):
 
     The rotation direction is clockwise when looking along the z-axis.
 
-    :param float angle: The angle specified in degrees.
+    .. math::
+
+        \\mathbf{T_{AB}} = \\left( \\begin{array}{cccc} \\cos{\\theta} & -\\sin{\\theta} & 0 & 0 \\\\
+        \\sin{\\theta} & \\cos{\\theta} & 0 & 0 \\\\
+        0 & 0 & 1 & 0 \\\\
+        0 & 0 & 0 & 1 \\end{array} \\right)
+
+    :param float angle: The angle :math:`\\theta` specified in degrees.
     :rtype: AffineMatrix3D
     """
 

@@ -31,26 +31,30 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt, fabs
+from libc.math cimport sqrt, fabs, NAN, acos, cos, sin
 
 
 cdef class Vector3D(_Vec3):
+    """
+    Represents a vector in 3D affine space.
+
+    Vectors are described by their (x, y, z) coordinates in the chosen coordinate system. Standard Vector3D operations are
+    supported such as addition, subtraction, scaling, dot product, cross product, normalisation and coordinate
+    transformations.
+
+    If no initial values are passed, Vector3D defaults to a unit vector
+    aligned with the z-axis: Vector3D(0.0, 0.0, 1.0)
+
+    :param float x: initial x coordinate, defaults to x = 0.0.
+    :param float y: initial y coordinate, defaults to y = 0.0.
+    :param float z: initial z coordinate, defaults to z = 0.0.
+
+    :ivar float x: x-coordinate
+    :ivar float y: y-coordinate
+    :ivar float z: z-coordinate
+    """
 
     def __init__(self, double x=0.0, double y=0.0, double z=1.0):
-        """
-        Represents a vector in 3D affine space.
-
-        Vectors are described by their (x, y, z) coordinates in the chosen coordinate system. Standard Vector3D operations are
-        supported such as addition, subtraction, scaling, dot product, cross product, normalisation and coordinate
-        transformations.
-
-        If no initial values are passed, Vector3D defaults to a unit vector
-        aligned with the z-axis: Vector3D(0.0, 0.0, 1.0)
-
-        :param float x: initial x coordinate, defaults to x = 0.0.
-        :param float y: initial y coordinate, defaults to y = 0.0.
-        :param float z: initial z coordinate, defaults to z = 0.0.
-        """
 
         self.x = x
         self.y = y
@@ -77,6 +81,47 @@ cdef class Vector3D(_Vec3):
         else:
             return NotImplemented
 
+    def __getitem__(self, int i):
+        """Returns the vector coordinates by index ([0,1,2] -> [x,y,z]).
+
+            >>> a = Vector3D(1, 0, 0)
+            >>> a[0]
+            1
+        """
+
+        if i == 0:
+            return self.x
+        elif i == 1:
+            return self.y
+        elif i == 2:
+            return self.z
+        else:
+            raise IndexError("Index out of range [0, 2].")
+
+    def __setitem__(self, int i, double value):
+        """Sets the vector coordinates by index ([0,1,2] -> [x,y,z]).
+
+            >>> a = Vector3D(1, 0, 0)
+            >>> a[1] = 2
+            >>> a
+            Vector3D(1.0, 2.0, 0.0)
+        """
+
+        if i == 0:
+            self.x = value
+        elif i == 1:
+            self.y = value
+        elif i == 2:
+            self.z = value
+        else:
+            raise IndexError("Index out of range [0, 2].")
+
+    def __iter__(self):
+        """ Iterates over the vector coordinates (x, y, z) """
+        yield self.x
+        yield self.y
+        yield self.z
+
     def __neg__(self):
         """Returns a vector with the reverse orientation (negation operator)."""
 
@@ -85,7 +130,11 @@ cdef class Vector3D(_Vec3):
                             -self.z)
 
     def __add__(object x, object y):
-        """Addition operator."""
+        """Addition operator.
+
+            >>> Vector3D(1, 0, 0) + Vector3D(0, 1, 0)
+            Vector3D(1.0, 1.0, 0.0)
+        """
 
         cdef _Vec3 vx, vy
 
@@ -103,7 +152,11 @@ cdef class Vector3D(_Vec3):
             return NotImplemented
 
     def __sub__(object x, object y):
-        """Subtraction operator."""
+        """Subtraction operator.
+
+            >>> Vector3D(1, 0, 0) - Vector3D(0, 1, 0)
+            Vector3D(1.0, -1.0, 0.0)
+        """
 
         cdef _Vec3 vx, vy
 
@@ -121,7 +174,15 @@ cdef class Vector3D(_Vec3):
             return NotImplemented
 
     def __mul__(object x, object y):
-        """Multiplication operator."""
+        """Multiplication operator.
+
+        3D vectors can be multiplied with both scalars and transformation matrices.
+
+            >>> 2 * Vector3D(1, 2, 3)
+            Vector3D(2.0, 4.0, 6.0)
+            >>> rotate_x(90) * Vector3D(0, 0, 1)
+            Vector3D(0.0, -1.0, 0.0)
+        """
 
         cdef double s
         cdef Vector3D v
@@ -160,7 +221,11 @@ cdef class Vector3D(_Vec3):
 
     @cython.cdivision(True)
     def __truediv__(object x, object y):
-        """Division operator."""
+        """Division operator.
+
+            >>> Vector3D(1, 1, 1) / 2
+            Vector3D(0.5, 0.5, 0.5)
+        """
 
         cdef double d
         cdef Vector3D v
@@ -189,7 +254,7 @@ cdef class Vector3D(_Vec3):
         """
         Calculates the cross product between this vector and the supplied vector
 
-        C = A.cross(B) <=> C = A x B
+        C = A.cross(B) <=> :math:`\\vec{C} = \\vec{A} \\times \\vec{B}`
 
         :param Vector3D v: An input vector with which to calculate the cross product.
         :rtype: Vector3D
@@ -230,6 +295,10 @@ cdef class Vector3D(_Vec3):
 
         The vector is transformed by pre-multiplying the vector by the affine
         matrix.
+
+        .. math::
+
+            \\vec{C} = \\textbf{A} \\times \\vec{B}
 
         This method is substantially faster than using the multiplication
         operator of AffineMatrix3D when called from cython code.
@@ -348,22 +417,138 @@ cdef class Vector3D(_Vec3):
 
         return v
 
+    cpdef Vector3D lerp(self, Vector3D b, double t):
+        """
+        Returns the linear interpolation between this vector and the supplied vector.
+
+        .. math::
+
+            v = t \\times \\vec{a} + (1-t) \\times \\vec{b}
+
+        :param Vector3D b: The other vector that bounds the interpolation.
+        :param double t: The parametric interpolation point t in (0, 1).
+        """
+
+        cdef double t_minus
+
+        if not 0 <= t <= 1:
+            raise ValueError("Vector lerp parameter t must be in range (0, 1).")
+
+        t_minus = 1 - t
+
+        return new_vector3d(self.x * t_minus + b.x * t, self.y * t_minus + b.y * t, self.z * t_minus + b.z * t)
+
+    cpdef Vector3D slerp(self, Vector3D b, double t):
+        """
+        Performs spherical vector interpolation between two vectors.
+
+        The difference between this function and lerp (linear interpolation) is that the
+        vectors are treated as directions and their angles and magnitudes are interpolated
+        separately.
+
+        Let :math:`\\theta_0` be the angle between two arbitrary vectors :math:`\\vec{a}`
+        and :math:`\\vec{b}`. :math:`\\theta_0` can be calculated through the dot product
+        relationship.
+
+        .. math::
+
+            \\theta_0 = \\cos{^{-1}(\\vec{a} \\cdot \\vec{b})}
+
+        The interpolated vector, :math:`\\vec{v}`, has angle :math:`\\theta` measured from
+        :math:`\\vec{a}`.
+
+        .. math::
+
+            \\theta = t \\times \\theta_0
+
+        Next we need to find the basis vector :math:`\\hat{e}` such that {:math:`\\hat{a}`,
+        :math:`\\hat{e}`} form an orthonormal basis in the same plane as {:math:`\\vec{a}`,
+        :math:`\\vec{b}`}.
+
+        .. math::
+
+            \\hat{e} = \\frac{\\vec{b} - \\vec{a} \\times (\\vec{a} \\cdot \\vec{b})}{|\\vec{b} - \\vec{a} \\times (\\vec{a} \\cdot \\vec{b})|}
+
+        The resulting interpolated direction vector can now be defined as
+
+        .. math::
+
+            \\hat{v} = \\hat{a} \\times \\cos{\\theta} + \\hat{e} \\times \\sin{\\theta}.
+
+        Finally, the magnitude can be interpolated separately by linearly interpolating the original
+        vector magnitudes.
+
+        .. math::
+
+            \\vec{v} = \\hat{v} \\times (t \\times |\\vec{a}| + (1-t) \\times |\\vec{b}|)
+
+        :param Vector3D b: The other vector that bounds the interpolation.
+        :param double t: The parametric interpolation point t in (0, 1).
+        """
+
+        cdef:
+            double theta, theta_0, magnitude_a, magnitude_b, dot_product, ctheta, stheta
+            Vector3D a_normalised, b_normalised, e_vec, v_vec
+
+        if not 0 <= t <= 1:
+            raise ValueError("Spherical lerp parameter t must be in range (0, 1).")
+
+        a_normalised = self.normalise()
+        b_normalised = b.normalise()
+        magnitude_a = self.get_length()
+        magnitude_b = b.get_length()
+
+        # Calculate angle between vectors a and b through dot product
+        theta_0 = acos(a_normalised.dot(b_normalised))
+
+        # Calculate interpolated angle theta
+        theta = t * theta_0
+
+        # Calculate new orthogonal basis vector e
+        dot_product = a_normalised.dot(b_normalised)
+        e_vec = new_vector3d(
+            b_normalised.x - a_normalised.x * dot_product,
+            b_normalised.y - a_normalised.y * dot_product,
+            b_normalised.z - a_normalised.z * dot_product
+        )
+
+        if e_vec.get_length() == 0:
+            raise ValueError("Vectors a and b are parallel, the spherical lerp operation is "
+                             "undefined for these vectors.")
+        e_vec = e_vec.normalise()
+
+        # calculate direction of interpolated vector
+        # v_vec = a_normalised * cos(theta) + e_vec * sin(theta)
+        ctheta = cos(theta)
+        stheta = sin(theta)
+        v_vec = new_vector3d(
+            a_normalised.x * ctheta + e_vec.x * stheta,
+            a_normalised.y * ctheta + e_vec.y * stheta,
+            a_normalised.z * ctheta + e_vec.z * stheta
+        )
+
+        # scale by the interpolated magnitudes
+        return v_vec.mul(magnitude_a * (1 - t) + t * magnitude_b)
+
 
 cdef class Vector2D:
+    """
+    Represents a vector in 2D space.
+
+    2D vectors are described by their (x, y) coordinates. Standard Vector2D operations are
+    supported such as addition, subtraction, scaling, dot product, cross product and normalisation.
+
+    If no initial values are passed, Vector2D defaults to a unit vector
+    aligned with the x-axis: Vector2D(1.0, 0.0)
+
+    :param float x: initial x coordinate, defaults to x = 0.0.
+    :param float y: initial y coordinate, defaults to y = 0.0.
+
+    :ivar float x: x-coordinate
+    :ivar float y: y-coordinate
+    """
 
     def __init__(self, double x=1.0, double y=0.0):
-        """
-        Represents a vector in 2D space.
-
-        2D vectors are described by their (x, y) coordinates. Standard Vector2D operations are
-        supported such as addition, subtraction, scaling, dot product, cross product and normalisation.
-
-        If no initial values are passed, Vector2D defaults to a unit vector
-        aligned with the x-axis: Vector2D(1.0, 0.0)
-
-        :param float x: initial x coordinate, defaults to x = 0.0.
-        :param float y: initial y coordinate, defaults to y = 0.0.
-        """
 
         self.x = x
         self.y = y
@@ -389,13 +574,53 @@ cdef class Vector2D:
         else:
             return NotImplemented
 
+    def __getitem__(self, int i):
+        """Returns the vector coordinates by index ([0,1] -> [x,y]).
+
+            >>> a = Vector2D(1, 0)
+            >>> a[0]
+            1
+        """
+
+        if i == 0:
+            return self.x
+        elif i == 1:
+            return self.y
+        else:
+            raise IndexError("Index out of range [0, 1].")
+
+    def __setitem__(self, int i, double value):
+        """Sets the vector coordinates by index ([0,1] -> [x,y]).
+
+            >>> a = Vector2D(1, 0)
+            >>> a[1] = 2
+            >>> a
+            Vector2D(1.0, 2.0)
+        """
+
+        if i == 0:
+            self.x = value
+        elif i == 1:
+            self.y = value
+        else:
+            raise IndexError("Index out of range [0, 1].")
+
+    def __iter__(self):
+        """ Iterates over the vector coordinates (x, y) """
+        yield self.x
+        yield self.y
+
     def __neg__(self):
         """Returns a vector with the reverse orientation (negation operator)."""
 
         return new_vector2d(-self.x, -self.y)
 
     def __add__(object x, object y):
-        """Addition operator."""
+        """Addition operator.
+
+            >>> Vector2D(1, 0) + Vector2D(0, 1)
+            Vector2D(1.0, 1.0)
+        """
 
         cdef Vector2D vx, vy
 
@@ -411,7 +636,11 @@ cdef class Vector2D:
             return NotImplemented
 
     def __sub__(object x, object y):
-        """Subtraction operator."""
+        """Subtraction operator.
+
+            >>> Vector2D(1, 0) - Vector2D(0, 1)
+            Vector2D(1.0, -1.0)
+        """
 
         cdef Vector2D vx, vy
 
@@ -428,7 +657,11 @@ cdef class Vector2D:
 
     # TODO - add 2D affine transformations
     def __mul__(object x, object y):
-        """Multiplication operator."""
+        """Multiplication operator.
+
+            >>> 2 * Vector3D(1, 2)
+            Vector2D(2.0, 4.0)
+        """
 
         cdef double s
         cdef Vector2D v
@@ -463,7 +696,11 @@ cdef class Vector2D:
 
     @cython.cdivision(True)
     def __truediv__(object x, object y):
-        """Division operator."""
+        """Division operator.
+
+            >>> Vector2D(1, 1) / 2
+            Vector2D(0.5, 0.5)
+        """
 
         cdef double d
         cdef Vector2D v
@@ -486,7 +723,8 @@ cdef class Vector2D:
 
             raise TypeError("Unsupported operand type. Expects a real number.")
 
-    property length:
+    @property
+    def length(self):
         """
         The vector's length.
 
@@ -494,14 +732,11 @@ cdef class Vector2D:
         a zero length vector. The direction of a zero length vector is
         undefined hence it can not be lengthened.
         """
+        return self.get_length()
 
-        def __get__(self):
-
-            return self.get_length()
-
-        def __set__(self, double v):
-
-            self.set_length(v)
+    @length.setter
+    def length(self, double v):
+        self.set_length(v)
 
     cpdef double dot(self, Vector2D v):
         """
@@ -512,7 +747,7 @@ cdef class Vector2D:
 
         return self.x * v.x + self.y * v.y
 
-    cdef inline double get_length(self):
+    cdef inline double get_length(self) nogil:
         """
         Fast function to obtain the vectors length.
 
@@ -524,7 +759,7 @@ cdef class Vector2D:
         return sqrt(self.x * self.x + self.y * self.y)
 
     @cython.cdivision(True)
-    cdef inline void set_length(self, double v) except *:
+    cdef inline object set_length(self, double v):
         """
         Fast function to set the vectors length.
 
@@ -546,7 +781,7 @@ cdef class Vector2D:
         self.x = self.x * t
         self.y = self.y * t
 
-    cdef inline double get_index(self, int index):
+    cdef inline double get_index(self, int index) nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -560,9 +795,9 @@ cdef class Vector2D:
         elif index == 1:
             return self.y
         else:
-            return float("NaN")
+            return NAN
 
-    cdef inline void set_index(self, int index, double value):
+    cdef inline void set_index(self, int index, double value) nogil:
         """
         Fast setting of coordinates via indexing.
 
