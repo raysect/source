@@ -30,7 +30,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.scenegraph.signal import GEOMETRY, MATERIAL
-from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 
 cdef class Primitive(Node):
@@ -187,6 +186,19 @@ cdef class Primitive(Node):
         """
 
         return self.bounding_box().enclosing_sphere()
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        """
+        Returns a new instance of the primitive with the same geometry.
+        
+        :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
+        :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
+        :param Material material: An object representing the material properties of the primitive.
+        :param str name: A string defining the node name.
+        :return: 
+        """
+
+        raise NotImplementedError("Virtual method instance() has not been implemented.")
 
     cpdef object notify_geometry_change(self):
         """

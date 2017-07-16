@@ -372,3 +372,6 @@ cdef class Box(Primitive):
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return Box(self._lower.copy(), self._upper.copy(), parent, transform, material, name)

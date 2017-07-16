@@ -217,3 +217,6 @@ cdef class Sphere(Primitive):
     cpdef BoundingSphere3D bounding_sphere(self):
         cdef Point3D centre = new_point3d(0, 0, 0).transform(self.to_root())
         return BoundingSphere3D(centre, self._radius * SPHERE_PADDING)
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return Sphere(self._radius, parent, transform, material, name)

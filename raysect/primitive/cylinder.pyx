@@ -384,3 +384,5 @@ cdef class Cylinder(Primitive):
 
         return box
 
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return Cylinder(self._radius, self._height, parent, transform, material, name)

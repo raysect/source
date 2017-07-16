@@ -358,3 +358,5 @@ cdef class Parabola(Primitive):
 
         return box
 
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return Parabola(self._radius, self._height, parent, transform, material, name)

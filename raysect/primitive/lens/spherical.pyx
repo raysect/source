@@ -131,6 +131,9 @@ cdef class BiConvex(EncapsulatedPrimitive):
         # edge thickness is the length of the barrel without the curved surfaces
         self.edge_thickness = self.center_thickness - (self.front_thickness + self.back_thickness)
 
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return BiConvex(self.diameter, self.center_thickness, self.front_curvature, self.back_curvature, parent, transform, material, name)
+
 
 cdef class BiConcave(EncapsulatedPrimitive):
     """
@@ -154,8 +157,6 @@ cdef class BiConcave(EncapsulatedPrimitive):
     :param material: An object representing the material properties of the primitive.
     :param name: A string defining the node name.
     """
-
-
 
     cdef:
         readonly double diameter
@@ -220,6 +221,9 @@ cdef class BiConcave(EncapsulatedPrimitive):
 
         # edge thickness is the length of the barrel without the curved surfaces
         self.edge_thickness = self.center_thickness + self.front_thickness + self.back_thickness
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return BiConcave(self.diameter, self.center_thickness, self.front_curvature, self.back_curvature, parent, transform, material, name)
 
 
 cdef class PlanoConvex(EncapsulatedPrimitive):
@@ -302,6 +306,9 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
         # edge thickness is the length of the barrel without the curved surfaces
         self.edge_thickness = self.center_thickness - self.curve_thickness
 
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return PlanoConvex(self.diameter, self.center_thickness, self.curvature, parent, transform, material, name)
+
 
 cdef class PlanoConcave(EncapsulatedPrimitive):
     """
@@ -379,6 +386,9 @@ cdef class PlanoConcave(EncapsulatedPrimitive):
 
         # edge thickness is the length of the barrel without the curved surfaces
         self.edge_thickness = self.center_thickness + self.curve_thickness
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return PlanoConcave(self.diameter, self.center_thickness, self.curvature, parent, transform, material, name)
 
 
 cdef class Meniscus(EncapsulatedPrimitive):
@@ -473,6 +483,8 @@ cdef class Meniscus(EncapsulatedPrimitive):
         # edge thickness is the length of the barrel without the curved surfaces
         self.edge_thickness = self.center_thickness -self.front_thickness + self.back_thickness
 
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return Meniscus(self.diameter, self.center_thickness, self.front_curvature, self.back_curvature, parent, transform, material, name)
 
 
 

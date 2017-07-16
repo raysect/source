@@ -353,6 +353,13 @@ cdef class Union(CSGPrimitive):
 
         return box
 
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+
+        cdef Primitive primitive_a, primitive_b
+        primitive_a = self._primitive_a.primitive.instance()
+        primitive_b = self._primitive_b.primitive.instance()
+        return Union(primitive_a, primitive_b, parent, transform, material, name)
+
 
 cdef class Intersect(CSGPrimitive):
     """
@@ -428,6 +435,13 @@ cdef class Intersect(CSGPrimitive):
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+
+        cdef Primitive primitive_a, primitive_b
+        primitive_a = self._primitive_a.primitive.instance()
+        primitive_b = self._primitive_b.primitive.instance()
+        return Intersect(primitive_a, primitive_b, parent, transform, material, name)
 
 
 cdef class Subtract(CSGPrimitive):
@@ -513,3 +527,10 @@ cdef class Subtract(CSGPrimitive):
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+
+        cdef Primitive primitive_a, primitive_b
+        primitive_a = self._primitive_a.primitive.instance()
+        primitive_b = self._primitive_b.primitive.instance()
+        return Subtract(primitive_a, primitive_b, parent, transform, material, name)
