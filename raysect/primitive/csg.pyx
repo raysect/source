@@ -61,12 +61,13 @@ cdef class CSGPrimitive(Primitive):
       material (default = None).
     """
 
-    def __init__(self, Primitive primitive_a not None = NullPrimitive(),
-                 Primitive primitive_b not None = NullPrimitive(), object parent=None,
-                 AffineMatrix3D transform not None = AffineMatrix3D(),
-                 Material material not None = Material(), str name=None):
+    def __init__(self, Primitive primitive_a=None, Primitive primitive_b=None, object parent=None,
+                 AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, material, name)
+
+        primitive_a = primitive_a or NullPrimitive()
+        primitive_b = primitive_b or NullPrimitive()
 
         # wrap primitives in bounding boxes
         # this must be done before building the scenegraph as re-parenting

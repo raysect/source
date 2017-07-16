@@ -55,7 +55,7 @@ cdef class Sphere(Primitive):
     :param str name: A string specifying a user-friendly name for the sphere (default = "").
     """
 
-    def __init__(self, double radius=0.5, object parent=None, AffineMatrix3D transform not None=AffineMatrix3D(), Material material not None=Material(), str name=None):
+    def __init__(self, double radius=0.5, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, material, name)
 
