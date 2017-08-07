@@ -69,8 +69,7 @@ cdef class Parabola(Primitive):
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
-                 AffineMatrix3D transform=None, Material material=None,
-                 str name=None):
+                 AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, material, name)
 
@@ -358,3 +357,5 @@ cdef class Parabola(Primitive):
 
         return box
 
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return Parabola(self._radius, self._height, parent, transform, material, name)

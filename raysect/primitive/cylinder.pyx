@@ -71,9 +71,8 @@ cdef class Cylinder(Primitive):
     :param str name: A string specifying a user-friendly name for the cylinder (default = "").
     """
 
-    def __init__(self, double radius=0.5, double height=1.0, object parent = None,
-                 AffineMatrix3D transform not None = AffineMatrix3D(),
-                 Material material not None = Material(), str name=None):
+    def __init__(self, double radius=0.5, double height=1.0, object parent=None,
+                 AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, material, name)
 
@@ -384,3 +383,5 @@ cdef class Cylinder(Primitive):
 
         return box
 
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return Cylinder(self._radius, self._height, parent, transform, material, name)

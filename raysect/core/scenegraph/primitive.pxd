@@ -32,7 +32,7 @@
 from raysect.core.ray cimport Ray
 from raysect.core.material cimport Material
 from raysect.core.intersection cimport Intersection
-from raysect.core.math cimport Point3D
+from raysect.core.math cimport Point3D, AffineMatrix3D
 from raysect.core.scenegraph.node cimport Node
 from raysect.core.scenegraph.signal cimport ChangeSignal
 from raysect.core.boundingbox cimport BoundingBox3D
@@ -54,6 +54,8 @@ cdef class Primitive(Node):
     cpdef BoundingBox3D bounding_box(self)
 
     cpdef BoundingSphere3D bounding_sphere(self)
+
+    cpdef object instance(self, object parent=*, AffineMatrix3D transform=*, Material material=*, str name=*)
 
     cpdef object notify_geometry_change(self)
 

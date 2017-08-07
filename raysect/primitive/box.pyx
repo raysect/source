@@ -69,7 +69,7 @@ cdef class Box(Primitive):
     :param str name: A string specifying a user-friendly name for the box (default = "").
     """
 
-    def __init__(self, Point3D lower=None, Point3D upper=None, object parent = None, AffineMatrix3D transform not None = AffineMatrix3D(), Material material not None = Material(), str name=None):
+    def __init__(self, Point3D lower=None, Point3D upper=None, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, material, name)
 
@@ -372,3 +372,6 @@ cdef class Box(Primitive):
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+        return Box(self._lower.copy(), self._upper.copy(), parent, transform, material, name)

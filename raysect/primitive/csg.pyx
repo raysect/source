@@ -61,12 +61,13 @@ cdef class CSGPrimitive(Primitive):
       material (default = None).
     """
 
-    def __init__(self, Primitive primitive_a not None = NullPrimitive(),
-                 Primitive primitive_b not None = NullPrimitive(), object parent=None,
-                 AffineMatrix3D transform not None = AffineMatrix3D(),
-                 Material material not None = Material(), str name=None):
+    def __init__(self, Primitive primitive_a=None, Primitive primitive_b=None, object parent=None,
+                 AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, material, name)
+
+        primitive_a = primitive_a or NullPrimitive()
+        primitive_b = primitive_b or NullPrimitive()
 
         # wrap primitives in bounding boxes
         # this must be done before building the scenegraph as re-parenting
@@ -353,6 +354,13 @@ cdef class Union(CSGPrimitive):
 
         return box
 
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+
+        cdef Primitive primitive_a, primitive_b
+        primitive_a = self._primitive_a.primitive.instance()
+        primitive_b = self._primitive_b.primitive.instance()
+        return Union(primitive_a, primitive_b, parent, transform, material, name)
+
 
 cdef class Intersect(CSGPrimitive):
     """
@@ -428,6 +436,13 @@ cdef class Intersect(CSGPrimitive):
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+
+        cdef Primitive primitive_a, primitive_b
+        primitive_a = self._primitive_a.primitive.instance()
+        primitive_b = self._primitive_b.primitive.instance()
+        return Intersect(primitive_a, primitive_b, parent, transform, material, name)
 
 
 cdef class Subtract(CSGPrimitive):
@@ -513,3 +528,10 @@ cdef class Subtract(CSGPrimitive):
             box.extend(point.transform(self.to_root()), BOX_PADDING)
 
         return box
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+
+        cdef Primitive primitive_a, primitive_b
+        primitive_a = self._primitive_a.primitive.instance()
+        primitive_b = self._primitive_b.primitive.instance()
+        return Subtract(primitive_a, primitive_b, parent, transform, material, name)

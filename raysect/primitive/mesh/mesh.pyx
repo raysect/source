@@ -883,11 +883,11 @@ cdef class Mesh(Primitive):
     argument is ignored.
 
     An alternate option for creating a new mesh is to create an instance of an
-    existing mesh. An instance is a "clone" of the original mesh. Instances
+    existing mesh. An instance is a "clone" of the original mesh. Mesh instances
     hold references to the internal data of the target mesh, they are therefore
     very memory efficient (particularly for detailed meshes) compared to
-    creating a new mesh from scratch. If instance is set, it takes precedence
-    over any other mesh creation settings.
+    creating a new mesh from scratch. A new instance of a mesh can be created
+    using the instance() method.
 
     If a mesh contains degenerate triangles (common for meshes generated from
     CAD models), enable tolerant mode to automatically remove them during mesh
@@ -912,7 +912,6 @@ cdef class Mesh(Primitive):
     :param bool closed: True is the mesh defines a closed volume (default=True).
     :param bool tolerant: Mesh will automatically correct meshes with degenerate
       triangles if set to True (default=True).
-    :param Mesh instance: The Mesh to become an instance of (default=None).
     :param int kdtree_max_depth: The maximum tree depth (automatic if set to 0, default=0).
     :param int kdtree_min_items: The item count threshold for forcing creation of
       a new leaf node (default=1).
@@ -931,33 +930,41 @@ cdef class Mesh(Primitive):
     """
 
     # TODO: calculate or measure triangle hit cost vs split traversal
-    def __init__(self, object vertices=None, object triangles=None, object normals=None,
-                 bint smoothing=True, bint closed=True, bint tolerant=True, Mesh instance=None,
+    def __init__(self, object vertices, object triangles, object normals=None,
+                 bint smoothing=True, bint closed=True, bint tolerant=True,
                  int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0,
                  double kdtree_empty_bonus=0.25, object parent=None,
-                 AffineMatrix3D transform not None=AffineMatrix3D(),
-                 Material material not None=Material(), unicode name not None=""):
+                 AffineMatrix3D transform=None, Material material=None, str name=None):
 
         super().__init__(parent, transform, material, name)
 
-        if instance:
+        if vertices is None or triangles is None:
+            raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
 
-            # hold references to internal data of the specified mesh
-            self._data = instance._data
-
-        else:
-
-            if vertices is None or triangles is None:
-                raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
-
-            # build the kd-Tree
-            self._data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
+        # build the kd-Tree
+        self._data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
         self._next_world_ray = None
         self._next_local_ray = None
         self._ray_distance = 0
+
+    cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
+
+        cdef Mesh mesh = Mesh.__new__(Mesh)
+        super(Mesh, mesh).__init__(parent, transform, material, name)
+
+        # copy the kd-Tree
+        mesh._data = self._data
+
+        # initialise next intersection search
+        self._seek_next_intersection = False
+        self._next_world_ray = None
+        self._next_local_ray = None
+        self._ray_distance = 0
+
+        return mesh
 
     cpdef Intersection hit(self, Ray ray):
         """
