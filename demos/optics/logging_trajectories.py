@@ -1,56 +1,47 @@
 
 # External imports
+import matplotlib as mpl
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+import numpy as np
+plt.ion()
 
 # Raysect imports
 from raysect.optical import World, translate, rotate, Point3D, d65_white, Ray, Vector3D
-from raysect.optical.material import Lambert, Checkerboard
+from raysect.optical.material.absorber import AbsorbingSurface
 from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
 from raysect.optical.observer import FibreOptic, PowerPipeline0D, SpectralPipeline0D
+from raysect.optical.loggingray import LoggingRay
+from raysect.primitive.lens.spherical import *
 
-
-# Box defining the ground plane
-ground = Box(lower=Point3D(-50, -1.51, -50), upper=Point3D(50, -1.5, 50), material=Lambert())
-
-# checker board wall that acts as emitter
-emitter = Box(lower=Point3D(-10, -10, 10), upper=Point3D(10, 10, 10.1),
-              material=Checkerboard(4, d65_white, d65_white, 0.1, 2.0), transform=rotate(45, 0, 0))
-
-# Sphere
-sphere = Sphere(radius=1.5, transform=translate(0, 0.0001, 0), material=schott("N-BK7"))
-
-
-# 3. Build Scenegraph
-# -------------------
 
 world = World()
-sphere.parent = world
-ground.parent = world
-emitter.parent = world
+
+# Create a glass BiConvex lens we want to study
+lens_glass = schott("N-BK7")
+lens_glass.transmission_only = True
+lens = BiConvex(0.0254, 0.0052, 0.0506, 0.0506, parent=world, material=lens_glass)
+
+# Create a target plane behind the lens.
+target = Box(lower=Point3D(-50, -50, -0), upper=Point3D(50, 50, 0), material=AbsorbingSurface(),
+             transform=translate(0, 0, 0.1), parent=world)
 
 
-# 4. Observe()
-# ------------
+# for each sample direction trace a logging ray and plot the ray trajectory
+fig = plt.figure()
+ax = fig.gca(projection='3d')
+for v in np.linspace(0, 0.012, 10):
 
-spectra = SpectralPipeline0D()
-power = PowerPipeline0D()
-fibre = FibreOptic([spectra, power], acceptance_angle=45, radius=0.0005, spectral_bins=500, spectral_rays=1, pixel_samples=1000, transform=translate(0, 0, -5), parent=world)
-fibre.observe()
+    start = Point3D(v, 0, -0.05)
+    log_ray = LoggingRay(start, Vector3D(0, 0, 1))
+    log_ray.trace(world)
 
-from raysect.optical.loggingray import LoggingRay
-import numpy as np
-
-plt.figure()
-for v in np.linspace(0, 2.0, 20):
-    r = LoggingRay(Point3D(v, 0, -5), Vector3D(0, 0, 1))
-    r.trace(world)
-
-    p = []
-    for point in r.log:
+    p = [(start.x, start.y, start.z)]
+    for point in log_ray.log:
         p.append((point.x, point.y, point.z))
     p = np.array(p)
 
-    plt.plot(p[:, 0], p[:, 2])
+    ax.plot(p[:, 0], p[:, 1], p[:, 2], 'k')
 
 plt.show()
