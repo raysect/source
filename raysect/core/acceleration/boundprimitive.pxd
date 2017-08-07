@@ -41,8 +41,8 @@ cdef class BoundPrimitive:
     cdef readonly BoundingBox3D box
     cdef bint _primitive_tested
 
-    cdef inline Intersection hit(self, Ray ray)
+    cdef Intersection hit(self, Ray ray)
 
-    cdef inline Intersection next_intersection(self)
+    cdef Intersection next_intersection(self)
 
-    cdef inline bint contains(self, Point3D point)
+    cdef bint contains(self, Point3D point)

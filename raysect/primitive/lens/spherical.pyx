@@ -116,7 +116,7 @@ cdef class BiConvex(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef inline void _calc_geometry(self):
+    cdef void _calc_geometry(self):
 
         cdef double radius, radius_sqr
 
@@ -207,7 +207,7 @@ cdef class BiConcave(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef inline void _calc_geometry(self):
+    cdef void _calc_geometry(self):
 
         cdef double radius, radius_sqr
 
@@ -292,7 +292,7 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef inline void _calc_geometry(self):
+    cdef void _calc_geometry(self):
 
         cdef double radius, radius_sqr
 
@@ -373,7 +373,7 @@ cdef class PlanoConcave(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef inline void _calc_geometry(self):
+    cdef void _calc_geometry(self):
 
         cdef double radius, radius_sqr
 
@@ -468,7 +468,7 @@ cdef class Meniscus(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef inline void _calc_geometry(self):
+    cdef void _calc_geometry(self):
 
         cdef double radius, radius_sqr
 

@@ -81,7 +81,7 @@ cdef class _MeshKDTree(KDTree2DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef inline BoundingBox2D _generate_bounding_box(self, np.int32_t triangle):
+    cdef BoundingBox2D _generate_bounding_box(self, np.int32_t triangle):
         """
         Generates a bounding box for the specified triangle.
 

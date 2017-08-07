@@ -42,7 +42,7 @@ cdef class BoundingSphere3D:
 
     cpdef tuple full_intersection(self, Ray ray)
 
-    cdef inline bint intersect(self, Ray ray, double *front_intersection, double *back_intersection)
+    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection)
 
     cpdef bint contains(self, Point3D point)
 

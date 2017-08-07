@@ -831,13 +831,13 @@ cdef class MeshData(KDTree3DCore):
         m.load(file)
         return m
 
-    cdef inline uint8_t _read_uint8(self, object file):
+    cdef uint8_t _read_uint8(self, object file):
         return (<uint8_t *> PyBytes_AsString(file.read(sizeof(uint8_t))))[0]
 
-    cdef inline bint _read_bool(self, object file):
+    cdef bint _read_bool(self, object file):
         return self._read_uint8(file) != 0
 
-    cdef inline double _read_float(self, object file):
+    cdef double _read_float(self, object file):
         return (<float *> PyBytes_AsString(file.read(sizeof(float))))[0]
 
 

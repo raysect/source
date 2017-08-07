@@ -88,21 +88,21 @@ cdef class KDTree2DCore:
 
     cpdef bint is_contained(self, Point2D point)
 
-    cdef inline bint _is_contained(self, Point2D point)
+    cdef bint _is_contained(self, Point2D point)
 
-    cdef inline bint _is_contained_node(self, int32_t id, Point2D point)
+    cdef bint _is_contained_node(self, int32_t id, Point2D point)
 
-    cdef inline bint _is_contained_branch(self, int32_t id, Point2D point)
+    cdef bint _is_contained_branch(self, int32_t id, Point2D point)
 
     cdef bint _is_contained_leaf(self, int32_t id, Point2D point)
 
     cpdef list items_containing(self, Point2D point)
 
-    cdef inline list _items_containing(self, Point2D point)
+    cdef list _items_containing(self, Point2D point)
 
-    cdef inline list _items_containing_node(self, int32_t id, Point2D point)
+    cdef list _items_containing_node(self, int32_t id, Point2D point)
 
-    cdef inline list _items_containing_branch(self, int32_t id, Point2D point)
+    cdef list _items_containing_branch(self, int32_t id, Point2D point)
 
     cdef list _items_containing_leaf(self, int32_t id, Point2D point)
 

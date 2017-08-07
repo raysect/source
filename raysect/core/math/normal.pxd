@@ -43,15 +43,15 @@ cdef class Normal3D(_Vec3):
 
     cpdef Normal3D transform_with_inverse(self, AffineMatrix3D m)
 
-    cdef inline Normal3D neg(self)
+    cdef Normal3D neg(self)
 
-    cdef inline Normal3D add(self, _Vec3 v)
+    cdef Normal3D add(self, _Vec3 v)
 
-    cdef inline Normal3D sub(self, _Vec3 v)
+    cdef Normal3D sub(self, _Vec3 v)
 
-    cdef inline Normal3D mul(self, double m)
+    cdef Normal3D mul(self, double m)
 
-    cdef inline Normal3D div(self, double m)
+    cdef Normal3D div(self, double m)
 
     cpdef Normal3D copy(self)
 

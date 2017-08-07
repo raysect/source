@@ -194,7 +194,7 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz=None):
 
 
 @cython.cdivision(True)
-cpdef inline tuple ciexyy_to_ciexyz(double cx, double cy, double y):
+cpdef tuple ciexyy_to_ciexyz(double cx, double cy, double y):
     """
     Performs conversion from CIE xyY to CIE XYZ colour space
 
@@ -209,7 +209,7 @@ cpdef inline tuple ciexyy_to_ciexyz(double cx, double cy, double y):
 
 
 @cython.cdivision(True)
-cpdef inline tuple ciexyz_to_ciexyy(double x, double y, double z):
+cpdef tuple ciexyz_to_ciexyy(double x, double y, double z):
     """
     Performs conversion from CIE XYZ to CIE xyY colour space
 
@@ -227,7 +227,7 @@ cpdef inline tuple ciexyz_to_ciexyy(double x, double y, double z):
     return x / n, y / n, y
 
 
-cdef inline double srgb_transfer_function(double v):
+cdef double srgb_transfer_function(double v):
 
     if v <= 0.0031308:
 
@@ -239,7 +239,7 @@ cdef inline double srgb_transfer_function(double v):
         return 1.055 * v**0.4166666666666667 - 0.055
 
 
-cpdef inline tuple ciexyz_to_srgb(double x, double y, double z):
+cpdef tuple ciexyz_to_srgb(double x, double y, double z):
     """
     Convert CIE XYZ values to sRGB colour space.
 
@@ -273,7 +273,7 @@ cpdef inline tuple ciexyz_to_srgb(double x, double y, double z):
     return r, g, b
 
 
-cdef inline double srgb_transfer_function_inverse(double v):
+cdef double srgb_transfer_function_inverse(double v):
 
     if v <= 0.04045:
 
@@ -286,7 +286,7 @@ cdef inline double srgb_transfer_function_inverse(double v):
         return (0.9478672985781991 * (v + 0.055))**2.4
 
 
-cpdef inline tuple srgb_to_ciexyz(double r, double g, double b):
+cpdef tuple srgb_to_ciexyz(double r, double g, double b):
     """
     Convert sRGB values to CIE XYZ colour space.
 

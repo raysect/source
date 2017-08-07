@@ -46,7 +46,7 @@ cdef class NumericalIntegrator(VolumeIntegrator):
         double _step
         int _min_samples
 
-    cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1
+    cdef int _check_dimensions(self, Spectrum spectrum, int bins) except -1
 
 
 cdef class InhomogeneousVolumeEmitter(NullSurface):

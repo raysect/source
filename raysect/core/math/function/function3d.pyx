@@ -151,7 +151,7 @@ cdef class PythonFunction3D(Function3D):
         return self.function(x, y, z)
 
 
-cdef inline Function3D autowrap_function3d(object function):
+cdef Function3D autowrap_function3d(object function):
     """
     Automatically wraps the supplied python object in a PythonFunction3D object.
 

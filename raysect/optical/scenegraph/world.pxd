@@ -44,7 +44,7 @@ cdef class ImportanceManager:
 
     cdef object _calculate_cdf(self)
 
-    cdef inline tuple _pick_sphere(self)
+    cdef tuple _pick_sphere(self)
 
     cpdef Vector3D sample(self, Point3D origin)
 

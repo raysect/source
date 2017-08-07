@@ -68,11 +68,11 @@ cdef class MeshData(KDTree3DCore):
 
     cpdef BoundingBox3D bounding_box(self, AffineMatrix3D to_world)
 
-    cdef inline uint8_t _read_uint8(self, object file)
+    cdef uint8_t _read_uint8(self, object file)
 
-    cdef inline bint _read_bool(self, object file)
+    cdef bint _read_bool(self, object file)
 
-    cdef inline double _read_float(self, object file)
+    cdef double _read_float(self, object file)
 
 
 cdef class Mesh(Primitive):

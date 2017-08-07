@@ -187,7 +187,7 @@ cdef class _Mat4:
          self.m[2][0], self.m[2][1], self.m[2][2], self.m[2][3],
          self.m[3][0], self.m[3][1], self.m[3][2], self.m[3][3]) = state
 
-    cdef inline double get_element(self, int row, int column):
+    cdef double get_element(self, int row, int column):
         """
         Fast getting of matrix elements via indexing.
 
@@ -199,7 +199,7 @@ cdef class _Mat4:
 
         return self.m[row][column]
 
-    cdef inline void set_element(self, int row, int column, double v):
+    cdef void set_element(self, int row, int column, double v):
         """
         Fast setting of matrix elements via indexing.
 

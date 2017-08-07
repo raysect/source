@@ -88,29 +88,29 @@ cdef class KDTree3DCore:
 
     cpdef bint trace(self, Ray ray)
 
-    cdef inline bint _trace(self, Ray ray)
+    cdef bint _trace(self, Ray ray)
 
-    cdef inline bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range)
+    cdef bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range)
 
-    cdef inline bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range)
+    cdef bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range)
 
     cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range)
 
     cpdef list items_containing(self, Point3D point)
 
-    cdef inline list _items_containing(self, Point3D point)
+    cdef list _items_containing(self, Point3D point)
 
-    cdef inline list _items_containing_node(self, int32_t id, Point3D point)
+    cdef list _items_containing_node(self, int32_t id, Point3D point)
 
-    cdef inline list _items_containing_branch(self, int32_t id, Point3D point)
+    cdef list _items_containing_branch(self, int32_t id, Point3D point)
 
     cdef list _items_containing_leaf(self, int32_t id, Point3D point)
 
     cdef void _reset(self)
 
-    cdef inline double _read_double(self, object file)
+    cdef double _read_double(self, object file)
 
-    cdef inline int32_t _read_int32(self, object file)
+    cdef int32_t _read_int32(self, object file)
 
 
 cdef class KDTree3D(KDTree3DCore):

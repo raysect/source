@@ -43,15 +43,15 @@ cdef class Point3D:
 
     cpdef Point3D transform(self, AffineMatrix3D m)
 
-    cdef inline Point3D add(self, _Vec3 v)
+    cdef Point3D add(self, _Vec3 v)
 
-    cdef inline Point3D sub(self, _Vec3 v)
+    cdef Point3D sub(self, _Vec3 v)
 
     cpdef Point3D copy(self)
 
-    cdef inline double get_index(self, int index) nogil
+    cdef double get_index(self, int index) nogil
 
-    cdef inline void set_index(self, int index, double value) nogil
+    cdef void set_index(self, int index, double value) nogil
 
 
 cdef inline Point3D new_point3d(double x, double y, double z):
@@ -80,15 +80,15 @@ cdef class Point2D:
 
     # cpdef Point3D transform(self, AffineMatrix3D m)
 
-    cdef inline Point2D add(self, Vector2D v)
+    cdef Point2D add(self, Vector2D v)
 
-    cdef inline Point2D sub(self, Vector2D v)
+    cdef Point2D sub(self, Vector2D v)
 
     cpdef Point2D copy(self)
 
-    cdef inline double get_index(self, int index) nogil
+    cdef double get_index(self, int index) nogil
 
-    cdef inline void set_index(self, int index, double value) nogil
+    cdef void set_index(self, int index, double value) nogil
 
 
 cdef inline Point2D new_point2d(double x, double y):

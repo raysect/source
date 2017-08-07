@@ -31,7 +31,7 @@
 
 from libc.math cimport M_1_PI
 
-cpdef inline double km(double v):
+cpdef double km(double v):
     """
     Converts kilometers to meters.
 
@@ -40,7 +40,7 @@ cpdef inline double km(double v):
     """
     return v * 1e3
 
-cpdef inline double cm(double v):
+cpdef double cm(double v):
     """
     Converts centimeters to meters.
 
@@ -49,7 +49,7 @@ cpdef inline double cm(double v):
     """
     return v * 1e-2
 
-cpdef inline double mm(double v):
+cpdef double mm(double v):
     """
     Converts millimeters to meters.
 
@@ -58,7 +58,7 @@ cpdef inline double mm(double v):
     """
     return v * 1e-3
 
-cpdef inline double um(double v):
+cpdef double um(double v):
     """
     Converts micrometers to meters.
 
@@ -67,7 +67,7 @@ cpdef inline double um(double v):
     """
     return v * 1e-6
 
-cpdef inline double nm(double v):
+cpdef double nm(double v):
     """
     Converts nanometers to meters.
 
@@ -76,7 +76,7 @@ cpdef inline double nm(double v):
     """
     return v * 1e-9
 
-cpdef inline double mile(double v):
+cpdef double mile(double v):
     """
     Converts miles to meters.
 
@@ -85,7 +85,7 @@ cpdef inline double mile(double v):
     """
     return v * 1609.34
 
-cpdef inline double yard(double v):
+cpdef double yard(double v):
     """
     Converts yards to meters.
 
@@ -94,7 +94,7 @@ cpdef inline double yard(double v):
     """
     return v * 0.9144
 
-cpdef inline double foot(double v):
+cpdef double foot(double v):
     """
     Converts feet to meters.
 
@@ -103,7 +103,7 @@ cpdef inline double foot(double v):
     """
     return v * 0.3048
 
-cpdef inline double inch(double v):
+cpdef double inch(double v):
     """
     Converts inches to meters.
 
@@ -112,7 +112,7 @@ cpdef inline double inch(double v):
     """
     return v * 0.0254
 
-cpdef inline double mil(double v):
+cpdef double mil(double v):
     """
     Converts mils (thousandths of an inch) to meters.
 
@@ -121,7 +121,7 @@ cpdef inline double mil(double v):
     """
     return v * 2.54e-5
 
-cpdef inline radian(double v):
+cpdef radian(double v):
     """
     Converts radians to degrees.
 

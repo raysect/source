@@ -527,7 +527,7 @@ cdef class KDTree3DCore:
 
         return self._trace(ray)
 
-    cdef inline bint _trace(self, Ray ray):
+    cdef bint _trace(self, Ray ray):
         """
         Starts the ray traversal of the kd tree.
 
@@ -547,7 +547,7 @@ cdef class KDTree3DCore:
         # start exploration of kd-Tree
         return self._trace_node(ROOT_NODE, ray, min_range, max_range)
 
-    cdef inline bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range):
+    cdef bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range):
         """
         Dispatches trace calculation to the relevant node handler.
 
@@ -564,7 +564,7 @@ cdef class KDTree3DCore:
             return self._trace_branch(id, ray, min_range, max_range)
 
     @cython.cdivision(True)
-    cdef inline bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range):
+    cdef bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range):
         """
         Traverses a kd-Tree branch node along the ray path.
 
@@ -674,7 +674,7 @@ cdef class KDTree3DCore:
 
         return self._items_containing(point)
 
-    cdef inline list _items_containing(self, Point3D point):
+    cdef list _items_containing(self, Point3D point):
         """
         Starts contains traversal of the kd-Tree.
 
@@ -689,7 +689,7 @@ cdef class KDTree3DCore:
         # start search
         return self._items_containing_node(ROOT_NODE, point)
 
-    cdef inline list _items_containing_node(self, int32_t id, Point3D point):
+    cdef list _items_containing_node(self, int32_t id, Point3D point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -703,7 +703,7 @@ cdef class KDTree3DCore:
         else:
             return self._items_containing_branch(id, point)
 
-    cdef inline list _items_containing_branch(self, int32_t id, Point3D point):
+    cdef list _items_containing_branch(self, int32_t id, Point3D point):
         """
         Locates the kd-Tree node containing the point.
 
@@ -755,7 +755,7 @@ cdef class KDTree3DCore:
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTree3DCore _items_containing_leaf() method not implemented.")
 
-    cdef inline void _reset(self):
+    cdef void _reset(self):
         """
         Resets the kd-tree state, de-allocating all memory.
         """
@@ -924,10 +924,10 @@ cdef class KDTree3DCore:
         if close:
             file.close()
 
-    cdef inline int32_t _read_int32(self, object file):
+    cdef int32_t _read_int32(self, object file):
         return (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
 
-    cdef inline double _read_double(self, object file):
+    cdef double _read_double(self, object file):
         return (<double *> PyBytes_AsString(file.read(sizeof(double))))[0]
 
 

@@ -82,7 +82,7 @@ cdef class Primitive(Node):
         # inform the scene-graph root that a material change has occurred
         self.notify_material_change()
 
-    cdef inline Material get_material(self):
+    cdef Material get_material(self):
         return self._material
 
     cpdef Intersection hit(self, Ray ray):

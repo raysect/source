@@ -40,4 +40,4 @@ cdef class Sphere(Primitive):
     cdef Vector3D _cached_direction
     cdef Ray _cached_ray
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance)
+    cdef Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance)

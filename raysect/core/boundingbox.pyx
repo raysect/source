@@ -130,7 +130,7 @@ cdef class BoundingBox3D:
         """
         return self.get_centre()
 
-    cdef inline Point3D get_centre(self):
+    cdef Point3D get_centre(self):
         """
         Find the centre of the bounding box.
         """
@@ -175,7 +175,7 @@ cdef class BoundingBox3D:
 
         return hit, front_intersection, back_intersection
 
-    cdef inline bint intersect(self, Ray ray, double *front_intersection, double *back_intersection):
+    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection):
 
         # set initial ray-slab intersection search range
         front_intersection[0] = -INFINITY
@@ -196,7 +196,7 @@ cdef class BoundingBox3D:
         return True
 
     @cython.cdivision(True)
-    cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) nogil:
+    cdef void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) nogil:
 
         cdef double reciprocal, tmin, tmax
 

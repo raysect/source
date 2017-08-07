@@ -110,7 +110,7 @@ cdef class ImportanceManager:
                 self._cdf[index] = self._cdf[index-1] + importance
         self._cdf /= self._total_importance
 
-    cdef inline tuple _pick_sphere(self):
+    cdef tuple _pick_sphere(self):
         """
         Find the important primitive bounding sphere corresponding to a uniform random number.
         """

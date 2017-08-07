@@ -107,7 +107,7 @@ cdef class PinholeCamera(Observer2D):
             raise ValueError("Etendue must be greater than zero.")
         self._etendue = value
 
-    cdef inline object _update_image_geometry(self):
+    cdef object _update_image_geometry(self):
 
         max_pixels = max(self.pixels)
 

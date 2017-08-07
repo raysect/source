@@ -73,9 +73,9 @@ cdef class StatsArray1D:
 
     cpdef ndarray errors(self)
 
-    cdef inline void _new_buffers(self)
+    cdef void _new_buffers(self)
 
-    cdef inline object _bounds_check(self, int x)
+    cdef object _bounds_check(self, int x)
 
 
 cdef class StatsArray2D:
@@ -101,9 +101,9 @@ cdef class StatsArray2D:
 
     cpdef ndarray errors(self)
 
-    cdef inline void _new_buffers(self)
+    cdef void _new_buffers(self)
 
-    cdef inline object _bounds_check(self, int x, int y)
+    cdef object _bounds_check(self, int x, int y)
 
 
 cdef class StatsArray3D:
@@ -129,6 +129,6 @@ cdef class StatsArray3D:
 
     cpdef ndarray errors(self)
 
-    cdef inline void _new_buffers(self)
+    cdef void _new_buffers(self)
 
-    cdef inline object _bounds_check(self, int x, int y, int z)
+    cdef object _bounds_check(self, int x, int y, int z)

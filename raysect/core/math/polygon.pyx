@@ -114,7 +114,7 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices):
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.initializedcheck(False)
-cdef inline int _locate_ear(list active_vertices, double[:,::1] vertices) except -1:
+cdef int _locate_ear(list active_vertices, double[:,::1] vertices) except -1:
     """
     Identifies the vertex that lies on an ear.
     """
@@ -166,7 +166,7 @@ cdef inline int _locate_ear(list active_vertices, double[:,::1] vertices) except
                        "Please check the polygon data describes a simple polygon.")
 
 
-cdef inline bint _is_convex(double v1x, double v1y, double v2x, double v2y, double v3x, double v3y) nogil:
+cdef bint _is_convex(double v1x, double v1y, double v2x, double v2y, double v3x, double v3y) nogil:
     """
     Returns True if vertex is convex.
     """

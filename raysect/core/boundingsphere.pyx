@@ -112,7 +112,7 @@ cdef class BoundingSphere3D:
         hit = self.intersect(ray, &front_intersection, &back_intersection)
         return hit, front_intersection, back_intersection
 
-    cdef inline bint intersect(self, Ray ray, double *front_intersection, double *back_intersection):
+    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection):
 
         cdef Point3D origin
         cdef Vector3D direction

@@ -39,15 +39,15 @@ cdef class BoundingBox3D:
     cdef Point3D lower
     cdef Point3D upper
 
-    cdef inline Point3D get_centre(self)
+    cdef Point3D get_centre(self)
 
     cpdef bint hit(self, Ray ray)
 
     cpdef tuple full_intersection(self, Ray ray)
 
-    cdef inline bint intersect(self, Ray ray, double *front_intersection, double *back_intersection)
+    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection)
 
-    cdef inline void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) nogil
+    cdef void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) nogil
 
     cpdef bint contains(self, Point3D point)
 

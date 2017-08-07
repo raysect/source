@@ -174,7 +174,7 @@ cdef class CSGPrimitive(Primitive):
         # identify first valid intersection
         return self._identify_intersection(self._cache_ray, intersection_a, intersection_b, closest_intersection)
 
-    cdef inline Intersection _identify_intersection(self, Ray ray, Intersection a, Intersection b, Intersection closest):
+    cdef Intersection _identify_intersection(self, Ray ray, Intersection a, Intersection b, Intersection closest):
 
         cdef Intersection intersection
 
@@ -219,7 +219,7 @@ cdef class CSGPrimitive(Primitive):
         # no valid intersections
         return None
 
-    cdef inline Intersection _closest_intersection(self, Intersection a, Intersection b):
+    cdef Intersection _closest_intersection(self, Intersection a, Intersection b):
 
         if a is None:
             return b

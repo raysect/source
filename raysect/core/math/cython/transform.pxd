@@ -32,6 +32,6 @@
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 from raysect.core.math.vector cimport Vector3D
 
-cdef inline AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up)
+cdef AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up)
 
-cdef inline AffineMatrix3D rotate_basis_inverse(Vector3D forward, Vector3D up)
+cdef AffineMatrix3D rotate_basis_inverse(Vector3D forward, Vector3D up)

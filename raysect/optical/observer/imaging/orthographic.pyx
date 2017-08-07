@@ -105,7 +105,7 @@ cdef class OrthographicCamera(Observer2D):
             raise ValueError("Etendue must be greater than zero.")
         self._etendue = value
 
-    cdef inline object _update_image_geometry(self):
+    cdef object _update_image_geometry(self):
 
         self.image_delta = self._width / self._pixels[0]
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta

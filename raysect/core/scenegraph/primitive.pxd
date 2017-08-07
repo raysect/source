@@ -43,7 +43,7 @@ cdef class Primitive(Node):
 
     cdef Material _material
 
-    cdef inline Material get_material(self)
+    cdef Material get_material(self)
 
     cpdef Intersection hit(self, Ray ray)
 

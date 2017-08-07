@@ -39,7 +39,7 @@ cdef class PythonFunction2D(Function2D):
     cdef public object function
 
 
-cdef inline Function2D autowrap_function2d(object function)
+cdef Function2D autowrap_function2d(object function)
 
 
 cdef class AddFunction2D(Function2D):

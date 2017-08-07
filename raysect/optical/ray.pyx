@@ -163,7 +163,7 @@ cdef class Ray(CoreRay):
             raise ValueError("Number of bins cannot be less than 1.")
         self._bins = bins
 
-    cdef inline int get_bins(self) nogil:
+    cdef int get_bins(self) nogil:
         return self._bins
 
     @property
@@ -186,7 +186,7 @@ cdef class Ray(CoreRay):
 
         self._min_wavelength = min_wavelength
 
-    cdef inline double get_min_wavelength(self) nogil:
+    cdef double get_min_wavelength(self) nogil:
         return self._min_wavelength
 
     @property
@@ -209,7 +209,7 @@ cdef class Ray(CoreRay):
 
         self._max_wavelength = max_wavelength
 
-    cdef inline double get_max_wavelength(self) nogil:
+    cdef double get_max_wavelength(self) nogil:
         return self._max_wavelength
 
     @property
@@ -294,7 +294,7 @@ cdef class Ray(CoreRay):
 
         self._important_path_weight = important_path_weight
 
-    cdef inline double get_important_path_weight(self) nogil:
+    cdef double get_important_path_weight(self) nogil:
         return self._important_path_weight
 
     cpdef Spectrum new_spectrum(self):
@@ -356,7 +356,7 @@ cdef class Ray(CoreRay):
         return spectrum
 
     @cython.cdivision(True)
-    cdef inline Spectrum _sample_surface(self, Intersection intersection, World world):
+    cdef Spectrum _sample_surface(self, Intersection intersection, World world):
 
         cdef Material material
 
@@ -373,7 +373,7 @@ cdef class Ray(CoreRay):
                                          intersection.world_to_primitive,
                                          intersection.primitive_to_world)
 
-    cdef inline Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):
+    cdef Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):
 
         cdef:
             list primitives

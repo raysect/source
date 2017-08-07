@@ -152,7 +152,7 @@ cdef class Sphere(Primitive):
         self._further_intersection = False
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t)
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance):
+    cdef Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance):
 
         cdef Point3D hit_point, inside_point, outside_point
         cdef Normal3D normal

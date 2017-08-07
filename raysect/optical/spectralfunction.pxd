@@ -47,17 +47,17 @@ cdef class SpectralFunction:
     cpdef double average(self, double min_wavelength, double max_wavelength)
     cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int bins)
 
-    cdef inline void _average_cache_init(self)
+    cdef void _average_cache_init(self)
     cpdef object _average_cache_clear(self)
-    cdef inline bint _average_cache_valid(self, double min_wavelength, double max_wavelength)
-    cdef inline double _average_cache_get(self)
-    cdef inline void _average_cache_set(self, double min_wavelength, double max_wavelength, double average)
+    cdef bint _average_cache_valid(self, double min_wavelength, double max_wavelength)
+    cdef double _average_cache_get(self)
+    cdef void _average_cache_set(self, double min_wavelength, double max_wavelength, double average)
 
-    cdef inline void _sample_cache_init(self)
+    cdef void _sample_cache_init(self)
     cpdef object _sample_cache_clear(self)
-    cdef inline bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int bins)
-    cdef inline ndarray _sample_cache_get(self)
-    cdef inline void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples)
+    cdef bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int bins)
+    cdef ndarray _sample_cache_get(self)
+    cdef void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples)
 
 
 cdef class NumericallyIntegratedSF(SpectralFunction):

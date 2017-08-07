@@ -121,7 +121,7 @@ cdef class Conductor(Material):
         return spectrum
 
     @cython.cdivision(True)
-    cdef inline double _fresnel(self, double ci, double n, double k) nogil:
+    cdef double _fresnel(self, double ci, double n, double k) nogil:
 
         cdef double c12, k0, k1, k2, k3
 
@@ -257,7 +257,7 @@ cdef class RoughConductor(ContinuousBSDF):
         return self._f(spectrum, s_outgoing, s_half)
 
     @cython.cdivision(True)
-    cdef inline double _d(self, Vector3D s_half):
+    cdef double _d(self, Vector3D s_half):
 
         cdef double r2, h2, k
 
@@ -267,12 +267,12 @@ cdef class RoughConductor(ContinuousBSDF):
         k = h2 * (r2 - 1) + 1
         return r2 / (M_PI * k * k)
 
-    cdef inline double _g(self, Vector3D s_incoming, Vector3D s_outgoing):
+    cdef double _g(self, Vector3D s_incoming, Vector3D s_outgoing):
         # Smith's geometric shadowing model
         return self._g1(s_incoming) * self._g1(s_outgoing)
 
     @cython.cdivision(True)
-    cdef inline double _g1(self, Vector3D v):
+    cdef double _g1(self, Vector3D v):
         # Smith's geometric component (G1) for GGX distribution
         cdef double r2 = self._roughness * self._roughness
         return 2 * v.z / (v.z + sqrt(r2 + (1 - r2) * (v.z * v.z)))
@@ -281,7 +281,7 @@ cdef class RoughConductor(ContinuousBSDF):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef inline Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal):
+    cdef Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal):
 
         cdef:
             double[::1] n, k
@@ -299,7 +299,7 @@ cdef class RoughConductor(ContinuousBSDF):
         return spectrum
 
     @cython.cdivision(True)
-    cdef inline double _fresnel_conductor(self, double ci, double n, double k) nogil:
+    cdef double _fresnel_conductor(self, double ci, double n, double k) nogil:
 
         cdef double c12, k0, k1, k2, k3
 

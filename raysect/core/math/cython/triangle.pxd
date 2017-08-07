@@ -30,17 +30,17 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
-cdef inline bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
+cdef bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
                                  double v3x, double v3y, double px, double py) nogil
 
 
-cdef inline void barycentric_coords(double v1x, double v1y, double v2x, double v2y,
+cdef void barycentric_coords(double v1x, double v1y, double v2x, double v2y,
                                     double v3x, double v3y, double px, double py,
                                     double *alpha, double *beta, double *gamma) nogil
 
 
-cdef inline bint barycentric_inside_triangle(double alpha, double beta, double gamma) nogil
+cdef bint barycentric_inside_triangle(double alpha, double beta, double gamma) nogil
 
 
-cdef inline double barycentric_interpolation(double alpha, double beta, double gamma,
+cdef double barycentric_interpolation(double alpha, double beta, double gamma,
                                              double va, double vb, double vc) nogil

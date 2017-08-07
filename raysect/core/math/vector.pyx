@@ -312,7 +312,7 @@ cdef class Vector3D(_Vec3):
                             m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z,
                             m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z)
 
-    cdef inline Vector3D neg(self):
+    cdef Vector3D neg(self):
         """
         Fast negation operator.
 
@@ -324,7 +324,7 @@ cdef class Vector3D(_Vec3):
                             -self.y,
                             -self.z)
 
-    cdef inline Vector3D add(self, _Vec3 v):
+    cdef Vector3D add(self, _Vec3 v):
         """
         Fast addition operator.
 
@@ -336,7 +336,7 @@ cdef class Vector3D(_Vec3):
                             self.y + v.y,
                             self.z + v.z)
 
-    cdef inline Vector3D sub(self, _Vec3 v):
+    cdef Vector3D sub(self, _Vec3 v):
         """
         Fast subtraction operator.
 
@@ -348,7 +348,7 @@ cdef class Vector3D(_Vec3):
                             self.y - v.y,
                             self.z - v.z)
 
-    cdef inline Vector3D mul(self, double m):
+    cdef Vector3D mul(self, double m):
         """
         Fast multiplication operator.
 
@@ -361,7 +361,7 @@ cdef class Vector3D(_Vec3):
                             self.z * m)
 
     @cython.cdivision(True)
-    cdef inline Vector3D div(self, double d):
+    cdef Vector3D div(self, double d):
         """
         Fast division operator.
 
@@ -747,7 +747,7 @@ cdef class Vector2D:
 
         return self.x * v.x + self.y * v.y
 
-    cdef inline double get_length(self) nogil:
+    cdef double get_length(self) nogil:
         """
         Fast function to obtain the vectors length.
 
@@ -759,7 +759,7 @@ cdef class Vector2D:
         return sqrt(self.x * self.x + self.y * self.y)
 
     @cython.cdivision(True)
-    cdef inline object set_length(self, double v):
+    cdef object set_length(self, double v):
         """
         Fast function to set the vectors length.
 
@@ -781,7 +781,7 @@ cdef class Vector2D:
         self.x = self.x * t
         self.y = self.y * t
 
-    cdef inline double get_index(self, int index) nogil:
+    cdef double get_index(self, int index) nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -797,7 +797,7 @@ cdef class Vector2D:
         else:
             return NAN
 
-    cdef inline void set_index(self, int index, double value) nogil:
+    cdef void set_index(self, int index, double value) nogil:
         """
         Fast setting of coordinates via indexing.
 
@@ -868,7 +868,7 @@ cdef class Vector2D:
     #                         m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z,
     #                         m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z)
 
-    cdef inline Vector2D neg(self):
+    cdef Vector2D neg(self):
         """
         Fast negation operator.
 
@@ -878,7 +878,7 @@ cdef class Vector2D:
 
         return new_vector2d(-self.x, -self.y)
 
-    cdef inline Vector2D add(self, Vector2D v):
+    cdef Vector2D add(self, Vector2D v):
         """
         Fast addition operator.
 
@@ -888,7 +888,7 @@ cdef class Vector2D:
 
         return new_vector2d(self.x + v.x, self.y + v.y)
 
-    cdef inline Vector2D sub(self, Vector2D v):
+    cdef Vector2D sub(self, Vector2D v):
         """
         Fast subtraction operator.
 
@@ -898,7 +898,7 @@ cdef class Vector2D:
 
         return new_vector2d(self.x - v.x, self.y - v.y)
 
-    cdef inline Vector2D mul(self, double m):
+    cdef Vector2D mul(self, double m):
         """
         Fast multiplication operator.
 
@@ -909,7 +909,7 @@ cdef class Vector2D:
         return new_vector2d(self.x * m, self.y * m)
 
     @cython.cdivision(True)
-    cdef inline Vector3D div(self, double d):
+    cdef Vector3D div(self, double d):
         """
         Fast division operator.
 

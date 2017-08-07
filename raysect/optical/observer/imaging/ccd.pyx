@@ -107,7 +107,7 @@ cdef class CCDArray(Observer2D):
         self._pixel_area = (width / self._pixels[0])**2
         self._update_image_geometry()
 
-    cdef inline object _update_image_geometry(self):
+    cdef object _update_image_geometry(self):
 
         self.image_delta = self._width / self._pixels[0]
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta

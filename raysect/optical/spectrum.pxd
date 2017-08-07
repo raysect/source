@@ -43,10 +43,10 @@ cdef class Spectrum(SpectralFunction):
         ndarray _wavelengths
         double[::1] samples_mv
 
-    cdef inline void _wavelength_check(self, double min_wavelength, double max_wavelength)
-    cdef inline void _attribute_check(self)
-    cdef inline void _construct(self, double min_wavelength, double max_wavelength, int bins)
-    cdef inline void _populate_wavelengths(self)
+    cdef void _wavelength_check(self, double min_wavelength, double max_wavelength)
+    cdef void _attribute_check(self)
+    cdef void _construct(self, double min_wavelength, double max_wavelength, int bins)
+    cdef void _populate_wavelengths(self)
 
     cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int bins)
     cpdef bint is_zero(self)
@@ -56,17 +56,17 @@ cdef class Spectrum(SpectralFunction):
     cpdef Spectrum new_spectrum(self)
     cpdef Spectrum copy(self)
 
-    cdef inline void add_scalar(self, double value) nogil
-    cdef inline void sub_scalar(self, double value) nogil
-    cdef inline void mul_scalar(self, double value) nogil
-    cdef inline void div_scalar(self, double value) nogil
-    cdef inline void mad_scalar(self, double scalar, double[::1] array) nogil
+    cdef void add_scalar(self, double value) nogil
+    cdef void sub_scalar(self, double value) nogil
+    cdef void mul_scalar(self, double value) nogil
+    cdef void div_scalar(self, double value) nogil
+    cdef void mad_scalar(self, double scalar, double[::1] array) nogil
 
-    cdef inline void add_array(self, double[::1] array) nogil
-    cdef inline void sub_array(self, double[::1] array) nogil
-    cdef inline void mul_array(self, double[::1] array) nogil
-    cdef inline void div_array(self, double[::1] array) nogil
-    cdef inline void mad_array(self, double[::1] a, double[::1] b) nogil
+    cdef void add_array(self, double[::1] array) nogil
+    cdef void sub_array(self, double[::1] array) nogil
+    cdef void mul_array(self, double[::1] array) nogil
+    cdef void div_array(self, double[::1] array) nogil
+    cdef void mad_array(self, double[::1] a, double[::1] b) nogil
 
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int bins)

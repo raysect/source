@@ -479,7 +479,7 @@ cdef class KDTree2DCore:
 
         return self._is_contained(point)
 
-    cdef inline bint _is_contained(self, Point2D point):
+    cdef bint _is_contained(self, Point2D point):
         """
         Starts contains traversal of the kd-Tree.
 
@@ -494,7 +494,7 @@ cdef class KDTree2DCore:
         # start search
         return self._is_contained_node(ROOT_NODE, point)
 
-    cdef inline bint _is_contained_node(self, int32_t id, Point2D point):
+    cdef bint _is_contained_node(self, int32_t id, Point2D point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -508,7 +508,7 @@ cdef class KDTree2DCore:
         else:
             return self._is_contained_branch(id, point)
 
-    cdef inline bint _is_contained_branch(self, int32_t id, Point2D point):
+    cdef bint _is_contained_branch(self, int32_t id, Point2D point):
         """
         Locates the kd-Tree node containing the point.
 
@@ -568,7 +568,7 @@ cdef class KDTree2DCore:
 
         return self._items_containing(point)
 
-    cdef inline list _items_containing(self, Point2D point):
+    cdef list _items_containing(self, Point2D point):
         """
         Starts contains traversal of the kd-Tree.
 
@@ -583,7 +583,7 @@ cdef class KDTree2DCore:
         # start search
         return self._items_containing_node(ROOT_NODE, point)
 
-    cdef inline list _items_containing_node(self, int32_t id, Point2D point):
+    cdef list _items_containing_node(self, int32_t id, Point2D point):
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -597,7 +597,7 @@ cdef class KDTree2DCore:
         else:
             return self._items_containing_branch(id, point)
 
-    cdef inline list _items_containing_branch(self, int32_t id, Point2D point):
+    cdef list _items_containing_branch(self, int32_t id, Point2D point):
         """
         Locates the kd-Tree node containing the point.
 
@@ -649,7 +649,7 @@ cdef class KDTree2DCore:
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTree2DCore _items_containing_leaf() method not implemented.")
 
-    cdef inline void _reset(self):
+    cdef void _reset(self):
         """
         Resets the kd-tree state, de-allocating all memory.
         """

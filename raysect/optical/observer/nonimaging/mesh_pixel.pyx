@@ -233,7 +233,7 @@ cdef class MeshPixel(Observer0D):
         return rays
 
     @cython.initializedcheck(False)
-    cdef inline int32_t _pick_triangle(self):
+    cdef int32_t _pick_triangle(self):
         """
         Pick a triangle such that sample points are uniform across the surface area.
         """
@@ -241,7 +241,7 @@ cdef class MeshPixel(Observer0D):
         # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
         return find_index(self._cdf_mv, uniform()) + 1
 
-    cdef inline AffineMatrix3D _surface_to_local(self, Vector3D normal):
+    cdef AffineMatrix3D _surface_to_local(self, Vector3D normal):
         """
         Calculates the surface to local space transform.
 

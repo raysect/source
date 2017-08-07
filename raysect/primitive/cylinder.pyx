@@ -274,7 +274,7 @@ cdef class Cylinder(Primitive):
         self._further_intersection = False
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_type)
 
-    cdef inline Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int type):
+    cdef Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance, int face, int type):
 
         cdef:
             Point3D hit_point, inside_point, outside_point
@@ -315,7 +315,7 @@ cdef class Cylinder(Primitive):
                                 normal, exiting, self.to_local(), self.to_root())
 
     @cython.cdivision(True)
-    cdef inline Vector3D _interior_offset(self, Point3D hit_point, Normal3D normal, int type):
+    cdef Vector3D _interior_offset(self, Point3D hit_point, Normal3D normal, int type):
 
         cdef double x, y, z, length
 
@@ -349,12 +349,12 @@ cdef class Cylinder(Primitive):
         point = point.transform(self.to_local())
         return self._inside_slab(point) and self._inside_cylinder(point)
 
-    cdef inline bint _inside_cylinder(self, Point3D point):
+    cdef bint _inside_cylinder(self, Point3D point):
 
         # is the point inside the cylinder radius
         return (point.x * point.x + point.y * point.y) <= (self._radius * self._radius)
 
-    cdef inline bint _inside_slab(self, Point3D point):
+    cdef bint _inside_slab(self, Point3D point):
 
         # first check point is within the cylinder upper and lower bounds
         return 0.0 <= point.z <= self._height

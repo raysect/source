@@ -173,7 +173,7 @@ cdef class NumericalIntegrator(VolumeIntegrator):
 
         return spectrum
 
-    cdef inline int _check_dimensions(self, Spectrum spectrum, int bins) except -1:
+    cdef int _check_dimensions(self, Spectrum spectrum, int bins) except -1:
         if spectrum.samples.ndim != 1 or spectrum.samples.shape[0] != bins:
             raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 

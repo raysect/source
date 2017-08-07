@@ -42,7 +42,7 @@ These functions can not be called from Python directly.
 from raysect.core.math.affinematrix cimport new_affinematrix3d
 
 
-cdef inline AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up):
+cdef AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up):
     """
     Returns a rotation matrix defined by forward and up vectors.
 
@@ -69,7 +69,7 @@ cdef inline AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up):
         0.0, 0.0, 0.0, 1.0
     )
 
-cdef inline AffineMatrix3D rotate_basis_inverse(Vector3D forward, Vector3D up):
+cdef AffineMatrix3D rotate_basis_inverse(Vector3D forward, Vector3D up):
     """
     Returns the inverse of the rotation matrix defined by forward and up vectors.
 

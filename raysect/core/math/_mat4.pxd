@@ -33,7 +33,7 @@ cdef class _Mat4:
 
     cdef double m[4][4]
 
-    cdef inline double get_element(self, int row, int column)
+    cdef double get_element(self, int row, int column)
 
-    cdef inline void set_element(self, int row, int column, double v)
+    cdef void set_element(self, int row, int column, double v)
 

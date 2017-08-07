@@ -127,7 +127,7 @@ cdef class Roughen(Material):
 
         return self.material.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
 
-    cdef inline tuple _generate_surface_transforms(self, Normal3D normal):
+    cdef tuple _generate_surface_transforms(self, Normal3D normal):
         """
         Calculates and populates the surface space transform attributes.
         """

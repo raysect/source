@@ -325,7 +325,7 @@ cdef class ContinuousBSDF(Material):
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
 
 
-cdef inline tuple _generate_surface_transforms(Normal3D normal):
+cdef tuple _generate_surface_transforms(Normal3D normal):
     """
     Calculates and populates the surface space transform attributes.
 

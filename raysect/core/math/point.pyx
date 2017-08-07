@@ -277,7 +277,7 @@ cdef class Point3D:
                            (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
                            (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
 
-    cdef inline Point3D add(self, _Vec3 v):
+    cdef Point3D add(self, _Vec3 v):
         """
         Fast addition operator.
 
@@ -289,7 +289,7 @@ cdef class Point3D:
                            self.y + v.y,
                            self.z + v.z)
 
-    cdef inline Point3D sub(self, _Vec3 v):
+    cdef Point3D sub(self, _Vec3 v):
         """
         Fast subtraction operator.
 
@@ -312,7 +312,7 @@ cdef class Point3D:
                            self.y,
                            self.z)
 
-    cdef inline double get_index(self, int index) nogil:
+    cdef double get_index(self, int index) nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -330,7 +330,7 @@ cdef class Point3D:
         else:
             return NAN
 
-    cdef inline void set_index(self, int index, double value) nogil:
+    cdef void set_index(self, int index, double value) nogil:
         """
         Fast setting of coordinates via indexing.
 
@@ -561,7 +561,7 @@ cdef class Point2D:
     #                      (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
     #                      (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
 
-    cdef inline Point2D add(self, Vector2D v):
+    cdef Point2D add(self, Vector2D v):
         """
         Fast addition operator.
 
@@ -571,7 +571,7 @@ cdef class Point2D:
 
         return new_point2d(self.x + v.x, self.y + v.y)
 
-    cdef inline Point2D sub(self, Vector2D v):
+    cdef Point2D sub(self, Vector2D v):
         """
         Fast subtraction operator.
 
@@ -589,7 +589,7 @@ cdef class Point2D:
         """
         return new_point2d(self.x, self.y)
 
-    cdef inline double get_index(self, int index) nogil:
+    cdef double get_index(self, int index) nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -604,7 +604,7 @@ cdef class Point2D:
         else:
             return NAN
 
-    cdef inline void set_index(self, int index, double value) nogil:
+    cdef void set_index(self, int index, double value) nogil:
         """
         Fast setting of coordinates via indexing.
 

@@ -211,7 +211,7 @@ cdef class StatsArray1D:
             errors_mv[x] = _std_error(self.variance_mv[x], self.samples_mv[x])
         return errors
 
-    cdef inline void _new_buffers(self):
+    cdef void _new_buffers(self):
         self.mean = zeros((self.length,), dtype=float64)
         self.variance = zeros((self.length, ), dtype=float64)
         self.samples = zeros((self.length, ), dtype=int32)
@@ -219,7 +219,7 @@ cdef class StatsArray1D:
         self.variance_mv = self.variance
         self.samples_mv = self.samples
 
-    cdef inline object _bounds_check(self, int x):
+    cdef object _bounds_check(self, int x):
         if x < 0 or x >= self.length:
             raise ValueError("Index is out of range.")
 
@@ -341,7 +341,7 @@ cdef class StatsArray2D:
                 errors_mv[x, y] = _std_error(self.variance_mv[x, y], self.samples_mv[x, y])
         return errors
 
-    cdef inline void _new_buffers(self):
+    cdef void _new_buffers(self):
         self.mean = zeros((self.nx, self.ny), dtype=float64)
         self.variance = zeros((self.nx, self.ny), dtype=float64)
         self.samples = zeros((self.nx, self.ny), dtype=int32)
@@ -349,7 +349,7 @@ cdef class StatsArray2D:
         self.variance_mv = self.variance
         self.samples_mv = self.samples
 
-    cdef inline object _bounds_check(self, int x, int y):
+    cdef object _bounds_check(self, int x, int y):
 
         if x < 0 or x >= self.nx:
             raise ValueError("Index x is out of range.")
@@ -482,7 +482,7 @@ cdef class StatsArray3D:
                     errors_mv[x, y, z] = _std_error(self.variance_mv[x, y, z], self.samples_mv[x, y, z])
         return errors
 
-    cdef inline void _new_buffers(self):
+    cdef void _new_buffers(self):
         self.mean = zeros((self.nx, self.ny, self.nz), dtype=float64)
         self.variance = zeros((self.nx, self.ny, self.nz), dtype=float64)
         self.samples = zeros((self.nx, self.ny, self.nz), dtype=int32)
@@ -490,7 +490,7 @@ cdef class StatsArray3D:
         self.variance_mv = self.variance
         self.samples_mv = self.samples
 
-    cdef inline object _bounds_check(self, int x, int y, int z):
+    cdef object _bounds_check(self, int x, int y, int z):
 
         if x < 0 or x >= self.nx:
             raise ValueError("Index x is out of range.")
@@ -503,7 +503,7 @@ cdef class StatsArray3D:
 
 
 @cython.cdivision(True)
-cdef inline double _std_error(double v, int n) nogil:
+cdef double _std_error(double v, int n) nogil:
     """
     Calculates the standard error from the variance.
 
@@ -518,7 +518,7 @@ cdef inline double _std_error(double v, int n) nogil:
 
 
 @cython.cdivision(True)
-cdef inline void _add_sample(double sample, double *m, double *v, int *n) nogil:
+cdef void _add_sample(double sample, double *m, double *v, int *n) nogil:
     """
     Updates the mean, variance and sample count with the supplied sample value.
 
@@ -555,7 +555,7 @@ cdef inline void _add_sample(double sample, double *m, double *v, int *n) nogil:
 
 
 @cython.cdivision(True)
-cdef inline void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt) nogil:
+cdef void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt) nogil:
     """
     Computes the combined statistics of two sets of samples specified by mean, variance and sample count.
 

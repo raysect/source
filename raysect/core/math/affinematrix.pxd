@@ -36,7 +36,7 @@ cdef class AffineMatrix3D(_Mat4):
 
     cpdef AffineMatrix3D inverse(self)
 
-    cdef inline AffineMatrix3D mul(self, AffineMatrix3D m)
+    cdef AffineMatrix3D mul(self, AffineMatrix3D m)
 
 
 cdef inline AffineMatrix3D new_affinematrix3d(double m00, double m01, double m02, double m03,

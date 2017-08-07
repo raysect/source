@@ -256,7 +256,7 @@ cdef class Dielectric(Material):
             return spectrum
 
     @cython.cdivision(True)
-    cdef inline void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil:
+    cdef void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil:
 
         reflectivity[0] = 0.5 * (((n1*ci - n2*ct) / (n1*ci + n2*ct))**2 + ((n1*ct - n2*ci) / (n1*ct + n2*ci))**2)
         transmission[0] = 1 - reflectivity[0]

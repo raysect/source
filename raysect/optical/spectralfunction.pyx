@@ -93,7 +93,7 @@ cdef class SpectralFunction:
 
         return average
 
-    cdef inline void _average_cache_init(self):
+    cdef void _average_cache_init(self):
 
         # initialise cache with invalid values
         self._average_cache = 0
@@ -103,16 +103,16 @@ cdef class SpectralFunction:
     cpdef object _average_cache_clear(self):
         self._average_cache = None
 
-    cdef inline bint _average_cache_valid(self, double min_wavelength, double max_wavelength):
+    cdef bint _average_cache_valid(self, double min_wavelength, double max_wavelength):
         return (
             self._average_cache_min_wvl == min_wavelength and
             self._average_cache_max_wvl == max_wavelength
         )
 
-    cdef inline double _average_cache_get(self):
+    cdef double _average_cache_get(self):
         return self._average_cache
 
-    cdef inline void _average_cache_set(self, double min_wavelength, double max_wavelength, double average):
+    cdef void _average_cache_set(self, double min_wavelength, double max_wavelength, double average):
 
         self._average_cache = average
         self._average_cache_min_wvl = min_wavelength
@@ -161,7 +161,7 @@ cdef class SpectralFunction:
 
         return samples
 
-    cdef inline void _sample_cache_init(self):
+    cdef void _sample_cache_init(self):
 
         # initialise cache with invalid values
         self._sample_cache = None
@@ -172,7 +172,7 @@ cdef class SpectralFunction:
     cpdef object _sample_cache_clear(self):
         self._sample_cache = None
 
-    cdef inline bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int bins):
+    cdef bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int bins):
 
         return (
             self._sample_cache_min_wvl == min_wavelength and
@@ -180,10 +180,10 @@ cdef class SpectralFunction:
             self._sample_cache_num_samp == bins
         )
 
-    cdef inline ndarray _sample_cache_get(self):
+    cdef ndarray _sample_cache_get(self):
         return self._sample_cache
 
-    cdef inline void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples):
+    cdef void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples):
 
         self._sample_cache = samples
         self._sample_cache_min_wvl = min_wavelength

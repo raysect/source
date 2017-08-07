@@ -163,7 +163,7 @@ cdef void init_by_array64(uint64_t init_key[], uint64_t key_length) nogil:
     mt[0] = 9223372036854775808UL  # 1 << 63, MSB is 1 assuring non-zero initial array
 
 
-cdef inline uint64_t _rand_uint64() nogil:
+cdef uint64_t _rand_uint64() nogil:
     """
     Generates a random number on [0, 2^64-1] - interval.
     """
@@ -299,7 +299,7 @@ cpdef bint probability(double prob):
     return uniform() < prob
 
 
-cdef inline Point2D point_disk():
+cdef Point2D point_disk():
     """
     Returns a random point on a disk of unit radius.
 
@@ -311,7 +311,7 @@ cdef inline Point2D point_disk():
     return new_point2d(r * cos(theta), r * sin(theta))
 
 
-cdef inline Point2D point_square():
+cdef Point2D point_square():
     """
     Returns a random point on a square of unit radius.
 
@@ -321,7 +321,7 @@ cdef inline Point2D point_square():
     return new_point2d(uniform(), uniform())
 
 
-cdef inline Point3D point_triangle(Point3D v1, Point3D v2, Point3D v3):
+cdef Point3D point_triangle(Point3D v1, Point3D v2, Point3D v3):
 
     cdef double temp, alpha, beta, gamma
 
@@ -339,7 +339,7 @@ cdef inline Point3D point_triangle(Point3D v1, Point3D v2, Point3D v3):
     )
 
 
-cdef inline Vector3D vector_sphere():
+cdef Vector3D vector_sphere():
     """
     Generates a random vector on a unit sphere.
 
@@ -354,7 +354,7 @@ cdef inline Vector3D vector_sphere():
     return new_vector3d(x, y, z)
 
 
-cdef inline Vector3D vector_hemisphere_uniform():
+cdef Vector3D vector_hemisphere_uniform():
     """
     Generates a random vector on a unit hemisphere.
 
@@ -372,7 +372,7 @@ cdef inline Vector3D vector_hemisphere_uniform():
     return new_vector3d(x, y, z)
 
 
-cdef inline Vector3D vector_hemisphere_cosine():
+cdef Vector3D vector_hemisphere_cosine():
     """
     Generates a cosine-weighted random vector on a unit hemisphere.
 
@@ -389,7 +389,7 @@ cdef inline Vector3D vector_hemisphere_cosine():
     return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
 
 
-cdef inline Vector3D vector_cone_uniform(double theta):
+cdef Vector3D vector_cone_uniform(double theta):
     """
     Generates a random vector in a cone along the z-axis.
 
@@ -412,7 +412,7 @@ cdef inline Vector3D vector_cone_uniform(double theta):
     return new_vector3d(x, y, z)
 
 
-cdef inline Vector3D vector_cone_cosine(double theta):
+cdef Vector3D vector_cone_cosine(double theta):
     """
     Generates a cosine-weighted random vector on a cone along the z-axis.
 

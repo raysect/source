@@ -44,9 +44,9 @@ cdef class CSGPrimitive(Primitive):
     cdef Intersection _cache_last_intersection
     cdef bint _cache_invalid
 
-    cdef inline Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection)
+    cdef Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection)
 
-    cdef inline Intersection _closest_intersection(self, Intersection a, Intersection b)
+    cdef Intersection _closest_intersection(self, Intersection a, Intersection b)
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest)
 

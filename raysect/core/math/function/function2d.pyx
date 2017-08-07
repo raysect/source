@@ -152,7 +152,7 @@ cdef class PythonFunction2D(Function2D):
         return self.function(x, y)
 
 
-cdef inline Function2D autowrap_function2d(object function):
+cdef Function2D autowrap_function2d(object function):
     """
     Automatically wraps the supplied python object in a PythonFunction2D object.
 

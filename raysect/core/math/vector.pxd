@@ -40,15 +40,15 @@ cdef class Vector3D(_Vec3):
 
     cpdef Vector3D transform(self, AffineMatrix3D m)
 
-    cdef inline Vector3D neg(self)
+    cdef Vector3D neg(self)
 
-    cdef inline Vector3D add(self, _Vec3 v)
+    cdef Vector3D add(self, _Vec3 v)
 
-    cdef inline Vector3D sub(self, _Vec3 v)
+    cdef Vector3D sub(self, _Vec3 v)
 
-    cdef inline Vector3D mul(self, double m)
+    cdef Vector3D mul(self, double m)
 
-    cdef inline Vector3D div(self, double m)
+    cdef Vector3D div(self, double m)
 
     cpdef Vector3D copy(self)
 
@@ -81,13 +81,13 @@ cdef class Vector2D:
 
     cpdef double dot(self, Vector2D v)
 
-    cdef inline double get_length(self) nogil
+    cdef double get_length(self) nogil
 
-    cdef inline object set_length(self, double v)
+    cdef object set_length(self, double v)
 
-    cdef inline double get_index(self, int index) nogil
+    cdef double get_index(self, int index) nogil
 
-    cdef inline void set_index(self, int index, double value) nogil
+    cdef void set_index(self, int index, double value) nogil
 
     cpdef double cross(self, Vector2D v)
 
@@ -95,15 +95,15 @@ cdef class Vector2D:
 
     # cpdef Vector2D transform(self, AffineMatrix2D m):
 
-    cdef inline Vector2D neg(self)
+    cdef Vector2D neg(self)
 
-    cdef inline Vector2D add(self, Vector2D v)
+    cdef Vector2D add(self, Vector2D v)
 
-    cdef inline Vector2D sub(self, Vector2D v)
+    cdef Vector2D sub(self, Vector2D v)
 
-    cdef inline Vector2D mul(self, double m)
+    cdef Vector2D mul(self, double m)
 
-    cdef inline Vector3D div(self, double d)
+    cdef Vector3D div(self, double d)
 
     cpdef Vector2D copy(self)
 

@@ -37,7 +37,7 @@ cimport cython
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline int find_index(double[::1] x, double v) nogil:
+cdef int find_index(double[::1] x, double v) nogil:
     """
     Locates the lower index or the range that contains the specified value.
 
@@ -94,7 +94,7 @@ cdef inline int find_index(double[::1] x, double v) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double interpolate(double[::1] x, double[::1] y, double p) nogil:
+cdef double interpolate(double[::1] x, double[::1] y, double p) nogil:
     """
     Linearly interpolates sampled data onto the specified point.
 
@@ -135,7 +135,7 @@ cdef inline double interpolate(double[::1] x, double[::1] y, double p) nogil:
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil:
+cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil:
     """
     Integrates a linearly interpolated function between two points.
 
@@ -245,7 +245,7 @@ cdef inline double integrate(double[::1] x, double[::1] y, double x0, double x1)
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline double average(double[::1] x, double[::1] y, double x0, double x1) nogil:
+cdef double average(double[::1] x, double[::1] y, double x0, double x1) nogil:
     """
     Returns the average value of a linearly interpolated function between two
     points.
@@ -303,7 +303,7 @@ cdef inline double average(double[::1] x, double[::1] y, double x0, double x1) n
 
 #TODO: docstring
 @cython.cdivision(True)
-cdef inline bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil:
+cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil:
     """
 
     :param double a:
@@ -338,7 +338,7 @@ cdef inline bint solve_quadratic(double a, double b, double c, double *t0, doubl
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline bint winding2d(double[:,::1] vertices) nogil:
+cdef bint winding2d(double[:,::1] vertices) nogil:
     """
     Identifies the winding direction of a simple 2D polygon.
 

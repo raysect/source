@@ -40,18 +40,18 @@ cpdef double normal(double mean, double sigma)
 
 cpdef bint probability(double prob)
 
-cdef inline Point2D point_disk()
+cdef Point2D point_disk()
 
-cdef inline Point2D point_square()
+cdef Point2D point_square()
 
-cdef inline Point3D point_triangle(Point3D v1, Point3D v2, Point3D v3)
+cdef Point3D point_triangle(Point3D v1, Point3D v2, Point3D v3)
 
-cdef inline Vector3D vector_sphere()
+cdef Vector3D vector_sphere()
 
-cdef inline Vector3D vector_hemisphere_uniform()
+cdef Vector3D vector_hemisphere_uniform()
 
-cdef inline Vector3D vector_hemisphere_cosine()
+cdef Vector3D vector_hemisphere_cosine()
 
-cdef inline Vector3D vector_cone_uniform(double theta)
+cdef Vector3D vector_cone_uniform(double theta)
 
-cdef inline Vector3D vector_cone_cosine(double theta)
+cdef Vector3D vector_cone_cosine(double theta)

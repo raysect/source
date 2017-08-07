@@ -272,7 +272,7 @@ cdef class Normal3D(_Vec3):
                             m.m[0][1] * self.x + m.m[1][1] * self.y + m.m[2][1] * self.z,
                             m.m[0][2] * self.x + m.m[1][2] * self.y + m.m[2][2] * self.z)
 
-    cdef inline Normal3D neg(self):
+    cdef Normal3D neg(self):
         """
         Fast negation operator.
 
@@ -284,7 +284,7 @@ cdef class Normal3D(_Vec3):
                             -self.y,
                             -self.z)
 
-    cdef inline Normal3D add(self, _Vec3 v):
+    cdef Normal3D add(self, _Vec3 v):
         """
         Fast addition operator.
 
@@ -296,7 +296,7 @@ cdef class Normal3D(_Vec3):
                             self.y + v.y,
                             self.z + v.z)
 
-    cdef inline Normal3D sub(self, _Vec3 v):
+    cdef Normal3D sub(self, _Vec3 v):
         """
         Fast subtraction operator.
 
@@ -308,7 +308,7 @@ cdef class Normal3D(_Vec3):
                             self.y - v.y,
                             self.z - v.z)
 
-    cdef inline Normal3D mul(self, double m):
+    cdef Normal3D mul(self, double m):
         """
         Fast multiplication operator.
 
@@ -321,7 +321,7 @@ cdef class Normal3D(_Vec3):
                             self.z * m)
 
     @cython.cdivision(True)
-    cdef inline Normal3D div(self, double d):
+    cdef Normal3D div(self, double d):
         """
         Fast division operator.
 

@@ -42,7 +42,7 @@ cdef class _MeshKDTree(KDTree2DCore):
         np.int32_t[:, ::1] _triangles
         np.int32_t triangle_id
 
-    cdef inline BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)
+    cdef BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)
 
 
 cdef class Discrete2DMesh(Function2D):

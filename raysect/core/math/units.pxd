@@ -29,19 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cpdef inline double km(double v)
-cpdef inline double cm(double v)
-cpdef inline double mm(double v)
-cpdef inline double um(double v)
-cpdef inline double nm(double v)
+cpdef double km(double v)
+cpdef double cm(double v)
+cpdef double mm(double v)
+cpdef double um(double v)
+cpdef double nm(double v)
 
-cpdef inline double mile(double v)
-cpdef inline double yard(double v)
-cpdef inline double foot(double v)
-cpdef inline double inch(double v)
-cpdef inline double mil(double v)
+cpdef double mile(double v)
+cpdef double yard(double v)
+cpdef double foot(double v)
+cpdef double inch(double v)
+cpdef double mil(double v)
 
-cpdef inline radian(double v)
+cpdef radian(double v)
 
 
 

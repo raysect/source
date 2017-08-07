@@ -36,15 +36,15 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
 
 cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = *)
 
-cpdef inline tuple ciexyy_to_ciexyz(double cx, double cy, double y)
+cpdef tuple ciexyy_to_ciexyz(double cx, double cy, double y)
 
-cpdef inline tuple ciexyz_to_ciexyy(double x, double y, double z)
+cpdef tuple ciexyz_to_ciexyy(double x, double y, double z)
 
-cdef inline double srgb_transfer_function(double v)
+cdef double srgb_transfer_function(double v)
 
-cpdef inline tuple ciexyz_to_srgb(double x, double y, double z)
+cpdef tuple ciexyz_to_srgb(double x, double y, double z)
 
-cdef inline double srgb_transfer_function_inverse(double v)
+cdef double srgb_transfer_function_inverse(double v)
 
-cpdef inline tuple srgb_to_ciexyz(double r, double g, double b)
+cpdef tuple srgb_to_ciexyz(double r, double g, double b)
 

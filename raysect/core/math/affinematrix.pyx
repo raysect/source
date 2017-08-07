@@ -228,7 +228,7 @@ cdef class AffineMatrix3D(_Mat4):
                                   (self.m[3][1] * t[ 1] - self.m[3][0] * t[ 3] - self.m[3][2] * t[ 0]) * idet,
                                   t[18] * idet)
 
-    cdef inline AffineMatrix3D mul(self, AffineMatrix3D m):
+    cdef AffineMatrix3D mul(self, AffineMatrix3D m):
 
         return new_affinematrix3d(self.m[0][0] * m.m[0][0] + self.m[0][1] * m.m[1][0] + self.m[0][2] * m.m[2][0] + self.m[0][3] * m.m[3][0],
                                   self.m[0][0] * m.m[0][1] + self.m[0][1] * m.m[1][1] + self.m[0][2] * m.m[2][1] + self.m[0][3] * m.m[3][1],

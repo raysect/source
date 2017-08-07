@@ -47,7 +47,7 @@ cdef class Intersection:
     cdef public AffineMatrix3D world_to_primitive
     cdef public AffineMatrix3D primitive_to_world
 
-    cdef inline void _construct(self, Ray ray, double ray_distance, Primitive primitive,
+    cdef void _construct(self, Ray ray, double ray_distance, Primitive primitive,
                                 Point3D hit_point, Point3D inside_point, Point3D outside_point,
                                 Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive,
                                 AffineMatrix3D primitive_to_world)
