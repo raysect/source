@@ -6,6 +6,7 @@ Primitives Module
    geometric_primitives
    meshes
    csg_operations
+   optical_elements
 
 
 
