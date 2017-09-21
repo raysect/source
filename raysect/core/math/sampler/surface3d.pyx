@@ -148,7 +148,7 @@ cdef class DiskSampler3D(SurfaceSampler3D):
         self._area_inv = 1 / self.area
 
     cdef Point3D sample(self):
-        cdef double r = sqrt(uniform())
+        cdef double r = sqrt(uniform()) * self.radius
         cdef double theta = 2.0 * PI * uniform()
         return new_point3d(r * cos(theta), r * sin(theta), 0)
 
