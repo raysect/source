@@ -31,11 +31,16 @@
 
 from libc.math cimport cos, M_PI as PI
 
+from raysect.core cimport Vector3D
 from raysect.core.math.sampler cimport DiskSampler3D, ConeUniformSampler
 from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
 cimport cython
+
+
+# 1 / (2 * PI)
+DEF RECIP_2_PI = 0.15915494309189535
 
 
 # TODO - provide a function for angular fall off for collection, instead of acceptance cone.
@@ -123,17 +128,23 @@ cdef class FibreOptic(Observer0D):
 
         cdef:
             list rays, origins, directions
+            double weight, pdf
+            Vector3D direction
             int n
 
         origins = self._point_sampler.samples(ray_count)
-        directions = self._vector_sampler.samples(ray_count)
+        directions = self._vector_sampler.samples_with_pdfs(ray_count)
 
         rays = []
         for n in range(ray_count):
 
             # projected area weight is normal.incident which simplifies
             # to incident.z here as the normal is (0, 0 ,1)
-            rays.append((template.copy(origins[n], directions[n]), directions[n].z))
+            # weight = 1/(2pi) * 1/(sample_pdf) * cos(theta)
+            # Note: 1/area * 1/area_pdf cancels when doing uniform area sampling
+            direction, pdf = directions[n]
+            weight = RECIP_2_PI / pdf * direction.z
+            rays.append((template.copy(origins[n], direction), weight))
 
         return rays
 
