@@ -4,6 +4,7 @@ import sys
 import numpy
 import os
 import os.path as path
+import multiprocessing
 
 force = False
 profile = False
@@ -59,5 +60,5 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
-    ext_modules=cythonize(extensions, force=force, compiler_directives=directives))
+    ext_modules=cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=directives))
 

@@ -189,7 +189,7 @@ cdef class MeshPixel(Observer0D):
             AffineMatrix3D surface_to_local
             int32_t triangle, v1i, v2i, v3i
 
-        directions = self._vector_sampler(ray_count)
+        directions = self._vector_sampler.samples(ray_count)
 
         rays = []
         for n in range(ray_count):

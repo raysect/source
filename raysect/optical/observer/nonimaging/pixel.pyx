@@ -148,8 +148,8 @@ cdef class Pixel(Observer0D):
             int n
             double weight
 
-        origins = self._point_sampler(ray_count)
-        directions = self._vector_sampler(ray_count)
+        origins = self._point_sampler.samples(ray_count)
+        directions = self._vector_sampler.samples(ray_count)
 
         rays = []
         for n in range(ray_count):
