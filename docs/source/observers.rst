@@ -3,9 +3,9 @@
 Sampling and Observers
 **********************
 
-=================
-Observer Equation
-=================
+=========================
+Light transport equations
+=========================
 
 The total intensity measured by an observing pixel is given be the integral of
 the incident emission over the collecting solid angle :math:`\Omega` and surface
@@ -25,6 +25,33 @@ rays become increasingly parallel to the surface.
 
    **Caption:** Example sampling geometry for a pixel in a camera. (Image credit: Carr, M.,
    Meakins, A., et. al. (2017))
+
+The amount of light that reaches a camera from a point on an object surface is
+given by the sum of light emitted and reflected from other sources.
+
+.. math::
+
+   L_{O}(p, \omega_O) = \int_{\Omega} L_{i}(p, \omega_i) \times f(\omega_i, \omega_o) \times \cos (\theta_i) d\omega_i
+
+
+This equation is the same as the observer equation with the addition of the
+bidirectional reflectance distribution function (BRDF) term :math:`f(\omega_i , \omega_o )`.
+The BRDF is a weighting function that describes the redistribution of incident light
+into outgoing reflections and transmission/absorption. It is commonly approximated in
+terms of two ideal material components, specular and diffuse reflections. Ideal specular
+reflection behaves like a mirror where the incoming light is perfectly reflected into
+one angle, :math:`f_s (\omega_i, \omega_o ) = \rho_s(\omega_i )\delta(\omega_i ,\omega_o )`.
+An ideal diffuse surface (matte paper) will evenly redistribute incident light across all
+directions and hence has no angular dependance, :math:`f_d (\omega_i , \omega_o ) = \rho_d /\pi`.
+Real physical materials exhibit a complex combination of both behaviours in addition to
+transmission and absorption.
+
+.. figure:: images/material_reflections.png
+   :align: center
+
+   **Caption:** Example geometry for light reflected from a material surface. (Image credit: Carr, M.,
+   Meakins, A., et. al. (2017))
+
 
 =======================
 Monte-Carlo Integration
@@ -100,6 +127,29 @@ Importance sampling exploits the fact that the Monte-Carlo estimator converges f
 are taken from a distribution p(x) that is similar to the function f(x) in the integrand
 (i.e. concentrate the calculations where the integrand is high).
 
+Uniform hemisphere distribution
+-------------------------------
+
+When calculating the irradiance at an observer surface we need to sample a set of
+randomly distributed unit vectors in a hemisphere oriented along the surface normal. The simplest
+distribution would be the uniform distribution where all angles over :math:`2 \pi` have equal
+probability of being sampled. The weighting distribution is :math:`w(\omega) = 1`. Thus the
+distributions normalisation constant evaluates to the area of solid angle being sampled, similar to
+the :math:`b-a` length scale for the 1D cartesian case.
+
+.. math::
+   c = \int_{0}^{2\pi} \int_{0}^{\frac{\pi}{2}} \sin(\theta) d\theta d\phi = 2 \pi
+
+Therefore :math:`p(\omega)` for uniformly distributed vectors is
+
+.. math::
+   p(\omega) = \frac{1}{2 \pi}.
+
+The estimator for the irradiance becomes
+
+.. math::
+   I = \frac{2 \pi}{N} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta_i)
+
 Cosine distribution
 -------------------
 
@@ -110,25 +160,25 @@ it is useful to generate observer samples proportional to the cosine distributio
 
 .. math::
 
-   w(x) = \cos(\theta)
+   w(\omega) = \cos(\theta)
 
 The normalisation constant, :math:`c`, can be evaluated by integrating :math:`w(x)` over the domain.
 
 .. math::
-   c = \int_{0}^{2\pi} \int_{0}^{\frac{\pi}{2}} w(x) \sin(\theta) d\theta d\phi = \pi
+   c = \int_{0}^{2\pi} \int_{0}^{\frac{\pi}{2}} w(\omega) \sin(\theta) d\theta d\phi = \pi
 
-Therefore :math:`p(x)` for a cosine distribution would be
+Therefore :math:`p(\omega)` for a cosine distribution would be
 
 .. math::
-   p(x) = \frac{\cos(\theta)}{\pi}
+   p(\omega) = \frac{\cos(\theta)}{\pi}
 
 and the estimator becomes
 
 .. math::
-   I \approx \frac{\pi}{N} \sum_{i=1}^{N} \frac{f(x_i)}{cos(\theta_i)}.
+   I = \frac{\pi}{N \cos(\theta)} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta) = \frac{\pi}{N} \sum_{i=1}^{N} L_i(p, \omega_i)
 
-Here the sum is performed with a randomly generated sequence of cosine weighted points :math:`x_i` with
-angle :math:`\theta_i`.
+Note that the cosine factors have cancelled, which is makes sense since we are treating
+the :math:`\cos(\theta)` term as the important distribution.
 
 
 Sampling the lights
