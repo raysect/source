@@ -74,22 +74,25 @@ the integral contains steep gradients or a divergence, for example, a bright poi
 The standard error on the integral estimator can become large in such circumstances.
 
 We can get around these problems by drawing the sample points :math:`x_i` from a non-uniform
-probability density function (i.e. higher density for regions with stronger emission). :math:`p(x_i)`
-now becomes
+probability density function (i.e. higher density for regions with stronger emission). Formally, :math:`p(x_i)`
+is defined as
 
 .. math::
 
    p(x_i) = \frac{w(x_i)}{\int_{a}^{b} w(x) dx}
 
-where :math:`w(x)` is the weight function and has been normalised so that its integral is 1. The
-estimator for the integral is now
+where :math:`w(x)` is the weight function describing the distribution of sampling points. :math:`p(x)` has
+the same functional shape as :math:`w(x)` but has been normalised so that its integral is 1. For uniform
+sampling, :math:`w(x) = 1` and :math:`p(x_i) = 1/(b-a)` recovering the average value formula.
+
+For the general case function :math:`w(x)` the estimator for the integral is now
 
 .. math::
 
    I \approx \frac{1}{N} \sum_{i=1}^{N} \frac{f(x_i)}{w(x_i)} \int_{a}^{b} w(x) dx
 
 This is the fundamental formula of importance sampling and a generalisation of the average
-value method (try :math:`w(x) = 1`). It allows estimation of the integral :math:`I` by performing
+value method. It allows estimation of the integral :math:`I` by performing
 a weighted sum, which can be weighted to have higher density in regions of interest. The price we
 pay is that the random samples are being drawn from a more complicated distribution.
 
@@ -99,6 +102,34 @@ are taken from a distribution p(x) that is similar to the function f(x) in the i
 
 Cosine distribution
 -------------------
+
+As mentioned above, it is often advantageous to draw samples from a distribution with similar shape
+to the function being integrated. The observer equation is weighted with a cosine theta term meaning
+that samples near the top of the hemisphere are weighted much more than samples near the edge. Hence
+it is useful to generate observer samples proportional to the cosine distribution.
+
+.. math::
+
+   w(x) = \cos(\theta)
+
+The normalisation constant, :math:`c`, can be evaluated by integrating :math:`w(x)` over the domain.
+
+.. math::
+   c = \int_{0}^{2\pi} \int_{0}^{\frac{\pi}{2}} w(x) \sin(\theta) d\theta d\phi = \pi
+
+Therefore :math:`p(x)` for a cosine distribution would be
+
+.. math::
+   p(x) = \frac{\cos(\theta)}{\pi}
+
+and the estimator becomes
+
+.. math::
+   I \approx \frac{\pi}{N} \sum_{i=1}^{N} \frac{f(x_i)}{cos(\theta_i)}.
+
+Here the sum is performed with a randomly generated sequence of cosine weighted points :math:`x_i` with
+angle :math:`\theta_i`.
+
 
 Sampling the lights
 -------------------
