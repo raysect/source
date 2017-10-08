@@ -3,9 +3,9 @@
 Sampling and Observers
 **********************
 
-=========================
-Light transport equations
-=========================
+=================
+Observer equation
+=================
 
 The total intensity measured by an observing pixel is given be the integral of
 the incident emission over the collecting solid angle :math:`\Omega` and surface
@@ -24,32 +24,6 @@ rays become increasingly parallel to the surface.
    :align: center
 
    **Caption:** Example sampling geometry for a pixel in a camera. (Image credit: Carr, M.,
-   Meakins, A., et. al. (2017))
-
-The amount of light that reaches a camera from a point on an object surface is
-given by the sum of light emitted and reflected from other sources.
-
-.. math::
-
-   L_{O}(p, \omega_O) = \int_{\Omega} L_{i}(p, \omega_i) \times f(\omega_i, \omega_o) \times \cos (\theta_i) d\omega_i
-
-
-This equation is the same as the observer equation with the addition of the
-bidirectional reflectance distribution function (BRDF) term :math:`f(\omega_i , \omega_o )`.
-The BRDF is a weighting function that describes the redistribution of incident light
-into outgoing reflections and transmission/absorption. It is commonly approximated in
-terms of two ideal material components, specular and diffuse reflections. Ideal specular
-reflection behaves like a mirror where the incoming light is perfectly reflected into
-one angle, :math:`f_s (\omega_i, \omega_o ) = \rho_s(\omega_i )\delta(\omega_i ,\omega_o )`.
-An ideal diffuse surface (matte paper) will evenly redistribute incident light across all
-directions and hence has no angular dependance, :math:`f_d (\omega_i , \omega_o ) = \rho_d /\pi`.
-Real physical materials exhibit a complex combination of both behaviours in addition to
-transmission and absorption.
-
-.. figure:: images/material_reflections.png
-   :align: center
-
-   **Caption:** Example geometry for light reflected from a material surface. (Image credit: Carr, M.,
    Meakins, A., et. al. (2017))
 
 
@@ -184,8 +158,40 @@ the :math:`\cos(\theta)` term as the important distribution.
 Sampling the lights
 -------------------
 
+=========
+Materials
+=========
+
+The amount of light that reaches a camera from a point on an object surface is
+given by the sum of light emitted and reflected from other sources.
+
+.. math::
+
+   L_{O}(p, \omega_O) = \int_{\Omega} L_{i}(p, \omega_i) \times f(\omega_i, \omega_o) \times \cos (\theta_i) d\omega_i
+
+
+This equation is the same as the observer equation with the addition of the
+bidirectional reflectance distribution function (BRDF) term :math:`f(\omega_i , \omega_o )`.
+The BRDF is a weighting function that describes the redistribution of incident light
+into outgoing reflections and transmission/absorption. It is commonly approximated in
+terms of two ideal material components, specular and diffuse reflections. Ideal specular
+reflection behaves like a mirror where the incoming light is perfectly reflected into
+one angle, :math:`f_s (\omega_i, \omega_o ) = \rho_s(\omega_i )\delta(\omega_i ,\omega_o )`.
+An ideal diffuse surface (matte paper) will evenly redistribute incident light across all
+directions and hence has no angular dependance, :math:`f_d (\omega_i , \omega_o ) = \rho_d /\pi`.
+Real physical materials exhibit a complex combination of both behaviours in addition to
+transmission and absorption.
+
+.. figure:: images/material_reflections.png
+   :align: center
+
+   **Caption:** Example geometry for light reflected from a material surface. (Image credit: Carr, M.,
+   Meakins, A., et. al. (2017))
+
+
 Sampling the BRDF
 -----------------
+
 
 ============================
 Multiple Importance Sampling
