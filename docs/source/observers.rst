@@ -151,12 +151,48 @@ and the estimator becomes
 .. math::
    I = \frac{\pi}{N \cos(\theta)} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta) = \frac{\pi}{N} \sum_{i=1}^{N} L_i(p, \omega_i)
 
-Note that the cosine factors have cancelled, which is makes sense since we are treating
+Note that the cosine factors have cancelled, which makes sense since we are treating
 the :math:`\cos(\theta)` term as the important distribution.
+
+Uniform cone distribution
+-------------------------
+
+A common sampling distribution is the uniform cone, where vectors are sampled uniformly over the
+circular solid angle centred around the z-axis with angle to z :math:`\theta_{max}`. Samples
+around the z-axis can be transformed by rotation without effecting the sample density. The weighting
+function is uniform and hence :math:`w(\omega) = 1`. The normalisation constant for the distribution
+is
+
+.. math::
+   c = \int_{0}^{2\pi} \int_{0}^{\theta_{max}} \sin(\theta) d\theta d\phi = 2\pi (1-\cos(\theta_{max}))
+
+with corresponding pdf equal to
+
+.. math::
+   p(\omega) = \frac{1}{2\pi (1-\cos(\theta_{max}))}.
+
+The estimator is
+
+.. math::
+   I = \frac{2\pi (1-\cos(\theta_{max}))}{N} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta_i).
 
 
 Sampling the lights
 -------------------
+
+Arbitrary light sources and important primitives can be sampled with the projection method. The
+light (or primitive) in question is wrapped in a bounding sphere that just encloses the object.
+It is then a matter of projecting the bounding sphere into a uniform cone at the surface of the
+sample point. The vector from the sample point to the bounding sphere can be used to find a disk
+inside the bounding sphere that defines the effective solid angle to be sampled.
+
+.. figure:: images/light_sampling.png
+   :align: center
+
+   **Caption:** A complex light source sampled with the projection method.
+
+
+
 
 =========
 Materials
