@@ -41,6 +41,11 @@ cdef class _MeshKDTree(KDTree2DCore):
         double[:, ::1] _vertices
         np.int32_t[:, ::1] _triangles
         np.int32_t triangle_id
+        bint _cache_available
+        double _cached_x
+        double _cached_y
+        np.int32_t _cached_id
+        bint _cached_result
 
     cdef BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)
 
