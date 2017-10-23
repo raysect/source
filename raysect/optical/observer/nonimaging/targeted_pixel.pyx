@@ -190,18 +190,8 @@ cdef class TargetedPixel(Observer0D):
 
             # is point inside sphere?
             if distance == 0 or distance < sphere.radius:
-
-                # the point lies inside the sphere, sample random direction from hemisphere
-                ray_direction = self._fallback_vector_sampler.sample()
-
-                # cosine weighted distribution
-                # projected area cosine is implicit in distribution
-                # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
-                weight = 0.5
-
-                rays.append((template.copy(ray_origin, ray_direction), weight))
+                self._add_hemisphere_sample(self, template, ray_origin, rays)
                 continue
-
 
             # calculate the angular radius
             t = sphere.radius / distance
@@ -216,16 +206,7 @@ cdef class TargetedPixel(Observer0D):
             # todo: calculate projected area of a cut sphere to improve sampling
             sphere_angle = asin(sphere_direction.z)
             if angular_radius >= sphere_angle:
-
-                # perform hemisphere sampling
-                ray_direction = self._fallback_vector_sampler.sample()
-
-                # cosine weighted distribution
-                # projected area cosine is implicit in distribution
-                # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
-                weight = 0.5
-
-                rays.append((template.copy(ray_origin, ray_direction), weight))
+                self._add_hemisphere_sample(self, template, ray_origin, rays)
                 continue
 
             # sample a vector from a cone of half angle equal to the angular radius
@@ -244,6 +225,18 @@ cdef class TargetedPixel(Observer0D):
             rays.append((template.copy(ray_origin, ray_direction), weight))
 
         return rays
+
+    cdef void _add_hemisphere_sample(self, template, origin, rays):
+
+        cdef Vector3D direction
+
+        # perform hemisphere sampling
+        direction = self._fallback_vector_sampler.sample()
+
+        # cosine weighted distribution
+        # projected area cosine is implicit in distribution
+        # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
+        rays.append((template.copy(origin, direction), 0.5))
 
     cpdef double _pixel_etendue(self):
         return self._solid_angle * self._collection_area
