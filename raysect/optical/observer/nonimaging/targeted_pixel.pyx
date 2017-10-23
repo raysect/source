@@ -33,9 +33,14 @@ from libc.math cimport cos, M_PI as PI
 
 from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler
 from raysect.core.boundingsphere cimport BoundingSphere3D
-from raysect.optical cimport Primitive, Ray, Point3D, new_point3d, new_vector3d
+from raysect.optical cimport Primitive, Ray, Point3D, Vector3D
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
+from raysect.core.math.random cimport vector_cone_uniform
+from raysect.core.math.cython cimport rotate_basis
+
+from libc.math cimport M_PI as PI, asin, sqrt
+
 cimport cython
 
 
@@ -66,7 +71,7 @@ cdef class TargetedPixel(Observer0D):
         double _x_width, _y_width, _solid_angle, _collection_area
         Primitive target
         RectangleSampler3D _point_sampler
-        HemisphereCosineSampler _vector_sampler
+        HemisphereCosineSampler _fallback_vector_sampler
 
     def __init__(self, target, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
@@ -86,7 +91,7 @@ cdef class TargetedPixel(Observer0D):
 
         self._x_width = 0.01
         self._y_width = 0.01
-        self._vector_sampler = HemisphereCosineSampler()
+        self._fallback_vector_sampler = HemisphereCosineSampler()
         self._solid_angle = 2 * PI
 
         self.x_width = x_width or 0.01
@@ -155,63 +160,88 @@ cdef class TargetedPixel(Observer0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef list _generate_rays(self, Ray template, int ray_count):
 
         cdef:
-            list rays, origins, directions
+            list rays, origins
             int n
-            double weight, radius
-            Point3D centre
+            double weight, distance
+            Point3D sphere_centre, ray_origin
+            Vector3D sphere_direction, ray_direction
             BoundingSphere3D sphere
 
         # test target primitive is in the same scenegraph as the observer
         if self.target.root is not self.root:
             raise ValueError("Target primitive is not in the same scenegraph as the TargetedPixel observer.")
 
+        origins = self._point_sampler.samples(ray_count)
+
         # obtain bounding sphere and convert position to local coordinate space
         sphere = self.target.bounding_sphere()
-        centre = sphere.centre.transform(self.to_local())
-        radius = sphere.radius
-
-
-        origins = self._point_sampler.samples(ray_count)
+        sphere_centre = sphere.centre.transform(self.to_local())
 
         rays = []
         for n in range(ray_count):
 
-            # for attempt in range(SAMPLE_ATTEMPTS):
+            ray_origin = origins[n]
+            sphere_direction = ray_origin.vector_to(sphere_centre)
+            distance = sphere_direction.get_length()
 
-                direction = origin.vector_to(sphere.centre)
-                distance = direction.get_length()
+            # is point inside sphere?
+            if distance == 0 or distance < sphere.radius:
 
-                # is point inside sphere?
-                if distance == 0 or distance < sphere.radius:
-                    # the point lies inside the sphere, sample random direction from full sphere
-                    return vector_sphere()
+                # the point lies inside the sphere, sample random direction from hemisphere
+                ray_direction = self._fallback_vector_sampler.sample()
 
-                # calculate the angular radius and solid angle projection of the sphere
-                angular_radius = asin(sphere.radius / distance)
+                # cosine weighted distribution
+                # projected area cosine is implicit in distribution
+                # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
+                weight = 0.5
 
-                # sample a vector from a cone of half angle equal to the angular radius
-                sample = vector_cone_uniform(angular_radius * 180 / PI)
+                rays.append((template.copy(ray_origin, ray_direction), weight))
+                continue
 
-                # rotate cone to lie along vector from observation point to sphere centre
-                direction = direction.normalise()
-                rotation = rotate_basis(direction, direction.orthogonal())
-                sample_direction =  sample.transform(rotation)
 
-                # check sample_direction is inside pixel hemisphere, if not, resample.
-                # if sample_direction.z > 0:
-                #     break
+            # calculate the angular radius
+            t = sphere.radius / distance
+            angular_radius = asin(t)
+            angular_radius_cos = sqrt(1 - t * t)
 
-            # else:
-                # sampling failed after 20 attempts
-                # sample from full cosine weighted hemisphere
+            # Tests direction angle is always above cone angle:
+            # We have yet to derive the partial projected area of a sphere intersecting the horizon
+            # for now we will just fall back to hemisphere sampling, even if this is inefficient.
+            # This test also implicitly checks if the sphere direction lies in the hemisphere as the
+            # angular_radius cannot be less than zero
+            # todo: calculate projected area of a cut sphere to improve sampling
+            sphere_angle = asin(sphere_direction.z)
+            if angular_radius >= sphere_angle:
 
-            # cosine weighted distribution
-            # projected area cosine is implicit in distribution
-            # weight = (1 / 2*pi) * (pi / cos(theta)) * cos(theta) = 0.5
-            rays.append((template.copy(origins[n], directions[n]), 0.5))
+                # perform hemisphere sampling
+                ray_direction = self._fallback_vector_sampler.sample()
+
+                # cosine weighted distribution
+                # projected area cosine is implicit in distribution
+                # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
+                weight = 0.5
+
+                rays.append((template.copy(ray_origin, ray_direction), weight))
+                continue
+
+            # sample a vector from a cone of half angle equal to the angular radius
+            ray_direction = vector_cone_uniform(angular_radius * 180 / PI)
+
+            # rotate cone to lie along vector from observation point to sphere centre
+            sphere_direction = sphere_direction.normalise()
+            rotation = rotate_basis(sphere_direction, sphere_direction.orthogonal())
+            ray_direction =  ray_direction.transform(rotation)
+
+            # calculate sampling weight
+            # pdf = 1 / solid_angle = 1 / (2 * pi * (1 - cos(angular_radius))
+            # weight = 1 / (2 * pi) * cos(theta) * 1 / pdf
+            weight = 1 / (2 * PI) * ray_direction.z * (2 * PI * (1 - angular_radius_cos))
+
+            rays.append((template.copy(ray_origin, ray_direction), weight))
 
         return rays
 

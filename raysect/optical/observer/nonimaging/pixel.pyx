@@ -156,7 +156,7 @@ cdef class Pixel(Observer0D):
 
             # cosine weighted distribution
             # projected area cosine is implicit in distribution
-            # weight = (1 / 2*pi) * (pi / cos(theta)) * cos(theta) = 0.5
+            # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
             rays.append((template.copy(origins[n], directions[n]), 0.5))
 
         return rays
