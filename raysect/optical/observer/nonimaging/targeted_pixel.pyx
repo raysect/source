@@ -220,7 +220,7 @@ cdef class TargetedPixel(Observer0D):
             # calculate sampling weight
             # pdf = 1 / solid_angle = 1 / (2 * pi * (1 - cos(angular_radius))
             # weight = 1 / (2 * pi) * cos(theta) * 1 / pdf
-            weight = 1 / (2 * PI) * ray_direction.z * (2 * PI * (1 - angular_radius_cos))
+            weight = ray_direction.z * (1 - angular_radius_cos)
 
             rays.append((template.copy(ray_origin, ray_direction), weight))
 
