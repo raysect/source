@@ -190,7 +190,7 @@ cdef class TargetedPixel(Observer0D):
 
             # is point inside sphere?
             if distance == 0 or distance < sphere.radius:
-                self._add_hemisphere_sample(self, template, ray_origin, rays)
+                self._add_hemisphere_sample(template, ray_origin, rays)
                 continue
 
             # calculate the angular radius
@@ -206,7 +206,7 @@ cdef class TargetedPixel(Observer0D):
             # todo: calculate projected area of a cut sphere to improve sampling
             sphere_angle = asin(sphere_direction.z)
             if angular_radius >= sphere_angle:
-                self._add_hemisphere_sample(self, template, ray_origin, rays)
+                self._add_hemisphere_sample(template, ray_origin, rays)
                 continue
 
             # sample a vector from a cone of half angle equal to the angular radius
@@ -226,7 +226,7 @@ cdef class TargetedPixel(Observer0D):
 
         return rays
 
-    cdef void _add_hemisphere_sample(self, template, origin, rays):
+    cdef void _add_hemisphere_sample(self, Ray template, Point3D origin, list rays):
 
         cdef Vector3D direction
 
