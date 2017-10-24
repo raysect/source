@@ -59,7 +59,7 @@ cdef class Pixel(Observer0D):
     def __init__(self, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
         pipelines = pipelines or [SpectralPipeline0D()]
 
@@ -68,7 +68,7 @@ cdef class Pixel(Observer0D):
                          spectral_bins=spectral_bins, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
                          ray_extinction_prob=ray_extinction_prob, ray_extinction_min_depth=ray_extinction_min_depth,
                          ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
-                         ray_important_path_weight=ray_important_path_weight)
+                         ray_important_path_weight=ray_important_path_weight, quiet=quiet)
 
         self._x_width = 0.01
         self._y_width = 0.01
