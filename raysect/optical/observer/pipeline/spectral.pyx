@@ -38,7 +38,8 @@ from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.observer.base.slice cimport SpectralSlice
 
 
-_DEFAULT_PIPELINE_NAME = "Spectral Pipeline"
+_DEFAULT_POWER_PIPELINE_NAME = "Spectral Power Pipeline"
+_DEFAULT_RADIANCE_PIPELINE_NAME = "Spectral Radiance Pipeline"
 _DISPLAY_DPI = 100
 _DISPLAY_SIZE = (800 / _DISPLAY_DPI, 600 / _DISPLAY_DPI)
 
@@ -71,7 +72,7 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
 
     def __init__(self, bint accumulate=True, str name=None):
 
-        self.name = name or _DEFAULT_PIPELINE_NAME
+        self.name = name or _DEFAULT_POWER_PIPELINE_NAME
         self.accumulate = accumulate
         self.samples = None
         self._spectral_slices = None
@@ -207,7 +208,7 @@ cdef class SpectralPowerPipeline2D(Pipeline2D):
 
     def __init__(self, bint accumulate=True, str name=None):
 
-        self.name = name or _DEFAULT_PIPELINE_NAME
+        self.name = name or _DEFAULT_POWER_PIPELINE_NAME
         self.accumulate = accumulate
         self.frame = None
         self._pixels = None
@@ -337,7 +338,7 @@ cdef class SpectralRadiancePipeline0D(Pipeline0D):
 
     def __init__(self, bint accumulate=True, str name=None):
 
-        self.name = name or _DEFAULT_PIPELINE_NAME
+        self.name = name or _DEFAULT_RADIANCE_PIPELINE_NAME
         self.accumulate = accumulate
         self.samples = None
         self._spectral_slices = None
@@ -473,7 +474,7 @@ cdef class SpectralRadiancePipeline2D(Pipeline2D):
 
     def __init__(self, bint accumulate=True, str name=None):
 
-        self.name = name or _DEFAULT_PIPELINE_NAME
+        self.name = name or _DEFAULT_RADIANCE_PIPELINE_NAME
         self.accumulate = accumulate
         self.frame = None
         self._pixels = None
