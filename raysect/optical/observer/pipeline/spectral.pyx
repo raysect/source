@@ -67,6 +67,7 @@ cdef class SpectralPipeline0D(Pipeline0D):
         readonly double min_wavelength, max_wavelength, delta_wavelength
         readonly np.ndarray wavelengths
         object _display_figure
+        bint _quiet
 
     def __init__(self, bint accumulate=True, str name=None):
 
@@ -82,6 +83,7 @@ cdef class SpectralPipeline0D(Pipeline0D):
         self.wavelengths = None
 
         self._display_figure = None
+        self._quiet = False
 
     cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
@@ -95,6 +97,8 @@ cdef class SpectralPipeline0D(Pipeline0D):
         # create samples buffer
         if not self.accumulate or self.samples is None or self.samples.length != spectral_bins:
             self.samples = StatsArray1D(spectral_bins)
+
+        self._quiet = quiet
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -120,10 +124,10 @@ cdef class SpectralPipeline0D(Pipeline0D):
 
     cpdef object finalise(self):
 
-        self._render_display()
-
-        # workaround for interactivity for QT backend
-        plt.pause(0.1)
+        if not self._quiet:
+            self._render_display()
+            # workaround for interactivity for QT backend
+            plt.pause(0.1)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
