@@ -39,7 +39,7 @@ from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.core.math.cython cimport find_index
 from raysect.optical cimport Ray, Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
 from raysect.optical.observer.base cimport Observer0D
-from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
+from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 from raysect.primitive.mesh.mesh cimport Mesh
 cimport cython
 
@@ -87,7 +87,7 @@ cdef class MeshPixel(Observer0D):
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
-        pipelines = pipelines or [SpectralPipeline0D()]
+        pipelines = pipelines or [SpectralPowerPipeline0D()]
 
         super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
                          pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,

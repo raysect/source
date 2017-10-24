@@ -30,6 +30,7 @@
 from .power import PowerPipeline0D, PowerPipeline2D, PowerAdaptiveSampler2D
 from .rgb import RGBPipeline2D, RGBAdaptiveSampler2D
 from .bayer import BayerPipeline2D
-from .spectral import SpectralPipeline0D, SpectralPipeline2D
+from .spectral import SpectralPowerPipeline0D, SpectralPowerPipeline2D,\
+    SpectralRadiancePipeline0D, SpectralRadiancePipeline2D
 
 
