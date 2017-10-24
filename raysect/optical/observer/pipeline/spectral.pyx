@@ -166,6 +166,19 @@ cdef class SpectralPipeline0D(Pipeline0D):
             raise ValueError("There is no spectrum to display.")
         self._render_display()
 
+    cpdef to_spectrum(self):
+        """
+        Pack the observed spectral data into a Spectrum() object.
+        """
+
+        cdef Spectrum spectrum
+
+        if not self.samples:
+            raise ValueError("No spectrum has been observed.")
+        spectrum = Spectrum(self.min_wavelength, self.max_wavelength, self.bins)
+        spectrum.samples = self.samples.mean
+        return spectrum
+
 
 cdef class SpectralPipeline2D(Pipeline2D):
     """
