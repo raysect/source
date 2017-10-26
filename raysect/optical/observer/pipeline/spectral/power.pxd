@@ -1,4 +1,4 @@
-# Copyright (c) 2017, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,7 +27,40 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .power import PowerPipeline0D, PowerPipeline2D, PowerAdaptiveSampler2D
-from .rgb import RGBPipeline2D, RGBAdaptiveSampler2D
-from .bayer import BayerPipeline2D
-from .spectral import *
+cimport numpy as np
+
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
+from raysect.core.math cimport StatsArray3D, StatsArray1D
+
+
+cdef class SpectralPowerPipeline0D(Pipeline0D):
+
+    cdef:
+        public str name
+        public bint accumulate
+        readonly StatsArray1D samples
+        list _spectral_slices
+        readonly int bins
+        readonly double min_wavelength, max_wavelength, delta_wavelength
+        readonly np.ndarray wavelengths
+        object _display_figure
+        bint _quiet
+
+
+cdef class SpectralPowerPipeline2D(Pipeline2D):
+
+    cdef:
+        public str name
+        public bint accumulate
+        readonly StatsArray3D frame
+        tuple _pixels
+        int _samples
+        list _spectral_slices
+        readonly int bins
+        readonly double min_wavelength, max_wavelength, delta_wavelength
+        readonly np.ndarray wavelengths
+
+
+cdef class SpectralPowerPixelProcessor(PixelProcessor):
+
+    cdef StatsArray1D bins

@@ -1,5 +1,6 @@
 
 # External imports
+import numpy as np
 import matplotlib.pyplot as plt
 plt.ion()
 
@@ -41,3 +42,5 @@ fibre = FibreOptic([spectra_power, spectra_radiance, power], acceptance_angle=45
                    spectral_rays=1, pixel_samples=1000, transform=translate(0, 0, -5), parent=world)
 fibre.observe()
 
+plt.ioff()
+plt.show()
