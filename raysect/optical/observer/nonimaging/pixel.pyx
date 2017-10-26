@@ -34,7 +34,7 @@ from libc.math cimport cos, M_PI as PI
 from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler
 from raysect.optical cimport Ray, new_point3d, new_vector3d
 from raysect.optical.observer.base cimport Observer0D
-from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
+from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 cimport cython
 
 
@@ -59,16 +59,16 @@ cdef class Pixel(Observer0D):
     def __init__(self, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
-        pipelines = pipelines or [SpectralPipeline0D()]
+        pipelines = pipelines or [SpectralPowerPipeline0D()]
 
         super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
                          pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
                          spectral_bins=spectral_bins, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
                          ray_extinction_prob=ray_extinction_prob, ray_extinction_min_depth=ray_extinction_min_depth,
                          ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
-                         ray_important_path_weight=ray_important_path_weight)
+                         ray_important_path_weight=ray_important_path_weight, quiet=quiet)
 
         self._x_width = 0.01
         self._y_width = 0.01

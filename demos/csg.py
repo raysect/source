@@ -8,7 +8,7 @@ from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
 from matplotlib.pyplot import *
 from numpy import array
 
-from raysect.optical.observer import PinholeCamera, RGBPipeline2D, BayerPipeline2D, SpectralPipeline2D
+from raysect.optical.observer import PinholeCamera, RGBPipeline2D, BayerPipeline2D, SpectralPowerPipeline2D
 
 red_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
                        transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0])*0.7))
@@ -45,7 +45,7 @@ ion()
 rgb = RGBPipeline2D()
 rgb.accumulate = True
 
-spectral = SpectralPipeline2D()
+spectral = SpectralPowerPipeline2D()
 spectral.accumulate = True
 
 pipelines = [rgb] #, spectral]

@@ -11,7 +11,6 @@ from raysect.optical import World, translate, rotate, Point3D, d65_white, Ray, V
 from raysect.optical.material.absorber import AbsorbingSurface
 from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
-from raysect.optical.observer import FibreOptic, PowerPipeline0D, SpectralPipeline0D
 from raysect.optical.loggingray import LoggingRay
 from raysect.primitive.lens.spherical import *
 
