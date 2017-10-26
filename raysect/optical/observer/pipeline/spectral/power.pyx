@@ -55,7 +55,7 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
     :param str name: User friendly name for this pipeline.
     """
 
-    def __init__(self, bint accumulate=True, str name=None):
+    def __init__(self, bint accumulate=True, str name=None, bint display_progress=True):
 
         super().__init__()
 
@@ -70,6 +70,7 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
         self.delta_wavelength = 0
         self.wavelengths = None
 
+        self.display_progress = display_progress
         self._display_figure = None
         self._quiet = False
 
@@ -112,7 +113,8 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
 
     cpdef object finalise(self):
 
-        if not self._quiet:
+        if self.display_progress:
+
             self._render_display()
             # workaround for interactivity for QT backend
             plt.pause(0.1)

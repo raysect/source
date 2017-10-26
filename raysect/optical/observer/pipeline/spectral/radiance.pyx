@@ -58,9 +58,9 @@ cdef class SpectralRadiancePipeline0D(SpectralPowerPipeline0D):
     :param str name: User friendly name for this pipeline.
     """
 
-    def __init__(self, bint accumulate=True, str name=None):
+    def __init__(self, bint accumulate=True, str name=None, bint display_progress=True):
         name = name or _DEFAULT_PIPELINE_NAME
-        super().__init__(accumulate=accumulate, name=name)
+        super().__init__(accumulate=accumulate, name=name, display_progress=display_progress)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

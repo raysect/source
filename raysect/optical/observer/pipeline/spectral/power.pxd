@@ -43,6 +43,7 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
         readonly int bins
         readonly double min_wavelength, max_wavelength, delta_wavelength
         readonly np.ndarray wavelengths
+        bint display_progress
         object _display_figure
         bint _quiet
 
