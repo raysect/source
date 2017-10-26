@@ -32,16 +32,32 @@
 from libc.math cimport cos, M_PI as PI
 
 from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler
-from raysect.optical cimport Ray, new_point3d, new_vector3d
+from raysect.core.boundingsphere cimport BoundingSphere3D
+from raysect.optical cimport Primitive, Ray, Point3D, Vector3D
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
+from raysect.core.math.random cimport vector_cone_uniform
+from raysect.core.math.cython cimport rotate_basis
+
+from libc.math cimport M_PI as PI, asin, sqrt
+
 cimport cython
 
 
-cdef class Pixel(Observer0D):
+# TODO - make sure the cached bounding sphere is reset when a change to the scenegraph occurs
+cdef class TargetedPixel(Observer0D):
     """
-    A pixel observer that samples rays from a hemisphere and rectangular area.
+    A pixel observer that samples are targeted solid angle and rectangular area.
 
+    If the user wants to target and empty space or a hole in a structure. They should
+    create a primitive that occupies the space and give it a Null material.
+
+    .. Warning..
+       This should only be used when the only source of light lies in the solid angle
+       of the targeted primitive as observed by the observer. If this is not the case any
+       power calculations will be invalid.
+
+    :param Primitive target: The primitive that this observer will target.
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this pixel (default=SpectralPipeline0D()).
     :param float x_width: The rectangular collection area's width along the
@@ -53,13 +69,14 @@ cdef class Pixel(Observer0D):
 
     cdef:
         double _x_width, _y_width, _solid_angle, _collection_area
+        Primitive target
         RectangleSampler3D _point_sampler
-        HemisphereCosineSampler _vector_sampler
+        HemisphereCosineSampler _fallback_vector_sampler
 
-    def __init__(self, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
+    def __init__(self, target, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
         pipelines = pipelines or [SpectralPipeline0D()]
 
@@ -68,11 +85,13 @@ cdef class Pixel(Observer0D):
                          spectral_bins=spectral_bins, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
                          ray_extinction_prob=ray_extinction_prob, ray_extinction_min_depth=ray_extinction_min_depth,
                          ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
-                         ray_important_path_weight=ray_important_path_weight)
+                         ray_important_path_weight=ray_important_path_weight, quiet=quiet)
+
+        self.target = target
 
         self._x_width = 0.01
         self._y_width = 0.01
-        self._vector_sampler = HemisphereCosineSampler()
+        self._fallback_vector_sampler = HemisphereCosineSampler()
         self._solid_angle = 2 * PI
 
         self.x_width = x_width or 0.01
@@ -141,25 +160,85 @@ cdef class Pixel(Observer0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef list _generate_rays(self, Ray template, int ray_count):
 
         cdef:
-            list rays, origins, directions
+            list rays, origins
             int n
-            double weight
+            double weight, distance
+            Point3D sphere_centre, ray_origin
+            Vector3D sphere_direction, ray_direction
+            BoundingSphere3D sphere
+
+        # test target primitive is in the same scenegraph as the observer
+        if self.target.root is not self.root:
+            raise ValueError("Target primitive is not in the same scenegraph as the TargetedPixel observer.")
 
         origins = self._point_sampler.samples(ray_count)
-        directions = self._vector_sampler.samples(ray_count)
+
+        # obtain bounding sphere and convert position to local coordinate space
+        sphere = self.target.bounding_sphere()
+        sphere_centre = sphere.centre.transform(self.to_local())
 
         rays = []
         for n in range(ray_count):
 
-            # cosine weighted distribution
-            # projected area cosine is implicit in distribution
-            # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
-            rays.append((template.copy(origins[n], directions[n]), 0.5))
+            ray_origin = origins[n]
+            sphere_direction = ray_origin.vector_to(sphere_centre)
+            distance = sphere_direction.get_length()
+
+            # is point inside sphere?
+            if distance == 0 or distance < sphere.radius:
+                self._add_hemisphere_sample(template, ray_origin, rays)
+                continue
+
+            # calculate the angular radius
+            t = sphere.radius / distance
+            angular_radius = asin(t)
+            angular_radius_cos = sqrt(1 - t * t)
+
+            # Tests direction angle is always above cone angle:
+            # We have yet to derive the partial projected area of a sphere intersecting the horizon
+            # for now we will just fall back to hemisphere sampling, even if this is inefficient.
+            # This test also implicitly checks if the sphere direction lies in the hemisphere as the
+            # angular_radius cannot be less than zero
+            # todo: calculate projected area of a cut sphere to improve sampling
+            sphere_angle = asin(sphere_direction.z)
+            if angular_radius >= sphere_angle:
+                self._add_hemisphere_sample(template, ray_origin, rays)
+                continue
+
+            # sample a vector from a cone of half angle equal to the angular radius
+            ray_direction = vector_cone_uniform(angular_radius * 180 / PI)
+
+            # rotate cone to lie along vector from observation point to sphere centre
+            sphere_direction = sphere_direction.normalise()
+            rotation = rotate_basis(sphere_direction, sphere_direction.orthogonal())
+            ray_direction =  ray_direction.transform(rotation)
+
+            # calculate sampling weight
+            # pdf = 1 / solid_angle = 1 / (2 * pi * (1 - cos(angular_radius))
+            # weight = 1 / (2 * pi) * cos(theta) * 1 / pdf
+            weight = ray_direction.z * (1 - angular_radius_cos)
+
+            rays.append((template.copy(ray_origin, ray_direction), weight))
 
         return rays
 
+    cdef void _add_hemisphere_sample(self, Ray template, Point3D origin, list rays):
+
+        cdef Vector3D direction
+
+        # perform hemisphere sampling
+        direction = self._fallback_vector_sampler.sample()
+
+        # cosine weighted distribution
+        # projected area cosine is implicit in distribution
+        # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
+        rays.append((template.copy(origin, direction), 0.5))
+
     cpdef double _pixel_etendue(self):
         return self._solid_angle * self._collection_area
+
+
