@@ -35,6 +35,7 @@ from raysect.core cimport Vector3D, new_vector3d
 from raysect.core.math.cython cimport solve_quadratic, swap_double
 
 
+@cython.freelist(256)
 cdef class BoundingSphere3D:
 
     def __init__(self, Point3D centre, double radius):
