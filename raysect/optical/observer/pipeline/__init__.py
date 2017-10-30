@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .power import PowerPipeline0D, PowerPipeline2D, PowerAdaptiveSampler2D
-from .rgb import RGBPipeline2D, RGBAdaptiveSampler2D
-from .bayer import BayerPipeline2D
-from .spectral import *
+from raysect.optical.observer.pipeline.power import PowerPipeline0D, PowerPipeline2D, PowerAdaptiveSampler2D
+from raysect.optical.observer.pipeline.rgb import RGBPipeline2D, RGBAdaptiveSampler2D
+from raysect.optical.observer.pipeline.bayer import BayerPipeline2D
+from raysect.optical.observer.pipeline.spectral import *
