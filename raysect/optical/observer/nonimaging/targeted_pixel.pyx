@@ -35,7 +35,7 @@ from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampl
 from raysect.core.boundingsphere cimport BoundingSphere3D
 from raysect.optical cimport Primitive, Ray, Point3D, Vector3D
 from raysect.optical.observer.base cimport Observer0D
-from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
+from raysect.optical.observer.pipeline.spectral import SpectralRadiancePipeline0D
 from raysect.core.math.random cimport vector_cone_uniform
 from raysect.core.math.cython cimport rotate_basis
 
@@ -78,7 +78,7 @@ cdef class TargetedPixel(Observer0D):
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
-        pipelines = pipelines or [SpectralPipeline0D()]
+        pipelines = pipelines or [SpectralRadiancePipeline0D()]
 
         super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
                          pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
