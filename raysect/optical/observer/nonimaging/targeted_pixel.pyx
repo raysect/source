@@ -205,7 +205,6 @@ cdef class TargetedPixel(Observer0D):
             # if importance sampling enabled (targets exist) and probability of importance sample == True:
             if probability(self._targeted_path_prob):
 
-                # TODO - fix all hemisphere sampling to consider the targeted path weight when
                 # calculating the PDF
                 self._add_targeted_sample(template, ray_origin, sphere_centre, sphere_radius, rays)
 
@@ -227,6 +226,7 @@ cdef class TargetedPixel(Observer0D):
 
         sphere_direction = ray_origin.vector_to(sphere_centre)
         distance = sphere_direction.get_length()
+        sphere_direction = sphere_direction.normalise()
 
         # is point inside sphere?
         if distance == 0 or distance < sphere_radius:
@@ -253,7 +253,6 @@ cdef class TargetedPixel(Observer0D):
         ray_direction = vector_cone_uniform(angular_radius * 180 / PI)
 
         # rotate cone to lie along vector from observation point to sphere centre
-        sphere_direction = sphere_direction.normalise()
         rotation = rotate_basis(sphere_direction, sphere_direction.orthogonal())
         ray_direction =  ray_direction.transform(rotation)
 
