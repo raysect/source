@@ -29,9 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer import SpectralPipeline0D
+from raysect.optical.observer import SpectralPowerPipeline0D
 
-from raysect.optical cimport Ray, new_point3d, new_vector3d, Point3D, Vector3D
+from raysect.optical cimport Ray, new_point3d, new_vector3d
 from raysect.optical.observer.base cimport Observer0D
 
 
@@ -48,24 +48,24 @@ cdef class SightLine(Observer0D):
       by this line of sight (default=SpectralPipeline0D()).
     :param kwargs: **kwargs and instance properties from Observer0D and _ObserverBase
     """
-    # :param Point3D position: The origin position of this sight line
-    #   (default=Point3D(0, 0, 0)).
-    # :param Vector3D direction: The observing direction of this sight line
-    #   (default=Vector3D(0, 0, 1)).
 
     cdef:
         double _etendue
-        # Point3D _position
-        # Vector3D _direction
 
-    def __init__(self, etendue=None, pipelines=None, parent=None, transform=None, name=None):
+    def __init__(self, etendue=None, pipelines=None, parent=None, transform=None, name=None,
+                 render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
+                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
-        pipelines = pipelines or [SpectralPipeline0D()]
-        super().__init__(pipelines, parent=parent, transform=transform, name=name)
+        pipelines = pipelines or [SpectralPowerPipeline0D()]
+        super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
+                         pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
+                         spectral_bins=spectral_bins, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
+                         ray_extinction_prob=ray_extinction_prob, ray_extinction_min_depth=ray_extinction_min_depth,
+                         ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
+                         ray_important_path_weight=ray_important_path_weight, quiet=quiet)
 
         self.etendue = etendue or 1.0
-        # self.position = position or Point3D(0, 0, 0)
-        # self.direction = direction or Vector3D(0, 0, 1)
 
     @property
     def etendue(self):

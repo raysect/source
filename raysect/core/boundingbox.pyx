@@ -46,6 +46,7 @@ DEF Z_AXIS = 2
 DEF SPHERE_PADDING = 1.000001
 
 
+@cython.freelist(256)
 cdef class BoundingBox3D:
     """
     Axis-aligned bounding box.
@@ -426,6 +427,7 @@ cdef class BoundingBox3D:
         return BoundingSphere3D(centre, radius)
 
 
+@cython.freelist(256)
 cdef class BoundingBox2D:
     """
     Axis-aligned 2D bounding box.
