@@ -32,9 +32,9 @@
 import numpy as np
 cimport numpy as np
 from raysect.core cimport Point3D, Vector3D, AffineMatrix3D
-from raysect.core.math.random cimport uniform, vector_sphere, vector_cone_uniform
+from raysect.core.math.random cimport uniform, vector_sphere, vector_cone_uniform, vector_hemisphere_cosine
 from raysect.core.math.cython cimport find_index, rotate_basis
-from libc.math cimport M_PI as PI, asin, sqrt
+from libc.math cimport M_PI, M_1_PI, asin, sqrt
 cimport cython
 
 
@@ -53,6 +53,9 @@ cdef class TargettedHemisphereSampler:
 
         self.targetted_path_prob = targetted_path_prob or 0.9
         self._targets = targets
+
+        # TODO - validate targets
+        self._calculate_cdf()
 
     def __call__(self, Point3D point, object samples=None, bint pdf=False):
         """
@@ -91,26 +94,124 @@ cdef class TargettedHemisphereSampler:
             raise ValueError("Targeted path probability must lie in the range [0, 1].")
         self._targetted_path_prob = value
 
+    @cython.cdivision(True)
     cpdef double pdf(self, Point3D point, Vector3D sample):
         """
-        Generates a pdf for a given sample value.
+        Calculates the value of the PDF for the specified sample point and direction.
 
-        Vectors *must* be normalised.
-
-        :param Vector3D sample: The sample point at which to get the pdf.
-        :rtype: float
+        :param Point3D point: The point from which to sample.
+        :param Vector3D sample: The sample direction.
+        :rtype: double
         """
-        raise NotImplemented("The method pdf() is not implemented for this sampler.")
 
+        cdef:
+            double weight, distance, solid_angle, angular_radius_cos, t
+            double pdf_all, pdf_sphere, selection_weight
+            Vector3D cone_axis
+            AffineMatrix3D rotation
+
+        # Sample is beneath the hemisphere plane
+        if sample.z < 0.0:
+            return 0.0
+
+        # assemble pdf
+        pdf_all = 0
+        for sphere_centre, sphere_radius, weight in self._targets:
+
+            cone_axis = point.vector_to(sphere_centre)
+            distance = cone_axis.get_length()
+
+            # is point inside sphere?
+            if distance == 0 or distance < sphere_radius:
+                pdf = M_1_PI * sample.z
+
+            else:
+
+                # calculate the angular radius and solid angle projection of the sphere
+                t = sphere_radius / distance
+                angular_radius = asin(t)
+
+                # Tests direction angle is always above cone angle:
+                # We have yet to derive the partial projected area of a sphere intersecting the horizon
+                # for now we will just fall back to hemisphere sampling, even if this is inefficient.
+                # This test also implicitly checks if the sphere direction lies in the hemisphere as the
+                # angular_radius cannot be less than zero
+                # todo: calculate projected area of a cut sphere to improve sampling
+                sphere_angle = asin(sample.z)
+                if angular_radius >= sphere_angle:
+                    pdf = M_1_PI * sample.z
+
+                else:
+
+                    # calculate cosine of angular radius of cone
+                    angular_radius_cos = sqrt(1 - t * t)
+
+                    # does the direction lie inside the cone of projection
+                    cone_axis = cone_axis.normalise()
+                    if sample.dot(cone_axis) < angular_radius_cos:
+                        # no contribution, outside code of projection
+                        continue
+
+                    # calculate pdf
+                    solid_angle = 2 * M_PI * (1 - angular_radius_cos)
+                    pdf = 1 / solid_angle
+
+            # add contribution to pdf
+            selection_weight = weight / self._total_weight
+            pdf_all += selection_weight * pdf
+
+        return pdf_all
+
+    @cython.cdivision(True)
     cdef Vector3D sample(self, Point3D point):
         """
         Generate a single sample.
 
         If the pdf is required please see sample_with_pdf().
 
+        :param Point3D point: The point from which to sample.
+        :return: The vector along which to sample.
         :rtype: Vector3D
         """
-        raise NotImplemented("The method sample() is not implemented for this sampler.")
+
+        # calculate projection of sphere (a disk) as seen from origin point and
+        # generate a random direction towards that projection
+
+        cdef:
+            double weight, distance, angular_radius
+            Vector3D direction, sample
+            AffineMatrix3D rotation
+
+        sphere_centre, sphere_radius, weight = self._pick_sphere()
+
+        direction = point.vector_to(sphere_centre)
+        distance = direction.get_length()
+
+        # is point inside sphere?
+        if distance == 0 or distance < sphere_radius:
+            # the point lies inside the sphere, sample random direction from full sphere
+            return vector_hemisphere_cosine()
+
+        # calculate the angular radius and solid angle projection of the sphere
+        angular_radius = asin(sphere_radius / distance)
+
+        # Tests direction angle is always above cone angle:
+        # We have yet to derive the partial projected area of a sphere intersecting the horizon
+        # for now we will just fall back to hemisphere sampling, even if this is inefficient.
+        # This test also implicitly checks if the sphere direction lies in the hemisphere as the
+        # angular_radius cannot be less than zero
+        # todo: calculate projected area of a cut sphere to improve sampling
+        sphere_angle = asin(direction.z)
+        if angular_radius >= sphere_angle:
+            return vector_hemisphere_cosine()
+
+        # sample a vector from a cone of half angle equal to the angular radius
+        sample = vector_cone_uniform(angular_radius * 180 / M_PI)
+
+        # rotate cone to lie along vector from observation point to sphere centre
+        direction = direction.normalise()
+        rotation = rotate_basis(direction, direction.orthogonal())
+        return sample.transform(rotation)
 
     cdef tuple sample_with_pdf(self, Point3D point):
         """
@@ -124,7 +225,15 @@ cdef class TargettedHemisphereSampler:
 
         :rtype: tuple
         """
-        raise NotImplemented("The method pdf() is not implemented for this sampler.")
+
+        cdef:
+            Vector3D sample_direction
+            double pdf
+
+        sample_direction = self.sample(point)
+        pdf = self.pdf(point, sample_direction)
+
+        return sample_direction, pdf
 
     cdef list samples(self, Point3D point, int samples):
         """
@@ -165,6 +274,36 @@ cdef class TargettedHemisphereSampler:
         for i in range(samples):
             results.append(self.sample_with_pdf(point))
         return results
+
+    cdef object _calculate_cdf(self):
+        """
+        Calculate the cumulative distribution function for the sphere weights.
+
+        Stores an array with length equal to the number of spheres. At each
+        point in the array the normalised cumulative weighting is stored.
+        """
+
+        self._cdf = np.zeros(len(self._targets))
+        for index, sphere_data in enumerate(self._targets):
+            _, _, weight = sphere_data
+            if index == 0:
+                self._cdf[index] = weight
+            else:
+                self._cdf[index] = self._cdf[index - 1] + weight
+
+        self._total_weight = self._cdf[len(self._targets) - 1]
+        self._cdf /= self._total_weight
+
+    cdef tuple _pick_sphere(self):
+        """
+        Find the important primitive bounding sphere corresponding to a uniform random number.
+        """
+
+        cdef int index
+
+        # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
+        index = find_index(self._cdf, uniform()) + 1
+        return self._targets[index]
 
 
 cdef class TargettedSphereSampler:
@@ -248,7 +387,7 @@ cdef class TargettedSphereSampler:
             if distance == 0 or distance < sphere_radius:
 
                 # the point lies inside the sphere, the projection is a full sphere
-                solid_angle = 4 * PI
+                solid_angle = 4 * M_PI
 
             else:
 
@@ -263,7 +402,7 @@ cdef class TargettedSphereSampler:
                     continue
 
                 # calculate solid angle
-                solid_angle = 2 * PI * (1 - angular_radius_cos)
+                solid_angle = 2 * M_PI * (1 - angular_radius_cos)
 
             # calculate probability
             pdf_sphere = 1 / solid_angle
@@ -308,7 +447,7 @@ cdef class TargettedSphereSampler:
         angular_radius = asin(sphere_radius / distance)
 
         # sample a vector from a cone of half angle equal to the angular radius
-        sample = vector_cone_uniform(angular_radius * 180 / PI)
+        sample = vector_cone_uniform(angular_radius * 180 / M_PI)
 
         # rotate cone to lie along vector from observation point to sphere centre
         direction = direction.normalise()
