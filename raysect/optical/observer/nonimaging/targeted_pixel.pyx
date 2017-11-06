@@ -36,13 +36,14 @@ from raysect.core.boundingsphere cimport BoundingSphere3D
 from raysect.optical cimport Primitive, Ray, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralRadiancePipeline0D
-from raysect.core.math.random cimport vector_cone_uniform
+from raysect.core.math.random cimport probability, vector_cone_uniform
 from raysect.core.math.cython cimport rotate_basis
 
 from libc.math cimport M_PI as PI, asin, sqrt
 
 cimport cython
 
+# TODO - the pdf calcualtion is horrifically broken, do not user until this is fixed!!!
 
 # TODO - make sure the cached bounding sphere is reset when a change to the scenegraph occurs
 cdef class TargetedPixel(Observer0D):
