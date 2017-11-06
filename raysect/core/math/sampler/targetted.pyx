@@ -33,19 +33,19 @@ import from raysect.core cimport Point3D, Vector3D
 
 
 # todo: docstrings need updating
-cdef class TargetedHemisphereSampler:
+cdef class TargettedHemisphereSampler:
 
     cdef:
-        double _targeted_path_prob
+        double _targetted_path_prob
         list _targets
 
-    def __init__(self, list targets, targeted_path_prob=None):
+    def __init__(self, list targets, targetted_path_prob=None):
         """
         Targets is a list of tuples containing the following (Point3D sphere_origin, double sphere_radius, double weight).
 
-        :param list targets: a list of tuples describing spheres for targeted sampling.
+        :param list targets: a list of tuples describing spheres for targetted sampling.
         """
-        self.targeted_path_prob = targeted_path_prob or 0.9
+        self.targetted_path_prob = targetted_path_prob or 0.9
         self._targets = targets
 
     def __call__(self, Point3D point, object samples=None, bint pdf=False):
@@ -73,6 +73,17 @@ cdef class TargetedHemisphereSampler:
             if pdf:
                 return self.sample_with_pdf(point)
             return self.sample(point)
+
+    @property
+    def targetted_path_prob(self):
+        return self._targetted_path_prob
+
+    @targetted_path_prob.setter
+    def targetted_path_prob(self, double value):
+
+        if value < 0 or value > 1:
+            raise ValueError("Targeted path probability must lie in the range [0, 1].")
+        self._targetted_path_prob = value
 
     cpdef double pdf(self, Point3D point, Vector3D sample):
         """
@@ -151,19 +162,19 @@ cdef class TargetedHemisphereSampler:
 
 
 # todo: docstrings need updating
-cdef class TargetedSphereSampler:
+cdef class TargettedSphereSampler:
 
     cdef:
-        double _targeted_path_prob
+        double _targetted_path_prob
         list _targets
 
-    def __init__(self, list targets, targeted_path_prob=None):
+    def __init__(self, list targets, targetted_path_prob=None):
         """
         Targets is a list of tuples containing the following (Point3D sphere_origin, double sphere_radius, double weight).
 
-        :param list targets: a list of tuples describing spheres for targeted sampling.
+        :param list targets: a list of tuples describing spheres for targetted sampling.
         """
-        self.targeted_path_prob = targeted_path_prob or 0.9
+        self.targetted_path_prob = targetted_path_prob or 0.9
         self._targets = targets
 
     def __call__(self, Point3D point, object samples=None, bint pdf=False):
@@ -191,6 +202,17 @@ cdef class TargetedSphereSampler:
             if pdf:
                 return self.sample_with_pdf(point)
             return self.sample(point)
+
+    @property
+    def targetted_path_prob(self):
+        return self._targetted_path_prob
+
+    @targetted_path_prob.setter
+    def targetted_path_prob(self, double value):
+
+        if value < 0 or value > 1:
+            raise ValueError("Targetted path probability must lie in the range [0, 1].")
+        self._targetted_path_prob = value
 
     cpdef double pdf(self, Point3D point, Vector3D sample):
         """
