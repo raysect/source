@@ -35,7 +35,7 @@ from raysect.core cimport Vector3D
 from raysect.core.math.sampler cimport DiskSampler3D, ConeUniformSampler
 from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer0D
-from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
+from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 cimport cython
 
 
@@ -69,16 +69,16 @@ cdef class FibreOptic(Observer0D):
     def __init__(self, pipelines=None, acceptance_angle=None, radius=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
-        pipelines = pipelines or [SpectralPipeline0D()]
+        pipelines = pipelines or [SpectralPowerPipeline0D()]
 
         super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
                          pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
                          spectral_bins=spectral_bins, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
                          ray_extinction_prob=ray_extinction_prob, ray_extinction_min_depth=ray_extinction_min_depth,
                          ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
-                         ray_important_path_weight=ray_important_path_weight)
+                         ray_important_path_weight=ray_important_path_weight, quiet=quiet)
 
         acceptance_angle = acceptance_angle or 5.0
         radius = radius or 0.001

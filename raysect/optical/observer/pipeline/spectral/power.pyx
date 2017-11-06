@@ -28,27 +28,24 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-cimport numpy as np
 import numpy as np
 from matplotlib import pyplot as plt
 
-from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
-from raysect.core.math cimport StatsArray3D, StatsArray1D
 from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.observer.base.slice cimport SpectralSlice
 
 
-_DEFAULT_PIPELINE_NAME = "Spectral Pipeline"
+_DEFAULT_PIPELINE_NAME = "Spectral Power Pipeline"
 _DISPLAY_DPI = 100
 _DISPLAY_SIZE = (800 / _DISPLAY_DPI, 600 / _DISPLAY_DPI)
 
 
 # todo: add rendering display
-cdef class SpectralPipeline0D(Pipeline0D):
+cdef class SpectralPowerPipeline0D(Pipeline0D):
     """
-    A basic spectrum pipeline for 0D observers.
+    A basic spectral power pipeline for 0D observers (W/nm).
 
-    The raw spectrum for the observer is stored along with the associated
+    The mean spectral power for the observer is stored along with the associated
     error on each wavelength bin.
 
     Spectral values and errors are available through the self.frame attribute.
@@ -58,17 +55,9 @@ cdef class SpectralPipeline0D(Pipeline0D):
     :param str name: User friendly name for this pipeline.
     """
 
-    cdef:
-        public str name
-        public bint accumulate
-        readonly StatsArray1D samples
-        list _spectral_slices
-        readonly int bins
-        readonly double min_wavelength, max_wavelength, delta_wavelength
-        readonly np.ndarray wavelengths
-        object _display_figure
+    def __init__(self, bint accumulate=True, str name=None, bint display_progress=True):
 
-    def __init__(self, bint accumulate=True, str name=None):
+        super().__init__()
 
         self.name = name or _DEFAULT_PIPELINE_NAME
         self.accumulate = accumulate
@@ -81,7 +70,9 @@ cdef class SpectralPipeline0D(Pipeline0D):
         self.delta_wavelength = 0
         self.wavelengths = None
 
+        self.display_progress = display_progress
         self._display_figure = None
+        self._quiet = False
 
     cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
@@ -96,10 +87,12 @@ cdef class SpectralPipeline0D(Pipeline0D):
         if not self.accumulate or self.samples is None or self.samples.length != spectral_bins:
             self.samples = StatsArray1D(spectral_bins)
 
+        self._quiet = quiet
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef PixelProcessor pixel_processor(self, int slice_id):
-        return SpectralPixelProcessor(self._spectral_slices[slice_id])
+        return SpectralPowerPixelProcessor(self._spectral_slices[slice_id])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -120,10 +113,11 @@ cdef class SpectralPipeline0D(Pipeline0D):
 
     cpdef object finalise(self):
 
-        self._render_display()
+        if self.display_progress:
 
-        # workaround for interactivity for QT backend
-        plt.pause(0.1)
+            self._render_display()
+            # workaround for interactivity for QT backend
+            plt.pause(0.1)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -163,11 +157,11 @@ cdef class SpectralPipeline0D(Pipeline0D):
         self._render_display()
 
 
-cdef class SpectralPipeline2D(Pipeline2D):
+cdef class SpectralPowerPipeline2D(Pipeline2D):
     """
-    A basic spectrum pipeline for 2D observers.
+    A basic spectral power pipeline for 2D observers (W/nm).
 
-    The raw spectrum for each pixel is stored along with the associated
+    The mean spectral power for each pixel is stored along with the associated
     error on each wavelength bin in a 2D frame object.
 
     Spectral values and errors are available through the self.frame attribute.
@@ -176,17 +170,6 @@ cdef class SpectralPipeline2D(Pipeline2D):
       to observe() (default=True).
     :param str name: User friendly name for this pipeline.
     """
-
-    cdef:
-        public str name
-        public bint accumulate
-        readonly StatsArray3D frame
-        tuple _pixels
-        int _samples
-        list _spectral_slices
-        readonly int bins
-        readonly double min_wavelength, max_wavelength, delta_wavelength
-        readonly np.ndarray wavelengths
 
     def __init__(self, bint accumulate=True, str name=None):
 
@@ -223,7 +206,7 @@ cdef class SpectralPipeline2D(Pipeline2D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
-        return SpectralPixelProcessor(self._spectral_slices[slice_id])
+        return SpectralPowerPixelProcessor(self._spectral_slices[slice_id])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -270,12 +253,10 @@ cdef class SpectralPipeline2D(Pipeline2D):
         plt.show()
 
 
-cdef class SpectralPixelProcessor(PixelProcessor):
+cdef class SpectralPowerPixelProcessor(PixelProcessor):
     """
-    PixelProcessor that stores the spectrum observed by each pixel.
+    PixelProcessor that stores the spectral power observed by each pixel.
     """
-
-    cdef StatsArray1D bins
 
     def __init__(self, SpectralSlice slice):
         self.bins = StatsArray1D(slice.bins)
@@ -290,4 +271,3 @@ cdef class SpectralPixelProcessor(PixelProcessor):
 
     cpdef tuple pack_results(self):
         return self.bins.mean, self.bins.variance
-

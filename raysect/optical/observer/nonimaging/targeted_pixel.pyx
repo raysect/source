@@ -36,7 +36,7 @@ from raysect.core.boundingsphere cimport BoundingSphere3D
 from raysect.optical cimport Primitive, Ray, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralRadiancePipeline0D
-from raysect.core.math.random cimport vector_cone_uniform, probability
+from raysect.core.math.random cimport vector_cone_uniform
 from raysect.core.math.cython cimport rotate_basis
 
 from libc.math cimport M_PI as PI, asin, sqrt
