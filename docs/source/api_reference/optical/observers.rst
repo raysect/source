@@ -1,4 +1,6 @@
 
+.. _observers-page:
+
 Observers
 =========
 

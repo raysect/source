@@ -96,18 +96,28 @@ Power
 Spectral
 --------
 
-.. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralPipeline0D
+.. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralPowerPipeline0D
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralPipeline2D
+.. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralRadiancePipeline0D
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralPixelProcessor
+.. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralPowerPipeline2D
    :members:
    :show-inheritance:
 
+.. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralRadiancePipeline2D
+   :members:
+   :show-inheritance:
 
+.. autoclass:: raysect.optical.observer.pipeline.spectral.power.SpectralPowerPixelProcessor
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.pipeline.spectral.radiance.SpectralRadiancePixelProcessor
+   :members:
+   :show-inheritance:
 
 

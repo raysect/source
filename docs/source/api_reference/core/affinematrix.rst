@@ -2,6 +2,7 @@
 Affine Matricies
 ================
 
+.. _affine-matrix-3D:
 .. automodule:: raysect.core.math.affinematrix
    :members:
 
