@@ -204,6 +204,7 @@ cdef class TargetedPixel(Observer0D):
             # This test also implicitly checks if the sphere direction lies in the hemisphere as the
             # angular_radius cannot be less than zero
             # todo: calculate projected area of a cut sphere to improve sampling
+            sphere_direction = sphere_direction.normalise()
             sphere_angle = asin(sphere_direction.z)
             if angular_radius >= sphere_angle:
                 self._add_hemisphere_sample(template, ray_origin, rays)
@@ -213,7 +214,6 @@ cdef class TargetedPixel(Observer0D):
             ray_direction = vector_cone_uniform(angular_radius * 180 / PI)
 
             # rotate cone to lie along vector from observation point to sphere centre
-            sphere_direction = sphere_direction.normalise()
             rotation = rotate_basis(sphere_direction, sphere_direction.orthogonal())
             ray_direction =  ray_direction.transform(rotation)
 
