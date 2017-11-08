@@ -46,16 +46,39 @@ cdef class TargettedHemisphereSampler:
     """
 
     cdef:
-        double _targetted_path_prob
+        double _total_weight
         list _targets
+        np.ndarray _cdf
+        double[::1] _cdf_mv
 
-    def __init__(self, list targets, targetted_path_prob=None):
+    def __init__(self, list targets):
 
-        self.targetted_path_prob = targetted_path_prob or 0.9
         self._targets = targets
+        self._total_weight = 0
+        self._cdf = None
 
-        # TODO - validate targets
+        self._validate_targets()
         self._calculate_cdf()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef object _validate_targets(self):
+
+        cdef:
+            tuple target
+            double radius, weight
+
+        if len(self._targets) < 1:
+            raise ValueError('List of targets must contain at least one target sphere.')
+
+        for target in self._targets:
+            _, radius, weight = target
+
+            if radius <= 0:
+                raise ValueError('Target sphere radius must be greater than zero.')
+
+            if weight <= 0:
+                raise ValueError('Target weight must be greater than zero.')
 
     def __call__(self, Point3D point, object samples=None, bint pdf=False):
         """
@@ -83,17 +106,6 @@ cdef class TargettedHemisphereSampler:
                 return self.sample_with_pdf(point)
             return self.sample(point)
 
-    @property
-    def targetted_path_prob(self):
-        return self._targetted_path_prob
-
-    @targetted_path_prob.setter
-    def targetted_path_prob(self, double value):
-
-        if value < 0 or value > 1:
-            raise ValueError("Targeted path probability must lie in the range [0, 1].")
-        self._targetted_path_prob = value
-
     @cython.cdivision(True)
     cpdef double pdf(self, Point3D point, Vector3D sample):
         """
@@ -105,8 +117,10 @@ cdef class TargettedHemisphereSampler:
         """
 
         cdef:
-            double weight, distance, solid_angle, angular_radius_cos, t
-            double pdf_all, pdf_sphere, selection_weight
+            double weight, selection_weight
+            double pdf, pdf_all, sphere_radius
+            double  distance, solid_angle, angular_radius_cos, t
+            Point3D sphere_centre
             Vector3D cone_axis
             AffineMatrix3D rotation
 
@@ -178,7 +192,8 @@ cdef class TargettedHemisphereSampler:
         # generate a random direction towards that projection
 
         cdef:
-            double weight, distance, angular_radius
+            double sphere_radius, weight, distance, angular_radius
+            Point3D sphere_centre
             Vector3D direction, sample
             AffineMatrix3D rotation
 
@@ -275,6 +290,9 @@ cdef class TargettedHemisphereSampler:
             results.append(self.sample_with_pdf(point))
         return results
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef object _calculate_cdf(self):
         """
         Calculate the cumulative distribution function for the sphere weights.
@@ -283,17 +301,33 @@ cdef class TargettedHemisphereSampler:
         point in the array the normalised cumulative weighting is stored.
         """
 
-        self._cdf = np.zeros(len(self._targets))
+        cdef:
+            int count, index
+            tuple sphere_data
+            double weight
+
+        count = len(self._targets)
+
+        # create empty array and acquire a memory view for fast access
+        self._cdf = np.zeros(count)
+        self._cdf_mv = self._cdf
+
+        # accumulate cdf and total weight
         for index, sphere_data in enumerate(self._targets):
-            _, _, weight = sphere_data
+            _, radius, weight = sphere_data
             if index == 0:
-                self._cdf[index] = weight
+                self._cdf_mv[index] = weight
             else:
-                self._cdf[index] = self._cdf[index - 1] + weight
+                self._cdf_mv[index] = self._cdf_mv[index - 1] + weight
 
-        self._total_weight = self._cdf[len(self._targets) - 1]
-        self._cdf /= self._total_weight
+        # normalise
+        self._total_weight = self._cdf_mv[count - 1]
+        for index in range(count - 1):
+            self._cdf_mv[index] /= self._total_weight
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef tuple _pick_sphere(self):
         """
         Find the important primitive bounding sphere corresponding to a uniform random number.
@@ -302,7 +336,7 @@ cdef class TargettedHemisphereSampler:
         cdef int index
 
         # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
-        index = find_index(self._cdf, uniform()) + 1
+        index = find_index(self._cdf_mv, uniform()) + 1
         return self._targets[index]
 
 
@@ -349,17 +383,6 @@ cdef class TargettedSphereSampler:
             if pdf:
                 return self.sample_with_pdf(point)
             return self.sample(point)
-
-    @property
-    def targetted_path_prob(self):
-        return self._targetted_path_prob
-
-    @targetted_path_prob.setter
-    def targetted_path_prob(self, double value):
-
-        if value < 0 or value > 1:
-            raise ValueError("Targetted path probability must lie in the range [0, 1].")
-        self._targetted_path_prob = value
 
     @cython.cdivision(True)
     cpdef double pdf(self, Point3D point, Vector3D sample):
