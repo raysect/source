@@ -31,29 +31,23 @@
 
 import numpy as np
 cimport numpy as np
-from raysect.core cimport Point3D, Vector3D, AffineMatrix3D
+from raysect.core.math cimport Point3D, Vector3D, AffineMatrix3D
 from raysect.core.math.random cimport uniform, vector_sphere, vector_cone_uniform, vector_hemisphere_cosine
 from raysect.core.math.cython cimport find_index, rotate_basis
-from libc.math cimport M_PI, M_1_PI, asin, sqrt
+from libc.math cimport M_PI, M_1_PI, asin, acos, sqrt
 cimport cython
 
 
 cdef class _TargettedSampler:
 
-    cdef:
-        double _total_weight
-        list _targets
-        np.ndarray _cdf
-        double[::1] _cdf_mv
-
-    def __init__(self, list targets):
+    def __init__(self, object targets):
         """
         Targets is a list of tuples containing the following (Point3D sphere_centre, double sphere_radius, double weight).
 
         :param list targets: a list of tuples describing spheres for targetted sampling.
         """
 
-        self._targets = targets
+        self._targets = tuple(targets)
         self._total_weight = 0
         self._cdf = None
 
@@ -357,6 +351,7 @@ cdef class TargettedHemisphereSampler(_TargettedSampler):
         # This test also implicitly checks if the sphere direction lies in the hemisphere as the
         # angular_radius cannot be less than zero
         # todo: calculate projected area of a cut sphere to improve sampling
+        direction = direction.normalise()
         sphere_angle = asin(direction.z)
         if angular_radius >= sphere_angle:
             return vector_hemisphere_cosine()
@@ -365,7 +360,6 @@ cdef class TargettedHemisphereSampler(_TargettedSampler):
         sample = vector_cone_uniform(angular_radius * 180 / M_PI)
 
         # rotate cone to lie along vector from observation point to sphere centre
-        direction = direction.normalise()
         rotation = rotate_basis(direction, direction.orthogonal())
         return sample.transform(rotation)
 
