@@ -4,7 +4,7 @@ Sampling and Observers
 **********************
 
 =================
-Observer Equation
+Observer equation
 =================
 
 The total intensity measured by an observing pixel is given be the integral of
@@ -25,6 +25,7 @@ rays become increasingly parallel to the surface.
 
    **Caption:** Example sampling geometry for a pixel in a camera. (Image credit: Carr, M.,
    Meakins, A., et. al. (2017))
+
 
 =======================
 Monte-Carlo Integration
@@ -74,22 +75,25 @@ the integral contains steep gradients or a divergence, for example, a bright poi
 The standard error on the integral estimator can become large in such circumstances.
 
 We can get around these problems by drawing the sample points :math:`x_i` from a non-uniform
-probability density function (i.e. higher density for regions with stronger emission). :math:`p(x_i)`
-now becomes
+probability density function (i.e. higher density for regions with stronger emission). Formally, :math:`p(x_i)`
+is defined as
 
 .. math::
 
    p(x_i) = \frac{w(x_i)}{\int_{a}^{b} w(x) dx}
 
-where :math:`w(x)` is the weight function and has been normalised so that its integral is 1. The
-estimator for the integral is now
+where :math:`w(x)` is the weight function describing the distribution of sampling points. :math:`p(x)` has
+the same functional shape as :math:`w(x)` but has been normalised so that its integral is 1. For uniform
+sampling, :math:`w(x) = 1` and :math:`p(x_i) = 1/(b-a)` recovering the average value formula.
+
+For the general case function :math:`w(x)` the estimator for the integral is now
 
 .. math::
 
    I \approx \frac{1}{N} \sum_{i=1}^{N} \frac{f(x_i)}{w(x_i)} \int_{a}^{b} w(x) dx
 
 This is the fundamental formula of importance sampling and a generalisation of the average
-value method (try :math:`w(x) = 1`). It allows estimation of the integral :math:`I` by performing
+value method. It allows estimation of the integral :math:`I` by performing
 a weighted sum, which can be weighted to have higher density in regions of interest. The price we
 pay is that the random samples are being drawn from a more complicated distribution.
 
@@ -97,14 +101,133 @@ Importance sampling exploits the fact that the Monte-Carlo estimator converges f
 are taken from a distribution p(x) that is similar to the function f(x) in the integrand
 (i.e. concentrate the calculations where the integrand is high).
 
+Uniform hemisphere distribution
+-------------------------------
+
+When calculating the irradiance at an observer surface we need to sample a set of
+randomly distributed unit vectors in a hemisphere oriented along the surface normal. The simplest
+distribution would be the uniform distribution where all angles over :math:`2 \pi` have equal
+probability of being sampled. The weighting distribution is :math:`w(\omega) = 1`. Thus the
+distributions normalisation constant evaluates to the area of solid angle being sampled, similar to
+the :math:`b-a` length scale for the 1D cartesian case.
+
+.. math::
+   c = \int_{0}^{2\pi} \int_{0}^{\frac{\pi}{2}} \sin(\theta) d\theta d\phi = 2 \pi
+
+Therefore :math:`p(\omega)` for uniformly distributed vectors is
+
+.. math::
+   p(\omega) = \frac{1}{2 \pi}.
+
+The estimator for the irradiance becomes
+
+.. math::
+   I = \frac{2 \pi}{N} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta_i)
+
 Cosine distribution
 -------------------
+
+As mentioned above, it is often advantageous to draw samples from a distribution with similar shape
+to the function being integrated. The observer equation is weighted with a cosine theta term meaning
+that samples near the top of the hemisphere are weighted much more than samples near the edge. Hence
+it is useful to generate observer samples proportional to the cosine distribution.
+
+.. math::
+
+   w(\omega) = \cos(\theta)
+
+The normalisation constant, :math:`c`, can be evaluated by integrating :math:`w(x)` over the domain.
+
+.. math::
+   c = \int_{0}^{2\pi} \int_{0}^{\frac{\pi}{2}} w(\omega) \sin(\theta) d\theta d\phi = \pi
+
+Therefore :math:`p(\omega)` for a cosine distribution would be
+
+.. math::
+   p(\omega) = \frac{\cos(\theta)}{\pi}
+
+and the estimator becomes
+
+.. math::
+   I = \frac{\pi}{N \cos(\theta)} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta) = \frac{\pi}{N} \sum_{i=1}^{N} L_i(p, \omega_i)
+
+Note that the cosine factors have cancelled, which makes sense since we are treating
+the :math:`\cos(\theta)` term as the important distribution.
+
+Uniform cone distribution
+-------------------------
+
+A common sampling distribution is the uniform cone, where vectors are sampled uniformly over the
+circular solid angle centred around the z-axis with angle to z :math:`\theta_{max}`. Samples
+around the z-axis can be transformed by rotation without effecting the sample density. The weighting
+function is uniform and hence :math:`w(\omega) = 1`. The normalisation constant for the distribution
+is
+
+.. math::
+   c = \int_{0}^{2\pi} \int_{0}^{\theta_{max}} \sin(\theta) d\theta d\phi = 2\pi (1-\cos(\theta_{max}))
+
+with corresponding pdf equal to
+
+.. math::
+   p(\omega) = \frac{1}{2\pi (1-\cos(\theta_{max}))}.
+
+The estimator is
+
+.. math::
+   I = \frac{2\pi (1-\cos(\theta_{max}))}{N} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta_i).
+
 
 Sampling the lights
 -------------------
 
+Arbitrary light sources and important primitives can be sampled with the projection method. The
+light (or primitive) in question is wrapped in a bounding sphere that just encloses the object.
+It is then a matter of projecting the bounding sphere into a uniform cone at the surface of the
+sample point. The vector from the sample point to the bounding sphere can be used to find a disk
+inside the bounding sphere that defines the effective solid angle to be sampled.
+
+.. figure:: images/light_sampling.png
+   :align: center
+
+   **Caption:** A complex light source sampled with the projection method.
+
+
+
+
+=========
+Materials
+=========
+
+The amount of light that reaches a camera from a point on an object surface is
+given by the sum of light emitted and reflected from other sources.
+
+.. math::
+
+   L_{O}(p, \omega_O) = \int_{\Omega} L_{i}(p, \omega_i) \times f(\omega_i, \omega_o) \times \cos (\theta_i) d\omega_i
+
+
+This equation is the same as the observer equation with the addition of the
+bidirectional reflectance distribution function (BRDF) term :math:`f(\omega_i , \omega_o )`.
+The BRDF is a weighting function that describes the redistribution of incident light
+into outgoing reflections and transmission/absorption. It is commonly approximated in
+terms of two ideal material components, specular and diffuse reflections. Ideal specular
+reflection behaves like a mirror where the incoming light is perfectly reflected into
+one angle, :math:`f_s (\omega_i, \omega_o ) = \rho_s(\omega_i )\delta(\omega_i ,\omega_o )`.
+An ideal diffuse surface (matte paper) will evenly redistribute incident light across all
+directions and hence has no angular dependance, :math:`f_d (\omega_i , \omega_o ) = \rho_d /\pi`.
+Real physical materials exhibit a complex combination of both behaviours in addition to
+transmission and absorption.
+
+.. figure:: images/material_reflections.png
+   :align: center
+
+   **Caption:** Example geometry for light reflected from a material surface. (Image credit: Carr, M.,
+   Meakins, A., et. al. (2017))
+
+
 Sampling the BRDF
 -----------------
+
 
 ============================
 Multiple Importance Sampling
