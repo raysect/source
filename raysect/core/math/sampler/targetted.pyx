@@ -31,31 +31,48 @@
 
 import numpy as np
 cimport numpy as np
-from raysect.core cimport Point3D, Vector3D, AffineMatrix3D
+from raysect.core.math cimport Point3D, Vector3D, AffineMatrix3D
 from raysect.core.math.random cimport uniform, vector_sphere, vector_cone_uniform, vector_hemisphere_cosine
 from raysect.core.math.cython cimport find_index, rotate_basis
-from libc.math cimport M_PI, M_1_PI, asin, sqrt
+from libc.math cimport M_PI, M_1_PI, asin, acos, sqrt
 cimport cython
 
 
-cdef class TargettedHemisphereSampler:
-    """
-    Targets is a list of tuples containing the following (Point3D sphere_centre, double sphere_radius, double weight).
+cdef class _TargettedSampler:
 
-    :param list targets: a list of tuples describing spheres for targetted sampling.
-    """
+    def __init__(self, object targets):
+        """
+        Targets is a list of tuples containing the following (Point3D sphere_centre, double sphere_radius, double weight).
 
-    cdef:
-        double _targetted_path_prob
-        list _targets
+        :param list targets: a list of tuples describing spheres for targetted sampling.
+        """
 
-    def __init__(self, list targets, targetted_path_prob=None):
+        self._targets = tuple(targets)
+        self._total_weight = 0
+        self._cdf = None
 
-        self.targetted_path_prob = targetted_path_prob or 0.9
-        self._targets = targets
-
-        # TODO - validate targets
+        self._validate_targets()
         self._calculate_cdf()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cdef object _validate_targets(self):
+
+        cdef:
+            tuple target
+            double radius, weight
+
+        if len(self._targets) < 1:
+            raise ValueError('List of targets must contain at least one target sphere.')
+
+        for target in self._targets:
+            _, radius, weight = target
+
+            if radius <= 0:
+                raise ValueError('Target sphere radius must be greater than zero.')
+
+            if weight <= 0:
+                raise ValueError('Target weight must be greater than zero.')
 
     def __call__(self, Point3D point, object samples=None, bint pdf=False):
         """
@@ -83,16 +100,146 @@ cdef class TargettedHemisphereSampler:
                 return self.sample_with_pdf(point)
             return self.sample(point)
 
-    @property
-    def targetted_path_prob(self):
-        return self._targetted_path_prob
+    cpdef double pdf(self, Point3D point, Vector3D sample):
+        """
+        Calculates the value of the PDF for the specified sample point and direction.
 
-    @targetted_path_prob.setter
-    def targetted_path_prob(self, double value):
+        :param Point3D point: The point from which to sample.
+        :param Vector3D sample: The sample direction.
+        :rtype: double
+        """
 
-        if value < 0 or value > 1:
-            raise ValueError("Targeted path probability must lie in the range [0, 1].")
-        self._targetted_path_prob = value
+        raise NotImplementedError('Virtual method pdf() has not been implemented.')
+
+    cdef Vector3D sample(self, Point3D point):
+        """
+        Generate a single sample.
+
+        If the pdf is required please see sample_with_pdf().
+
+        :param Point3D point: The point from which to sample.
+        :return: The vector along which to sample.
+        :rtype: Vector3D
+        """
+
+        raise NotImplementedError('Virtual method sample() has not been implemented.')
+
+    cdef tuple sample_with_pdf(self, Point3D point):
+        """
+        Generates a single sample with its associated pdf.
+
+        Returns a tuple with the sample point as the first element and pdf value as
+        the second element.
+
+        Obtaining a sample with its pdf is generally more efficient than requesting the sample and then
+        its pdf in a subsequent call since some of the calculation is common between the two steps.
+
+        :rtype: tuple
+        """
+
+        cdef:
+            Vector3D sample_direction
+            double pdf
+
+        sample_direction = self.sample(point)
+        pdf = self.pdf(point, sample_direction)
+
+        return sample_direction, pdf
+
+    cdef list samples(self, Point3D point, int samples):
+        """
+        Generates a list of samples.
+
+        If pdfs are required please see samples_with_pdfs().
+
+        :param int samples: Number of points to generate.
+        :rtype: list
+        """
+
+        cdef list results
+        cdef int i
+
+        results = []
+        for i in range(samples):
+            results.append(self.sample(point))
+        return results
+
+    cdef list samples_with_pdfs(self, Point3D point, int samples):
+        """
+        Generates a list of tuples containing samples and their associated pdfs.
+
+        Each sample is a tuple with the sample point as the first element and pdf value as
+        the second element.
+
+        Obtaining samples with pdfs is generally more efficient than requesting samples and then
+        the pdf in a subsequent call since some of the calculation is common between the two steps.
+
+        :param int samples: Number of points to generate.
+        :rtype: list
+        """
+
+        cdef list results
+        cdef int i
+
+        results = []
+        for i in range(samples):
+            results.append(self.sample_with_pdf(point))
+        return results
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef object _calculate_cdf(self):
+        """
+        Calculate the cumulative distribution function for the sphere weights.
+
+        Stores an array with length equal to the number of spheres. At each
+        point in the array the normalised cumulative weighting is stored.
+        """
+
+        cdef:
+            int count, index
+            tuple sphere_data
+            double weight
+
+        count = len(self._targets)
+
+        # create empty array and acquire a memory view for fast access
+        self._cdf = np.zeros(count)
+        self._cdf_mv = self._cdf
+
+        # accumulate cdf and total weight
+        for index, sphere_data in enumerate(self._targets):
+            _, radius, weight = sphere_data
+            if index == 0:
+                self._cdf_mv[index] = weight
+            else:
+                self._cdf_mv[index] = self._cdf_mv[index - 1] + weight
+
+        # normalise
+        self._total_weight = self._cdf_mv[count - 1]
+        for index in range(count - 1):
+            self._cdf_mv[index] /= self._total_weight
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef tuple _pick_sphere(self):
+        """
+        Find the important primitive bounding sphere corresponding to a uniform random number.
+        """
+
+        cdef int index
+
+        # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
+        index = find_index(self._cdf_mv, uniform()) + 1
+        return self._targets[index]
+
+
+cdef class TargettedHemisphereSampler(_TargettedSampler):
+    """
+
+    """
 
     @cython.cdivision(True)
     cpdef double pdf(self, Point3D point, Vector3D sample):
@@ -105,8 +252,10 @@ cdef class TargettedHemisphereSampler:
         """
 
         cdef:
-            double weight, distance, solid_angle, angular_radius_cos, t
-            double pdf_all, pdf_sphere, selection_weight
+            double weight, selection_weight
+            double pdf, pdf_all, sphere_radius
+            double  distance, solid_angle, angular_radius_cos, t
+            Point3D sphere_centre
             Vector3D cone_axis
             AffineMatrix3D rotation
 
@@ -178,7 +327,8 @@ cdef class TargettedHemisphereSampler:
         # generate a random direction towards that projection
 
         cdef:
-            double weight, distance, angular_radius
+            double sphere_radius, weight, distance, angular_radius
+            Point3D sphere_centre
             Vector3D direction, sample
             AffineMatrix3D rotation
 
@@ -201,6 +351,7 @@ cdef class TargettedHemisphereSampler:
         # This test also implicitly checks if the sphere direction lies in the hemisphere as the
         # angular_radius cannot be less than zero
         # todo: calculate projected area of a cut sphere to improve sampling
+        direction = direction.normalise()
         sphere_angle = asin(direction.z)
         if angular_radius >= sphere_angle:
             return vector_hemisphere_cosine()
@@ -209,157 +360,14 @@ cdef class TargettedHemisphereSampler:
         sample = vector_cone_uniform(angular_radius * 180 / M_PI)
 
         # rotate cone to lie along vector from observation point to sphere centre
-        direction = direction.normalise()
         rotation = rotate_basis(direction, direction.orthogonal())
         return sample.transform(rotation)
 
-    cdef tuple sample_with_pdf(self, Point3D point):
-        """
-        Generates a single sample with its associated pdf.
 
-        Returns a tuple with the sample point as the first element and pdf value as
-        the second element.
+cdef class TargettedSphereSampler(_TargettedSampler):
+    """
 
-        Obtaining a sample with its pdf is generally more efficient than requesting the sample and then
-        its pdf in a subsequent call since some of the calculation is common between the two steps.
-
-        :rtype: tuple
-        """
-
-        cdef:
-            Vector3D sample_direction
-            double pdf
-
-        sample_direction = self.sample(point)
-        pdf = self.pdf(point, sample_direction)
-
-        return sample_direction, pdf
-
-    cdef list samples(self, Point3D point, int samples):
-        """
-        Generates a list of samples.
-
-        If pdfs are required please see samples_with_pdfs().
-
-        :param int samples: Number of points to generate.
-        :rtype: list
-        """
-
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample(point))
-        return results
-
-    cdef list samples_with_pdfs(self, Point3D point, int samples):
-        """
-        Generates a list of tuples containing samples and their associated pdfs.
-
-        Each sample is a tuple with the sample point as the first element and pdf value as
-        the second element.
-
-        Obtaining samples with pdfs is generally more efficient than requesting samples and then
-        the pdf in a subsequent call since some of the calculation is common between the two steps.
-
-        :param int samples: Number of points to generate.
-        :rtype: list
-        """
-
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample_with_pdf(point))
-        return results
-
-    cdef object _calculate_cdf(self):
-        """
-        Calculate the cumulative distribution function for the sphere weights.
-
-        Stores an array with length equal to the number of spheres. At each
-        point in the array the normalised cumulative weighting is stored.
-        """
-
-        self._cdf = np.zeros(len(self._targets))
-        for index, sphere_data in enumerate(self._targets):
-            _, _, weight = sphere_data
-            if index == 0:
-                self._cdf[index] = weight
-            else:
-                self._cdf[index] = self._cdf[index - 1] + weight
-
-        self._total_weight = self._cdf[len(self._targets) - 1]
-        self._cdf /= self._total_weight
-
-    cdef tuple _pick_sphere(self):
-        """
-        Find the important primitive bounding sphere corresponding to a uniform random number.
-        """
-
-        cdef int index
-
-        # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
-        index = find_index(self._cdf, uniform()) + 1
-        return self._targets[index]
-
-
-cdef class TargettedSphereSampler:
-
-    cdef:
-        double _targetted_path_prob
-        list _targets
-
-    def __init__(self, list targets, targetted_path_prob=None):
-        """
-        Targets is a list of tuples containing the following (Point3D sphere_centre, double sphere_radius, double weight).
-
-        :param list targets: a list of tuples describing spheres for targetted sampling.
-        """
-        self.targetted_path_prob = targetted_path_prob or 0.9
-        self._targets = targets
-
-        # TODO - validate targets
-        self._calculate_cdf()
-
-    def __call__(self, Point3D point, object samples=None, bint pdf=False):
-        """
-        If samples is not provided, returns a single Vector3D sample from
-        the distribution. If samples is set to a value then a number of
-        samples equal to the value specified is returned in a list.
-
-        If pdf is set to True the Vector3D sample is returned inside a tuple
-        with its associated pdf value as the second element.
-
-        :param int samples: Number of points to generate (default=None).
-        :param bool pdf: Toggle for returning associated sample pdfs (default=False).
-        :return: A Vector3D, tuple or list of Vector3D objects.
-        """
-
-        if samples:
-            samples = int(samples)
-            if samples <= 0:
-                raise ValueError("Number of samples must be greater than 0.")
-            if pdf:
-                return self.samples_with_pdfs(point, samples)
-            return self.samples(point, samples)
-        else:
-            if pdf:
-                return self.sample_with_pdf(point)
-            return self.sample(point)
-
-    @property
-    def targetted_path_prob(self):
-        return self._targetted_path_prob
-
-    @targetted_path_prob.setter
-    def targetted_path_prob(self, double value):
-
-        if value < 0 or value > 1:
-            raise ValueError("Targetted path probability must lie in the range [0, 1].")
-        self._targetted_path_prob = value
+    """
 
     @cython.cdivision(True)
     cpdef double pdf(self, Point3D point, Vector3D sample):
@@ -372,8 +380,10 @@ cdef class TargettedSphereSampler:
         """
 
         cdef:
-            double weight, distance, solid_angle, angular_radius_cos, t
-            double pdf_all, pdf_sphere, selection_weight
+            double weight, selection_weight
+            double pdf, pdf_all, sphere_radius
+            double  distance, solid_angle, angular_radius_cos, t
+            Point3D sphere_centre
             Vector3D cone_axis
             AffineMatrix3D rotation
 
@@ -405,11 +415,11 @@ cdef class TargettedSphereSampler:
                 solid_angle = 2 * M_PI * (1 - angular_radius_cos)
 
             # calculate probability
-            pdf_sphere = 1 / solid_angle
+            pdf = 1 / solid_angle
             selection_weight = weight / self._total_weight
 
             # add contribution to pdf
-            pdf_all += selection_weight * pdf_sphere
+            pdf_all += selection_weight * pdf
 
         return pdf_all
 
@@ -429,7 +439,8 @@ cdef class TargettedSphereSampler:
         # generate a random direction towards that projection
 
         cdef:
-            double weight, distance, angular_radius
+            double sphere_radius, weight, distance, angular_radius
+            Point3D sphere_centre
             Vector3D direction, sample
             AffineMatrix3D rotation
 
@@ -454,94 +465,3 @@ cdef class TargettedSphereSampler:
         rotation = rotate_basis(direction, direction.orthogonal())
         return sample.transform(rotation)
 
-    cdef tuple sample_with_pdf(self, Point3D point):
-        """
-        Generates a single sample with its associated pdf.
-
-        Returns a tuple with the sample point as the first element and pdf value as
-        the second element.
-
-        Obtaining a sample with its pdf is generally more efficient than requesting the sample and then
-        its pdf in a subsequent call since some of the calculation is common between the two steps.
-
-        :rtype: tuple
-        """
-
-        cdef:
-            Vector3D sample_direction
-            double pdf
-
-        sample_direction = self.sample(point)
-        pdf = self.pdf(point, sample_direction)
-
-        return sample_direction, pdf
-
-    cdef list samples(self, Point3D point, int samples):
-        """
-        Generates a list of samples.
-
-        If pdfs are required please see samples_with_pdfs().
-
-        :param int samples: Number of points to generate.
-        :rtype: list
-        """
-
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample(point))
-        return results
-
-    cdef list samples_with_pdfs(self, Point3D point, int samples):
-        """
-        Generates a list of tuples containing samples and their associated pdfs.
-
-        Each sample is a tuple with the sample point as the first element and pdf value as
-        the second element.
-
-        Obtaining samples with pdfs is generally more efficient than requesting samples and then
-        the pdf in a subsequent call since some of the calculation is common between the two steps.
-
-        :param int samples: Number of points to generate.
-        :rtype: list
-        """
-
-        cdef list results
-        cdef int i
-
-        results = []
-        for i in range(samples):
-            results.append(self.sample_with_pdf(point))
-        return results
-
-    cdef object _calculate_cdf(self):
-        """
-        Calculate the cumulative distribution function for the sphere weights.
-
-        Stores an array with length equal to the number of spheres. At each
-        point in the array the normalised cumulative weighting is stored.
-        """
-
-        self._cdf = np.zeros(len(self._targets))
-        for index, sphere_data in enumerate(self._targets):
-            _, _, weight = sphere_data
-            if index == 0:
-                self._cdf[index] = weight
-            else:
-                self._cdf[index] = self._cdf[index - 1] + weight
-
-        self._total_weight = self._cdf[len(self._targets) - 1]
-        self._cdf /= self._total_weight
-
-    cdef tuple _pick_sphere(self):
-        """
-        Find the important primitive bounding sphere corresponding to a uniform random number.
-        """
-
-        cdef int index
-
-        # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
-        index = find_index(self._cdf, uniform()) + 1
-        return self._targets[index]
