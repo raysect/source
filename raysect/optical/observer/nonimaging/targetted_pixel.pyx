@@ -31,11 +31,15 @@
 
 from libc.math cimport cos, M_PI as PI
 
+from raysect.core.math.random cimport probability
 from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
-from raysect.optical cimport Ray, new_point3d, new_vector3d, Primitive
+from raysect.optical cimport Ray, Primitive, Point3D, Vector3D, BoundingSphere3D
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 cimport cython
+
+
+DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 
 cdef class TargettedPixel(Observer0D):
@@ -52,7 +56,7 @@ cdef class TargettedPixel(Observer0D):
     """
 
     cdef:
-        double _x_width, _y_width, _solid_angle, _collection_area
+        double _x_width, _y_width, _solid_angle, _collection_area, _targetted_path_prob
         tuple _targets
         RectangleSampler3D _point_sampler
         HemisphereCosineSampler _cosine_sampler
@@ -83,7 +87,7 @@ cdef class TargettedPixel(Observer0D):
         self.y_width = y_width or 0.01
 
         self.targets = targets
-        self.targetted_path_prob = targetted_path_prob
+        self.targetted_path_prob = targetted_path_prob or 0.9
 
     @property
     def x_width(self):
@@ -192,7 +196,6 @@ cdef class TargettedPixel(Observer0D):
         else:
             return self._generate_rays_targetted(template, ray_count)
 
-
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef list _generate_rays_untargetted(self, Ray template, int ray_count):
@@ -203,7 +206,7 @@ cdef class TargettedPixel(Observer0D):
             double weight
 
         origins = self._point_sampler.samples(ray_count)
-        directions = self._vector_sampler.samples(ray_count)
+        directions = self._cosine_sampler.samples(ray_count)
 
         rays = []
         for n in range(ray_count):
@@ -218,6 +221,92 @@ cdef class TargettedPixel(Observer0D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef list _generate_rays_targetted(self, Ray template, int ray_count):
+
+        cdef:
+            list rays, origins, spheres
+            int n
+            double weight, distance, sphere_radius
+            Point3D sphere_centre, ray_origin
+            Vector3D sphere_direction, ray_direction
+            BoundingSphere3D sphere
+            Primitive target
+
+        # test target primitives are in the same scene-graph as the observer
+        for target in self._targets:
+            if target.root is not self.root:
+                raise ValueError("Target primitive is not in the same scenegraph as the TargetedPixel observer.")
+
+        # generate bounding spheres and convert to local coordinate system
+        spheres = []
+        for target in self._targets:
+            sphere = target.bounding_sphere()
+            spheres.append((sphere.centre.transform(self.to_local()), sphere.radius, 1.0))
+
+        # instance targetted pixel sampler
+        self._targetted_sampler = TargettedHemisphereSampler(spheres)
+
+        # sample pixel origins
+        origins = self._point_sampler.samples(ray_count)
+
+        rays = []
+        for origin in origins:
+
+            if probability(self._targetted_path_prob):
+                # obtain targetted vector sample
+                direction = self._targetted_sampler.sample(origin)
+
+            else:
+                # obtain cosine weighted hemisphere sample
+                direction = self._cosine_sampler.sample()
+
+            # calculate combined pdf and ray weight
+            pdf = self._targetted_path_prob * self._targetted_sampler.pdf(origin, direction) + \
+                  (1-self._targetted_path_prob) * self._cosine_sampler.pdf(direction)
+
+            # weight = 1 / (2 * pi) * cos(theta) * 1/pdf
+            weight = R_2_PI * direction.z / pdf
+
+            rays.append((template.copy(origin, direction), weight))
+
+        return rays
+
+
+        # cdef:
+        #     list rays, origins
+        #     int n
+        #     double weight, distance, sphere_radius
+        #     Point3D sphere_centre, ray_origin
+        #     Vector3D sphere_direction, ray_direction
+        #     BoundingSphere3D sphere
+        #
+        # # test target primitive is in the same scenegraph as the observer
+        # if self.target.root is not self.root:
+        #     raise ValueError("Target primitive is not in the same scenegraph as the TargetedPixel observer.")
+        #
+        # origins = self._point_sampler.samples(ray_count)
+        #
+        # # obtain bounding sphere and convert position to local coordinate space
+        # sphere = self.target.bounding_sphere()
+        # sphere_centre = sphere.centre.transform(self.to_local())
+        # sphere_radius = sphere.radius
+        #
+        # rays = []
+        # for n in range(ray_count):
+        #
+        #     ray_origin = origins[n]
+        #
+        #     # are we importance sample - yes or no
+        #     # if importance sampling enabled (targets exist) and probability of importance sample == True:
+        #     if probability(self._targetted_path_prob):
+        #
+        #         # calculating the PDF
+        #         self._add_targetted_sample(template, ray_origin, sphere_centre, sphere_radius, rays)
+        #
+        #     else:
+        #         # cosine weighted hemisphere sampling
+        #         self._add_hemisphere_sample(template, ray_origin, 1 - self._targetted_path_prob, rays)
+        #
+        # return rays
 
 
 
