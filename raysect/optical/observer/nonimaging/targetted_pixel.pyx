@@ -44,8 +44,25 @@ DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 cdef class TargettedPixel(Observer0D):
     """
-    A pixel observer that samples rays from a hemisphere and rectangular area.
+    A pixel observer that preferentially targets rays towards a given list of primitives.
 
+    The targetted pixel takes a list of target primitives. The observer targets the
+    bounding sphere that encompasses a target primitive. Therefore, for best performance,
+    the target primitives should be split up such that their surfaces are closely wrapped
+    by the bounding sphere.
+
+    The sampling algorithm fires a proportion of rays at the targets, and a portion sampled
+    from the full hemisphere. The proportion that is fired towards the targets is controlled
+    with the targetted_path_prob attribute. By default this attribute is set to 0.9, i.e.
+    90% of the rays are fired towards the targets.
+
+    .. Warning..
+       If the target probability is set to 1, rays will only be fired directly towards the
+       targets. The user must ensure there are now sources of radiance outside of the
+       targeted directions, otherwise they will not be sampled and the result will be biased.
+
+    :param list targets: The list of primtivies for targeted sampling.
+    :param float targetted_path_prob: The probability of sampling a targeted primitive VS sampling over the whole hemisphere.
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this pixel (default=SpectralPipeline0D()).
     :param float x_width: The rectangular collection area's width along the
@@ -62,8 +79,8 @@ cdef class TargettedPixel(Observer0D):
         HemisphereCosineSampler _cosine_sampler
         TargettedHemisphereSampler _targetted_sampler
 
-    def __init__(self, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None, targets=None,
-                 targetted_path_prob = None,
+    def __init__(self, targets, targetted_path_prob=None,
+                 pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
                  ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
@@ -152,6 +169,11 @@ cdef class TargettedPixel(Observer0D):
 
     @property
     def targets(self):
+        """
+        The list of primitives this pixel will target for sampling.
+
+        :rtype: list
+        """
         return self._targets
 
     @targets.setter
@@ -159,15 +181,13 @@ cdef class TargettedPixel(Observer0D):
 
         # No targets?
         if value is None:
-            self._targets = None
-            return
+            raise ValueError("Targets must be a list of primitives.")
 
         value = tuple(value)
 
         # Empty tuple?
         if not value:
-            self._targets = None
-            return
+            raise ValueError("Targets list cannot be empty.")
 
         # List must contain only primitives
         for target in value:
@@ -178,6 +198,16 @@ cdef class TargettedPixel(Observer0D):
 
     @property
     def targetted_path_prob(self):
+        """
+        The probability that an individual sample will be fired at a target instead of a sample from the whole hemisphere.
+
+        .. Warning..
+           If the target probability is set to 1, rays will only be fired directly towards the targets. The user must
+           ensure there are now sources of radiance outside of the targeted directions, otherwise they will not be
+           sampled and the result will be biased.
+
+        :rtype: float
+        """
         return self._targetted_path_prob
 
     @targetted_path_prob.setter
@@ -190,38 +220,6 @@ cdef class TargettedPixel(Observer0D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef list _generate_rays(self, Ray template, int ray_count):
-
-        if self._targets is None:
-            return self._generate_rays_untargetted(template, ray_count)
-        else:
-            return self._generate_rays_targetted(template, ray_count)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cpdef list _generate_rays_untargetted(self, Ray template, int ray_count):
-
-        cdef:
-            list rays, origins, directions
-            int n
-            double weight
-
-        origins = self._point_sampler.samples(ray_count)
-        directions = self._cosine_sampler.samples(ray_count)
-
-        rays = []
-        for n in range(ray_count):
-
-            # cosine weighted distribution
-            # projected area cosine is implicit in distribution
-            # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
-            rays.append((template.copy(origins[n], directions[n]), 0.5))
-
-        return rays
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cpdef list _generate_rays_targetted(self, Ray template, int ray_count):
 
         cdef:
             list rays, origins, spheres
