@@ -220,14 +220,15 @@ cdef class TargettedPixel(Observer0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef list _generate_rays_targetted(self, Ray template, int ray_count):
 
         cdef:
             list rays, origins, spheres
             int n
             double weight, distance, sphere_radius
-            Point3D sphere_centre, ray_origin
-            Vector3D sphere_direction, ray_direction
+            Point3D sphere_centre, origin
+            Vector3D direction
             BoundingSphere3D sphere
             Primitive target
 
@@ -269,46 +270,6 @@ cdef class TargettedPixel(Observer0D):
             rays.append((template.copy(origin, direction), weight))
 
         return rays
-
-
-        # cdef:
-        #     list rays, origins
-        #     int n
-        #     double weight, distance, sphere_radius
-        #     Point3D sphere_centre, ray_origin
-        #     Vector3D sphere_direction, ray_direction
-        #     BoundingSphere3D sphere
-        #
-        # # test target primitive is in the same scenegraph as the observer
-        # if self.target.root is not self.root:
-        #     raise ValueError("Target primitive is not in the same scenegraph as the TargetedPixel observer.")
-        #
-        # origins = self._point_sampler.samples(ray_count)
-        #
-        # # obtain bounding sphere and convert position to local coordinate space
-        # sphere = self.target.bounding_sphere()
-        # sphere_centre = sphere.centre.transform(self.to_local())
-        # sphere_radius = sphere.radius
-        #
-        # rays = []
-        # for n in range(ray_count):
-        #
-        #     ray_origin = origins[n]
-        #
-        #     # are we importance sample - yes or no
-        #     # if importance sampling enabled (targets exist) and probability of importance sample == True:
-        #     if probability(self._targetted_path_prob):
-        #
-        #         # calculating the PDF
-        #         self._add_targetted_sample(template, ray_origin, sphere_centre, sphere_radius, rays)
-        #
-        #     else:
-        #         # cosine weighted hemisphere sampling
-        #         self._add_hemisphere_sample(template, ray_origin, 1 - self._targetted_path_prob, rays)
-        #
-        # return rays
-
-
 
     cpdef double _pixel_etendue(self):
         return self._solid_angle * self._collection_area
