@@ -31,34 +31,17 @@
 
 from libc.math cimport cos, M_PI as PI
 
-from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler
-from raysect.core.boundingsphere cimport BoundingSphere3D
-from raysect.optical cimport Primitive, Ray, Point3D, Vector3D, AffineMatrix3D
+from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
+from raysect.optical cimport Ray, new_point3d, new_vector3d, Primitive
 from raysect.optical.observer.base cimport Observer0D
-from raysect.optical.observer.pipeline.spectral import SpectralRadiancePipeline0D
-from raysect.core.math.random cimport probability, vector_cone_uniform
-from raysect.core.math.cython cimport rotate_basis
-
-from libc.math cimport M_PI as PI, asin, sqrt
-
+from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 cimport cython
 
-# TODO - the pdf calcualtion is horrifically broken, do not user until this is fixed!!!
 
-# TODO - make sure the cached bounding sphere is reset when a change to the scenegraph occurs
-cdef class TargetedPixel(Observer0D):
+cdef class TargettedPixel(Observer0D):
     """
-    A pixel observer that samples are targetted solid angle and rectangular area.
+    A pixel observer that samples rays from a hemisphere and rectangular area.
 
-    If the user wants to target and empty space or a hole in a structure. They should
-    create a primitive that occupies the space and give it a Null material.
-
-    .. Warning..
-       This should only be used when the only source of light lies in the solid angle
-       of the targetted primitive as observed by the observer. If this is not the case any
-       power calculations will be invalid.
-
-    :param Primitive target: The primitive that this observer will target.
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this pixel (default=SpectralPipeline0D()).
     :param float x_width: The rectangular collection area's width along the
@@ -70,18 +53,18 @@ cdef class TargetedPixel(Observer0D):
 
     cdef:
         double _x_width, _y_width, _solid_angle, _collection_area
-        double _targetted_path_prob
-        Primitive target
+        tuple _targets
         RectangleSampler3D _point_sampler
-        HemisphereCosineSampler _fallback_vector_sampler
+        HemisphereCosineSampler _cosine_sampler
+        TargettedHemisphereSampler _targetted_sampler
 
-    def __init__(self, target, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
+    def __init__(self, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None, targets=None,
+                 targetted_path_prob = None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None,
-                 targetted_path_prob=None, quiet=False):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
-        pipelines = pipelines or [SpectralRadiancePipeline0D()]
+        pipelines = pipelines or [SpectralPowerPipeline0D()]
 
         super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
                          pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
@@ -90,16 +73,17 @@ cdef class TargetedPixel(Observer0D):
                          ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
                          ray_important_path_weight=ray_important_path_weight, quiet=quiet)
 
-        self.target = target
-        self.targetted_path_prob = targetted_path_prob or 0.9
-
         self._x_width = 0.01
         self._y_width = 0.01
-        self._fallback_vector_sampler = HemisphereCosineSampler()
+        self._cosine_sampler = HemisphereCosineSampler()
+        self._targetted_sampler = None
         self._solid_angle = 2 * PI
 
         self.x_width = x_width or 0.01
         self.y_width = y_width or 0.01
+
+        self.targets = targets
+        self.targetted_path_prob = targetted_path_prob
 
     @property
     def x_width(self):
@@ -163,6 +147,32 @@ cdef class TargetedPixel(Observer0D):
         return self._pixel_etendue()
 
     @property
+    def targets(self):
+        return self._targets
+
+    @targets.setter
+    def targets(self, value):
+
+        # No targets?
+        if value is None:
+            self._targets = None
+            return
+
+        value = tuple(value)
+
+        # Empty tuple?
+        if not value:
+            self._targets = None
+            return
+
+        # List must contain only primitives
+        for target in value:
+            if not isinstance(target, Primitive):
+                raise TypeError("Target list must contain only primitives.")
+
+        self._targets = value
+
+    @property
     def targetted_path_prob(self):
         return self._targetted_path_prob
 
@@ -175,110 +185,41 @@ cdef class TargetedPixel(Observer0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    @cython.cdivision(True)
     cpdef list _generate_rays(self, Ray template, int ray_count):
 
-        cdef:
-            list rays, origins
-            int n
-            double weight, distance, sphere_radius
-            Point3D sphere_centre, ray_origin
-            Vector3D sphere_direction, ray_direction
-            BoundingSphere3D sphere
+        if self._targets is None:
+            return self._generate_rays_untargetted(template, ray_count)
+        else:
+            return self._generate_rays_targetted(template, ray_count)
 
-        # test target primitive is in the same scenegraph as the observer
-        if self.target.root is not self.root:
-            raise ValueError("Target primitive is not in the same scenegraph as the TargetedPixel observer.")
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef list _generate_rays_untargetted(self, Ray template, int ray_count):
+
+        cdef:
+            list rays, origins, directions
+            int n
+            double weight
 
         origins = self._point_sampler.samples(ray_count)
-
-        # obtain bounding sphere and convert position to local coordinate space
-        sphere = self.target.bounding_sphere()
-        sphere_centre = sphere.centre.transform(self.to_local())
-        sphere_radius = sphere.radius
+        directions = self._vector_sampler.samples(ray_count)
 
         rays = []
         for n in range(ray_count):
 
-            ray_origin = origins[n]
-
-            # are we importance sample - yes or no
-            # if importance sampling enabled (targets exist) and probability of importance sample == True:
-            if probability(self._targetted_path_prob):
-
-                # calculating the PDF
-                self._add_targetted_sample(template, ray_origin, sphere_centre, sphere_radius, rays)
-
-            else:
-                # cosine weighted hemisphere sampling
-                self._add_hemisphere_sample(template, ray_origin, 1 - self._targetted_path_prob, rays)
+            # cosine weighted distribution
+            # projected area cosine is implicit in distribution
+            # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
+            rays.append((template.copy(origins[n], directions[n]), 0.5))
 
         return rays
 
-    @cython.cdivision(True)
-    cdef _add_targetted_sample(self, Ray template, Point3D ray_origin, Point3D sphere_centre, double sphere_radius, list rays):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef list _generate_rays_targetted(self, Ray template, int ray_count):
 
-        cdef:
-            double weight, distance, t, angular_radius, angular_radius_cos, sphere_angle
-            Vector3D sphere_direction, ray_direction
-            AffineMatrix3D rotation
 
-        # TODO - select target
-
-        sphere_direction = ray_origin.vector_to(sphere_centre)
-        distance = sphere_direction.get_length()
-        sphere_direction = sphere_direction.normalise()
-
-        # is point inside sphere?
-        if distance == 0 or distance < sphere_radius:
-            self._add_hemisphere_sample(template, ray_origin, self._targetted_path_prob, rays)
-            return
-
-        # calculate the angular radius
-        t = sphere_radius / distance
-        angular_radius = asin(t)
-        angular_radius_cos = sqrt(1 - t * t)
-
-        # Tests direction angle is always above cone angle:
-        # We have yet to derive the partial projected area of a sphere intersecting the horizon
-        # for now we will just fall back to hemisphere sampling, even if this is inefficient.
-        # This test also implicitly checks if the sphere direction lies in the hemisphere as the
-        # angular_radius cannot be less than zero
-        # todo: calculate projected area of a cut sphere to improve sampling
-        sphere_angle = asin(sphere_direction.z)
-        if angular_radius >= sphere_angle:
-            self._add_hemisphere_sample(template, ray_origin, self._targetted_path_prob, rays)
-            return
-
-        # sample a vector from a cone of half angle equal to the angular radius
-        ray_direction = vector_cone_uniform(angular_radius * 180 / PI)
-
-        # rotate cone to lie along vector from observation point to sphere centre
-        rotation = rotate_basis(sphere_direction, sphere_direction.orthogonal())
-        ray_direction =  ray_direction.transform(rotation)
-
-        # calculate sampling weight
-        # pdf = 1 / solid_angle = 1 / (2 * pi * (1 - cos(angular_radius)) * target_path_prob
-        # weight = 1 / (2 * pi) * cos(theta) * 1 / pdf
-        weight = ray_direction.z * (1 - angular_radius_cos) / self._targetted_path_prob
-
-        rays.append((template.copy(ray_origin, ray_direction), weight))
-
-    @cython.cdivision(True)
-    cdef void _add_hemisphere_sample(self, Ray template, Point3D origin, double selection_prob, list rays):
-
-        cdef Vector3D direction
-
-        # perform hemisphere sampling
-        direction = self._fallback_vector_sampler.sample()
-
-        # cosine weighted distribution
-        # projected area cosine is implicit in distribution
-        # weight = 1 / (2 * pi) * (pi / cos(theta)) * cos(theta) = 0.5
-        # multiplying by 1 / selection probability to correct the pdf given there
-        # are two possible code paths.
-        rays.append((template.copy(origin, direction), 0.5 / selection_prob))
 
     cpdef double _pixel_etendue(self):
         return self._solid_angle * self._collection_area
-
