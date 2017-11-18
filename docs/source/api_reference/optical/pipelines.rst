@@ -93,6 +93,26 @@ Power
    :show-inheritance:
 
 
+Radiance
+--------
+
+.. autoclass:: raysect.optical.observer.pipeline.radiance.RadiancePipeline0D
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.pipeline.radiance.RadiancePipeline2D
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.pipeline.radiance.RadiancePixelProcessor
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.pipeline.radiance.RadianceAdaptiveSampler2D
+   :members:
+   :show-inheritance:
+
+
 Spectral
 --------
 

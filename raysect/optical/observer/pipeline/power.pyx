@@ -62,15 +62,6 @@ cdef class PowerPipeline0D(Pipeline0D):
     :param str name: User friendly name for this pipeline.
     """
 
-    cdef:
-        str name
-        public SpectralFunction filter
-        public bint accumulate
-        readonly StatsBin value
-        StatsArray1D _working_buffer
-        list _resampled_filter
-        bint _quiet
-
     def __init__(self, SpectralFunction filter=None, bint accumulate=True, str name=None):
 
         self.name = name or _DEFAULT_PIPELINE_NAME

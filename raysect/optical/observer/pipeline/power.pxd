@@ -29,8 +29,20 @@
 
 from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
-from raysect.core.math cimport StatsBin, StatsArray2D
+from raysect.core.math cimport StatsBin, StatsArray1D, StatsArray2D
 from raysect.optical.observer.base.sampler cimport FrameSampler2D
+
+
+cdef class PowerPipeline0D(Pipeline0D):
+
+    cdef:
+        str name
+        public SpectralFunction filter
+        public bint accumulate
+        readonly StatsBin value
+        StatsArray1D _working_buffer
+        list _resampled_filter
+        bint _quiet
 
 
 cdef class PowerPipeline2D(Pipeline2D):

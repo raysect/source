@@ -1,4 +1,4 @@
-# Copyright (c) 2017, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,8 +27,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.pipeline.power import PowerPipeline0D, PowerPipeline2D, PowerAdaptiveSampler2D
-from raysect.optical.observer.pipeline.radiance import RadiancePipeline0D, RadiancePipeline2D, RadianceAdaptiveSampler2D
-from raysect.optical.observer.pipeline.rgb import RGBPipeline2D, RGBAdaptiveSampler2D
-from raysect.optical.observer.pipeline.bayer import BayerPipeline2D
-from raysect.optical.observer.pipeline.spectral import *
+from raysect.optical.spectralfunction cimport SpectralFunction
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
+from raysect.optical.observer.pipeline.power cimport PowerPipeline0D, PowerPipeline2D, PowerAdaptiveSampler2D
+from raysect.core.math cimport StatsBin, StatsArray2D
+from raysect.optical.observer.base.sampler cimport FrameSampler2D
+
+
+cdef class RadiancePipeline2D(PowerPipeline2D):
+    pass
+
+
+cdef class RadiancePixelProcessor(PixelProcessor):
+
+    cdef:
+        StatsBin bin
+        double[::1] filter, _temp
+
+
+cdef class RadianceAdaptiveSampler2D(PowerAdaptiveSampler2D):
+    pass

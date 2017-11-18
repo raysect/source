@@ -9,7 +9,7 @@ from raysect.optical import World, translate, rotate, Point3D, d65_white, Ray
 from raysect.optical.material import Lambert, Checkerboard
 from raysect.optical.library import schott
 from raysect.primitive import Sphere, Box
-from raysect.optical.observer import FibreOptic, PowerPipeline0D, SpectralPowerPipeline0D, SpectralRadiancePipeline0D
+from raysect.optical.observer import FibreOptic, PowerPipeline0D, RadiancePipeline0D, SpectralPowerPipeline0D, SpectralRadiancePipeline0D
 
 
 # Box defining the ground plane
@@ -38,8 +38,9 @@ emitter.parent = world
 spectra_power = SpectralPowerPipeline0D()
 spectra_radiance = SpectralRadiancePipeline0D()
 power = PowerPipeline0D()
-fibre = FibreOptic([spectra_power, spectra_radiance, power], acceptance_angle=45, radius=0.0005, spectral_bins=500,
-                   spectral_rays=1, pixel_samples=1000, transform=translate(0, 0, -5), parent=world)
+radiance = RadiancePipeline0D()
+fibre = FibreOptic([spectra_power, spectra_radiance, power, radiance], acceptance_angle=10, radius=0.0005,
+                   spectral_bins=500, spectral_rays=1, pixel_samples=1000, transform=translate(0, 0, -5), parent=world)
 fibre.observe()
 
 plt.ioff()
