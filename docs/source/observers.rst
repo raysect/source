@@ -114,18 +114,28 @@ with sample weights given by
 Observing Surfaces
 ==================
 
-The total intensity measured by an observing surface is given be the integral of
-the incident emission over the collecting solid angle :math:`\Omega` and surface
+The total power (radiant flux) measured by an observing surface is given be the integral
+of the incident radiance over the collecting solid angle :math:`\Omega` and surface
 area :math:`A`. Therefore the observer equation is
 
 .. math::
 
-   I = \int_{A} \int_{\Omega} L_{i}(x_i, \omega_i) \times \cos (\theta_i) d\omega_i dA
+   \Phi = \int_{A} \int_{\Omega} L_{i}(x_j, \omega_j) \times \cos (\theta_j) d\omega dA
 
-Here, :math:`L_{i}(x_i, \omega_i)` is the incident emission at a given point :math:`p`
-and incident angle :math:`\omega_i` on the observing surface. :math:`\cos (\theta_i)`
+Here, :math:`L_{i}(x_j, \omega_j)` is the incident radiance at a given point :math:`x_j`
+and incident angle :math:`\omega_j` on the observing surface. :math:`\cos (\theta_j)`
 is a geometry factor describing the increase in effective observing area as the incident
 rays become increasingly parallel to the surface.
+
+The mean radiance measured by an observing surface is simply
+
+.. math::
+
+   L = \frac{\Phi}{A \Omega}.
+
+All raysect observers measure the mean spectral radiance :math:`L` as their base quantity.
+All other quantities of interest can be evaluated through integration over areas, solid
+angles and nm.
 
 Let us now re-express this equation in terms of a general Monte Carlo estimator. The
 samples will be drawn from two different distributions, 2D points on the observing
@@ -133,17 +143,17 @@ surface and 3D Vectors over the :math:`2/pi` solid angle hemisphere. Therefore, 
 average value estimator would become
 
 .. math::
-   I = \frac{1}{N} \sum_{i=1}^{N} \frac{L_i(x_i, \omega_i) \cos(\theta_i)}{p_A(x_i) p_\Omega(\omega_i)}
+   L = \frac{1}{N} \sum_{j=1}^{N} \frac{L_i(x_j, \omega_j) \cos(\theta_j)}{p_A(x_j) p_\Omega(\omega_j) A \Omega}
 
-where :math:`p_A(x_i)` is the probability of drawing sample point :math:`x_i` from
-area :math:`A` and :math:`p_\Omega(\omega_i)` is the probability of drawing sample
-vector :math:`\omega_i` from solid angle :math:`\Omega`.
+where :math:`p_A(x_j)` is the probability of drawing sample point :math:`x_j` from
+area :math:`A` and :math:`p_\Omega(\omega_j)` is the probability of drawing sample
+vector :math:`\omega_j` from solid angle :math:`\Omega`.
 
 This is the root equation being evaluated in all Raysect observers. In most cases
-the detector area is sampled with uniform sampling and hence :math:`p_A(x_i)` ends
-up dropping out of the equation. It is far more common to use a variety of sampling
-strategies for the sample directions, :math:`\omega_i`, and hence :math:`p_\Omega(\omega_i)`
-is typically more important.
+the detector area is sampled with uniform sampling and hence :math:`p_A(x_j) = 1/A`
+ends up cancelling :math:`A` out of the equation. It is far more common to use a variety
+of sampling strategies for the sample directions, :math:`\omega_j`, and hence
+:math:`p_\Omega(\omega_j)` is typically more important.
 
 Let us now consider some more specialised cases.
 
@@ -174,12 +184,12 @@ the :math:`b-a` length scale for the 1D cartesian case.
 Therefore :math:`p(\omega)` for uniformly distributed vectors is
 
 .. math::
-   p_\Omega(\omega_i) = \frac{w(\omega_i)}{\int_{a}^{b} w(\omega) d\omega} = \frac{1}{2 \pi}.
+   p_\Omega(\omega_j) = \frac{w(\omega_j)}{\int_{a}^{b} w(\omega) d\omega} = \frac{1}{2 \pi}.
 
-The estimator for the irradiance becomes
+The estimator for the mean radiance becomes
 
 .. math::
-   I = \frac{2 \pi}{N} \sum_{i=1}^{N} L_i(x_i, \omega_i) \cos(\theta_i)
+   L = \frac{1}{N} \sum_{j=1}^{N} L_i(x_j, \omega_j) \cos(\theta_j)
 
 CCD Pixel with a Cosine distribution
 ------------------------------------
@@ -191,22 +201,22 @@ Hence it is useful to generate vector samples proportional to the cosine distrib
 
 .. math::
 
-   w(\omega_i) = \cos(\theta_i)
+   w(\omega_j) = \cos(\theta_j)
 
 The normalisation constant, :math:`c`, can be evaluated by integrating :math:`w(\omega)` over the domain.
 
 .. math::
    c = \int_{0}^{2\pi} \int_{0}^{\frac{\pi}{2}} w(\omega) \sin(\theta) d\theta d\phi = \pi
 
-Therefore :math:`p(\omega_i)` for a cosine distribution would be
+Therefore :math:`p(\omega_j)` for a cosine distribution would be
 
 .. math::
-   p_\Omega(\omega_i) = \frac{w(\omega_i)}{\int_{a}^{b} w(\omega) d\omega} = \frac{\cos(\theta)}{\pi}
+   p_\Omega(\omega_j) = \frac{w(\omega_j)}{\int_{a}^{b} w(\omega) d\omega} = \frac{\cos(\theta)}{\pi}
 
 and the estimator becomes
 
 .. math::
-   I = \frac{1}{N} \sum_{i=1}^{N} L_i(x_i, \omega_i) \cos(\theta_i) \frac{\pi}{\cos(\theta_i)} = \frac{\pi}{N} \sum_{i=1}^{N} L_i(x_i, \omega_i)
+   L = \frac{1}{N} \sum_{j=1}^{N} L_i(x_j, \omega_j) \cos(\theta_j) \frac{\pi}{\cos(\theta_j) \Omega} = \frac{1}{2N} \sum_{j=1}^{N} L_i(x_j, \omega_j)
 
 Note that the cosine factors have cancelled, which makes sense since we are treating
 the :math:`\cos(\theta)` term as the important distribution.
@@ -216,7 +226,7 @@ Optical Fibre
 
 Consider an optical fibre with circular area :math:`A_f` and radius :math:`r_f`. The area of solid angle
 over which light can be collected is a cone with half angle :math:`\theta_{max}`. The circular area can
-be sampled with uniformly distributed points, meaning :math:`p_A(x_i)` would cancel out again. An
+be sampled with uniformly distributed points, meaning :math:`p_A(x_j)` would cancel out again. An
 appropriate vector sampling distribution is the uniform cone, where vectors are sampled uniformly
 over the circular solid angle centred around the z-axis with angle to z :math:`\theta_{max}`. Samples
 around the z-axis can be transformed by rotation without effecting the sample density. The weighting
@@ -225,20 +235,20 @@ function is uniform and hence
 .. math::
    w(\omega) = 1.
 
-The normalisation constant for the distribution is
+The normalisation constant for the distribution is now the fractional solid angle area,
 
 .. math::
-   c = \int_{0}^{2\pi} \int_{0}^{\theta_{max}} \sin(\theta) d\theta d\phi = 2\pi (1-\cos(\theta_{max}))
+   c = \int_{0}^{2\pi} \int_{0}^{\theta_{max}} \sin(\theta) d\theta d\phi = 2\pi (1-\cos(\theta_{max})) = \Omega_{\theta_{max}},
 
 with corresponding pdf equal to
 
 .. math::
-   p_\Omega(\omega_i) = \frac{1}{2\pi (1-\cos(\theta_{max}))}.
+   p_\Omega(\omega_i) = \frac{1}{\Omega_{\theta_m}}.
 
 The estimator is
 
 .. math::
-   I = \frac{2\pi (1-\cos(\theta_{max}))}{N} \sum_{i=1}^{N} L_i(x_i, \omega_i) \cos(\theta_i).
+   L = \frac{(1-\cos(\theta_{max}))}{N} \sum_{i=1}^{N} L_i(x_i, \omega_i) \cos(\theta_i).
 
 
 Sampling the lights
