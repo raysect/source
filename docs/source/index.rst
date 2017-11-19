@@ -51,9 +51,9 @@ Please post a question on the `github issue queue <https://github.com/raysect/so
    installation
    how_it_works
    quickstart_guide
+   observers
    primitives
    materials
-   observers
    conventions
    references
    glossary

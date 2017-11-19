@@ -556,6 +556,8 @@ cdef class Observer0D(_ObserverBase):
       observe() (default=1000).
     :param int samples_per_task: Minimum number of samples to request per task (default=250).
     :param kwargs: **kwargs from _ObserverBase.
+
+    .. automethod:: raysect.optical.observer.base.observer.Observer0D._generate_rays
     """
 
     def __init__(self, pipelines, parent=None, transform=None, name=None,
@@ -684,12 +686,17 @@ cdef class Observer0D(_ObserverBase):
 
         This method must return a list of tuples, with each tuple containing
         a Ray object and a corresponding weighting, typically the projected
-        area/direction cosine. The number of rays returned must be equal to
-        ray_count otherwise pipeline statistics will be incorrectly calculated.
+        area/direction cosine. In general the weight will be:
+
+        .. math::
+           W = \\frac{1}{2\pi} * \\frac{1}{A} * \\frac{1}{pdf_A} * \\frac{1}{pdf_\Omega} * cos(\\theta)
 
         If the projected area weight is not required (due to the ray sampling
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
+
+        The number of rays returned must be equal to
+        ray_count otherwise pipeline statistics will be incorrectly calculated.
 
         :param Ray template: The template ray from which all rays should be generated.
         :param int ray_count: The number of rays to be generated.
@@ -861,6 +868,8 @@ cdef class Observer2D(_ObserverBase):
     :param int pixel_samples: Number of samples to generate per pixel with one call to
       observe() (default=1000).
     :param kwargs: **kwargs from _ObserverBase.
+
+    .. automethod:: raysect.optical.observer.base.observer.Observer2D._generate_rays
     """
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
@@ -1003,12 +1012,17 @@ cdef class Observer2D(_ObserverBase):
 
         This method must return a list of tuples, with each tuple containing
         a Ray object and a corresponding weighting, typically the projected
-        area/direction cosine. The number of rays returned must be equal to
-        ray_count otherwise pipeline statistics will be incorrectly calculated.
+        area/direction cosine. In general the weight will be:
+
+        .. math::
+           W = \\frac{1}{2\pi} * \\frac{1}{A} * \\frac{1}{pdf_A} * \\frac{1}{pdf_\Omega} * cos(\\theta)
 
         If the projected area weight is not required (due to the ray sampling
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
+
+        The number of rays returned must be equal to ray_count otherwise pipeline
+        statistics will be incorrectly calculated.
 
         :param int x: Pixel x index.
         :param int y: Pixel y index.
