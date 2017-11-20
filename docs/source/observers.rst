@@ -3,38 +3,17 @@
 Sampling and Observers
 **********************
 
-=================
-Observer equation
-=================
+=================================
+Primer on Monte-Carlo Integration
+=================================
 
-The total intensity measured by an observing pixel is given be the integral of
-the incident emission over the collecting solid angle :math:`\Omega` and surface
-area :math:`A`.
+Average value method
+--------------------
 
-.. math::
-
-   I = \int_{A} \int_{\Omega} L_{i}(p, \omega_i) \times \cos (\theta_i) d\omega_i dA
-
-Here, :math:`L_{i}(p, \omega_i)` is the incident emission at a given point :math:`p`
-and incident angle :math:`\omega_i` on the observing surface. :math:`\cos (\theta_i)`
-is a geometry factor describing the increase in effective observing area as the incident
-rays become increasingly parallel to the surface.
-
-.. figure:: images/pixel_sampling.png
-   :align: center
-
-   **Caption:** Example sampling geometry for a pixel in a camera. (Image credit: Carr, M.,
-   Meakins, A., et. al. (2017))
-
-
-=======================
-Monte-Carlo Integration
-=======================
-
-The integral in the observer equation is exact but difficult to evaluate analytically
-for most physically relevant scenes. Monte-Carlo integration is a technique for
-approximating the value of an integral by simulating a random process with random
-numbers.
+The integrals encountered in optical ray-tracing are exact but difficult to evaluate
+analytically for most physically relevant scenes. Monte-Carlo integration is a
+technique for approximating the value of an integral by simulating a random process
+with random numbers.
 
 The simplest form of Monte-Carlo integration is the average value method, which starts by
 considering the integral
@@ -66,9 +45,9 @@ square area :math:`A` and 3D vectors in the hemisphere :math:`\Omega`.
 In general, the standard error on the approximation scales as :math:`1/\sqrt{N}` with
 :math:`N` samples.
 
-===================
+
 Importance Sampling
-===================
+-------------------
 
 The average value formula works well for smoothly varying functions but becomes inefficient when
 the integral contains steep gradients or a divergence, for example, a bright point light source.
@@ -101,14 +80,102 @@ Importance sampling exploits the fact that the Monte-Carlo estimator converges f
 are taken from a distribution p(x) that is similar to the function f(x) in the integrand
 (i.e. concentrate the calculations where the integrand is high).
 
-Uniform hemisphere distribution
--------------------------------
+Multiple Importance Sampling
+----------------------------
 
-When calculating the irradiance at an observer surface we need to sample a set of
-randomly distributed unit vectors in a hemisphere oriented along the surface normal. The simplest
-distribution would be the uniform distribution where all angles over :math:`2 \pi` have equal
-probability of being sampled. The weighting distribution is :math:`w(\omega) = 1`. Thus the
-distributions normalisation constant evaluates to the area of solid angle being sampled, similar to
+It is difficult to construct a single sampling distribution that represents a physically relevant scene.
+Instead, the integrand of the lighting equations can be approximated as sums and products of the
+underlying features in a scene, such as individual light sources and geometry factors. Ideally we would
+sample all candidate distributions in a physical scene.
+
+Suppose the complicated integrand in our scene can approximated by a set operations on a number of simpler
+underlying distributions. e.g.
+
+.. math::
+
+   f(x) = (f_1(x) + f_2(x)) \times f_3(x)
+
+Multiple importance sampling is a generalisation of the importance sampling equation which allows us to
+evaluate complicated integrands by simultaneously sampling multiple underlying important distributions
+(see Veach, E. 1998). Without going into the derivation, the integrand becomes
+
+.. math::
+
+   I \approx \sum_{i=1}^{N} \sum_{j=1}^{n_i} \frac{w_i(x_{i,j}) f(x_{i,j})}{p(x_{i,j})}
+
+with sample weights given by
+
+.. math::
+
+   w_i(x) = \frac{n_i p_i(x)}{\sum_j n_j p_j(x)}
+
+
+==================
+Observing Surfaces
+==================
+
+The total power (radiant flux) measured by an observing surface is given be the integral
+of the incident radiance over the collecting solid angle :math:`\Omega` and surface
+area :math:`A`. Therefore the observer equation is
+
+.. math::
+
+   \Phi = \int_{A} \int_{\Omega} L_{i}(x_j, \omega_j) \times \cos (\theta_j) d\omega dA
+
+Here, :math:`L_{i}(x_j, \omega_j)` is the incident radiance at a given point :math:`x_j`
+and incident angle :math:`\omega_j` on the observing surface. :math:`\cos (\theta_j)`
+is a geometry factor describing the increase in effective observing area as the incident
+rays become increasingly parallel to the surface.
+
+The mean radiance measured by an observing surface is simply
+
+.. math::
+
+   L = \frac{\Phi}{A \Omega}.
+
+All raysect observers measure the mean spectral radiance :math:`L` as their base quantity.
+All other quantities of interest can be evaluated through integration over areas, solid
+angles and nm.
+
+Let us now re-express this equation in terms of a general Monte Carlo estimator. The
+samples will be drawn from two different distributions, 2D points on the observing
+surface and 3D Vectors over the :math:`2/pi` solid angle hemisphere. Therefore, the
+average value estimator would become
+
+.. math::
+   L = \frac{1}{N} \sum_{j=1}^{N} \frac{L_i(x_j, \omega_j) \cos(\theta_j)}{p_A(x_j) p_\Omega(\omega_j) A \Omega}
+
+where :math:`p_A(x_j)` is the probability of drawing sample point :math:`x_j` from
+area :math:`A` and :math:`p_\Omega(\omega_j)` is the probability of drawing sample
+vector :math:`\omega_j` from solid angle :math:`\Omega`.
+
+This is the root equation being evaluated in all Raysect observers. In most cases
+the detector area is sampled with uniform sampling and hence :math:`p_A(x_j) = 1/A`
+ends up cancelling :math:`A` out of the equation. It is far more common to use a variety
+of sampling strategies for the sample directions, :math:`\omega_j`, and hence
+:math:`p_\Omega(\omega_j)` is typically more important.
+
+Let us now consider some more specialised cases.
+
+.. figure:: images/pixel_sampling.png
+   :align: center
+
+   **Caption:** Example sampling geometry for a pixel in a camera. (Image credit: Carr, M.,
+   Meakins, A., et. al. (2017))
+
+CCD Pixel with Uniform Hemisphere Sampling
+------------------------------------------
+
+Let us consider one of the most common cases for an observing surface, a rectangular
+pixel surface with a hemisphere of solid angle over which incident light can be collected.
+To calculate the Monte Carlo estimator we need :math:`N` sample points and vectors. The simplest
+vector distribution would be the uniform distribution where all angles over :math:`2 \pi` have equal
+probability of being sampled. The weighting distribution is
+
+.. math::
+   w(\omega) = 1.
+
+Thus the distributions normalisation constant evaluates to the area of solid angle being sampled, similar to
 the :math:`b-a` length scale for the 1D cartesian case.
 
 .. math::
@@ -117,64 +184,71 @@ the :math:`b-a` length scale for the 1D cartesian case.
 Therefore :math:`p(\omega)` for uniformly distributed vectors is
 
 .. math::
-   p(\omega) = \frac{1}{2 \pi}.
+   p_\Omega(\omega_j) = \frac{w(\omega_j)}{\int_{a}^{b} w(\omega) d\omega} = \frac{1}{2 \pi}.
 
-The estimator for the irradiance becomes
+The estimator for the mean radiance becomes
 
 .. math::
-   I = \frac{2 \pi}{N} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta_i)
+   L = \frac{1}{N} \sum_{j=1}^{N} L_i(x_j, \omega_j) \cos(\theta_j)
 
-Cosine distribution
--------------------
+CCD Pixel with a Cosine distribution
+------------------------------------
 
 As mentioned above, it is often advantageous to draw samples from a distribution with similar shape
 to the function being integrated. The observer equation is weighted with a cosine theta term meaning
-that samples near the top of the hemisphere are weighted much more than samples near the edge. Hence
-it is useful to generate observer samples proportional to the cosine distribution.
+that vector samples near the top of the hemisphere are weighted much more than samples near the edge.
+Hence it is useful to generate vector samples proportional to the cosine distribution.
 
 .. math::
 
-   w(\omega) = \cos(\theta)
+   w(\omega_j) = \cos(\theta_j)
 
-The normalisation constant, :math:`c`, can be evaluated by integrating :math:`w(x)` over the domain.
+The normalisation constant, :math:`c`, can be evaluated by integrating :math:`w(\omega)` over the domain.
 
 .. math::
    c = \int_{0}^{2\pi} \int_{0}^{\frac{\pi}{2}} w(\omega) \sin(\theta) d\theta d\phi = \pi
 
-Therefore :math:`p(\omega)` for a cosine distribution would be
+Therefore :math:`p(\omega_j)` for a cosine distribution would be
 
 .. math::
-   p(\omega) = \frac{\cos(\theta)}{\pi}
+   p_\Omega(\omega_j) = \frac{w(\omega_j)}{\int_{a}^{b} w(\omega) d\omega} = \frac{\cos(\theta)}{\pi}
 
 and the estimator becomes
 
 .. math::
-   I = \frac{\pi}{N \cos(\theta)} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta) = \frac{\pi}{N} \sum_{i=1}^{N} L_i(p, \omega_i)
+   L = \frac{1}{N} \sum_{j=1}^{N} L_i(x_j, \omega_j) \cos(\theta_j) \frac{\pi}{\cos(\theta_j) \Omega} = \frac{1}{2N} \sum_{j=1}^{N} L_i(x_j, \omega_j)
 
 Note that the cosine factors have cancelled, which makes sense since we are treating
 the :math:`\cos(\theta)` term as the important distribution.
 
-Uniform cone distribution
--------------------------
+Optical Fibre
+-------------
 
-A common sampling distribution is the uniform cone, where vectors are sampled uniformly over the
-circular solid angle centred around the z-axis with angle to z :math:`\theta_{max}`. Samples
+Consider an optical fibre with circular area :math:`A_f` and radius :math:`r_f`. The area of solid angle
+over which light can be collected is a cone with half angle :math:`\theta_{max}`. The circular area can
+be sampled with uniformly distributed points, meaning :math:`p_A(x_j)` would cancel out again. An
+appropriate vector sampling distribution is the uniform cone, where vectors are sampled uniformly
+over the circular solid angle centred around the z-axis with angle to z :math:`\theta_{max}`. Samples
 around the z-axis can be transformed by rotation without effecting the sample density. The weighting
-function is uniform and hence :math:`w(\omega) = 1`. The normalisation constant for the distribution
-is
+function is uniform and hence
 
 .. math::
-   c = \int_{0}^{2\pi} \int_{0}^{\theta_{max}} \sin(\theta) d\theta d\phi = 2\pi (1-\cos(\theta_{max}))
+   w(\omega) = 1.
+
+The normalisation constant for the distribution is now the fractional solid angle area,
+
+.. math::
+   c = \int_{0}^{2\pi} \int_{0}^{\theta_{max}} \sin(\theta) d\theta d\phi = 2\pi (1-\cos(\theta_{max})) = \Omega_{\theta_{max}},
 
 with corresponding pdf equal to
 
 .. math::
-   p(\omega) = \frac{1}{2\pi (1-\cos(\theta_{max}))}.
+   p_\Omega(\omega_i) = \frac{1}{\Omega_{\theta_m}}.
 
 The estimator is
 
 .. math::
-   I = \frac{2\pi (1-\cos(\theta_{max}))}{N} \sum_{i=1}^{N} L_i(p, \omega_i) \cos(\theta_i).
+   L = \frac{(1-\cos(\theta_{max}))}{N} \sum_{i=1}^{N} L_i(x_i, \omega_i) \cos(\theta_i).
 
 
 Sampling the lights
@@ -192,11 +266,9 @@ inside the bounding sphere that defines the effective solid angle to be sampled.
    **Caption:** A complex light source sampled with the projection method.
 
 
-
-
-=========
-Materials
-=========
+=================
+Material Surfaces
+=================
 
 The amount of light that reaches a camera from a point on an object surface is
 given by the sum of light emitted and reflected from other sources.
@@ -229,10 +301,8 @@ Sampling the BRDF
 -----------------
 
 
-============================
-Multiple Importance Sampling
-============================
+===================
+Participating Media
+===================
 
-
-
-
+Volume scattering, fluorescence and opacity effects.
