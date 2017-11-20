@@ -29,25 +29,32 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport cos, M_PI as PI
-
 from raysect.core.math.random cimport probability
+from raysect.optical.observer.sampler2d import FullFrameSampler2D
+from raysect.optical.observer.pipeline import RGBPipeline2D
+
 from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
-from raysect.optical cimport Ray, Primitive, Point3D, Vector3D, BoundingSphere3D
-from raysect.optical.observer.base cimport Observer0D
-from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
+from raysect.optical cimport Primitive, BoundingSphere3D, Ray, AffineMatrix3D, Point3D, Vector3D, translate
+from libc.math cimport M_PI
+from raysect.optical.observer.base cimport Observer2D
 cimport cython
 
 
 DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 
-cdef class TargettedPixel(Observer0D):
+cdef class TargettedCCDArray(Observer2D):
     """
-    A pixel observer that preferentially targets rays towards a given list of primitives.
+    An ideal CCD-like imaging sensor that preferentially targets a given list of primitives.
 
-    The targetted pixel takes a list of target primitives. The observer targets the
-    bounding sphere that encompasses a target primitive. Therefore, for best performance,
+    The targetted CCD is a regular array of square pixels. Each pixel samples red, green
+    and blue channels (behaves like a Foveon imaging sensor). The CCD sensor
+    width is specified with the width parameter. The CCD height is calculated
+    from the width and the number of vertical and horizontal pixels. The
+    default width and sensor ratio approximates a 35mm camera sensor.
+
+    The targetted CCD takes a list of target primitives. Each pixel will target the
+    bounding spheres that encompass each target primitive. Therefore, for best performance,
     the target primitives should be split up such that their surfaces are closely wrapped
     by the bounding sphere.
 
@@ -61,111 +68,72 @@ cdef class TargettedPixel(Observer0D):
        targets. The user must ensure there are no sources of radiance outside of the
        targeted directions, otherwise they will not be sampled and the result will be biased.
 
-    :param list targets: The list of primitives for targeted sampling.
-    :param float targetted_path_prob: The probability of sampling a targeted primitive VS sampling over the whole hemisphere.
+    :param list targets: The list of primitives for targetted sampling.
+    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(512, 512)).
+    :param float width: The CCD sensor x-width in metres (default=35mm).
     :param list pipelines: The list of pipelines that will process the spectrum measured
-      by this pixel (default=SpectralPipeline0D()).
-    :param float x_width: The rectangular collection area's width along the
-      x-axis in local coordinates (default=1cm).
-    :param float y_width: The rectangular collection area's width along the
-      y-axis in local coordinates (default=1cm).
-    :param kwargs: **kwargs from Observer0D and _ObserverBase
+      at each pixel by the camera (default=RGBPipeline2D()).
+    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
     cdef:
-        double _x_width, _y_width, _solid_angle, _collection_area, _targetted_path_prob
+        double _width, _pixel_area, _image_delta, _image_start_x, _image_start_y, _targetted_path_prob
         tuple _targets
         RectangleSampler3D _point_sampler
         HemisphereCosineSampler _cosine_sampler
         TargettedHemisphereSampler _targetted_sampler
 
-    def __init__(self, targets, targetted_path_prob=None,
-                 pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
-                 render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
-                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
+    def __init__(self, targets, pixels=(720, 480), width=0.035, targetted_path_prob=None, parent=None, transform=None, name=None, pipelines=None):
 
-        pipelines = pipelines or [SpectralPowerPipeline0D()]
+        # initial values to prevent undefined behaviour when setting via self.width
+        self._width = 0.035
+        self._pixels = (720, 480)
 
-        super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
-                         pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
-                         spectral_bins=spectral_bins, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
-                         ray_extinction_prob=ray_extinction_prob, ray_extinction_min_depth=ray_extinction_min_depth,
-                         ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
-                         ray_important_path_weight=ray_important_path_weight, quiet=quiet)
+        pipelines = pipelines or [RGBPipeline2D()]
 
-        self._x_width = 0.01
-        self._y_width = 0.01
         self._cosine_sampler = HemisphereCosineSampler()
         self._targetted_sampler = None
-        self._solid_angle = 2 * PI
 
-        self.x_width = x_width or 0.01
-        self.y_width = y_width or 0.01
-
+        self.width = width
         self.targets = targets
         self.targetted_path_prob = targetted_path_prob or 0.9
 
+        super().__init__(pixels, FullFrameSampler2D(), pipelines,
+                         parent=parent, transform=transform, name=name)
+
     @property
-    def x_width(self):
+    def pixels(self):
+        return self._pixels
+
+    @pixels.setter
+    def pixels(self, value):
+        pixels = tuple(value)
+        if len(pixels) != 2:
+            raise ValueError("Pixels must be a 2 element tuple defining the x and y resolution.")
+        x, y = pixels
+        if x <= 0:
+            raise ValueError("Number of x pixels must be greater than 0.")
+        if y <= 0:
+            raise ValueError("Number of y pixels must be greater than 0.")
+        self._pixels = pixels
+        self._update_image_geometry()
+
+    @property
+    def width(self):
         """
-        The rectangular collection area's width along the x-axis in local coordinates.
+        The CCD sensor x-width in metres.
 
         :rtype: float
         """
-        return self._x_width
+        return self._width
 
-    @x_width.setter
-    def x_width(self, value):
-        if value <= 0:
-            raise RuntimeError("Pixel x-width must be greater than zero.")
-        self._x_width = value
-        self._point_sampler = RectangleSampler3D(width=self._x_width, height=self._y_width)
-        self._collection_area = self._x_width * self._y_width
-
-    @property
-    def y_width(self):
-        """
-        The rectangular collection area's width along the y-axis in local coordinates.
-
-        :rtype: float
-        """
-        return self._y_width
-
-    @y_width.setter
-    def y_width(self, value):
-        if value <= 0:
-            raise RuntimeError("Pixel y-width must be greater than zero.")
-        self._y_width = value
-        self._point_sampler = RectangleSampler3D(width=self._x_width, height=self._y_width)
-        self._collection_area = self._x_width * self._y_width
-
-    @property
-    def collection_area(self):
-        """
-        The pixel's collection area in m^2.
-
-        :rtype: float
-        """
-        return self._collection_area
-
-    @property
-    def solid_angle(self):
-        """
-        The pixel's solid angle in steradians str.
-
-        :rtype: float
-        """
-        return self._solid_angle
-
-    @property
-    def etendue(self):
-        """
-        The pixel's etendue measured in units of per area per solid angle (m^-2 str^-1).
-
-        :rtype: float
-        """
-        return self._pixel_etendue()
+    @width.setter
+    def width(self, width):
+        if width <= 0:
+            raise ValueError("width can not be less than or equal to 0 meters.")
+        self._width = width
+        self._pixel_area = (width / self._pixels[0])**2
+        self._update_image_geometry()
 
     @property
     def targets(self):
@@ -217,16 +185,25 @@ cdef class TargettedPixel(Observer0D):
             raise ValueError("Targeted path probability must lie in the range [0, 1].")
         self._targetted_path_prob = value
 
+    cdef object _update_image_geometry(self):
+
+        self._image_delta = self._width / self._pixels[0]
+        self._image_start_x = 0.5 * self._pixels[0] * self._image_delta
+        self._image_start_y = 0.5 * self._pixels[1] * self._image_delta
+        self._point_sampler = RectangleSampler3D(self._image_delta, self._image_delta)
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef list _generate_rays(self, Ray template, int ray_count):
+    cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
 
         cdef:
-            list rays, origins, spheres
-            double weight, distance, sphere_radius
-            Point3D sphere_centre, origin
+            double pixel_x, pixel_y
+            list origins, rays, spheres
+            Point3D origin
             Vector3D direction
+            Ray ray
+            AffineMatrix3D pixel_to_local
             BoundingSphere3D sphere
             Primitive target
 
@@ -244,11 +221,20 @@ cdef class TargettedPixel(Observer0D):
         # instance targetted pixel sampler
         self._targetted_sampler = TargettedHemisphereSampler(spheres)
 
-        # sample pixel origins
+        # generate pixel transform
+        pixel_x = self._image_start_x - self._image_delta * ix
+        pixel_y = self._image_start_y - self._image_delta * iy
+        pixel_to_local = translate(pixel_x, pixel_y, 0)
+
+        # generate origin points in pixel space
         origins = self._point_sampler.samples(ray_count)
 
+        # assemble rays
         rays = []
         for origin in origins:
+
+            # transform to local space from pixel space
+            origin = origin.transform(pixel_to_local)
 
             if probability(self._targetted_path_prob):
                 # obtain targetted vector sample
@@ -269,5 +255,5 @@ cdef class TargettedPixel(Observer0D):
 
         return rays
 
-    cpdef double _pixel_etendue(self):
-        return self._solid_angle * self._collection_area
+    cpdef double _pixel_etendue(self, int x, int y):
+        return self._pixel_area * 2 * M_PI

@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .ccd import CCDArray
+from .targetted_ccd import TargettedCCDArray
 from .orthographic import OrthographicCamera
 from .pinhole import PinholeCamera
 from .vector import VectorCamera
