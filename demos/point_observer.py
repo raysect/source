@@ -35,13 +35,14 @@ emitter.parent = world
 # 4. Observe()
 # ------------
 
-spectra_power = SpectralPowerPipeline0D()
-spectra_radiance = SpectralRadiancePipeline0D()
+spectral_power = SpectralPowerPipeline0D()
+spectral_radiance = SpectralRadiancePipeline0D()
 power = PowerPipeline0D()
 radiance = RadiancePipeline0D()
-fibre = FibreOptic([spectra_power, spectra_radiance, power, radiance], acceptance_angle=10, radius=0.0005,
+fibre = FibreOptic([spectral_power, spectral_radiance, power, radiance], acceptance_angle=10, radius=0.0005,
                    spectral_bins=500, spectral_rays=1, pixel_samples=1000, transform=translate(0, 0, -5), parent=world)
 fibre.observe()
+print(fibre.etendue)
 
 plt.ioff()
 plt.show()

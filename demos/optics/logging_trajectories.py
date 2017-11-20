@@ -30,17 +30,20 @@ target = Box(lower=Point3D(-50, -50, -0), upper=Point3D(50, 50, 0), material=Abs
 # for each sample direction trace a logging ray and plot the ray trajectory
 fig = plt.figure()
 ax = fig.gca(projection='3d')
-for v in np.linspace(0, 0.012, 10):
 
-    start = Point3D(v, 0, -0.05)
-    log_ray = LoggingRay(start, Vector3D(0, 0, 1))
-    log_ray.trace(world)
+for u in np.linspace(-0.006, 0.006, 5):
+    for v in np.linspace(-0.012, 0.012, 11):
 
-    p = [(start.x, start.y, start.z)]
-    for point in log_ray.log:
-        p.append((point.x, point.y, point.z))
-    p = np.array(p)
+        start = Point3D(v, u, -0.05)
+        log_ray = LoggingRay(start, Vector3D(0, 0, 1))
+        log_ray.trace(world)
 
-    ax.plot(p[:, 0], p[:, 1], p[:, 2], 'k')
+        p = [(start.x, start.y, start.z)]
+        for point in log_ray.log:
+            p.append((point.x, point.y, point.z))
+        p = np.array(p)
+
+        ax.plot(p[:, 0], p[:, 1], p[:, 2], 'k-')
+        ax.plot(p[:, 0], p[:, 1], p[:, 2], 'r.')
 
 plt.show()

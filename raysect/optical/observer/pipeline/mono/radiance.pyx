@@ -174,28 +174,3 @@ cdef class RadiancePixelProcessor(PixelProcessor):
     cpdef tuple pack_results(self):
         return self.bin.mean, self.bin.variance
 
-
-cdef class RadianceAdaptiveSampler2D(PowerAdaptiveSampler2D):
-    """
-    FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
-    level in each pixel's power value.
-
-    Pixels that have high noise levels will receive extra samples until the desired
-    noise threshold is achieve across the whole image.
-
-    :param PowerPipeline2D pipeline: The specific power pipeline to use for feedback control.
-    :param float fraction: The fraction of frame pixels to receive extra sampling
-      (default=0.2).
-    :param float ratio:
-    :param int min_samples: Minimum number of pixel samples across the image before
-      turning on adaptive sampling (default=1000).
-    :param double cutoff: Normalised noise threshold at which extra sampling will be aborted and
-      rendering will complete (default=0.0). The standard error is normalised to 1 so that a
-      cutoff of 0.01 corresponds to 1% standard error.
-    """
-
-    def __init__(self, RadianceAdaptiveSampler2D pipeline, double fraction=0.2, double ratio=10.0,
-                 int min_samples=1000, double cutoff=0.0):
-
-        super().__init__(pipeline, fraction=fraction, ratio=ratio, min_samples=min_samples, cutoff=cutoff)
-
