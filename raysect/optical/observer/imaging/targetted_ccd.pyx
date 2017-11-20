@@ -83,8 +83,7 @@ cdef class TargettedCCDArray(Observer2D):
         HemisphereCosineSampler _cosine_sampler
         TargettedHemisphereSampler _targetted_sampler
 
-    def __init__(self, targets, targetted_path_prob=None,
-                 pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
+    def __init__(self, targets, pixels=(720, 480), width=0.035, targetted_path_prob=None, parent=None, transform=None, name=None, pipelines=None):
 
         # initial values to prevent undefined behaviour when setting via self.width
         self._width = 0.035

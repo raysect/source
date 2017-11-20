@@ -64,13 +64,16 @@ cdef class CCDArray(Observer2D):
 
     def __init__(self, pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
 
-        pipelines = pipelines or [RGBPipeline2D()]
+        # initial values to prevent undefined behaviour when setting via self.width
+        self._width = 0.035
+        self._pixels = (720, 480)
 
-        super().__init__(pixels, FullFrameSampler2D(), pipelines,
-                         parent=parent, transform=transform, name=name)
+        pipelines = pipelines or [RGBPipeline2D()]
 
         self.width = width
         self.vector_sampler = HemisphereCosineSampler()
+
+        super().__init__(pixels, FullFrameSampler2D(), pipelines, parent=parent, transform=transform, name=name)
 
     @property
     def pixels(self):

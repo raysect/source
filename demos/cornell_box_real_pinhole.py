@@ -132,30 +132,14 @@ filter_blue = InterpolatedSF([100, 480, 490, 500, 510, 800], [0, 0, 1, 1, 0, 0])
 power_unfiltered = PowerPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
 power_unfiltered.display_update_time = 15
 
-power_green = PowerPipeline2D(filter=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
-power_green.display_update_time = 15
-
-power_red = PowerPipeline2D(filter=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
-power_red.display_update_time = 15
-
 rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
 
-bayer = BayerPipeline2D(filter_red, filter_green, filter_blue, display_unsaturated_fraction=0.96, name="Bayer Filter")
-bayer.display_update_time = 15
-
-spectral = SpectralPowerPipeline2D()
-
-# pipelines = [power, rgb, bayer, spectral]
-# pipelines = [power_unfiltered] #, power_green, power_red, bayer]#, spectral]
 pipelines = [rgb, power_unfiltered]
-# sampler = PowerAdaptiveSampler2D(power_unfiltered, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
 sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
-
 
 camera = Node(parent=world, transform=translate(0, 0, -3.3))
 pinhole = Sphere(0.0005, camera, transform=translate(0, 0, 0), material=NullMaterial())
-film = TargettedCCDArray(targetted_path_prob=1.0, targets=[pinhole], width=0.1, pixels=(512, 512), parent=camera, transform=translate(0, 0, -0.1), pipelines=pipelines)
-
+film = TargettedCCDArray(targetted_path_prob=1.0, targets=[pinhole], width=0.1, pixels=(64, 64), parent=camera, transform=translate(0, 0, -0.1207), pipelines=pipelines)
 film.frame_sampler = sampler
 film.pixel_samples = 250
 film.spectral_bins = 15
@@ -177,15 +161,9 @@ while not film.render_complete:
 
     film.observe()
 
-    rgb.save('cornell_box_rgb_pass_{:04d}.png'.format(p))
-    power_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
-    # power_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
-    # power_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
-    # bayer.save('cornell_box_bayer_pass_{:04d}.png'.format(p))
+    rgb.save('cornell_box_real_rgb_pass_{:04d}.png'.format(p))
+    power_unfiltered.save('cornell_box_real_unfiltered_pass_{:04d}.png'.format(p))
 
-    # spectral.display_pixel(28, 70)
-
-    #print("total power:", power_unfiltered.frame.mean.sum(), "+/-", np.sqrt(np.sum(power_unfiltered.frame.variance**2)))
     print()
     p += 1
 
