@@ -31,4 +31,5 @@
 
 from raysect.core.math.sampler.solidangle cimport *
 from raysect.core.math.sampler.surface3d cimport *
+from raysect.core.math.sampler.targetted cimport *
 
