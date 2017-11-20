@@ -18,7 +18,8 @@ def display_samples(samples, title):
     plt.ylim(-90, 90)
     plt.title(title)
 
-samples = 10000
+
+samples = 100000
 
 # Target tuple: (sphere_centre, sphere_radius, target_weight)
 targets = [
