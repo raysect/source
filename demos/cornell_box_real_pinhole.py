@@ -139,7 +139,7 @@ sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cut
 
 camera = Node(parent=world, transform=translate(0, 0, -3.3))
 pinhole = Sphere(0.0005, camera, transform=translate(0, 0, 0), material=NullMaterial())
-film = TargettedCCDArray(targetted_path_prob=1.0, targets=[pinhole], width=0.1, pixels=(64, 64), parent=camera, transform=translate(0, 0, -0.1207), pipelines=pipelines)
+film = TargettedCCDArray(targetted_path_prob=1.0, targets=[pinhole], width=0.1, pixels=(512, 512), parent=camera, transform=translate(0, 0, -0.1207), pipelines=pipelines)
 film.frame_sampler = sampler
 film.pixel_samples = 250
 film.spectral_bins = 15
