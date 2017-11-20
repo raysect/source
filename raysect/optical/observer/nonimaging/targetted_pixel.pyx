@@ -58,10 +58,10 @@ cdef class TargettedPixel(Observer0D):
 
     .. Warning..
        If the target probability is set to 1, rays will only be fired directly towards the
-       targets. The user must ensure there are now sources of radiance outside of the
+       targets. The user must ensure there are no sources of radiance outside of the
        targeted directions, otherwise they will not be sampled and the result will be biased.
 
-    :param list targets: The list of primtivies for targeted sampling.
+    :param list targets: The list of primitives for targeted sampling.
     :param float targetted_path_prob: The probability of sampling a targeted primitive VS sampling over the whole hemisphere.
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this pixel (default=SpectralPipeline0D()).

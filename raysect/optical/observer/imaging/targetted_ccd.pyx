@@ -43,20 +43,34 @@ cimport cython
 DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 
-# TODO: add docstrings
 cdef class TargettedCCDArray(Observer2D):
     """
-    An observer that models an idealised CCD-like imaging sensor.
+    An ideal CCD-like imaging sensor that preferentially targets a given list of primitives.
 
-    The CCD is a regular array of square pixels. Each pixel samples red, green
+    The targetted CCD is a regular array of square pixels. Each pixel samples red, green
     and blue channels (behaves like a Foveon imaging sensor). The CCD sensor
     width is specified with the width parameter. The CCD height is calculated
     from the width and the number of vertical and horizontal pixels. The
     default width and sensor ratio approximates a 35mm camera sensor.
 
+    The targetted CCD takes a list of target primitives. Each pixel will target the
+    bounding spheres that encompass each target primitive. Therefore, for best performance,
+    the target primitives should be split up such that their surfaces are closely wrapped
+    by the bounding sphere.
+
+    The sampling algorithm fires a proportion of rays at the targets, and a portion sampled
+    from the full hemisphere. The proportion that is fired towards the targets is controlled
+    with the targetted_path_prob attribute. By default this attribute is set to 0.9, i.e.
+    90% of the rays are fired towards the targets.
+
+    .. Warning..
+       If the target probability is set to 1, rays will only be fired directly towards the
+       targets. The user must ensure there are no sources of radiance outside of the
+       targeted directions, otherwise they will not be sampled and the result will be biased.
+
+    :param list targets: The list of primitives for targetted sampling.
     :param tuple pixels: A tuple of pixel dimensions for the camera (default=(512, 512)).
     :param float width: The CCD sensor x-width in metres (default=35mm).
-    :param float etendue: The etendue of each pixel (default=1.0)
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
@@ -71,7 +85,6 @@ cdef class TargettedCCDArray(Observer2D):
 
     def __init__(self, targets, targetted_path_prob=None,
                  pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
-
 
         # initial values to prevent undefined behaviour when setting via self.width
         self._width = 0.035
