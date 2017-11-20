@@ -34,8 +34,7 @@ from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
 from raysect.core cimport RectangleSampler3D, HemisphereCosineSampler, SolidAngleSampler, SurfaceSampler3D
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate
-from raysect.optical cimport Ray
+from raysect.optical cimport Ray, AffineMatrix3D, Point3D, Vector3D, translate
 from libc.math cimport M_PI
 from raysect.optical.observer.base cimport Observer2D
 
@@ -118,15 +117,16 @@ cdef class CCDArray(Observer2D):
 
         cdef:
             double pixel_x, pixel_y
-            list points, rays
-            Point3D pixel_centre, point, origin
+            list origin_points, direction_vectors, rays
+            Point3D origin
             Vector3D direction
             Ray ray
+            AffineMatrix3D pixel_to_local
 
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
         pixel_y = self.image_start_y - self.image_delta * iy
-        to_local = translate(pixel_x, pixel_y, 0)
+        pixel_to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
         origin_points = self.point_sampler.samples(ray_count)
@@ -137,8 +137,8 @@ cdef class CCDArray(Observer2D):
         for origin, direction in zip(origin_points, direction_vectors):
 
             # transform to local space from pixel space
-            origin = origin.transform(to_local)
-            direction = direction.transform(to_local)
+            origin = origin.transform(pixel_to_local)
+            direction = direction.transform(pixel_to_local)
 
             ray = template.copy(origin, direction)
 
