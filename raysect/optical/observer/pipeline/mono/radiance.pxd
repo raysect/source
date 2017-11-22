@@ -27,11 +27,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
-from raysect.optical.observer.pipeline.power cimport PowerPipeline0D, PowerPipeline2D, PowerAdaptiveSampler2D
-from raysect.core.math cimport StatsBin, StatsArray2D
-from raysect.optical.observer.base.sampler cimport FrameSampler2D
+from raysect.optical.observer.base cimport PixelProcessor
+from raysect.optical.observer.pipeline.mono.power cimport PowerPipeline0D, PowerPipeline2D
+from raysect.core.math cimport StatsBin
+
+
+cdef class RadiancePipeline0D(PowerPipeline0D):
+    pass
 
 
 cdef class RadiancePipeline2D(PowerPipeline2D):

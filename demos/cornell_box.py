@@ -121,7 +121,7 @@ sphere = Sphere(0.4,
 
 from raysect.optical.observer import PinholeCamera, CCDArray
 from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, SpectralPowerPipeline2D, PowerPipeline2D
-from raysect.optical.observer import PowerAdaptiveSampler2D, RGBAdaptiveSampler2D
+from raysect.optical.observer import MonoAdaptiveSampler2D, RGBAdaptiveSampler2D
 from raysect.core.workflow import SerialEngine
 
 filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
@@ -148,7 +148,7 @@ spectral = SpectralPowerPipeline2D()
 # pipelines = [power, rgb, bayer, spectral]
 # pipelines = [power_unfiltered] #, power_green, power_red, bayer]#, spectral]
 pipelines = [rgb, power_unfiltered]
-# sampler = PowerAdaptiveSampler2D(power_unfiltered, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
+# sampler = MonoAdaptiveSampler2D(power_unfiltered, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
 sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
 
 # camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)

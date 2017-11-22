@@ -74,13 +74,3 @@ cdef class PowerPixelProcessor(PixelProcessor):
         StatsBin bin
         double[::1] filter, _temp
 
-
-cdef class MonoAdaptiveSampler2D(FrameSampler2D):
-
-    cdef:
-        PowerPipeline2D pipeline
-        double fraction, ratio, cutoff
-        int min_samples
-
-    cpdef list _full_frame(self, tuple pixels)
-

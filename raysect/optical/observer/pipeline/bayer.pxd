@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,8 +27,29 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import *
-from .pipeline import *
-from .imaging import *
-from .nonimaging import *
-from .sampler2d import *
+from raysect.optical.spectralfunction cimport SpectralFunction
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
+from raysect.core.math cimport StatsArray2D
+
+cdef class BayerPipeline2D(Pipeline2D):
+
+    cdef:
+        str name
+        public SpectralFunction red_filter, green_filter, blue_filter
+        tuple _bayer_mosaic
+        public bint display_progress
+        double _display_timer
+        double _display_update_time
+        public bint accumulate
+        readonly StatsArray2D frame
+        double[:,::1] _working_mean, _working_variance
+        char[:,::1] _working_touched
+        StatsArray2D _display_frame
+        list _resampled_filters
+        tuple _pixels
+        int _samples
+        object _display_figure
+        double _display_black_point, _display_white_point, _display_unsaturated_fraction, _display_gamma
+        bint _display_auto_exposure
+        public bint display_persist_figure
+        bint _quiet

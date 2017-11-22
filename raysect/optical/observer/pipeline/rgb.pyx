@@ -30,20 +30,14 @@
 from time import time
 import matplotlib.pyplot as plt
 import numpy as np
-from random import shuffle
-from raysect.optical.observer.sampler2d import FullFrameSampler2D
 
 cimport cython
 cimport numpy as np
-from raysect.core.math.cython cimport clamp
-from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
-from raysect.core.math cimport StatsArray3D, StatsArray2D, StatsArray1D
+from raysect.core.math cimport StatsArray3D, StatsArray1D
 from raysect.optical.colour cimport resample_ciexyz, spectrum_to_ciexyz, ciexyz_to_srgb
 
 from raysect.optical.spectrum cimport Spectrum
-from raysect.optical.observer.base.sampler cimport FrameSampler2D
-from libc.math cimport pow
 
 
 _DEFAULT_PIPELINE_NAME = "RGBPipeline Pipeline"
@@ -76,25 +70,6 @@ cdef class RGBPipeline2D(Pipeline2D):
       (default=1.0).
     :param str name: User friendly name for this pipeline.
     """
-
-    cdef:
-        str name
-        public bint display_progress
-        double _display_timer
-        double _display_update_time
-        public bint accumulate
-        readonly StatsArray3D xyz_frame
-        double[:,:,::1] _working_mean, _working_variance
-        char[:,::1] _working_touched
-        StatsArray3D _display_frame
-        list _resampled_xyz
-        tuple _pixels
-        int _samples
-        object _display_figure
-        double _display_sensitivity, _display_unsaturated_fraction
-        bint _display_auto_exposure
-        public bint display_persist_figure
-        bint _quiet
 
     def __init__(self, bint display_progress=True,
                  double display_update_time=15, bint accumulate=True,
@@ -443,7 +418,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef _generate_srgb_image(self, double[:,:,::1] xyz_image_mv):
+    cpdef np.ndarray _generate_srgb_image(self, double[:,:,::1] xyz_image_mv):
 
         cdef:
             int nx, ny, ix, iy
@@ -502,10 +477,6 @@ cdef class XYZPixelProcessor(PixelProcessor):
     XYZ colourspace values.
     """
 
-    cdef:
-        np.ndarray resampled_xyz
-        StatsArray1D xyz
-
     def __init__(self, np.ndarray resampled_xyz):
         self.resampled_xyz = resampled_xyz
         self.xyz = StatsArray1D(3)
@@ -525,107 +496,3 @@ cdef class XYZPixelProcessor(PixelProcessor):
     cpdef tuple pack_results(self):
         return self.xyz.mean, self.xyz.variance
 
-
-cdef class RGBAdaptiveSampler2D(FrameSampler2D):
-    """
-    FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
-    level in each RGB pixel value.
-
-    Pixels that have high noise levels will receive extra samples until the desired
-    noise threshold is achieve across the whole image.
-
-    :param RGBPipeline2D pipeline: The specific RGB pipeline to use for feedback control.
-    :param float fraction: The fraction of frame pixels to receive extra sampling
-      (default=0.2).
-    :param float ratio:
-    :param int min_samples: Minimum number of pixel samples across the image before
-      turning on adaptive sampling (default=1000).
-    :param double cutoff: Noise threshold at which extra sampling will be aborted and
-      rendering will complete (default=0.0).
-    """
-
-    cdef:
-        RGBPipeline2D pipeline
-        double fraction, ratio, cutoff
-        int min_samples
-
-    def __init__(self, RGBPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
-
-        # todo: validation
-        self.pipeline = pipeline
-        self.fraction = fraction
-        self.ratio = ratio
-        self.min_samples = min_samples
-        self.cutoff = cutoff
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cpdef list generate_tasks(self, tuple pixels):
-
-        cdef:
-            StatsArray3D frame
-            int x, y, c, min_samples, samples
-            np.ndarray normalised
-            double[:,:,::1] error
-            double[:,::1] normalised_mv
-            double percentile_error
-            list tasks
-            double[3] pixel_normalised
-
-        frame = self.pipeline.xyz_frame
-        if frame is None:
-            # no frame data available, generate tasks for the full frame
-            return self._full_frame(pixels)
-
-        # sanity check
-        if (pixels[0], pixels[1], 3) != frame.shape:
-            raise ValueError('The number of pixels passed to the frame sampler are inconsistent with the pipeline frame size.')
-
-        min_samples = max(self.min_samples, <int>(frame.samples.max() / self.ratio))
-        error = frame.errors()
-        normalised = np.zeros((frame.nx, frame.ny))
-        normalised_mv = normalised
-
-        # calculated normalised standard error
-        for x in range(frame.nx):
-            for y in range(frame.ny):
-                for c in range(3):
-                    if frame.mean_mv[x, y, c] <= 0:
-                        pixel_normalised[c] = 0
-                    else:
-                        pixel_normalised[c] = error[x, y, c] / frame.mean_mv[x, y, c]
-                normalised_mv[x, y] = max(pixel_normalised[0], pixel_normalised[1], pixel_normalised[2])
-
-        # locate error value corresponding to fraction of frame to process
-        percentile_error = np.percentile(normalised, (1 - self.fraction) * 100)
-
-        # build tasks
-        tasks = []
-        for x in range(frame.nx):
-            for y in range(frame.ny):
-                samples = min(frame.samples_mv[x, y, 0], frame.samples_mv[x, y, 1], frame.samples_mv[x, y, 2])
-                if samples < min_samples or normalised_mv[x, y] > max(self.cutoff, percentile_error):
-                    tasks.append((x, y))
-
-        # perform tasks in random order so that image is assembled randomly rather than sequentially
-        shuffle(tasks)
-
-        return tasks
-
-    cpdef list _full_frame(self, tuple pixels):
-
-        cdef:
-            list tasks
-            int nx, ny, x, y
-
-        tasks = []
-        nx, ny = pixels
-        for x in range(nx):
-            for y in range(ny):
-                tasks.append((x, y))
-
-        # perform tasks in random order so that image is assembled randomly rather than sequentially
-        shuffle(tasks)
-
-        return tasks

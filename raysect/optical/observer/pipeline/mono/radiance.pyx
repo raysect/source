@@ -89,7 +89,7 @@ cdef class RadiancePipeline0D(PowerPipeline0D):
             mean += self._working_buffer.mean_mv[slice_id]
             variance += self._working_buffer.variance_mv[slice_id]
             if self._working_buffer.samples_mv[slice_id] != samples:
-                raise ValueError("Samples for each spectral slice are inconsistent for PowerPipeline0D.")
+                raise ValueError("Samples for each spectral slice are inconsistent.")
 
         self.value.combine_samples(mean, variance, samples)
 
