@@ -28,7 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
-from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
+from raysect.optical.observer.pipeline import RGBPipeline2D
+from raysect.optical.observer.sampler2d import RGBAdaptiveSampler2D
 
 from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, RectangleSampler3D
 from raysect.optical cimport Ray

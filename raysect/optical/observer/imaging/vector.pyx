@@ -27,8 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.sampler2d import FullFrameSampler2D
-from raysect.optical.observer.pipeline import RGBPipeline2D, RGBAdaptiveSampler2D
+from raysect.optical.observer.sampler2d import FullFrameSampler2D, RGBAdaptiveSampler2D
+from raysect.optical.observer.pipeline import RGBPipeline2D
+
 import numpy as np
 
 from raysect.core cimport Point3D, Vector3D

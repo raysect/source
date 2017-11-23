@@ -27,7 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import numpy as np
 from random import shuffle
+
 from raysect.optical.observer.base cimport FrameSampler2D
 from raysect.optical.observer.pipeline cimport RGBPipeline2D, RadiancePipeline2D, PowerPipeline2D
 from raysect.core.math cimport StatsArray1D, StatsArray2D, StatsArray3D
