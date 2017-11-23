@@ -99,7 +99,7 @@ cdef class SpectralRadiancePipeline0D(SpectralPowerPipeline0D):
         fig.canvas.draw_idle()
         plt.show()
 
-    cpdef to_spectrum(self):
+    cpdef Spectrum to_spectrum(self):
         """
         Returns the mean spectral radiance in a Spectrum() object.
         """
@@ -160,7 +160,7 @@ cdef class SpectralRadiancePipeline2D(SpectralPowerPipeline2D):
         plt.draw()
         plt.show()
 
-    cpdef to_spectrum(self, int x, int y):
+    cpdef Spectrum to_spectrum(self, int x, int y):
         """
         Returns the mean spectral radiance of pixel (x, y) in a Spectrum() object.
         """
@@ -178,8 +178,6 @@ cdef class SpectralRadiancePixelProcessor(PixelProcessor):
     """
     PixelProcessor that stores the spectral radiance observed by each pixel.
     """
-
-    cdef StatsArray1D bins
 
     def __init__(self, SpectralSlice slice):
         self.bins = StatsArray1D(slice.bins)

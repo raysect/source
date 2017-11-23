@@ -62,15 +62,6 @@ cdef class PowerPipeline0D(Pipeline0D):
     :param str name: User friendly name for this pipeline.
     """
 
-    cdef:
-        str name
-        public SpectralFunction filter
-        public bint accumulate
-        readonly StatsBin value
-        StatsArray1D _working_buffer
-        list _resampled_filter
-        bint _quiet
-
     def __init__(self, SpectralFunction filter=None, bint accumulate=True, str name=None):
 
         self.name = name or _DEFAULT_PIPELINE_NAME
@@ -131,7 +122,7 @@ cdef class PowerPipeline0D(Pipeline0D):
             mean += self._working_buffer.mean_mv[slice_id]
             variance += self._working_buffer.variance_mv[slice_id]
             if self._working_buffer.samples_mv[slice_id] != samples:
-                raise ValueError("Samples for each spectral slice are inconsistent for PowerPipeline0D.")
+                raise ValueError("Samples for each spectral slice are inconsistent.")
 
         self.value.combine_samples(mean, variance, samples)
 
@@ -580,96 +571,3 @@ cdef class PowerPixelProcessor(PixelProcessor):
         return self.bin.mean, self.bin.variance
 
 
-cdef class PowerAdaptiveSampler2D(FrameSampler2D):
-    """
-    FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
-    level in each pixel's power value.
-
-    Pixels that have high noise levels will receive extra samples until the desired
-    noise threshold is achieve across the whole image.
-
-    :param PowerPipeline2D pipeline: The specific power pipeline to use for feedback control.
-    :param float fraction: The fraction of frame pixels to receive extra sampling
-      (default=0.2).
-    :param float ratio:
-    :param int min_samples: Minimum number of pixel samples across the image before
-      turning on adaptive sampling (default=1000).
-    :param double cutoff: Normalised noise threshold at which extra sampling will be aborted and
-      rendering will complete (default=0.0). The standard error is normalised to 1 so that a
-      cutoff of 0.01 corresponds to 1% standard error.
-    """
-
-    def __init__(self, PowerPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
-
-        # todo: validation
-        self.pipeline = pipeline
-        self.fraction = fraction
-        self.ratio = ratio
-        self.min_samples = min_samples
-        self.cutoff = cutoff
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cpdef list generate_tasks(self, tuple pixels):
-
-        cdef:
-            StatsArray2D frame
-            int x, y
-            np.ndarray normalised
-            double[:,::1] error, normalised_mv
-            double percentile_error
-            list tasks
-
-        frame = self.pipeline.frame
-        if frame is None:
-            # no frame data available, generate tasks for the full frame
-            return self._full_frame(pixels)
-
-        # sanity check
-        if pixels != frame.shape:
-            raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the pipeline frame size.')
-
-        min_samples = max(self.min_samples, frame.samples.max() / self.ratio)
-        error = frame.errors()
-        normalised = np.zeros((frame.nx, frame.ny))
-        normalised_mv = normalised
-
-        # calculated normalised standard error
-        for x in range(frame.nx):
-            for y in range(frame.ny):
-                if frame.mean_mv[x, y] <= 0:
-                    normalised_mv[x, y] = 0
-                else:
-                    normalised_mv[x, y] = error[x, y] / frame.mean_mv[x, y]
-
-        # locate error value corresponding to fraction of frame to process
-        percentile_error = np.percentile(normalised, (1 - self.fraction) * 100)
-
-        # build tasks
-        tasks = []
-        for x in range(frame.nx):
-            for y in range(frame.ny):
-                if frame.samples_mv[x, y] < min_samples or normalised_mv[x, y] > max(self.cutoff, percentile_error):
-                    tasks.append((x, y))
-
-        # perform tasks in random order so that image is assembled randomly rather than sequentially
-        shuffle(tasks)
-
-        return tasks
-
-    cpdef list _full_frame(self, tuple pixels):
-
-        cdef:
-            list tasks
-            int nx, ny, x, y
-
-        tasks = []
-        nx, ny = pixels
-        for x in range(nx):
-            for y in range(ny):
-                tasks.append((x, y))
-
-        # perform tasks in random order so that image is assembled randomly rather than sequentially
-        shuffle(tasks)
-
-        return tasks

@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,8 +27,50 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import *
-from .pipeline import *
-from .imaging import *
-from .nonimaging import *
-from .sampler2d import *
+from raysect.optical.spectralfunction cimport SpectralFunction
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
+from raysect.core.math cimport StatsBin, StatsArray1D, StatsArray2D
+from raysect.optical.observer.base.sampler cimport FrameSampler2D
+
+
+cdef class PowerPipeline0D(Pipeline0D):
+
+    cdef:
+        str name
+        public SpectralFunction filter
+        public bint accumulate
+        readonly StatsBin value
+        StatsArray1D _working_buffer
+        list _resampled_filter
+        bint _quiet
+
+
+cdef class PowerPipeline2D(Pipeline2D):
+
+    cdef:
+        str name
+        public SpectralFunction filter
+        public bint display_progress
+        double _display_timer
+        double _display_update_time
+        public bint accumulate
+        readonly StatsArray2D frame
+        double[:,::1] _working_mean, _working_variance
+        char[:,::1] _working_touched
+        StatsArray2D _display_frame
+        list _resampled_filter
+        tuple _pixels
+        int _samples
+        object _display_figure
+        double _display_black_point, _display_white_point, _display_unsaturated_fraction, _display_gamma
+        bint _display_auto_exposure
+        public bint display_persist_figure
+        bint _quiet
+
+
+cdef class PowerPixelProcessor(PixelProcessor):
+
+    cdef:
+        StatsBin bin
+        double[::1] filter, _temp
+

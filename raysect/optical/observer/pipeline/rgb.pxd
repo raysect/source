@@ -1,4 +1,4 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,22 +27,37 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from random import shuffle
-from .base import FrameSampler2D
+cimport numpy as np
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
+from raysect.core.math cimport StatsArray3D, StatsArray1D
 
 
-class FullFrameSampler2D(FrameSampler2D):
+cdef class RGBPipeline2D(Pipeline2D):
 
-    def generate_tasks(self, pixels):
+    cdef:
+        str name
+        public bint display_progress
+        double _display_timer
+        double _display_update_time
+        public bint accumulate
+        readonly StatsArray3D xyz_frame
+        double[:,:,::1] _working_mean, _working_variance
+        char[:,::1] _working_touched
+        StatsArray3D _display_frame
+        list _resampled_xyz
+        tuple _pixels
+        int _samples
+        object _display_figure
+        double _display_sensitivity, _display_unsaturated_fraction
+        bint _display_auto_exposure
+        public bint display_persist_figure
+        bint _quiet
 
-        tasks = []
-        nx, ny = pixels
-        for iy in range(ny):
-            for ix in range(nx):
-                tasks.append((ix, iy))
+    cpdef np.ndarray _generate_srgb_image(self, double[:,:,::1] xyz_image_mv)
 
-        # perform tasks in random order so that image is assembled randomly rather than sequentially
-        shuffle(tasks)
 
-        return tasks
+cdef class XYZPixelProcessor(PixelProcessor):
 
+    cdef:
+        np.ndarray resampled_xyz
+        StatsArray1D xyz

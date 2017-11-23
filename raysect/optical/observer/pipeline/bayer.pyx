@@ -37,7 +37,7 @@ from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsArray2D
-from raysect.optical.observer.pipeline.power cimport PowerPixelProcessor
+from raysect.optical.observer.pipeline.mono.power cimport PowerPixelProcessor
 from libc.math cimport pow
 
 
@@ -79,27 +79,6 @@ cdef class BayerPipeline2D(Pipeline2D):
       display screens (default=2.2).
     :param str name: User friendly name for this pipeline (default="Bayer Pipeline").
     """
-
-    cdef:
-        str name
-        public SpectralFunction red_filter, green_filter, blue_filter
-        tuple _bayer_mosaic
-        public bint display_progress
-        double _display_timer
-        double _display_update_time
-        public bint accumulate
-        readonly StatsArray2D frame
-        double[:,::1] _working_mean, _working_variance
-        char[:,::1] _working_touched
-        StatsArray2D _display_frame
-        list _resampled_filters
-        tuple _pixels
-        int _samples
-        object _display_figure
-        double _display_black_point, _display_white_point, _display_unsaturated_fraction, _display_gamma
-        bint _display_auto_exposure
-        public bint display_persist_figure
-        bint _quiet
 
     def __init__(self, SpectralFunction red_filter, SpectralFunction green_filter,
                  SpectralFunction blue_filter, bint display_progress=True,
