@@ -104,11 +104,11 @@ measured_volume_error = power.value.error()
 volume_deviation = (measured_volume_emission - calculated_volume_emission) / measured_volume_error
 
 # Emitter is a sphere surface emitter located at the origin
-# Surface area of the sphere is 4 * Pi * r^2, emission over 2 * pi
+# Surface area of the sphere is 4 * Pi * r^2, lambert emitter
 # UniformSurfaceEmitter is configured to emit 1W/str/m^2/ x nm, where x is the wavelength interval
 
 print("Starting observations with surface emitter...")
-calculated_surface_emission = (2 * pi) * (4 * pi * emitting_sphere_radius**2) * (max_wl - min_wl)
+calculated_surface_emission = pi * (4 * pi * emitting_sphere_radius**2) * (max_wl - min_wl)
 
 emitter.material = UniformSurfaceEmitter(ConstantSF(1.0))
 observer.observe()
