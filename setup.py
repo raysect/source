@@ -38,7 +38,7 @@ else:
 
 setup(
     name="raysect",
-    version="0.3.1",
+    version="0.4.0",
     url="http://www.raysect.org",
     author="Dr Alex Meakins",
     author_email="developers@raysect.org",
