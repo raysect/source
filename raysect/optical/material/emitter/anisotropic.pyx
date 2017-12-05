@@ -40,7 +40,7 @@ cdef class AnisotropicSurfaceEmitter(NullVolume):
 
     """
 
-    def __init__(self, double scale = 1.0):
+    def __init__(self):
         """
         Uniform anisotropic surface emitter with user-defined radiation pattern (spectrally inhomogeneous in general case)
 
@@ -53,7 +53,6 @@ cdef class AnisotropicSurfaceEmitter(NullVolume):
         emission is spectral radiance: W/m2/str/nm"""
 
         super().__init__()
-        self.scale = scale
         self.importance = 1.0
 
     @cython.boundscheck(False)
