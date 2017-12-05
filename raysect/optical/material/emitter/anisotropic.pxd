@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -27,12 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .uniform import UniformSurfaceEmitter, UniformVolumeEmitter
-from .unity import UnitySurfaceEmitter, UnityVolumeEmitter
-from .homogeneous import HomogeneousVolumeEmitter
-from .inhomogeneous import InhomogeneousVolumeEmitter
-from .checkerboard import Checkerboard
-from .anisotropic import AnisotropicSurfaceEmitter
+from raysect.optical cimport Spectrum
+from raysect.optical.material cimport NullVolume
 
 
+cdef class AnisotropicSurfaceEmitter(NullVolume):
+
+    cpdef Spectrum emission_function(self, Spectrum spectrum, double cosine, bint back_face)
 

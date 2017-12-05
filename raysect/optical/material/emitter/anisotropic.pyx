@@ -29,9 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport acos, fabs
-from raysect.optical cimport Spectrum, World, Ray, Primitive, Point3D, AffineMatrix3D, Vector3D, Normal3D
-from raysect.optical.material cimport NullVolume
+from libc.math cimport fabs
+from raysect.optical cimport World, Ray, Primitive, Point3D, AffineMatrix3D, Vector3D, Normal3D
 cimport cython
 
 
@@ -43,14 +42,7 @@ cdef class AnisotropicSurfaceEmitter(NullVolume):
     def __init__(self):
         """
         Uniform anisotropic surface emitter with user-defined radiation pattern (spectrally inhomogeneous in general case)
-
-        radiation pattern is a normalised function of two variables: polar angle and wavelength
-
-        integral of a radiation pattern over the solid angle must be equal to 4*pi for any wavelength
-
-        spectral radiance = (emission_spectrum * radiation_pattern)
-
-        emission is spectral radiance: W/m2/str/nm"""
+        """
 
         super().__init__()
         self.importance = 1.0
@@ -80,7 +72,7 @@ cdef class AnisotropicSurfaceEmitter(NullVolume):
         cosine = fabs(cosine)
 
         # obtain emission spectrum
-        spectrum = self.emission_function(ray.new_spectrum(), angle, cosine, back_face)
+        spectrum = self.emission_function(ray.new_spectrum(), cosine, back_face)
 
         # check spectrum object
         if spectrum.samples.ndim != 1 or spectrum.samples.shape[0] != ray.get_bins():
