@@ -1,13 +1,15 @@
 
+from matplotlib.pyplot import *
+
 from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF, Node
 from raysect.primitive import Sphere, Box, Cylinder, Subtract
 from raysect.primitive.lens.spherical import BiConvex
 from raysect.optical.library.metal import Gold, Silver, Copper, Titanium, Aluminium, Beryllium
 from raysect.optical.material import Lambert, UniformSurfaceEmitter, AbsorbingSurface, NullMaterial
 from raysect.optical.library import schott
-from matplotlib.pyplot import *
 from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, TargettedCCDArray, CCDArray, RGBAdaptiveSampler2D
 from raysect.optical.colour import ciexyz_x, ciexyz_y, ciexyz_z
+
 
 world = World()
 
@@ -50,7 +52,7 @@ pipelines = [rgb, bayer]
 ccd = TargettedCCDArray(targets=[aperture], parent=camera, pipelines=pipelines)
 ccd.frame_sampler = sampler
 ccd.pixels = (180*2, 120*2)  # (360, 240)
-ccd.pixel_samples = 50
+ccd.pixel_samples = 250
 ccd.spectral_rays = 1
 ccd.spectral_bins = 15
 

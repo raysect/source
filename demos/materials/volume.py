@@ -1,5 +1,5 @@
-import time
 
+import time
 from matplotlib.pyplot import *
 from numpy import sqrt, cos
 
