@@ -1,6 +1,6 @@
-from os import path
 
 # External imports
+from os import path
 from numpy import tan, pi as PI
 import numpy as np
 import matplotlib.pyplot as plt

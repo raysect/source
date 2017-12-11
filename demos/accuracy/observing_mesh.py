@@ -1,9 +1,12 @@
 
+import os
+from math import pi
+
 from raysect.primitive import Sphere, import_obj
 from raysect.optical import World, ConstantSF
 from raysect.optical.observer import MeshPixel, PowerPipeline0D
 from raysect.optical.material.emitter import UnityVolumeEmitter, UniformSurfaceEmitter
-from math import sqrt, pi
+
 
 samples = 100000
 
@@ -22,14 +25,13 @@ world = World()
 emitter = Sphere(radius=sphere_radius, parent=world)
 
 power = PowerPipeline0D(accumulate=False)
-mesh = import_obj("./resources/box_normals_inwards.obj", scaling=2.0)
+base_path = os.path.split(os.path.realpath(__file__))[0]
+mesh = import_obj(os.path.join(base_path, "../resources/box_normals_inwards.obj"), scaling=2.0)
 
 observer = MeshPixel(mesh, pipelines=[power], parent=world,
                      min_wavelength=min_wl, max_wavelength=max_wl,
                      spectral_bins=1, pixel_samples=samples,)
 
-# from raysect.core.workflow import SerialEngine
-# observer.render_engine = SerialEngine()
 
 # Emitter is a sphere volume emitter located at the origin
 # Volume of the sphere is 4/3 * Pi * r^3, emission over 4 * pi
