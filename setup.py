@@ -45,7 +45,7 @@ setup(
     description='A Ray-tracing Framework for Science and Engineering',
     license="BSD",
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Education",
         "Intended Audience :: Developers",
