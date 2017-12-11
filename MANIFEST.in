@@ -1,4 +1,3 @@
 include README.md CHANGELOG.txt LICENSE.txt CONTRIBUTING.txt AUTHORS.txt MANIFEST.in setup.py .gitignore
-recursive-include raysect *.py *.pyx *.pxd *.csv *.obj *.json
-recursive-include demos *.py *.pyx *.pxd *.csv *.obj
+recursive-include raysect *.py *.pyx *.pxd *.csv *.json
 recursive-include docs *
