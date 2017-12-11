@@ -592,7 +592,7 @@ cdef class MeshData(KDTree3DCore):
                 self.face_normals[self._i, X],
                 self.face_normals[self._i, Y],
                 self.face_normals[self._i, Z]
-            )
+            ).normalise()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

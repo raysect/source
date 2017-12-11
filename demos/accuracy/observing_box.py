@@ -1,10 +1,12 @@
 
+from math import pi
+
 from raysect.core import translate, rotate
 from raysect.primitive import Sphere
 from raysect.optical import World, ConstantSF
 from raysect.optical.observer import Pixel, PowerPipeline0D
 from raysect.optical.material.emitter import UnityVolumeEmitter, UniformSurfaceEmitter
-from math import pi
+
 
 samples = 100000
 
@@ -28,9 +30,6 @@ observing_plane = Pixel([power], x_width=cube_size, y_width=cube_size,
                         min_wavelength=min_wl, max_wavelength=max_wl,
                         spectral_bins=1, pixel_samples=samples,
                         parent=world, transform=rotate(0, 0, 0)*translate(0, 0, -cube_size / 2))
-
-# from raysect.core.workflow import SerialEngine
-# observing_plane.render_engine = SerialEngine()
 
 # Emitter is a sphere volume emitter located at the origin
 # Volume of the sphere is 4/3 * Pi * r^3, emission over 4 * pi
@@ -63,6 +62,3 @@ print('Measured volume emission => {} +/- {} W'.format(measured_volume_emission,
 print()
 print('Expected surface emission => {} W'.format(calculated_surface_emission))
 print('Measured surface emission => {} +/- {} W'.format(measured_surface_emission, measured_surface_error))
-
-
-

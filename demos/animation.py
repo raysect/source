@@ -5,7 +5,7 @@ from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.emitter import Checkerboard
 from raysect.optical.library import schott
-from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
+from raysect.primitive import Sphere, Box, Cylinder, Intersect
 
 plt.ion()
 

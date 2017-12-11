@@ -1,11 +1,13 @@
 
 import numpy as np
+from math import pi
+
 from raysect.core import translate, rotate
 from raysect.primitive import Sphere
 from raysect.optical import World
 from raysect.optical.observer import PowerPipeline0D, FibreOptic
 from raysect.optical.material.emitter import UnityVolumeEmitter
-from math import pi
+
 
 samples = 100000
 
@@ -37,7 +39,6 @@ optical_fibre = FibreOptic([fibre_power], acceptance_angle=fibre_half_angle, rad
 
 
 approximate_fraction_of_sphere = np.pi*fibre_radius**2 / (4 * np.pi * fibre_distance**2)
-print(1/approximate_fraction_of_sphere)
 
 
 # Emitter is a sphere volume emitter located at the origin

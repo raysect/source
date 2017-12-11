@@ -1,13 +1,15 @@
 
-from raysect.core.workflow import SerialEngine
+from matplotlib.pyplot import *
+from numpy import array
+
+from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
+
 from raysect.optical import World, translate, rotate, Point3D, d65_white, InterpolatedSF
 from raysect.optical.observer import OrthographicCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter, Checkerboard
 from raysect.optical.material.dielectric import Dielectric, Sellmeier
 from raysect.optical.library import schott
-from raysect.primitive import Sphere, Box, Cylinder, Union, Intersect, Subtract
-from matplotlib.pyplot import *
-from numpy import array
+
 
 red_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
                        transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0])*0.7))
@@ -17,6 +19,7 @@ green_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.
 
 blue_glass = Dielectric(index=Sellmeier(1.03961212, 0.231792344, 1.01046945, 6.00069867e-3, 2.00179144e-2, 1.03560653e2),
                         transmission=InterpolatedSF([300, 490, 510, 590, 610, 800], array([1.0, 1.0, 0.0, 0.0, 0.0, 0.0])*0.7))
+
 
 world = World()
 
@@ -33,7 +36,7 @@ Intersect(sphere, Subtract(cube, Union(Union(cyl_x, cyl_y), cyl_z)), world, tran
 
 s1 = Sphere(1.0, transform=translate(0, 0, 1.0-0.01))
 s2 = Sphere(0.5, transform=translate(0, 0, -0.5+0.01))
-Intersect(s1, s2, world, translate(0,0,-3.6)*rotate(50,50,0), schott("N-BK7"))
+Intersect(s1, s2, world, translate(0, 0, -3.6)*rotate(50, 50, 0), schott("N-BK7"))
 
 Box(Point3D(-50, -50, 50), Point3D(50, 50, 50.1), world, material=Checkerboard(4, d65_white, d65_white, 0.4, 0.8))
 Box(Point3D(-100, -100, -100), Point3D(100, 100, 100), world, material=UniformSurfaceEmitter(d65_white, 0.1))
@@ -50,4 +53,3 @@ ioff()
 # camera.pipelines[0].save("render.png")
 camera.pipelines[0].display()
 show()
-
