@@ -1,13 +1,16 @@
 
-from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
+from matplotlib.pyplot import *
+
 from raysect.primitive import Sphere, Box, Cylinder, Subtract
 from raysect.primitive.lens.spherical import BiConvex
+
+from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
 from raysect.optical.library.metal import Gold, Silver, Copper, Titanium, Aluminium, Beryllium
 from raysect.optical.material import Lambert, UniformSurfaceEmitter, AbsorbingSurface
 from raysect.optical.library import schott
-from matplotlib.pyplot import *
 from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, CCDArray, RGBAdaptiveSampler2D
 from raysect.optical.colour import ciexyz_x, ciexyz_y, ciexyz_z
+
 
 world = World()
 
@@ -48,6 +51,7 @@ c = Subtract(
     transform=translate(0, 0, -0.01),
     material=AbsorbingSurface()
 )
+
 
 # start ray tracing
 ion()

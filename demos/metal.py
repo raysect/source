@@ -1,9 +1,12 @@
-from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
+
+from matplotlib.pyplot import *
+
 from raysect.primitive import Sphere, Box, Cylinder
+from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.library import Gold, Silver, Copper, Titanium, Aluminium
 from raysect.optical.material import Lambert, UniformSurfaceEmitter
-from matplotlib.pyplot import *
+
 
 world = World()
 
