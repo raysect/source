@@ -1,9 +1,12 @@
+
+from matplotlib.pyplot import *
+
 from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.primitive import Sphere, Box, Cylinder
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D
-from raysect.optical.material import Lambert, UniformSurfaceEmitter, Roughen
+from raysect.optical.material import UniformSurfaceEmitter
 from raysect.optical.library import *
-from matplotlib.pyplot import *
+
 
 rough_max = 0.5
 
@@ -50,7 +53,6 @@ Cylinder(0.5, 1.0, world, transform=translate(0.5, 5, 4) * rotate(90, 0, 0), mat
 Cylinder(0.5, 1.0, world, transform=translate(0.5, 5, 2) * rotate(90, 0, 0), material=UniformSurfaceEmitter(d65_white, 1.0))
 
 rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
-# sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
 
 # observer
 camera = PinholeCamera((1024, 512), fov=42, pipelines=[rgb], transform=translate(0, 3.3, 0) * rotate(0, -47, 0), parent=world)
