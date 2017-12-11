@@ -1,5 +1,6 @@
 
 # External imports
+import os
 from matplotlib.pyplot import *
 import time
 
@@ -11,7 +12,6 @@ from raysect.optical.material.emitter import UniformVolumeEmitter
 from raysect.optical.material import Lambert
 from raysect.primitive import Box, Subtract
 from raysect.primitive.mesh import Mesh
-from raysect.primitive.mesh import import_obj
 from raysect.optical.library import schott
 
 
@@ -25,17 +25,19 @@ Bunny model source:
   Converted to obj format using MeshLab
 """
 
+base_path = os.path.split(os.path.realpath(__file__))[0]
+
 # DIAMOND MATERIAL
 diamond = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0), ConstantSF(1.0))
 
 world = World()
 
 # BUNNY
-# mesh = import_obj("./resources/stanford_bunny.obj", scaling=1, parent=world,
-#                   transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)  # material=schott("LF5G19")
+# mesh = import_obj(os.path.join(base_path, "resources/stanford_bunny.obj"), scaling=1, parent=world,
+#                   transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)
 
-mesh = Mesh.from_file("./resources/stanford_bunny.rsm", parent=world,
-                  transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)
+mesh = Mesh.from_file(os.path.join(base_path, "resources/stanford_bunny.rsm"), parent=world,
+                      transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)
 
 # LIGHT BOX
 padding = 1e-5

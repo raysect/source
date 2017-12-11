@@ -1,7 +1,6 @@
 
 # External imports
 import matplotlib.pyplot as plt
-import numpy as np
 import os
 
 # Raysect imports

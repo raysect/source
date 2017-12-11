@@ -1,9 +1,13 @@
-from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
+
+from matplotlib.pyplot import *
+
+from raysect.primitive import Sphere, Box
+from raysect.optical import World, Node, translate, rotate, Point3D
 from raysect.optical.material import Lambert, UniformSurfaceEmitter, NullMaterial
 from raysect.optical.library import *
-from raysect.primitive import Sphere, Box
-from matplotlib.pyplot import *
-from numpy import array
+from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, PowerPipeline2D, TargettedCCDArray
+from raysect.optical.observer import RGBAdaptiveSampler2D
+
 
 """
 Cornell Box Demo
@@ -106,23 +110,13 @@ light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
 box = Box(Point3D(-0.4, 0, -0.4), Point3D(0.3, 1.4, 0.3),
           parent=world,
           transform=translate(0.4, -1 + 1e-6, 0.4)*rotate(30, 0, 0),
-          # material=RoughTungsten(0.5))
-          # material=Lambert())
           material=schott("N-BK7"))
 
 sphere = Sphere(0.4,
-    parent=world,
-    transform=translate(-0.4, -0.6 + 1e-6, -0.4)*rotate(0, 0, 0),
-    # material=RoughGold(0.1))
-    # material=Lambert())
-    # material=Titanium())
-    material=schott("N-BK7"))
+                parent=world,
+                transform=translate(-0.4, -0.6 + 1e-6, -0.4)*rotate(0, 0, 0),
+                material=schott("N-BK7"))
 
-
-from raysect.optical.observer import PinholeCamera, TargettedCCDArray
-from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, SpectralPowerPipeline2D, PowerPipeline2D
-from raysect.optical.observer import MonoAdaptiveSampler2D, RGBAdaptiveSampler2D
-from raysect.core.workflow import SerialEngine
 
 filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
 filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
@@ -132,14 +126,26 @@ filter_blue = InterpolatedSF([100, 480, 490, 500, 510, 800], [0, 0, 1, 1, 0, 0])
 power_unfiltered = PowerPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
 power_unfiltered.display_update_time = 15
 
+power_green = PowerPipeline2D(filter=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
+power_green.display_update_time = 15
+
+power_red = PowerPipeline2D(filter=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
+power_red.display_update_time = 15
+
 rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
 
-pipelines = [rgb, power_unfiltered]
+bayer = BayerPipeline2D(filter_red, filter_green, filter_blue, display_unsaturated_fraction=0.96, name="Bayer Filter")
+bayer.display_update_time = 15
+
+pipelines = [rgb, power_unfiltered, power_green, power_red, bayer]
+
 sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
+
 
 camera = Node(parent=world, transform=translate(0, 0, -3.3))
 pinhole = Sphere(0.0005, camera, transform=translate(0, 0, 0), material=NullMaterial())
-film = TargettedCCDArray(targetted_path_prob=1.0, targets=[pinhole], width=0.1, pixels=(512, 512), parent=camera, transform=translate(0, 0, -0.1207), pipelines=pipelines)
+film = TargettedCCDArray(targetted_path_prob=1.0, targets=[pinhole], width=0.1, pixels=(512, 512), parent=camera,
+                         transform=translate(0, 0, -0.1207), pipelines=pipelines)
 film.frame_sampler = sampler
 film.pixel_samples = 250
 film.spectral_bins = 15
@@ -149,7 +155,6 @@ film.ray_important_path_weight = 0.25
 film.ray_max_depth = 500
 film.ray_extinction_min_depth = 3
 film.ray_extinction_prob = 0.01
-# film.render_engine = SerialEngine()
 
 
 # start ray tracing
