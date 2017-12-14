@@ -55,6 +55,9 @@ cdef class Item2D:
         readonly int32_t id
         readonly BoundingBox2D box
 
+    cpdef Item2D refine_lower(self, int axis, double split)
+    cpdef Item2D refine_upper(self, int axis, double split)
+
 
 cdef class KDTree2DCore:
 

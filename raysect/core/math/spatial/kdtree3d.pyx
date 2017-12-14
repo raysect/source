@@ -74,6 +74,12 @@ cdef class Item3D:
         self.id = id
         self.box = box
 
+    cpdef Item3D refine_lower(self, int axis, double split):
+        return self
+
+    cpdef Item3D refine_upper(self, int axis, double split):
+        return self
+
 
 cdef int _edge_compare(const void *p1, const void *p2) nogil:
 
@@ -325,11 +331,11 @@ cdef class KDTree3DCore:
 
             # is the item present in the lower node?
             if item.box.lower.get_index(best_axis) < best_split:
-                lower_items.append(item)
+                lower_items.append(item.refine_lower(best_axis, best_split))
 
             # is the item present in the upper node?
             if item.box.upper.get_index(best_axis) > best_split:
-                upper_items.append(item)
+                upper_items.append(item.refine_upper(best_axis, best_split))
 
         # construct bounding boxes that enclose the lower and upper nodes
         lower_bounds = self._get_lower_bounds(bounds, best_split, best_axis)
