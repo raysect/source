@@ -32,5 +32,5 @@ from raysect.optical.material.emitter.unity cimport UnitySurfaceEmitter, UnityVo
 from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
 from raysect.optical.material.emitter.inhomogeneous cimport InhomogeneousVolumeEmitter
 from raysect.optical.material.emitter.checkerboard cimport Checkerboard
-
+from raysect.optical.material.emitter.anisotropic cimport AnisotropicSurfaceEmitter
 

@@ -4,7 +4,6 @@ import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
-plt.ion()
 
 # Raysect imports
 from raysect.optical import World, translate, rotate, Point3D, d65_white, Ray, Vector3D
@@ -28,6 +27,7 @@ target = Box(lower=Point3D(-50, -50, -0), upper=Point3D(50, 50, 0), material=Abs
 
 
 # for each sample direction trace a logging ray and plot the ray trajectory
+plt.ion()
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 
@@ -46,4 +46,5 @@ for u in np.linspace(-0.006, 0.006, 5):
         ax.plot(p[:, 0], p[:, 1], p[:, 2], 'k-')
         ax.plot(p[:, 0], p[:, 1], p[:, 2], 'r.')
 
+plt.ioff()
 plt.show()
