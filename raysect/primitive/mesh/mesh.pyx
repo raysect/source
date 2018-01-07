@@ -296,7 +296,6 @@ cdef class MeshData(KDTree3DCore):
                 max(self.vertices[i1, Z], self.vertices[i2, Z], self.vertices[i3, Z]),
             ),
         )
-        bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
 
         return bbox
 

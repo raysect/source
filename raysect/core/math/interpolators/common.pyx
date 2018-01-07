@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,12 +33,8 @@ import numpy as np
 cimport numpy as np
 from raysect.core.boundingbox cimport BoundingBox2D, new_boundingbox2d
 from raysect.core.math.point cimport Point2D, new_point2d
-from raysect.core.math.spatial.kdtree2d cimport Item2D
 from raysect.core.math.cython cimport barycentric_inside_triangle, barycentric_coords
 cimport cython
-
-# bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-6
 
 # convenience defines
 DEF V1 = 0
@@ -49,33 +45,19 @@ DEF X = 0
 DEF Y = 1
 
 
-cdef class MeshKDTree2D(KDTree2DCore):
+cdef class TriangleItem2D(Item2D):
 
-    def __init__(self, object vertices not None, object triangles not None):
+    def __init__(self, np.int32_t triangle, double[:, ::1] vertices, np.int32_t[:, ::1] triangles):
 
         self._vertices = vertices
         self._triangles = triangles
+        super().__init__(triangle, self._generate_bounding_box(triangle))
 
-        # check dimensions are correct
-        if vertices.ndim != 2 or vertices.shape[1] != 2:
-            raise ValueError("The vertex array must have dimensions Nx2.")
+    cpdef Item2D refine_lower(self, int axis, double split):
+        return self
 
-        if triangles.ndim != 2 or triangles.shape[1] != 3:
-            raise ValueError("The triangle array must have dimensions Mx3.")
-
-        # check triangles contains only valid indices
-        invalid = (triangles[:, 0:3] < 0) | (triangles[:, 0:3] >= vertices.shape[0])
-        if invalid.any():
-            raise ValueError("The triangle array references non-existent vertices.")
-
-        # kd-Tree init
-        items = []
-        for triangle in range(self._triangles.shape[0]):
-            items.append(Item2D(triangle, self._generate_bounding_box(triangle)))
-        super().__init__(items, max_depth=0, min_items=1, hit_cost=50.0, empty_bonus=0.2)
-
-        # todo: (possible enhancement) check if triangles are overlapping?
-        # (any non-owned vertex lying inside another triangle)
+    cpdef Item2D refine_upper(self, int axis, double split):
+        return self
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -109,9 +91,37 @@ cdef class MeshKDTree2D(KDTree2DCore):
                 max(self._vertices[i1, Y], self._vertices[i2, Y], self._vertices[i3, Y]),
             ),
         )
-        bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
 
         return bbox
+
+
+cdef class MeshKDTree2D(KDTree2DCore):
+
+    def __init__(self, object vertices not None, object triangles not None):
+
+        self._vertices = vertices
+        self._triangles = triangles
+
+        # check dimensions are correct
+        if vertices.ndim != 2 or vertices.shape[1] != 2:
+            raise ValueError("The vertex array must have dimensions Nx2.")
+
+        if triangles.ndim != 2 or triangles.shape[1] != 3:
+            raise ValueError("The triangle array must have dimensions Mx3.")
+
+        # check triangles contains only valid indices
+        invalid = (triangles[:, 0:3] < 0) | (triangles[:, 0:3] >= vertices.shape[0])
+        if invalid.any():
+            raise ValueError("The triangle array references non-existent vertices.")
+
+        # kd-Tree init
+        items = []
+        for triangle in range(self._triangles.shape[0]):
+            items.append(TriangleItem2D(triangle, self._vertices, self._triangles))
+        super().__init__(items, max_depth=0, min_items=1, hit_cost=50.0, empty_bonus=0.2)
+
+        # todo: (possible enhancement) check if triangles are overlapping?
+        # (any non-owned vertex lying inside another triangle)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
