@@ -36,6 +36,9 @@ from raysect.core.math.point cimport Point2D, new_point2d
 from raysect.core.math.cython cimport barycentric_inside_triangle, barycentric_coords
 cimport cython
 
+# bounding box is padded by a small amount to avoid numerical accuracy issues
+DEF BOX_PADDING = 1e-6
+
 # convenience defines
 DEF V1 = 0
 DEF V2 = 1
@@ -91,6 +94,11 @@ cdef class TriangleItem2D(Item2D):
                 max(self._vertices[i1, Y], self._vertices[i2, Y], self._vertices[i3, Y]),
             ),
         )
+
+        # The bounding box and triangle vertices may not align following coordinate
+        # transforms in the water tight mesh algorithm, therefore a small bit of padding
+        # is added to avoid numerical representation issues.
+        bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
 
         return bbox
 

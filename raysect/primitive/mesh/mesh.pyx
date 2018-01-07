@@ -297,6 +297,11 @@ cdef class MeshData(KDTree3DCore):
             ),
         )
 
+        # The bounding box and triangle vertices may not align following coordinate
+        # transforms in the water tight mesh algorithm, therefore a small bit of padding
+        # is added to avoid numerical representation issues.
+        bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
+
         return bbox
 
     cpdef bint trace(self, Ray ray):
