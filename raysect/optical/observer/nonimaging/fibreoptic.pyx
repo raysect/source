@@ -128,7 +128,7 @@ cdef class FibreOptic(Observer0D):
 
         cdef:
             list rays, origins, directions
-            double weight, pdf
+            double pdf
             Vector3D direction
             int n
 
@@ -140,11 +140,12 @@ cdef class FibreOptic(Observer0D):
 
             # projected area weight is normal.incident which simplifies
             # to incident.z here as the normal is (0, 0 ,1)
-            # weight = 1/(2pi) * 1/(sample_pdf) * cos(theta)
-            # Note: 1/area * 1/area_pdf cancels when doing uniform area sampling
+            # weight = 1/(Omega) * 1/(omega_sample_pdf) * 1/(Area) * 1/(x_sample_pdf) * cos(theta)
+            # Note: 1/area * 1/area_pdf cancels when doing uniform area point sampling
+            # Note: 1/(Omega) * 1/(omega_sample_pdf) cancels when doing uniform vector sampling
+            # Therefore, weight = cos(theta) term only.
             direction, pdf = directions[n]
-            weight = RECIP_2_PI / pdf * direction.z
-            rays.append((template.copy(origins[n], direction), weight))
+            rays.append((template.copy(origins[n], direction), direction.z))
 
         return rays
 

@@ -1,10 +1,14 @@
+
+from matplotlib.pyplot import *
+from numpy import array
+
+from raysect.primitive import Sphere, Box
+
 from raysect.optical import World, Node, translate, rotate, Point3D, d65_white, ConstantSF, InterpolatedSF
 from raysect.optical.observer import PinholeCamera
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.material.dielectric import Dielectric
-from raysect.primitive import Sphere, Box
-from matplotlib.pyplot import *
-from numpy import array
+
 
 world = World()
 
@@ -48,4 +52,3 @@ ioff()
 camera.pipelines[0].save("raysect_logo.png")
 camera.pipelines[0].display()
 show()
-

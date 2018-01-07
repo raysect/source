@@ -1,6 +1,8 @@
+
 import matplotlib.pyplot as plt
-from raysect.core.math import Point3D, TargettedHemisphereSampler, TargettedSphereSampler
 from math import atan2, sqrt, degrees
+
+from raysect.core.math import Point3D, TargettedHemisphereSampler, TargettedSphereSampler
 
 
 def display_samples(samples, title):
@@ -43,14 +45,3 @@ s_samples = sphere(observation_point, samples=samples)
 display_samples(h_samples, 'Hemisphere Samples at ({}, {}, {})'.format(*observation_point))
 display_samples(s_samples, 'Sphere Samples at ({}, {}, {})'.format(*observation_point))
 plt.show()
-
-
-
-
-
-
-
-
-
-
-

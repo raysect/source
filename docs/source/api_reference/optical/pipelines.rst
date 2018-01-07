@@ -80,7 +80,7 @@ Power
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.optical.observer.pipeline.mono.PowerPixelProcessor
+.. autoclass:: raysect.optical.observer.pipeline.mono.power.PowerPixelProcessor
    :members:
    :show-inheritance:
 
@@ -92,7 +92,7 @@ Radiance
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.optical.observer.pipeline.momo.RadiancePipeline2D
+.. autoclass:: raysect.optical.observer.pipeline.mono.RadiancePipeline2D
    :members:
    :show-inheritance:
 

@@ -51,9 +51,12 @@ fibre.pixel_samples = pixel_samples=1000
 # 4. Observe()
 # ------------
 
+plt.ion()
 fibre.observe()
+
 
 # You can access the spectral data directly to make your own plots.
 plt.figure()
 plt.plot(spectra.wavelengths, spectra.samples.mean)
+plt.ioff()
 plt.show()

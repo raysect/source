@@ -1,10 +1,14 @@
+
+import os
 import time
-from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
-from raysect.primitive import Sphere, Box, Cylinder, import_obj
-from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
-from raysect.optical.library import RoughIron, RoughGold, RoughTitanium
-from raysect.optical.material import Lambert, UniformSurfaceEmitter, UniformVolumeEmitter, Dielectric, Sellmeier
 from matplotlib.pyplot import *
+
+from raysect.optical import World, translate, rotate, Point3D, d65_white, ConstantSF
+from raysect.primitive import Sphere, Box, import_obj
+from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
+from raysect.optical.library import RoughTitanium
+from raysect.optical.material import UniformSurfaceEmitter, UniformVolumeEmitter, Dielectric, Sellmeier
+
 
 # DIAMOND MATERIAL
 diamond_material = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0), ConstantSF(1))
@@ -12,8 +16,10 @@ diamond_material.importance = 2
 
 world = World()
 
+base_path = os.path.split(os.path.realpath(__file__))[0]
+
 # the diamond
-diamond = import_obj("resources/diamond.obj", scaling=0.01, smoothing=False, parent=world,
+diamond = import_obj(os.path.join(base_path, "resources/diamond.obj"), scaling=0.01, smoothing=False, parent=world,
                      transform=translate(0.0, 0.713001, 0.0)*rotate(-10, 0, 0), material=diamond_material)
 
 # floor
@@ -32,6 +38,7 @@ camera = PinholeCamera((1024, 1024), parent=world, transform=translate(0, 4, -3.
 camera.spectral_bins = 18
 camera.spectral_rays = 9
 camera.pixel_samples = 200
+
 
 # start ray tracing
 ion()

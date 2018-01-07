@@ -1,10 +1,12 @@
 
+from matplotlib.pyplot import *
+
 from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.primitive import Sphere, Box, Cylinder
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D
 from raysect.optical.material import Lambert, UniformSurfaceEmitter, Roughen
 from raysect.optical.library import *
-from matplotlib.pyplot import *
+
 
 """
 Material Roughness Scan
@@ -14,6 +16,7 @@ Demonstration of the roughen material modifier. The back row is aluminium and
 the front row is glass. The surface roughness is increased from left to right
 from 0 to 50%.
 """
+
 
 world = World()
 

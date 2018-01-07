@@ -1,9 +1,10 @@
 
 from matplotlib.pyplot import ion, ioff, show
+
+from raysect.primitive import Box
 from raysect.optical import World, translate, Point3D, Node
 from raysect.optical.observer import Pixel, TargettedPixel, PowerPipeline0D
 from raysect.optical.material import UnitySurfaceEmitter
-from raysect.primitive import Box
 
 
 SAMPLES = 100000
@@ -40,4 +41,3 @@ targetted_pixel.observe()
 
 ioff()
 show()
-
