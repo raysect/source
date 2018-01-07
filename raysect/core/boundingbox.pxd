@@ -69,6 +69,8 @@ cdef class BoundingBox3D:
 
     cpdef object pad(self, double padding)
 
+    cpdef object pad_axis(self, int axis, double padding)
+
     cpdef BoundingSphere3D enclosing_sphere(self)
 
 
@@ -109,6 +111,8 @@ cdef class BoundingBox2D:
     cpdef double largest_extent(self)
 
     cpdef object pad(self, double padding)
+
+    cpdef object pad_axis(self, int axis, double padding)
 
 
 cdef inline BoundingBox2D new_boundingbox2d(Point2D lower, Point2D upper):

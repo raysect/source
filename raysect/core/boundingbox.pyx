@@ -411,6 +411,34 @@ cdef class BoundingBox3D:
         self.upper.y = self.upper.y + padding
         self.upper.z = self.upper.z + padding
 
+    cpdef object pad_axis(self, int axis, double padding):
+        """
+        Makes the bounding box larger along the specified axis by amount of padding.
+
+        The specified bounding box axis will end up larger by a factor of 2 x padding.
+
+        :param int axis: The axis to apply padding to {0: X axis, 1: Y axis, 2: Z axis}.
+        :param float padding: Distance to use as padding margin.
+        """
+
+        if axis < 0 or axis > 2:
+            raise ValueError("Axis must be in the range [0, 2].")
+
+        if axis == X_AXIS:
+            self.lower.x = self.lower.x - padding
+            self.upper.x = self.upper.x + padding
+
+        elif axis == Y_AXIS:
+            self.lower.y = self.lower.y - padding
+            self.upper.y = self.upper.y + padding
+
+        elif axis == Z_AXIS:
+            self.lower.z = self.lower.z - padding
+            self.upper.z = self.upper.z + padding
+
+        else:
+            raise ValueError("Axis must be in the range [0, 2].")
+
     cpdef BoundingSphere3D enclosing_sphere(self):
         """
         Returns a BoundingSphere3D guaranteed to enclose the bounding box.
@@ -611,3 +639,27 @@ cdef class BoundingBox2D:
 
         self.upper.x = self.upper.x + padding
         self.upper.y = self.upper.y + padding
+
+    cpdef object pad_axis(self, int axis, double padding):
+        """
+        Makes the bounding box larger along the specified axis by amount of padding.
+
+        The specified bounding box axis will end up larger by a factor of 2 x padding.
+
+        :param int axis: The axis to apply padding to {0: X axis, 1: Y axis}.
+        :param float padding: Distance to use as padding margin.
+        """
+
+        if axis < 0 or axis > 1:
+            raise ValueError("Axis must be in the range [0, 1].")
+
+        if axis == X_AXIS:
+            self.lower.x = self.lower.x - padding
+            self.upper.x = self.upper.x + padding
+
+        elif axis == Y_AXIS:
+            self.lower.y = self.lower.y - padding
+            self.upper.y = self.upper.y + padding
+
+        else:
+            raise ValueError("Axis must be in the range [0, 1].")
