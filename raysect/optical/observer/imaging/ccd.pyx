@@ -51,7 +51,6 @@ cdef class CCDArray(Observer2D):
 
     :param tuple pixels: A tuple of pixel dimensions for the camera (default=(512, 512)).
     :param float width: The CCD sensor x-width in metres (default=35mm).
-    :param float etendue: The etendue of each pixel (default=1.0)
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
