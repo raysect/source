@@ -13,11 +13,11 @@ Release 0.4.0 (11 Dec 2017)
 ---------------------------
 
 API Changes:
-* VolumeEmitterHomogeneous renamed HomogeneousVolumeEmitter
-* VolumeEmitterInhomogeneous renamed InhomogeneousVolumeEmitter
+* VolumeEmitterHomogeneous renamed HomogeneousVolumeEmitter.
+* VolumeEmitterInhomogeneous renamed InhomogeneousVolumeEmitter.
 
 Bug Fixes:
-* Fixed normalisation bug in FibreOptic observer,
+* Fixed normalisation bug in FibreOptic observer.
 
 New:
 * InhomogeneousVolumeEmitter integrator now pluggable.
