@@ -130,6 +130,98 @@ cdef class PowerPipeline0D(Pipeline0D):
             print("{} - incident power: {:.4G} +/- {:.4G} W".format(self.name, self.value.mean, self.value.error()))
 
 
+cdef class PowerPipeline1D(Pipeline1D):
+    # """
+    # A power pipeline for 2D observers.
+    #
+    # The raw spectrum collected at each pixel by the observer is multiplied by
+    # a spectral filter and integrated to give to total power collected at that
+    # pixel.
+    #
+    # The measured value and error for each pixel are accessed at self.frame.mean and self.frame.error
+    # respectively.
+    #
+    # :param SpectralFunction filter: A filter function to be multiplied with the
+    #  measured spectrum.
+    # :param bool display_progress: Toggles the display of live render progress
+    #   (default=True).
+    # :param float display_update_time: Time in seconds between preview display
+    #   updates (default=15 seconds).
+    # :param bool accumulate: Whether to accumulate samples with subsequent calls
+    #   to observe() (default=True).
+    # :param bool display_auto_exposure: Toggles the use of automatic exposure of
+    #   final images (default=True).
+    # :param float display_black_point:
+    # :param float display_white_point:
+    # :param float display_unsaturated_fraction: Fraction of pixels that must not
+    #   be saturated. Display values will be scaled to satisfy this value
+    #   (default=1.0).
+    # :param float display_gamma:
+    # :param str name: User friendly name for this pipeline.
+    # """
+    #
+    def __init__(self, SpectralFunction filter=None, bint accumulate=True, str name=None):
+
+        self.name = name or _DEFAULT_PIPELINE_NAME
+
+        self.filter = filter or ConstantSF(1.0)
+        self.accumulate = accumulate
+
+        self.frame = None
+
+        self._working_mean = None
+        self._working_variance = None
+
+        self._resampled_filter = None
+
+        self._pixels = 0
+        self._samples = 0
+
+    cpdef object initialise(self, int pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
+
+        self._pixels = pixels
+        self._samples = pixel_samples
+
+        # create intermediate and final frame-buffers
+        if not self.accumulate or self.frame is None or self.frame.length != pixels:
+            self.frame = StatsArray1D(pixels)
+
+        self._working_mean = np.zeros(pixels)
+        self._working_variance = np.zeros(pixels)
+
+        # generate pixel processor configurations for each spectral slice
+        self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef PixelProcessor pixel_processor(self, int pixel, int slice_id):
+        return PowerPixelProcessor(self._resampled_filter[slice_id])
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object update(self, int pixel, int slice_id, tuple packed_result):
+
+        cdef:
+            double mean, variance
+
+        # obtain result
+        mean, variance = packed_result
+
+        # accumulate sub-samples
+        self._working_mean[pixel] += mean
+        self._working_variance[pixel] += variance
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object finalise(self):
+
+        cdef int pixel
+
+        # update final frame with working frame results
+        for pixel in range(self.frame.length):
+            self.frame.combine_samples(pixel, self._working_mean[pixel], self._working_variance[pixel], self._samples)
+
+
 cdef class PowerPipeline2D(Pipeline2D):
     """
     A power pipeline for 2D observers.

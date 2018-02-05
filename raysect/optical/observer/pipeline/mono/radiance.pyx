@@ -27,19 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from time import time
-import matplotlib.pyplot as plt
-import numpy as np
-from random import shuffle
-
-cimport cython
-cimport numpy as np
-from raysect.core.math.cython cimport clamp
-from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
-from raysect.core.math cimport StatsBin, StatsArray1D, StatsArray2D
+from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.spectrum cimport Spectrum
-
-from libc.math cimport pow
+cimport cython
 
 
 _DEFAULT_PIPELINE_NAME = "Radiance Pipeline"
@@ -96,6 +86,47 @@ cdef class RadiancePipeline0D(PowerPipeline0D):
         if not self._quiet:
             print("{} - incident radiance: {:.4G} +/- {:.4G} W/str/m^2"
                   "".format(self.name, self.value.mean, self.value.error()))
+
+
+cdef class RadiancePipeline1D(PowerPipeline1D):
+    # """
+    # A radiance pipeline for 2D observers.
+    #
+    # The raw spectrum collected at each pixel by the observer is multiplied by
+    # a spectral filter and integrated to give to total radiance collected at that
+    # pixel (W/str/m^2).
+    #
+    # The measured value and error for each pixel are accessed at self.frame.mean and self.frame.error
+    # respectively.
+    #
+    # :param SpectralFunction filter: A filter function to be multiplied with the
+    #  measured spectrum.
+    # :param bool display_progress: Toggles the display of live render progress
+    #   (default=True).
+    # :param float display_update_time: Time in seconds between preview display
+    #   updates (default=15 seconds).
+    # :param bool accumulate: Whether to accumulate samples with subsequent calls
+    #   to observe() (default=True).
+    # :param bool display_auto_exposure: Toggles the use of automatic exposure of
+    #   final images (default=True).
+    # :param float display_black_point:
+    # :param float display_white_point:
+    # :param float display_unsaturated_fraction: Fraction of pixels that must not
+    #   be saturated. Display values will be scaled to satisfy this value
+    #   (default=1.0).
+    # :param float display_gamma:
+    # :param str name: User friendly name for this pipeline.
+    # """
+
+    def __init__(self, SpectralFunction filter=None, bint accumulate=True, str name=None):
+
+        name = name or _DEFAULT_PIPELINE_NAME
+        super().__init__(filter=filter, accumulate=accumulate, name=name)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef PixelProcessor pixel_processor(self, int pixel, int slice_id):
+        return RadiancePixelProcessor(self._resampled_filter[slice_id])
 
 
 cdef class RadiancePipeline2D(PowerPipeline2D):

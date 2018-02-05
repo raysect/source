@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline1D, Pipeline2D
 from raysect.core.math cimport StatsBin, StatsArray1D, StatsArray2D
 from raysect.optical.observer.base.sampler cimport FrameSampler2D
 
@@ -43,6 +43,19 @@ cdef class PowerPipeline0D(Pipeline0D):
         StatsArray1D _working_buffer
         list _resampled_filter
         bint _quiet
+
+
+cdef class PowerPipeline1D(Pipeline1D):
+
+    cdef:
+        str name
+        public SpectralFunction filter
+        public bint accumulate
+        readonly StatsArray1D frame
+        double[::1] _working_mean, _working_variance
+        list _resampled_filter
+        tuple _pixels
+        int _samples
 
 
 cdef class PowerPipeline2D(Pipeline2D):
