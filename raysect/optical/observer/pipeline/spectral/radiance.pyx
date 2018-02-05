@@ -113,20 +113,19 @@ cdef class SpectralRadiancePipeline0D(SpectralPowerPipeline0D):
         return spectrum
 
 
-# TODO: Docstring
 cdef class SpectralRadiancePipeline1D(SpectralPowerPipeline1D):
-    # """
-    # A basic spectral radiance pipeline for 2D observers (W/str/m^2/nm).
-    #
-    # The mean spectral radiance for each pixel is stored along with the associated
-    # error on each wavelength bin in a 2D frame object.
-    #
-    # Spectral values and errors are available through the self.frame attribute.
-    #
-    # :param bool accumulate: Whether to accumulate samples with subsequent calls
-    #   to observe() (default=True).
-    # :param str name: User friendly name for this pipeline.
-    # """
+    """
+    A basic spectral radiance pipeline for 1D observers (W/str/m^2/nm).
+
+    The mean spectral radiance for each pixel is stored along with the associated
+    error on each wavelength bin in a 1D frame object.
+
+    Spectral values and errors are available through the self.frame attribute.
+
+    :param bool accumulate: Whether to accumulate samples with subsequent calls
+      to observe() (default=True).
+    :param str name: User friendly name for this pipeline.
+    """
 
     def __init__(self, bint accumulate=True, str name=None):
         name = name or _DEFAULT_PIPELINE_NAME

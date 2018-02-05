@@ -4,7 +4,7 @@ from math import pi
 
 from raysect.primitive import Sphere, import_obj
 from raysect.optical import World, ConstantSF
-from raysect.optical.observer import MeshPixel, MeshCamera, PowerPipeline0D, PowerPipeline1D
+from raysect.optical.observer import MeshPixel, PowerPipeline0D
 from raysect.optical.material.emitter import UnityVolumeEmitter, UniformSurfaceEmitter
 
 

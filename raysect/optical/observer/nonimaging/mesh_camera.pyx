@@ -54,24 +54,24 @@ DEF V3 = 2
 
 
 cdef class MeshCamera(Observer1D):
-    # """
-    # Uses a supplied mesh surface as a pixel.
-    #
-    # Warning: you must be careful when using this camera to not double count radiance. For example,
-    # if you have a concave mesh its possible for two surfaces to see the same emission. In cases
-    # like this, the mesh should have an absorbing surface to prevent double counting.
-    #
-    # This observer samples over the surface defined by a triangular mesh. At each point on the surface
-    # the incoming radiance over a hemisphere is sampled.
-    #
-    # A mesh surface offset can be set to ensure sample don't collide with a coincident primitive. When set,
-    # the surface offset specifies the distance along the surface normal that the ray launch origin is shifted.
-    #
-    # :param list pipelines: The list of pipelines that will process the spectrum measured
-    #   by this pixel (default=SpectralPipeline0D()).
-    # :param float surface_offset: The offset from the mesh surface (default=0).
-    # :param kwargs: **kwargs from Observer0D and _ObserverBase
-    # """
+    """
+    Uses a supplied mesh surface as a linear camera.
+
+    Warning: you must be careful when using this camera to not double count radiance. For example,
+    if you have a concave mesh its possible for two surfaces to see the same emission. In cases
+    like this, the mesh should have an absorbing surface to prevent double counting.
+
+    This observer samples over each triangle or a triangular mesh. At each point on the surface
+    the incoming radiance over a hemisphere is sampled. The pixel id corresponds to the triangle
+    id in the mesh.
+
+    A mesh surface offset can be set to ensure samples don't collide with a coincident primitive.
+    When set, the surface offset specifies the distance along the surface normal that the ray
+    launch origin is shifted.
+
+    :param mesh: The Mesh object to use as the sampling surface.
+    :param float surface_offset: The offset from the mesh surface (default=0).
+    """
 
     cdef:
         double _surface_offset, _solid_angle, _collection_area

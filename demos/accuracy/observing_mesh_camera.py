@@ -4,7 +4,7 @@ from math import pi, sqrt
 
 from raysect.primitive import Sphere, import_obj
 from raysect.optical import World, ConstantSF
-from raysect.optical.observer import MeshPixel, MeshCamera, PowerPipeline0D, PowerPipeline1D
+from raysect.optical.observer import MeshCamera, PowerPipeline1D
 from raysect.optical.material.emitter import UnityVolumeEmitter, UniformSurfaceEmitter
 
 
@@ -43,7 +43,7 @@ calculated_volume_emission = 16 / 3 * pi**2 * sphere_radius**3 * (max_wl - min_w
 emitter.material = UnityVolumeEmitter()
 observer.observe()
 measured_volume_emission = power.frame.mean.sum()
-measured_volume_error = power.frame.errors().sum() / sqrt(12)
+measured_volume_error = power.frame.errors().sum() / sqrt(12)  # 12 triangles in mesh
 
 # Emitter is a sphere surface emitter located at the origin
 # Surface area of the sphere is 4 * Pi * r^2, lambert emitter
@@ -55,7 +55,7 @@ calculated_surface_emission = 4 * pi**2 * sphere_radius**2 * (max_wl - min_wl)
 emitter.material = UniformSurfaceEmitter(ConstantSF(1.0))
 observer.observe()
 measured_surface_emission = power.frame.mean.sum()
-measured_surface_error = power.frame.errors().sum() / sqrt(12)
+measured_surface_error = power.frame.errors().sum() / sqrt(12)  # 12 triangles in mesh
 
 print()
 print('Expected volume emission => {} W'.format(calculated_volume_emission))
