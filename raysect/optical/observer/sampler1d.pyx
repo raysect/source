@@ -55,7 +55,7 @@ cdef class FullFrameSampler1D(FrameSampler1D):
         return tasks
 
 
-cdef class MonoAdaptiveSampler2D(FrameSampler1D):
+cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     """
     FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
     level in each pixel's power value.

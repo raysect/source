@@ -38,7 +38,8 @@ from raysect.core.math.random cimport point_triangle
 from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.optical cimport Ray, Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
 from raysect.optical.observer.base cimport Observer1D
-from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline1D
+from raysect.optical.observer.pipeline.mono import PowerPipeline1D
+from raysect.optical.observer.sampler1d import FullFrameSampler1D
 from raysect.primitive.mesh.mesh cimport Mesh
 cimport cython
 
@@ -81,16 +82,21 @@ cdef class MeshCamera(Observer1D):
         double [::1] _areas_mv
         HemisphereCosineSampler _vector_sampler
 
-    def __init__(self, Mesh mesh not None, surface_offset=None, pipelines=None, parent=None, transform=None, name=None,
-                 render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
-                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
+    def __init__(self, Mesh mesh not None, surface_offset=None, frame_sampler=None, pipelines=None, parent=None,
+                 transform=None, name=None, render_engine=None, pixel_samples=None,
+                 spectral_rays=None, spectral_bins=None, min_wavelength=None, max_wavelength=None,
+                 ray_extinction_prob=None, ray_extinction_min_depth=None, ray_max_depth=None,
+                 ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
-        pipelines = pipelines or [SpectralPowerPipeline1D()]
+        pipelines = pipelines or [PowerPipeline1D()]
+        frame_sampler = frame_sampler or FullFrameSampler1D()
 
-        super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
-                         pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
-                         spectral_bins=spectral_bins, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
+        # TODO - replace this with access to Mesh public methods when implemented, this breaks encapsulation, yuck!
+        pixels = mesh._data.triangles.shape[0]
+        super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name,
+                         render_engine=render_engine, pixel_samples=pixel_samples,
+                         spectral_rays=spectral_rays, spectral_bins=spectral_bins,
+                         min_wavelength=min_wavelength, max_wavelength=max_wavelength,
                          ray_extinction_prob=ray_extinction_prob, ray_extinction_min_depth=ray_extinction_min_depth,
                          ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
                          ray_important_path_weight=ray_important_path_weight, quiet=quiet)

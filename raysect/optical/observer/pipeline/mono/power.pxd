@@ -54,7 +54,7 @@ cdef class PowerPipeline1D(Pipeline1D):
         readonly StatsArray1D frame
         double[::1] _working_mean, _working_variance
         list _resampled_filter
-        tuple _pixels
+        int _pixels
         int _samples
 
 
