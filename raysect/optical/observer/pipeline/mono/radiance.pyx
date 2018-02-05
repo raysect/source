@@ -88,6 +88,7 @@ cdef class RadiancePipeline0D(PowerPipeline0D):
                   "".format(self.name, self.value.mean, self.value.error()))
 
 
+# TODO: Docstring
 cdef class RadiancePipeline1D(PowerPipeline1D):
     # """
     # A radiance pipeline for 2D observers.

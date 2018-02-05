@@ -27,5 +27,5 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.pipeline.mono.power cimport PowerPipeline0D, PowerPipeline2D
-from raysect.optical.observer.pipeline.mono.radiance cimport RadiancePipeline0D, RadiancePipeline2D
+from raysect.optical.observer.pipeline.mono.power cimport PowerPipeline0D, PowerPipeline1D, PowerPipeline2D
+from raysect.optical.observer.pipeline.mono.radiance cimport RadiancePipeline0D, RadiancePipeline1D, RadiancePipeline2D

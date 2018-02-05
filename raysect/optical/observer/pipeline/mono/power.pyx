@@ -130,6 +130,7 @@ cdef class PowerPipeline0D(Pipeline0D):
             print("{} - incident power: {:.4G} +/- {:.4G} W".format(self.name, self.value.mean, self.value.error()))
 
 
+# TODO: Docstring
 cdef class PowerPipeline1D(Pipeline1D):
     # """
     # A power pipeline for 2D observers.
