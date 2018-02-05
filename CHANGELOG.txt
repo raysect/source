@@ -1,12 +1,23 @@
 Raysect Changelog
 =================
 
-Release 1.0.0 (TBD)
+Release 0.5.0 (TBD)
 -------------------
+
+New:
+* Added MeshCamera. A camera that uses the triangles of a mesh as pixels.
+* Spectral and Monochromatic 1D pipelines.
+
+
+Release 0.4.0 (11 Dec 2017)
+---------------------------
 
 API Changes:
 * VolumeEmitterHomogeneous renamed HomogeneousVolumeEmitter
 * VolumeEmitterInhomogeneous renamed InhomogeneousVolumeEmitter
+
+Bug Fixes:
+* Fixed normalisation bug in FibreOptic observer,
 
 New:
 * InhomogeneousVolumeEmitter integrator now pluggable.
@@ -14,6 +25,16 @@ New:
 * Added cython utility for determining polygon winding order for n-sided polygons.
 * Added triangulate2d function for splitting N-sided polygon into triangles.
 * Added lerp and slerp functions to Vector3D.
+* Added new utility methods to BoundingBox2D and 3D.
+* Added AnisotropicSurfaceEmitter material.
+* Added BoundingSphere3D.
+* Added MeshPixel. A pixel that uses a mesh as a collecting surface.
+* Added TargettedPixel. A pixel that fires additional samples at specific target primitives.
+* Added TargettedCCDArray. A CCD that fires additional samples at specific target primitives.
+* Added radiance pipelines.
+* Added instancing to primitives.
+* Added bounding sphere to primitives.
+* Tidied up samplers.
 
 
 Release 0.3.1 (17 Mar 2017)
