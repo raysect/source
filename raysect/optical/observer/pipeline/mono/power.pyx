@@ -159,6 +159,7 @@ cdef class PowerPipeline1D(Pipeline1D):
 
         self._working_mean = None
         self._working_variance = None
+        self._working_touched = None
 
         self._resampled_filter = None
 
@@ -176,6 +177,7 @@ cdef class PowerPipeline1D(Pipeline1D):
 
         self._working_mean = np.zeros(pixels)
         self._working_variance = np.zeros(pixels)
+        self._working_touched = np.zeros(pixels, dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
@@ -199,6 +201,9 @@ cdef class PowerPipeline1D(Pipeline1D):
         self._working_mean[pixel] += mean
         self._working_variance[pixel] += variance
 
+        # mark pixel as modified
+        self._working_touched[pixel] = 1
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef object finalise(self):
@@ -207,7 +212,8 @@ cdef class PowerPipeline1D(Pipeline1D):
 
         # update final frame with working frame results
         for pixel in range(self.frame.length):
-            self.frame.combine_samples(pixel, self._working_mean[pixel], self._working_variance[pixel], self._samples)
+            if self._working_touched[pixel] == 1:
+                self.frame.combine_samples(pixel, self._working_mean[pixel], self._working_variance[pixel], self._samples)
 
 
 cdef class PowerPipeline2D(Pipeline2D):

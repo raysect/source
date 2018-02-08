@@ -83,7 +83,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
 
     def __init__(self, object pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0):
 
-        if not isinstance(pipeline, [PowerPipeline2D, RadiancePipeline2D]):
+        if not isinstance(pipeline, (PowerPipeline2D, RadiancePipeline2D)):
             raise TypeError('Sampler only compatible with PowerPipeLine2D or RadiancePipeline2D pipelines.')
 
         # todo: validation
