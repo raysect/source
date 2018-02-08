@@ -1,4 +1,6 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,26 +29,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer.base cimport PixelProcessor
-from raysect.optical.observer.pipeline.mono.power cimport PowerPipeline0D, PowerPipeline1D, PowerPipeline2D
-from raysect.core.math cimport StatsBin
+cimport numpy as np
+from raysect.core.boundingbox cimport BoundingBox2D
+from raysect.core.math.spatial.kdtree2d cimport KDTree2DCore
 
 
-cdef class RadiancePipeline0D(PowerPipeline0D):
-    pass
-
-
-cdef class RadiancePipeline1D(PowerPipeline1D):
-    pass
-
-
-cdef class RadiancePipeline2D(PowerPipeline2D):
-    pass
-
-
-cdef class RadiancePixelProcessor(PixelProcessor):
+cdef class MeshKDTree2D(KDTree2DCore):
 
     cdef:
-        StatsBin bin
-        double[::1] filter, _temp
+        double[:, ::1] _vertices
+        np.int32_t[:, ::1] _triangles
+        np.int32_t triangle_id
+        np.int32_t i1, i2, i3
+        double alpha, beta, gamma
 
+    cdef BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)

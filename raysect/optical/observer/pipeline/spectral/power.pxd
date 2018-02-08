@@ -29,8 +29,8 @@
 
 cimport numpy as np
 
-from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline2D
-from raysect.core.math cimport StatsArray3D, StatsArray1D
+from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline1D, Pipeline2D
+from raysect.core.math cimport StatsArray1D, StatsArray2D, StatsArray3D
 
 
 cdef class SpectralPowerPipeline0D(Pipeline0D):
@@ -46,6 +46,20 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
         bint display_progress
         object _display_figure
         bint _quiet
+
+
+cdef class SpectralPowerPipeline1D(Pipeline1D):
+
+    cdef:
+        public str name
+        public bint accumulate
+        readonly StatsArray2D frame
+        int _pixels
+        int _samples
+        list _spectral_slices
+        readonly int bins
+        readonly double min_wavelength, max_wavelength, delta_wavelength
+        readonly np.ndarray wavelengths
 
 
 cdef class SpectralPowerPipeline2D(Pipeline2D):

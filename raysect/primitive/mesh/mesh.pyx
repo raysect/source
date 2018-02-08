@@ -296,6 +296,10 @@ cdef class MeshData(KDTree3DCore):
                 max(self.vertices[i1, Z], self.vertices[i2, Z], self.vertices[i3, Z]),
             ),
         )
+
+        # The bounding box and triangle vertices may not align following coordinate
+        # transforms in the water tight mesh algorithm, therefore a small bit of padding
+        # is added to avoid numerical representation issues.
         bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
 
         return bbox

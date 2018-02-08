@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical cimport Spectrum
-from raysect.optical.observer.pipeline.spectral.power cimport SpectralPowerPipeline0D, SpectralPowerPipeline2D
+from raysect.optical.observer.pipeline.spectral.power cimport SpectralPowerPipeline0D, SpectralPowerPipeline1D, SpectralPowerPipeline2D
 from raysect.core.math cimport StatsArray1D
 from raysect.optical.observer.base.processor cimport PixelProcessor
 
@@ -36,6 +36,11 @@ from raysect.optical.observer.base.processor cimport PixelProcessor
 cdef class SpectralRadiancePipeline0D(SpectralPowerPipeline0D):
 
     cpdef Spectrum to_spectrum(self)
+
+
+cdef class SpectralRadiancePipeline1D(SpectralPowerPipeline1D):
+
+    cpdef Spectrum to_spectrum(self, int pixel)
 
 
 cdef class SpectralRadiancePipeline2D(SpectralPowerPipeline2D):
