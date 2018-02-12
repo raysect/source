@@ -53,6 +53,7 @@ cdef class PowerPipeline1D(Pipeline1D):
         public bint accumulate
         readonly StatsArray1D frame
         double[::1] _working_mean, _working_variance
+        char[::1] _working_touched
         list _resampled_filter
         int _pixels
         int _samples

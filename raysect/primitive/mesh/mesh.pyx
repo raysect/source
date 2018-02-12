@@ -201,7 +201,6 @@ cdef class MeshData(KDTree3DCore):
             raise ValueError('Mesh does not contain vertex normals.')
         return self._vertex_normals.copy()
 
-
     @property
     def face_normals(self):
         return self._face_normals.copy()

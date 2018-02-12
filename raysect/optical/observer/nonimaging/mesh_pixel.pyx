@@ -75,6 +75,7 @@ cdef class MeshPixel(Observer0D):
 
     cdef:
         double _surface_offset, _solid_angle, _collection_area
+        readonly Mesh mesh
         float32_t[:, ::1] _vertices_mv
         float32_t[:, ::1] _face_normals_mv
         int32_t[:, ::1] _triangles_mv
@@ -102,10 +103,10 @@ cdef class MeshPixel(Observer0D):
 
         self._surface_offset = surface_offset
 
-        # TODO - replace this with access to Mesh public methods when implemented, this breaks encapsulation, yuck!
-        self._vertices_mv = mesh._data.vertices_mv
-        self._face_normals_mv = mesh._data.face_normals_mv
-        self._triangles_mv = mesh._data.triangles_mv
+        self.mesh = mesh
+        self._vertices_mv = mesh.data.vertices_mv
+        self._face_normals_mv = mesh.data.face_normals_mv
+        self._triangles_mv = mesh.data.triangles_mv
 
         self._vector_sampler = HemisphereCosineSampler()
         self._solid_angle = 2 * M_PI
