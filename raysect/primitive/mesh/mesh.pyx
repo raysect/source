@@ -79,7 +79,6 @@ DEF NO_INTERSECTION = -1
 DEF RSM_VERSION_MAJOR = 1
 DEF RSM_VERSION_MINOR = 0
 
-# TODO: expose triangles, vertices, etc, as attributes on Mesh and modify MeshPixel to stop using internals of this class
 # TODO: fire exceptions if degenerate triangles are found and tolerant mode is not enabled (the face normal call will fail @ normalisation)
 # TODO: tidy up the internal storage of triangles - separate the triangle reference arrays for vertices, normals etc...
 # TODO: the following code really is a bit opaque, needs a general tidy up
@@ -187,6 +186,105 @@ cdef class MeshData(KDTree3DCore):
             items.append(Item3D(i, self._generate_bounding_box(i)))
 
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
+
+    @property
+    def vertices(self):
+        return self._vertices.copy()
+
+    @property
+    def triangles(self):
+        return self._triangles.copy()
+
+    @property
+    def vertex_normals(self):
+        if self._vertex_normals is None:
+            raise ValueError('Mesh does not contain vertex normals.')
+        return self._vertex_normals.copy()
+
+
+    @property
+    def face_normals(self):
+        return self._face_normals.copy()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Point3D vertex(self, int index):
+        """
+        Returns the specified vertex.
+        
+        :param index: The vertex index.
+        :return: A Point3D object. 
+        """
+
+        if index < 0 or index >= self.vertices_mv.shape[0]:
+            raise ValueError('Vertex index is out of range: [0, {}].'.format(self.vertices_mv.shape[0]))
+
+        return new_point3d(
+            self.vertices_mv[index, X],
+            self.vertices_mv[index, Y],
+            self.vertices_mv[index, Z]
+        )
+
+    cpdef ndarray triangle(self, int index):
+        """
+        Returns the specified triangle.
+        
+        The returned data will either be a 3 or 6 element numpy array. The 
+        first three element are the triangle's vertex indices. If present, the
+        last three elements are the triangle's vertex normal indices.
+        
+        :param index: The triangle index.
+        :return: A numpy array. 
+        """
+
+        if index < 0 or index >= self.vertices_mv.shape[0]:
+            raise ValueError('Triangle index is out of range: [0, {}].'.format(self.triangles_mv.shape[0]))
+
+        return self._triangles[index, :].copy()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Normal3D vertex_normal(self, int index):
+        """
+        Returns the specified vertex normal.
+        
+        :param index: The vertex normal's index.
+        :return: A Normal3D object. 
+        """
+
+        if self._vertex_normals is None:
+            raise ValueError('Mesh does not contain vertex normals.')
+
+        if index < 0 or index >= self.vertex_normals_mv.shape[0]:
+            raise ValueError('Vertex normal index is out of range: [0, {}].'.format(self.vertex_normals_mv.shape[0]))
+
+        return new_normal3d(
+            self.vertex_normals_mv[index, X],
+            self.vertex_normals_mv[index, Y],
+            self.vertex_normals_mv[index, Z]
+        )
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Normal3D face_normal(self, int index):
+        """
+        Returns the specified face normal.
+        
+        :param index: The face normal's index.
+        :return: A Normal3D object. 
+        """
+
+        if index < 0 or index >= self.face_normals_mv.shape[0]:
+            raise ValueError('Face normal index is out of range: [0, {}].'.format(self.face_normals_mv.shape[0]))
+
+        return new_normal3d(
+            self.face_normals_mv[index, X],
+            self.face_normals_mv[index, Y],
+            self.face_normals_mv[index, Z]
+        )
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -952,7 +1050,7 @@ cdef class Mesh(Primitive):
             raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
 
         # build the kd-Tree
-        self._data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
+        self.data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
@@ -966,7 +1064,7 @@ cdef class Mesh(Primitive):
         super(Mesh, mesh).__init__(parent, transform, material, name)
 
         # copy the kd-Tree
-        mesh._data = self._data
+        mesh.data = self.data
 
         # initialise next intersection search
         self._seek_next_intersection = False
@@ -1003,7 +1101,7 @@ cdef class Mesh(Primitive):
         self._ray_distance = 0
 
         # do we hit the mesh?
-        if self._data.trace(local_ray):
+        if self.data.trace(local_ray):
             return self._process_intersection(ray, local_ray)
 
         # there was no intersection so disable next intersection search
@@ -1030,7 +1128,7 @@ cdef class Mesh(Primitive):
         if self._seek_next_intersection:
 
             # do we hit the mesh again?
-            if self._data.trace(self._next_local_ray):
+            if self.data.trace(self._next_local_ray):
                 return self._process_intersection(self._next_world_ray, self._next_local_ray)
 
             # there was no intersection so disable further searching
@@ -1044,7 +1142,7 @@ cdef class Mesh(Primitive):
             Intersection intersection
 
         # obtain intersection details from the kd-tree
-        intersection = self._data.calc_intersection(local_ray)
+        intersection = self.data.calc_intersection(local_ray)
 
         # enable next intersection search and cache the local ray for the next intersection calculation
         # we must shift the new origin past the last intersection
@@ -1089,11 +1187,11 @@ cdef class Mesh(Primitive):
         """
 
         # avoid unnecessary transform by checking closed state early
-        if not self._data.closed:
+        if not self.data.closed:
             return False
 
         p = p.transform(self.to_local())
-        return self._data.contains(p)
+        return self.data.contains(p)
 
     cpdef BoundingBox3D bounding_box(self):
         """
@@ -1106,7 +1204,7 @@ cdef class Mesh(Primitive):
         :return: A BoundingBox3D object.
         """
 
-        return self._data.bounding_box(self.to_root())
+        return self.data.bounding_box(self.to_root())
 
     def save(self, object file):
         """
@@ -1136,7 +1234,7 @@ cdef class Mesh(Primitive):
         # """
 
         # hand over to the mesh data object
-        self._data.save(file)
+        self.data.save(file)
 
     def load(self, object file):
         """
@@ -1149,7 +1247,7 @@ cdef class Mesh(Primitive):
         """
 
         # rebuild internal state
-        self._data = MeshData.from_file(file)
+        self.data = MeshData.from_file(file)
         self._seek_next_intersection = False
         self._next_world_ray = None
         self._next_local_ray = None
