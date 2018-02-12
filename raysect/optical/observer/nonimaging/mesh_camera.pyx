@@ -92,7 +92,7 @@ cdef class MeshCamera(Observer1D):
         frame_sampler = frame_sampler or FullFrameSampler1D()
 
         # TODO - replace this with access to Mesh public methods when implemented, this breaks encapsulation, yuck!
-        pixels = mesh._data.triangles.shape[0]
+        pixels = mesh._data.triangles_mv.shape[0]
         super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name,
                          render_engine=render_engine, pixel_samples=pixel_samples,
                          spectral_rays=spectral_rays, spectral_bins=spectral_bins,
@@ -108,9 +108,9 @@ cdef class MeshCamera(Observer1D):
         self._surface_offset = surface_offset
 
         # TODO - replace this with access to Mesh public methods when implemented, this breaks encapsulation, yuck!
-        self._vertices_mv = mesh._data.vertices
-        self._face_normals_mv = mesh._data.face_normals
-        self._triangles_mv = mesh._data.triangles
+        self._vertices_mv = mesh._data.vertices_mv
+        self._face_normals_mv = mesh._data.face_normals_mv
+        self._triangles_mv = mesh._data.triangles_mv
 
         self._vector_sampler = HemisphereCosineSampler()
         self._solid_angle = 2 * M_PI

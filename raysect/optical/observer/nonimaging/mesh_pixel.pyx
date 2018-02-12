@@ -103,9 +103,9 @@ cdef class MeshPixel(Observer0D):
         self._surface_offset = surface_offset
 
         # TODO - replace this with access to Mesh public methods when implemented, this breaks encapsulation, yuck!
-        self._vertices_mv = mesh._data.vertices
-        self._face_normals_mv = mesh._data.face_normals
-        self._triangles_mv = mesh._data.triangles
+        self._vertices_mv = mesh._data.vertices_mv
+        self._face_normals_mv = mesh._data.face_normals_mv
+        self._triangles_mv = mesh._data.triangles_mv
 
         self._vector_sampler = HemisphereCosineSampler()
         self._solid_angle = 2 * M_PI

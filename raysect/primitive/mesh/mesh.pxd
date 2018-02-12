@@ -33,16 +33,20 @@
 
 from raysect.core cimport Primitive, Ray, Intersection, BoundingBox3D, AffineMatrix3D, Normal3D, Point3D
 from raysect.core.math.spatial cimport KDTree3DCore
-from numpy cimport float32_t, int32_t, uint8_t
+from numpy cimport float32_t, int32_t, uint8_t, ndarray
 
 
 cdef class MeshData(KDTree3DCore):
 
     cdef:
-        float32_t[:, ::1] vertices
-        float32_t[:, ::1] vertex_normals
-        float32_t[:, ::1] face_normals
-        int32_t[:, ::1] triangles
+        ndarray _vertices
+        ndarray _vertex_normals
+        ndarray _face_normals
+        ndarray _triangles
+        float32_t[:, ::1] vertices_mv
+        float32_t[:, ::1] vertex_normals_mv
+        float32_t[:, ::1] face_normals_mv
+        int32_t[:, ::1] triangles_mv
         public bint smoothing
         public bint closed
         int32_t _ix, _iy, _iz

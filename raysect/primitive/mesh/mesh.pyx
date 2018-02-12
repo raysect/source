@@ -157,10 +157,15 @@ cdef class MeshData(KDTree3DCore):
             if invalid.any():
                 raise ValueError("The triangle array references non-existent normals.")
 
+        # assign to internal attributes
+        self._vertices = vertices
+        self._vertex_normals = vertex_normals
+        self._triangles = triangles
+
         # assign to memory views
-        self.vertices = vertices
-        self.vertex_normals = vertex_normals
-        self.triangles = triangles
+        self.vertices_mv = vertices
+        self.vertex_normals_mv = vertex_normals
+        self.triangles_mv = triangles
 
         # initial hit data
         self._u = -1.0
@@ -178,7 +183,7 @@ cdef class MeshData(KDTree3DCore):
 
         # kd-Tree init requires the triangle's id (it's index here) and bounding box
         items = []
-        for i in range(self.triangles.shape[0]):
+        for i in range(self.triangles_mv.shape[0]):
             items.append(Item3D(i, self._generate_bounding_box(i)))
 
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
@@ -196,15 +201,15 @@ cdef class MeshData(KDTree3DCore):
 
         # scan triangles and make valid triangles contiguous
         valid = 0
-        for i in range(self.triangles.shape[0]):
+        for i in range(self.triangles_mv.shape[0]):
 
-            i1 = self.triangles[i, V1]
-            i2 = self.triangles[i, V2]
-            i3 = self.triangles[i, V3]
+            i1 = self.triangles_mv[i, V1]
+            i2 = self.triangles_mv[i, V2]
+            i3 = self.triangles_mv[i, V3]
 
-            p1 = new_point3d(self.vertices[i1, X], self.vertices[i1, Y], self.vertices[i1, Z])
-            p2 = new_point3d(self.vertices[i2, X], self.vertices[i2, Y], self.vertices[i2, Z])
-            p3 = new_point3d(self.vertices[i3, X], self.vertices[i3, Y], self.vertices[i3, Z])
+            p1 = new_point3d(self.vertices_mv[i1, X], self.vertices_mv[i1, Y], self.vertices_mv[i1, Z])
+            p2 = new_point3d(self.vertices_mv[i2, X], self.vertices_mv[i2, Y], self.vertices_mv[i2, Z])
+            p3 = new_point3d(self.vertices_mv[i3, X], self.vertices_mv[i3, Y], self.vertices_mv[i3, Z])
 
             # the cross product of two edge vectors of a degenerate triangle
             # (where 2 or more vertices are coincident or lie on the same line)
@@ -218,11 +223,11 @@ cdef class MeshData(KDTree3DCore):
                 continue
 
             # shift triangles
-            self.triangles[valid, :] = self.triangles[i, :]
+            self.triangles_mv[valid, :] = self.triangles_mv[i, :]
             valid += 1
 
         # reslice array to contain only valid triangles
-        self.triangles = self.triangles[:valid, :]
+        self.triangles_mv = self.triangles_mv[:valid, :]
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -243,24 +248,25 @@ cdef class MeshData(KDTree3DCore):
             Point3D p1, p2, p3
             Vector3D v1, v2, v3
 
-        self.face_normals = zeros((self.triangles.shape[0], 3), dtype=float32)
-        for i in range(self.face_normals.shape[0]):
+        self._face_normals = zeros((self.triangles_mv.shape[0], 3), dtype=float32)
+        self.face_normals_mv = self._face_normals
+        for i in range(self.face_normals_mv.shape[0]):
 
-            i1 = self.triangles[i, V1]
-            i2 = self.triangles[i, V2]
-            i3 = self.triangles[i, V3]
+            i1 = self.triangles_mv[i, V1]
+            i2 = self.triangles_mv[i, V2]
+            i3 = self.triangles_mv[i, V3]
 
-            p1 = new_point3d(self.vertices[i1, X], self.vertices[i1, Y], self.vertices[i1, Z])
-            p2 = new_point3d(self.vertices[i2, X], self.vertices[i2, Y], self.vertices[i2, Z])
-            p3 = new_point3d(self.vertices[i3, X], self.vertices[i3, Y], self.vertices[i3, Z])
+            p1 = new_point3d(self.vertices_mv[i1, X], self.vertices_mv[i1, Y], self.vertices_mv[i1, Z])
+            p2 = new_point3d(self.vertices_mv[i2, X], self.vertices_mv[i2, Y], self.vertices_mv[i2, Z])
+            p3 = new_point3d(self.vertices_mv[i3, X], self.vertices_mv[i3, Y], self.vertices_mv[i3, Z])
 
             v1 = p1.vector_to(p2)
             v2 = p1.vector_to(p3)
             v3 = v1.cross(v2).normalise()
 
-            self.face_normals[i, X] = v3.x
-            self.face_normals[i, Y] = v3.y
-            self.face_normals[i, Z] = v3.z
+            self.face_normals_mv[i, X] = v3.x
+            self.face_normals_mv[i, Y] = v3.y
+            self.face_normals_mv[i, Z] = v3.z
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -280,20 +286,20 @@ cdef class MeshData(KDTree3DCore):
             int32_t i1, i2, i3
             BoundingBox3D bbox
 
-        i1 = self.triangles[i, V1]
-        i2 = self.triangles[i, V2]
-        i3 = self.triangles[i, V3]
+        i1 = self.triangles_mv[i, V1]
+        i2 = self.triangles_mv[i, V2]
+        i3 = self.triangles_mv[i, V3]
 
         bbox = new_boundingbox3d(
             new_point3d(
-                min(self.vertices[i1, X], self.vertices[i2, X], self.vertices[i3, X]),
-                min(self.vertices[i1, Y], self.vertices[i2, Y], self.vertices[i3, Y]),
-                min(self.vertices[i1, Z], self.vertices[i2, Z], self.vertices[i3, Z]),
+                min(self.vertices_mv[i1, X], self.vertices_mv[i2, X], self.vertices_mv[i3, X]),
+                min(self.vertices_mv[i1, Y], self.vertices_mv[i2, Y], self.vertices_mv[i3, Y]),
+                min(self.vertices_mv[i1, Z], self.vertices_mv[i2, Z], self.vertices_mv[i3, Z]),
             ),
             new_point3d(
-                max(self.vertices[i1, X], self.vertices[i2, X], self.vertices[i3, X]),
-                max(self.vertices[i1, Y], self.vertices[i2, Y], self.vertices[i3, Y]),
-                max(self.vertices[i1, Z], self.vertices[i2, Z], self.vertices[i3, Z]),
+                max(self.vertices_mv[i1, X], self.vertices_mv[i2, X], self.vertices_mv[i3, X]),
+                max(self.vertices_mv[i1, Y], self.vertices_mv[i2, Y], self.vertices_mv[i3, Y]),
+                max(self.vertices_mv[i1, Z], self.vertices_mv[i2, Z], self.vertices_mv[i3, Z]),
             ),
         )
 
@@ -432,22 +438,22 @@ cdef class MeshData(KDTree3DCore):
             float det, det_reciprocal
 
         # obtain vertex ids
-        i1 = self.triangles[i, V1]
-        i2 = self.triangles[i, V2]
-        i3 = self.triangles[i, V3]
+        i1 = self.triangles_mv[i, V1]
+        i2 = self.triangles_mv[i, V2]
+        i3 = self.triangles_mv[i, V3]
 
         # center coordinate space on ray origin
-        v1[X] = self.vertices[i1, X] - ray.origin.x
-        v1[Y] = self.vertices[i1, Y] - ray.origin.y
-        v1[Z] = self.vertices[i1, Z] - ray.origin.z
+        v1[X] = self.vertices_mv[i1, X] - ray.origin.x
+        v1[Y] = self.vertices_mv[i1, Y] - ray.origin.y
+        v1[Z] = self.vertices_mv[i1, Z] - ray.origin.z
 
-        v2[X] = self.vertices[i2, X] - ray.origin.x
-        v2[Y] = self.vertices[i2, Y] - ray.origin.y
-        v2[Z] = self.vertices[i2, Z] - ray.origin.z
+        v2[X] = self.vertices_mv[i2, X] - ray.origin.x
+        v2[Y] = self.vertices_mv[i2, Y] - ray.origin.y
+        v2[Z] = self.vertices_mv[i2, Z] - ray.origin.z
 
-        v3[X] = self.vertices[i3, X] - ray.origin.x
-        v3[Y] = self.vertices[i3, Y] - ray.origin.y
-        v3[Z] = self.vertices[i3, Z] - ray.origin.z
+        v3[X] = self.vertices_mv[i3, X] - ray.origin.x
+        v3[Y] = self.vertices_mv[i3, Y] - ray.origin.y
+        v3[Z] = self.vertices_mv[i3, Z] - ray.origin.z
 
         # obtain ray transform
         ix = self._ix
@@ -534,9 +540,9 @@ cdef class MeshData(KDTree3DCore):
 
         # generate intersection description
         face_normal = new_normal3d(
-            self.face_normals[triangle, X],
-            self.face_normals[triangle, Y],
-            self.face_normals[triangle, Z]
+            self.face_normals_mv[triangle, X],
+            self.face_normals_mv[triangle, Y],
+            self.face_normals_mv[triangle, Z]
         )
         hit_point = new_point3d(
             ray.origin.x + ray.direction.x * t,
@@ -578,24 +584,24 @@ cdef class MeshData(KDTree3DCore):
 
         cdef int32_t n1, n2, n3
 
-        if self.smoothing and self.vertex_normals is not None:
+        if self.smoothing and self.vertex_normals_mv is not None:
 
-            n1 = self.triangles[self._i, N1]
-            n2 = self.triangles[self._i, N2]
-            n3 = self.triangles[self._i, N3]
+            n1 = self.triangles_mv[self._i, N1]
+            n2 = self.triangles_mv[self._i, N2]
+            n3 = self.triangles_mv[self._i, N3]
 
             return new_normal3d(
-                self._u * self.vertex_normals[n1, X] + self._v * self.vertex_normals[n2, X] + self._w * self.vertex_normals[n3, X],
-                self._u * self.vertex_normals[n1, Y] + self._v * self.vertex_normals[n2, Y] + self._w * self.vertex_normals[n3, Y],
-                self._u * self.vertex_normals[n1, Z] + self._v * self.vertex_normals[n2, Z] + self._w * self.vertex_normals[n3, Z]
+                self._u * self.vertex_normals_mv[n1, X] + self._v * self.vertex_normals_mv[n2, X] + self._w * self.vertex_normals_mv[n3, X],
+                self._u * self.vertex_normals_mv[n1, Y] + self._v * self.vertex_normals_mv[n2, Y] + self._w * self.vertex_normals_mv[n3, Y],
+                self._u * self.vertex_normals_mv[n1, Z] + self._v * self.vertex_normals_mv[n2, Z] + self._w * self.vertex_normals_mv[n3, Z]
             ).normalise()
 
         else:
 
             return new_normal3d(
-                self.face_normals[self._i, X],
-                self.face_normals[self._i, Y],
-                self.face_normals[self._i, Z]
+                self.face_normals_mv[self._i, X],
+                self.face_normals_mv[self._i, Y],
+                self.face_normals_mv[self._i, Z]
             ).normalise()
 
     @cython.boundscheck(False)
@@ -626,7 +632,7 @@ cdef class MeshData(KDTree3DCore):
 
         # inspect the Z component of the triangle face normal to identify orientation
         # this is an optimised version of ray.direction.dot(face_normal) as we know ray only propagating in Z
-        return self.face_normals[self._i, Z] > 0.0
+        return self.face_normals_mv[self._i, Z] > 0.0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -651,8 +657,8 @@ cdef class MeshData(KDTree3DCore):
         # TODO: padding should really be a function of mesh extent
         # convert vertices to world space and grow a bounding box around them
         bbox = BoundingBox3D()
-        for i in range(self.vertices.shape[0]):
-            vertex = new_point3d(self.vertices[i, X], self.vertices[i, Y], self.vertices[i, Z])
+        for i in range(self.vertices_mv.shape[0]):
+            vertex = new_point3d(self.vertices_mv[i, X], self.vertices_mv[i, Y], self.vertices_mv[i, Z])
             bbox.extend(vertex.transform(to_world), BOX_PADDING)
 
         return bbox
@@ -681,9 +687,9 @@ cdef class MeshData(KDTree3DCore):
             close = True
 
         # hold local references to avoid repeated memory view object checks
-        vertices = self.vertices
-        vertex_normals = self.vertex_normals
-        triangles = self.triangles
+        vertices = self.vertices_mv
+        vertex_normals = self.vertex_normals_mv
+        triangles = self.triangles_mv
 
         # write header
         file.write(b"RSM")
@@ -698,7 +704,7 @@ cdef class MeshData(KDTree3DCore):
         # item counts
         file.write(struct.pack("<i", vertices.shape[0]))
 
-        if self.vertex_normals is not None:
+        if self.vertex_normals_mv is not None:
             file.write(struct.pack("<i", vertex_normals.shape[0]))
         else:
             file.write(struct.pack("<i", 0))
@@ -782,7 +788,7 @@ cdef class MeshData(KDTree3DCore):
         for i in range(num_vertices):
             for j in range(3):
                 vertices[i, j] = self._read_float(file)
-        self.vertices = vertices
+        self.vertices_mv = vertices
 
         # read vertex normals
         if num_vertex_normals > 0:
@@ -790,9 +796,9 @@ cdef class MeshData(KDTree3DCore):
             for i in range(num_vertex_normals):
                 for j in range(3):
                     vertex_normals[i, j] = self._read_float(file)
-            self.vertex_normals = vertex_normals
+            self.vertex_normals_mv = vertex_normals
         else:
-            self.vertex_normals = None
+            self.vertex_normals_mv = None
 
         # read triangles
         width = 3
@@ -804,7 +810,7 @@ cdef class MeshData(KDTree3DCore):
         for i in range(num_triangles):
             for j in range(width):
                 triangles[i, j] = self._read_int32(file)
-        self.triangles = triangles
+        self.triangles_mv = triangles
 
         # read kdtree
         super().load(file)
