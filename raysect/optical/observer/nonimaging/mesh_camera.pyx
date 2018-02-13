@@ -147,6 +147,10 @@ cdef class MeshCamera(Observer1D):
         cdef Vector3D e2 = v1.vector_to(v3)
         return 0.5 * e1.cross(e2).get_length()
 
+    @property
+    def collection_areas(self):
+        return self._areas.copy()
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
@@ -160,6 +164,10 @@ cdef class MeshCamera(Observer1D):
             raise ValueError('Pixel must lie in the range [0, number of triangles).')
         return self._areas_mv[pixel]
 
+    @property
+    def solid_angles(self):
+        return np.ones(self._areas.shape[0]) * self._solid_angle
+
     cpdef double solid_angle(self, int pixel):
         """
         The pixel's solid angle in steradians str.
@@ -169,6 +177,10 @@ cdef class MeshCamera(Observer1D):
         if pixel < 0 or pixel >= self._areas_mv.shape[0]:
             raise ValueError('Pixel must lie in the range [0, number of triangles).')
         return self._solid_angle
+
+    @property
+    def etendues(self):
+        return self._areas.copy() * self._solid_angle
 
     cpdef double etendue(self, int pixel):
         """
