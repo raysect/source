@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,12 +29,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .uniform import UniformSurfaceEmitter, UniformVolumeEmitter
-from .unity import UnitySurfaceEmitter, UnityVolumeEmitter
-from .homogeneous import HomogeneousVolumeEmitter
-from .inhomogeneous import InhomogeneousVolumeEmitter, VolumeIntegrator, NumericalIntegrator
-from .checkerboard import Checkerboard
-from .anisotropic import AnisotropicSurfaceEmitter
+cimport numpy as np
+from raysect.core.boundingbox cimport BoundingBox2D
+from raysect.core.math.spatial.kdtree2d cimport KDTree2DCore
 
 
+cdef class MeshKDTree2D(KDTree2DCore):
 
+    cdef:
+        double[:, ::1] _vertices
+        np.int32_t[:, ::1] _triangles
+        np.int32_t triangle_id
+        np.int32_t i1, i2, i3
+        double alpha, beta, gamma
+
+    cdef BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)
