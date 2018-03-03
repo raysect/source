@@ -29,26 +29,36 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: split instance into its own method (e.g. mymesh.instance(), this change is planned for Interpolate2DMesh. Both classes should be consistent.
-
 from raysect.core cimport Primitive, Ray, Intersection, BoundingBox3D, AffineMatrix3D, Normal3D, Point3D
 from raysect.core.math.spatial cimport KDTree3DCore
-from numpy cimport float32_t, int32_t, uint8_t
+from numpy cimport float32_t, int32_t, uint8_t, ndarray
 
 
 cdef class MeshData(KDTree3DCore):
 
     cdef:
-        float32_t[:, ::1] vertices
-        float32_t[:, ::1] vertex_normals
-        float32_t[:, ::1] face_normals
-        int32_t[:, ::1] triangles
+        ndarray _vertices
+        ndarray _vertex_normals
+        ndarray _face_normals
+        ndarray _triangles
+        float32_t[:, ::1] vertices_mv
+        float32_t[:, ::1] vertex_normals_mv
+        float32_t[:, ::1] face_normals_mv
+        int32_t[:, ::1] triangles_mv
         public bint smoothing
         public bint closed
         int32_t _ix, _iy, _iz
         float _sx, _sy, _sz
         float _u, _v, _w, _t
         int32_t _i
+
+    cpdef Point3D vertex(self, int index)
+
+    cpdef ndarray triangle(self, int index)
+
+    cpdef Normal3D vertex_normal(self, int index)
+
+    cpdef Normal3D face_normal(self, int index)
 
     cdef object _filter_triangles(self)
 
@@ -78,7 +88,7 @@ cdef class MeshData(KDTree3DCore):
 cdef class Mesh(Primitive):
 
     cdef:
-        MeshData _data
+        readonly MeshData data
         bint _seek_next_intersection
         Ray _next_world_ray
         Ray _next_local_ray

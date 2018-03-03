@@ -113,6 +113,67 @@ cdef class SpectralRadiancePipeline0D(SpectralPowerPipeline0D):
         return spectrum
 
 
+cdef class SpectralRadiancePipeline1D(SpectralPowerPipeline1D):
+    """
+    A basic spectral radiance pipeline for 1D observers (W/str/m^2/nm).
+
+    The mean spectral radiance for each pixel is stored along with the associated
+    error on each wavelength bin in a 1D frame object.
+
+    Spectral values and errors are available through the self.frame attribute.
+
+    :param bool accumulate: Whether to accumulate samples with subsequent calls
+      to observe() (default=True).
+    :param str name: User friendly name for this pipeline.
+    """
+
+    def __init__(self, bint accumulate=True, str name=None):
+        name = name or _DEFAULT_PIPELINE_NAME
+        super().__init__(accumulate=accumulate, name=name)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef PixelProcessor pixel_processor(self, int pixel, int slice_id):
+        return SpectralRadiancePixelProcessor(self._spectral_slices[slice_id])
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def display_pixel(self, int pixel):
+
+        cdef:
+            np.ndarray errors
+            double[::1] errors_mv
+            int i
+
+        errors = np.empty(self.frame.ny)
+        errors_mv = errors
+        for i in range(self.frame.ny):
+            errors_mv[i] = self.frame.error(pixel, i)
+
+        plt.figure()
+        plt.plot(self.wavelengths, self.frame.mean[pixel, :], color=(0, 0, 1))
+        plt.plot(self.wavelengths, self.frame.mean[pixel, :] + errors[:], color=(0.685, 0.685, 1.0))
+        plt.plot(self.wavelengths, self.frame.mean[pixel, :] - errors[:], color=(0.685, 0.685, 1.0))
+        plt.title('{} - Pixel {}'.format(self.name, pixel))
+        plt.xlabel('Wavelength (nm)')
+        plt.ylabel('Spectral Radiance (W/str/m^2/nm)')
+        plt.draw()
+        plt.show()
+
+    cpdef Spectrum to_spectrum(self, int pixel):
+        """
+        Returns the mean spectral radiance of pixel in a Spectrum() object.
+        """
+
+        cdef Spectrum spectrum
+
+        if not self.frame:
+            raise ValueError("No frame present.")
+        spectrum = Spectrum(self.min_wavelength, self.max_wavelength, self.bins)
+        spectrum.samples[:] = self.frame.mean[pixel, :]
+        return spectrum
+
+
 cdef class SpectralRadiancePipeline2D(SpectralPowerPipeline2D):
     """
     A basic spectral radiance pipeline for 2D observers (W/str/m^2/nm).
@@ -167,10 +228,10 @@ cdef class SpectralRadiancePipeline2D(SpectralPowerPipeline2D):
 
         cdef Spectrum spectrum
 
-        if not self.samples:
-            raise ValueError("No spectrum has been observed.")
+        if not self.frame:
+            raise ValueError("No frame present.")
         spectrum = Spectrum(self.min_wavelength, self.max_wavelength, self.bins)
-        spectrum.samples[:] = self.samples.mean[:]
+        spectrum.samples[:] = self.frame.mean[x, y, :]
         return spectrum
 
 

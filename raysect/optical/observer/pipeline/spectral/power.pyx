@@ -183,6 +183,101 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
         output_file.close()
 
 
+cdef class SpectralPowerPipeline1D(Pipeline1D):
+    """
+    A basic spectral power pipeline for 1D observers (W/nm).
+
+    The mean spectral power for each pixel is stored along with the associated
+    error on each wavelength bin in a 1D frame object.
+
+    Spectral values and errors are available through the self.frame attribute.
+
+    :param bool accumulate: Whether to accumulate samples with subsequent calls
+      to observe() (default=True).
+    :param str name: User friendly name for this pipeline.
+    """
+
+    def __init__(self, bint accumulate=True, str name=None):
+
+        self.name = name or _DEFAULT_PIPELINE_NAME
+        self.accumulate = accumulate
+        self.frame = None
+        self._pixels = 0
+        self._samples = 0
+        self._spectral_slices = None
+
+        self.min_wavelength = 0
+        self.max_wavelength = 0
+        self.bins = 0
+        self.delta_wavelength = 0
+        self.wavelengths = None
+
+    cpdef object initialise(self, int pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
+
+        self._pixels = pixels
+        self._samples = pixel_samples
+        self._spectral_slices = spectral_slices
+
+        self.min_wavelength = min_wavelength
+        self.max_wavelength = max_wavelength
+        self.delta_wavelength = (max_wavelength - min_wavelength) / spectral_bins
+        self.bins = spectral_bins
+        self.wavelengths = np.array([min_wavelength + (0.5 + i) * self.delta_wavelength for i in range(spectral_bins)])
+
+        # create frame-buffer
+        if not self.accumulate or self.frame is None or self.frame.shape != (pixels, spectral_bins):
+            self.frame = StatsArray2D(pixels, spectral_bins)
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef PixelProcessor pixel_processor(self, int pixel, int slice_id):
+        return SpectralPowerPixelProcessor(self._spectral_slices[slice_id])
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef object update(self, int pixel, int slice_id, tuple packed_result):
+
+        cdef:
+            int index
+            double[::1] mean, variance
+            SpectralSlice slice
+
+        # obtain result
+        mean, variance = packed_result
+
+        # accumulate samples
+        slice = self._spectral_slices[slice_id]
+        for index in range(slice.bins):
+            self.frame.combine_samples(pixel, slice.offset + index, mean[index], variance[index], self._samples)
+
+    cpdef object finalise(self):
+        pass
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def display_pixel(self, int pixel):
+
+        cdef:
+            np.ndarray errors
+            double[::1] errors_mv
+            int i
+
+        errors = np.empty(self.frame.ny)
+        errors_mv = errors
+        for i in range(self.frame.ny):
+            errors_mv[i] = self.frame.error(pixel, i)
+
+        plt.figure()
+        plt.plot(self.wavelengths, self.frame.mean[pixel, :], color=(0, 0, 1))
+        plt.plot(self.wavelengths, self.frame.mean[pixel, :] + errors[:], color=(0.685, 0.685, 1.0))
+        plt.plot(self.wavelengths, self.frame.mean[pixel, :] - errors[:], color=(0.685, 0.685, 1.0))
+        plt.title('{} - Pixel {}'.format(self.name, pixel))
+        plt.xlabel('Wavelength (nm)')
+        plt.ylabel('Spectral Power (W/nm)')
+        plt.draw()
+        plt.show()
+
+
 cdef class SpectralPowerPipeline2D(Pipeline2D):
     """
     A basic spectral power pipeline for 2D observers (W/nm).

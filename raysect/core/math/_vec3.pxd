@@ -35,6 +35,8 @@ cdef class _Vec3:
 
     cpdef double dot(self, _Vec3 v)
 
+    cpdef double angle(self, _Vec3 v)
+
     cdef double get_length(self) nogil
 
     cdef object set_length(self, double v)

@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from libc.math cimport sqrt, NAN
+from libc.math cimport sqrt, acos, NAN, M_PI
 
 
 @cython.freelist(512)
@@ -114,6 +114,15 @@ cdef class _Vec3:
 
         return self.x * v.x + self.y * v.y + self.z * v.z
 
+    cpdef double angle(self, _Vec3 v):
+        """
+        Calculates the angle between this vector and the supplied vector.
+
+        Returns the angle in degrees.
+        """
+
+        return acos(self.dot(v) / (self.get_length() * v.get_length())) * 180 / M_PI
+
     cdef double get_length(self) nogil:
         """
         Fast function to obtain the vectors length.
@@ -140,7 +149,7 @@ cdef class _Vec3:
         # if current length is zero, problem is ill defined
         t = self.x * self.x + self.y * self.y + self.z * self.z
         if t == 0.0:
-            raise ZeroDivisionError("A zero length vector can not be rescaled as the direction of a zero length vector is undefined.")
+            raise ZeroDivisionError("A zero length vector cannot be rescaled as the direction of a zero length vector is undefined.")
 
         # normalise and rescale vector
         t = v / sqrt(t)

@@ -28,11 +28,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.observer.base cimport PixelProcessor
-from raysect.optical.observer.pipeline.mono.power cimport PowerPipeline0D, PowerPipeline2D
+from raysect.optical.observer.pipeline.mono.power cimport PowerPipeline0D, PowerPipeline1D, PowerPipeline2D
 from raysect.core.math cimport StatsBin
 
 
 cdef class RadiancePipeline0D(PowerPipeline0D):
+    pass
+
+
+cdef class RadiancePipeline1D(PowerPipeline1D):
     pass
 
 
