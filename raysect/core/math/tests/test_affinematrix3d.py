@@ -193,6 +193,30 @@ class TestAffineMatrix3D(unittest.TestCase):
             for j, v in enumerate(row):
                 self.assertAlmostEqual(minv[i, j], v, places=14, msg="Inverse calculation failed (R"+str(i)+", C"+str(j)+").")
 
+    def test_is_identity(self):
+        """Matrix equal to Identity matrix."""
+
+        m1 = AffineMatrix3D()
+        self.assertTrue(m1.is_identity(), "AffineMatrix3D - Identity test failed.")
+
+        m2 = AffineMatrix3D([[1, 2, 3, 4],
+                             [5, 6, 2, 8],
+                             [9, 10, 4, 9],
+                             [4, 14, 15, 16]])
+        self.assertFalse(m2.is_identity(), "AffineMatrix3D - Identity test failed.")
+
+    def test_is_close(self):
+
+        m1 = AffineMatrix3D()
+        m2 = AffineMatrix3D()
+        m3 = AffineMatrix3D([[1, 2, 3, 4],
+                             [5, 6, 2, 8],
+                             [9, 10, 4, 9],
+                             [4, 14, 15, 16]])
+
+        self.assertTrue(m1.is_close(m2), "AffineMatrix3D - is close test failed.")
+        self.assertFalse(m1.is_close(m3), "AffineMatrix3D - is close test failed.")
+
 
 if __name__ == "__main__":
     unittest.main()
