@@ -37,3 +37,5 @@ cdef class _Mat4:
 
     cdef void set_element(self, int row, int column, double v)
 
+    cpdef bint is_identity(self, double tolerance=*)
+
