@@ -38,10 +38,6 @@ cdef class AffineMatrix3D(_Mat4):
 
     cdef AffineMatrix3D mul(self, AffineMatrix3D m)
 
-    cpdef bint is_identity(self, double tolerance=*)
-
-    cpdef bint is_close(self, AffineMatrix3D matrix, tolerance=*)
-
 
 cdef inline AffineMatrix3D new_affinematrix3d(double m00, double m01, double m02, double m03,
                                               double m10, double m11, double m12, double m13,

@@ -39,3 +39,5 @@ cdef class _Mat4:
 
     cpdef bint is_identity(self, double tolerance=*)
 
+    cpdef bint is_close(self, _Mat4 other, double tolerance=*)
+

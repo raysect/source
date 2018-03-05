@@ -193,6 +193,21 @@ cdef class _Mat4:
         :return: True/False
         """
 
+        return self.is_close(_Mat4(), tolerance)
+
+    cpdef bint is_close(self, _Mat4 other, double tolerance=1e-8):
+        """
+        Is this matrix equal to another matrix within a numerical tolerance.
+        
+        The method has a default tolerance of 1e-8 to account for errors that
+        may have accumulated due to numerical accuracy limits. The tolerance
+        may be altered by setting the tolerance argument. 
+         
+        :param other: The other matrix.
+        :param tolerance: Numerical tolerance (default: 1e-8)
+        :return: True/False
+        """
+
         cdef:
             int i, j
             double v
@@ -202,15 +217,7 @@ cdef class _Mat4:
 
         for i in range(0, 4):
             for j in range(0, 4):
-
-                # identity matrix
-                if i == j:
-                    v = 1.0
-                else:
-                    v = 0.0
-
-                # plus/minus tolerance
-                if abs(self.m[i][j] - v) >= tolerance:
+                if abs(self.m[i][j] - other.m[i][j]) >= tolerance:
                     return False
 
         return True
