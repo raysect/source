@@ -24,9 +24,13 @@ Raysect currently only supports Linux. Windows support will come at a later stag
 
 Please note, for legal reasons we require the copyright to any contributed code to be passed to the Raysect project. Please see CONTRIBUTING.txt in the repository.
 
-The Raysect Development Team:
------------------------------
+Development Team
+----------------
 
 * Dr Alex Meakins
 * Dr Matthew Carr
 
+Citing the Code
+---------------
+
+* Dr Alex Meakins, & Dr Matthew Carr. (2017, December 11). Raysect Python Raytracing Package (Version v0.4.0). Zenodo. http://doi.org/10.5281/zenodo.1205064
