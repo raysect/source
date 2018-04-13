@@ -45,9 +45,8 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices):
     """
     Triangulates a N sided simple polygon.
 
-    An N-sided simple polygon is a closed polygon where
-    none of the line segments making up the polygon intersect
-    with each other.
+    An N-sided simple polygon is a closed polygon where none of the line
+    segments making up the polygon intersect with each other.
 
     The algorithm accepts polygons with clockwise or anti-clockwise
     winding order.
@@ -57,9 +56,8 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices):
     of 3 indices into the original vertex array for each triangle. The returned
     array will therefore have dimensions (N-2, 3).
 
-    As implemented, this function does not allow any points to be coincident,
-    including the start and end point. Therefore the vertex array given to this
-    function needs to be an open polygon.
+    The final vertex is connected to the first vertex to close the polygon. The 
+    supplied vertex array must not include any coincident points.
 
     :param np.ndarray vertices: The array of Nx2 polygon vertices.
     :return: An ndarray of N-2 triangles.
