@@ -57,6 +57,10 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices):
     of 3 indices into the original vertex array for each triangle. The returned
     array will therefore have dimensions (N-2, 3).
 
+    As implemented, this function does not allow any points to be coincident,
+    including the start and end point. Therefore the vertex array given to this
+    function needs to be an open polygon.
+
     :param np.ndarray vertices: The array of Nx2 polygon vertices.
     :return: An ndarray of N-2 triangles.
     :rtype: np.ndarray
