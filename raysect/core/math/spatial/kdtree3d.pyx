@@ -542,7 +542,7 @@ cdef class KDTree3DCore:
         # check tree bounds
         hit = self.bounds.intersect(ray, &min_range, &max_range)
         if not hit:
-            return None
+            return False
 
         # start exploration of kd-Tree
         return self._trace_node(ROOT_NODE, ray, min_range, max_range)
