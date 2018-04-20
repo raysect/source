@@ -151,5 +151,5 @@ cdef class CCDArray(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, int x, int y):
+    cpdef double _pixel_sensitivity(self, int x, int y):
         return self._pixel_area * 2 * M_PI

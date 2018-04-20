@@ -159,13 +159,13 @@ cdef class TargettedPixel(Observer0D):
         return self._solid_angle
 
     @property
-    def etendue(self):
+    def sensitivity(self):
         """
-        The pixel's etendue measured in units of per area per solid angle (m^-2 str^-1).
+        The pixel's sensitivity measured in units of per area per solid angle (m^-2 str^-1).
 
         :rtype: float
         """
-        return self._pixel_etendue()
+        return self._pixel_sensitivity()
 
     @property
     def targets(self):
@@ -269,5 +269,5 @@ cdef class TargettedPixel(Observer0D):
 
         return rays
 
-    cpdef double _pixel_etendue(self):
+    cpdef double _pixel_sensitivity(self):
         return self._solid_angle * self._collection_area

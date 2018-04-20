@@ -631,7 +631,7 @@ cdef class PowerPixelProcessor(PixelProcessor):
     """
     PixelProcessor that converts each pixel's spectrum into total power by
     integrating over the spectrum and multiplying the resulting radiance
-    value by the pixel's etendue.
+    value by the pixel's sensitivity.
     """
 
     def __init__(self, double[::1] filter):
@@ -640,7 +640,7 @@ cdef class PowerPixelProcessor(PixelProcessor):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef object add_sample(self, Spectrum spectrum, double etendue):
+    cpdef object add_sample(self, Spectrum spectrum, double sensitivity):
 
         cdef:
             int index
@@ -649,7 +649,7 @@ cdef class PowerPixelProcessor(PixelProcessor):
 
         # apply filter curve and integrate
         for index in range(spectrum.bins):
-            total += spectrum.samples_mv[index] * self.filter[index] * etendue * spectrum.delta_wavelength
+            total += spectrum.samples_mv[index] * self.filter[index] * sensitivity * spectrum.delta_wavelength
 
         self.bin.add_sample(total)
 

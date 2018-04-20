@@ -49,7 +49,7 @@ cdef class VectorCamera(Observer2D):
       of each pixel. Must have same shape as the pixel dimensions.
     :param np.ndarray pixel_directions: Numpy array of Vector3Ds describing the sampling
       direction vectors of each pixel. Must have same shape as the pixel dimensions.
-    :param float etendue: The etendue of each pixel (default=1.0)
+    :param float sensitivity: The sensitivity of each pixel (default=1.0)
     :param FrameSampler2D frame_sampler: The frame sampling strategy (default=FullFrameSampler2D()).
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
@@ -57,11 +57,11 @@ cdef class VectorCamera(Observer2D):
     """
 
     cdef:
-        double _etendue
+        double _sensitivity
         double image_delta, image_start_x, image_start_y
         np.ndarray pixel_origins, pixel_directions
 
-    def __init__(self, pixel_origins, pixel_directions, frame_sampler=None, pipelines=None, etendue=None, parent=None, transform=None, name=None):
+    def __init__(self, pixel_origins, pixel_directions, frame_sampler=None, pipelines=None, sensitivity=None, parent=None, transform=None, name=None):
 
         # defaults to an adaptively sampled RGB pipeline
         if not pipelines and not frame_sampler:
@@ -87,24 +87,24 @@ cdef class VectorCamera(Observer2D):
         # camera configuration
         self.pixel_origins = pixel_origins
         self.pixel_directions = pixel_directions
-        self._etendue = etendue or 1.0
+        self._sensitivity = sensitivity or 1.0
 
     @property
-    def etendue(self):
+    def sensitivity(self):
         """
-        The etendue applied to each pixel.
+        The sensitivity applied to each pixel.
 
-        If etendue=1.0 all spectral units are in radiance.
+        If sensitivity=1.0 all spectral units are in radiance.
 
         :rtype: float
         """
-        return self._etendue
+        return self._sensitivity
 
-    @etendue.setter
-    def etendue(self, value):
+    @sensitivity.setter
+    def sensitivity(self, value):
         if value <= 0:
-            raise ValueError("Etendue must be greater than zero.")
-        self._etendue = value
+            raise ValueError("Sensitivity must be greater than zero.")
+        self._sensitivity = value
 
     cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count):
 
@@ -131,5 +131,5 @@ cdef class VectorCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, int x, int y):
-        return self._etendue
+    cpdef double _pixel_sensitivity(self, int x, int y):
+        return self._sensitivity

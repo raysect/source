@@ -55,7 +55,7 @@ class ObservingSphere(Observer0D):
 
         return rays
 
-    def _pixel_etendue(self):
+    def _pixel_sensitivity(self):
         return self._solid_angle * self._collection_area
 
 

@@ -483,15 +483,15 @@ cdef class XYZPixelProcessor(PixelProcessor):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef object add_sample(self, Spectrum spectrum, double etendue):
+    cpdef object add_sample(self, Spectrum spectrum, double sensitivity):
 
         cdef double x, y, z
 
         # convert spectrum to CIE XYZ and add sample to pixel buffer
         x, y, z = spectrum_to_ciexyz(spectrum, self.resampled_xyz)
-        self.xyz.add_sample(0, x * etendue)
-        self.xyz.add_sample(1, y * etendue)
-        self.xyz.add_sample(2, z * etendue)
+        self.xyz.add_sample(0, x * sensitivity)
+        self.xyz.add_sample(1, y * sensitivity)
+        self.xyz.add_sample(2, z * sensitivity)
 
     cpdef tuple pack_results(self):
         return self.xyz.mean, self.xyz.variance
