@@ -121,26 +121,26 @@ cdef class OpenCVCamera(Observer2D):
 
         super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name)
 
-        self._etendue = etendue or 1.0
+        self._sensitivity = etendue or 1.0
 
         self.point_sampler = RectangleSampler3D(1, 1)
 
     @property
-    def etendue(self):
+    def sensitivity(self):
         """
-        The etendue applied to each pixel.
+        The sensitivity applied to each pixel.
 
-        If etendue=1.0 all spectral units are in radiance.
+        If sensitivity=1.0 all spectral units are in radiance.
 
         :rtype: float
         """
-        return self._etendue
+        return self._sensitivity
 
-    @etendue.setter
-    def etendue(self, value):
+    @sensitivity.setter
+    def sensitivity(self, value):
         if value <= 0:
-            raise ValueError("Etendue must be greater than zero.")
-        self._etendue = value
+            raise ValueError("Sensitivity must be greater than zero.")
+        self._sensitivity = value
 
     cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count):
 
@@ -188,5 +188,5 @@ cdef class OpenCVCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, int x, int y):
-        return self._etendue
+    cpdef double _pixel_sensitivity(self, int x, int y):
+        return self._sensitivity

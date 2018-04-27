@@ -86,8 +86,8 @@ cdef class PinholeCamera(Observer2D):
 
     @fov.setter
     def fov(self, value):
-        if value <= 0 or value > 90:
-            raise ValueError("The field-of-view angle must lie in the range (0, 90].")
+        if value <= 0 or value >= 180:
+            raise ValueError("The field-of-view angle must lie in the range (0, 180).")
         self._fov = value
         self._update_image_geometry()
 
