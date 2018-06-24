@@ -41,6 +41,7 @@ cdef class _NodeBase:
     cdef readonly AffineMatrix3D _root_transform
     cdef readonly AffineMatrix3D _root_transform_inverse
     cdef bint _track_modifications
+    cdef public dict meta
 
 
 
