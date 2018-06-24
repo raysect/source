@@ -91,15 +91,16 @@ cdef class TargettedCCDArray(Observer2D):
 
         pipelines = pipelines or [RGBPipeline2D()]
 
+        super().__init__(pixels, FullFrameSampler2D(), pipelines,
+                         parent=parent, transform=transform, name=name)
+
         self._cosine_sampler = HemisphereCosineSampler()
         self._targetted_sampler = None
 
+        # setting width triggers calculation of image geometry calculations
         self.width = width
         self.targets = targets
         self.targetted_path_prob = targetted_path_prob or 0.9
-
-        super().__init__(pixels, FullFrameSampler2D(), pipelines,
-                         parent=parent, transform=transform, name=name)
 
     @property
     def pixels(self):
@@ -132,7 +133,6 @@ cdef class TargettedCCDArray(Observer2D):
         if width <= 0:
             raise ValueError("width can not be less than or equal to 0 meters.")
         self._width = width
-        self._pixel_area = (width / self._pixels[0])**2
         self._update_image_geometry()
 
     @property
@@ -191,6 +191,7 @@ cdef class TargettedCCDArray(Observer2D):
         self._image_start_x = 0.5 * self._pixels[0] * self._image_delta
         self._image_start_y = 0.5 * self._pixels[1] * self._image_delta
         self._point_sampler = RectangleSampler3D(self._image_delta, self._image_delta)
+        self._pixel_area = (self._width / self._pixels[0])**2
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

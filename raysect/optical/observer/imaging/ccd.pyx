@@ -69,10 +69,11 @@ cdef class CCDArray(Observer2D):
 
         pipelines = pipelines or [RGBPipeline2D()]
 
+        super().__init__(pixels, FullFrameSampler2D(), pipelines, parent=parent, transform=transform, name=name)
+
+        # setting width triggers calculation of image geometry calculations
         self.width = width
         self.vector_sampler = HemisphereCosineSampler()
-
-        super().__init__(pixels, FullFrameSampler2D(), pipelines, parent=parent, transform=transform, name=name)
 
     @property
     def pixels(self):
@@ -105,7 +106,6 @@ cdef class CCDArray(Observer2D):
         if width <= 0:
             raise ValueError("width can not be less than or equal to 0 meters.")
         self._width = width
-        self._pixel_area = (width / self._pixels[0])**2
         self._update_image_geometry()
 
     cdef object _update_image_geometry(self):
@@ -114,6 +114,7 @@ cdef class CCDArray(Observer2D):
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
         self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
         self.point_sampler = RectangleSampler3D(self.image_delta, self.image_delta)
+        self._pixel_area = (self._width / self._pixels[0])**2
 
     cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
 
