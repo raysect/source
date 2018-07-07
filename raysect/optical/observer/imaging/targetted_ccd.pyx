@@ -249,6 +249,9 @@ cdef class TargettedCCDArray(Observer2D):
             pdf = self._targetted_path_prob * self._targetted_sampler.pdf(origin, direction) + \
                   (1-self._targetted_path_prob) * self._cosine_sampler.pdf(direction)
 
+            if pdf <= 0:
+                raise ValueError('Ray direction probability is zero. The target object extends beyond the pixel horizon.')
+
             # weight = 1 / (2 * pi) * cos(theta) * 1/pdf
             weight = R_2_PI * direction.z / pdf
 
