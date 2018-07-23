@@ -160,7 +160,6 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
         return tasks
 
 
-# TODO - fix doc string
 cdef class MaskedMonoAdaptiveSampler2D(FrameSampler2D):
     """
     A masked FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
@@ -365,7 +364,6 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
         return tasks
 
 
-# TODO - doc string
 cdef class MaskedRGBAdaptiveSampler2D(FrameSampler2D):
     """
     A masked FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
