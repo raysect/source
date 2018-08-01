@@ -277,6 +277,29 @@ cdef class SpectralPowerPipeline1D(Pipeline1D):
         plt.draw()
         plt.show()
 
+    def save_data(self, filename):
+        """
+        Saves the spectral frame data to a python pickle file.
+
+        :param str filename: data file path and filename.
+        """
+
+        if not self.frame:
+            raise ValueError("There is no frame data to save.")
+
+        if not filename.endswith('.pickle'):
+            filename += '.pickle'
+
+        data = {
+            'samples': self.frame.mean,
+            'variance': self.frame.variance,
+            'errors': self.frame.errors()
+        }
+
+        output_file = open(filename, 'wb')
+        pickle.dump(data, output_file)
+        output_file.close()
+
 
 cdef class SpectralPowerPipeline2D(Pipeline2D):
     """
