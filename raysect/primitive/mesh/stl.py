@@ -183,9 +183,95 @@ class STLHandler:
 
             return vertices, triangles
 
+    @classmethod
+    def write_stl(cls, mesh, filename, mode="BINARY"):
+        """
+        Write a mesh instance to a STereoLithography (STL) mesh file (.stl).
+
+        :param str filename: Mesh file path.
+        """
+
+        if not isinstance(mesh, Mesh):
+            raise ValueError("The mesh argument to write_stl() must be a valid Raysect Mesh primitive object.")
+
+        if mode == "ASCII":
+            cls._write_ascii(mesh, filename)
+        elif mode == "BINARY":
+            cls._write_binary(mesh, filename)
+            # raise NotImplementedError("A Binary STL writer has not been implemented yet.")
+        else:
+            raise ValueError("mode argument for write_stl() must be ['BINARY', 'ASCII']")
+
+    @classmethod
+    def _write_ascii(cls, mesh, filename):
+
+        triangles = mesh.data.triangles
+        normals = mesh.data.face_normals
+        vertices = mesh.data.vertices
+        num_triangles = triangles.shape[0]
+
+        filehandle = open(filename, 'w')
+        mesh_name = mesh.name.replace(" ", "_") or 'RaysectMesh'
+        filehandle.write('solid {}\n'.format(mesh_name))
+
+        for i in range(num_triangles):
+            v1, v2, v3 = triangles[i, 0:3]
+            filehandle.write('  facet normal {:6e} {:6e} {:6e}\n'.format(normals[i, 0], normals[i, 1], normals[i, 2]))
+            filehandle.write('    outer loop\n')
+            filehandle.write('      vertex  {:6e} {:6e} {:6e}\n'.format(vertices[v1, 0], vertices[v1, 1], vertices[v1, 2]))
+            filehandle.write('      vertex  {:6e} {:6e} {:6e}\n'.format(vertices[v2, 0], vertices[v2, 1], vertices[v2, 2]))
+            filehandle.write('      vertex  {:6e} {:6e} {:6e}\n'.format(vertices[v3, 0], vertices[v3, 1], vertices[v3, 2]))
+            filehandle.write('    endloop\n')
+            filehandle.write('  endfacet\n')
+
+            if i == 0:
+                print(v1, v2, v3)
+                print(vertices[v1, 0], vertices[v1, 1], vertices[v1, 2])
+                print(vertices[v2, 0], vertices[v2, 1], vertices[v2, 2])
+                print(vertices[v3, 0], vertices[v3, 1], vertices[v3, 2])
+
+        filehandle.write('endsolid {}'.format(mesh_name))
+        filehandle.close()
+
+    @classmethod
+    def _write_binary(cls, mesh, filename):
+
+        triangles = mesh.data.triangles
+        normals = mesh.data.face_normals
+        vertices = mesh.data.vertices
+        num_triangles = triangles.shape[0]
+
+        filehandle = open(filename, 'wb')
+        mesh_name = mesh.name.replace(" ", "") or 'RaysectMesh'
+        if len(mesh_name) < 80:
+            mesh_name = mesh_name.ljust(80)
+        else:
+            mesh_name = mesh_name[0:80]
+        filehandle.write(mesh_name.encode('utf-8'))
+
+        # filehandle.write(num_triangles.to_bytes(4, byteorder='little', signed=False))
+        filehandle.write(struct.pack('<I', num_triangles))
+
+        for i in range(num_triangles):
+
+            # write the face normal coordinates
+            filehandle.write(struct.pack('<f', normals[i, 0]))
+            filehandle.write(struct.pack('<f', normals[i, 1]))
+            filehandle.write(struct.pack('<f', normals[i, 2]))
+
+            # write the three vertex coordinates
+            v1, v2, v3 = triangles[i, 0:3]
+            for vj in (v1, v2, v3):
+                filehandle.write(struct.pack('<f', vertices[vj, 0]))
+                filehandle.write(struct.pack('<f', vertices[vj, 1]))
+                filehandle.write(struct.pack('<f', vertices[vj, 2]))
+
+            # UINT16 – Attribute byte count
+            filehandle.write(struct.pack('<H', 0))
+
+        filehandle.close()
+
 
 import_stl = STLHandler.import_stl
-
-
-
+write_stl = STLHandler.write_stl
 
