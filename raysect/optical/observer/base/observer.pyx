@@ -378,7 +378,7 @@ cdef class _ObserverBase(Observer):
             list rays, pixel_processors
             PixelProcessor processor
             int ray_count
-            double etendue, projection_weight
+            double sensitivity, projection_weight
             Ray ray
             Spectrum spectrum
             list results
@@ -393,8 +393,8 @@ cdef class _ObserverBase(Observer):
         # initialise ray statistics
         ray_count = 0
 
-        # obtain pixel etendue to convert spectral radiance to spectral power
-        etendue = self._obtain_etendue(task)
+        # obtain pixel sensitivity to convert spectral radiance to spectral power
+        sensitivity = self._obtain_sensitivity(task)
 
         # launch rays and accumulate spectral samples
         for ray, projection_weight in rays:
@@ -408,7 +408,7 @@ cdef class _ObserverBase(Observer):
             spectrum.mul_scalar(projection_weight)
 
             for processor in pixel_processors:
-                processor.add_sample(spectrum, etendue)
+                processor.add_sample(spectrum, sensitivity)
 
             # accumulate statistics
             ray_count += ray.ray_count
@@ -512,7 +512,7 @@ cdef class _ObserverBase(Observer):
 
     cpdef list _obtain_rays(self, tuple task, Ray template):
         """
-        Returns a list of Rays that sample over the etendue of the pixel.
+        Returns a list of Rays that sample over the sensitivity of the pixel.
 
         This is a virtual method to be implemented by derived classes.
 
@@ -534,7 +534,7 @@ cdef class _ObserverBase(Observer):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _obtain_etendue(self, tuple task):
+    cpdef double _obtain_sensitivity(self, tuple task):
         """
 
         :param pixel_id:
@@ -672,12 +672,12 @@ cdef class Observer0D(_ObserverBase):
         samples, = task
         return self._generate_rays(template, samples)
 
-    cpdef double _obtain_etendue(self, tuple task):
-        return self._pixel_etendue()
+    cpdef double _obtain_sensitivity(self, tuple task):
+        return self._pixel_sensitivity()
 
     cpdef list _generate_rays(self, Ray template, int ray_count):
         """
-        Generate a list of Rays that sample over the etendue of the pixel.
+        Generate a list of Rays that sample over the sensitivity of the pixel.
 
         This is a virtual method to be implemented by derived classes.
 
@@ -705,7 +705,7 @@ cdef class Observer0D(_ObserverBase):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _pixel_etendue(self):
+    cpdef double _pixel_sensitivity(self):
         """
 
         :return:
@@ -814,14 +814,14 @@ cdef class Observer1D(_ObserverBase):
         pixel, = task
         return self._generate_rays(pixel, template, self._pixel_samples)
 
-    cpdef double _obtain_etendue(self, tuple task):
+    cpdef double _obtain_sensitivity(self, tuple task):
         cdef int pixel
         pixel, = task
-        return self._pixel_etendue(pixel)
+        return self._pixel_sensitivity(pixel)
 
     cpdef list _generate_rays(self, int pixel, Ray template, int ray_count):
         """
-        Generate a list of Rays that sample over the etendue of the pixel.
+        Generate a list of Rays that sample over the sensitivity of the pixel.
 
         This is a virtual method to be implemented by derived classes.
 
@@ -845,7 +845,7 @@ cdef class Observer1D(_ObserverBase):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _pixel_etendue(self, int pixel):
+    cpdef double _pixel_sensitivity(self, int pixel):
         """
 
         :param int pixel: Pixel index.
@@ -996,14 +996,14 @@ cdef class Observer2D(_ObserverBase):
         x, y = task
         return self._generate_rays(x, y, template, self._pixel_samples)
 
-    cpdef double _obtain_etendue(self, tuple task):
+    cpdef double _obtain_sensitivity(self, tuple task):
         cdef int x, y
         x, y = task
-        return self._pixel_etendue(x, y)
+        return self._pixel_sensitivity(x, y)
 
     cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count):
         """
-        Generate a list of Rays that sample over the etendue of the pixel.
+        Generate a list of Rays that sample over the sensitivity of the pixel.
 
         This is a virtual method to be implemented by derived classes.
 
@@ -1033,7 +1033,7 @@ cdef class Observer2D(_ObserverBase):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _pixel_etendue(self, int x, int y):
+    cpdef double _pixel_sensitivity(self, int x, int y):
         """
 
         :param int x: Pixel x index.

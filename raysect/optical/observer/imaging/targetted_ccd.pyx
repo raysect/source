@@ -91,15 +91,16 @@ cdef class TargettedCCDArray(Observer2D):
 
         pipelines = pipelines or [RGBPipeline2D()]
 
+        super().__init__(pixels, FullFrameSampler2D(), pipelines,
+                         parent=parent, transform=transform, name=name)
+
         self._cosine_sampler = HemisphereCosineSampler()
         self._targetted_sampler = None
 
+        # setting width triggers calculation of image geometry calculations
         self.width = width
         self.targets = targets
         self.targetted_path_prob = targetted_path_prob or 0.9
-
-        super().__init__(pixels, FullFrameSampler2D(), pipelines,
-                         parent=parent, transform=transform, name=name)
 
     @property
     def pixels(self):
@@ -132,7 +133,6 @@ cdef class TargettedCCDArray(Observer2D):
         if width <= 0:
             raise ValueError("width can not be less than or equal to 0 meters.")
         self._width = width
-        self._pixel_area = (width / self._pixels[0])**2
         self._update_image_geometry()
 
     @property
@@ -191,6 +191,7 @@ cdef class TargettedCCDArray(Observer2D):
         self._image_start_x = 0.5 * self._pixels[0] * self._image_delta
         self._image_start_y = 0.5 * self._pixels[1] * self._image_delta
         self._point_sampler = RectangleSampler3D(self._image_delta, self._image_delta)
+        self._pixel_area = (self._width / self._pixels[0])**2
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -248,6 +249,9 @@ cdef class TargettedCCDArray(Observer2D):
             pdf = self._targetted_path_prob * self._targetted_sampler.pdf(origin, direction) + \
                   (1-self._targetted_path_prob) * self._cosine_sampler.pdf(direction)
 
+            if pdf <= 0:
+                raise ValueError('Ray direction probability is zero. The target object extends beyond the pixel horizon.')
+
             # weight = 1 / (2 * pi) * cos(theta) * 1/pdf
             weight = R_2_PI * direction.z / pdf
 
@@ -255,5 +259,5 @@ cdef class TargettedCCDArray(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, int x, int y):
+    cpdef double _pixel_sensitivity(self, int x, int y):
         return self._pixel_area * 2 * M_PI

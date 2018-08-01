@@ -160,6 +160,104 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
         return tasks
 
 
+cdef class MaskedMonoAdaptiveSampler2D(FrameSampler2D):
+    """
+    A masked FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
+    level in each pixel's power value.
+
+    Pixels that have high noise levels will receive extra samples until the desired
+    noise threshold is achieve across the masked image.
+
+    :param PowerPipeline2D pipeline: The specific power pipeline to use for feedback control.
+    :param np.ndarray mask: The image mask array.
+    :param int min_samples: Minimum number of pixel samples across the image before
+      turning on adaptive sampling (default=1000).
+    :param double cutoff: Normalised noise threshold at which extra sampling will be aborted and
+      rendering will complete (default=0.0). The standard error is normalised to 1 so that a
+      cutoff of 0.01 corresponds to 1% standard error.
+    """
+
+    cdef:
+        PowerPipeline2D pipeline
+        double fraction, ratio, cutoff
+        int min_samples
+        np.ndarray mask
+
+    def __init__(self, object pipeline, np.ndarray mask, int min_samples=1000, double cutoff=0.0):
+
+        if not isinstance(pipeline, (PowerPipeline2D, RadiancePipeline2D)):
+            raise TypeError('Sampler only compatible with PowerPipeLine2D or RadiancePipeline2D pipelines.')
+
+        # todo: validation
+        self.pipeline = pipeline
+        self.min_samples = min_samples
+        self.cutoff = cutoff
+        self.mask = mask
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    cpdef list generate_tasks(self, tuple pixels):
+
+        cdef:
+            StatsArray2D frame
+            int x, y
+            np.ndarray normalised
+            double[:,::1] error, normalised_mv
+            double percentile_error
+            list tasks
+
+        frame = self.pipeline.frame
+        if frame is None:
+            # no frame data available, generate tasks for the full frame
+            return self._full_frame(pixels)
+
+        # sanity check
+        if pixels != frame.shape:
+            raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the pipeline frame size.')
+
+        min_samples = self.min_samples
+        error = frame.errors()
+        normalised = np.zeros((frame.nx, frame.ny))
+        normalised_mv = normalised
+
+        # calculated normalised standard error
+        for x in range(frame.nx):
+            for y in range(frame.ny):
+                if frame.mean_mv[x, y] <= 0:
+                    normalised_mv[x, y] = 0
+                else:
+                    normalised_mv[x, y] = error[x, y] / frame.mean_mv[x, y]
+
+        # build tasks
+        tasks = []
+        for x in range(frame.nx):
+            for y in range(frame.ny):
+                if self.mask[x, y] and (frame.samples_mv[x, y] < min_samples or normalised_mv[x, y] > self.cutoff):
+                    tasks.append((x, y))
+
+        # perform tasks in random order so that image is assembled randomly rather than sequentially
+        shuffle(tasks)
+
+        return tasks
+
+    cpdef list _full_frame(self, tuple pixels):
+
+        cdef:
+            list tasks
+            int nx, ny, x, y
+
+        tasks = []
+        nx, ny = pixels
+        for x in range(nx):
+            for y in range(ny):
+                if self.mask[x, y]:
+                    tasks.append((x, y))
+
+        # perform tasks in random order so that image is assembled randomly rather than sequentially
+        shuffle(tasks)
+
+        return tasks
+
 
 cdef class RGBAdaptiveSampler2D(FrameSampler2D):
     """
@@ -259,6 +357,108 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
         for x in range(nx):
             for y in range(ny):
                 tasks.append((x, y))
+
+        # perform tasks in random order so that image is assembled randomly rather than sequentially
+        shuffle(tasks)
+
+        return tasks
+
+
+cdef class MaskedRGBAdaptiveSampler2D(FrameSampler2D):
+    """
+    A masked FrameSampler that dynamically adjusts a camera's pixel samples based on the noise
+    level in each RGB pixel value.
+
+    Pixels that have high noise levels will receive extra samples until the desired
+    noise threshold is achieve across the whole image.
+
+    :param RGBPipeline2D pipeline: The specific RGB pipeline to use for feedback control.
+    :param np.ndarray mask: The image mask array.
+    :param int min_samples: Minimum number of pixel samples across the image before
+      turning on adaptive sampling (default=1000).
+    :param double cutoff: Noise threshold at which extra sampling will be aborted and
+      rendering will complete (default=0.0).
+    """
+
+    cdef:
+        RGBPipeline2D pipeline
+        double fraction, ratio, cutoff
+        int min_samples
+        np.ndarray mask
+
+    def __init__(self, RGBPipeline2D pipeline, np.ndarray mask, int min_samples=1000, double cutoff=0.0):
+
+        # todo: validation
+        self.pipeline = pipeline
+        self.min_samples = min_samples
+        self.cutoff = cutoff
+        self.mask = mask
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cpdef list generate_tasks(self, tuple pixels):
+
+        cdef:
+            StatsArray3D frame
+            int x, y, c, min_samples, samples
+            np.ndarray normalised
+            double[:,:,::1] error
+            double[:,::1] normalised_mv
+            double percentile_error
+            list tasks
+            double[3] pixel_normalised
+
+        frame = self.pipeline.xyz_frame
+        if frame is None:
+            # no frame data available, generate tasks for the full frame
+            return self._full_frame(pixels)
+
+        # sanity check
+        if (pixels[0], pixels[1], 3) != frame.shape:
+            raise ValueError('The number of pixels passed to the frame sampler are inconsistent with the pipeline frame size.')
+
+        min_samples = self.min_samples
+        error = frame.errors()
+        normalised = np.zeros((frame.nx, frame.ny))
+        normalised_mv = normalised
+
+        # calculated normalised standard error
+        for x in range(frame.nx):
+            for y in range(frame.ny):
+                for c in range(3):
+                    if frame.mean_mv[x, y, c] <= 0:
+                        pixel_normalised[c] = 0
+                    else:
+                        pixel_normalised[c] = error[x, y, c] / frame.mean_mv[x, y, c]
+                normalised_mv[x, y] = max(pixel_normalised[0], pixel_normalised[1], pixel_normalised[2])
+
+        # build tasks
+        tasks = []
+        for x in range(frame.nx):
+            for y in range(frame.ny):
+                if self.mask[x, y]:
+                    samples = min(frame.samples_mv[x, y, 0], frame.samples_mv[x, y, 1], frame.samples_mv[x, y, 2])
+                    if samples < min_samples or normalised_mv[x, y] > self.cutoff:
+                        tasks.append((x, y))
+
+        # perform tasks in random order so that image is assembled randomly rather than sequentially
+        shuffle(tasks)
+
+        return tasks
+
+    cpdef list _full_frame(self, tuple pixels):
+
+        cdef:
+            list tasks
+            int nx, ny, x, y
+
+        tasks = []
+        nx, ny = pixels
+        for x in range(nx):
+            for y in range(ny):
+                if self.mask[x, y]:
+                    tasks.append((x, y))
 
         # perform tasks in random order so that image is assembled randomly rather than sequentially
         shuffle(tasks)

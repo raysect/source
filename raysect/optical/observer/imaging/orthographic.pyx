@@ -44,7 +44,7 @@ cdef class OrthographicCamera(Observer2D):
     :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
     :param double width: width of the orthographic area to observe in meters,
       the height is deduced from the 'pixels' attribute.
-    :param float etendue: The etendue of each pixel (default=1.0)
+    :param float sensitivity: The sensitivity of each pixel (default=1.0)
     :param FrameSampler2D frame_sampler: The frame sampling strategy
       (default=FullFrameSampler2D()).
     :param list pipelines: The list of pipelines that will process the spectrum measured
@@ -53,10 +53,10 @@ cdef class OrthographicCamera(Observer2D):
     """
 
     cdef:
-        double image_delta, image_start_x, image_start_y, _width, _etendue
+        double image_delta, image_start_x, image_start_y, _width, _sensitivity
         RectangleSampler3D _point_sampler
 
-    def __init__(self, pixels, width, etendue=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
+    def __init__(self, pixels, width, sensitivity=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
         # defaults to an adaptively sampled RGB pipeline
         if not pipelines and not frame_sampler:
@@ -69,7 +69,7 @@ cdef class OrthographicCamera(Observer2D):
 
         super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name)
 
-        self.etendue = etendue or 1.0
+        self.sensitivity = sensitivity or 1.0
         self.width = width
 
     @property
@@ -90,21 +90,21 @@ cdef class OrthographicCamera(Observer2D):
         self._update_image_geometry()
 
     @property
-    def etendue(self):
+    def sensitivity(self):
         """
-        The etendue applied to each pixel.
+        The sensitivity applied to each pixel.
 
-        If etendue=1.0 all spectral units are in radiance.
+        If sensitivity=1.0 all spectral units are in radiance.
 
         :rtype: float
         """
-        return self._etendue
+        return self._sensitivity
 
-    @etendue.setter
-    def etendue(self, value):
+    @sensitivity.setter
+    def sensitivity(self, value):
         if value <= 0:
-            raise ValueError("Etendue must be greater than zero.")
-        self._etendue = value
+            raise ValueError("Sensitivity must be greater than zero.")
+        self._sensitivity = value
 
     cdef object _update_image_geometry(self):
 
@@ -143,7 +143,7 @@ cdef class OrthographicCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, int ix, int iy):
-        return self._etendue
+    cpdef double _pixel_sensitivity(self, int ix, int iy):
+        return self._sensitivity
 
 
