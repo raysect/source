@@ -215,6 +215,9 @@ cdef class MaskedMonoAdaptiveSampler2D(FrameSampler2D):
         if pixels != frame.shape:
             raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the pipeline frame size.')
 
+        if pixels != (self.mask.shape[0], self.mask.shape[1]):
+            raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask frame size.')
+
         min_samples = self.min_samples
         error = frame.errors()
         normalised = np.zeros((frame.nx, frame.ny))
@@ -417,6 +420,9 @@ cdef class MaskedRGBAdaptiveSampler2D(FrameSampler2D):
         # sanity check
         if (pixels[0], pixels[1], 3) != frame.shape:
             raise ValueError('The number of pixels passed to the frame sampler are inconsistent with the pipeline frame size.')
+
+        if pixels != (self.mask.shape[0], self.mask.shape[1]):
+            raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask frame size.')
 
         min_samples = self.min_samples
         error = frame.errors()
