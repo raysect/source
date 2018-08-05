@@ -92,9 +92,11 @@ cdef class MeshData(KDTree3DCore):
 
     :param object vertices: A list/array or triangle vertices with shape Nx3,
       where N is the number of vertices.
-    :param object triangles: A list/array of triangles with shape Nx3 where N is
-      the number of triangles in the mesh. For each triangle there must be three
-      integers identifying the triangle vertices in the vertices array.
+    :param object triangles: A list/array of triangles with shape Nx3 or Nx6
+      where N is the number of triangles in the mesh. For each triangle there
+      must be three integers identifying the triangle's vertices in the vertices
+      array. If vertex normals are present then three additional integers
+      specify the triangle's vertex normals in the normals array.
     :param object normals: Optional array of triangle normals (default=None).
     :param bool smoothing: Turns on smoothing of triangle surface normals when
       calculating ray intersections (default=True).
