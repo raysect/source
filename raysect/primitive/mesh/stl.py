@@ -187,7 +187,7 @@ class STLHandler:
             return vertices, triangles
 
     @classmethod
-    def write_stl(cls, mesh, filename, mode=STL_BINARY):
+    def export_stl(cls, mesh, filename, mode=STL_BINARY):
         """
         Write a mesh instance to a STereoLithography (STL) mesh file (.stl).
 
@@ -273,5 +273,5 @@ class STLHandler:
 
 
 import_stl = STLHandler.import_stl
-write_stl = STLHandler.write_stl
+export_stl = STLHandler.export_stl
 
