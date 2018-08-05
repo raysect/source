@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,12 +33,17 @@ import struct
 import numpy as np
 from raysect.primitive.mesh import Mesh
 
+PLY_AUTOMATIC = 'auto'
+PLY_ASCII = 'ascii'
+PLY_BINARY = 'binary'
 
-# TODO - add support for other data types, e.g. face colours and other arbitrary data
+
+# TODO: add support for other data types, e.g. face colours and other arbitrary data
+# TODO: this implementation is currently very rigid. Some valid PLY files might fail unnecessarily at present.
 class PLYHandler:
 
     @classmethod
-    def import_ply(cls, filename, scaling=1.0, mode="AUTOMATIC", **kwargs):
+    def import_ply(cls, filename, scaling=1.0, mode=PLY_AUTOMATIC, **kwargs):
         """
         Create a mesh instance from a Polygon File Format (PLY) mesh file (.ply).
         Note PLY is also known as the Stanford Triangle Format.
@@ -49,22 +54,27 @@ class PLYHandler:
 
         :param str filename: Mesh file path.
         :param double scaling: Scale the mesh by this factor (default=1.0).
-        :param str mode: The file format to load ['ASCII', 'BINARY', 'AUTOMATIC'].
-        :param **kwargs: Accepts optional keyword arguments from the Mesh class.
+        :param str mode: The file format to load: 'ascii', 'binary', 'auto' (default='auto').
+        :param kwargs: Accepts optional keyword arguments from the Mesh class.
         :rtype: Mesh
         """
 
-        if mode == "ASCII":
+        mode = mode.lower()
+        if mode == PLY_ASCII:
             vertices, triangles = cls._load_ascii(filename, scaling)
 
-        elif mode == "BINARY":
+        elif mode == PLY_BINARY:
             vertices, triangles = cls._load_binary(filename, scaling)
 
-        else:
+        elif mode == PLY_AUTOMATIC:
             try:
                 vertices, triangles = cls._load_ascii(filename, scaling)
             except ValueError:
                 vertices, triangles = cls._load_binary(filename, scaling)
+
+        else:
+            modes = (PLY_AUTOMATIC, PLY_ASCII, PLY_BINARY)
+            raise ValueError('Unrecognised import mode, valid values are: {}'.format(modes))
 
         return Mesh(vertices, triangles, smoothing=False, **kwargs)
 
@@ -74,51 +84,49 @@ class PLYHandler:
         # parse the file header
         try:
 
-            filehandle = open(filename, 'r')
+            with open(filename, 'r') as f:
 
-            assert filehandle.readline().strip() == "ply"
-            assert filehandle.readline().strip() == "format ascii 1.0"
+                assert f.readline().strip() == "ply"
+                assert f.readline().strip() == "format ascii 1.0"
 
-            # skip over comments
-            while True:
-                line = filehandle.readline().strip()
-                if line[0] == "comment":
-                    continue
-                break
-
-            # read out vertex specification
-            assert (line[0] == 'element' and line[1] == 'vertex')
-            num_vertices = int(line[2])
-            assert filehandle.readline().strip() == 'property float x'
-            assert filehandle.readline().strip() == 'property float y'
-            assert filehandle.readline().strip() == 'property float z'
-
-            line = filehandle.readline().strip().split()
-            assert (line[0] == 'element' and line[1] == 'face')
-            num_triangles = int(line[2])
-            assert filehandle.readline().strip() == 'property list uchar int vertex_indices'
-
-            # go to end of header
-            while True:
-                line = filehandle.readline().strip().split()
-                if line[0] == "end_header":
+                # skip over comments
+                while True:
+                    line = f.readline().strip()
+                    if line[0] == "comment":
+                        continue
                     break
 
-            # read in the vertices
-            vertices = np.empty((num_vertices, 3))
-            for i in range(num_vertices):
-                line = filehandle.readline().strip().split()
-                vertices[i, :] = float(line[0])*scaling, float(line[1])*scaling, float(line[2])*scaling
+                # read out vertex specification
+                assert (line[0] == 'element' and line[1] == 'vertex')
+                num_vertices = int(line[2])
+                assert f.readline().strip() == 'property float x'
+                assert f.readline().strip() == 'property float y'
+                assert f.readline().strip() == 'property float z'
 
-            # read in the triangles
-            triangles = np.empty((num_triangles, 3), dtype=np.int32)
-            for i in range(num_triangles):
-                line = filehandle.readline().strip().split()
-                if not int(line[0]) == 3:
-                    raise ValueError("This PLY file contains polygons, Raysect can only handle triangles.")
-                triangles[i, :] = float(line[1])*scaling, float(line[2])*scaling, float(line[3])*scaling
+                line = f.readline().strip().split()
+                assert (line[0] == 'element' and line[1] == 'face')
+                num_triangles = int(line[2])
+                assert f.readline().strip() == 'property list uchar int vertex_indices'
 
-            filehandle.close()
+                # go to end of header
+                while True:
+                    line = f.readline().strip().split()
+                    if line[0] == "end_header":
+                        break
+
+                # read in the vertices
+                vertices = np.empty((num_vertices, 3))
+                for i in range(num_vertices):
+                    line = f.readline().strip().split()
+                    vertices[i, :] = float(line[0])*scaling, float(line[1])*scaling, float(line[2])*scaling
+
+                # read in the triangles
+                triangles = np.empty((num_triangles, 3), dtype=np.int32)
+                for i in range(num_triangles):
+                    line = f.readline().strip().split()
+                    if not int(line[0]) == 3:
+                        raise ValueError("Raysect meshes can only handle triangles.")
+                    triangles[i, :] = float(line[1])*scaling, float(line[2])*scaling, float(line[3])*scaling
 
             return vertices, triangles
 
@@ -128,65 +136,63 @@ class PLYHandler:
     @classmethod
     def _load_binary(cls, filename, scaling):
 
-        filehandle = open(filename, 'rb')
+        with open(filename, 'rb') as f:
 
-        assert filehandle.readline().decode().strip() == "ply"
-        assert filehandle.readline().decode().strip() == "format binary_little_endian 1.0"
+            assert f.readline().decode().strip() == "ply"
+            assert f.readline().decode().strip() == "format binary_little_endian 1.0"
 
-        # skip over comments
-        while True:
-            line = filehandle.readline().decode().strip().split()
-            if line[0] == "comment":
-                continue
-            break
-
-        # read out vertex specification
-        assert (line[0] == 'element' and line[1] == 'vertex')
-        num_vertices = int(line[2])
-        assert filehandle.readline().decode().strip() == 'property float x'
-        assert filehandle.readline().decode().strip() == 'property float y'
-        assert filehandle.readline().decode().strip() == 'property float z'
-
-        line = filehandle.readline().decode().strip().split()
-        assert (line[0] == 'element' and line[1] == 'face')
-        num_triangles = int(line[2])
-        assert filehandle.readline().decode().strip() == 'property list uchar int vertex_indices'
-
-        # go to end of header
-        while True:
-            line = filehandle.readline().decode().strip().split()
-            if line[0] == "end_header":
+            # skip over comments
+            while True:
+                line = f.readline().decode().strip().split()
+                if line[0] == "comment":
+                    continue
                 break
 
-        # read in the vertices
-        vertices = np.empty((num_vertices, 3))
-        for i in range(num_vertices):
-            next_line = filehandle.read(12)
-            vertices[i, :] = struct.unpack('<fff', next_line)
-        vertices *= scaling
+            # read out vertex specification
+            assert (line[0] == 'element' and line[1] == 'vertex')
+            num_vertices = int(line[2])
+            assert f.readline().decode().strip() == 'property float x'
+            assert f.readline().decode().strip() == 'property float y'
+            assert f.readline().decode().strip() == 'property float z'
 
-        # read in the triangles
-        triangles = np.empty((num_triangles, 3), dtype=np.int32)
-        for i in range(num_triangles):
-            next_line = filehandle.read(13)
-            data = struct.unpack('<BIII', next_line)
-            if not data[0] == 3:
-                raise ValueError("This PLY file contains polygons, Raysect meshes can only handle triangles.")
-            triangles[i, :] = data[1:]
+            line = f.readline().decode().strip().split()
+            assert (line[0] == 'element' and line[1] == 'face')
+            num_triangles = int(line[2])
+            assert f.readline().decode().strip() == 'property list uchar int vertex_indices'
 
-        filehandle.close()
+            # go to end of header
+            while True:
+                line = f.readline().decode().strip().split()
+                if line[0] == "end_header":
+                    break
+
+            # read in the vertices
+            vertices = np.empty((num_vertices, 3))
+            for i in range(num_vertices):
+                next_line = f.read(12)
+                vertices[i, :] = struct.unpack('<fff', next_line)
+            vertices *= scaling
+
+            # read in the triangles
+            triangles = np.empty((num_triangles, 3), dtype=np.int32)
+            for i in range(num_triangles):
+                next_line = f.read(13)
+                data = struct.unpack('<BIII', next_line)
+                if not data[0] == 3:
+                    raise ValueError("Raysect meshes can only handle triangles.")
+                triangles[i, :] = data[1:]
 
         return vertices, triangles
 
     @classmethod
-    def write_ply(cls, mesh, filename, mode="BINARY", comment="Generated by Raysect"):
+    def export_ply(cls, mesh, filename, mode=PLY_BINARY, comment="Generated by Raysect"):
         """
         Write a mesh instance to a Polygon File Format (PLY) mesh file (.ply).
         Note PLY is also known as the Stanford Triangle Format.
 
         :param Mesh mesh: The Raysect mesh instance to write as PLY.
         :param str filename: Mesh file path.
-        :param str mode: The file format to write ['ASCII', 'BINARY'].
+        :param str mode: The file format to write: 'ascii', 'binary' (default='ascii').
         :param str comment: An optional string comment to include in the output file,
           can be multiple lines.
         """
@@ -194,83 +200,79 @@ class PLYHandler:
         if not isinstance(mesh, Mesh):
             raise ValueError("The mesh argument to write_ply() must be a valid Raysect Mesh primitive object.")
 
-        if mode == "ASCII":
+        mode = mode.lower()
+        if mode == PLY_ASCII:
             cls._write_ascii(mesh, filename, comment=comment)
-
-        elif mode == "BINARY":
+        elif mode == PLY_BINARY:
             cls._write_binary(mesh, filename, comment=comment)
-
         else:
-            raise ValueError("The mode argument for write_ply() must be on of ['BINARY', 'ASCII'].")
+            modes = (PLY_ASCII, PLY_BINARY)
+            raise ValueError('Unrecognised export mode, valid values are: {}'.format(modes))
 
     @classmethod
     def _write_ascii(cls, mesh, filename, comment=None):
 
-        filehandle = open(filename, "w")
+        with open(filename, "w") as f:
 
-        vertices = mesh.data.vertices
-        num_vertices = vertices.shape[0]
-        triangles = mesh.data.triangles
-        num_triangles = triangles.shape[0]
+            vertices = mesh.data.vertices
+            num_vertices = vertices.shape[0]
+            triangles = mesh.data.triangles
+            num_triangles = triangles.shape[0]
 
-        # write header
-        filehandle.write("ply\n")
-        filehandle.write("format ascii 1.0\n")
-        comment_lines = comment.splitlines()
-        for comment in comment_lines:
-            filehandle.write("comment " + comment + "\n")
-        filehandle.write("element vertex {}\n".format(num_vertices))
-        filehandle.write("property float x\n")
-        filehandle.write("property float y\n")
-        filehandle.write("property float z\n")
-        filehandle.write("element face {}\n".format(num_triangles))
-        filehandle.write("property list uchar int vertex_index\n")
-        filehandle.write("end_header\n")
+            # write header
+            f.write("ply\n")
+            f.write("format ascii 1.0\n")
+            comment_lines = comment.splitlines()
+            for comment in comment_lines:
+                f.write("comment " + comment + "\n")
+            f.write("element vertex {}\n".format(num_vertices))
+            f.write("property float x\n")
+            f.write("property float y\n")
+            f.write("property float z\n")
+            f.write("element face {}\n".format(num_triangles))
+            f.write("property list uchar int vertex_index\n")
+            f.write("end_header\n")
 
-        # write vertices
-        for i in range(num_vertices):
-            filehandle.write("{} {} {}\n".format(vertices[i, 0], vertices[i, 1], vertices[i, 2]))
+            # write vertices
+            for i in range(num_vertices):
+                f.write("{} {} {}\n".format(vertices[i, 0], vertices[i, 1], vertices[i, 2]))
 
-        # write triangles
-        for i in range(num_triangles):
-            filehandle.write("3 {} {} {}\n".format(triangles[i, 0], triangles[i, 1], triangles[i, 2]))
-
-        filehandle.close()
+            # write triangles
+            for i in range(num_triangles):
+                f.write("3 {} {} {}\n".format(triangles[i, 0], triangles[i, 1], triangles[i, 2]))
 
     @classmethod
     def _write_binary(cls, mesh, filename, comment=None):
 
-        filehandle = open(filename, "wb")
+        with open(filename, "wb") as f:
 
-        vertices = mesh.data.vertices
-        num_vertices = vertices.shape[0]
-        triangles = mesh.data.triangles
-        num_triangles = triangles.shape[0]
+            vertices = mesh.data.vertices
+            num_vertices = vertices.shape[0]
+            triangles = mesh.data.triangles
+            num_triangles = triangles.shape[0]
 
-        # write header
-        filehandle.write("ply\n".encode())
-        filehandle.write("format binary_little_endian 1.0\n".encode())
-        comment_lines = comment.splitlines()
-        for comment in comment_lines:
-            filehandle.write(("comment " + comment + "\n").encode())
-        filehandle.write("element vertex {}\n".format(num_vertices).encode())
-        filehandle.write("property float x\n".encode())
-        filehandle.write("property float y\n".encode())
-        filehandle.write("property float z\n".encode())
-        filehandle.write("element face {}\n".format(num_triangles).encode())
-        filehandle.write("property list uchar int vertex_index\n".encode())
-        filehandle.write("end_header\n".encode())
+            # write header
+            f.write("ply\n".encode())
+            f.write("format binary_little_endian 1.0\n".encode())
+            comment_lines = comment.splitlines()
+            for comment in comment_lines:
+                f.write(("comment " + comment + "\n").encode())
+            f.write("element vertex {}\n".format(num_vertices).encode())
+            f.write("property float x\n".encode())
+            f.write("property float y\n".encode())
+            f.write("property float z\n".encode())
+            f.write("element face {}\n".format(num_triangles).encode())
+            f.write("property list uchar int vertex_index\n".encode())
+            f.write("end_header\n".encode())
 
-        # write vertices
-        for i in range(num_vertices):
-            filehandle.write(struct.pack('<fff', vertices[i, 0], vertices[i, 1], vertices[i, 2]))
+            # write vertices
+            for i in range(num_vertices):
+                f.write(struct.pack('<fff', vertices[i, 0], vertices[i, 1], vertices[i, 2]))
 
-        # write triangles
-        for i in range(num_triangles):
-            filehandle.write(struct.pack('<BIII', 3, triangles[i, 0], triangles[i, 1], triangles[i, 2]))
-
-        filehandle.close()
+            # write triangles
+            for i in range(num_triangles):
+                f.write(struct.pack('<BIII', 3, triangles[i, 0], triangles[i, 1], triangles[i, 2]))
 
 
 import_ply = PLYHandler.import_ply
-write_ply = PLYHandler.write_ply
+export_ply = PLYHandler.export_ply

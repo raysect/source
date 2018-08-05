@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,13 +35,23 @@ import numpy as np
 
 from raysect.primitive.mesh import Mesh
 
+VTK_AUTOMATIC = 'auto'
+VTK_ASCII = 'ascii'
+VTK_BINARY = 'binary'
 
+
+# todo: very rigid, needs to be made more flexible
+# todo: add support for different file versions
+# todo: add support for binary files
 class VTKHandler:
 
     @classmethod
-    def import_vtk(cls, filename, scaling=1.0, mode="AUTOMATIC", **kwargs):
+    def import_vtk(cls, filename, scaling=1.0, mode=VTK_AUTOMATIC, **kwargs):
         """
         Create a mesh instance from a VTK mesh data file (.vtk).
+
+        Currently only supports VTK DataFile v2.0 and unstructured grid data with
+        3 element (triangular) cells.
 
         Some engineering meshes are exported in different units (mm for example)
         whereas Raysect units are in m. Applying a scale factor of 0.001 would
@@ -49,22 +59,25 @@ class VTKHandler:
 
         :param str filename: Mesh file path.
         :param double scaling: Scale the mesh by this factor (default=1.0).
-        :param **kwargs: Accepts optional keyword arguments from the Mesh class.
+        :param str mode: The file format to load: 'ascii', 'binary', 'auto' (default='auto').
+        :param kwargs: Accepts optional keyword arguments from the Mesh class.
         :rtype: Mesh
         """
 
-        if mode == "ASCII":
+        mode = mode.lower()
+        if mode == VTK_ASCII:
             vertices, triangles, mesh_name = cls._load_ascii(filename, scaling)
-        elif mode == "BINARY":
-            raise NotImplementedError('The BINARY .vtk loading routine has not been implemented yet.')
-        elif mode == "AUTOMATIC":
+        elif mode == VTK_BINARY:
+            raise NotImplementedError('The binary .vtk loading routine has not been implemented yet.')
+        elif mode == VTK_AUTOMATIC:
             try:
                 vertices, triangles, mesh_name = cls._load_ascii(filename, scaling)
             except ValueError:
                 # vertices, triangles, mesh_name = cls._load_binary(filename, scaling)
-                raise NotImplementedError('The BINARY .vtk loading routine has not been implemented yet.')
+                raise NotImplementedError('The binary .vtk loading routine has not been implemented yet.')
         else:
-            raise ValueError("The import_vtk() mode argument must be one of ['ASCII', 'BINARY', 'AUTOMATIC'].")
+            modes = (VTK_ASCII, VTK_BINARY)
+            raise ValueError('Unrecognised import mode, valid values are: {}'.format(modes))
 
         if 'name' not in kwargs.keys():
             kwargs['name'] = mesh_name or "VTKMesh"
@@ -74,25 +87,25 @@ class VTKHandler:
     @classmethod
     def _load_ascii(cls, filename, scaling):
 
-        with open(filename, 'r') as fh:
+        with open(filename, 'r') as f:
 
             # parse the file header
-            assert fh.readline().strip() == "# vtk DataFile Version 2.0"
-            mesh_name = fh.readline().strip()
-            assert fh.readline().strip() == "ASCII"
+            assert f.readline().strip() == "# vtk DataFile Version 2.0"
+            mesh_name = f.readline().strip()
+            assert f.readline().strip() == "ASCII"
 
-            vertices = cls._ascii_read_vertices(fh, scaling)
+            if not f.readline().strip() == "DATASET UNSTRUCTURED_GRID":
+                raise RuntimeError("Unrecognised dataset encountered in vtk file.")
 
-            triangles = cls._ascii_read_triangles(fh)
+            vertices = cls._ascii_read_vertices(f, scaling)
+            triangles = cls._ascii_read_triangles(f)
 
             return vertices, triangles, mesh_name
 
     @classmethod
-    def _ascii_read_vertices(cls, fh, scaling):
+    def _ascii_read_vertices(cls, f, scaling):
 
-        if not fh.readline().strip() == "DATASET UNSTRUCTURED_GRID":
-            raise RuntimeError("Unrecognised dataset encountered in vtk file.")
-        match = re.match("POINTS  ([0-9]*)  float", fh.readline().strip())
+        match = re.match("POINTS  ([0-9]*)  float", f.readline().strip())
         if not match:
             raise RuntimeError("Unrecognised dataset encountered in vtk file.")
         num_points = int(match.group(1))
@@ -100,7 +113,7 @@ class VTKHandler:
         vertices = np.empty((num_points, 3))
 
         for i in range(num_points):
-            coordinates = fh.readline().split()
+            coordinates = f.readline().split()
             vertices[i, 0] = float(coordinates[0]) * scaling
             vertices[i, 1] = float(coordinates[1]) * scaling
             vertices[i, 2] = float(coordinates[2]) * scaling
@@ -108,27 +121,27 @@ class VTKHandler:
         return vertices
 
     @classmethod
-    def _ascii_read_triangles(cls, fh):
+    def _ascii_read_triangles(cls, f):
 
-        match = re.match("CELLS\s*([0-9]*)\s*([0-9]*)", fh.readline())
+        match = re.match("CELLS\s*([0-9]*)\s*([0-9]*)", f.readline())
         if not match:
             raise RuntimeError("Unrecognised dataset encountered in vtk file.")
         num_triangles = int(match.group(1))
         triangles = np.empty((num_triangles, 3), dtype=np.int32)
         for i in range(num_triangles):
-            triangle_specification = fh.readline().split()
+            triangle_specification = f.readline().split()
             triangles[i, 0] = int(triangle_specification[1])
             triangles[i, 1] = int(triangle_specification[2])
             triangles[i, 2] = int(triangle_specification[3])
 
-        assert fh.readline().split()[0] == 'CELL_TYPES'
+        assert f.readline().split()[0] == 'CELL_TYPES'
         for i in range(num_triangles):
-            assert int(fh.readline().strip()) == 5
+            assert int(f.readline().strip()) == 5
 
         return triangles
 
     @classmethod
-    def write_vtk(cls, mesh, filename, triangle_data=None, vertex_data=None, mode="ASCII"):
+    def export_vtk(cls, mesh, filename, triangle_data=None, vertex_data=None, mode=VTK_ASCII):
         """
         Write a mesh instance to a vtk mesh file (.vtk) with optional cell and point data.
 
@@ -140,84 +153,83 @@ class VTKHandler:
         :param dict vertex_data: A dictionary of vertex datasets to be saved along with the
           mesh. The dictionary keys will be the variable names. Each array must be 1D with length
           equal to the number of vertices in the mesh.
+        :param str mode: The file format to write: 'ascii' or 'binary' (default='ascii').
         """
 
         if not isinstance(mesh, Mesh):
             raise ValueError("The mesh argument to write_vtk() must be a valid Raysect Mesh primitive object.")
 
-        if mode == "ASCII":
+        mode = mode.lower()
+        if mode == VTK_ASCII:
             cls._write_ascii(mesh, filename, triangle_data=triangle_data, vertex_data=vertex_data)
-        elif mode == "BINARY":
-            raise NotImplementedError("A Binary VTK writer has not been implemented yet.")
+        elif mode == VTK_BINARY:
+            raise NotImplementedError("A binary VTK writer has not been implemented yet.")
         else:
-            raise ValueError("mode argument for write_vtk() must be ['BINARY', 'ASCII']")
+            modes = (VTK_ASCII, VTK_BINARY)
+            raise ValueError('Unrecognised export mode, valid values are: {}'.format(modes))
 
     @classmethod
     def _write_ascii(cls, mesh, filename, triangle_data=None, vertex_data=None):
 
-        num_triangles = mesh.data.triangles.shape[0]
+        with open(filename, 'w') as f:
 
-        filehandle = open(filename, 'w')
+            # # vtk DataFile Version 2.0
+            # My Raysect mesh data
+            # ASCII
+            f.write('# vtk DataFile Version 2.0\n')
+            f.write('{}\n'.format(mesh.name.replace(" ", "_") or 'RaysectMesh'))
+            f.write('ASCII\n')
 
-        # # vtk DataFile Version 2.0
-        # My Raysect mesh data
-        # ASCII
-        filehandle.write('# vtk DataFile Version 2.0\n')
-        filehandle.write('{}\n'.format(mesh.name.replace(" ", "_") or 'RaysectMesh'))
-        filehandle.write('ASCII\n')
+            cls._ascii_write_geometry(f, mesh)
 
-        cls._ascii_write_geometry(mesh, filehandle)
+            if vertex_data:
+                cls._ascii_write_vertex_data(f, mesh, vertex_data)
 
-        if vertex_data:
-            cls._ascii_write_vertex_data(mesh, filehandle, vertex_data)
-
-        if triangle_data:
-            cls._ascii_write_triangle_data(mesh, filehandle, triangle_data)
-
-        filehandle.close()
+            if triangle_data:
+                cls._ascii_write_triangle_data(f, mesh, triangle_data)
 
     @classmethod
-    def _ascii_write_geometry(cls, mesh, filehandle):
+    def _ascii_write_geometry(cls, f, mesh):
 
         triangles = mesh.data.triangles
         vertices = mesh.data.vertices
         num_triangles = mesh.data.triangles.shape[0]
-        num_verticies = mesh.data.vertices.shape[0]
+        num_vertices = mesh.data.vertices.shape[0]
 
         # DATASET UNSTRUCTURED_GRID
         # POINTS  5081  float
         # 5.12135678592 3.59400404579 5.20377763887
         # 5.07735666785 3.40460816029 5.27386350545
         # ...
-        filehandle.write('DATASET UNSTRUCTURED_GRID\n')
-        filehandle.write('POINTS {} float\n'.format(num_verticies))
-        for i in range(num_verticies):
-            filehandle.write('{} {} {}\n'.format(vertices[i, 0], vertices[i, 1], vertices[i, 2]))
+        f.write('DATASET UNSTRUCTURED_GRID\n')
+        f.write('POINTS {} float\n'.format(num_vertices))
+        for i in range(num_vertices):
+            f.write('{} {} {}\n'.format(vertices[i, 0], vertices[i, 1], vertices[i, 2]))
 
         # CELLS  9804 39216
         # 3 447 4361 446
         # 3 444 4248 445
         # ...
-        filehandle.write('CELLS {} {}\n'.format(num_triangles, 4 * num_triangles))
+        f.write('CELLS {} {}\n'.format(num_triangles, 4 * num_triangles))
         for i in range(num_triangles):
-            filehandle.write('3 {} {} {}\n'.format(triangles[i, 0], triangles[i, 1], triangles[i, 2]))
+            f.write('3 {} {} {}\n'.format(triangles[i, 0], triangles[i, 1], triangles[i, 2]))
 
         # CELL_TYPES  9804
         # 5
         # 5
         # ...
-        filehandle.write('CELL_TYPES {}\n'.format(num_triangles))
+        f.write('CELL_TYPES {}\n'.format(num_triangles))
         for i in range(num_triangles):
-            filehandle.write('5\n')
+            f.write('5\n')
 
     @classmethod
-    def _ascii_write_vertex_data(cls, mesh, filehandle, vertex_data):
+    def _ascii_write_vertex_data(cls, f, mesh, vertex_data):
         raise NotImplementedError("write_vtk() does not currently support mesh vertex data.")
 
     # TODO - support more VTK data types
     # TODO - add better input data validation
     @classmethod
-    def _ascii_write_triangle_data(cls, mesh, filehandle, triangle_data):
+    def _ascii_write_triangle_data(cls, f, mesh, triangle_data):
 
         # CELL_DATA 9804
         # SCALARS cell_scalars FLOAT
@@ -227,7 +239,7 @@ class VTKHandler:
         # ...
 
         num_triangles = mesh.data.triangles.shape[0]
-        filehandle.write('CELL_DATA {}\n'.format(num_triangles))
+        f.write('CELL_DATA {}\n'.format(num_triangles))
 
         error_msg = "The triangle_data argument in write_vtk() must be a dictionary or arrays/lists " \
                     "with length equal to the number of triangles."
@@ -243,11 +255,11 @@ class VTKHandler:
             except TypeError:
                 raise ValueError(error_msg)
 
-            filehandle.write('SCALARS {} FLOAT\n'.format(var_name.replace(" ", "_")))
-            filehandle.write('LOOKUP_TABLE default\n')
+            f.write('SCALARS {} FLOAT\n'.format(var_name.replace(" ", "_")))
+            f.write('LOOKUP_TABLE default\n')
             for value in values:
-                filehandle.write('{}\n'.format(value))
+                f.write('{}\n'.format(value))
 
 
 import_vtk = VTKHandler.import_vtk
-write_vtk = VTKHandler.write_vtk
+export_vtk = VTKHandler.export_vtk

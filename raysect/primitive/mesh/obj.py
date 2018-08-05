@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,7 @@ class OBJHandler:
 
         :param str filename: Mesh file path.
         :param double scaling: Scale the mesh by this factor (default=1.0).
-        :param **kwargs: Accepts optional keyword arguments from the Mesh class.
+        :param kwargs: Accepts optional keyword arguments from the Mesh class.
         :rtype: Mesh
         """
 
@@ -135,3 +135,4 @@ class OBJHandler:
 
 
 import_obj = OBJHandler.import_obj
+# export_obj = OBJHandler.export_obj
