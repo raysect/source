@@ -219,7 +219,9 @@ class STLHandler:
 
         with open(filename, 'w') as f:
 
-            mesh_name = mesh.name.replace(" ", "_") or 'RaysectMesh'
+            mesh_name = mesh.name or 'RaysectMesh'
+            mesh_name = mesh_name.replace(" ", "_")
+
             f.write('solid {}\n'.format(mesh_name))
 
             for i in range(num_triangles):
@@ -232,12 +234,6 @@ class STLHandler:
                 f.write('    endloop\n')
                 f.write('  endfacet\n')
 
-                if i == 0:
-                    print(v1, v2, v3)
-                    print(vertices[v1, 0], vertices[v1, 1], vertices[v1, 2])
-                    print(vertices[v2, 0], vertices[v2, 1], vertices[v2, 2])
-                    print(vertices[v3, 0], vertices[v3, 1], vertices[v3, 2])
-
             f.write('endsolid {}'.format(mesh_name))
 
     @classmethod
@@ -248,7 +244,8 @@ class STLHandler:
         vertices = mesh.data.vertices
         num_triangles = triangles.shape[0]
 
-        mesh_name = mesh.name.replace(" ", "_") or 'RaysectMesh'
+        mesh_name = mesh.name or 'RaysectMesh'
+        mesh_name = mesh_name.replace(" ", "_")
 
         with open(filename, 'wb') as f:
 

@@ -31,6 +31,6 @@
 
 from .mesh import Mesh
 from .stl import import_stl, export_stl, STL_AUTOMATIC, STL_ASCII, STL_BINARY
-from .obj import import_obj
+from .obj import import_obj, export_obj
 from .ply import import_ply, export_ply, PLY_AUTOMATIC, PLY_ASCII, PLY_BINARY
 from .vtk import import_vtk, export_vtk, VTK_AUTOMATIC, VTK_ASCII, VTK_BINARY

@@ -216,8 +216,9 @@ class PLYHandler:
         with open(filename, "w") as f:
 
             vertices = mesh.data.vertices
-            num_vertices = vertices.shape[0]
             triangles = mesh.data.triangles
+
+            num_vertices = vertices.shape[0]
             num_triangles = triangles.shape[0]
 
             # write header
@@ -235,12 +236,14 @@ class PLYHandler:
             f.write("end_header\n")
 
             # write vertices
-            for i in range(num_vertices):
-                f.write("{} {} {}\n".format(vertices[i, 0], vertices[i, 1], vertices[i, 2]))
+            for vertex in vertices:
+                f.write("{:.6e} {:6e} {:6e}\n".format(vertex[0], vertex[1], vertex[2]))
+
+            # TODO: handle vertex normals
 
             # write triangles
-            for i in range(num_triangles):
-                f.write("3 {} {} {}\n".format(triangles[i, 0], triangles[i, 1], triangles[i, 2]))
+            for triangle in triangles:
+                f.write("3 {:d} {:d} {:d}\n".format(triangle[0], triangle[1], triangle[2]))
 
     @classmethod
     def _write_binary(cls, mesh, filename, comment=None):
@@ -248,8 +251,9 @@ class PLYHandler:
         with open(filename, "wb") as f:
 
             vertices = mesh.data.vertices
-            num_vertices = vertices.shape[0]
             triangles = mesh.data.triangles
+
+            num_vertices = vertices.shape[0]
             num_triangles = triangles.shape[0]
 
             # write header
@@ -267,12 +271,14 @@ class PLYHandler:
             f.write("end_header\n".encode())
 
             # write vertices
-            for i in range(num_vertices):
-                f.write(struct.pack('<fff', vertices[i, 0], vertices[i, 1], vertices[i, 2]))
+            for vertex in vertices:
+                f.write(struct.pack('<fff', vertex[0], vertex[1], vertex[2]))
+
+            # TODO: handle vertex normals
 
             # write triangles
-            for i in range(num_triangles):
-                f.write(struct.pack('<BIII', 3, triangles[i, 0], triangles[i, 1], triangles[i, 2]))
+            for triangle in triangles:
+                f.write(struct.pack('<BIII', 3, triangle[0], triangle[1], triangle[2]))
 
 
 import_ply = PLYHandler.import_ply
