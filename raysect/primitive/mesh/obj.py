@@ -135,6 +135,12 @@ class OBJHandler:
 
     @classmethod
     def export_obj(cls, mesh, filename):
+        """
+        Write a mesh instance to a Wavefront OBJ (.obj) mesh file.
+
+        :param Mesh mesh: The Raysect mesh instance to write to OBJ.
+        :param str filename: Mesh file path.
+        """
 
         # note indexing in obj format is 1 based, Python is 0 based
         with open(filename, 'w') as f:
