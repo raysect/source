@@ -156,5 +156,5 @@ cdef class VectorCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, int x, int y):
-        return self._etendue
+    cpdef double _pixel_sensitivity(self, int x, int y):
+        return self._sensitivity
