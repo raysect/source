@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .mesh import Mesh
-from .stl import import_stl, STL_AUTOMATIC, STL_ASCII, STL_BINARY
+from .stl import import_stl, write_stl, STL_AUTOMATIC, STL_ASCII, STL_BINARY
 from .obj import import_obj
-
+from .ply import import_ply, write_ply
+from .vtk import import_vtk, write_vtk

@@ -188,7 +188,9 @@ class STLHandler:
         """
         Write a mesh instance to a STereoLithography (STL) mesh file (.stl).
 
+        :param Mesh mesh: The Raysect mesh instance to write to STL.
         :param str filename: Mesh file path.
+        :param str mode: The file format to write ['ASCII', 'BINARY'].
         """
 
         if not isinstance(mesh, Mesh):

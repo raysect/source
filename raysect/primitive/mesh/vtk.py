@@ -132,7 +132,14 @@ class VTKHandler:
         """
         Write a mesh instance to a vtk mesh file (.vtk) with optional cell and point data.
 
+        :param Mesh mesh: The Raysect mesh instance to write as VTK.
         :param str filename: Mesh file path.
+        :param dict triangle_data: A dictionary of triangle face datasets to be saved along with the
+          mesh. The dictionary keys will be the variable names. Each array must be 1D with length
+          equal to the number of triangles in the mesh.
+        :param dict vertex_data: A dictionary of vertex datasets to be saved along with the
+          mesh. The dictionary keys will be the variable names. Each array must be 1D with length
+          equal to the number of vertices in the mesh.
         """
 
         if not isinstance(mesh, Mesh):
