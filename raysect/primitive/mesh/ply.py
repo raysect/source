@@ -38,6 +38,7 @@ PLY_ASCII = 'ascii'
 PLY_BINARY = 'binary'
 
 
+# TODO: missing vertex normal support
 # TODO: add support for other data types, e.g. face colours and other arbitrary data
 # TODO: this implementation is currently very rigid. Some valid PLY files might fail unnecessarily at present.
 class PLYHandler:
