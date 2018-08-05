@@ -83,8 +83,6 @@ DEF RSM_VERSION_MINOR = 0
 # TODO: tidy up the internal storage of triangles - separate the triangle reference arrays for vertices, normals etc...
 # TODO: the following code really is a bit opaque, needs a general tidy up
 # TODO: move load/save code to C?
-
-
 cdef class MeshData(KDTree3DCore):
     """
     Holds the mesh data and acceleration structures.
@@ -102,7 +100,7 @@ cdef class MeshData(KDTree3DCore):
       calculating ray intersections (default=True).
     :param bool closed: Whether this mesh should be treated as a closed surface,
       i.e. no holes. (default=True)
-    :param bool tolerant: Toggles filtering out of degenerant triangles
+    :param bool tolerant: Toggles filtering out of degenerate triangles
       (default=True).
     :param int max_depth: Maximum kd-Tree depth for this mesh (automatic if set to
       0, default=0).
@@ -198,7 +196,7 @@ cdef class MeshData(KDTree3DCore):
     @property
     def vertex_normals(self):
         if self._vertex_normals is None:
-            raise ValueError('Mesh does not contain vertex normals.')
+            return None
         return self._vertex_normals.copy()
 
     @property
