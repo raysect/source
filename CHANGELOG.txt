@@ -1,14 +1,8 @@
 Raysect Changelog
 =================
 
-Release 0.5.1 (7 Aug 2018)
---------------------------
 
-Bug Fixes:
-* Typo in setup.py broke installation in pip.
-
-
-Release 0.5.0 (7 Aug 2018)
+Release 0.5.2 (7 Aug 2018)
 --------------------------
 
 API Changes:
@@ -29,6 +23,12 @@ New:
 * Added meta dictionary attribute to scene-graph nodes to allow users to attach their own data. [#218]
 * Added is_identity() and is_close() comparison methods to AffineMatrix3D. [#199]
 * Added angle() to vector objects to compute angle between vectors. [#205]
+
+Release 0.5.0, 0.5.1 (7 Aug 2018)
+---------------------------------
+
+Bug Fixes:
+* setup.py broke installation in pip.
 
 
 Release 0.4.0 (11 Dec 2017)
