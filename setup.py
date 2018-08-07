@@ -59,7 +59,6 @@ setup(
         "Topic :: Scientific/Engineering :: Physics"
     ],
     install_requires=[
-        'python>=3.5',
         'cython>=0.28',
         'numpy',
         'matplotlib'
