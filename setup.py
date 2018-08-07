@@ -61,7 +61,6 @@ setup(
     install_requires=[
         'cython>=0.28',
         'numpy',
-        'matplotlib'
     ],
     packages=find_packages(),
     include_package_data=True,
