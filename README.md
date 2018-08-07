@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1205064.svg)](https://doi.org/10.5281/zenodo.1205064)
+[![DOI](https://zenodo.org/badge/24816520.svg)](https://zenodo.org/badge/latestdoi/24816520)
 
 <a name="logo"/>
 <a href="https://www.raysect.org/" target="_blank">
