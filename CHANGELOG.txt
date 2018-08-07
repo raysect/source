@@ -1,7 +1,6 @@
 Raysect Changelog
 =================
 
-
 Release 0.5.2 (7 Aug 2018)
 --------------------------
 
@@ -23,6 +22,7 @@ New:
 * Added meta dictionary attribute to scene-graph nodes to allow users to attach their own data. [#218]
 * Added is_identity() and is_close() comparison methods to AffineMatrix3D. [#199]
 * Added angle() to vector objects to compute angle between vectors. [#205]
+
 
 Release 0.5.0, 0.5.1 (7 Aug 2018)
 ---------------------------------
