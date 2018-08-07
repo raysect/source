@@ -179,18 +179,18 @@ cdef class MeshCamera(Observer1D):
         return self._solid_angle
 
     @property
-    def etendues(self):
+    def sensitivitys(self):
         return self._areas.copy() * self._solid_angle
 
-    cpdef double etendue(self, int pixel):
+    cpdef double sensitivity(self, int pixel):
         """
-        The pixel's etendue measured in units of per area per solid angle (m^-2 str^-1).
+        The pixel's sensitivity measured in units of per area per solid angle (m^-2 str^-1).
 
         :rtype: float
         """
         if pixel < 0 or pixel >= self._areas_mv.shape[0]:
             raise ValueError('Pixel must lie in the range [0, number of triangles).')
-        return self._pixel_etendue(pixel)
+        return self._pixel_sensitivity(pixel)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -271,5 +271,5 @@ cdef class MeshCamera(Observer1D):
 
         return surface_to_primitive
 
-    cpdef double _pixel_etendue(self, int pixel):
+    cpdef double _pixel_sensitivity(self, int pixel):
         return self._solid_angle * self._areas_mv[pixel]

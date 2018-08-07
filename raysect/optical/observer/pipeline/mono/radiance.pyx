@@ -177,7 +177,7 @@ cdef class RadiancePixelProcessor(PixelProcessor):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef object add_sample(self, Spectrum spectrum, double etendue):
+    cpdef object add_sample(self, Spectrum spectrum, double sensitivity):
 
         cdef:
             int index

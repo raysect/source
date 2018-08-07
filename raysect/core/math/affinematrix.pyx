@@ -33,6 +33,7 @@ cimport cython
 from libc.math cimport fabs
 
 
+
 cdef class AffineMatrix3D(_Mat4):
     """A 4x4 affine matrix.
 
@@ -246,8 +247,3 @@ cdef class AffineMatrix3D(_Mat4):
                                   self.m[3][0] * m.m[0][1] + self.m[3][1] * m.m[1][1] + self.m[3][2] * m.m[2][1] + self.m[3][3] * m.m[3][1],
                                   self.m[3][0] * m.m[0][2] + self.m[3][1] * m.m[1][2] + self.m[3][2] * m.m[2][2] + self.m[3][3] * m.m[3][2],
                                   self.m[3][0] * m.m[0][3] + self.m[3][1] * m.m[1][3] + self.m[3][2] * m.m[2][3] + self.m[3][3] * m.m[3][3])
-
-
-
-
-

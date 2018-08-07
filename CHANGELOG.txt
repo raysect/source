@@ -1,12 +1,34 @@
 Raysect Changelog
 =================
 
-Release 0.5.0 (TBD)
--------------------
+Release 0.5.2 (7 Aug 2018)
+--------------------------
+
+API Changes:
+* Etendue replaced with sensitivity in the observers. [#202]
+
+Bug Fixes:
+* Raysect now builds with Cython 0.28.
+* Fixed pixel geometry changes not triggering a recalculation of the TargettedCCD pixel sensitivity. [#219]
 
 New:
-* Added MeshCamera. A camera that uses the triangles of a mesh as pixels.
-* Spectral and Monochromatic 1D pipelines.
+* Added MeshCamera. A camera that uses the triangles of a mesh as pixels. [#204]
+* Added Spectral and Monochromatic 1D pipelines. [supporting #204]
+* Added STL and OBJ mesh exporters. [#176]
+* Added limited support for PLY and VTK mesh importing/exporting. [#209, #224]
+* Added OpenCV camera. [#109]
+* Added sub-sampling (anti-aliasing) to VectorCamera. [#222]
+* Added masked samplers that allow users to limit the region being rendered. [#223]
+* Added meta dictionary attribute to scene-graph nodes to allow users to attach their own data. [#218]
+* Added is_identity() and is_close() comparison methods to AffineMatrix3D. [#199]
+* Added angle() to vector objects to compute angle between vectors. [#205]
+
+
+Release 0.5.0, 0.5.1 (7 Aug 2018)
+---------------------------------
+
+Bug Fixes:
+* setup.py broke installation in pip.
 
 
 Release 0.4.0 (11 Dec 2017)

@@ -46,7 +46,7 @@ cdef class PinholeCamera(Observer2D):
 
     :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
     :param float fov: The field of view of the camera in degrees (default=45 degrees).
-    :param float etendue: The etendue of each pixel (default=1.0)
+    :param float sensitivity: The sensitivity of each pixel (default=1.0)
     :param FrameSampler2D frame_sampler: The frame sampling strategy, defaults to adaptive
       sampling (i.e. extra samples for noisier pixels).
     :param list pipelines: The list of pipelines that will process the spectrum measured
@@ -55,10 +55,10 @@ cdef class PinholeCamera(Observer2D):
     """
 
     cdef:
-        double _etendue, _fov, image_delta, image_start_x, image_start_y
+        double _sensitivity, _fov, image_delta, image_start_x, image_start_y
         RectangleSampler3D point_sampler
 
-    def __init__(self, pixels, fov=None, etendue=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
+    def __init__(self, pixels, fov=None, sensitivity=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
         # defaults to an adaptively sampled RGB pipeline
         if not pipelines and not frame_sampler:
@@ -73,7 +73,7 @@ cdef class PinholeCamera(Observer2D):
 
         # note that the fov property triggers a call to _update_image_geometry()
         self.fov = fov or 45
-        self.etendue = etendue or 1.0
+        self.sensitivity = sensitivity or 1.0
 
     @property
     def fov(self):
@@ -86,27 +86,27 @@ cdef class PinholeCamera(Observer2D):
 
     @fov.setter
     def fov(self, value):
-        if value <= 0 or value > 90:
-            raise ValueError("The field-of-view angle must lie in the range (0, 90].")
+        if value <= 0 or value >= 180:
+            raise ValueError("The field-of-view angle must lie in the range (0, 180).")
         self._fov = value
         self._update_image_geometry()
 
     @property
-    def etendue(self):
+    def sensitivity(self):
         """
-        The etendue applied to each pixel.
+        The sensitivity applied to each pixel.
 
-        If etendue=1.0 all spectral units are in radiance.
+        If sensitivity=1.0 all spectral units are in radiance.
 
         :rtype: float
         """
-        return self._etendue
+        return self._sensitivity
 
-    @etendue.setter
-    def etendue(self, value):
+    @sensitivity.setter
+    def sensitivity(self, value):
         if value <= 0:
-            raise ValueError("Etendue must be greater than zero.")
-        self._etendue = value
+            raise ValueError("Sensitivity must be greater than zero.")
+        self._sensitivity = value
 
     cdef object _update_image_geometry(self):
 
@@ -166,5 +166,5 @@ cdef class PinholeCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, int x, int y):
-        return self._etendue
+    cpdef double _pixel_sensitivity(self, int x, int y):
+        return self._sensitivity

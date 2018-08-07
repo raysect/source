@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,11 +31,10 @@
 
 from raysect.primitive.mesh import Mesh
 import struct
-import os
 
-STL_AUTOMATIC = 0
-STL_ASCII = 1
-STL_BINARY = 2
+STL_AUTOMATIC = 'auto'
+STL_ASCII = 'ascii'
+STL_BINARY = 'binary'
 
 
 class STLHandler:
@@ -51,34 +50,39 @@ class STLHandler:
 
         :param str filename: Mesh file path.
         :param double scaling: Scale the mesh by this factor (default=1.0).
-        :param **kwargs: Accepts optional keyword arguments from the Mesh class.
+        :param str mode: The file format to load: 'ascii', 'binary', 'auto' (default='auto').
+        :param kwargs: Accepts optional keyword arguments from the Mesh class.
         :rtype: Mesh
         """
 
+        mode = mode.lower()
         if mode == STL_ASCII:
             vertices, triangles = cls._load_ascii(filename, scaling)
         elif mode == STL_BINARY:
             vertices, triangles = cls._load_binary(filename, scaling)
-        else:
+        elif mode == STL_AUTOMATIC:
             try:
                 vertices, triangles = cls._load_ascii(filename, scaling)
             except ValueError:
                 vertices, triangles = cls._load_binary(filename, scaling)
+        else:
+            modes = (STL_AUTOMATIC, STL_ASCII, STL_BINARY)
+            raise ValueError('Unrecognised import mode, valid values are: {}'.format(modes))
 
         return Mesh(vertices, triangles, smoothing=False, **kwargs)
 
     @classmethod
     def _load_ascii(cls, filename, scaling):
 
-        with open(filename, 'r') as fh:
-            line = cls._get_ascii_line(fh)
+        with open(filename, 'r') as f:
+            line = cls._get_ascii_line(f)
             if not line.startswith('solid'):
                 raise ValueError('ASCII STL files should start with a solid definition. The application that produced this STL '
                                  'file may be faulty, please report this error. The erroneous line: {}'.format(line))
-            return cls._ascii_read_triangle(fh, scaling)
+            return cls._ascii_read_triangle(f, scaling)
 
     @classmethod
-    def _ascii_read_triangle(cls, fh, scaling):
+    def _ascii_read_triangle(cls, f, scaling):
 
         vertices = []
         triangles = []
@@ -86,13 +90,13 @@ class STLHandler:
         while True:
             try:
                 # read
-                _ = cls._get_ascii_line(fh, 'facet normal')
-                assert cls._get_ascii_line(fh) == 'outer loop'
-                v1 = cls._get_ascii_line(fh, 'vertex')
-                v2 = cls._get_ascii_line(fh, 'vertex')
-                v3 = cls._get_ascii_line(fh, 'vertex')
-                assert cls._get_ascii_line(fh) == 'endloop'
-                assert cls._get_ascii_line(fh) == 'endfacet'
+                _ = cls._get_ascii_line(f, 'facet normal')
+                assert cls._get_ascii_line(f) == 'outer loop'
+                v1 = cls._get_ascii_line(f, 'vertex')
+                v2 = cls._get_ascii_line(f, 'vertex')
+                v3 = cls._get_ascii_line(f, 'vertex')
+                assert cls._get_ascii_line(f) == 'endloop'
+                assert cls._get_ascii_line(f) == 'endfacet'
 
                 # store
                 vertices.append([scaling * v1[0], scaling * v1[1], scaling * v1[2]])
@@ -108,10 +112,10 @@ class STLHandler:
         return vertices, triangles
 
     @classmethod
-    def _get_ascii_line(cls, fh, prefix=''):
+    def _get_ascii_line(cls, f, prefix=''):
 
         # get next line, remove whitespace i.e. indentation, newline character, etc
-        line = fh.readline().lower().strip()
+        line = f.readline().lower().strip()
         if prefix:
             if line.startswith(prefix):
                 values = line.replace(prefix, '', 1).strip().split()
@@ -130,32 +134,32 @@ class STLHandler:
     @classmethod
     def _load_binary(cls, filename, scaling):
 
-        #: Amount of bytes to read while using buffered reading
+        # amount of bytes to read while using buffered reading
         BUFFER_SIZE = 4096
 
-        #: The amount of bytes in the header field
+        # the amount of bytes in the header field
         HEADER_SIZE = 80
 
-        #: The amount of bytes in the count field
+        # the amount of bytes in the count field
         COUNT_SIZE = 4
 
         triangles = []
 
-        with open(filename, 'rb') as fh:
+        with open(filename, 'rb') as f:
 
-            header = fh.read(HEADER_SIZE).lower()
-            count, = struct.unpack('@i', fh.read(COUNT_SIZE))
+            header = f.read(HEADER_SIZE).lower()
+            count, = struct.unpack('@i', f.read(COUNT_SIZE))
 
             # if check_size:
             #     # Check the size of the file
-            #     fh.seek(0, os.SEEK_END)
-            #     raw_size = fh.tell() - HEADER_SIZE - COUNT_SIZE
+            #     f.seek(0, os.SEEK_END)
+            #     raw_size = f.tell() - HEADER_SIZE - COUNT_SIZE
             #     expected_count = raw_size / cls.dtype.itemsize
             #     if expected_count != count:
             #         raise ValueError('Expected {} vectors but header indicates {}. '
             #                          'Is file invalid?'.format(expected_count, count))
             #     #
-            #     fh.seek(HEADER_SIZE + COUNT_SIZE)
+            #     f.seek(HEADER_SIZE + COUNT_SIZE)
 
             vertices = []
             triangles = []
@@ -163,16 +167,16 @@ class STLHandler:
             # Read the rest of the binary data
             while count > 0:
 
-                # stored normal is not used, recalculated in Triangle
-                nx, ny, nz, = struct.unpack('<3f', fh.read(12))
+                # stored normal is not used, recalculated by Mesh
+                nx, ny, nz, = struct.unpack('<3f', f.read(12))
 
                 # triangle vertices
-                v1x, v1y, v1z, = struct.unpack('<3f', fh.read(12))
-                v2x, v2y, v2z, = struct.unpack('<3f', fh.read(12))
-                v3x, v3y, v3z, = struct.unpack('<3f', fh.read(12))
+                v1x, v1y, v1z, = struct.unpack('<3f', f.read(12))
+                v2x, v2y, v2z, = struct.unpack('<3f', f.read(12))
+                v3x, v3y, v3z, = struct.unpack('<3f', f.read(12))
 
                 # unused attribute
-                attrib = struct.unpack('<H', fh.read(2))
+                attrib = struct.unpack('<H', f.read(2))
 
                 # store
                 vertices.append([scaling * v1x, scaling * v1y, scaling * v1z])
@@ -183,9 +187,89 @@ class STLHandler:
 
             return vertices, triangles
 
+    @classmethod
+    def export_stl(cls, mesh, filename, mode=STL_BINARY):
+        """
+        Write a mesh instance to a STereoLithography (STL) mesh file (.stl).
+
+        :param Mesh mesh: The Raysect mesh instance to write to STL.
+        :param str filename: Mesh file path.
+        :param str mode: The file format to write: 'ascii' or 'binary' (default='ascii').
+        """
+
+        if not isinstance(mesh, Mesh):
+            raise ValueError('The mesh argument to write_stl() must be a valid Raysect Mesh primitive object.')
+
+        mode = mode.lower()
+        if mode == STL_ASCII:
+            cls._write_ascii(mesh, filename)
+        elif mode == STL_BINARY:
+            cls._write_binary(mesh, filename)
+        else:
+            modes = (STL_ASCII, STL_BINARY)
+            raise ValueError('Unrecognised export mode, valid values are: {}'.format(modes))
+
+    @classmethod
+    def _write_ascii(cls, mesh, filename):
+
+        triangles = mesh.data.triangles
+        normals = mesh.data.face_normals
+        vertices = mesh.data.vertices
+        num_triangles = triangles.shape[0]
+
+        with open(filename, 'w') as f:
+
+            mesh_name = mesh.name or 'RaysectMesh'
+            mesh_name = mesh_name.replace(" ", "_")
+
+            f.write('solid {}\n'.format(mesh_name))
+
+            for i in range(num_triangles):
+                v1, v2, v3 = triangles[i, 0:3]
+                f.write('  facet normal {:6e} {:6e} {:6e}\n'.format(normals[i, 0], normals[i, 1], normals[i, 2]))
+                f.write('    outer loop\n')
+                f.write('      vertex  {:6e} {:6e} {:6e}\n'.format(vertices[v1, 0], vertices[v1, 1], vertices[v1, 2]))
+                f.write('      vertex  {:6e} {:6e} {:6e}\n'.format(vertices[v2, 0], vertices[v2, 1], vertices[v2, 2]))
+                f.write('      vertex  {:6e} {:6e} {:6e}\n'.format(vertices[v3, 0], vertices[v3, 1], vertices[v3, 2]))
+                f.write('    endloop\n')
+                f.write('  endfacet\n')
+
+            f.write('endsolid {}'.format(mesh_name))
+
+    @classmethod
+    def _write_binary(cls, mesh, filename):
+
+        triangles = mesh.data.triangles
+        normals = mesh.data.face_normals
+        vertices = mesh.data.vertices
+        num_triangles = triangles.shape[0]
+
+        mesh_name = mesh.name or 'RaysectMesh'
+        mesh_name = mesh_name.replace(" ", "_")
+
+        with open(filename, 'wb') as f:
+
+            f.write(struct.pack('80s', mesh_name.encode('utf-8')))
+            f.write(struct.pack('<I', num_triangles))
+
+            for i in range(num_triangles):
+
+                # write the face normal coordinates
+                f.write(struct.pack('<f', normals[i, 0]))
+                f.write(struct.pack('<f', normals[i, 1]))
+                f.write(struct.pack('<f', normals[i, 2]))
+
+                # write the three vertex coordinates
+                v1, v2, v3 = triangles[i, 0:3]
+                for vj in (v1, v2, v3):
+                    f.write(struct.pack('<f', vertices[vj, 0]))
+                    f.write(struct.pack('<f', vertices[vj, 1]))
+                    f.write(struct.pack('<f', vertices[vj, 2]))
+
+                # UINT16 – Attribute byte count
+                f.write(struct.pack('<H', 0))
+
 
 import_stl = STLHandler.import_stl
-
-
-
+export_stl = STLHandler.export_stl
 

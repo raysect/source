@@ -38,7 +38,7 @@ else:
 
 setup(
     name="raysect",
-    version="0.5.0",
+    version="0.5.2",
     url="http://www.raysect.org",
     author="Dr Alex Meakins et al.",
     author_email="developers@raysect.org",
@@ -54,9 +54,13 @@ setup(
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Cython",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.5",
         "Topic :: Multimedia :: Graphics :: 3D Rendering",
         "Topic :: Scientific/Engineering :: Physics"
+    ],
+    install_requires=[
+        'cython>=0.28',
+        'numpy',
     ],
     packages=find_packages(),
     include_package_data=True,
