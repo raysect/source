@@ -33,4 +33,4 @@ Development Team
 Citing the Code
 ---------------
 
-* Dr Alex Meakins, & Dr Matthew Carr. (2017, December 11). Raysect Python Raytracing Package (Version v0.4.0). Zenodo. http://doi.org/10.5281/zenodo.1205064
+* Dr Alex Meakins, & Matthew Carr. (2018, August 7). raysect/source: v0.5.0 Release (Version v0.5.0). Zenodo. http://doi.org/10.5281/zenodo.1341347
