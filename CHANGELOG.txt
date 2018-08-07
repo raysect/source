@@ -1,6 +1,13 @@
 Raysect Changelog
 =================
 
+Release 0.5.1 (7 Aug 2018)
+--------------------------
+
+Bug Fixes:
+* Typo in setup.py broke installation in pip.
+
+
 Release 0.5.0 (7 Aug 2018)
 --------------------------
 
