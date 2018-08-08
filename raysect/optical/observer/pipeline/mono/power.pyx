@@ -75,6 +75,29 @@ cdef class PowerPipeline0D(Pipeline0D):
 
         self._quiet = False
 
+    def __getstate__(self):
+
+        state = {
+            'name': self.name,
+            'filter': self.filter,
+            'accumulate': self.accumulate,
+            'value': self.value.__getstate__(),
+            'quiet': self._quiet
+        }
+
+        return state
+
+    def __setstate__(self, state):
+
+        self.name = state['name']
+        self.filter = state['filter']
+        self.accumulate = state['accumulate']
+        self.value = StatsBin.__new__().__setstate__(state['value'])
+        self._quiet = state['quiet']
+
+        self._working_buffer = None
+        self._resampled_filter = None
+
     cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
         if not self.accumulate:
@@ -166,6 +189,42 @@ cdef class PowerPipeline1D(Pipeline1D):
 
         self._pixels = 0
         self._samples = 0
+
+    def __getstate__(self):
+
+        state = {
+            'name': self.name,
+            'filter': self.filter,
+            'accumulate': self.accumulate,
+            'pixels': self._pixels,
+            'samples': self._samples
+        }
+
+        if self.frame:
+            state['frame'] = self.frame.__getstate__()
+        else:
+            state['frame'] = None
+
+        return state
+
+    def __setstate__(self, state):
+
+        self.name = state['name']
+        self.filter = state['filter']
+        self.accumulate = state['accumulate']
+        self._pixels = state['pixels']
+        self._samples = state['samples']
+
+        if state['frame']:
+            self.frame = StatsArray1D.__new__().__setstate__(state['frame'])
+        else:
+            self.frame = None
+
+        self._working_mean = None
+        self._working_variance = None
+        self._working_touched = None
+
+        self._resampled_filter = None
 
     cpdef object initialise(self, int pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
@@ -290,6 +349,54 @@ cdef class PowerPipeline2D(Pipeline2D):
         self._samples = 0
 
         self._quiet = False
+
+    def __getstate__(self):
+
+        state = {
+            'name': self.name,
+            'filter': self.filter,
+            'accumulate': self.accumulate,
+            'pixels': self._pixels,
+            'samples': self._samples,
+            'display_progress': self.display_progress,
+            'display_timer': self._display_timer,
+            'display_update_time': self._display_update_time,
+            'quiet': self._quiet
+        }
+
+        if self.frame:
+            state['frame'] = self.frame.__getstate__()
+        else:
+            state['frame'] = None
+
+        return state
+
+    def __setstate__(self, state):
+
+        self.name = state['name']
+        self.filter = state['filter']
+        self.accumulate = state['accumulate']
+        self._pixels = state['pixels']
+        self._samples = state['samples']
+
+        self.display_progress = state['display_progress']
+        self.display_update_time = state['display_update_time']
+        self._quiet = state['quiet']
+
+        if state['frame']:
+            self.frame = StatsArray1D.__new__().__setstate__(state['frame'])
+        else:
+            self.frame = None
+
+        self._working_mean = None
+        self._working_variance = None
+        self._working_touched = None
+
+        self._display_frame = None
+        self._display_timer = 0
+        self._display_figure = None
+
+        self._resampled_filter = None
 
     @property
     def display_white_point(self):
@@ -626,29 +733,6 @@ cdef class PowerPipeline2D(Pipeline2D):
 
         image = self._generate_display_image(self.frame)
         plt.imsave(filename, np.transpose(image), cmap='gray', vmin=0.0)
-
-    def save_data(self, filename):
-        """
-        Saves the frame data to a python pickle file.
-
-        :param str filename: data file path and filename.
-        """
-
-        if not self.frame:
-            raise ValueError("There is no frame data to save.")
-
-        if not filename.endswith('.pickle'):
-            filename += '.pickle'
-
-        data = {
-            'samples': self.frame.mean,
-            'variance': self.frame.variance,
-            'errors': self.frame.errors()
-        }
-
-        output_file = open(filename, 'wb')
-        pickle.dump(data, output_file)
-        output_file.close()
 
 
 cdef class PowerPixelProcessor(PixelProcessor):
