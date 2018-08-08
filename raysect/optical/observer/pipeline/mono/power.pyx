@@ -27,7 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import pickle
 from time import time
 import matplotlib.pyplot as plt
 import numpy as np
@@ -274,29 +273,6 @@ cdef class PowerPipeline1D(Pipeline1D):
         for pixel in range(self.frame.length):
             if self._working_touched[pixel] == 1:
                 self.frame.combine_samples(pixel, self._working_mean[pixel], self._working_variance[pixel], self._samples)
-
-    def save_data(self, filename):
-        """
-        Saves the frame data to a python pickle file.
-
-        :param str filename: data file path and filename.
-        """
-
-        if not self.frame:
-            raise ValueError("There is no frame data to save.")
-
-        if not filename.endswith('.pickle'):
-            filename += '.pickle'
-
-        data = {
-            'samples': self.frame.mean,
-            'variance': self.frame.variance,
-            'errors': self.frame.errors()
-        }
-
-        output_file = open(filename, 'wb')
-        pickle.dump(data, output_file)
-        output_file.close()
 
 
 cdef class PowerPipeline2D(Pipeline2D):

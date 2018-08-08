@@ -27,8 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import pickle
 cimport cython
 import numpy as np
 from matplotlib import pyplot as plt
@@ -193,30 +191,6 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
             raise ValueError("There is no spectrum to display.")
         self._render_display()
 
-    def save_data(self, filename):
-        """
-        Saves the spectral data to a python pickle file.
-
-        :param str filename: data file path and filename.
-        """
-
-        if not self.samples:
-            raise ValueError("There is no spectrum to save.")
-
-        if not filename.endswith('.pickle'):
-            filename += '.pickle'
-
-        data = {
-            'wavelengths': self.wavelengths,
-            'samples': self.samples.mean,
-            'variance': self.samples.variance,
-            'errors': self.samples.errors()
-        }
-
-        output_file = open(filename, 'wb')
-        pickle.dump(data, output_file)
-        output_file.close()
-
 
 cdef class SpectralPowerPipeline1D(Pipeline1D):
     """
@@ -344,29 +318,6 @@ cdef class SpectralPowerPipeline1D(Pipeline1D):
         plt.ylabel('Spectral Power (W/nm)')
         plt.draw()
         plt.show()
-
-    def save_data(self, filename):
-        """
-        Saves the spectral frame data to a python pickle file.
-
-        :param str filename: data file path and filename.
-        """
-
-        if not self.frame:
-            raise ValueError("There is no frame data to save.")
-
-        if not filename.endswith('.pickle'):
-            filename += '.pickle'
-
-        data = {
-            'samples': self.frame.mean,
-            'variance': self.frame.variance,
-            'errors': self.frame.errors()
-        }
-
-        output_file = open(filename, 'wb')
-        pickle.dump(data, output_file)
-        output_file.close()
 
 
 cdef class SpectralPowerPipeline2D(Pipeline2D):
@@ -496,29 +447,6 @@ cdef class SpectralPowerPipeline2D(Pipeline2D):
         plt.ylabel('Spectral Power (W/nm)')
         plt.draw()
         plt.show()
-
-    def save_data(self, filename):
-        """
-        Saves the spectral frame data to a python pickle file.
-
-        :param str filename: data file path and filename.
-        """
-
-        if not self.frame:
-            raise ValueError("There is no frame data to save.")
-
-        if not filename.endswith('.pickle'):
-            filename += '.pickle'
-
-        data = {
-            'samples': self.frame.mean,
-            'variance': self.frame.variance,
-            'errors': self.frame.errors()
-        }
-
-        output_file = open(filename, 'wb')
-        pickle.dump(data, output_file)
-        output_file.close()
 
 
 cdef class SpectralPowerPixelProcessor(PixelProcessor):
