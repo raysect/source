@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: implement pickle
+
 import numpy as np
 cimport numpy as np
 from raysect.core.math.function.function2d cimport Function2D
