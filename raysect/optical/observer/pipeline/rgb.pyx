@@ -110,53 +110,53 @@ cdef class RGBPipeline2D(Pipeline2D):
 
         self._quiet = False
 
-    def __getstate__(self):
-
-        state = {
-            'name': self.name,
-            'accumulate': self.accumulate,
-            'xyz_frame': self.xyz_frame.__getstate__(),
-            'display_progress': self.display_progress,
-            'display_update_time': self._display_update_time,
-            'display_persist_figure': self.display_persist_figure,
-            'display_sensitivity': self._display_sensitivity,
-            'display_auto_exposure': self._display_auto_exposure,
-            'display_unsaturated_fraction': self._display_unsaturated_fraction,
-            'pixels': self._pixels,
-            'samples': self._samples,
-            'quiet': self._quiet
-        }
-
-        return state
-
-    def __setstate__(self, state):
-
-        self.name = state['name']
-        self.accumulate = state['accumulate']
-        self.xyz_frame = StatsArray3D.__new__().__setstate__(state['xyz_frame'])
-
-        self.display_progress = state['display_progress']
-        self._display_update_time = state['display_update_time']
-        self.display_persist_figure = state['display_persist_figure']
-
-        self._display_sensitivity = state['display_sensitivity']
-        self._display_auto_exposure = state['display_auto_exposure']
-        self._display_unsaturated_fraction = state['display_unsaturated_fraction']
-
-        self._working_mean = None
-        self._working_variance = None
-        self._working_touched = None
-
-        self._display_frame = None
-        self._display_timer = 0
-        self._display_figure = None
-
-        self._resampled_xyz = None
-
-        self._pixels = state['pixels']
-        self._samples = state['samples']
-
-        self._quiet = state['quiet']
+    # def __getstate__(self):
+    #
+    #     state = {
+    #         'name': self.name,
+    #         'accumulate': self.accumulate,
+    #         'xyz_frame': self.xyz_frame.__getstate__(),
+    #         'display_progress': self.display_progress,
+    #         'display_update_time': self._display_update_time,
+    #         'display_persist_figure': self.display_persist_figure,
+    #         'display_sensitivity': self._display_sensitivity,
+    #         'display_auto_exposure': self._display_auto_exposure,
+    #         'display_unsaturated_fraction': self._display_unsaturated_fraction,
+    #         'pixels': self._pixels,
+    #         'samples': self._samples,
+    #         'quiet': self._quiet
+    #     }
+    #
+    #     return state
+    #
+    # def __setstate__(self, state):
+    #
+    #     self.name = state['name']
+    #     self.accumulate = state['accumulate']
+    #     self.xyz_frame = StatsArray3D.__new__().__setstate__(state['xyz_frame'])
+    #
+    #     self.display_progress = state['display_progress']
+    #     self._display_update_time = state['display_update_time']
+    #     self.display_persist_figure = state['display_persist_figure']
+    #
+    #     self._display_sensitivity = state['display_sensitivity']
+    #     self._display_auto_exposure = state['display_auto_exposure']
+    #     self._display_unsaturated_fraction = state['display_unsaturated_fraction']
+    #
+    #     self._working_mean = None
+    #     self._working_variance = None
+    #     self._working_touched = None
+    #
+    #     self._display_frame = None
+    #     self._display_timer = 0
+    #     self._display_figure = None
+    #
+    #     self._resampled_xyz = None
+    #
+    #     self._pixels = state['pixels']
+    #     self._samples = state['samples']
+    #
+    #     self._quiet = state['quiet']
 
     @property
     def display_sensitivity(self):
