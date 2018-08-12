@@ -301,6 +301,20 @@ cdef class InterpolatedSF(SpectralFunction):
         if normalise:
             self.samples /= self.integrate(self.wavelengths.min(), self.wavelengths.max())
 
+    def __getstate__(self):
+
+        state = {
+            'wavelengths': self.wavelengths,
+            'samples': self.samples
+        }
+
+        return state
+
+    def __setstate__(self, state):
+
+        self.wavelengths = state['wavelengths']
+        self.samples = state['samples']
+
     @cython.initializedcheck(False)
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         """
@@ -329,6 +343,14 @@ cdef class ConstantSF(SpectralFunction):
 
         super().__init__()
         self.value = value
+
+    def __getstate__(self):
+
+        return {'value': self.value}
+
+    def __setstate__(self, state):
+
+        self.value = state['value']
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         """

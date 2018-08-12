@@ -49,6 +49,22 @@ cdef class StatsBin:
         self.variance = 0.0
         self.samples = 0
 
+    def __getstate__(self):
+
+        state = {
+            'mean': self.mean,
+            'variance': self.variance,
+            'samples': self.samples
+        }
+
+        return state
+
+    def __setstate__(self, state):
+
+        self.mean = state['mean']
+        self.variance = state['variance']
+        self.samples = state['samples']
+
     cpdef object clear(self):
         self.mean = 0.0
         self.variance = 0.0
@@ -112,6 +128,24 @@ cdef class StatsArray1D:
 
         # generate buffers
         self._new_buffers()
+
+    def __getstate__(self):
+
+        state = {
+            'length': self.length,
+            'mean': self.mean,
+            'variance': self.variance,
+            'samples': self.samples
+        }
+
+        return state
+
+    def __setstate__(self, state):
+
+        self.length = state['length']
+        self.mean = state['mean']
+        self.variance = state['variance']
+        self.samples = state['samples']
 
     @property
     def shape(self):
@@ -241,6 +275,26 @@ cdef class StatsArray2D:
 
         # generate frame buffers
         self._new_buffers()
+
+    def __getstate__(self):
+
+        state = {
+            'nx': self.nx,
+            'ny': self.ny,
+            'mean': self.mean,
+            'variance': self.variance,
+            'samples': self.samples
+        }
+
+        return state
+
+    def __setstate__(self, state):
+
+        self.nx = state['nx']
+        self.ny = state['ny']
+        self.mean = state['mean']
+        self.variance = state['variance']
+        self.samples = state['samples']
 
     @property
     def shape(self):
@@ -379,6 +433,28 @@ cdef class StatsArray3D:
 
         # generate frame buffers
         self._new_buffers()
+
+    def __getstate__(self):
+
+        state = {
+            'nx': self.nx,
+            'ny': self.ny,
+            'nz': self.nz,
+            'mean': self.mean,
+            'variance': self.variance,
+            'samples': self.samples
+        }
+
+        return state
+
+    def __setstate__(self, state):
+
+        self.nx = state['nx']
+        self.ny = state['ny']
+        self.nz = state['nz']
+        self.mean = state['mean']
+        self.variance = state['variance']
+        self.samples = state['samples']
 
     @property
     def shape(self):
