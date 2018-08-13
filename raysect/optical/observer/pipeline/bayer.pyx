@@ -1,4 +1,4 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,8 +26,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-# TODO: implement pickle
 
 from time import time
 import matplotlib.pyplot as plt
@@ -133,66 +131,57 @@ cdef class BayerPipeline2D(Pipeline2D):
 
         self._quiet = False
 
-    # def __getstate__(self):
-    #
-    #     # public SpectralFunction red_filter, green_filter, blue_filter
-    #     state = {
-    #         'name': self.name,
-    #         'accumulate': self.accumulate,
-    #         'bayer_mosaic': self._bayer_mosaic,
-    #         'red_filter': self.red_filter,
-    #         'green_filter': self.green_filter,
-    #         'blue_filter': self.blue_filter,
-    #         'frame': self.frame.__getstate__(),
-    #         'display_progress': self.display_progress,
-    #         'display_update_time': self._display_update_time,
-    #         'display_persist_figure': self.display_persist_figure,
-    #         'display_auto_exposure': self._display_auto_exposure,
-    #         'display_unsaturated_fraction': self._display_unsaturated_fraction,
-    #         'display_gamma': self._display_gamma,
-    #         'display_black_point': self._display_black_point,
-    #         'display_white_point': self._display_white_point,
-    #         'pixels': self._pixels,
-    #         'samples': self._samples,
-    #         'quiet': self._quiet
-    #     }
-    #
-    #     return state
-    #
-    # def __setstate__(self, state):
-    #
-    #     self.name = state['name']
-    #     self.accumulate = state['accumulate']
-    #     self._bayer_mosaic = state['bayer_mosaic']
-    #     self.red_filter = state['red_filter']
-    #     self.green_filter = state['green_filter']
-    #     self.blue_filter = state['blue_filter']
-    #     self.frame = StatsArray2D.__new__().__setstate__(state['frame'])
-    #
-    #     self.display_progress = state['display_progress']
-    #     self._display_update_time = state['display_update_time']
-    #     self.display_persist_figure = state['display_persist_figure']
-    #
-    #     self._display_auto_exposure = state['display_auto_exposure']
-    #     self._display_unsaturated_fraction = state['display_unsaturated_fraction']
-    #     self._display_gamma = state['display_gamma']
-    #     self._display_black_point = state['display_black_point']
-    #     self._display_white_point = state['display_white_point']
-    #
-    #     self._working_mean = None
-    #     self._working_variance = None
-    #     self._working_touched = None
-    #
-    #     self._display_frame = None
-    #     self._display_timer = 0
-    #     self._display_figure = None
-    #
-    #     self._resampled_filters = None
-    #
-    #     self._pixels = state['pixels']
-    #     self._samples = state['samples']
-    #
-    #     self._quiet = state['quiet']
+    def __getstate__(self):
+
+        return (
+            self.name,
+            self.red_filter,
+            self.green_filter,
+            self.blue_filter,
+            self._bayer_mosaic,
+            self.display_progress,
+            self.display_update_time,
+            self.display_persist_figure,
+            self.display_gamma,
+            self._display_black_point,
+            self._display_white_point,
+            self._display_auto_exposure,
+            self.display_unsaturated_fraction,
+            self.accumulate,
+            self.frame
+        )
+
+    def __setstate__(self, state):
+
+        (
+            self.name,
+            self.red_filter,
+            self.green_filter,
+            self.blue_filter,
+            self._bayer_mosaic,
+            self.display_progress,
+            self.display_update_time,
+            self.display_persist_figure,
+            self.display_gamma,
+            self._display_black_point,
+            self._display_white_point,
+            self._display_auto_exposure,
+            self.display_unsaturated_fraction,
+            self.accumulate,
+            self.frame
+        ) = state
+
+        # initialise internal state
+        self._working_mean = None
+        self._working_variance = None
+        self._working_touched = None
+        self._display_frame = None
+        self._display_timer = 0
+        self._display_figure = None
+        self._resampled_filters = None
+        self._pixels = None
+        self._samples = 0
+        self._quiet = False
 
     @property
     def display_white_point(self):
