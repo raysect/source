@@ -34,4 +34,9 @@ from .targetted_ccd import TargettedCCDArray
 from .orthographic import OrthographicCamera
 from .pinhole import PinholeCamera
 from .vector import VectorCamera
-from .opencv import OpenCVCamera
+
+try:
+    from .opencv import OpenCVCamera
+except ImportError:
+    pass
+
