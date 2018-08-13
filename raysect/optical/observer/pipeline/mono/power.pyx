@@ -27,12 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: implement pickle
-
 from time import time
 import matplotlib.pyplot as plt
 import numpy as np
-from random import shuffle
 
 cimport cython
 cimport numpy as np
@@ -76,28 +73,31 @@ cdef class PowerPipeline0D(Pipeline0D):
 
         self._quiet = False
 
-    # def __getstate__(self):
-    #
-    #     state = {
-    #         'name': self.name,
-    #         'filter': self.filter,
-    #         'accumulate': self.accumulate,
-    #         'value': self.value.__getstate__(),
-    #         'quiet': self._quiet
-    #     }
-    #
-    #     return state
-    #
-    # def __setstate__(self, state):
-    #
-    #     self.name = state['name']
-    #     self.filter = state['filter']
-    #     self.accumulate = state['accumulate']
-    #     self.value = StatsBin.__new__().__setstate__(state['value'])
-    #     self._quiet = state['quiet']
-    #
-    #     self._working_buffer = None
-    #     self._resampled_filter = None
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return (
+            self.name,
+            self.filter,
+            self.accumulate,
+            self.value
+        )
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        (
+            self.name,
+            self.filter,
+            self.accumulate,
+            self.value
+        ) = state
+
+        # initialise internal state
+        self._working_buffer = None
+        self._resampled_filter = None
+        self._quiet = False
+
 
     cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
@@ -191,41 +191,33 @@ cdef class PowerPipeline1D(Pipeline1D):
         self._pixels = 0
         self._samples = 0
 
-    # def __getstate__(self):
-    #
-    #     state = {
-    #         'name': self.name,
-    #         'filter': self.filter,
-    #         'accumulate': self.accumulate,
-    #         'pixels': self._pixels,
-    #         'samples': self._samples
-    #     }
-    #
-    #     if self.frame:
-    #         state['frame'] = self.frame.__getstate__()
-    #     else:
-    #         state['frame'] = None
-    #
-    #     return state
-    #
-    # def __setstate__(self, state):
-    #
-    #     self.name = state['name']
-    #     self.filter = state['filter']
-    #     self.accumulate = state['accumulate']
-    #     self._pixels = state['pixels']
-    #     self._samples = state['samples']
-    #
-    #     if state['frame']:
-    #         self.frame = StatsArray1D.__new__().__setstate__(state['frame'])
-    #     else:
-    #         self.frame = None
-    #
-    #     self._working_mean = None
-    #     self._working_variance = None
-    #     self._working_touched = None
-    #
-    #     self._resampled_filter = None
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return (
+            self.name,
+            self.filter,
+            self.accumulate,
+            self.frame
+        )
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        (
+            self.name,
+            self.filter,
+            self.accumulate,
+            self.frame
+        ) = state
+
+        # initialise internal state
+        self._working_mean = None
+        self._working_variance = None
+        self._working_touched = None
+        self._resampled_filter = None
+        self._pixels = 0
+        self._samples = 0
 
     cpdef object initialise(self, int pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
@@ -351,53 +343,52 @@ cdef class PowerPipeline2D(Pipeline2D):
 
         self._quiet = False
 
-    # def __getstate__(self):
-    #
-    #     state = {
-    #         'name': self.name,
-    #         'filter': self.filter,
-    #         'accumulate': self.accumulate,
-    #         'pixels': self._pixels,
-    #         'samples': self._samples,
-    #         'display_progress': self.display_progress,
-    #         'display_timer': self._display_timer,
-    #         'display_update_time': self._display_update_time,
-    #         'quiet': self._quiet
-    #     }
-    #
-    #     if self.frame:
-    #         state['frame'] = self.frame.__getstate__()
-    #     else:
-    #         state['frame'] = None
-    #
-    #     return state
-    #
-    # def __setstate__(self, state):
-    #
-    #     self.name = state['name']
-    #     self.filter = state['filter']
-    #     self.accumulate = state['accumulate']
-    #     self._pixels = state['pixels']
-    #     self._samples = state['samples']
-    #
-    #     self.display_progress = state['display_progress']
-    #     self.display_update_time = state['display_update_time']
-    #     self._quiet = state['quiet']
-    #
-    #     if state['frame']:
-    #         self.frame = StatsArray1D.__new__().__setstate__(state['frame'])
-    #     else:
-    #         self.frame = None
-    #
-    #     self._working_mean = None
-    #     self._working_variance = None
-    #     self._working_touched = None
-    #
-    #     self._display_frame = None
-    #     self._display_timer = 0
-    #     self._display_figure = None
-    #
-    #     self._resampled_filter = None
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return (
+            self.name,
+            self.filter,
+            self.display_progress,
+            self.display_update_time,
+            self.display_persist_figure,
+            self.display_gamma,
+            self._display_black_point,
+            self._display_white_point,
+            self._display_auto_exposure,
+            self.display_unsaturated_fraction,
+            self.accumulate,
+            self.frame
+        )
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        (
+            self.name,
+            self.filter,
+            self.display_progress,
+            self.display_update_time,
+            self.display_persist_figure,
+            self.display_gamma,
+            self._display_black_point,
+            self._display_white_point,
+            self._display_auto_exposure,
+            self.display_unsaturated_fraction,
+            self.accumulate,
+            self.frame
+        ) = state
+
+        self._working_mean = None
+        self._working_variance = None
+        self._working_touched = None
+        self._display_frame = None
+        self._display_timer = 0
+        self._display_figure = None
+        self._resampled_filter = None
+        self._pixels = None
+        self._samples = 0
+        self._quiet = False
 
     @property
     def display_white_point(self):
