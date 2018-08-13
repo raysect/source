@@ -29,8 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: implement pickle
-
 cimport cython
 from raysect.core.math.cython cimport interpolate, integrate
 from numpy import array, float64, argsort
@@ -71,7 +69,6 @@ cdef class SpectralFunction:
         self._sample_cache_init()
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
-
         raise NotImplementedError("Virtual method integrate() not implemented.")
 
     @cython.cdivision(True)
@@ -301,19 +298,37 @@ cdef class InterpolatedSF(SpectralFunction):
         if normalise:
             self.samples /= self.integrate(self.wavelengths.min(), self.wavelengths.max())
 
-    # def __getstate__(self):
-    #
-    #     state = {
-    #         'wavelengths': self.wavelengths,
-    #         'samples': self.samples
-    #     }
-    #
-    #     return state
-    #
-    # def __setstate__(self, state):
-    #
-    #     self.wavelengths = state['wavelengths']
-    #     self.samples = state['samples']
+    def __getstate__(self):
+
+        return (
+            self.wavelengths,
+            self.samples,
+            self._average_cache,
+            self._average_cache_min_wvl,
+            self._average_cache_max_wvl,
+            self._sample_cache,
+            self._sample_cache_min_wvl,
+            self._sample_cache_max_wvl,
+            self._sample_cache_num_samp
+        )
+
+    def __setstate__(self, state):
+
+        (
+            self.wavelengths,
+            self.samples,
+            self._average_cache,
+            self._average_cache_min_wvl,
+            self._average_cache_max_wvl,
+            self._sample_cache,
+            self._sample_cache_min_wvl,
+            self._sample_cache_max_wvl,
+            self._sample_cache_num_samp
+        ) = state
+
+        # rebuild memory views
+        self.wavelengths_mv = self.wavelengths
+        self.samples_mv = self.samples
 
     @cython.initializedcheck(False)
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
@@ -343,14 +358,6 @@ cdef class ConstantSF(SpectralFunction):
 
         super().__init__()
         self.value = value
-
-    # def __getstate__(self):
-    #
-    #     return {'value': self.value}
-    #
-    # def __setstate__(self, state):
-    #
-    #     self.value = state['value']
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         """
