@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-# TODO: implement pickle
 
 cimport cython
 from raysect.core.math.cython cimport integrate, interpolate
@@ -63,6 +61,33 @@ cdef class Spectrum(SpectralFunction):
             raise ValueError("Number of bins cannot be less than 1.")
 
         self._construct(min_wavelength, max_wavelength, bins)
+
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return (
+            self.min_wavelength,
+            self.max_wavelength,
+            self.bins,
+            self.delta_wavelength,
+            self.samples,
+            self._wavelengths,
+        )
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        (
+            self.min_wavelength,
+            self.max_wavelength,
+            self.bins,
+            self.delta_wavelength,
+            self.samples,
+            self._wavelengths,
+        ) = state
+
+        # rebuild memory views
+        self.samples_mv = self.samples
 
     cdef void _wavelength_check(self, double min_wavelength, double max_wavelength):
 
@@ -125,28 +150,6 @@ cdef class Spectrum(SpectralFunction):
         """
 
         return self.bins
-
-    def __getstate__(self):
-        """Encodes state for pickling."""
-
-        return (
-            self.min_wavelength,
-            self.max_wavelength,
-            self.bins,
-            self.delta_wavelength,
-            self.samples,
-        )
-
-    def __setstate__(self, state):
-        """Decodes state for pickling."""
-
-        (self.min_wavelength,
-         self.max_wavelength,
-         self.bins,
-         self.delta_wavelength,
-         self.samples) = state
-
-        self._wavelengths = None
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
