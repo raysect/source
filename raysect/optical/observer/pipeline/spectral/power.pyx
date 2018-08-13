@@ -1,4 +1,4 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -74,40 +74,38 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
         self._display_figure = None
         self._quiet = False
 
-    # def __getstate__(self):
-    #
-    #     state = {
-    #         'name': self.name,
-    #         'accumulate': self.accumulate,
-    #         'samples': self.samples.__getstate__(),
-    #         'min_wavelength': self.min_wavelength,
-    #         'max_wavelength': self.max_wavelength,
-    #         'bins': self.bins,
-    #         'wavelengths': self.wavelengths,
-    #         'delta_wavelength': self.delta_wavelength,
-    #         'display_progress': self.display_progress,
-    #         'display_figure': self._display_figure,
-    #         'quiet': self._quiet
-    #     }
-    #
-    #     return state
-    #
-    # def b__setstate__(self, state):
-    #
-    #     self.name = state['name']
-    #     self.accumulate = state['accumulate']
-    #     self.samples = StatsArray1D.__new__().__setstate__(state['samples'])
-    #     self._spectral_slices = None
-    #
-    #     self.min_wavelength = state['min_wavelength']
-    #     self.max_wavelength = state['max_wavelength']
-    #     self.bins = state['bins']
-    #     self.delta_wavelength = state['delta_wavelength']
-    #     self.wavelengths = state['wavelengths']
-    #
-    #     self.display_progress = state['display_progress']
-    #     self._display_figure = state['display_figure']
-    #     self._quiet = state['quiet']
+    def __getstate__(self):
+
+        return (
+            self.name,
+            self.accumulate,
+            self.samples,
+            self.min_wavelength,
+            self.max_wavelength,
+            self.bins,
+            self.wavelengths,
+            self.delta_wavelength,
+            self.display_progress
+        )
+
+    def __setstate__(self, state):
+
+        (
+            self.name,
+            self.accumulate,
+            self.samples,
+            self.min_wavelength,
+            self.max_wavelength,
+            self.bins,
+            self.wavelengths,
+            self.delta_wavelength,
+            self.display_progress
+        ) = state
+
+        # initialise internal state
+        self._spectral_slices = None
+        self._display_figure = None
+        self._quiet = False
 
     cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
@@ -221,38 +219,36 @@ cdef class SpectralPowerPipeline1D(Pipeline1D):
         self.delta_wavelength = 0
         self.wavelengths = None
 
-    # def __getstate__(self):
-    #
-    #     state = {
-    #         'name': self.name,
-    #         'accumulate': self.accumulate,
-    #         'frame': self.frame.__getstate__(),
-    #         'pixels': self._pixels,
-    #         'samples': self._samples,
-    #         'spectral_slices': self._spectral_slices
-    #         'min_wavelength': self.min_wavelength,
-    #         'max_wavelength': self.max_wavelength,
-    #         'bins': self.bins,
-    #         'wavelengths': self.wavelengths,
-    #         'delta_wavelength': self.delta_wavelength,
-    #     }
-    #
-    #     return state
-    #
-    # def __setstate__(self, state):
-    #
-    #     self.name = state['name']
-    #     self.accumulate = state['accumulate']
-    #     self.frame = StatsArray2D.__new__().__setstate__(state['frame'])
-    #     self._pixels = state['pixels']
-    #     self._samples = state['samples']
-    #     self._spectral_slices = state['spectral_slices']
-    #
-    #     self.min_wavelength = state['min_wavelength']
-    #     self.max_wavelength = state['max_wavelength']
-    #     self.bins = state['bins']
-    #     self.delta_wavelength = state['delta_wavelength']
-    #     self.wavelengths = state['wavelengths']
+    def __getstate__(self):
+
+        return (
+            self.name,
+            self.accumulate,
+            self.frame,
+            self.min_wavelength,
+            self.max_wavelength,
+            self.bins,
+            self.delta_wavelength,
+            self.wavelengths
+        )
+
+    def __setstate__(self, state):
+
+        (
+            self.name,
+            self.accumulate,
+            self.frame,
+            self.min_wavelength,
+            self.max_wavelength,
+            self.bins,
+            self.delta_wavelength,
+            self.wavelengths
+        ) = state
+
+        # initialise internal state
+        self._pixels = 0
+        self._samples = 0
+        self._spectral_slices = None
 
     cpdef object initialise(self, int pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
@@ -349,38 +345,36 @@ cdef class SpectralPowerPipeline2D(Pipeline2D):
         self.delta_wavelength = 0
         self.wavelengths = None
 
-    # def __getstate__(self):
-    #
-    #     state = {
-    #         'name': self.name,
-    #         'accumulate': self.accumulate,
-    #         'frame': self.frame.__getstate__(),
-    #         'pixels': self._pixels,
-    #         'samples': self._samples,
-    #         'spectral_slices': self._spectral_slices
-    #         'min_wavelength': self.min_wavelength,
-    #         'max_wavelength': self.max_wavelength,
-    #         'bins': self.bins,
-    #         'wavelengths': self.wavelengths,
-    #         'delta_wavelength': self.delta_wavelength,
-    #     }
-    #
-    #     return state
-    #
-    # def __setstate__(self, state):
-    #
-    #     self.name = state['name']
-    #     self.accumulate = state['accumulate']
-    #     self.frame = StatsArray3D.__new__().__setstate__(state['frame'])
-    #     self._pixels = state['pixels']
-    #     self._samples = state['samples']
-    #     self._spectral_slices = state['spectral_slices']
-    #
-    #     self.min_wavelength = state['min_wavelength']
-    #     self.max_wavelength = state['max_wavelength']
-    #     self.bins = state['bins']
-    #     self.delta_wavelength = state['delta_wavelength']
-    #     self.wavelengths = state['wavelengths']
+    def __getstate__(self):
+
+        return (
+            self.name,
+            self.accumulate,
+            self.frame,
+            self.min_wavelength,
+            self.max_wavelength,
+            self.bins,
+            self.delta_wavelength,
+            self.wavelengths
+        )
+
+    def __setstate__(self, state):
+
+        (
+            self.name,
+            self.accumulate,
+            self.frame,
+            self.min_wavelength,
+            self.max_wavelength,
+            self.bins,
+            self.delta_wavelength,
+            self.wavelengths
+        ) = state
+
+        # initialise internal state
+        self._pixels = 0
+        self._samples = 0
+        self._spectral_slices = None
 
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet):
 
