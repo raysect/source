@@ -1034,6 +1034,8 @@ cdef class Mesh(Primitive):
       (default=Material() instance).
     :param str name: A human friendly name to identity the mesh in the
       scene-graph (default="").
+
+    :ivar MeshData data: A class instance containing all the mesh data.
     """
 
     # TODO: calculate or measure triangle hit cost vs split traversal
@@ -1213,6 +1215,13 @@ cdef class Mesh(Primitive):
         contains the mesh geometry and the mesh acceleration structures.
 
         :param file: File object or string path.
+
+        .. code-block:: pycon
+
+            >>> mesh
+            <raysect.primitive.mesh.mesh.Mesh at 0x7f2c09eac2e8>
+            >>> mesh.save("my_mesh.rsm")
+
         """
 
         # todo: keeping this here until I re add the kdtree parameter
@@ -1267,6 +1276,19 @@ cdef class Mesh(Primitive):
         :param AffineMatrix3D transform: The co-ordinate transform between the mesh and its parent.
         :param Material material: The surface/volume material.
         :param str name: A human friendly name to identity the mesh in the scene-graph.
+
+        .. code-block:: pycon
+
+            >>> from raysect.optical import World, translate, rotate, ConstantSF, Sellmeier, Dielectric
+            >>> from raysect.primitive import Mesh
+            >>>
+            >>> world = World()
+            >>>
+            >>> diamond = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0), ConstantSF(1.0))
+            >>>
+            >>> mesh = Mesh.from_file("my_mesh.rsm", parent=world, material=diamond,
+            >>>                       transform=translate(0, 0, 0)*rotate(165, 0, 0))
+
         """
 
         m = Mesh.__new__(Mesh)

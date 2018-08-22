@@ -52,6 +52,11 @@ cdef class Vector3D(_Vec3):
     :ivar float x: x-coordinate
     :ivar float y: y-coordinate
     :ivar float z: z-coordinate
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import Vector3D
+        >>> a = Vector3D(1, 0, 0)
     """
 
     def __init__(self, double x=0.0, double y=0.0, double z=1.0):
@@ -117,13 +122,24 @@ cdef class Vector3D(_Vec3):
             raise IndexError("Index out of range [0, 2].")
 
     def __iter__(self):
-        """ Iterates over the vector coordinates (x, y, z) """
+        """Iterates over the vector coordinates (x, y, z)
+
+            >>> a = Vector3D(0, 1, 2)
+            >>> x, y, z = a
+            >>> x, y, z
+            (0.0, 1.0, 2.0)
+        """
         yield self.x
         yield self.y
         yield self.z
 
     def __neg__(self):
-        """Returns a vector with the reverse orientation (negation operator)."""
+        """Returns a vector with the reverse orientation (negation operator).
+
+            >>> a = Vector3D(1, 0, 0)
+            >>> -a
+            Vector3D(-1.0, -0.0, -0.0)
+        """
 
         return new_vector3d(-self.x,
                             -self.y,
@@ -178,6 +194,7 @@ cdef class Vector3D(_Vec3):
 
         3D vectors can be multiplied with both scalars and transformation matrices.
 
+            >>> from raysect.core import Vector3D, rotate_x
             >>> 2 * Vector3D(1, 2, 3)
             Vector3D(2.0, 4.0, 6.0)
             >>> rotate_x(90) * Vector3D(0, 0, 1)
@@ -258,6 +275,13 @@ cdef class Vector3D(_Vec3):
 
         :param Vector3D v: An input vector with which to calculate the cross product.
         :rtype: Vector3D
+
+        .. code-block:: pycon
+
+            >>> a = Vector3D(1, 0, 0)
+            >>> b= Vector3D(0, 1, 0)
+            >>> a.cross(b)
+            Vector3D(0.0, 0.0, 1.0)
         """
 
         return new_vector3d(self.y * v.z - v.y * self.z,
@@ -272,6 +296,12 @@ cdef class Vector3D(_Vec3):
         The returned vector is normalised to length 1.0 - a unit vector.
 
         :rtype: Vector3D
+
+        .. code-block:: pycon
+
+            >>> a = Vector3D(1, 1, 1)
+            >>> a.normalise()
+            Vector3D(0.5773502691896258, 0.5773502691896258, 0.5773502691896258)
         """
 
         cdef double t
@@ -306,6 +336,13 @@ cdef class Vector3D(_Vec3):
         :param AffineMatrix3D m: The affine matrix describing the required coordinate transformation.
         :return: A new instance of this vector that has been transformed with the supplied Affine Matrix.
         :rtype: Vector3D
+
+        .. code-block:: pycon
+
+            >>> z = Vector3D(0, 0, 1)
+            >>> y = z.transform(rotate_x(90))
+            >>> y
+            Vector3D(0.0, -1.0, 6.123233995736766e-17)
         """
 
         return new_vector3d(m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,
@@ -384,6 +421,12 @@ cdef class Vector3D(_Vec3):
         Returns a copy of the vector.
 
         :rtype: Vector3D
+
+        .. code-block:: pycon
+
+            >>> a = Vector3D(1, 1, 1)
+            >>> a.copy()
+            Vector3D(1.0, 1.0, 1.0)
         """
 
         return new_vector3d(self.x,
@@ -396,6 +439,12 @@ cdef class Vector3D(_Vec3):
         Returns a unit vector that is guaranteed to be orthogonal to the vector.
 
         :rtype: vector3D
+
+        .. code-block:: pycon
+
+            >>> a = Vector3D(1, 0, 0)
+            >>> a.orthogonal()
+            Vector3D(0.0, 1.0, 0.0)
         """
 
         cdef:
@@ -427,6 +476,13 @@ cdef class Vector3D(_Vec3):
 
         :param Vector3D b: The other vector that bounds the interpolation.
         :param double t: The parametric interpolation point t in (0, 1).
+
+        .. code-block:: pycon
+
+            >>> a = Vector3D(1, 0, 0)
+            >>> b = Vector3D(0, 1, 0)
+            >>> a.lerp(b, 0.5)
+            Vector3D(0.5, 0.5, 0.0)
         """
 
         cdef double t_minus
@@ -484,6 +540,13 @@ cdef class Vector3D(_Vec3):
 
         :param Vector3D b: The other vector that bounds the interpolation.
         :param double t: The parametric interpolation point t in (0, 1).
+
+        .. code-block:: pycon
+
+            >>> a = Vector3D(1, 0, 0)
+            >>> b = Vector3D(0, 1.5, 0)
+            >>> a.slerp(b, 0.5)
+            Vector3D(0.8838834764831844, 0.8838834764831843, 0.0)
         """
 
         cdef:
@@ -546,6 +609,12 @@ cdef class Vector2D:
 
     :ivar float x: x-coordinate
     :ivar float y: y-coordinate
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import Vector2D
+        >>> a = Vector2D(1, 0)
+
     """
 
     def __init__(self, double x=1.0, double y=0.0):
@@ -606,12 +675,25 @@ cdef class Vector2D:
             raise IndexError("Index out of range [0, 1].")
 
     def __iter__(self):
-        """ Iterates over the vector coordinates (x, y) """
+        """Iterates over the vector coordinates (x, y)
+
+            >>> a = Vector2D(1, 0)
+            >>> x, y = a
+            >>> x, y
+            (1.0, 0.0)
+
+        """
         yield self.x
         yield self.y
 
     def __neg__(self):
-        """Returns a vector with the reverse orientation (negation operator)."""
+        """Returns a vector with the reverse orientation (negation operator).
+
+            >>> a = Vector2D(1, 0)
+            >>> -a
+            Vector2D(-1.0, -0.0)
+
+        """
 
         return new_vector2d(-self.x, -self.y)
 
@@ -731,6 +813,11 @@ cdef class Vector2D:
         Raises a ZeroDivisionError if an attempt is made to change the length of
         a zero length vector. The direction of a zero length vector is
         undefined hence it can not be lengthened.
+
+            >>> a = Vector2D(1, 1)
+            >>> a.length
+            1.4142135623730951
+
         """
         return self.get_length()
 
@@ -742,7 +829,15 @@ cdef class Vector2D:
         """
         Calculates the dot product between this vector and the supplied vector.
 
-        Returns a scalar.
+        :rtype: float
+
+        .. code-block:: pycon
+
+            >>> a = Vector2D(1, 1)
+            >>> b = Vector2D(0, 1)
+            >>> a.dot(b)
+            1.0
+
         """
 
         return self.x * v.x + self.y * v.y
@@ -822,6 +917,14 @@ cdef class Vector2D:
 
         :param Vector2D v: An input vector with which to calculate the cross product.
         :rtype: float
+
+        .. code-block:: pycon
+
+            >>> a = Vector2D(1, 1)
+            >>> b = Vector2D(0, 1)
+            >>> a.cross(b)
+            >>> 1.0
+
         """
 
         return self.x * v.y - self.y * v.x
@@ -834,6 +937,13 @@ cdef class Vector2D:
         The returned vector is normalised to length 1.0 - a unit vector.
 
         :rtype: Vector2D
+
+        .. code-block:: pycon
+
+            >>> a = Vector2D(1, 1)
+            >>> a.normalise()
+            Vector2D(0.7071067811865475, 0.7071067811865475)
+
         """
 
         cdef double t
@@ -930,6 +1040,13 @@ cdef class Vector2D:
         Returns a copy of the vector.
 
         :rtype: Vector2D
+
+        .. code-block:: pycon
+
+            >>> a = Vector2D(1, 1)
+            >>> a.copy()
+            Vector2D(1.0, 1.0)
+
         """
 
         return new_vector2d(self.x, self.y)
@@ -939,6 +1056,13 @@ cdef class Vector2D:
         Returns a unit vector that is guaranteed to be orthogonal to the vector.
 
         :rtype: vector2D
+
+        .. code-block:: pycon
+
+            >>> a = Vector2D(1, 1)
+            >>> a.orthogonal()
+            Vector2D(-0.7071067811865475, 0.7071067811865475
+
         """
 
         cdef:
