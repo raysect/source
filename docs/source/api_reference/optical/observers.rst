@@ -17,12 +17,14 @@ properties of all observers and the overall observing workflow.
    :members:
 
 
-
-
 0D Observers
 ------------
 
 .. autoclass:: raysect.optical.observer.base.observer.Observer0D
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.nonimaging.sightline.SightLine
    :members:
    :show-inheritance:
 
@@ -34,7 +36,7 @@ properties of all observers and the overall observing workflow.
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.optical.observer.nonimaging.sightline.SightLine
+.. autoclass:: raysect.optical.observer.nonimaging.targetted_pixel.TargettedPixel
    :members:
    :show-inheritance:
 

@@ -42,21 +42,13 @@ Solid Angle Samplers
    :special-members: __call__
 
 .. autoclass:: raysect.core.math.sampler.solidangle.SphereSampler
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.sampler.solidangle.HemisphereUniformSampler
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.sampler.solidangle.HemisphereCosineSampler
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.sampler.solidangle.ConeUniformSampler
-   :members:
-   :show-inheritance:
-
-.. .. autoclass:: raysect.core.math.sampler.ConeCosineSampler
-   :members:
    :show-inheritance:

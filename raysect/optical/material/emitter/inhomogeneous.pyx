@@ -50,7 +50,7 @@ cdef class VolumeIntegrator:
         This is a virtual method and must be implemented in a sub class.
 
         :param Spectrum spectrum: Spectrum measured so far along ray path. Add your emission
-        to this spectrum, don't override it.
+          to this spectrum, don't override it.
         :param World world: The world scene-graph.
         :param Ray ray: The ray being traced.
         :param Primitive primitive: The geometric primitive to which this material belongs
@@ -216,7 +216,7 @@ cdef class InhomogeneousVolumeEmitter(NullSurface):
         :param Point3D point: Requested sample point in local coordinates.
         :param Vector3D direction: The emission direction in local coordinates.
         :param Spectrum spectrum: Spectrum measured so far along ray path. Add your emission
-        to this spectrum, don't override it.
+          to this spectrum, don't override it.
         :param World world: The world scene-graph.
         :param Ray ray: The ray being traced.
         :param Primitive primitive: The geometric primitive to which this material belongs

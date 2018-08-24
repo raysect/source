@@ -47,6 +47,17 @@ cdef class SightLine(Observer0D):
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this line of sight (default=SpectralPipeline0D()).
     :param kwargs: **kwargs and instance properties from Observer0D and _ObserverBase
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import World
+        >>> from raysect.optical.observer import SightLine, PowerPipeline0D
+        >>>
+        >>> world = World()
+        >>> power = PowerPipeline0D(accumulate=False)
+        >>> los = SightLine([power], min_wavelength=400, max_wavelength=720,
+                            parent=world, transform=rotate(0, 0, 0)*translate(0, 0, -1))
+        >>> los.observe()
     """
 
     cdef:

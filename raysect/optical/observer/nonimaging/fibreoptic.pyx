@@ -59,6 +59,17 @@ cdef class FibreOptic(Observer0D):
     :param float radius: The radius of the fibre tip in metres. This radius defines a circular area at the fibre tip
        which will be sampled over.
     :param kwargs: **kwargs from Observer0D and _ObserverBase
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical.observer import FibreOptic, RadiancePipeline0D, PowerPipeline0D
+        >>>
+        >>> power = PowerPipeline0D()
+        >>> radiance = RadiancePipeline0D()
+        >>> fibre = FibreOptic([power, radiance], acceptance_angle=10, radius=0.0005,
+                                spectral_bins=500, pixel_samples=1000,
+                                transform=translate(0, 0, -5), parent=world)
+        >>> fibre.observe()
     """
 
     cdef:

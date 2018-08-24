@@ -69,7 +69,22 @@ cdef class SpectralFunction:
         self._sample_cache_init()
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
+        """
+        Calculates the integrated radiance over the specified spectral range.
 
+        Virtual method, to be implemented in child classes.
+
+        :param float min_wavelength: The minimum wavelength in nanometers
+        :param float max_wavelength: The maximum wavelength in nanometers
+        :return: Integrated radiance in W/m^2/str
+        :rtype: float
+
+        .. code-block:: pycon
+
+            >>> spectrum = ray.trace(world)
+            >>> spectrum.integrate(400, 700)
+            328.50926129107023
+        """
         raise NotImplementedError("Virtual method integrate() not implemented.")
 
     @cython.cdivision(True)
@@ -77,9 +92,17 @@ cdef class SpectralFunction:
         """
         Average radiance over the requested spectral range (W/m^2/sr/nm).
 
+        Virtual method, to be implemented in child classes.
+
         :param float min_wavelength: lower wavelength for calculation
         :param float max_wavelength: upper wavelength for calculation
         :rtype: float
+
+        .. code-block:: pycon
+
+            >>> spectrum = ray.trace(world)
+            >>> spectrum.average(400, 700)
+            1.095030870970234
         """
 
         # is a cached average already available?
@@ -126,6 +149,14 @@ cdef class SpectralFunction:
         :param float max_wavelength: upper wavelength for calculation
         :param int bins: The number of spectral bins
         :rtype: ndarray
+
+        .. code-block:: pycon
+
+            >>> spectrum
+            <raysect.optical.spectrum.Spectrum at 0x7f56c22bd8b8>
+            >>> spectrum.min_wavelength, spectrum.max_wavelength
+            (375.0, 785.0)
+            >>> sub_spectrum = spectrum.sample(450, 550, 100)
         """
 
         cdef:
@@ -272,6 +303,15 @@ cdef class InterpolatedSF(SpectralFunction):
     :param object samples: 1D array of spectral samples.
     :param bool normalise: True/false toggle for whether to normalise the
       spectral function so its integral equals 1.
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import InterpolatedSF
+        >>>
+        >>> # defining a set of spectral filters
+        >>> filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
+        >>> filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
+        >>> filter_blue = InterpolatedSF([100, 480, 490, 500, 510, 800], [0, 0, 1, 1, 0, 0])
     """
 
     def __init__(self, object wavelengths, object samples, normalise=False):
@@ -321,6 +361,12 @@ cdef class ConstantSF(SpectralFunction):
     Constant value spectral function
 
     :param float value: Constant radiance value
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import ConstantSF
+        >>>
+        >>> unity_spectral_function = ConstantSF(1.0)
     """
 
     def __init__(self, double value):

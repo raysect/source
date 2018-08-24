@@ -49,6 +49,14 @@ cdef class Sellmeier(NumericallyIntegratedSF):
     :param float c2: Sellmeier :math:`C_2` coefficient.
     :param float c3: Sellmeier :math:`B_1` coefficient.
     :param float sample_resolution: The numerical sampling resolution in nanometers.
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import ConstantSF
+        >>> from raysect.optical.material import Dielectric, Sellmeier
+        >>>
+        >>> diamond_material = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0),
+                                          ConstantSF(1))
     """
 
     def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, double sample_resolution=10):
@@ -89,6 +97,14 @@ cdef class Dielectric(Material):
     :param SpectralFunction external_index: Refractive index of the external material at the interface,
       defaults to a vacuum (n=1).
     :param bool transmission_only: toggles transmission only, no reflection (default=False).
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import ConstantSF
+        >>> from raysect.optical.material import Dielectric, Sellmeier
+        >>>
+        >>> diamond_material = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0),
+                                          ConstantSF(1))
     """
 
     def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None, bint transmission_only=False):

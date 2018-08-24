@@ -39,6 +39,14 @@ cdef class UnitySurfaceEmitter(NullVolume):
 
     This material is useful for general purpose debugging and testing energy
     conservation.
+
+        >>> from raysect.primitive import Sphere
+        >>> from raysect.optical import World
+        >>> from raysect.optical.material import UnitySurfaceEmitter
+        >>>
+        >>> # set-up scenegraph
+        >>> world = World()
+        >>> emitter = Sphere(radius=0.01, parent=world, material=UnitySurfaceEmitter())
     """
 
     def __init__(self):
@@ -65,6 +73,14 @@ cdef class UnityVolumeEmitter(HomogeneousVolumeEmitter):
 
     This material is useful for general purpose debugging and evaluating the coupling
     coefficients between cameras and emitting volumes.
+
+        >>> from raysect.primitive import Sphere
+        >>> from raysect.optical import World
+        >>> from raysect.optical.material import UnityVolumeEmitter
+        >>>
+        >>> # set-up scenegraph
+        >>> world = World()
+        >>> emitter = Sphere(radius=0.01, parent=world, material=UnityVolumeEmitter())
     """
 
     def __init__(self):

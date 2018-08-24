@@ -35,3 +35,4 @@ from .boundingsphere import *
 from .math import *
 from .scenegraph import *
 from .constants import *
+from .workflow import SerialEngine, MulticoreEngine
