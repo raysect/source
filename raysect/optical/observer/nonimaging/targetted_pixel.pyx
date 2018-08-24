@@ -70,6 +70,21 @@ cdef class TargettedPixel(Observer0D):
     :param float y_width: The rectangular collection area's width along the
       y-axis in local coordinates (default=1cm).
     :param kwargs: **kwargs from Observer0D and _ObserverBase
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical.observer import TargettedPixel, PowerPipeline0D
+        >>>
+        >>> # set-up scenegraph
+        >>> world = World()
+        >>> emitter = Sphere(radius=sphere_radius, parent=world)
+        >>> emitter.material = UnityVolumeEmitter()
+        >>>
+        >>> # setup targetted pixel observer
+        >>> targetted_pipeline = PowerPipeline0D(name="Targeted Pixel Observer")
+        >>> targetted_pixel = TargettedPixel(parent=world, targets=[emitter],
+        >>>                                  pixel_samples=250, pipelines=[targetted_pipeline])
+        >>> targetted_pixel.observe()
     """
 
     cdef:

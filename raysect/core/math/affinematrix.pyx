@@ -134,7 +134,15 @@ cdef class AffineMatrix3D(_Mat4):
         return s + "])"
 
     def __mul__(object x, object y):
-        """Multiplication operator."""
+        """Multiplication operator.
+
+            >>> from raysect.core import translate, rotate_x
+            >>> translate(0, 0, -3.5) * rotate_x(45)
+            AffineMatrix3D([[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 0.7071067811865476, -0.7071067811865475, 0.0],
+                            [0.0, 0.7071067811865475, 0.7071067811865476, -3.5],
+                            [0.0, 0.0, 0.0, 1.0]])
+        """
 
         cdef AffineMatrix3D mx, my
 
@@ -170,6 +178,17 @@ cdef class AffineMatrix3D(_Mat4):
 
         Raises a ValueError if the matrix is singular and the inverse can not be
         calculated. All valid affine transforms should be invertable.
+
+            >>> from raysect.core import AffineMatrix3D
+            >>> m = AffineMatrix3D([[0.0, 0.0, 1.0, 0.0],
+                                    [1.0, 0.0, 0.0, 0.0],
+                                    [0.0, 1.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 1.0]])
+            >>> m.inverse()
+            AffineMatrix3D([[0.0, 1.0, 0.0, -0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [1.0, 0.0, 0.0, -0.0],
+                            [0.0, 0.0, -0.0, 1.0]])
         """
 
         cdef:

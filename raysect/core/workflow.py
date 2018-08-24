@@ -97,6 +97,12 @@ class SerialEngine(RenderEngine):
     Render engine for running on a single CPU processor.
 
     This engine is useful for debugging.
+
+        >>> from raysect.core import SerialEngine
+        >>> from raysect.optical.observer import PinholeCamera
+        >>>
+        >>> camera = PinholeCamera((512, 512))
+        >>> camera.render_engine = SerialEngine()
     """
 
     def run(self, tasks, render, update, render_args=(), render_kwargs={}, update_args=(), update_kwargs={}):
@@ -121,6 +127,19 @@ class MulticoreEngine(RenderEngine):
     of CPU cores detected on the machine.
     
     :param processes: The number of worker processes, or None to use all available cores (default).
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import MulticoreEngine
+        >>> from raysect.optical.observer import PinholeCamera
+        >>>
+        >>> camera = PinholeCamera((512, 512))
+        >>>
+        >>> # allowing the camera to use all available CPU cores.
+        >>> camera.render_engine = MulticoreEngine()
+        >>>
+        >>> # or forcing the render engine to use a specific number of CPU processes
+        >>> camera.render_engine = MulticoreEngine(processes=8)
     """
 
     def __init__(self, processes=None):

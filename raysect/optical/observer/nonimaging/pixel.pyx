@@ -49,6 +49,19 @@ cdef class Pixel(Observer0D):
     :param float y_width: The rectangular collection area's width along the
       y-axis in local coordinates (default=1cm).
     :param kwargs: **kwargs from Observer0D and _ObserverBase
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import World
+        >>> from raysect.optical.observer import Pixel, PowerPipeline0D
+        >>>
+        >>> world = World()
+        >>> power = PowerPipeline0D(accumulate=False)
+        >>> observing_plane = Pixel([power], x_width=2.0, y_width=2.0,
+                                    min_wavelength=400, max_wavelength=720,
+                                    spectral_bins=1, pixel_samples=250,
+                                    parent=world, transform=rotate(0, 0, 0)*translate(0, 0, -1))
+        >>> observing_plane.observe()
     """
 
     cdef:
