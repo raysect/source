@@ -4,7 +4,7 @@ Affine Matricies
 
 .. _affine-matrix-3D:
 .. automodule:: raysect.core.math.affinematrix
-   :special-members: __mul__
+   :special-members: __mul__, __getitem__, __setitem__
    :members:
    :inherited-members: is_close, is_identity
 
