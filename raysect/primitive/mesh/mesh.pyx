@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-# TODO: split instance into its own method (e.g. mymesh.instance(), this change is planned for Interpolate2DMesh. Both classes should be consistent.
 
 import io
 import struct
@@ -847,9 +845,6 @@ cdef class MeshData(KDTree3DCore):
 
         cdef:
             int32_t i, j
-            float32_t[:, ::1] vertices
-            float32_t[:, ::1] vertex_normals
-            int32_t[:, ::1] triangles
 
         close = False
 
@@ -881,20 +876,22 @@ cdef class MeshData(KDTree3DCore):
         num_triangles = self._read_int32(file)
 
         # read vertices
-        vertices = zeros((num_vertices, 3), dtype=float32)
+        self._vertices = zeros((num_vertices, 3), dtype=float32)
+        self.vertices_mv = self._vertices
         for i in range(num_vertices):
             for j in range(3):
-                vertices[i, j] = self._read_float(file)
-        self.vertices_mv = vertices
+                self.vertices_mv[i, j] = self._read_float(file)
 
         # read vertex normals
         if num_vertex_normals > 0:
-            vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
+            self._vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
+            self.vertex_normals_mv = self._vertex_normals
             for i in range(num_vertex_normals):
                 for j in range(3):
-                    vertex_normals[i, j] = self._read_float(file)
-            self.vertex_normals_mv = vertex_normals
+                    self.vertex_normals_mv[i, j] = self._read_float(file)
+
         else:
+            self._vertex_normals = None
             self.vertex_normals_mv = None
 
         # read triangles
@@ -903,11 +900,11 @@ cdef class MeshData(KDTree3DCore):
             # we have vertex normals for each triangle
             width += 3
 
-        triangles = zeros((num_triangles, width), dtype=int32)
+        self._triangles = zeros((num_triangles, width), dtype=int32)
+        self.triangles_mv = self._triangles
         for i in range(num_triangles):
             for j in range(width):
-                triangles[i, j] = self._read_int32(file)
-        self.triangles_mv = triangles
+                self.triangles_mv[i, j] = self._read_int32(file)
 
         # read kdtree
         super().load(file)
