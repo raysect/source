@@ -84,6 +84,8 @@ cdef class MeshData(KDTree3DCore):
 
     cdef double _read_float(self, object file)
 
+    cpdef object flip_normals(self)
+
 
 cdef class Mesh(Primitive):
 
@@ -95,3 +97,5 @@ cdef class Mesh(Primitive):
         double _ray_distance
 
     cdef Intersection _process_intersection(self, Ray world_ray, Ray local_ray)
+
+    cpdef object flip_normals(self)

@@ -935,6 +935,32 @@ cdef class MeshData(KDTree3DCore):
         m.load(file)
         return m
 
+    cpdef object flip_normals(self):
+        """ Flip the face orientation of this mesh. """
+
+        if self.triangles_mv.shape[1] == 3:
+            for i in range(self.triangles_mv.shape[0]):
+                self.triangles_mv[i, 0], self.triangles_mv[i, 2] = self.triangles_mv[i, 2], self.triangles_mv[i, 0]
+
+        else:
+            for i in range(self.triangles_mv.shape[0]):
+                self.triangles_mv[i, 0], self.triangles_mv[i, 2] = self.triangles_mv[i, 2], self.triangles_mv[i, 0]
+                self.triangles_mv[i, 3], self.triangles_mv[i, 5] = self.triangles_mv[i, 5], self.triangles_mv[i, 3]
+
+        for i in range(self.face_normals_mv.shape[0]):
+
+            self.face_normals_mv[i, X] = - self.face_normals_mv[i, X]
+            self.face_normals_mv[i, Y] = - self.face_normals_mv[i, Y]
+            self.face_normals_mv[i, Z] = - self.face_normals_mv[i, Z]
+
+        if self._vertex_normals is not None:
+
+            for i in range(self.vertex_normals_mv.shape[0]):
+
+                self.vertex_normals_mv[i, X] = - self.vertex_normals_mv[i, X]
+                self.vertex_normals_mv[i, Y] = - self.vertex_normals_mv[i, Y]
+                self.vertex_normals_mv[i, Z] = - self.vertex_normals_mv[i, Z]
+
     cdef uint8_t _read_uint8(self, object file):
         return (<uint8_t *> PyBytes_AsString(file.read(sizeof(uint8_t))))[0]
 
@@ -1292,4 +1318,8 @@ cdef class Mesh(Primitive):
         super(Mesh, m).__init__(parent, transform, material, name)
         m.load(file)
         return m
+
+    cpdef object flip_normals(self):
+        """ Flip the face orientation of this mesh. """
+        self.data.flip_normals()
 
