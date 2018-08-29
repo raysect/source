@@ -102,6 +102,7 @@ cdef class MeshData(KDTree3DCore):
       i.e. no holes. (default=True)
     :param bool tolerant: Toggles filtering out of degenerate triangles
       (default=True).
+    :param bool flip_normals: Inverts the direction of the surface normals (default=False).
     :param int max_depth: Maximum kd-Tree depth for this mesh (automatic if set to
       0, default=0).
     :param int min_items: The item count threshold for forcing creation of a
@@ -113,8 +114,8 @@ cdef class MeshData(KDTree3DCore):
     """
 
     def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True,
-                 bint closed=True, bint tolerant=True, int max_depth=0, int min_items=1,
-                 double hit_cost=20.0, double empty_bonus=0.2):
+                 bint closed=True, bint tolerant=True, bint flip_normals=False,
+                 int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         self.smoothing = smoothing
         self.closed = closed
@@ -174,6 +175,10 @@ cdef class MeshData(KDTree3DCore):
         # filter out degenerate triangles if we are being tolerant
         if tolerant:
             self._filter_triangles()
+
+        # flip normals if requested
+        if flip_normals:
+            self._flip_normals()
 
         # generate face normals
         self._generate_face_normals()
@@ -323,6 +328,30 @@ cdef class MeshData(KDTree3DCore):
 
         # reslice array to contain only valid triangles
         self.triangles_mv = self.triangles_mv[:valid, :]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef object _flip_normals(self):
+        """
+        Flip the face orientation of this mesh.
+        """
+
+        if self._vertex_normals is None:
+
+            for i in range(self.triangles_mv.shape[0]):
+                self.triangles_mv[i, 0], self.triangles_mv[i, 2] = self.triangles_mv[i, 2], self.triangles_mv[i, 0]
+
+        else:
+
+            for i in range(self.triangles_mv.shape[0]):
+                self.triangles_mv[i, 0], self.triangles_mv[i, 2] = self.triangles_mv[i, 2], self.triangles_mv[i, 0]
+                self.triangles_mv[i, 3], self.triangles_mv[i, 5] = self.triangles_mv[i, 5], self.triangles_mv[i, 3]
+
+            for i in range(self.vertex_normals_mv.shape[0]):
+                self.vertex_normals_mv[i, X] = -self.vertex_normals_mv[i, X]
+                self.vertex_normals_mv[i, Y] = -self.vertex_normals_mv[i, Y]
+                self.vertex_normals_mv[i, Z] = -self.vertex_normals_mv[i, Z]
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -935,32 +964,6 @@ cdef class MeshData(KDTree3DCore):
         m.load(file)
         return m
 
-    cpdef object flip_normals(self):
-        """ Flip the face orientation of this mesh. """
-
-        if self.triangles_mv.shape[1] == 3:
-            for i in range(self.triangles_mv.shape[0]):
-                self.triangles_mv[i, 0], self.triangles_mv[i, 2] = self.triangles_mv[i, 2], self.triangles_mv[i, 0]
-
-        else:
-            for i in range(self.triangles_mv.shape[0]):
-                self.triangles_mv[i, 0], self.triangles_mv[i, 2] = self.triangles_mv[i, 2], self.triangles_mv[i, 0]
-                self.triangles_mv[i, 3], self.triangles_mv[i, 5] = self.triangles_mv[i, 5], self.triangles_mv[i, 3]
-
-        for i in range(self.face_normals_mv.shape[0]):
-
-            self.face_normals_mv[i, X] = - self.face_normals_mv[i, X]
-            self.face_normals_mv[i, Y] = - self.face_normals_mv[i, Y]
-            self.face_normals_mv[i, Z] = - self.face_normals_mv[i, Z]
-
-        if self._vertex_normals is not None:
-
-            for i in range(self.vertex_normals_mv.shape[0]):
-
-                self.vertex_normals_mv[i, X] = - self.vertex_normals_mv[i, X]
-                self.vertex_normals_mv[i, Y] = - self.vertex_normals_mv[i, Y]
-                self.vertex_normals_mv[i, Z] = - self.vertex_normals_mv[i, Z]
-
     cdef uint8_t _read_uint8(self, object file):
         return (<uint8_t *> PyBytes_AsString(file.read(sizeof(uint8_t))))[0]
 
@@ -1042,6 +1045,7 @@ cdef class Mesh(Primitive):
     :param bool closed: True is the mesh defines a closed volume (default=True).
     :param bool tolerant: Mesh will automatically correct meshes with degenerate
       triangles if set to True (default=True).
+    :param bool flip_normals: Inverts the direction of the surface normals (default=False).
     :param int kdtree_max_depth: The maximum tree depth (automatic if set to 0, default=0).
     :param int kdtree_min_items: The item count threshold for forcing creation of
       a new leaf node (default=1).
@@ -1063,7 +1067,7 @@ cdef class Mesh(Primitive):
 
     # TODO: calculate or measure triangle hit cost vs split traversal
     def __init__(self, object vertices, object triangles, object normals=None,
-                 bint smoothing=True, bint closed=True, bint tolerant=True,
+                 bint smoothing=True, bint closed=True, bint tolerant=True, bint flip_normals=False,
                  int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0,
                  double kdtree_empty_bonus=0.25, object parent=None,
                  AffineMatrix3D transform=None, Material material=None, str name=None):
@@ -1319,7 +1323,4 @@ cdef class Mesh(Primitive):
         m.load(file)
         return m
 
-    cpdef object flip_normals(self):
-        """ Flip the face orientation of this mesh. """
-        self.data.flip_normals()
 

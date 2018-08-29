@@ -62,6 +62,8 @@ cdef class MeshData(KDTree3DCore):
 
     cdef object _filter_triangles(self)
 
+    cdef object _flip_normals(self)
+
     cdef object _generate_face_normals(self)
 
     cdef BoundingBox3D _generate_bounding_box(self, int32_t i)
@@ -84,7 +86,7 @@ cdef class MeshData(KDTree3DCore):
 
     cdef double _read_float(self, object file)
 
-    cpdef object flip_normals(self)
+
 
 
 cdef class Mesh(Primitive):
@@ -97,5 +99,3 @@ cdef class Mesh(Primitive):
         double _ray_distance
 
     cdef Intersection _process_intersection(self, Ray world_ray, Ray local_ray)
-
-    cpdef object flip_normals(self)
