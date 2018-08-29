@@ -62,6 +62,8 @@ cdef class MeshData(KDTree3DCore):
 
     cdef object _filter_triangles(self)
 
+    cdef object _flip_normals(self)
+
     cdef object _generate_face_normals(self)
 
     cdef BoundingBox3D _generate_bounding_box(self, int32_t i)
@@ -83,6 +85,8 @@ cdef class MeshData(KDTree3DCore):
     cdef bint _read_bool(self, object file)
 
     cdef double _read_float(self, object file)
+
+
 
 
 cdef class Mesh(Primitive):
