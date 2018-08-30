@@ -1,8 +1,8 @@
 Raysect Changelog
 =================
 
-Release 0.5.3 (TBD)
--------------------
+Release 0.5.3 (30 Aug 2018)
+---------------------------
 
 Bug Fixes:
 * Mesh load() not correctly populating vertex and triangle data arrays.
