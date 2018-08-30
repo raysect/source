@@ -29,8 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: implement pickle
-
 import numpy as np
 cimport numpy as np
 from raysect.core.math cimport Point3D, Vector3D, AffineMatrix3D
@@ -57,6 +55,16 @@ cdef class _TargettedSampler:
 
         self._validate_targets()
         self._calculate_cdf()
+
+    def __getstate__(self):
+        state = self._total_weight, self._targets, self._cdf
+
+    def __setstate__(self, state):
+        self._total_weight, self._targets, self._cdf = state
+        self._cdf_mv = self._cdf
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
