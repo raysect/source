@@ -102,6 +102,11 @@ Observers
      - .. image:: optical_fibre_power.png
           :height: 150px
           :width: 150px
+   * - :ref:`Mesh Observers <demo_mesh_observers>`
+     - Making observations on a mesh surface.
+     - .. image:: mesh_observers.jpg
+          :height: 150px
+          :width: 150px
    * - :ref:`Making a camera 1 <demo_cornell_box_with_camera>`
      - Making a camera from components.
      - .. image:: cornell_box_real_lens.png

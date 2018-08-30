@@ -57,9 +57,10 @@ cdef class MeshPixel(Observer0D):
     """
     Uses a supplied mesh surface as a pixel.
 
-    Warning: you must be careful when using this camera to not double count radiance. For example,
-    if you have a concave mesh its possible for two surfaces to see the same emission. In cases
-    like this, the mesh should have an absorbing surface to prevent double counting.
+    .. Warning::
+       Users must be careful when using this camera to not double count radiance. For example,
+       if you have a concave mesh its possible for two surfaces to see the same emission. In cases
+       like this, the mesh should have an absorbing surface to prevent double counting.
 
     This observer samples over the surface defined by a triangular mesh. At each point on the surface
     the incoming radiance over a hemisphere is sampled.
@@ -67,10 +68,28 @@ cdef class MeshPixel(Observer0D):
     A mesh surface offset can be set to ensure sample don't collide with a coincident primitive. When set,
     the surface offset specifies the distance along the surface normal that the ray launch origin is shifted.
 
-    :param list pipelines: The list of pipelines that will process the spectrum measured
-      by this pixel (default=SpectralPipeline0D()).
+    :param Mesh mesh: The mesh instance to use for observations.
     :param float surface_offset: The offset from the mesh surface (default=0).
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      by this pixel (default=SpectralPowerPipeline0D()).
     :param kwargs: **kwargs from Observer0D and _ObserverBase
+
+    .. code-block:: pycon
+
+        >>> from raysect.primitive import Mesh
+        >>> from raysect.optical import World
+        >>> from raysect.optical.material import AbsorbingSurface
+        >>> from raysect.optical.observer import MeshPixel, PowerPipeline0D
+        >>>
+        >>> world = World()
+        >>>
+        >>> mesh = Mesh.from_file("my_mesh.rsm", material=AbsorbingSurface(), parent=world)
+        >>>
+        >>> power = PowerPipeline0D(accumulate=False)
+        >>> observer = MeshPixel(mesh, pipelines=[power], parent=world,
+        >>>                      min_wavelength=400, max_wavelength=750,
+        >>>                      spectral_bins=1, pixel_samples=10000, surface_offset=1E-6)
+        >>> observer.observe()
     """
 
     cdef:
