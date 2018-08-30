@@ -1,10 +1,18 @@
 Raysect Changelog
 =================
 
-Release 0.6.0 (TBD)
+Release 0.5.3 (TBD)
 -------------------
 
-In development!
+Bug Fixes:
+* Mesh load() not correctly populating vertex and triangle data arrays.
+* Missing import guard for OpenCV camera, users no longer forced to install OpenCV!
+* VTK importer no longer crashes when mesh name is None.
+
+New:
+* Pickle support added to all scenegraph objects. It is now possible to pickle a scenegraph.
+* Optimised ImportanceManager gaining a 7% speedup for Cornell Box test case.
+* Mesh normals can be flipped during import/creation with new flip_normals argument.
 
 
 Release 0.5.2 (7 Aug 2018)
