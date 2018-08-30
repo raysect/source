@@ -37,6 +37,7 @@ cdef class ImportanceManager:
 
     cdef:
         ndarray _cdf
+        double[::1] _cdf_mv
         double _total_importance
         list _spheres
 
