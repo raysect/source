@@ -190,6 +190,17 @@ cdef class MeshData(KDTree3DCore):
 
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
 
+    def __getstate__(self):
+        state = io.BytesIO()
+        self.save(state)
+        return state.getvalue()
+
+    def __setstate__(self, state):
+        self.load(io.BytesIO(state))
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
+
     @property
     def vertices(self):
         return self._vertices.copy()

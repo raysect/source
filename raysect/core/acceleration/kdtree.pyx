@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -54,6 +54,19 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
         # kd-Tree init requires the primitives's id (it's index here) and bounding box
         items = [Item3D(id, bound_primitive.box) for id, bound_primitive in enumerate(self.primitives)]
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
+
+        self.hit_intersection = None
+
+    def __getstate__(self):
+        return self.primitives, super().__getstate__()
+
+    def __setstate__(self, state):
+        self.primitives, super_state = state
+        super().__setstate__(super_state)
+        self.hit_intersection = None
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
