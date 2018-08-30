@@ -190,6 +190,17 @@ cdef class MeshData(KDTree3DCore):
 
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
 
+    def __getstate__(self):
+        state = io.BytesIO()
+        self.save(state)
+        return state.getvalue()
+
+    def __setstate__(self, state):
+        self.load(io.BytesIO(state))
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
+
     @property
     def vertices(self):
         return self._vertices.copy()
@@ -1078,7 +1089,7 @@ cdef class Mesh(Primitive):
             raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
 
         # build the kd-Tree
-        self.data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
+        self.data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, flip_normals, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False

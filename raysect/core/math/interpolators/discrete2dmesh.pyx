@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-# TODO: implement pickle
 
 import numpy as np
 cimport numpy as np
@@ -93,9 +91,21 @@ cdef class Discrete2DMesh(Function2D):
         # build kdtree
         self._kdtree = MeshKDTree2D(vertex_coords, triangles)
 
+        # populate internal attributes
         self._triangle_data = triangle_data
+        self._triangle_data_mv = triangle_data
         self._default_value = default_value
         self._limit = limit
+
+    def __getstate__(self):
+        return self._triangle_data, self._kdtree, self._limit, self._default_value
+
+    def __setstate__(self, state):
+        self._triangle_data, self._kdtree, self._limit, self._default_value = state
+        self._triangle_data_mv = self._triangle_data
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @classmethod
     def instance(cls, Discrete2DMesh instance not None, object triangle_data=None, object limit=None, object default_value=None):
@@ -135,6 +145,9 @@ cdef class Discrete2DMesh(Function2D):
             if m._triangle_data.ndim != 1 or m._triangle_data.shape[0] != instance._triangle_data.shape[0]:
                 raise ValueError("triangle_data dimensions ({}) are incompatible with the number of triangles ({}).".format(m._triangle_data.shape[0], instance._triangle_data.shape[0]))
 
+        # create memoryview
+        m._triangle_data_mv = m._triangle_data
+
         # do we have a replacement limit check setting?
         if limit is None:
             m._limit = instance._limit
@@ -159,7 +172,7 @@ cdef class Discrete2DMesh(Function2D):
 
         if self._kdtree.is_contained(new_point2d(x, y)):
             triangle_id = self._kdtree.triangle_id
-            return self._triangle_data[triangle_id]
+            return self._triangle_data_mv[triangle_id]
 
         if not self._limit:
             return self._default_value
