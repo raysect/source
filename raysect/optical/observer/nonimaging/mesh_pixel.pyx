@@ -131,6 +131,41 @@ cdef class MeshPixel(Observer0D):
         self._solid_angle = 2 * M_PI
         self._calculate_areas()
 
+    def __getstate__(self):
+
+        state = (
+            self._surface_offset,
+            self._solid_angle,
+            self._collection_area,
+            self.mesh,
+            self._cdf,
+            self._vector_sampler,
+            super().__getstate__()
+        )
+
+    def __setstate__(self, state):
+
+        (
+            self._surface_offset,
+            self._solid_angle,
+            self._collection_area,
+            self.mesh,
+            self._cdf,
+            self._vector_sampler,
+            super_state
+        ) = state
+
+        super().__setstate__(super_state)
+
+        # recreate memoryviews
+        self._cdf_mv = self._cdf
+        self._vertices_mv = self.mesh.data.vertices_mv
+        self._face_normals_mv = self.mesh.data.face_normals_mv
+        self._triangles_mv = self.mesh.data.triangles_mv
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)

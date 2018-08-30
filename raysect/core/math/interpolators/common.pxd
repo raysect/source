@@ -37,8 +37,10 @@ from raysect.core.math.spatial.kdtree2d cimport KDTree2DCore
 cdef class MeshKDTree2D(KDTree2DCore):
 
     cdef:
-        double[:, ::1] _vertices
-        np.int32_t[:, ::1] _triangles
+        np.ndarray _vertices
+        np.ndarray _triangles
+        double[:, ::1] _vertices_mv
+        np.int32_t[:, ::1] _triangles_mv
         np.int32_t triangle_id
         np.int32_t i1, i2, i3
         double alpha, beta, gamma

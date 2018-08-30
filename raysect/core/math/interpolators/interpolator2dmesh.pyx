@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -92,9 +92,21 @@ cdef class Interpolator2DMesh(Function2D):
         # build kdtree
         self._kdtree = MeshKDTree2D(vertex_coords, triangles)
 
+        # populate internal attributes
         self._vertex_data = vertex_data
+        self._vertex_data_mv = vertex_data
         self._default_value = default_value
         self._limit = limit
+
+    def __getstate__(self):
+        return self._vertex_data, self._kdtree, self._limit, self._default_value
+
+    def __setstate__(self, state):
+        self._vertex_data, self._kdtree, self._limit, self._default_value = state
+        self._vertex_data_mv = self._vertex_data
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @classmethod
     def instance(cls, Interpolator2DMesh instance not None, object vertex_data=None, object limit=None, object default_value=None):
@@ -134,6 +146,9 @@ cdef class Interpolator2DMesh(Function2D):
             if m._vertex_data.ndim != 1 or m._vertex_data.shape[0] != instance._vertex_data.shape[0]:
                 raise ValueError("Vertex_data dimensions are incompatible with the number of vertices in the instance ({} vertices).".format(instance._vertex_data.shape[0]))
 
+        # build memoryview
+        m._vertex_data_mv = m._vertex_data
+
         # do we have a replacement limit check setting?
         if limit is None:
             m._limit = instance._limit
@@ -167,8 +182,12 @@ cdef class Interpolator2DMesh(Function2D):
             beta = self._kdtree.beta
             gamma = self._kdtree.gamma
 
-            return barycentric_interpolation(alpha, beta, gamma,
-                                             self._vertex_data[i1], self._vertex_data[i2], self._vertex_data[i3])
+            return barycentric_interpolation(
+                alpha, beta, gamma,
+                self._vertex_data_mv[i1],
+                self._vertex_data_mv[i2],
+                self._vertex_data_mv[i3]
+            )
 
         if not self._limit:
             return self._default_value

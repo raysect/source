@@ -23,6 +23,10 @@ if "--profile" in sys.argv:
 
 compilation_includes = [".", numpy.get_include()]
 compilation_args = []
+cython_directives = {
+    # 'auto_pickle': True,
+    'language_level': 3
+}
 
 setup_path = path.dirname(path.abspath(__file__))
 
@@ -40,12 +44,10 @@ if use_cython:
                 extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
 
     if profile:
-        directives = {"profile": True}
-    else:
-        directives = {}
+        cython_directives["profile"] = True
 
     # generate .c files from .pyx
-    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=directives)
+    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives)
 
 else:
 

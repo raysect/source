@@ -53,8 +53,8 @@ cdef class MeshKDTree2D(KDTree2DCore):
 
     def __init__(self, object vertices not None, object triangles not None):
 
-        self._vertices = vertices
-        self._triangles = triangles
+        vertices = np.array(vertices, dtype=np.int32)
+        triangles = np.array(triangles, dtype=np.double)
 
         # check dimensions are correct
         if vertices.ndim != 2 or vertices.shape[1] != 2:
@@ -68,6 +68,23 @@ cdef class MeshKDTree2D(KDTree2DCore):
         if invalid.any():
             raise ValueError("The triangle array references non-existent vertices.")
 
+        # assign to internal attributes
+        self._vertices = vertices
+        self._triangles = triangles
+
+        # assign to memory views
+        self._vertices_mv = vertices
+        self._triangles_mv = triangles
+
+        # initialise hit state attributes
+        self.triangle_id = -1
+        self.i1 = -1
+        self.i2 = -1
+        self.i3 = -1
+        self.alpha = 0.0
+        self.beta = 0.0
+        self.gamma = 0.0
+
         # kd-Tree init
         items = []
         for triangle in range(self._triangles.shape[0]):
@@ -76,6 +93,30 @@ cdef class MeshKDTree2D(KDTree2DCore):
 
         # todo: (possible enhancement) check if triangles are overlapping?
         # (any non-owned vertex lying inside another triangle)
+
+    def __getstate__(self):
+        return self._triangles, self._vertices, super().__getstate__()
+
+    def __setstate__(self, state):
+
+        self._triangles, self._vertices, super_state = state
+        super().__setstate__(super_state)
+
+        # rebuild memory views
+        self._vertices_mv = self._vertices
+        self._triangles_mv = self._triangles
+
+        # initialise hit state attributes
+        self.triangle_id = -1
+        self.i1 = -1
+        self.i2 = -1
+        self.i3 = -1
+        self.alpha = 0.0
+        self.beta = 0.0
+        self.gamma = 0.0
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -95,18 +136,18 @@ cdef class MeshKDTree2D(KDTree2DCore):
             np.int32_t i1, i2, i3
             BoundingBox2D bbox
 
-        i1 = self._triangles[triangle, V1]
-        i2 = self._triangles[triangle, V2]
-        i3 = self._triangles[triangle, V3]
+        i1 = self._triangles_mv[triangle, V1]
+        i2 = self._triangles_mv[triangle, V2]
+        i3 = self._triangles_mv[triangle, V3]
 
         bbox = new_boundingbox2d(
             new_point2d(
-                min(self._vertices[i1, X], self._vertices[i2, X], self._vertices[i3, X]),
-                min(self._vertices[i1, Y], self._vertices[i2, Y], self._vertices[i3, Y]),
+                min(self._vertices_mv[i1, X], self._vertices_mv[i2, X], self._vertices_mv[i3, X]),
+                min(self._vertices_mv[i1, Y], self._vertices_mv[i2, Y], self._vertices_mv[i3, Y]),
             ),
             new_point2d(
-                max(self._vertices[i1, X], self._vertices[i2, X], self._vertices[i3, X]),
-                max(self._vertices[i1, Y], self._vertices[i2, Y], self._vertices[i3, Y]),
+                max(self._vertices_mv[i1, X], self._vertices_mv[i2, X], self._vertices_mv[i3, X]),
+                max(self._vertices_mv[i1, Y], self._vertices_mv[i2, Y], self._vertices_mv[i3, Y]),
             ),
         )
 
@@ -131,13 +172,13 @@ cdef class MeshKDTree2D(KDTree2DCore):
 
             # obtain vertex indices
             triangle = self._nodes[id].items[index]
-            i1 = self._triangles[triangle, V1]
-            i2 = self._triangles[triangle, V2]
-            i3 = self._triangles[triangle, V3]
+            i1 = self._triangles_mv[triangle, V1]
+            i2 = self._triangles_mv[triangle, V2]
+            i3 = self._triangles_mv[triangle, V3]
 
-            barycentric_coords(self._vertices[i1, X], self._vertices[i1, Y],
-                               self._vertices[i2, X], self._vertices[i2, Y],
-                               self._vertices[i3, X], self._vertices[i3, Y],
+            barycentric_coords(self._vertices_mv[i1, X], self._vertices_mv[i1, Y],
+                               self._vertices_mv[i2, X], self._vertices_mv[i2, Y],
+                               self._vertices_mv[i3, X], self._vertices_mv[i3, Y],
                                point.x, point.y, &alpha, &beta, &gamma)
 
             if barycentric_inside_triangle(alpha, beta, gamma):

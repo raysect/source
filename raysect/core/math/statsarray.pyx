@@ -140,6 +140,18 @@ cdef class StatsArray1D:
         # generate buffers
         self._new_buffers()
 
+    def __getstate__(self):
+        return self.length, self.mean, self.variance, self.samples
+
+    def __setstate__(self, state):
+
+        self.length, self.mean, self.variance, self.samples = state
+
+        # reconstruct memory views
+        self.mean_mv = self.mean
+        self.variance_mv = self.variance
+        self.samples_mv = self.samples
+
     @property
     def shape(self):
         """ The numpy style array shape of the underlying StatsArray. """
@@ -309,6 +321,17 @@ cdef class StatsArray2D:
 
         # generate frame buffers
         self._new_buffers()
+
+    def __getstate__(self):
+        return self.nx, self.ny, self.mean, self.variance, self.samples
+
+    def __setstate__(self, state):
+        self.nx, self.ny, self.mean, self.variance, self.samples = state
+
+        # reconstruct memory views
+        self.mean_mv = self.mean
+        self.variance_mv = self.variance
+        self.samples_mv = self.samples
 
     @property
     def shape(self):
@@ -493,6 +516,18 @@ cdef class StatsArray3D:
 
         # generate frame buffers
         self._new_buffers()
+
+    def __getstate__(self):
+        return self.nx, self.ny, self.nz, self.mean, self.variance, self.samples
+
+    def __setstate__(self, state):
+
+        self.nx, self.ny, self.nz, self.mean, self.variance, self.samples = state
+
+        # reconstruct memory views
+        self.mean_mv = self.mean
+        self.variance_mv = self.variance
+        self.samples_mv = self.samples
 
     @property
     def shape(self):
