@@ -11,7 +11,7 @@ from raysect.optical.material.dielectric import Sellmeier, Dielectric
 from raysect.optical.material.emitter import UniformVolumeEmitter
 from raysect.optical.material import Lambert
 from raysect.primitive import Box, Subtract
-from raysect.primitive.mesh import Mesh
+from raysect.primitive.mesh import Mesh, import_obj
 from raysect.optical.library import schott
 
 
@@ -30,7 +30,7 @@ base_path = os.path.split(os.path.realpath(__file__))[0]
 world = World()
 
 #  BUNNY
-mesh = Mesh.from_file(os.path.join(base_path, "resources/stanford_bunny.rsm"), parent=world,
+mesh = import_obj(os.path.join(base_path, "../resources/stanford_bunny.obj"), parent=world,
                       transform=translate(0, 0, 0)*rotate(165, 0, 0), material=schott("N-BK7"))
 
 

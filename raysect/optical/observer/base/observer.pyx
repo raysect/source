@@ -715,6 +715,19 @@ cdef class Observer0D(_ObserverBase):
 
 
 cdef class Observer1D(_ObserverBase):
+    """
+    1D observer base class.
+
+    This is an abstract class and cannot be used for observing.
+
+    :param int pixels: The number of pixels for this observer, i.e. 512.
+    :param FrameSampler1D frame_sampler: A frame sampler class.
+    :param list pipelines: A list of pipelines that will process the resulting spectra
+      from this observer.
+    :param int pixel_samples: Number of samples to generate per pixel with one call to
+      observe() (default=1000).
+    :param kwargs: **kwargs from _ObserverBase.
+    """
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, spectral_rays=None, spectral_bins=None,
@@ -734,6 +747,11 @@ cdef class Observer1D(_ObserverBase):
 
     @property
     def pixel_samples(self):
+        """
+        The number of samples to take per pixel.
+
+        :rtype: int
+        """
         return self._pixel_samples
 
     @pixel_samples.setter
@@ -744,6 +762,11 @@ cdef class Observer1D(_ObserverBase):
 
     @property
     def pixels(self):
+        """
+        The number of pixels for this observer, i.e. 512.
+
+        :rtype: int
+        """
         return self._pixels
 
     @pixels.setter
@@ -754,6 +777,11 @@ cdef class Observer1D(_ObserverBase):
 
     @property
     def frame_sampler(self):
+        """
+        The FrameSampler1D class for this observer.
+
+        :rtype: FrameSampler1D
+        """
         return self._frame_sampler
 
     @frame_sampler.setter
@@ -764,6 +792,11 @@ cdef class Observer1D(_ObserverBase):
 
     @property
     def pipelines(self):
+        """
+        A list of pipelines to process the output spectra of these observations.
+
+        :rtype: list
+        """
         return self._pipelines
 
     @pipelines.setter
@@ -830,12 +863,17 @@ cdef class Observer1D(_ObserverBase):
 
         This method must return a list of tuples, with each tuple containing
         a Ray object and a corresponding weighting, typically the projected
-        area/direction cosine. The number of rays returned must be equal to
-        ray_count otherwise pipeline statistics will be incorrectly calculated.
+        area/direction cosine. In general the weight will be:
+
+        .. math::
+           W = \\frac{1}{2\pi} * \\frac{1}{A} * \\frac{1}{pdf_A} * \\frac{1}{pdf_\Omega} * cos(\\theta)
 
         If the projected area weight is not required (due to the ray sampling
         algorithm taking the weighting into account in the distribution e.g.
         cosine weighted) then the weight should be set to 1.0.
+
+        The number of rays returned must be equal to ray_count otherwise pipeline
+        statistics will be incorrectly calculated.
 
         :param int pixel: Pixel index.
         :param Ray template: The template ray from which all rays should be generated.
@@ -868,8 +906,6 @@ cdef class Observer2D(_ObserverBase):
     :param int pixel_samples: Number of samples to generate per pixel with one call to
       observe() (default=1000).
     :param kwargs: **kwargs from _ObserverBase.
-
-    .. automethod:: raysect.optical.observer.base.observer.Observer2D._generate_rays
     """
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
