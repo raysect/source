@@ -167,7 +167,7 @@ cdef class SpectralFunction:
 
         # are cached samples already available?
         if self._sample_cache_valid(min_wavelength, max_wavelength, bins):
-            return self._sample_cache_get()
+            return self._sample_cache_get_array()
 
         # create new sample ndarray and obtain a memoryview for fast access
         size = bins
@@ -185,14 +185,24 @@ cdef class SpectralFunction:
             lower = upper
 
         # update cache
-        self._sample_cache_set(min_wavelength, max_wavelength, bins, samples)
+        self._sample_cache_set(min_wavelength, max_wavelength, bins, samples, s_view)
 
         return samples
+
+    cdef double[::1] sample_mv(self, double min_wavelength, double max_wavelength, int bins):
+
+        if self._sample_cache_valid(min_wavelength, max_wavelength, bins):
+            return self._sample_cache_get_mv()
+
+        # populate cache
+        self.sample(min_wavelength, max_wavelength, bins)
+        return self._sample_cache_get_mv()
 
     cdef void _sample_cache_init(self):
 
         # initialise cache with invalid values
         self._sample_cache = None
+        self._sample_cache_mv = None
         self._sample_cache_min_wvl = -1
         self._sample_cache_max_wvl = -1
         self._sample_cache_num_samp = -1
@@ -205,12 +215,16 @@ cdef class SpectralFunction:
             self._sample_cache_num_samp == bins
         )
 
-    cdef ndarray _sample_cache_get(self):
+    cdef ndarray _sample_cache_get_array(self):
         return self._sample_cache
 
-    cdef void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples):
+    cdef double[::1] _sample_cache_get_mv(self):
+        return self._sample_cache_mv
+
+    cdef void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples, double[::1] samples_mv):
 
         self._sample_cache = samples
+        self._sample_cache_mv = samples_mv
         self._sample_cache_min_wvl = min_wavelength
         self._sample_cache_max_wvl = max_wavelength
         self._sample_cache_num_samp = bins
@@ -448,7 +462,7 @@ cdef class ConstantSF(SpectralFunction):
 
         # are cached samples already available?
         if self._sample_cache_valid(min_wavelength, max_wavelength, bins):
-            return self._sample_cache_get()
+            return self._sample_cache_get_array()
 
         # create new sample ndarray and obtain a memoryview for fast access
         size = bins
@@ -460,6 +474,6 @@ cdef class ConstantSF(SpectralFunction):
         s_view[:] = self.value
 
         # update cache
-        self._sample_cache_set(min_wavelength, max_wavelength, bins, samples)
+        self._sample_cache_set(min_wavelength, max_wavelength, bins, samples, s_view)
 
         return samples
