@@ -427,6 +427,7 @@ cdef class Ray(CoreRay):
             list primitives
             Point3D start_point, end_point
             Primitive primitive
+            Material material
 
         # identify any primitive volumes the ray is propagating through
         primitives = world.contains(self.origin)
