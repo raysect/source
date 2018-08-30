@@ -58,9 +58,13 @@ else:
                 module = path.splitext(c_file)[0].replace("/", ".")
                 extensions.append(Extension(module, [c_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
 
+# parse the package version number
+with open(path.join(path.dirname(__file__), 'raysect/VERSION')) as version_file:
+    version = version_file.read().strip()
+
 setup(
     name="raysect",
-    version="0.6.0",
+    version=version,
     url="http://www.raysect.org",
     author="Dr Alex Meakins et al.",
     author_email="developers@raysect.org",

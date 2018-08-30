@@ -27,4 +27,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-__version__ = '0.5.3'
+from os import path as _path
+
+# parse the package version number
+with open(_path.join(_path.dirname(__file__), 'VERSION')) as _f:
+    __version__ = _f.read().strip()
