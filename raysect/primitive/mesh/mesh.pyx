@@ -1078,7 +1078,9 @@ cdef class Mesh(Primitive):
             raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
 
         # build the kd-Tree
-        self.data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
+        self.data = MeshData(vertices, triangles, normals=normals, smoothing=smoothing, closed=closed,
+                             tolerant=tolerant, flip_normals=flip_normals, max_depth=kdtree_max_depth,
+                             min_items=kdtree_min_items, hit_cost=kdtree_hit_cost, empty_bonus=kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
