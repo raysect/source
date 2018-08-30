@@ -15,24 +15,20 @@ Geometric Primitives
 Sphere
 ~~~~~~
 .. autoclass:: raysect.primitive.Sphere
-   :members: __init__
 
 Box
 ~~~
 .. autoclass:: raysect.primitive.Box
-   :members: __init__
 
 Cylinder
 ~~~~~~~~
 
 .. autoclass:: raysect.primitive.Cylinder
-   :members: __init__
 
 Cone
 ~~~~
 
 .. autoclass:: raysect.primitive.Cone
-   :members: __init__
 
 
 ==============

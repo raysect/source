@@ -78,6 +78,18 @@ cdef class BayerPipeline2D(Pipeline2D):
     :param float display_gamma: Gamma exponent to account for non-linear response of
       display screens (default=2.2).
     :param str name: User friendly name for this pipeline (default="Bayer Pipeline").
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import InterpolatedSF
+        >>> from raysect.optical.observer import BayerPipeline2D
+        >>>
+        >>> filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
+        >>> filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
+        >>> filter_blue = InterpolatedSF([100, 480, 490, 500, 510, 800], [0, 0, 1, 1, 0, 0])
+        >>>
+        >>> bayer = BayerPipeline2D(filter_red, filter_green, filter_blue,
+                                    display_unsaturated_fraction=0.96, name="Bayer Filter")
     """
 
     def __init__(self, SpectralFunction red_filter, SpectralFunction green_filter,

@@ -37,7 +37,15 @@ from raysect.core.math.cython cimport solve_quadratic, swap_double
 
 @cython.freelist(256)
 cdef class BoundingSphere3D:
+    """
+    A bounding sphere.
 
+    Represents a bounding sphere around a primitive's surface. The sphere's
+    centre point and radius must be specified in world space.
+
+    :param Point3D centre: the centre point of the bounding sphere.
+    :param float radius: the radius of the sphere that bounds the primitive.
+    """
     def __init__(self, Point3D centre, double radius):
 
         if radius <= 0:

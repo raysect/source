@@ -149,6 +149,13 @@ cdef class SolidAngleSampler:
 cdef class SphereSampler(SolidAngleSampler):
     """
     Generates a random vector on a unit sphere.
+
+        >>> from raysect.core.math import SphereSampler
+        >>>
+        >>> sphere_sampler = SphereSampler()
+        >>> sphere_sampler(2)
+        [Vector3D(-0.03659868898144491, 0.24230159277890417, 0.9695104301149347),
+         Vector3D(-0.6983609515217772, -0.6547708308112921, -0.28907981684698814)]
     """
 
     cpdef double pdf(self, Vector3D sample):
@@ -172,6 +179,13 @@ cdef class HemisphereUniformSampler(SolidAngleSampler):
 
     The hemisphere is aligned along the z-axis - the plane that forms the
     hemisphere base lies in the x-y plane.
+
+        >>> from raysect.core.math import HemisphereUniformSampler
+        >>>
+        >>> sampler = HemisphereUniformSampler()
+        >>> sampler(2)
+        [Vector3D(-0.5555921819133177, -0.41159192618517343, 0.7224329821485018),
+         Vector3D(0.03447410534618117, 0.33544044138689, 0.9414304256517041)]
     """
 
     cpdef double pdf(self, Vector3D sample):
@@ -197,6 +211,13 @@ cdef class HemisphereCosineSampler(SolidAngleSampler):
 
     The hemisphere is aligned along the z-axis - the plane that forms the
     hemisphere base lies in the x-y plane.
+
+        >>> from raysect.core.math import HemisphereCosineSampler
+        >>>
+        >>> sampler = HemisphereCosineSampler()
+        >>> sampler(2)
+        [Vector3D(0.18950017731212562, 0.4920026797683874, 0.8497193924463526),
+         Vector3D(0.21900782218503353, 0.918767789013818, 0.32848336897387853)]
     """
 
     cpdef double pdf(self, Vector3D sample):
@@ -223,6 +244,14 @@ cdef class ConeUniformSampler(SolidAngleSampler):
     The cone is aligned along the z-axis.
     
     :param angle: Angle of the cone in degrees (default=45).
+
+    .. code-block:: pycon
+
+        >>> from raysect.core.math import ConeUniformSampler
+        >>> sampler = ConeUniformSampler(5)
+        >>> sampler(2)
+        [Vector3D(-0.032984782761108486, 0.02339453130328099, 0.9991820154562943),
+         Vector3D(0.0246657314750599, 0.08269560820438482, 0.9962695609494988)]
     """
 
     def __init__(self, double angle=45):
@@ -252,44 +281,3 @@ cdef class ConeUniformSampler(SolidAngleSampler):
 
     cdef tuple sample_with_pdf(self):
         return self.sample(), self._solid_angle_inv
-
-
-# cdef class ConeCosineSampler(SolidAngleSampler):
-#     """
-#     Generates a cosine weighted random vector from a cone.
-#
-#     The cone is aligned along the z-axis.
-#
-#     :param angle: Angle of the cone in degrees (default=45).
-#     """
-#
-#     def __init__(self, double angle=45):
-#
-#         super().__init__()
-#         if not 0 < angle <= 90:
-#             raise ValueError("The cone angle must be between 0 and 90 degrees.")
-#         self.angle = angle
-#         self._angle_radians = angle / 180 * M_PI
-#         self._angle_cosine = cos(self._angle_radians)
-#         # self._solid_angle = 2 * M_PI * (1 - self._angle_cosine)
-#         # self._solid_angle_inv = 1 / self._solid_angle
-#
-#     # cpdef double pdf(self, Vector3D sample):
-#     #     if sample.z >= self._angle_cosine:
-#     #         # todo: write me!
-#     #         raise NotImplementedError
-#     #     return 0.0
-#
-#     cdef Vector3D sample(self):
-#         cdef double r_max_scaled = asin(self._angle_radians)
-#         cdef double r = sqrt(uniform()) * r_max_scaled
-#         cdef double phi = 2.0 * M_PI * uniform()
-#         cdef double x = r * cos(phi)
-#         cdef double y = r * sin(phi)
-#         return new_vector3d(x, y, sqrt(max(0, 1.0 - x*x - y*y)))
-#
-#     # cdef tuple sample_with_pdf(self):
-#         # todo: need correct pdf
-#         # return self.sample(), PDF_GOES_HERE
-
-

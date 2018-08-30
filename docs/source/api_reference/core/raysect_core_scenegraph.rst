@@ -2,7 +2,7 @@
 Scenegraph Module
 =================
 
-.. automodule:: raysect.core.scenegraph.node
+.. autoclass:: raysect.core.scenegraph.node.Node
    :members:
 
 .. automodule:: raysect.core.scenegraph.observer
@@ -10,6 +10,7 @@ Scenegraph Module
 
 .. automodule:: raysect.core.scenegraph.primitive
    :members:
+   :show-inheritance:
 
 .. automodule:: raysect.core.scenegraph.world
    :members:

@@ -42,7 +42,7 @@ cdef class Primitive(Node):
 
     This is a base class, its functionality must be implemented fully by the deriving class.
 
-    :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
+    :param Node parent: Assigns the Node's parent to the specified scene-graph object.
     :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
     :param Material material: An object representing the material properties of the primitive.
     :param str name: A string defining the node name.
@@ -62,8 +62,6 @@ cdef class Primitive(Node):
         """
         The material class for this primitive.
 
-        :getter: Returns this primitive's material.
-        :setter: Sets this primitive's material.
         :rtype: Material
         """
         return self._material
@@ -191,7 +189,7 @@ cdef class Primitive(Node):
         """
         Returns a new instance of the primitive with the same geometry.
         
-        :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
+        :param Node parent: Assigns the Node's parent to the specified scene-graph object.
         :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
         :param Material material: An object representing the material properties of the primitive.
         :param str name: A string defining the node name.

@@ -51,6 +51,12 @@ cdef class Spectrum(SpectralFunction):
     :param float min_wavelength: Lower wavelength bound for this spectrum
     :param float max_wavelength: Upper wavelength bound for this spectrum
     :param int bins: Number of samples to use over the spectral range
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import Spectrum
+        >>>
+        >>> spectrum = Spectrum(400, 720, 250)
     """
 
     def __init__(self, double min_wavelength, double max_wavelength, int bins):
@@ -200,6 +206,12 @@ cdef class Spectrum(SpectralFunction):
         :param float max_wavelength: The maximum wavelength in nanometers
         :return: Average radiance in W/m^2/str/nm
         :rtype: float
+
+        .. code-block:: pycon
+
+            >>> spectrum = ray.trace(world)
+            >>> spectrum.average(400, 700)
+            1.095030870970234
         """
 
         self._wavelength_check(min_wavelength, max_wavelength)
@@ -219,6 +231,12 @@ cdef class Spectrum(SpectralFunction):
         :param float max_wavelength: The maximum wavelength in nanometers
         :return: Integrated radiance in W/m^2/str
         :rtype: float
+
+        .. code-block:: pycon
+
+            >>> spectrum = ray.trace(world)
+            >>> spectrum.integrate(400, 700)
+            328.50926129107023
         """
 
         self._wavelength_check(min_wavelength, max_wavelength)
@@ -240,6 +258,14 @@ cdef class Spectrum(SpectralFunction):
         :param float max_wavelength: The maximum wavelength in nanometers
         :param int bins: The number of spectral bins.
         :rtype: ndarray
+
+        .. code-block:: pycon
+
+            >>> spectrum
+            <raysect.optical.spectrum.Spectrum at 0x7f56c22bd8b8>
+            >>> spectrum.min_wavelength, spectrum.max_wavelength
+            (375.0, 785.0)
+            >>> sub_spectrum = spectrum.sample(450, 550, 100)
         """
 
         cdef:
@@ -283,6 +309,12 @@ cdef class Spectrum(SpectralFunction):
         True if the spectrum is zero, False otherwise.
 
         :rtype: bool
+
+        .. code-block:: pycon
+
+            >>> spectrum = ray.trace(world)
+            >>> spectrum.is_zero()
+            False
         """
 
         cdef int index
@@ -299,6 +331,12 @@ cdef class Spectrum(SpectralFunction):
         Returns radiance in W/m^2/str
 
         :rtype: float
+
+        .. code-block:: pycon
+
+            >>> spectrum = ray.trace(world)
+            >>> spectrum.total()
+            416.6978223103715
         """
 
         self._attribute_check()
@@ -317,6 +355,12 @@ cdef class Spectrum(SpectralFunction):
         and returns the data in a numpy array.
 
         :rtype: ndarray
+
+        .. code-block:: pycon
+
+            >>> spectrum = ray.trace(world)
+            >>> spectrum.to_photons()
+            array([2.30744985e+17, 3.12842916e+17, ...])
         """
 
         cdef:

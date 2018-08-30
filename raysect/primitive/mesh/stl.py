@@ -53,6 +53,19 @@ class STLHandler:
         :param str mode: The file format to load: 'ascii', 'binary', 'auto' (default='auto').
         :param kwargs: Accepts optional keyword arguments from the Mesh class.
         :rtype: Mesh
+
+        .. code-block:: pycon
+
+            >>> from raysect.optical import World, translate, rotate, ConstantSF, Sellmeier, Dielectric
+            >>> from raysect.primitive import import_stl
+            >>>
+            >>> world = World()
+            >>>
+            >>> diamond = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0),
+            >>>                      ConstantSF(1.0))
+            >>>
+            >>> mesh = import_stl("my_mesh.stl", scaling=1, mode='binary', parent=world,
+            >>>                   transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)
         """
 
         mode = mode.lower()
@@ -195,6 +208,14 @@ class STLHandler:
         :param Mesh mesh: The Raysect mesh instance to write to STL.
         :param str filename: Mesh file path.
         :param str mode: The file format to write: 'ascii' or 'binary' (default='ascii').
+
+        .. code-block:: pycon
+
+            >>> mesh
+            <raysect.primitive.mesh.mesh.Mesh at 0x7f2c09eac2e8>
+            >>> from raysect.primitive import export_stl
+            >>> export_stl(mesh, 'my_mesh.stl', mode='ascii')
+
         """
 
         if not isinstance(mesh, Mesh):

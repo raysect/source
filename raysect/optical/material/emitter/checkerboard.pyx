@@ -48,6 +48,19 @@ cdef class Checkerboard(NullVolume):
     :param SpectralFunction emission_spectrum2: Emission spectrum for square two.
     :param float scale1: Intensity of square one emission.
     :param float scale2: Intensity of square two emission.
+
+    .. code-block:: pycon
+
+        >>> from raysect.primitive import Box
+        >>> from raysect.optical import World, rotate, Point3D, d65_white
+        >>> from raysect.optical.material import Checkerboard
+        >>>
+        >>> world = World()
+        >>>
+        >>> # checker board wall that acts as emitter
+        >>> emitter = Box(lower=Point3D(-10, -10, 10), upper=Point3D(10, 10, 10.1), parent=world,
+                          transform=rotate(45, 0, 0))
+        >>> emitter.material=Checkerboard(4, d65_white, d65_white, 0.1, 2.0)
     """
 
     def __init__(self, double width=1.0, SpectralFunction emission_spectrum1=d65_white,

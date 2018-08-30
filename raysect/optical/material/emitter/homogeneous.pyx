@@ -102,7 +102,7 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
 
         :param Vector3D direction: The emission direction vector in local coordinates.
         :param Spectrum spectrum: Spectrum measured so far along ray path. Add your emission
-        to this spectrum, don't override it.
+          to this spectrum, don't override it.
         :param World world: The world scene-graph.
         :param Ray ray: The ray being traced.
         :param Primitive primitive: The geometric primitive to which this material belongs

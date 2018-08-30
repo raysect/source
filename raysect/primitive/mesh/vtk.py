@@ -50,12 +50,9 @@ class VTKHandler:
         """
         Create a mesh instance from a VTK mesh data file (.vtk).
 
-        Currently only supports VTK DataFile v2.0 and unstructured grid data with
-        3 element (triangular) cells.
-
-        Some engineering meshes are exported in different units (mm for example)
-        whereas Raysect units are in m. Applying a scale factor of 0.001 would
-        convert the mesh into m for use in Raysect.
+        .. warning ::
+           Currently only supports VTK DataFile v2.0 and unstructured grid data with
+           3 element (triangular) cells.
 
         :param str filename: Mesh file path.
         :param double scaling: Scale the mesh by this factor (default=1.0).
@@ -105,7 +102,7 @@ class VTKHandler:
     @classmethod
     def _ascii_read_vertices(cls, f, scaling):
 
-        match = re.match("POINTS  ([0-9]*)  float", f.readline().strip())
+        match = re.match("POINTS\s*([0-9]*)\s*float", f.readline().strip())
         if not match:
             raise RuntimeError("Unrecognised dataset encountered in vtk file.")
         num_points = int(match.group(1))
@@ -176,8 +173,9 @@ class VTKHandler:
             # # vtk DataFile Version 2.0
             # My Raysect mesh data
             # ASCII
+            mesh_name = (mesh.name or 'RaysectMesh').replace(" ", "_")
             f.write('# vtk DataFile Version 2.0\n')
-            f.write('{}\n'.format(mesh.name.replace(" ", "_") or 'RaysectMesh'))
+            f.write('{}\n'.format(mesh_name))
             f.write('ASCII\n')
 
             cls._ascii_write_geometry(f, mesh)

@@ -52,6 +52,21 @@ cdef class PinholeCamera(Observer2D):
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import translate
+        >>> from raysect.optical import World
+        >>> from raysect.optical.observer import PinholeCamera, PowerPipeline2D
+        >>>
+        >>> power = PowerPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
+        >>>
+        >>> camera = PinholeCamera((512, 512), parent=world, pipelines=[power])
+        >>> camera.transform = translate(0, 0, -3.3)
+        >>> camera.pixel_samples = 250
+        >>> camera.spectral_bins = 15
+        >>>
+        >>> camera.observe()
     """
 
     cdef:

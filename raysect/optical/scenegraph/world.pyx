@@ -240,6 +240,8 @@ cdef class World(CoreWorld):
     """
     The root node of the optical scene-graph.
 
+    Inherits a lot of functionality and attributes from the core World object.
+
     The world node tracks all primitives and observers in the world. It maintains acceleration structures to speed up
     the ray-tracing calculations. The particular acceleration algorithm used is selectable. The default acceleration
     structure is a kd-tree.

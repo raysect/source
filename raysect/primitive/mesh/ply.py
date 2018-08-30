@@ -58,6 +58,19 @@ class PLYHandler:
         :param str mode: The file format to load: 'ascii', 'binary', 'auto' (default='auto').
         :param kwargs: Accepts optional keyword arguments from the Mesh class.
         :rtype: Mesh
+        
+        .. code-block:: pycon
+
+            >>> from raysect.optical import World, translate, rotate, ConstantSF, Sellmeier, Dielectric
+            >>> from raysect.primitive import import_ply
+            >>>
+            >>> world = World()
+            >>>
+            >>> diamond = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0),
+            >>>                      ConstantSF(1.0))
+            >>>
+            >>> mesh = import_ply("your_mesh.ply", scaling=1, mode='binary', parent=world,
+            >>>                   transform=translate(0, 0, 0)*rotate(165, 0, 0), material=diamond)
         """
 
         mode = mode.lower()
@@ -196,6 +209,13 @@ class PLYHandler:
         :param str mode: The file format to write: 'ascii', 'binary' (default='ascii').
         :param str comment: An optional string comment to include in the output file,
           can be multiple lines.
+
+        .. code-block:: pycon
+
+            >>> mesh
+            <raysect.primitive.mesh.mesh.Mesh at 0x7f2c09eac2e8>
+            >>> from raysect.primitive import export_ply
+            >>> export_ply(mesh, 'my_mesh.ply', mode='ascii', comment='My mesh')
         """
 
         if not isinstance(mesh, Mesh):

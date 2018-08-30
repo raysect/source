@@ -43,9 +43,14 @@ cdef class Node(_NodeBase):
     systems, can be calculated. Using this transform it is then possible to
     transform vectors and points between the two co-ordinate systems.
 
-    :param _NodeBase parent: Assigns the Node's parent to the specified scene-graph object.
+    :param Node parent: Assigns the Node's parent to the specified scene-graph object.
     :param AffineMatrix3D transform: Sets the affine transform associated with the Node.
     :param str name: A string defining the node name.
+
+    :ivar list children: A list of child nodes for which this node is the parent.
+    :ivar dict meta: A dictionary for the storage of any extra user specified meta data.
+    :ivar Node root: A reference to the root node of this node's scene-graph
+      (i.e. the parent of all parents.
     """
 
     def __init__(self, object parent=None, AffineMatrix3D transform=None, str name=None):
@@ -70,8 +75,6 @@ cdef class Node(_NodeBase):
         """
         The parent of this node in the scenegraph.
 
-        :getter: Returns this node's parent node.
-        :setter: Sets this node's parent.
         :rtype: Node
         """
         return self._parent
@@ -124,8 +127,6 @@ cdef class Node(_NodeBase):
         """
         The transform for this node's coordinate system in relation to the parent node.
 
-        :getter: Returns this node's affine transform matrix.
-        :setter: Sets this node's affine transform matrix.
         :rtype: AffineMatrix3D
         """
         return self._transform
@@ -140,8 +141,6 @@ cdef class Node(_NodeBase):
         """
         The name of this node.
 
-        :getter: Returns this node's name.
-        :setter: Sets this node's name.
         :rtype: str
         """
         return self._name

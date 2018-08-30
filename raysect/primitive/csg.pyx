@@ -299,6 +299,24 @@ cdef class Union(CSGPrimitive):
       system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the new CSG primitive's
       material (default = None).
+
+    Some example code for creating the union between two cylinders.
+
+    .. code-block:: python
+
+        from raysect.core import rotate, translate
+        from raysect.primitive import Cylinder, Union
+        from raysect.optical import World
+        from raysect.optical.material import AbsorbingSurface
+
+        world = World()
+
+        cyl_x = Cylinder(1, 4.2, transform=rotate(90, 0, 0)*translate(0, 0, -2.1))
+        cyl_y = Cylinder(1, 4.2, transform=rotate(0, 90, 0)*translate(0, 0, -2.1))
+
+        csg_union = Union(cyl_x, cyl_y, world, material=AbsorbingSurface(),
+                          transform=translate(-2.1, 2.1, 2.5)*rotate(30, -20, 0))
+
     """
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
@@ -376,6 +394,24 @@ cdef class Intersect(CSGPrimitive):
       system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the new CSG primitive's
       material (default = None).
+
+    Some example code for creating the intersection between two cylinders.
+
+    .. code-block:: python
+
+        from raysect.core import rotate, translate
+        from raysect.primitive import Cylinder, Sphere, Intersect
+        from raysect.optical import World
+        from raysect.optical.material import AbsorbingSurface
+
+        world = World()
+
+        cyl_x = Cylinder(1, 4.2, transform=rotate(90, 0, 0)*translate(0, 0, -2.1))
+        sphere = Sphere(1.5)
+
+        csg_intersection = Intersect(cyl_x, sphere, world, material=AbsorbingSurface(),
+                                     transform=translate(-2.1, 2.1, 2.5)*rotate(30, -20, 0))
+
     """
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
@@ -459,6 +495,22 @@ cdef class Subtract(CSGPrimitive):
       system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the new CSG primitive's
       material (default = None).
+
+    .. code-block:: python
+
+        from raysect.core import rotate, translate, Point3D
+        from raysect.primitive import Box, Sphere, Subtract
+        from raysect.optical import World
+        from raysect.optical.material import AbsorbingSurface
+
+        world = World()
+
+        cube = Box(Point3D(-1.5, -1.5, -1.5), Point3D(1.5, 1.5, 1.5))
+        sphere = Sphere(1.75)
+
+        csg_subtraction = Subtract(cube, sphere, world, material=AbsorbingSurface(),
+                                   transform=translate(-2.1, 2.1, 2.5)*rotate(30, -20, 0))
+
     """
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
