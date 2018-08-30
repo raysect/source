@@ -66,6 +66,19 @@ cdef class Parabola(Primitive):
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the parabola's material (default = None).
     :param str name: A string specifying a user-friendly name for the parabola (default = "").
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import translate
+        >>> from raysect.primitive import Parabola
+        >>> from raysect.optical import World
+        >>> from raysect.optical.material import UniformSurfaceEmitter
+        >>> from raysect.optical.library.spectra.colours import yellow
+        >>>
+        >>> world = World()
+        >>>
+        >>> parabola = Parabola(0.5, 2.0, parent=world, transform=translate(0, 0, 1),
+                                material=UniformSurfaceEmitter(yellow), name="yellow parabola")
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
@@ -93,8 +106,6 @@ cdef class Parabola(Primitive):
     def radius(self):
         """
         Radius of the parabola base in x-y plane.
-
-        :rtype: float
         """
         return self._radius
 
@@ -114,8 +125,6 @@ cdef class Parabola(Primitive):
     def height(self):
         """
         The parabola's extent along the z-axis [0, height].
-
-        :rtype: float
         """
         return self._height
 

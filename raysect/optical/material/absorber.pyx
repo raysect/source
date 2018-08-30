@@ -37,6 +37,14 @@ from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World
 cdef class AbsorbingSurface(NullVolume):
     """
     A perfectly absorbing surface material.
+
+        >>> from raysect.primitive import Sphere
+        >>> from raysect.optical import World
+        >>> from raysect.optical.material import AbsorbingSurface
+        >>>
+        >>> # set-up scenegraph
+        >>> world = World()
+        >>> absorber = Sphere(radius=0.01, parent=world, material=AbsorbingSurface())
     """
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,

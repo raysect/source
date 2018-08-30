@@ -108,6 +108,10 @@ cdef class KDTree2DCore:
 
     cdef void _reset(self)
 
+    cdef double _read_double(self, object file)
+
+    cdef int32_t _read_int32(self, object file)
+
 
 cdef class KDTree2D(KDTree2DCore):
 

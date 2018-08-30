@@ -21,16 +21,6 @@ or adaptively select pixels to sample based on their noise level.
    :members:
 
 
-Pixel Processor
-^^^^^^^^^^^^^^^
-
-A pixel processor handles the processing of the spectra for each pixel sampled by the
-observer.
-
-.. autoclass:: raysect.optical.observer.base.processor.PixelProcessor
-   :members:
-
-
 Pipeline
 ^^^^^^^^
 
@@ -53,11 +43,7 @@ RGB
 ---
 
 .. autoclass:: raysect.optical.observer.pipeline.rgb.RGBPipeline2D
-   :members:
-   :show-inheritance:
-
-.. autoclass:: raysect.optical.observer.pipeline.rgb.XYZPixelProcessor
-   :members:
+   :members: display, display_auto_exposure, display_sensitivity, display_unsaturated_fraction, display_update_time, save
    :show-inheritance:
 
 
@@ -65,7 +51,7 @@ Bayer
 -----
 
 .. autoclass:: raysect.optical.observer.pipeline.bayer.BayerPipeline2D
-   :members:
+   :members: display, display_auto_exposure, display_black_point, display_gamma, display_unsaturated_fraction,display_update_time, display_white_point, save
    :show-inheritance:
 
 
@@ -73,15 +59,10 @@ Power
 -----
 
 .. autoclass:: raysect.optical.observer.pipeline.mono.PowerPipeline0D
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.pipeline.mono.PowerPipeline2D
-   :members:
-   :show-inheritance:
-
-.. autoclass:: raysect.optical.observer.pipeline.mono.power.PowerPixelProcessor
-   :members:
+   :members: display_auto_exposure, display_unsaturated_fraction, display_update_time, save
    :show-inheritance:
 
 
@@ -89,15 +70,9 @@ Radiance
 --------
 
 .. autoclass:: raysect.optical.observer.pipeline.mono.RadiancePipeline0D
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.pipeline.mono.RadiancePipeline2D
-   :members:
-   :show-inheritance:
-
-.. autoclass:: raysect.optical.observer.pipeline.mono.radiance.RadiancePixelProcessor
-   :members:
    :show-inheritance:
 
 
@@ -105,27 +80,17 @@ Spectral
 --------
 
 .. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralPowerPipeline0D
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralRadiancePipeline0D
-   :members:
+   :members: to_spectrum
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralPowerPipeline2D
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralRadiancePipeline2D
-   :members:
-   :show-inheritance:
-
-.. autoclass:: raysect.optical.observer.pipeline.spectral.power.SpectralPowerPixelProcessor
-   :members:
-   :show-inheritance:
-
-.. autoclass:: raysect.optical.observer.pipeline.spectral.radiance.SpectralRadiancePixelProcessor
-   :members:
+   :members: to_spectrum
    :show-inheritance:
 
 
@@ -133,13 +98,10 @@ Frame Samplers
 --------------
 
 .. autoclass:: raysect.optical.observer.sampler2d.FullFrameSampler2D
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.sampler2d.MonoAdaptiveSampler2D
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.sampler2d.RGBAdaptiveSampler2D
-   :members:
    :show-inheritance:

@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy import zeros
+import numpy as np
 from raysect.core.scenegraph.signal import MATERIAL
 
 from raysect.core cimport BoundingBox3D, BoundingSphere3D, AffineMatrix3D, _NodeBase, ChangeSignal
@@ -60,6 +60,7 @@ cdef class ImportanceManager:
 
         if len(primitives) == 0:
             self._cdf = None
+            self._cdf_mv = None
             return
 
         self._process_primitives(primitives)
@@ -67,11 +68,22 @@ cdef class ImportanceManager:
         if self._total_importance == 0:
             # no important primitives were found
             self._cdf = None
+            self._cdf_mv = None
             return
 
         # Populate numpy array storing the normalised cumulative importance weights of all important primitives.
         # Used for selecting a random primitive proportional to their respective weights.
         self._calculate_cdf()
+
+    def __getstate__(self):
+        state = self._cdf, self._total_importance, self._spheres
+
+    def __setstate__(self, state):
+        self._cdf, self._total_importance, self._spheres = state
+        self._cdf_mv = self._cdf
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     cdef object _process_primitives(self, list primitives):
         """
@@ -93,6 +105,9 @@ cdef class ImportanceManager:
                 self._total_importance += importance
                 self._spheres.append((sphere, importance))
 
+    @cython.wraparound(False)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef object _calculate_cdf(self):
         """
         Calculate the cumulative distribution function for import primitives (CDF).
@@ -101,7 +116,7 @@ cdef class ImportanceManager:
         each point in the array the normalised cumulative importance weighting is stored.
         """
 
-        self._cdf = zeros(len(self._spheres))
+        self._cdf = np.zeros(len(self._spheres), dtype=np.float64)
         for index, sphere_data in enumerate(self._spheres):
             _, importance = sphere_data
             if index == 0:
@@ -110,6 +125,12 @@ cdef class ImportanceManager:
                 self._cdf[index] = self._cdf[index-1] + importance
         self._cdf /= self._total_importance
 
+        # create memoryview for fast access
+        self._cdf_mv = self._cdf
+
+    @cython.wraparound(False)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef tuple _pick_sphere(self):
         """
         Find the important primitive bounding sphere corresponding to a uniform random number.
@@ -125,10 +146,12 @@ cdef class ImportanceManager:
             return None
 
         # due to the CDF not starting at zero, using find_index means that the result is offset by 1 index point.
-        index = find_index(self._cdf, uniform()) + 1
+        index = find_index(self._cdf_mv, uniform()) + 1
         return self._spheres[index]
 
     @cython.cdivision(True)
+    @cython.wraparound(False)
+    @cython.boundscheck(False)
     cpdef Vector3D sample(self, Point3D origin):
         """
         Sample a random important primitive weighted by their importance weight.
@@ -175,6 +198,8 @@ cdef class ImportanceManager:
         return sample.transform(rotation)
 
     @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
     cpdef double pdf(self, Point3D origin, Vector3D direction):
         """
         Calculates the value of the PDF for the specified sample point and direction.
@@ -239,6 +264,8 @@ cdef class ImportanceManager:
 cdef class World(CoreWorld):
     """
     The root node of the optical scene-graph.
+
+    Inherits a lot of functionality and attributes from the core World object.
 
     The world node tracks all primitives and observers in the world. It maintains acceleration structures to speed up
     the ray-tracing calculations. The particular acceleration algorithm used is selectable. The default acceleration

@@ -39,6 +39,10 @@ cimport cython
 cdef class StatsBin:
     """
     Class for storing a single numerical sampling result and its associated statistics.
+
+    :ivar float mean: The mean value of the samples.
+    :ivar float variance: The variance of the collected samples.
+    :ivar int samples: The total number of samples in the set.
     """
 
     def __init__(self):
@@ -48,11 +52,13 @@ cdef class StatsBin:
         self.samples = 0
 
     cpdef object clear(self):
+        """ Erase the current statistics stored in this StatsBin. """
         self.mean = 0.0
         self.variance = 0.0
         self.samples = 0
 
     cpdef StatsBin copy(self):
+        """ Instantiate a new StatsBin object with the same statistical results. """
         obj = StatsBin()
         obj.mean = self.mean
         obj.variance = self.variance
@@ -60,9 +66,21 @@ cdef class StatsBin:
         return obj
 
     cpdef object add_sample(self, double sample):
+        """
+        Add a single sample to this StatsBin.
+
+        :param float sample: The sample value to be added.
+        """
         _add_sample(sample, &self.mean, &self.variance, &self.samples)
 
     cpdef object combine_samples(self, double mean, double variance, int sample_count):
+        """
+        Combine the statistics from another set of samples with the results already stored in this StatsBin.
+
+        :param float mean: The mean of the new samples
+        :param float variance: The variance of the new samples
+        :param int sample_count: The number of new samples that were taken.
+        """
 
         cdef:
             int na, nb, nt = 0
@@ -97,10 +115,21 @@ cdef class StatsBin:
         self.samples = nt
 
     cpdef double error(self):
+        """ Compute the standard error of this sample distribution. """
         return _std_error(self.variance, self.samples)
 
 
 cdef class StatsArray1D:
+    """
+    Class for storing a 1D array of sampling results and their associated statistics.
+
+    :param int length: The length of the 1D samples array.
+
+    :ivar ndarray mean: The mean value of the samples.
+    :ivar ndarray variance: The variance of the collected samples.
+    :ivar ndarray samples: The total number of samples in the set.
+    :ivar int length: The length of the 1D samples array.
+    """
 
     def __init__(self, length):
 
@@ -111,15 +140,31 @@ cdef class StatsArray1D:
         # generate buffers
         self._new_buffers()
 
+    def __getstate__(self):
+        return self.length, self.mean, self.variance, self.samples
+
+    def __setstate__(self, state):
+
+        self.length, self.mean, self.variance, self.samples = state
+
+        # reconstruct memory views
+        self.mean_mv = self.mean
+        self.variance_mv = self.variance
+        self.samples_mv = self.samples
+
     @property
     def shape(self):
+        """ The numpy style array shape of the underlying StatsArray. """
+
         return (self.length, )
 
     cpdef object clear(self):
+        """ Erase the current statistics stored in this StatsArray. """
         self._new_buffers()
 
     @cython.initializedcheck(False)
     cpdef StatsArray1D copy(self):
+        """ Instantiate a new StatsArray1D object with the same statistical results. """
         obj = StatsArray1D(self.length)
         obj.mean_mv[:] = self.mean_mv[:]
         obj.variance_mv[:] = self.variance_mv[:]
@@ -130,6 +175,12 @@ cdef class StatsArray1D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef object add_sample(self, int x, double sample):
+        """
+        Add a single sample to the StatsArray1D element x.
+
+        :param int x: The position index where the sample should be added.
+        :param float sample: The sample value to be added.
+        """
         cdef:
             int n
             double m, v
@@ -153,6 +204,15 @@ cdef class StatsArray1D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef object combine_samples(self, int x, double mean, double variance, int sample_count):
+        """
+        Combine the statistics from a given set of samples with the results already stored in
+        this StatsArray at index position x.
+
+        :param int x: The index position where these results are to be added.
+        :param float mean: The mean of the new samples
+        :param float variance: The variance of the new samples
+        :param int sample_count: The number of new samples that were taken.
+        """
 
         cdef:
             int na, nb, nt = 0
@@ -192,6 +252,11 @@ cdef class StatsArray1D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef double error(self, int x):
+        """
+        Compute the standard error of the results at index position x.
+
+        :param int x: The index position at which to compute the standard error.
+        """
         self._bounds_check(x)
         return _std_error(self.variance_mv[x], self.samples_mv[x])
 
@@ -199,6 +264,11 @@ cdef class StatsArray1D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef ndarray errors(self):
+        """
+        Compute the standard errors of all the results stored in this StatsArray.
+
+        :rtype: ndarray
+        """
 
         cdef:
             int x
@@ -225,6 +295,18 @@ cdef class StatsArray1D:
 
 
 cdef class StatsArray2D:
+    """
+    Class for storing a 2D array of sampling results and their associated statistics.
+
+    :param int nx: The number of array samples along the x direction.
+    :param int ny: The number of array samples along the y direction.
+
+    :ivar ndarray mean: The mean value of the samples.
+    :ivar ndarray variance: The variance of the collected samples.
+    :ivar ndarray samples: The total number of samples in the set.
+    :ivar int nx: The number of array samples along the x direction.
+    :ivar int ny: The number of array samples along the y direction.
+    """
 
     def __init__(self, nx, ny):
 
@@ -240,15 +322,29 @@ cdef class StatsArray2D:
         # generate frame buffers
         self._new_buffers()
 
+    def __getstate__(self):
+        return self.nx, self.ny, self.mean, self.variance, self.samples
+
+    def __setstate__(self, state):
+        self.nx, self.ny, self.mean, self.variance, self.samples = state
+
+        # reconstruct memory views
+        self.mean_mv = self.mean
+        self.variance_mv = self.variance
+        self.samples_mv = self.samples
+
     @property
     def shape(self):
+        """ The numpy style array shape of the underlying StatsArray. """
         return self.nx, self.ny
 
     cpdef object clear(self):
+        """ Erase the current statistics stored in this StatsArray. """
         self._new_buffers()
 
     @cython.initializedcheck(False)
     cpdef StatsArray2D copy(self):
+        """ Instantiate a new StatsArray2D object with the same statistical results. """
         obj = StatsArray2D(self.nx, self.ny)
         obj.mean_mv[:] = self.mean_mv[:]
         obj.variance_mv[:] = self.variance_mv[:]
@@ -259,6 +355,14 @@ cdef class StatsArray2D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef object add_sample(self, int x, int y, double sample):
+        """
+        Add a single sample to the StatsArray2D results stored at element x, y.
+
+        :param int x: The x position index where the sample should be added.
+        :param int y: The y position index where the sample should be added.
+        :param float sample: The sample value to be added.
+        """
+
         cdef:
             int n
             double m, v
@@ -282,6 +386,16 @@ cdef class StatsArray2D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef object combine_samples(self, int x, int y, double mean, double variance, int sample_count):
+        """
+        Combine the statistics from a given set of samples with the results already stored in
+        this StatsArray at index position x, y.
+
+        :param int x: The x index position where these results are to be added.
+        :param int y: The y index position where these results are to be added.
+        :param float mean: The mean of the new samples
+        :param float variance: The variance of the new samples
+        :param int sample_count: The number of new samples that were taken.
+        """
 
         cdef:
             int nx, ny, nt = 0
@@ -321,6 +435,12 @@ cdef class StatsArray2D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef double error(self, int x, int y):
+        """
+        Compute the standard error of the results at index position x, y.
+
+        :param int x: The x index position at which to compute the standard error.
+        :param int y: The y index position at which to compute the standard error.
+        """
         self._bounds_check(x, y)
         return _std_error(self.variance_mv[x, y], self.samples_mv[x, y])
 
@@ -328,6 +448,11 @@ cdef class StatsArray2D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef ndarray errors(self):
+        """
+        Compute the standard errors of all the results stored in this StatsArray.
+
+        :rtype: ndarray
+        """
 
         cdef:
             int x, y
@@ -359,6 +484,20 @@ cdef class StatsArray2D:
 
 
 cdef class StatsArray3D:
+    """
+    Class for storing a 3D array of sampling results and their associated statistics.
+
+    :param int nx: The number of array samples along the x direction.
+    :param int ny: The number of array samples along the y direction.
+    :param int nz: The number of array samples along the z direction.
+
+    :ivar ndarray mean: The mean value of the samples.
+    :ivar ndarray variance: The variance of the collected samples.
+    :ivar ndarray samples: The total number of samples in the set.
+    :ivar int nx: The number of array samples along the x direction.
+    :ivar int ny: The number of array samples along the y direction.
+    :ivar int nz: The number of array samples along the z direction.
+    """
 
     def __init__(self, nx, ny, nz):
 
@@ -378,17 +517,32 @@ cdef class StatsArray3D:
         # generate frame buffers
         self._new_buffers()
 
+    def __getstate__(self):
+        return self.nx, self.ny, self.nz, self.mean, self.variance, self.samples
+
+    def __setstate__(self, state):
+
+        self.nx, self.ny, self.nz, self.mean, self.variance, self.samples = state
+
+        # reconstruct memory views
+        self.mean_mv = self.mean
+        self.variance_mv = self.variance
+        self.samples_mv = self.samples
+
     @property
     def shape(self):
+        """ The numpy style array shape of the underlying StatsArray. """
         return self.nx, self.ny, self.nz
 
     cpdef object clear(self):
+        """ Erase the current statistics stored in this StatsArray. """
         self._new_buffers()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef StatsArray3D copy(self):
+        """ Instantiate a new StatsArray3D object with the same statistical results. """
         obj = StatsArray3D(self.nx, self.ny, self.nz)
         obj.mean_mv[:] = self.mean_mv[:]
         obj.variance_mv[:] = self.variance_mv[:]
@@ -399,6 +553,15 @@ cdef class StatsArray3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef object add_sample(self, int x, int y, int z, double sample):
+        """
+        Add a single sample to the StatsArray3D results stored at element x, y, z.
+
+        :param int x: The x position index where the sample should be added.
+        :param int y: The y position index where the sample should be added.
+        :param int z: The z position index where the sample should be added.
+        :param float sample: The sample value to be added.
+        """
+
         cdef:
             int n
             double m, v
@@ -422,6 +585,17 @@ cdef class StatsArray3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef object combine_samples(self, int x, int y, int z, double mean, double variance, int sample_count):
+        """
+        Combine the statistics from a given set of samples with the results already stored in
+        this StatsArray at index position x, y, z.
+
+        :param int x: The x index position where these results are to be added.
+        :param int y: The y index position where these results are to be added.
+        :param int z: The z index position where these results are to be added.
+        :param float mean: The mean of the new samples
+        :param float variance: The variance of the new samples
+        :param int sample_count: The number of new samples that were taken.
+        """
 
         cdef:
             int na, nb, nt = 0
@@ -461,6 +635,13 @@ cdef class StatsArray3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef double error(self, int x, int y, int z):
+        """
+        Compute the standard error of the results at index position x, y, z.
+
+        :param int x: The x index position at which to compute the standard error.
+        :param int y: The y index position at which to compute the standard error.
+        :param int z: The z index position at which to compute the standard error.
+        """
         self._bounds_check(x, y, z)
         return _std_error(self.variance_mv[x, y, z], self.samples_mv[x, y, z])
 
@@ -468,6 +649,11 @@ cdef class StatsArray3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef ndarray errors(self):
+        """
+        Compute the standard errors of all the results stored in this StatsArray.
+
+        :rtype: ndarray
+        """
 
         cdef:
             int x, y, z

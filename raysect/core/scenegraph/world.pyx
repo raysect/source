@@ -61,9 +61,6 @@ cdef class World(_NodeBase):
     def accelerator(self):
         """
         The acceleration structure used for this world's scene-graph.
-
-        :getter: Returns this world node's acceleration structure.
-        :setter: Sets this world node's acceleration structure.
         """
         return self._accelerator
 
@@ -77,8 +74,6 @@ cdef class World(_NodeBase):
         """
         The name for this world node.
 
-        :getter: Returns this world node's name.
-        :setter: Sets this world node's name.
         :rtype: str
         """
         return self._name
@@ -92,7 +87,6 @@ cdef class World(_NodeBase):
         """
         The list of primitives maintained in this scene-graph.
 
-        :getter: Returns this world node's primitive list.
         :rtype: list
         """
         return self._primitives
@@ -102,7 +96,6 @@ cdef class World(_NodeBase):
         """
         The list of observers in this scene-graph.
 
-        :getter: Returns this world node's observers.
         :rtype: list
         """
         return self._observers
@@ -118,7 +111,7 @@ cdef class World(_NodeBase):
         of -100 in x. Applied to point (0,0,0) in A, this would produce the
         point (-100,0,0) in B as B is translated +100 in x compared to A.
 
-        :param _NodeBase node: The target node.
+        :param Node node: The target node.
         :return: An AffineMatrix3D describing the coordinate transform.
         :rtype: AffineMatrix3D
         """

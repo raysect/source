@@ -1,13 +1,17 @@
 from setuptools import setup, find_packages, Extension
-from Cython.Build import cythonize
 import sys
 import numpy
 import os
 import os.path as path
 import multiprocessing
 
+use_cython = False
 force = False
 profile = False
+
+if "--use-cython" in sys.argv:
+    use_cython = True
+    del sys.argv[sys.argv.index("--use-cython")]
 
 if "--force" in sys.argv:
     force = True
@@ -19,26 +23,50 @@ if "--profile" in sys.argv:
 
 compilation_includes = [".", numpy.get_include()]
 compilation_args = []
+cython_directives = {
+    # 'auto_pickle': True,
+    'language_level': 3
+}
 
 setup_path = path.dirname(path.abspath(__file__))
 
-# build extension list
-extensions = []
-for root, dirs, files in os.walk(setup_path):
-    for file in files:
-        if path.splitext(file)[1] == ".pyx":
-            pyx_file = path.relpath(path.join(root, file), setup_path)
-            module = path.splitext(pyx_file)[0].replace("/", ".")
-            extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+if use_cython:
 
-if profile:
-    directives = {"profile": True}
+    from Cython.Build import cythonize
+
+    # build .pyx extension list
+    extensions = []
+    for root, dirs, files in os.walk(setup_path):
+        for file in files:
+            if path.splitext(file)[1] == ".pyx":
+                pyx_file = path.relpath(path.join(root, file), setup_path)
+                module = path.splitext(pyx_file)[0].replace("/", ".")
+                extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+
+    if profile:
+        cython_directives["profile"] = True
+
+    # generate .c files from .pyx
+    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives)
+
 else:
-    directives = {}
+
+    # build .c extension list
+    extensions = []
+    for root, dirs, files in os.walk(setup_path):
+        for file in files:
+            if path.splitext(file)[1] == ".c":
+                c_file = path.relpath(path.join(root, file), setup_path)
+                module = path.splitext(c_file)[0].replace("/", ".")
+                extensions.append(Extension(module, [c_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+
+# parse the package version number
+with open(path.join(path.dirname(__file__), 'raysect/VERSION')) as version_file:
+    version = version_file.read().strip()
 
 setup(
     name="raysect",
-    version="0.5.2",
+    version=version,
     url="http://www.raysect.org",
     author="Dr Alex Meakins et al.",
     author_email="developers@raysect.org",
@@ -59,10 +87,9 @@ setup(
         "Topic :: Scientific/Engineering :: Physics"
     ],
     install_requires=[
-        'cython>=0.28',
         'numpy',
     ],
     packages=find_packages(),
     include_package_data=True,
-    ext_modules=cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=directives))
+    ext_modules=extensions)
 

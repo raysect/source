@@ -17,12 +17,14 @@ properties of all observers and the overall observing workflow.
    :members:
 
 
-
-
 0D Observers
 ------------
 
 .. autoclass:: raysect.optical.observer.base.observer.Observer0D
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.nonimaging.sightline.SightLine
    :members:
    :show-inheritance:
 
@@ -34,7 +36,23 @@ properties of all observers and the overall observing workflow.
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.optical.observer.nonimaging.sightline.SightLine
+.. autoclass:: raysect.optical.observer.nonimaging.targetted_pixel.TargettedPixel
+   :members:
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.nonimaging.mesh_pixel.MeshPixel
+   :members:
+   :show-inheritance:
+
+
+1D Observers
+------------
+
+.. autoclass:: raysect.optical.observer.base.observer.Observer1D
+   :members: _generate_rays, pixels, pixel_samples, frame_sampler, pipelines
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.nonimaging.mesh_camera.MeshCamera
    :members:
    :show-inheritance:
 
@@ -43,7 +61,7 @@ properties of all observers and the overall observing workflow.
 ------------
 
 .. autoclass:: raysect.optical.observer.base.observer.Observer2D
-   :members:
+   :members: _generate_rays, pixels, pixel_samples, frame_sampler, pipelines
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.imaging.pinhole.PinholeCamera

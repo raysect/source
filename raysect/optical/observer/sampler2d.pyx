@@ -38,6 +38,7 @@ cimport cython
 
 
 cdef class FullFrameSampler2D(FrameSampler2D):
+    """ Evenly samples the full 2D frame. """
 
     cpdef list generate_tasks(self, tuple pixels):
 

@@ -57,9 +57,10 @@ cdef class MeshCamera(Observer1D):
     """
     Uses a supplied mesh surface as a linear camera.
 
-    Warning: you must be careful when using this camera to not double count radiance. For example,
-    if you have a concave mesh its possible for two surfaces to see the same emission. In cases
-    like this, the mesh should have an absorbing surface to prevent double counting.
+    .. Warning::
+       Users must be careful when using this camera to not double count radiance. For example,
+       if you have a concave mesh its possible for two surfaces to see the same emission. In cases
+       like this, the mesh should have an absorbing surface to prevent double counting.
 
     This observer samples over each triangle or a triangular mesh. At each point on the surface
     the incoming radiance over a hemisphere is sampled. The pixel id corresponds to the triangle
@@ -69,8 +70,35 @@ cdef class MeshCamera(Observer1D):
     When set, the surface offset specifies the distance along the surface normal that the ray
     launch origin is shifted.
 
-    :param mesh: The Mesh object to use as the sampling surface.
+    :param Mesh mesh: The Mesh object to use as the sampling surface.
     :param float surface_offset: The offset from the mesh surface (default=0).
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      by this observer (default=PowerPipeline1D()).
+    :param kwargs: **kwargs from Observer1D and _ObserverBase
+
+    .. code-block:: pycon
+
+        >>> from raysect.primitive import Mesh
+        >>> from raysect.optical import World
+        >>> from raysect.optical.material import AbsorbingSurface
+        >>> from raysect.optical.observer import MeshCamera, PowerPipeline1D, MonoAdaptiveSampler1D
+        >>>
+        >>> world = World()
+        >>>
+        >>> mesh = Mesh.from_file("my_mesh.rsm", material=AbsorbingSurface(), parent=world)
+        >>>
+        >>> power = PowerPipeline1D()
+        >>> sampler = MonoAdaptiveSampler1D(power, fraction=0.2, ratio=25.0, min_samples=1000, cutoff=0.1)
+        >>> camera = MeshCamera(mesh,
+                                surface_offset=1e-6,  # launch rays 1mm off surface to avoid intersection with absorbing mesh
+                                pipelines=[power],
+                                frame_sampler=sampler,
+                                parent=world,
+                                spectral_bins=1,
+                                min_wavelength=400,
+                                max_wavelength=740,
+                                pixel_samples=250)
+        >>> camera.observe()
     """
 
     cdef:
@@ -116,6 +144,41 @@ cdef class MeshCamera(Observer1D):
         self._solid_angle = 2 * M_PI
         self._calculate_areas()
 
+    def __getstate__(self):
+
+        state = (
+            self._surface_offset,
+            self._solid_angle,
+            self._collection_area,
+            self.mesh,
+            self._areas,
+            self._vector_sampler,
+            super().__getstate__()
+        )
+
+    def __setstate__(self, state):
+
+        (
+            self._surface_offset,
+            self._solid_angle,
+            self._collection_area,
+            self.mesh,
+            self._areas,
+            self._vector_sampler,
+            super_state
+        ) = state
+
+        super().__setstate__(super_state)
+
+        # recreate memoryviews
+        self._areas_mv = self._areas
+        self._vertices_mv = self.mesh.data.vertices_mv
+        self._face_normals_mv = self.mesh.data.face_normals_mv
+        self._triangles_mv = self.mesh.data.triangles_mv
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
@@ -156,7 +219,7 @@ cdef class MeshCamera(Observer1D):
     @cython.initializedcheck(False)
     cpdef double collection_area(self, int pixel):
         """
-        The pixel's collection area in m^2.
+        The mesh camera's collection area in m^2.
 
         :rtype: float
         """
@@ -170,7 +233,7 @@ cdef class MeshCamera(Observer1D):
 
     cpdef double solid_angle(self, int pixel):
         """
-        The pixel's solid angle in steradians str.
+        The solid angle observed at each mesh triangle in steradians str.
 
         :rtype: float
         """
@@ -184,7 +247,7 @@ cdef class MeshCamera(Observer1D):
 
     cpdef double sensitivity(self, int pixel):
         """
-        The pixel's sensitivity measured in units of per area per solid angle (m^-2 str^-1).
+        The mesh camera's sensitivity measured in units of per area per solid angle (m^-2 str^-1).
 
         :rtype: float
         """
