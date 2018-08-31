@@ -111,7 +111,7 @@ cdef class PowerPipeline0D(Pipeline0D):
         self._working_buffer = StatsArray1D(len(spectral_slices))
 
         # generate pixel processor configurations for each spectral slice
-        self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        self._resampled_filter = [self.filter.sample_mv(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
 
         self._quiet = quiet
 
@@ -240,7 +240,7 @@ cdef class PowerPipeline1D(Pipeline1D):
         self._working_touched = np.zeros(pixels, dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
-        self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        self._resampled_filter = [self.filter.sample_mv(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -498,7 +498,7 @@ cdef class PowerPipeline2D(Pipeline2D):
         self._working_touched = np.zeros((nx, ny), dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
-        self._resampled_filter = [self.filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        self._resampled_filter = [self.filter.sample_mv(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
 
         self._quiet = quiet
 
