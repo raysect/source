@@ -1,6 +1,13 @@
 Raysect Changelog
 =================
 
+Release 0.5.4 (TBD)
+-------------------
+
+New:
+* Optimised materials significantly by avoiding unnecessary memoryview creation, ~10-20% speedups depending on material.
+
+
 Release 0.5.3 (30 Aug 2018)
 ---------------------------
 
