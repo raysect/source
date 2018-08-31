@@ -82,7 +82,7 @@ cdef class Lambert(ContinuousBSDF):
         cdef:
             Spectrum spectrum
             Ray reflected
-            ndarray reflectivity
+            double[::1] reflectivity
             double pdf
 
         # outgoing ray is sampling incident light so s_outgoing = incident
@@ -97,7 +97,7 @@ cdef class Lambert(ContinuousBSDF):
         spectrum = reflected.trace(world)
 
         # obtain samples of reflectivity
-        reflectivity = self.reflectivity.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        reflectivity = self.reflectivity.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
         # combine and normalise
         spectrum.mul_array(reflectivity)

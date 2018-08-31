@@ -37,7 +37,6 @@ from raysect.core.math.random cimport probability
 from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
 
 
-# TODO: double check these changes with the original code, make sure the results are the same!
 cdef class Sellmeier(NumericallyIntegratedSF):
     """
     Material with refractive index defined by `Sellmeier equation <https://en.wikipedia.org/wiki/Sellmeier_equation>`_
@@ -69,6 +68,36 @@ cdef class Sellmeier(NumericallyIntegratedSF):
         self.c1 = c1
         self.c2 = c2
         self.c3 = c3
+
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return (
+            self.b1,
+            self.b2,
+            self.b3,
+            self.c1,
+            self.c2,
+            self.c3,
+            super().__getstate__()
+        )
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        (
+            self.b1,
+            self.b2,
+            self.b3,
+            self.c1,
+            self.c2,
+            self.c3,
+            super_state
+        ) = state
+        super().__setstate__(super_state)
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.cdivision(True)
     cpdef double function(self, double wavelength):
@@ -291,7 +320,7 @@ cdef class Dielectric(Material):
             int index
 
         length = start_point.vector_to(end_point).get_length()
-        transmission = self.transmission.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        transmission = self.transmission.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         for index in range(spectrum.bins):
             spectrum.samples_mv[index] *= cpow(transmission[index], length)
 

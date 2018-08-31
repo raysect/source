@@ -115,10 +115,10 @@ cdef class Checkerboard(NullVolume):
         spectrum = ray.new_spectrum()
 
         if v:
-            emission = self.emission_spectrum1.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+            emission = self.emission_spectrum1.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
             scale = self.scale1
         else:
-            emission = self.emission_spectrum2.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+            emission = self.emission_spectrum2.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
             scale = self.scale2
 
         for index in range(spectrum.bins):

@@ -319,9 +319,9 @@ cdef class BayerPipeline2D(Pipeline2D):
         self._working_touched = np.zeros((nx, ny), dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
-        resampled_red_filter = [self.red_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
-        resampled_green_filter = [self.green_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
-        resampled_blue_filter = [self.blue_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        resampled_red_filter = [self.red_filter.sample_mv(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        resampled_green_filter = [self.green_filter.sample_mv(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        resampled_blue_filter = [self.blue_filter.sample_mv(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
         self._resampled_filters = [resampled_red_filter, resampled_green_filter, resampled_blue_filter]
 
         self._quiet = quiet
@@ -334,7 +334,7 @@ cdef class BayerPipeline2D(Pipeline2D):
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
 
         cdef:
-            np.ndarray filter
+            double[::1] filter
             int filter_id, index
 
         index = (x % 2) + 2 * (y % 2)
