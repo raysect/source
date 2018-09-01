@@ -130,7 +130,7 @@ cpdef double[:,::1] resample_ciexyz(double min_wavelength, double max_wavelength
     :param float min_wavelength: Lower wavelength bound on spectrum
     :param float max_wavelength: Upper wavelength bound on spectrum
     :param int bins: Number of spectral bins in spectrum
-    :rtype: ndarray
+    :rtype: memoryview
     """
 
     cdef ndarray xyz
