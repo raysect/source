@@ -59,5 +59,5 @@ cdef class RGBPipeline2D(Pipeline2D):
 cdef class XYZPixelProcessor(PixelProcessor):
 
     cdef:
-        np.ndarray resampled_xyz
+        double[:,::1] resampled_xyz
         StatsArray1D xyz

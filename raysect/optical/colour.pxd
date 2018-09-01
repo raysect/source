@@ -30,11 +30,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.spectrum cimport Spectrum
-from numpy cimport ndarray
 
-cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int bins)
+cpdef double[:,::1] resample_ciexyz(double min_wavelength, double max_wavelength, int bins)
 
-cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz = *)
+cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, double[:,::1] resampled_xyz=*)
 
 cpdef tuple ciexyy_to_ciexyz(double cx, double cy, double y)
 

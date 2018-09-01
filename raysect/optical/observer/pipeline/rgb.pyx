@@ -521,7 +521,7 @@ cdef class XYZPixelProcessor(PixelProcessor):
     XYZ colourspace values.
     """
 
-    def __init__(self, np.ndarray resampled_xyz):
+    def __init__(self, double[:,::1] resampled_xyz):
         self.resampled_xyz = resampled_xyz
         self.xyz = StatsArray1D(3)
 
