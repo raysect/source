@@ -19,7 +19,7 @@ world = World()
 base_path = os.path.split(os.path.realpath(__file__))[0]
 
 # the diamond
-diamond = import_obj(os.path.join(base_path, "resources/diamond.obj"), scaling=0.01, smoothing=False, parent=world,
+diamond = import_obj(os.path.join(base_path, "../resources/diamond.obj"), scaling=0.01, smoothing=False, parent=world,
                      transform=translate(0.0, 0.713001, 0.0)*rotate(-10, 0, 0), material=diamond_material)
 
 # floor
