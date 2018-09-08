@@ -30,7 +30,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 # TODO: add more advanced material handling
-# TODO: 2nd intersection calculation can be avoided subtract and intersection if the first primitive is missed
 
 from raysect.core cimport _NodeBase, ChangeSignal, Material, new_ray, new_intersection, Point3D, AffineMatrix3D, BoundingBox3D
 
@@ -147,11 +146,17 @@ cdef class CSGPrimitive(Primitive):
 
         # obtain initial intersections
         intersection_a = self._primitive_a.hit(local_ray)
+        if self.terminate_early(intersection_a):
+            return None
+
         intersection_b = self._primitive_b.hit(local_ray)
         closest_intersection = self._closest_intersection(intersection_a, intersection_b)
 
         # identify first valid intersection
         return self._identify_intersection(ray, intersection_a, intersection_b, closest_intersection)
+
+    cdef bint terminate_early(self, Intersection intersection):
+        return False
 
     cpdef Intersection next_intersection(self):
 
@@ -414,6 +419,9 @@ cdef class Intersect(CSGPrimitive):
 
     """
 
+    cdef bint terminate_early(self, Intersection intersection):
+        return intersection is None
+
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
         cdef bint inside_a, inside_b
@@ -488,8 +496,8 @@ cdef class Subtract(CSGPrimitive):
     Only volumes that are unique to primitive A and don't overlap with primitive
     B will be in the new CSG primitive.
 
-    :param Primitive primitive_a: Component primitive A of the intersection operation.
-    :param Primitive primitive_b: Component primitive B of the intersection operation.
+    :param Primitive primitive_a: Component primitive A of the subtract operation.
+    :param Primitive primitive_b: Component primitive B of the subtract operation.
     :param Node parent: Scene-graph parent node or None (default = None).
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate
       system relative to the scene-graph parent (default = identity matrix).
@@ -512,6 +520,9 @@ cdef class Subtract(CSGPrimitive):
                                    transform=translate(-2.1, 2.1, 2.5)*rotate(30, -20, 0))
 
     """
+
+    cdef bint terminate_early(self, Intersection intersection):
+        return intersection is None
 
     cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
 
