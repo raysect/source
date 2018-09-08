@@ -124,9 +124,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.cdivision(True)
     cdef void _construct(self, double min_wavelength, double max_wavelength, int bins):
 
-        cdef:
-            npy_intp size, index
-            double[::1] wavelengths_view
+        cdef npy_intp size, index
 
         self.min_wavelength = min_wavelength
         self.max_wavelength = max_wavelength

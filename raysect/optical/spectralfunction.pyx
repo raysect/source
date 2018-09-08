@@ -337,7 +337,7 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
         return self.sample_resolution, super().__getstate__()
 
     def __setstate__(self, state):
-        self.sample_resolutions, super_state = state
+        self.sample_resolution, super_state = state
         super().__setstate__(super_state)
 
     def __reduce__(self):
