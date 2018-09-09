@@ -138,6 +138,7 @@ rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
 bayer = BayerPipeline2D(filter_red, filter_green, filter_blue, display_unsaturated_fraction=0.96, name="Bayer Filter")
 bayer.display_update_time = 15
 
+# pipelines = [power_unfiltered]
 pipelines = [rgb, power_unfiltered, power_green, power_red, bayer]
 
 sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
