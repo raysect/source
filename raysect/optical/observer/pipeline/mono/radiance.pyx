@@ -175,6 +175,9 @@ cdef class RadiancePixelProcessor(PixelProcessor):
         self.bin = StatsBin()
         self.filter = filter
 
+    cpdef object reset(self):
+        self.bin.clear()
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef object add_sample(self, Spectrum spectrum, double sensitivity):

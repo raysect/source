@@ -101,7 +101,6 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._display_timer = 0
         self._display_figure = None
 
-        self._resampled_xyz = None
         self._processors = None
 
         self._pixels = None
@@ -143,7 +142,6 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._display_frame = None
         self._display_timer = 0
         self._display_figure = None
-        self._resampled_xyz = None
         self._pixels = None
         self._samples = 0
         self._quiet = False
@@ -230,8 +228,8 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._working_touched = np.zeros((nx, ny), dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
-        self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
-        self._processors = [XYZPixelProcessor(xyz) for xyz in self._resampled_xyz]
+        resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        self._processors = [XYZPixelProcessor(xyz) for xyz in resampled_xyz]
 
         self._quiet = quiet
 
@@ -247,6 +245,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object update(self, int x, int y, int slice_id, tuple packed_result):
 
         cdef:
@@ -273,6 +272,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object finalise(self):
 
         cdef int x, y
@@ -288,7 +288,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         if self.display_progress:
             self._render_display(self.xyz_frame)
 
-    def _start_display(self):
+    cpdef object _start_display(self):
         """
         Display live render.
         """
@@ -310,7 +310,8 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _update_display(self, int x, int y):
+    @cython.initializedcheck(False)
+    cpdef object _update_display(self, int x, int y):
         """
         Update live render.
         """
@@ -337,7 +338,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
             self._display_timer = time()
 
-    def _refresh_display(self):
+    cpdef object _refresh_display(self):
         """
         Refreshes the display window (if active) and frame data is present.
 
@@ -361,7 +362,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _render_display(self, frame, status=None):
+    cpdef object _render_display(self, StatsArray3D frame, str status=None):
 
         INTERPOLATION = 'nearest'
 
@@ -391,7 +392,8 @@ cdef class RGBPipeline2D(Pipeline2D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _generate_display_image(self, StatsArray3D frame):
+    @cython.initializedcheck(False)
+    cpdef np.ndarray _generate_display_image(self, StatsArray3D frame):
 
         cdef:
             int x, y, c
@@ -399,7 +401,7 @@ cdef class RGBPipeline2D(Pipeline2D):
             double[:,:,::1] xyz_image_mv
             double gamma_exponent
 
-        if self.display_auto_exposure:
+        if self._display_auto_exposure:
             self._display_sensitivity = self._calculate_sensitivity(frame.mean)
 
         xyz_image = frame.mean.copy()
@@ -419,7 +421,8 @@ cdef class RGBPipeline2D(Pipeline2D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _calculate_sensitivity(self, np.ndarray image):
+    @cython.initializedcheck(False)
+    cpdef double _calculate_sensitivity(self, np.ndarray image):
 
         cdef:
             int nx, ny, pixels, x, y, i
@@ -465,6 +468,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef np.ndarray _generate_srgb_image(self, double[:,:,::1] xyz_image_mv):
 
         cdef:
@@ -494,7 +498,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
         return rgb_image
 
-    def display(self):
+    cpdef object display(self):
         """
         Plot the RGB frame.
         """
@@ -502,7 +506,7 @@ cdef class RGBPipeline2D(Pipeline2D):
             raise ValueError("There is no frame to display.")
         self._render_display(self.xyz_frame)
 
-    def save(self, filename):
+    cpdef object save(self, str filename):
         """
         Saves the display image to a png file.
 
