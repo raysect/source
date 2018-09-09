@@ -50,3 +50,5 @@ cdef class RadiancePixelProcessor(PixelProcessor):
         StatsBin bin
         double[::1] filter, _temp
 
+    cpdef object reset(self)
+

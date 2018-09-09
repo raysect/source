@@ -64,6 +64,7 @@ cdef class RadiancePipeline0D(PowerPipeline0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object finalise(self):
 
         cdef:
@@ -174,6 +175,9 @@ cdef class RadiancePixelProcessor(PixelProcessor):
     def __init__(self, double[::1] filter):
         self.bin = StatsBin()
         self.filter = filter
+
+    cpdef object reset(self):
+        self.bin.clear()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

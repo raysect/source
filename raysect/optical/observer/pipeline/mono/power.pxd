@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cimport numpy as np
 from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline0D, Pipeline1D, Pipeline2D
 from raysect.core.math cimport StatsBin, StatsArray1D, StatsArray2D
@@ -81,6 +82,23 @@ cdef class PowerPipeline2D(Pipeline2D):
         public bint display_persist_figure
         bint _quiet
 
+    cpdef object _start_display(self)
+
+    cpdef object _update_display(self, int x, int y)
+
+    cpdef object _refresh_display(self)
+
+    cpdef object _render_display(self, StatsArray2D frame, str status=*)
+
+    cpdef np.ndarray _generate_display_image(self, StatsArray2D frame)
+
+    cpdef double _calculate_white_point(self, np.ndarray image)
+
+    cpdef object display(self)
+
+    cpdef object save(self, str filename)
+
+
 
 cdef class PowerPixelProcessor(PixelProcessor):
 
@@ -88,3 +106,4 @@ cdef class PowerPixelProcessor(PixelProcessor):
         StatsBin bin
         double[::1] filter, _temp
 
+    cpdef object reset(self)
