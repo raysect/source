@@ -64,6 +64,7 @@ cdef class RadiancePipeline0D(PowerPipeline0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object finalise(self):
 
         cdef:
