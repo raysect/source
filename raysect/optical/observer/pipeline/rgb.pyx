@@ -102,6 +102,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         self._display_figure = None
 
         self._resampled_xyz = None
+        self._processors = None
 
         self._pixels = None
         self._samples = 0
@@ -230,6 +231,7 @@ cdef class RGBPipeline2D(Pipeline2D):
 
         # generate pixel processor configurations for each spectral slice
         self._resampled_xyz = [resample_ciexyz(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        self._processors = [XYZPixelProcessor(xyz) for xyz in self._resampled_xyz]
 
         self._quiet = quiet
 
@@ -239,7 +241,9 @@ cdef class RGBPipeline2D(Pipeline2D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
-        return XYZPixelProcessor(self._resampled_xyz[slice_id])
+        cdef XYZPixelProcessor processor = self._processors[slice_id]
+        processor.reset()
+        return processor
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -467,7 +471,7 @@ cdef class RGBPipeline2D(Pipeline2D):
             int nx, ny, ix, iy
             np.ndarray rgb_image
             double[:,:,::1] rgb_image_mv
-            tuple rgb_pixel
+            (double, double, double) rgb_pixel
 
         nx = xyz_image_mv.shape[0]
         ny = xyz_image_mv.shape[1]
@@ -521,12 +525,16 @@ cdef class XYZPixelProcessor(PixelProcessor):
     XYZ colourspace values.
     """
 
-    def __init__(self, double[:,::1] resampled_xyz):
+    def __init__(self, double[:,::1] resampled_xyz not None):
         self.resampled_xyz = resampled_xyz
         self.xyz = StatsArray1D(3)
 
+    cpdef object reset(self):
+        self.xyz.clear()
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object add_sample(self, Spectrum spectrum, double sensitivity):
 
         cdef double x, y, z

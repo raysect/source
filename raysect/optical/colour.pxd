@@ -33,17 +33,17 @@ from raysect.optical.spectrum cimport Spectrum
 
 cpdef double[:,::1] resample_ciexyz(double min_wavelength, double max_wavelength, int bins)
 
-cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, double[:,::1] resampled_xyz=*)
+cpdef (double, double, double) spectrum_to_ciexyz(Spectrum spectrum, double[:,::1] resampled_xyz=*)
 
-cpdef tuple ciexyy_to_ciexyz(double cx, double cy, double y)
+cpdef (double, double, double) ciexyy_to_ciexyz(double cx, double cy, double y)
 
-cpdef tuple ciexyz_to_ciexyy(double x, double y, double z)
+cpdef (double, double, double) ciexyz_to_ciexyy(double x, double y, double z)
 
 cdef double srgb_transfer_function(double v)
 
-cpdef tuple ciexyz_to_srgb(double x, double y, double z)
+cpdef (double, double, double) ciexyz_to_srgb(double x, double y, double z)
 
 cdef double srgb_transfer_function_inverse(double v)
 
-cpdef tuple srgb_to_ciexyz(double r, double g, double b)
+cpdef (double, double, double) srgb_to_ciexyz(double r, double g, double b)
 

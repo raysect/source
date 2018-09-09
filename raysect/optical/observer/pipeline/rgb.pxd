@@ -44,7 +44,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         double[:,:,::1] _working_mean, _working_variance
         char[:,::1] _working_touched
         StatsArray3D _display_frame
-        list _resampled_xyz
+        list _resampled_xyz, _processors
         tuple _pixels
         int _samples
         object _display_figure
@@ -61,3 +61,5 @@ cdef class XYZPixelProcessor(PixelProcessor):
     cdef:
         double[:,::1] resampled_xyz
         StatsArray1D xyz
+
+    cpdef object reset(self)
