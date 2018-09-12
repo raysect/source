@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -51,6 +51,18 @@ cdef class Conductor(Material):
       index - :math:`n(\lambda)`.
     :param SpectralFunction extinction: Imaginary component of the
       refractive index (extinction) - :math:`k(\lambda)`.
+
+    .. code-block:: pycon
+
+        >>> import numpy as np
+        >>> from raysect.optical import InterpolatedSF
+        >>> from raysect.optical.material import Conductor
+        >>>
+        >>> wavelength = np.array(...)
+        >>> index = InterpolatedSF(wavelength, np.array(...))
+        >>> extinction = InterpolatedSF(wavelength, np.array(...))
+        >>>
+        >>> metal = Conductor(index, extinction)
     """
 
     def __init__(self, SpectralFunction index, SpectralFunction extinction):
@@ -86,8 +98,8 @@ cdef class Conductor(Material):
         ci = normal.dot(incident)
 
         # sample refractive index and absorption
-        n = self.index.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
-        k = self.extinction.sample(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
+        n = self.index.sample_mv(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
+        k = self.extinction.sample_mv(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
 
         # reflection
         temp = 2 * ci
@@ -155,6 +167,18 @@ cdef class RoughConductor(ContinuousBSDF):
       refractive index (extinction) - :math:`k(\lambda)`.
     :param float roughness: The roughness parameter in range (0, 1]. 0 is
       perfectly specular, 1 is perfectly rough.
+
+    .. code-block:: pycon
+
+        >>> import numpy as np
+        >>> from raysect.optical import InterpolatedSF
+        >>> from raysect.optical.material import RoughConductor
+        >>>
+        >>> wavelength = np.array(...)
+        >>> index = InterpolatedSF(wavelength, np.array(...))
+        >>> extinction = InterpolatedSF(wavelength, np.array(...))
+        >>>
+        >>> rough_metal = Conductor(index, extinction, 0.25)
     """
 
     def __init__(self, SpectralFunction index, SpectralFunction extinction, double roughness):
@@ -289,8 +313,8 @@ cdef class RoughConductor(ContinuousBSDF):
             int i
 
         # sample refractive index and absorption
-        n = self.index.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
-        k = self.extinction.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        n = self.index.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        k = self.extinction.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
         ci = s_normal.dot(s_outgoing)
         for i in range(spectrum.bins):

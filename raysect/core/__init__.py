@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,3 +35,4 @@ from .boundingsphere import *
 from .math import *
 from .scenegraph import *
 from .constants import *
+from .workflow import SerialEngine, MulticoreEngine

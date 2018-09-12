@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -52,6 +52,9 @@ cdef class _NodeBase:
         self._root_transform = AffineMatrix3D()
         self._root_transform_inverse = AffineMatrix3D()
         self._track_modifications = True
+
+        # user meta data dictionary
+        self.meta = {}
 
     def __str__(self):
         """String representation."""

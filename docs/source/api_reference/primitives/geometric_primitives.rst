@@ -3,21 +3,21 @@ Geometric Primitives
 ====================
 
 .. autoclass:: raysect.primitive.Box
-   :members:
+   :members: lower, upper
    :show-inheritance:
 
 .. autoclass:: raysect.primitive.Sphere
-   :members:
+   :members: radius
    :show-inheritance:
 
 .. autoclass:: raysect.primitive.Cylinder
-   :members:
+   :members: radius, height
    :show-inheritance:
 
 .. autoclass:: raysect.primitive.Cone
-   :members:
+   :members: radius, height
    :show-inheritance:
 
 .. autoclass:: raysect.primitive.Parabola
-   :members:
+   :members: radius, height
    :show-inheritance:

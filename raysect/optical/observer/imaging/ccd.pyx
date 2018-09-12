@@ -34,8 +34,7 @@ from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
 from raysect.core cimport RectangleSampler3D, HemisphereCosineSampler, SolidAngleSampler, SurfaceSampler3D
-from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, translate
-from raysect.optical cimport Ray
+from raysect.optical cimport Ray, AffineMatrix3D, Point3D, Vector3D, translate
 from libc.math cimport M_PI
 from raysect.optical.observer.base cimport Observer2D
 
@@ -52,7 +51,6 @@ cdef class CCDArray(Observer2D):
 
     :param tuple pixels: A tuple of pixel dimensions for the camera (default=(512, 512)).
     :param float width: The CCD sensor x-width in metres (default=35mm).
-    :param float etendue: The etendue of each pixel (default=1.0)
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
@@ -65,11 +63,15 @@ cdef class CCDArray(Observer2D):
 
     def __init__(self, pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
 
+        # initial values to prevent undefined behaviour when setting via self.width
+        self._width = 0.035
+        self._pixels = (720, 480)
+
         pipelines = pipelines or [RGBPipeline2D()]
 
-        super().__init__(pixels, FullFrameSampler2D(), pipelines,
-                         parent=parent, transform=transform, name=name)
+        super().__init__(pixels, FullFrameSampler2D(), pipelines, parent=parent, transform=transform, name=name)
 
+        # setting width triggers calculation of image geometry calculations
         self.width = width
         self.vector_sampler = HemisphereCosineSampler()
 
@@ -104,7 +106,6 @@ cdef class CCDArray(Observer2D):
         if width <= 0:
             raise ValueError("width can not be less than or equal to 0 meters.")
         self._width = width
-        self._pixel_area = (width / self._pixels[0])**2
         self._update_image_geometry()
 
     cdef object _update_image_geometry(self):
@@ -113,20 +114,22 @@ cdef class CCDArray(Observer2D):
         self.image_start_x = 0.5 * self._pixels[0] * self.image_delta
         self.image_start_y = 0.5 * self._pixels[1] * self.image_delta
         self.point_sampler = RectangleSampler3D(self.image_delta, self.image_delta)
+        self._pixel_area = (self._width / self._pixels[0])**2
 
     cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
 
         cdef:
             double pixel_x, pixel_y
-            list points, rays
-            Point3D pixel_centre, point, origin
+            list origin_points, direction_vectors, rays
+            Point3D origin
             Vector3D direction
             Ray ray
+            AffineMatrix3D pixel_to_local
 
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * ix
         pixel_y = self.image_start_y - self.image_delta * iy
-        to_local = translate(pixel_x, pixel_y, 0)
+        pixel_to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
         origin_points = self.point_sampler.samples(ray_count)
@@ -137,8 +140,8 @@ cdef class CCDArray(Observer2D):
         for origin, direction in zip(origin_points, direction_vectors):
 
             # transform to local space from pixel space
-            origin = origin.transform(to_local)
-            direction = direction.transform(to_local)
+            origin = origin.transform(pixel_to_local)
+            direction = direction.transform(pixel_to_local)
 
             ray = template.copy(origin, direction)
 
@@ -149,5 +152,5 @@ cdef class CCDArray(Observer2D):
 
         return rays
 
-    cpdef double _pixel_etendue(self, int x, int y):
+    cpdef double _pixel_sensitivity(self, int x, int y):
         return self._pixel_area * 2 * M_PI

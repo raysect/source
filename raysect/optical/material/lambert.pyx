@@ -47,6 +47,17 @@ cdef class Lambert(ContinuousBSDF):
 
     :param SpectralFunction reflectivity: Reflectance function which defines the
       fraction of light scattered at each wavelength.
+
+    .. code-block:: pycon
+
+        >>> from raysect.primitive import Sphere
+        >>> from raysect.optical import World, ConstantSF
+        >>> from raysect.optical.material import Lambert
+        >>>
+        >>> # set-up scenegraph
+        >>> world = World()
+        >>> sphere = Sphere(radius=0.01, parent=world)
+        >>> sphere.material=Lambert(0.25)  # 25% diffuse reflectivity
     """
 
     cdef SpectralFunction reflectivity
@@ -71,7 +82,7 @@ cdef class Lambert(ContinuousBSDF):
         cdef:
             Spectrum spectrum
             Ray reflected
-            ndarray reflectivity
+            double[::1] reflectivity
             double pdf
 
         # outgoing ray is sampling incident light so s_outgoing = incident
@@ -86,7 +97,7 @@ cdef class Lambert(ContinuousBSDF):
         spectrum = reflected.trace(world)
 
         # obtain samples of reflectivity
-        reflectivity = self.reflectivity.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        reflectivity = self.reflectivity.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
         # combine and normalise
         spectrum.mul_array(reflectivity)

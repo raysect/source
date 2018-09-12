@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -218,7 +218,12 @@ cpdef seed(object d=None):
     If a seed is not specified the generator is automatically re-seed using the
     system cryptographic random number generator (urandom).
 
-    :param d: Integer seed.
+    :param int d: Integer seed.
+
+    .. code-block:: pycon
+
+        >>> from raysect.core.math.random import seed
+        >>> seed(1)
     """
 
     cdef:
@@ -245,6 +250,15 @@ cpdef double uniform():
     Values are uniformly distributed.
 
     :returns: Random double.
+
+    .. code-block:: pycon
+
+        >>> from raysect.core.math.random import uniform
+        >>>
+        >>> uniform()
+        0.7151068954493792
+        >>> uniform()
+        0.21476630242370853
     """
 
     return (_rand_uint64() >> 11) * (1.0 / 9007199254740992.0)
@@ -264,6 +278,15 @@ cpdef double normal(double mean, double stddev):
     :param float mean: The distribution mean.
     :param float stddev: The distribution standard deviation.
     :returns: Random double.
+
+    .. code-block:: pycon
+
+        >>> from raysect.core.math.random import normal
+        >>>
+        >>> normal(0, 1)
+        0.5775399543387388
+        >>> normal(0, 1)
+        -2.247813575930409
     """
 
     global _normal_generate, _normal_c1, _normal_c2
@@ -294,6 +317,15 @@ cpdef bint probability(double prob):
     :param double prob: A probability from [0, 1].
     :return: True or False.
     :rtype: bool
+
+    .. code-block:: pycon
+
+        >>> from raysect.core.math.random import probability
+        >>>
+        >>> probability(0.8)
+        True
+        >>> probability(0.8)
+        True
     """
 
     return uniform() < prob

@@ -1,10 +1,12 @@
 
+from matplotlib.pyplot import *
+
+from raysect.primitive import Sphere, Box
 from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D
 from raysect.optical.material import UniformSurfaceEmitter
 from raysect.optical.library import *
-from raysect.primitive import Sphere, Box
-from matplotlib.pyplot import *
+
 
 """
 Multiple Importance Sampling Demo

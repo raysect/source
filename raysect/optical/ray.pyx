@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -66,6 +66,23 @@ cdef class Ray(CoreRay):
       (default=True).
     :param float important_path_weight: Weight to use for important paths when
       using importance sampling.
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import Point3D, Vector3D
+        >>> from raysect.optical import World, Ray
+        >>>
+        >>> world = World()
+        >>>
+        >>> ray = Ray(origin=Point3D(0, 0, -5),
+        >>>           direction=Vector3D(0, 0, 1),
+        >>>           min_wavelength=375,
+        >>>           max_wavelength=785,
+        >>>           bins=100)
+        >>>
+        >>> spectrum = ray.trace(world)
+        >>> spectrum
+        <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e048>
     """
 
     def __init__(self,
@@ -302,6 +319,20 @@ cdef class Ray(CoreRay):
         Returns a new Spectrum compatible with the ray spectral settings.
 
         :rtype: Spectrum
+
+        .. code-block:: pycon
+
+            >>> from raysect.core import Point3D, Vector3D
+            >>> from raysect.optical import Ray
+            >>>
+            >>> ray = Ray(origin=Point3D(0, 0, -5),
+            >>>           direction=Vector3D(0, 0, 1),
+            >>>           min_wavelength=375,
+            >>>           max_wavelength=785,
+            >>>           bins=100)
+            >>>
+            >>> ray.new_spectrum()
+            <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e1b0>
         """
 
         return new_spectrum(self._min_wavelength, self._max_wavelength, self._bins)
@@ -315,6 +346,23 @@ cdef class Ray(CoreRay):
         :param bool keep_alive: If true, disables Russian roulette termination of the ray.
         :return: The resulting Spectrum object collected by the ray.
         :rtype: Spectrum
+
+        .. code-block:: pycon
+
+            >>> from raysect.core import Point3D, Vector3D
+            >>> from raysect.optical import World, Ray
+            >>>
+            >>> world = World()
+            >>>
+            >>> ray = Ray(origin=Point3D(0, 0, -5),
+            >>>           direction=Vector3D(0, 0, 1),
+            >>>           min_wavelength=375,
+            >>>           max_wavelength=785,
+            >>>           bins=100)
+            >>>
+            >>> spectrum = ray.trace(world)
+            >>> spectrum
+            <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e048>
         """
 
         cdef:
@@ -379,6 +427,7 @@ cdef class Ray(CoreRay):
             list primitives
             Point3D start_point, end_point
             Primitive primitive
+            Material material
 
         # identify any primitive volumes the ray is propagating through
         primitives = world.contains(self.origin)
@@ -408,6 +457,7 @@ cdef class Ray(CoreRay):
         return spectrum
 
     @cython.cdivision(True)
+    @cython.initializedcheck(False)
     cpdef Spectrum sample(self, World world, int count):
         """
         Samples the radiance directed along the ray direction.
@@ -421,6 +471,22 @@ cdef class Ray(CoreRay):
         :param int count: Number of samples to take.
         :return: The accumulated spectrum collected by the ray.
         :rtype: Spectrum
+
+        .. code-block:: pycon
+
+            >>> from raysect.core import Point3D, Vector3D
+            >>> from raysect.optical import World, Ray
+            >>>
+            >>> world = World()
+            >>>
+            >>> ray = Ray(origin=Point3D(0, 0, -5),
+            >>>           direction=Vector3D(0, 0, 1),
+            >>>           min_wavelength=375,
+            >>>           max_wavelength=785,
+            >>>           bins=100)
+            >>>
+            >>> ray.sample(world, 10)
+            <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e318>
         """
 
         cdef:
@@ -434,7 +500,7 @@ cdef class Ray(CoreRay):
         normalisation = 1 / <double> count
         while count:
             sample = self.trace(world)
-            spectrum.mad_scalar(normalisation, sample.samples)
+            spectrum.mad_scalar(normalisation, sample.samples_mv)
             count -= 1
 
         return spectrum
@@ -492,6 +558,20 @@ cdef class Ray(CoreRay):
         :param Point3D origin: New Ray's origin position.
         :param Vector3D direction: New Ray's direction.
         :rtype: Ray
+
+        .. code-block:: pycon
+
+            >>> from raysect.core import Point3D, Vector3D
+            >>> from raysect.optical import Ray
+            >>>
+            >>> ray = Ray(origin=Point3D(0, 0, -5),
+            >>>           direction=Vector3D(0, 0, 1),
+            >>>           min_wavelength=375,
+            >>>           max_wavelength=785,
+            >>>           bins=100)
+            >>>
+            >>> ray.copy()
+            Ray(Point3D(0.0, 0.0, -5.0), Vector3D(0.0, 0.0, 1.0), inf)
         """
 
         if origin is None:

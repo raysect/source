@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,15 @@ cdef class Normal3D(_Vec3):
     :param float x: initial x coordinate, defaults to x = 0.0.
     :param float y: initial y coordinate, defaults to y = 0.0.
     :param float z: initial z coordinate, defaults to z = 0.0.
+
+    :ivar float x: x-coordinate
+    :ivar float y: y-coordinate
+    :ivar float z: z-coordinate
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import Normal3D
+        >>> a = Normal3D(0, 0, 1)
     """
 
     def __init__(self, double x=0.0, double y=0.0, double z=1.0):

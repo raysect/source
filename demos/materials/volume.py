@@ -1,5 +1,6 @@
-import time
 
+import os
+import time
 from matplotlib.pyplot import *
 from numpy import sqrt, cos
 
@@ -8,6 +9,7 @@ from raysect.optical.library import RoughTitanium
 from raysect.optical.material import InhomogeneousVolumeEmitter
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
 from raysect.primitive import Box
+from raysect.core.workflow import MulticoreEngine
 
 
 class CosGlow(InhomogeneousVolumeEmitter):
@@ -34,11 +36,13 @@ camera = PinholeCamera((512, 512), parent=world, transform=translate(0, 4, -3.5)
 camera.spectral_bins = 15
 camera.spectral_rays = 1
 camera.pixel_samples = 200
+camera.render_engine = MulticoreEngine(4)
 
 # integration resolution
 emitter.material.integrator.step = 0.05
 
 # start ray tracing
+os.nice(15)
 ion()
 timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
 for p in range(1, 1000):

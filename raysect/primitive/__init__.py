@@ -1,4 +1,4 @@
-# Copyright (c) 2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,6 @@ from .box import Box
 from .sphere import Sphere
 from .cylinder import Cylinder
 from .csg import Union, Intersect, Subtract
-from .mesh import Mesh, import_obj, import_stl
+from .mesh import Mesh, import_obj, export_obj, import_stl, export_stl, import_ply, export_ply, import_vtk, export_vtk
 from .cone import Cone
 from .parabola import Parabola

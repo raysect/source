@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -54,6 +54,11 @@ cdef class Point3D:
     :ivar float x: x-coordinate
     :ivar float y: y-coordinate
     :ivar float z: z-coordinate
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import Point3D
+        >>> a = Point3D(0, 1, 2)
 
     """
 
@@ -120,7 +125,13 @@ cdef class Point3D:
             raise IndexError("Index out of range [0, 2].")
 
     def __iter__(self):
-        """ Iterates over the coordinates (x, y, z) """
+        """Iterates over the coordinates (x, y, z)
+
+            >>> a = Point3D(0, 1, 2)
+            >>> x, y, z = a
+            >>> x, y, z
+            (0.0, 1.0, 2.0)
+        """
         yield self.x
         yield self.y
         yield self.z
@@ -223,6 +234,14 @@ cdef class Point3D:
 
         :param Point3D p: the point to which a vector will be calculated.
         :rtype: Vector3D
+
+        .. code-block:: pycon
+
+            >>> a = Point3D(0, 1, 2)
+            >>> b = Point3D(1, 1, 1)
+            >>> a.vector_to(b)
+            Vector3D(1.0, 0.0, -1.0)
+
         """
 
         return new_vector3d(p.x - self.x,
@@ -235,6 +254,13 @@ cdef class Point3D:
 
         :param Point3D p: the point to which the distance will be calculated
         :rtype: float
+
+        .. code-block:: pycon
+
+            >>> a = Point3D(0, 1, 2)
+            >>> b = Point3D(1, 1, 1)
+            >>> a.distance_to(b)
+            1.4142135623730951
         """
 
         cdef double x, y, z
@@ -306,6 +332,12 @@ cdef class Point3D:
         Returns a copy of the point.
 
         :rtype: Point3D
+
+        .. code-block:: pycon
+
+            >>> a = Point3D(0, 1, 2)
+            >>> a.copy()
+            Point3D(0.0, 1.0, 2.0)
         """
 
         return new_point3d(self.x,
@@ -362,6 +394,13 @@ cdef class Point2D:
 
     :ivar float x: x-coordinate
     :ivar float y: y-coordinate
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import Point2D
+        >>>
+        >>> a = Point2D(1, 1)
+
     """
 
     def __init__(self, double x=0.0, double y=0.0):
@@ -422,14 +461,21 @@ cdef class Point2D:
             raise IndexError("Index out of range [0, 1].")
 
     def __iter__(self):
-        """ Iterates over the coordinates (x, y) """
+        """Iterates over the coordinates (x, y)
+
+        >>> a = Point2D(1, 1)
+        >>> x, y = a
+        >>> x, y
+        (1.0, 1.0)
+
+        """
         yield self.x
         yield self.y
 
     def __add__(object x, object y):
         """Addition operator.
 
-            >>> Point32D(1, 0) + Vector2D(0, 1)
+            >>> Point2D(1, 0) + Vector2D(0, 1)
             Point2D(1.0, 1.0)
         """
 
@@ -514,6 +560,14 @@ cdef class Point2D:
 
         :param Point2D p: point to which a vector will be calculated
         :rtype: Vector2D
+
+        .. code-block:: pycon
+
+            >>> a = Point2D(1, 0)
+            >>> b = Point2D(1, 1)
+            >>> a.vector_to(b)
+            Vector2D(0.0, 1.0)
+
         """
 
         return new_vector2d(p.x - self.x, p.y - self.y)
@@ -524,6 +578,14 @@ cdef class Point2D:
 
         :param Point2D p: the point to which the distance will be calculated
         :rtype: float
+
+        .. code-block:: pycon
+
+            >>> a = Point2D(1, 0)
+            >>> b = Point2D(1, 1)
+            >>> a.distance_to(b)
+            1.0
+
         """
 
         cdef double x, y
@@ -586,6 +648,13 @@ cdef class Point2D:
         Returns a copy of the point.
 
         :rtype: Point2D
+
+        .. code-block:: pycon
+
+            >>> a = Point2D(1, 1)
+            >>> a.copy()
+            Point2D(1.0, 1.0)
+
         """
         return new_point2d(self.x, self.y)
 

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -146,6 +146,17 @@ cdef class KDTree2DCore:
 
         # start build
         self._build(items, self.bounds)
+
+    def __getstate__(self):
+        state = io.BytesIO()
+        self.save(state)
+        return state.getvalue()
+
+    def __setstate__(self, state):
+        self.load(io.BytesIO(state))
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     cdef int32_t _build(self, list items, BoundingBox2D bounds, int32_t depth=0):
         """
@@ -695,6 +706,130 @@ cdef class KDTree2DCore:
     #             print("]")
     #         else:
     #             print("id={} BRANCH: axis {}, split {}, lower_id {}, upper_id {}".format(id, self._nodes[id].type, self._nodes[id].split, id+1, self._nodes[id].count))
+
+    def save(self, file):
+
+        cdef:
+            int32_t id, item
+
+        close = False
+
+        # treat as a filename if a stream is not supplied
+        if not isinstance(file, io.IOBase):
+            file = open(file, mode="wb")
+            close = True
+
+        # write header
+        file.write(struct.pack("<i", self._max_depth))
+        file.write(struct.pack("<i", self._min_items))
+        file.write(struct.pack("<d", self._hit_cost))
+        file.write(struct.pack("<d", self._empty_bonus))
+
+        # write bounds
+        file.write(struct.pack("<d", self.bounds.lower.x))
+        file.write(struct.pack("<d", self.bounds.lower.y))
+
+        file.write(struct.pack("<d", self.bounds.upper.x))
+        file.write(struct.pack("<d", self.bounds.upper.y))
+
+        # write nodes
+        file.write(struct.pack("<i", self._next_node))  # number of nodes
+        for id in range(self._next_node):
+
+            if self._nodes[id].type == LEAF:
+
+                # leaf node
+                file.write(struct.pack("<i", self._nodes[id].type))
+                file.write(struct.pack("<i", self._nodes[id].count))
+                for item in range(self._nodes[id].count):
+                    file.write(struct.pack("<i", self._nodes[id].items[item]))
+
+            else:
+
+                # branch node
+                file.write(struct.pack("<i", self._nodes[id].type))
+                file.write(struct.pack("<d", self._nodes[id].split))
+                file.write(struct.pack("<i", self._nodes[id].count))
+
+        # if we opened a file, we should close it
+        if close:
+            file.close()
+
+    def load(self, file):
+
+        cdef:
+            int32_t id, item
+
+        # free existing nodes
+        self._reset()
+
+        # treat as a filename if a stream is not supplied
+        close = False
+        if not isinstance(file, io.IOBase):
+            file = open(file, mode="rb")
+            close = True
+
+        # read header
+        self._max_depth = self._read_int32(file)
+        self._min_items = self._read_int32(file)
+        self._hit_cost = self._read_double(file)
+        self._empty_bonus = self._read_double(file)
+
+        # read bounds
+        self.bounds = BoundingBox2D(
+            Point2D(
+                self._read_double(file),
+                self._read_double(file),
+            ),
+            Point2D(
+                self._read_double(file),
+                self._read_double(file),
+            )
+        )
+
+        # read nodes
+        self._next_node = self._read_int32(file)
+        self._allocated_nodes = self._next_node
+
+        # allocate nodes
+        self._nodes = <kdnode *> PyMem_Malloc(sizeof(kdnode) * self._allocated_nodes)
+        if not self._nodes:
+            raise MemoryError()
+
+        # load nodes
+        for id in range(self._next_node):
+
+            self._nodes[id].type = self._read_int32(file)
+            if self._nodes[id].type == LEAF:
+
+                # leaf node
+                self._nodes[id].count = self._read_int32(file)
+                if self._nodes[id].count > 0:
+
+                    # allocate items
+                    self._nodes[id].items = <int32_t *> PyMem_Malloc(sizeof(int32_t) * self._nodes[id].count)
+                    if not self._nodes[id].items:
+                        raise MemoryError()
+
+                    # read items
+                    for item in range(self._nodes[id].count):
+                        self._nodes[id].items[item] = self._read_int32(file)
+
+            else:
+
+                # branch node
+                self._nodes[id].split = self._read_double(file)
+                self._nodes[id].count = self._read_int32(file)
+
+        # if we opened a file, we should close it
+        if close:
+            file.close()
+
+    cdef int32_t _read_int32(self, object file):
+        return (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
+
+    cdef double _read_double(self, object file):
+        return (<double *> PyBytes_AsString(file.read(sizeof(double))))[0]
 
 
 cdef class KDTree2D(KDTree2DCore):

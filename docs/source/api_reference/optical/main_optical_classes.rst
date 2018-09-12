@@ -16,19 +16,16 @@ Spectral Functions
    :members:
 
 .. autoclass:: raysect.optical.spectrum.Spectrum
-   :members:
+   :members: clear, copy, is_compatible, is_zero, new_spectrum, to_photons, total, wavelengths
    :show-inheritance:
 
 .. autoclass:: raysect.optical.spectralfunction.NumericallyIntegratedSF
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.optical.spectralfunction.InterpolatedSF
-   :members:
    :show-inheritance:
 
 .. autoclass:: raysect.optical.spectralfunction.ConstantSF
-   :members:
    :show-inheritance:
 
 .. autofunction:: raysect.optical.spectrum.photon_energy
@@ -83,7 +80,4 @@ Optical Scenegraph
 
 .. autoclass:: raysect.optical.scenegraph.world.World
    :members:
-
-.. autoclass:: raysect.optical.scenegraph.world.ImportanceManager
-   :members:
-
+   :show-inheritance:

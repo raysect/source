@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -148,50 +148,16 @@ cdef class KDTree3DCore:
         # start build
         self._build(items, self.bounds)
 
-    # def __getstate__(self):
-    #     """Encodes state for pickling."""
-    #
-    #     # encode nodes
-    #     nodes = []
-    #     for id in range(self._next_node):
-    #         if self._nodes[id].type == LEAF:
-    #             items = []
-    #             for item in range(self._nodes[id].count):
-    #                 items.append(self._nodes[id].items[item])
-    #             node = (self._nodes[id].type, items)
-    #         else:
-    #             node = (self._nodes[id].type, (self._nodes[id].split, self._nodes[id].count))
-    #         nodes.append(node)
-    #
-    #     # encode settings
-    #     settings = (self._max_depth, self._min_items, self._hit_cost, self._empty_bonus)
-    #
-    #     state = (self.bounds, tuple(nodes), settings)
-    #     return state
-    #
-    # def __setstate__(self, tuple state):
-    #     """Decodes state for pickling."""
-    #
-    #     self.bounds, nodes, settings = state
-    #
-    #     # reset the object
-    #     self._reset()
-    #
-    #     # decode nodes
-    #     for node in nodes:
-    #         type, data = node
-    #         if type == LEAF:
-    #             items = [Item3D(id, None) for id in data]
-    #             self._new_leaf(items)
-    #         else:
-    #             split, count = data
-    #             id = self._new_node()
-    #             self._nodes[id].type = type
-    #             self._nodes[id].split = split
-    #             self._nodes[id].count = count
-    #
-    #     # decode settings
-    #     self._max_depth, self._min_items, self._hit_cost, self._empty_bonus = settings
+    def __getstate__(self):
+        state = io.BytesIO()
+        self.save(state)
+        return state.getvalue()
+
+    def __setstate__(self, state):
+        self.load(io.BytesIO(state))
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     cdef int32_t _build(self, list items, BoundingBox3D bounds, int32_t depth=0):
         """
@@ -542,7 +508,7 @@ cdef class KDTree3DCore:
         # check tree bounds
         hit = self.bounds.intersect(ray, &min_range, &max_range)
         if not hit:
-            return None
+            return False
 
         # start exploration of kd-Tree
         return self._trace_node(ROOT_NODE, ray, min_range, max_range)

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,6 @@ from raysect.core.math.random cimport probability
 from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
 
 
-# TODO: double check these changes with the original code, make sure the results are the same!
 cdef class Sellmeier(NumericallyIntegratedSF):
     """
     Material with refractive index defined by `Sellmeier equation <https://en.wikipedia.org/wiki/Sellmeier_equation>`_
@@ -49,6 +48,14 @@ cdef class Sellmeier(NumericallyIntegratedSF):
     :param float c2: Sellmeier :math:`C_2` coefficient.
     :param float c3: Sellmeier :math:`B_1` coefficient.
     :param float sample_resolution: The numerical sampling resolution in nanometers.
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import ConstantSF
+        >>> from raysect.optical.material import Dielectric, Sellmeier
+        >>>
+        >>> diamond_material = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0),
+                                          ConstantSF(1))
     """
 
     def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, double sample_resolution=10):
@@ -61,6 +68,36 @@ cdef class Sellmeier(NumericallyIntegratedSF):
         self.c1 = c1
         self.c2 = c2
         self.c3 = c3
+
+    def __getstate__(self):
+        """Encodes state for pickling."""
+
+        return (
+            self.b1,
+            self.b2,
+            self.b3,
+            self.c1,
+            self.c2,
+            self.c3,
+            super().__getstate__()
+        )
+
+    def __setstate__(self, state):
+        """Decodes state for pickling."""
+
+        (
+            self.b1,
+            self.b2,
+            self.b3,
+            self.c1,
+            self.c2,
+            self.c3,
+            super_state
+        ) = state
+        super().__setstate__(super_state)
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.cdivision(True)
     cpdef double function(self, double wavelength):
@@ -89,6 +126,14 @@ cdef class Dielectric(Material):
     :param SpectralFunction external_index: Refractive index of the external material at the interface,
       defaults to a vacuum (n=1).
     :param bool transmission_only: toggles transmission only, no reflection (default=False).
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import ConstantSF
+        >>> from raysect.optical.material import Dielectric, Sellmeier
+        >>>
+        >>> diamond_material = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0),
+                                          ConstantSF(1))
     """
 
     def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None, bint transmission_only=False):
@@ -275,7 +320,7 @@ cdef class Dielectric(Material):
             int index
 
         length = start_point.vector_to(end_point).get_length()
-        transmission = self.transmission.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        transmission = self.transmission.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         for index in range(spectrum.bins):
             spectrum.samples_mv[index] *= cpow(transmission[index], length)
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -192,6 +192,46 @@ class TestAffineMatrix3D(unittest.TestCase):
         for i, row in enumerate(r):
             for j, v in enumerate(row):
                 self.assertAlmostEqual(minv[i, j], v, places=14, msg="Inverse calculation failed (R"+str(i)+", C"+str(j)+").")
+
+    def test_is_identity(self):
+        """Matrix is identity matrix."""
+
+        m1 = AffineMatrix3D()
+        self.assertTrue(m1.is_identity(), "Is identity test failed with perfect identity matrix.")
+
+        m2 = AffineMatrix3D([[1, 2, 3, 4],
+                             [5, 6, 2, 8],
+                             [9, 10, 4, 9],
+                             [4, 14, 15, 16]])
+        self.assertFalse(m2.is_identity(), "Is identity test failed with non-identity matrix.")
+
+        m3 = AffineMatrix3D([[1.0001, -0.0001, 0.0001, -0.0001],
+                             [0.0001, 0.9999, 0.0001, -0.0001],
+                             [0.0001, -0.0001, 1.0001, -0.0001],
+                             [0.0001, -0.0001, 0.0001, 0.9999]])
+        self.assertTrue(m3.is_identity(tolerance=1e-3), "Is identity test failed with identity matrix requiring tolerance.")
+
+    def test_is_close(self):
+        """Matrix close to another matrix."""
+
+        m1 = AffineMatrix3D([[-1, 2, 3, 4],
+                             [5, 6, 2, 8],
+                             [9, -10, 4, 9],
+                             [4, 14, -15, 16]])
+
+        m2 = AffineMatrix3D([[1, 2, 3, 4],
+                             [5, 6, 2, 8],
+                             [9, 10, 4, 9],
+                             [4, 14, 15, 16]])
+
+        m3 = AffineMatrix3D([[-1.0008, 1.9993, 3, 4],
+                             [5, 6, 2, 8],
+                             [9, -10.0002, 4, 9],
+                             [4, 14, -15, 15.9995]])
+
+        self.assertTrue(m1.is_close(m1), "Is close test failed with perfect matrix.")
+        self.assertFalse(m1.is_close(m2), "Is close test failed with invalid matrix.")
+        self.assertTrue(m1.is_close(m3, tolerance=1e-3), "Is close test failed with matrix requiring tolerance.")
 
 
 if __name__ == "__main__":

@@ -79,7 +79,7 @@ cdef class _ObserverBase(Observer):
 
     cpdef list _obtain_rays(self, tuple task, Ray template)
 
-    cpdef double _obtain_etendue(self, tuple task)
+    cpdef double _obtain_sensitivity(self, tuple task)
 
 
 cdef class Observer0D(_ObserverBase):
@@ -91,7 +91,7 @@ cdef class Observer0D(_ObserverBase):
 
     cpdef list _generate_rays(self, Ray template, int ray_count)
 
-    cpdef double _pixel_etendue(self)
+    cpdef double _pixel_sensitivity(self)
 
 
 cdef class Observer1D(_ObserverBase):
@@ -104,7 +104,7 @@ cdef class Observer1D(_ObserverBase):
 
     cpdef list _generate_rays(self, int pixel, Ray template, int ray_count)
 
-    cpdef double _pixel_etendue(self, int pixel)
+    cpdef double _pixel_sensitivity(self, int pixel)
 
 
 cdef class Observer2D(_ObserverBase):
@@ -117,6 +117,6 @@ cdef class Observer2D(_ObserverBase):
 
     cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count)
 
-    cpdef double _pixel_etendue(self, int x, int y)
+    cpdef double _pixel_sensitivity(self, int x, int y)
 
 

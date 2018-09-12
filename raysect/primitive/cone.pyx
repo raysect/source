@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -66,6 +66,19 @@ cdef class Cone(Primitive):
       system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the cone's material (default = None).
     :param str name: A string specifying a user-friendly name for the cone (default = "").
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import translate
+        >>> from raysect.primitive import Box
+        >>> from raysect.optical import World
+        >>> from raysect.optical.material import UniformSurfaceEmitter
+        >>> from raysect.optical.library.spectra.colours import green
+        >>>
+        >>> world = World()
+        >>>
+        >>> cone = Cone(0.5, 2.0, parent=world, transform=translate(0, 0, 1),
+                        material=UniformSurfaceEmitter(green), name="green cone")
     """
 
     def __init__(self, double radius=0.5, double height=1.0, object parent=None,
@@ -94,8 +107,6 @@ cdef class Cone(Primitive):
     def radius(self):
         """
         The radius of the cone base in the x-y plane
-
-        :rtype: float
         """
         return self._radius
 
@@ -115,8 +126,6 @@ cdef class Cone(Primitive):
     def height(self):
         """
         The extend of the cone along the z-axis
-
-        :rtype: float
         """
         return self._height
 

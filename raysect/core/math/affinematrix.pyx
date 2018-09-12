@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 
 cimport cython
 from libc.math cimport fabs
+
 
 
 cdef class AffineMatrix3D(_Mat4):
@@ -133,7 +134,15 @@ cdef class AffineMatrix3D(_Mat4):
         return s + "])"
 
     def __mul__(object x, object y):
-        """Multiplication operator."""
+        """Multiplication operator.
+
+            >>> from raysect.core import translate, rotate_x
+            >>> translate(0, 0, -3.5) * rotate_x(45)
+            AffineMatrix3D([[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 0.7071067811865476, -0.7071067811865475, 0.0],
+                            [0.0, 0.7071067811865475, 0.7071067811865476, -3.5],
+                            [0.0, 0.0, 0.0, 1.0]])
+        """
 
         cdef AffineMatrix3D mx, my
 
@@ -169,6 +178,17 @@ cdef class AffineMatrix3D(_Mat4):
 
         Raises a ValueError if the matrix is singular and the inverse can not be
         calculated. All valid affine transforms should be invertable.
+
+            >>> from raysect.core import AffineMatrix3D
+            >>> m = AffineMatrix3D([[0.0, 0.0, 1.0, 0.0],
+                                    [1.0, 0.0, 0.0, 0.0],
+                                    [0.0, 1.0, 0.0, 0.0],
+                                    [0.0, 0.0, 0.0, 1.0]])
+            >>> m.inverse()
+            AffineMatrix3D([[0.0, 1.0, 0.0, -0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [1.0, 0.0, 0.0, -0.0],
+                            [0.0, 0.0, -0.0, 1.0]])
         """
 
         cdef:
@@ -246,8 +266,3 @@ cdef class AffineMatrix3D(_Mat4):
                                   self.m[3][0] * m.m[0][1] + self.m[3][1] * m.m[1][1] + self.m[3][2] * m.m[2][1] + self.m[3][3] * m.m[3][1],
                                   self.m[3][0] * m.m[0][2] + self.m[3][1] * m.m[1][2] + self.m[3][2] * m.m[2][2] + self.m[3][3] * m.m[3][2],
                                   self.m[3][0] * m.m[0][3] + self.m[3][1] * m.m[1][3] + self.m[3][2] * m.m[2][3] + self.m[3][3] * m.m[3][3])
-
-
-
-
-

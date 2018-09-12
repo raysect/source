@@ -42,6 +42,17 @@ cdef class UniformSurfaceEmitter(NullVolume):
 
     :param SpectralFunction emission_spectrum: The surface's emission function.
     :param float scale: Scale of the emission function (default = 1 W/m^2/str/nm).
+
+    .. code-block:: pycon
+
+        >>> from raysect.primitive import Sphere
+        >>> from raysect.optical import World, ConstantSF
+        >>> from raysect.optical.material import UniformSurfaceEmitter
+        >>>
+        >>> # set-up scenegraph
+        >>> world = World()
+        >>> emitter = Sphere(radius=0.01, parent=world)
+        >>> emitter.material=UniformSurfaceEmitter(ConstantSF(1.0))
     """
 
     def __init__(self, SpectralFunction emission_spectrum, double scale = 1.0):
@@ -63,7 +74,7 @@ cdef class UniformSurfaceEmitter(NullVolume):
             int index
 
         spectrum = ray.new_spectrum()
-        emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        emission = self.emission_spectrum.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         for index in range(spectrum.bins):
             spectrum.samples_mv[index] = emission[index] * self.scale
         return spectrum
@@ -85,6 +96,17 @@ cdef class UniformVolumeEmitter(HomogeneousVolumeEmitter):
 
     :param SpectralFunction emission_spectrum: The volume's emission function.
     :param float scale: Scale of the emission function (default = 1 W/m^3/str/nm).
+
+    .. code-block:: pycon
+
+        >>> from raysect.primitive import Sphere
+        >>> from raysect.optical import World, ConstantSF
+        >>> from raysect.optical.material import UniformVolumeEmitter
+        >>>
+        >>> # set-up scenegraph
+        >>> world = World()
+        >>> emitter = Sphere(radius=0.01, parent=world)
+        >>> emitter.material=UniformVolumeEmitter(ConstantSF(1.0))
     """
 
     def __init__(self, SpectralFunction emission_spectrum, double scale=1.0):
@@ -103,7 +125,7 @@ cdef class UniformVolumeEmitter(HomogeneousVolumeEmitter):
             double[::1] emission
             int index
 
-        emission = self.emission_spectrum.sample(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        emission = self.emission_spectrum.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         for index in range(spectrum.bins):
             spectrum.samples_mv[index] += emission[index] * self.scale
 

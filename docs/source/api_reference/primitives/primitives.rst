@@ -1,4 +1,6 @@
 
+.. _primitives-module:
+
 Primitives Module
 =================
 
