@@ -1,4 +1,4 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -69,6 +69,7 @@ cdef class SpectralRadiancePipeline0D(SpectralPowerPipeline0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     def _render_display(self):
 
         cdef:
@@ -99,6 +100,7 @@ cdef class SpectralRadiancePipeline0D(SpectralPowerPipeline0D):
         fig.canvas.draw_idle()
         plt.show()
 
+    @cython.initializedcheck(False)
     cpdef Spectrum to_spectrum(self):
         """
         Returns the mean spectral radiance in a Spectrum() object.
@@ -109,7 +111,7 @@ cdef class SpectralRadiancePipeline0D(SpectralPowerPipeline0D):
         if not self.samples:
             raise ValueError("No spectrum has been observed.")
         spectrum = Spectrum(self.min_wavelength, self.max_wavelength, self.bins)
-        spectrum.samples[:] = self.samples.mean[:]
+        spectrum.samples_mv[:] = self.samples.mean_mv[:]
         return spectrum
 
 
@@ -138,6 +140,7 @@ cdef class SpectralRadiancePipeline1D(SpectralPowerPipeline1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     def display_pixel(self, int pixel):
 
         cdef:
@@ -160,6 +163,7 @@ cdef class SpectralRadiancePipeline1D(SpectralPowerPipeline1D):
         plt.draw()
         plt.show()
 
+    @cython.initializedcheck(False)
     cpdef Spectrum to_spectrum(self, int pixel):
         """
         Returns the mean spectral radiance of pixel in a Spectrum() object.
@@ -170,7 +174,7 @@ cdef class SpectralRadiancePipeline1D(SpectralPowerPipeline1D):
         if not self.frame:
             raise ValueError("No frame present.")
         spectrum = Spectrum(self.min_wavelength, self.max_wavelength, self.bins)
-        spectrum.samples[:] = self.frame.mean[pixel, :]
+        spectrum.samples_mv[:] = self.frame.mean_mv[pixel, :]
         return spectrum
 
 
@@ -199,6 +203,7 @@ cdef class SpectralRadiancePipeline2D(SpectralPowerPipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     def display_pixel(self, int x, int y):
 
         cdef:
@@ -221,6 +226,7 @@ cdef class SpectralRadiancePipeline2D(SpectralPowerPipeline2D):
         plt.draw()
         plt.show()
 
+    @cython.initializedcheck(False)
     cpdef Spectrum to_spectrum(self, int x, int y):
         """
         Returns the mean spectral radiance of pixel (x, y) in a Spectrum() object.
@@ -231,7 +237,7 @@ cdef class SpectralRadiancePipeline2D(SpectralPowerPipeline2D):
         if not self.frame:
             raise ValueError("No frame present.")
         spectrum = Spectrum(self.min_wavelength, self.max_wavelength, self.bins)
-        spectrum.samples[:] = self.frame.mean[x, y, :]
+        spectrum.samples_mv[:] = self.frame.mean_mv[x, y, :]
         return spectrum
 
 
@@ -245,6 +251,7 @@ cdef class SpectralRadiancePixelProcessor(PixelProcessor):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object add_sample(self, Spectrum spectrum, double sensitivity):
 
         cdef int index

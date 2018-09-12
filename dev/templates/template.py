@@ -1,4 +1,4 @@
-# Copyright (c) 2014, <CONTRIBUTOR>, Raysect Project
+# Copyright (c) 2014-2018, <CONTRIBUTOR>, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

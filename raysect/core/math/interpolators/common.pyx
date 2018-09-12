@@ -53,8 +53,8 @@ cdef class MeshKDTree2D(KDTree2DCore):
 
     def __init__(self, object vertices not None, object triangles not None):
 
-        vertices = np.array(vertices, dtype=np.int32)
-        triangles = np.array(triangles, dtype=np.double)
+        vertices = np.array(vertices, dtype=np.double)
+        triangles = np.array(triangles, dtype=np.int32)
 
         # check dimensions are correct
         if vertices.ndim != 2 or vertices.shape[1] != 2:

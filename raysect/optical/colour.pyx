@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -155,7 +155,7 @@ cpdef double[:,::1] resample_ciexyz(double min_wavelength, double max_wavelength
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.initializedcheck(False)
-cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, double[:,::1] resampled_xyz=None):
+cpdef (double, double, double) spectrum_to_ciexyz(Spectrum spectrum, double[:,::1] resampled_xyz=None):
     """
     Calculates a tuple of CIE X, Y, Z values from an input spectrum
 
@@ -187,7 +187,7 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, double[:,::1] resampled_xyz=No
 
 
 @cython.cdivision(True)
-cpdef tuple ciexyy_to_ciexyz(double cx, double cy, double y):
+cpdef (double, double, double) ciexyy_to_ciexyz(double cx, double cy, double y):
     """
     Performs conversion from CIE xyY to CIE XYZ colour space
 
@@ -202,7 +202,7 @@ cpdef tuple ciexyy_to_ciexyz(double cx, double cy, double y):
 
 
 @cython.cdivision(True)
-cpdef tuple ciexyz_to_ciexyy(double x, double y, double z):
+cpdef (double, double, double) ciexyz_to_ciexyy(double x, double y, double z):
     """
     Performs conversion from CIE XYZ to CIE xyY colour space
 
@@ -232,7 +232,7 @@ cdef double srgb_transfer_function(double v):
         return 1.055 * v**0.4166666666666667 - 0.055
 
 
-cpdef tuple ciexyz_to_srgb(double x, double y, double z):
+cpdef (double, double, double) ciexyz_to_srgb(double x, double y, double z):
     """
     Convert CIE XYZ values to sRGB colour space.
 
@@ -279,7 +279,7 @@ cdef double srgb_transfer_function_inverse(double v):
         return (0.9478672985781991 * (v + 0.055))**2.4
 
 
-cpdef tuple srgb_to_ciexyz(double r, double g, double b):
+cpdef (double, double, double) srgb_to_ciexyz(double r, double g, double b):
     """
     Convert sRGB values to CIE XYZ colour space.
 

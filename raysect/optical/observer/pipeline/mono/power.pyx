@@ -1,4 +1,4 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -124,8 +124,7 @@ cdef class PowerPipeline0D(Pipeline0D):
     @cython.wraparound(False)
     cpdef object update(self, int slice_id, tuple packed_result, int samples):
 
-        cdef:
-            double mean, variance
+        cdef double mean, variance
 
         # obtain result
         mean, variance = packed_result
@@ -135,6 +134,7 @@ cdef class PowerPipeline0D(Pipeline0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object finalise(self):
 
         cdef:
@@ -512,6 +512,7 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object update(self, int x, int y, int slice_id, tuple packed_result):
 
         cdef:
@@ -533,6 +534,7 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object finalise(self):
 
         cdef int x, y
@@ -546,7 +548,7 @@ cdef class PowerPipeline2D(Pipeline2D):
         if self.display_progress:
             self._render_display(self.frame)
 
-    def _start_display(self):
+    cpdef object _start_display(self):
         """
         Display live render.
         """
@@ -568,7 +570,8 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _update_display(self, int x, int y):
+    @cython.initializedcheck(False)
+    cpdef object _update_display(self, int x, int y):
         """
         Update live render.
         """
@@ -593,7 +596,7 @@ cdef class PowerPipeline2D(Pipeline2D):
 
             self._display_timer = time()
 
-    def _refresh_display(self):
+    cpdef object _refresh_display(self):
         """
         Refreshes the display window (if active) and frame data is present.
 
@@ -617,7 +620,7 @@ cdef class PowerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _render_display(self, frame, status=None):
+    cpdef object _render_display(self, StatsArray2D frame, str status=None):
 
         INTERPOLATION = 'nearest'
 
@@ -647,7 +650,8 @@ cdef class PowerPipeline2D(Pipeline2D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _generate_display_image(self, StatsArray2D frame):
+    @cython.initializedcheck(False)
+    cpdef np.ndarray _generate_display_image(self, StatsArray2D frame):
 
         cdef:
             int nx, ny, x, y
@@ -675,7 +679,8 @@ cdef class PowerPipeline2D(Pipeline2D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _calculate_white_point(self, np.ndarray image):
+    @cython.initializedcheck(False)
+    cpdef double _calculate_white_point(self, np.ndarray image):
 
         cdef:
             int nx, ny, pixels, x, y, i
@@ -716,12 +721,12 @@ cdef class PowerPipeline2D(Pipeline2D):
 
         return peak_luminance + self._display_black_point
 
-    def display(self):
+    cpdef object display(self):
         if not self.frame:
             raise ValueError("There is no frame to display.")
         self._render_display(self.frame)
 
-    def save(self, filename):
+    cpdef object save(self, str filename):
         """
         Saves the display image to a png file.
 
@@ -748,6 +753,9 @@ cdef class PowerPixelProcessor(PixelProcessor):
     def __init__(self, double[::1] filter):
         self.bin = StatsBin()
         self.filter = filter
+
+    cpdef object reset(self):
+        self.bin.clear()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

@@ -133,6 +133,7 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object update(self, int slice_id, tuple packed_result, int pixel_samples):
 
         cdef:
@@ -158,6 +159,7 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     def _render_display(self):
 
         cdef:
@@ -281,6 +283,7 @@ cdef class SpectralPowerPipeline1D(Pipeline1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object update(self, int pixel, int slice_id, tuple packed_result):
 
         cdef:
@@ -301,6 +304,7 @@ cdef class SpectralPowerPipeline1D(Pipeline1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     def display_pixel(self, int pixel):
 
         cdef:
@@ -412,6 +416,7 @@ cdef class SpectralPowerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object update(self, int x, int y, int slice_id, tuple packed_result):
 
         cdef:
@@ -432,6 +437,7 @@ cdef class SpectralPowerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     def display_pixel(self, int x, int y):
 
         cdef:
@@ -465,6 +471,7 @@ cdef class SpectralPowerPixelProcessor(PixelProcessor):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object add_sample(self, Spectrum spectrum, double sensitivity):
 
         cdef int index
