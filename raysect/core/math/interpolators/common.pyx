@@ -94,6 +94,13 @@ cdef class MeshKDTree2D(KDTree2DCore):
         # todo: (possible enhancement) check if triangles are overlapping?
         # (any non-owned vertex lying inside another triangle)
 
+        # init cache
+        self._cache_available = False
+        self._cached_x = 0.0
+        self._cached_y = 0.0
+        self._cached_id = 0
+        self._cached_result = False
+
     def __getstate__(self):
         return self._triangles, self._vertices, super().__getstate__()
 
@@ -197,3 +204,26 @@ cdef class MeshKDTree2D(KDTree2DCore):
                 return True
 
         return False
+
+    cpdef bint is_contained(self, Point2D point):
+        """
+        Traverses the kd-Tree to identify if the point is contained by an item.
+        :param Point2D point: A Point2D object.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+        cdef bint result
+
+        if self._cache_available and point.x == self._cached_x and point.y == self._cached_y:
+            self.triangle_id = self._cached_id
+            return self._cached_result
+
+        result = self._is_contained(point)
+
+        # add cache
+        self._cache_available = True
+        self._cached_x = point.x
+        self._cached_y = point.y
+        self._cached_id = self.triangle_id
+        self._cached_result = result
+
+        return result
