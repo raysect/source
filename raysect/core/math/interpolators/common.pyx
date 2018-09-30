@@ -121,6 +121,12 @@ cdef class MeshKDTree2D(KDTree2DCore):
         self.beta = 0.0
         self.gamma = 0.0
 
+        # initialise cache values
+        self._cache_available = False
+        self._cached_x = 0.0
+        self._cached_y = 0.0
+        self._cached_result = False
+
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
