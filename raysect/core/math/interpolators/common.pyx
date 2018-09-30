@@ -53,8 +53,8 @@ cdef class MeshKDTree2D(KDTree2DCore):
 
     def __init__(self, object vertices not None, object triangles not None):
 
-        vertices = np.array(vertices, dtype=np.int32)
-        triangles = np.array(triangles, dtype=np.double)
+        vertices = np.array(vertices, dtype=np.double)
+        triangles = np.array(triangles, dtype=np.int32)
 
         # check dimensions are correct
         if vertices.ndim != 2 or vertices.shape[1] != 2:
@@ -94,6 +94,12 @@ cdef class MeshKDTree2D(KDTree2DCore):
         # todo: (possible enhancement) check if triangles are overlapping?
         # (any non-owned vertex lying inside another triangle)
 
+        # init cache
+        self._cache_available = False
+        self._cached_x = 0.0
+        self._cached_y = 0.0
+        self._cached_result = False
+
     def __getstate__(self):
         return self._triangles, self._vertices, super().__getstate__()
 
@@ -114,6 +120,12 @@ cdef class MeshKDTree2D(KDTree2DCore):
         self.alpha = 0.0
         self.beta = 0.0
         self.gamma = 0.0
+
+        # initialise cache values
+        self._cache_available = False
+        self._cached_x = 0.0
+        self._cached_y = 0.0
+        self._cached_result = False
 
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
@@ -197,3 +209,25 @@ cdef class MeshKDTree2D(KDTree2DCore):
                 return True
 
         return False
+
+    cpdef bint is_contained(self, Point2D point):
+        """
+        Traverses the kd-Tree to identify if the point is contained by an item.
+        :param Point2D point: A Point2D object.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        cdef bint result
+
+        if self._cache_available and point.x == self._cached_x and point.y == self._cached_y:
+            return self._cached_result
+
+        result = self._is_contained(point)
+
+        # add cache
+        self._cache_available = True
+        self._cached_x = point.x
+        self._cached_y = point.y
+        self._cached_result = result
+
+        return result

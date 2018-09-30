@@ -22,6 +22,11 @@ Core Functionality
    * - :ref:`Energy conservation <demo_energy_conservation>`
      - Checking all emitted light is collected correctly on a 3D enclosing surface.
      -
+   * - :ref:`Multiple Importance Sampling <demo_multiple_importance_sampling>`
+     - The classic multiple importance sampling demo re-implemented from E. Veach's PhD thesis.
+     - .. image:: multiple_importance_sampling.jpg
+          :height: 150px
+          :width: 150px
 
 
 Materials
@@ -117,10 +122,15 @@ Observers
      - .. image:: metal_balls_with_lens.png
           :height: 150px
           :width: 150px
+   * - :ref:`Making animations <demo_making_animations>`
+     - Looping over the observe loop whilst changing the position of primitives generates an animation.
+     - .. image:: animation_preview.jpg
+          :height: 150px
+          :width: 150px
 
 
-Examples Gallery
-================
+Optics
+======
 
 .. list-table:: Example scenes
    :widths: 28 50 22
@@ -134,14 +144,9 @@ Examples Gallery
      - .. image:: prism_720x360.jpg
           :height: 150px
           :width: 150px
-   * - :ref:`Multiple Importance Sampling <demo_multiple_importance_sampling>`
-     - The classic multiple importance sampling demo re-implemented from E. Veach's PhD thesis.
-     - .. image:: multiple_importance_sampling.jpg
-          :height: 150px
-          :width: 150px
-   * - :ref:`Making animations <demo_making_animations>`
-     - Looping over the observe loop whilst changing the position of primitives generates an animation.
-     - .. image:: animation_preview.jpg
+   * - :ref:`Etendue <demo_etendue_of_pinhole>`
+     - Calculating the etendue of a pinhole with ray-tracing.
+     - .. image:: etendue_of_pinhole.png
           :height: 150px
           :width: 150px
 

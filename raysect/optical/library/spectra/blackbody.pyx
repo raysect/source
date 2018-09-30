@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -54,6 +54,16 @@ cdef class BlackBody(NumericallyIntegratedSF):
 
         self.c1 = self.scale * 1.19104295e20
         self.c2 = 1.43877735e7 / self.temperature
+
+    def __getstate__(self):
+        return self.temperature, self.scale, self.c1, self.c2, super().__getstate__()
+
+    def __setstate__(self, state):
+        self.temperature, self.scale, self.c1, self.c2, super_state = state
+        super().__setstate__(super_state)
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.cdivision(True)
     cpdef double function(self, double wavelength):

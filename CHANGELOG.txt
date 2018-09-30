@@ -1,6 +1,18 @@
 Raysect Changelog
 =================
 
+Release 0.5.4 (1 Oct 2018)
+--------------------------
+
+Bug Fixes:
+* Spectrum class samples attribute is now publically accessible again, not readonly.
+
+New:
+* Optimised materials significantly by avoiding unnecessary memoryview creation, ~10-20% speedups depending on material.
+* Optimised observers leading to less overhead per pixel.
+* Added caching to 2D mesh interpolator evaluations.
+
+
 Release 0.5.3 (30 Aug 2018)
 ---------------------------
 

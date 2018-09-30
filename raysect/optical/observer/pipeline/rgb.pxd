@@ -1,4 +1,4 @@
-# Copyright (c) 2017, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         double[:,:,::1] _working_mean, _working_variance
         char[:,::1] _working_touched
         StatsArray3D _display_frame
-        list _resampled_xyz
+        list _processors
         tuple _pixels
         int _samples
         object _display_figure
@@ -53,11 +53,29 @@ cdef class RGBPipeline2D(Pipeline2D):
         public bint display_persist_figure
         bint _quiet
 
+    cpdef object _start_display(self)
+
+    cpdef object _update_display(self, int x, int y)
+
+    cpdef object _refresh_display(self)
+
+    cpdef object _render_display(self, StatsArray3D frame, str status=*)
+
+    cpdef np.ndarray _generate_display_image(self, StatsArray3D frame)
+
+    cpdef double _calculate_sensitivity(self, np.ndarray image)
+
     cpdef np.ndarray _generate_srgb_image(self, double[:,:,::1] xyz_image_mv)
+
+    cpdef object display(self)
+
+    cpdef object save(self, str filename)
 
 
 cdef class XYZPixelProcessor(PixelProcessor):
 
     cdef:
-        np.ndarray resampled_xyz
+        double[:,::1] resampled_xyz
         StatsArray1D xyz
+
+    cpdef object reset(self)

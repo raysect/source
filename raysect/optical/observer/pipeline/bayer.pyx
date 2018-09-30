@@ -136,7 +136,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         self._display_timer = 0
         self._display_figure = None
 
-        self._resampled_filters = None
+        self._processors = None
 
         self._pixels = None
         self._samples = 0
@@ -190,7 +190,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         self._display_frame = None
         self._display_timer = 0
         self._display_figure = None
-        self._resampled_filters = None
+        self._processors = None
         self._pixels = None
         self._samples = 0
         self._quiet = False
@@ -319,10 +319,15 @@ cdef class BayerPipeline2D(Pipeline2D):
         self._working_touched = np.zeros((nx, ny), dtype=np.int8)
 
         # generate pixel processor configurations for each spectral slice
-        resampled_red_filter = [self.red_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
-        resampled_green_filter = [self.green_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
-        resampled_blue_filter = [self.blue_filter.sample(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
-        self._resampled_filters = [resampled_red_filter, resampled_green_filter, resampled_blue_filter]
+        resampled_red_filter = [self.red_filter.sample_mv(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        resampled_green_filter = [self.green_filter.sample_mv(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+        resampled_blue_filter = [self.blue_filter.sample_mv(slice.min_wavelength, slice.max_wavelength, slice.bins) for slice in spectral_slices]
+
+        # build pixel processors
+        red_processors = [PowerPixelProcessor(filter) for filter in resampled_red_filter]
+        green_processors = [PowerPixelProcessor(filter) for filter in resampled_green_filter]
+        blue_processors = [PowerPixelProcessor(filter) for filter in resampled_blue_filter]
+        self._processors = [red_processors, green_processors, blue_processors]
 
         self._quiet = quiet
 
@@ -334,17 +339,18 @@ cdef class BayerPipeline2D(Pipeline2D):
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id):
 
         cdef:
-            np.ndarray filter
-            int filter_id, index
+            int index, filter_id
+            PowerPixelProcessor processor
 
         index = (x % 2) + 2 * (y % 2)
         filter_id = self._bayer_mosaic[index]
-        filter = self._resampled_filters[filter_id][slice_id]
-
-        return PowerPixelProcessor(filter)
+        processor = self._processors[filter_id][slice_id]
+        processor.reset()
+        return processor
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object update(self, int x, int y, int slice_id, tuple packed_result):
 
         cdef:
@@ -366,6 +372,7 @@ cdef class BayerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cpdef object finalise(self):
 
         cdef int x, y
@@ -379,7 +386,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         if self.display_progress:
             self._render_display(self.frame)
 
-    def _start_display(self):
+    cpdef object _start_display(self):
         """
         Display live render.
         """
@@ -401,7 +408,8 @@ cdef class BayerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _update_display(self, int x, int y):
+    @cython.initializedcheck(False)
+    cpdef object _update_display(self, int x, int y):
         """
         Update live render.
         """
@@ -426,7 +434,7 @@ cdef class BayerPipeline2D(Pipeline2D):
 
             self._display_timer = time()
 
-    def _refresh_display(self):
+    cpdef object _refresh_display(self):
         """
         Refreshes the display window (if active) and frame data is present.
 
@@ -450,7 +458,7 @@ cdef class BayerPipeline2D(Pipeline2D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _render_display(self, frame, status=None):
+    cpdef object _render_display(self, StatsArray2D frame, str status=None):
 
         INTERPOLATION = 'nearest'
 
@@ -480,7 +488,8 @@ cdef class BayerPipeline2D(Pipeline2D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _generate_display_image(self, StatsArray2D frame):
+    @cython.initializedcheck(False)
+    cpdef np.ndarray _generate_display_image(self, StatsArray2D frame):
 
         cdef:
             int nx, ny, x, y
@@ -488,7 +497,7 @@ cdef class BayerPipeline2D(Pipeline2D):
             double[:,::1] image_mv
             double gamma_exponent
 
-        if self.display_auto_exposure:
+        if self._display_auto_exposure:
             self._display_white_point = self._calculate_white_point(frame.mean)
 
         image = frame.mean.copy()
@@ -508,7 +517,8 @@ cdef class BayerPipeline2D(Pipeline2D):
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _calculate_white_point(self, np.ndarray image):
+    @cython.initializedcheck(False)
+    cpdef double _calculate_white_point(self, np.ndarray image):
 
         cdef:
             int nx, ny, pixels, x, y, i
@@ -549,7 +559,7 @@ cdef class BayerPipeline2D(Pipeline2D):
 
         return peak_luminance + self._display_black_point
 
-    def display(self):
+    cpdef object display(self):
         """
         Plot the RGB frame.
         """
@@ -557,7 +567,7 @@ cdef class BayerPipeline2D(Pipeline2D):
             raise ValueError("There is no frame to display.")
         self._render_display(self.frame)
 
-    def save(self, filename):
+    cpdef object save(self, str filename):
         """
         Saves the display image to a png file.
 

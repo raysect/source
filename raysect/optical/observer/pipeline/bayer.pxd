@@ -1,4 +1,4 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cimport numpy as np
 from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsArray2D
@@ -45,7 +46,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         double[:,::1] _working_mean, _working_variance
         char[:,::1] _working_touched
         StatsArray2D _display_frame
-        list _resampled_filters
+        list _processors
         tuple _pixels
         int _samples
         object _display_figure
@@ -53,3 +54,19 @@ cdef class BayerPipeline2D(Pipeline2D):
         bint _display_auto_exposure
         public bint display_persist_figure
         bint _quiet
+
+    cpdef object _start_display(self)
+
+    cpdef object _update_display(self, int x, int y)
+
+    cpdef object _refresh_display(self)
+
+    cpdef object _render_display(self, StatsArray2D frame, str status=*)
+
+    cpdef np.ndarray _generate_display_image(self, StatsArray2D frame)
+
+    cpdef double _calculate_white_point(self, np.ndarray image)
+
+    cpdef object display(self)
+
+    cpdef object save(self, str filename)

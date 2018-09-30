@@ -78,6 +78,7 @@ cdef class Spectrum(SpectralFunction):
             self.delta_wavelength,
             self.samples,
             self._wavelengths,
+            super().__getstate__()
         )
 
     def __setstate__(self, state):
@@ -90,7 +91,9 @@ cdef class Spectrum(SpectralFunction):
             self.delta_wavelength,
             self.samples,
             self._wavelengths,
+            super_state
         ) = state
+        super().__setstate__(super_state)
 
         # rebuild memory views
         self.samples_mv = self.samples
@@ -121,9 +124,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.cdivision(True)
     cdef void _construct(self, double min_wavelength, double max_wavelength, int bins):
 
-        cdef:
-            npy_intp size, index
-            double[::1] wavelengths_view
+        cdef npy_intp size, index
 
         self.min_wavelength = min_wavelength
         self.max_wavelength = max_wavelength
@@ -168,16 +169,16 @@ cdef class Spectrum(SpectralFunction):
         cdef:
             npy_intp size
             int index
-            double[::1] w_view
+            double[::1] wavelengths_mv
 
         if self._wavelengths is None:
 
             # create and populate central wavelength array
             size = self.bins
             self._wavelengths = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-            w_view = self._wavelengths
+            wavelengths_mv = self._wavelengths
             for index in range(self.bins):
-                w_view[index] = self.min_wavelength + (0.5 + index) * self.delta_wavelength
+                wavelengths_mv[index] = self.min_wavelength + (0.5 + index) * self.delta_wavelength
 
     cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int bins):
         """
@@ -270,7 +271,7 @@ cdef class Spectrum(SpectralFunction):
 
         cdef:
             ndarray samples
-            double[::1] s_view
+            double[::1] samples_mv
             npy_intp size, index
             double lower_wavelength, upper_wavelength, centre_wavelength, delta_wavelength, reciprocal
 
@@ -281,7 +282,7 @@ cdef class Spectrum(SpectralFunction):
         size = bins
         samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
         PyArray_FILLWBYTE(samples, 0)
-        s_view = samples
+        samples_mv = samples
 
         # require wavelength information for this calculation
         self._populate_wavelengths()
@@ -295,7 +296,7 @@ cdef class Spectrum(SpectralFunction):
 
             # average value obtained by integrating linearly interpolated data and normalising
             upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
-            s_view[index] = reciprocal * integrate(self._wavelengths, self.samples, lower_wavelength, upper_wavelength)
+            samples_mv[index] = reciprocal * integrate(self._wavelengths, self.samples, lower_wavelength, upper_wavelength)
             lower_wavelength = upper_wavelength
 
         return samples

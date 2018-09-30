@@ -1,4 +1,4 @@
-# Copyright (c) 2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -49,4 +49,6 @@ cdef class RadiancePixelProcessor(PixelProcessor):
     cdef:
         StatsBin bin
         double[::1] filter, _temp
+
+    cpdef object reset(self)
 

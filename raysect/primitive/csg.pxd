@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,8 @@ cdef class CSGPrimitive(Primitive):
     cdef Intersection _cache_intersection_b
     cdef Intersection _cache_last_intersection
     cdef bint _cache_invalid
+
+    cdef bint terminate_early(self, Intersection intersection)
 
     cdef Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection)
 
