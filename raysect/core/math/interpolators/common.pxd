@@ -47,7 +47,6 @@ cdef class MeshKDTree2D(KDTree2DCore):
         bint _cache_available
         double _cached_x
         double _cached_y
-        np.int32_t _cached_id
         bint _cached_result
 
     cdef BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)

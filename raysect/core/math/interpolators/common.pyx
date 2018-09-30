@@ -98,7 +98,6 @@ cdef class MeshKDTree2D(KDTree2DCore):
         self._cache_available = False
         self._cached_x = 0.0
         self._cached_y = 0.0
-        self._cached_id = 0
         self._cached_result = False
 
     def __getstate__(self):
@@ -211,10 +210,10 @@ cdef class MeshKDTree2D(KDTree2DCore):
         :param Point2D point: A Point2D object.
         :return: True if the point lies inside an item, false otherwise.
         """
+
         cdef bint result
 
         if self._cache_available and point.x == self._cached_x and point.y == self._cached_y:
-            self.triangle_id = self._cached_id
             return self._cached_result
 
         result = self._is_contained(point)
@@ -223,7 +222,6 @@ cdef class MeshKDTree2D(KDTree2DCore):
         self._cache_available = True
         self._cached_x = point.x
         self._cached_y = point.y
-        self._cached_id = self.triangle_id
         self._cached_result = result
 
         return result
