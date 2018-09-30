@@ -44,5 +44,9 @@ cdef class MeshKDTree2D(KDTree2DCore):
         np.int32_t triangle_id
         np.int32_t i1, i2, i3
         double alpha, beta, gamma
+        bint _cache_available
+        double _cached_x
+        double _cached_y
+        bint _cached_result
 
     cdef BoundingBox2D _generate_bounding_box(self, np.int32_t triangle)
