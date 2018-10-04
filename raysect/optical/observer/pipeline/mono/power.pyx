@@ -564,7 +564,10 @@ cdef class PowerPipeline2D(Pipeline2D):
         self._render_display(self._display_frame, 'rendering...')
 
         # workaround for interactivity for QT backend
-        plt.pause(0.1)
+        try:
+            plt.pause(0.1)
+        except NotImplementedError:
+            pass
 
         self._display_timer = time()
 
@@ -592,7 +595,10 @@ cdef class PowerPipeline2D(Pipeline2D):
             self._render_display(self._display_frame, 'rendering...')
 
             # workaround for interactivity for QT backend
-            plt.pause(0.1)
+            try:
+                plt.pause(0.1)
+            except NotImplementedError:
+                pass
 
             self._display_timer = time()
 
