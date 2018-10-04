@@ -149,7 +149,7 @@ class MulticoreEngine(RenderEngine):
 
     @property
     def processes(self):
-        return self.processes
+        return self._processes
 
     @processes.setter
     def processes(self, value):
