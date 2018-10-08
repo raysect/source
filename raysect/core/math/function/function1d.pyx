@@ -51,6 +51,12 @@ cdef class Function1D:
     cdef double evaluate(self, double x) except? -1e999:
         raise NotImplementedError("The evaluate() method has not been implemented.")
 
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+        raise NotImplementedError("Derivative not been implemented.")
+
+    # cpdef double integral(self, double x0, double x1, int order=1) except? -1e999:
+    #     raise NotImplementedError("The integral has not been implemented.")
+
     def __call__(self, double x):
         """ Evaluate the function f(x)
 
@@ -151,6 +157,9 @@ cdef class PythonFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self.function(x)
 
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+        return self.function.derivative(x, order)
+
 
 cdef Function1D autowrap_function1d(object function):
     """
@@ -186,6 +195,9 @@ cdef class AddFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) + self._function2.evaluate(x)
 
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+        return self._function1.derivative(x, order) + self._function2.derivative(x, order)
+
 
 cdef class SubtractFunction1D(Function1D):
     """
@@ -203,6 +215,9 @@ cdef class SubtractFunction1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) - self._function2.evaluate(x)
+
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+        return self._function1.derivative(x, order) - self._function2.derivative(x, order)
 
 
 cdef class MultiplyFunction1D(Function1D):
@@ -222,6 +237,15 @@ cdef class MultiplyFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) * self._function2.evaluate(x)
 
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+
+        # product rule
+        if order == 1:
+            return self._function1.evaluate(x) * self._function2.derivative(x) + \
+                   self._function1.derivative(x) * self._function2.evaluate(x)
+        else:
+            raise NotImplementedError("Derivative not been implemented.")
+
 
 cdef class DivideFunction1D(Function1D):
     """
@@ -239,10 +263,28 @@ cdef class DivideFunction1D(Function1D):
 
     @cython.cdivision(True)
     cdef double evaluate(self, double x) except? -1e999:
-        cdef double denominator = self._function2.evaluate(x)
-        if denominator == 0.0:
+
+        cdef double k = self._function2.evaluate(x)
+        if k == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
-        return self._function1.evaluate(x) / denominator
+        return self._function1.evaluate(x) / k
+
+    @cython.cdivision(True)
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+
+        cdef double k, a, b
+
+        # quotient rule
+        if order == 1:
+            k = self._function2.evaluate(x)
+            if k == 0.0:
+                raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
+            a = self._function1.derivative(x) * self._function2.evaluate(x)
+            b = self._function1.evaluate(x) * self._function2.derivative(x)
+            return (a - b) / (k * k)
+
+        else:
+            raise NotImplementedError("Derivative not been implemented.")
 
 
 cdef class AddScalar1D(Function1D):
@@ -262,6 +304,9 @@ cdef class AddScalar1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._value + self._function.evaluate(x)
 
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+        return self._function.derivative(x, order)
+
 
 cdef class SubtractScalar1D(Function1D):
     """
@@ -279,6 +324,9 @@ cdef class SubtractScalar1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._value - self._function.evaluate(x)
+
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+        return -self._function.derivative(x, order)
 
 
 cdef class MultiplyScalar1D(Function1D):
@@ -298,6 +346,9 @@ cdef class MultiplyScalar1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._value * self._function.evaluate(x)
 
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+        return self._value * self._function.derivative(x, order)
+
 
 cdef class DivideScalar1D(Function1D):
     """
@@ -315,7 +366,22 @@ cdef class DivideScalar1D(Function1D):
 
     @cython.cdivision(True)
     cdef double evaluate(self, double x) except? -1e999:
-        cdef double denominator = self._function.evaluate(x)
-        if denominator == 0.0:
+
+        cdef double k = self._function.evaluate(x)
+        if k == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
-        return self._value / denominator
+        return self._value / k
+
+    cpdef double derivative(self, double x, int order=1) except? -1e999:
+
+        cdef double k, a, b
+
+        # quotient rule
+        if order == 1:
+            k = self._function.evaluate(x)
+            if k == 0.0:
+                raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
+            return -self._value * self._function.derivative(x) / (k * k)
+
+        else:
+            raise NotImplementedError("Derivative not been implemented.")
