@@ -50,6 +50,9 @@ cdef class Function3D:
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         raise NotImplementedError("The evaluate() method has not been implemented.")
 
+    cpdef double derivative(self, double x, double y, double z, int x_order, int y_order, int z_order) except? -1e999:
+        raise NotImplementedError("Derivative not been implemented.")
+
     def __call__(self, double x, double y, double z):
         """ Evaluate the function f(x, y, z)
 

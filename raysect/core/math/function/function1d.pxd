@@ -33,7 +33,9 @@ cdef class Function1D:
 
     cdef double evaluate(self, double x) except? -1e999
 
-    cpdef double derivative(self, double x, int order=*) except? -1e999
+    cpdef double derivative(self, double x, int order) except? -1e999
+
+    # cpdef tuple sample(self, double min, double max, int samples, bint central=*)
 
 
 cdef class PythonFunction1D(Function1D):

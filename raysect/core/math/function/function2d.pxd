@@ -33,6 +33,8 @@ cdef class Function2D:
 
     cdef double evaluate(self, double x, double y) except? -1e999
 
+    cpdef double derivative(self, double x, double y, int x_order, int y_order) except? -1e999
+
 
 cdef class PythonFunction2D(Function2D):
 
