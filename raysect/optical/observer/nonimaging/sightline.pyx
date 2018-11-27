@@ -29,9 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.observer import SpectralPipeline0D
+from raysect.optical.observer import SpectralPowerPipeline0D
 
-from raysect.optical cimport Ray, new_point3d, new_vector3d, Point3D, Vector3D
+from raysect.optical cimport Ray, new_point3d, new_vector3d
 from raysect.optical.observer.base cimport Observer0D
 
 
@@ -42,47 +42,58 @@ cdef class SightLine(Observer0D):
 
     Fires a single ray oriented along the observer's z axis in world space.
 
-    :param float etendue: Optional user specified etendue. Defaults to etendue=1.0
+    :param float sensitivity: Optional user specified sensitivity. Defaults to sensitivity=1.0
       in which case the returned units will always be in radiance (W/m^2/str/nm)
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this line of sight (default=SpectralPipeline0D()).
     :param kwargs: **kwargs and instance properties from Observer0D and _ObserverBase
+
+    .. code-block:: pycon
+
+        >>> from raysect.optical import World
+        >>> from raysect.optical.observer import SightLine, PowerPipeline0D
+        >>>
+        >>> world = World()
+        >>> power = PowerPipeline0D(accumulate=False)
+        >>> los = SightLine([power], min_wavelength=400, max_wavelength=720,
+                            parent=world, transform=rotate(0, 0, 0)*translate(0, 0, -1))
+        >>> los.observe()
     """
-    # :param Point3D position: The origin position of this sight line
-    #   (default=Point3D(0, 0, 0)).
-    # :param Vector3D direction: The observing direction of this sight line
-    #   (default=Vector3D(0, 0, 1)).
 
     cdef:
-        double _etendue
-        # Point3D _position
-        # Vector3D _direction
+        double _sensitivity
 
-    def __init__(self, etendue=None, pipelines=None, parent=None, transform=None, name=None):
+    def __init__(self, sensitivity=None, pipelines=None, parent=None, transform=None, name=None,
+                 render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
+                 min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
-        pipelines = pipelines or [SpectralPipeline0D()]
-        super().__init__(pipelines, parent=parent, transform=transform, name=name)
+        pipelines = pipelines or [SpectralPowerPipeline0D()]
+        super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
+                         pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
+                         spectral_bins=spectral_bins, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
+                         ray_extinction_prob=ray_extinction_prob, ray_extinction_min_depth=ray_extinction_min_depth,
+                         ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
+                         ray_important_path_weight=ray_important_path_weight, quiet=quiet)
 
-        self.etendue = etendue or 1.0
-        # self.position = position or Point3D(0, 0, 0)
-        # self.direction = direction or Vector3D(0, 0, 1)
+        self.sensitivity = sensitivity or 1.0
 
     @property
-    def etendue(self):
+    def sensitivity(self):
         """
-        User specified etendue (str^-1/m^-2)
+        User specified sensitivity (str^-1/m^-2)
 
-        If etendue=1.0 the spectral units will always be in radiance (W/m^2/str/nm)
+        If sensitivity=1.0 the spectral units will always be in radiance (W/m^2/str/nm)
 
         :rtype: float
         """
-        return self._etendue
+        return self._sensitivity
 
-    @etendue.setter
-    def etendue(self, value):
+    @sensitivity.setter
+    def sensitivity(self, value):
         if value <= 0:
-            raise ValueError('Etendue must be greater than zero.')
-        self._etendue = value
+            raise ValueError('Sensitivity must be greater than zero.')
+        self._sensitivity = value
 
     cpdef list _generate_rays(self, Ray template, int ray_count):
 
@@ -95,5 +106,5 @@ cdef class SightLine(Observer0D):
             rays.append((template.copy(new_point3d(0, 0, 0), new_vector3d(0, 0, 1)), 1.0))
         return rays
 
-    cpdef double _pixel_etendue(self):
-        return self._etendue
+    cpdef double _pixel_sensitivity(self):
+        return self._sensitivity

@@ -1,10 +1,12 @@
+
+from math import pi
+
 from raysect.core import Point3D, translate, rotate_basis
 from raysect.core.math.sampler import HemisphereCosineSampler, SphereSampler, HemisphereUniformSampler
 from raysect.primitive import Sphere
 from raysect.optical import World, ConstantSF
 from raysect.optical.observer import PowerPipeline0D, Observer0D
 from raysect.optical.material.emitter import UnityVolumeEmitter, UniformSurfaceEmitter, UniformVolumeEmitter
-from math import pi
 
 
 class ObservingSphere(Observer0D):
@@ -22,7 +24,6 @@ class ObservingSphere(Observer0D):
                          ray_important_path_weight=ray_important_path_weight)
 
         self._radius = radius or 1.0
-        # self._vector_sampler = HemisphereUniformSampler()
         self._vector_sampler = HemisphereCosineSampler()
         self._sphere_sampler = SphereSampler()
         self._solid_angle = 2 * pi
@@ -47,10 +48,6 @@ class ObservingSphere(Observer0D):
             # transform sampling direction from surface space
             direction = directions[n].transform(rotate_basis(normal, normal.orthogonal()))
 
-            # USE WITH HEMISPHEREUNIFORMSAMPLER
-            # projection_weight = directions[n].z
-            # rays.append((template.copy(origin, direction), projection_weight))
-
             # USE WITH HEMISPHERECOSINESAMPLER
             # cosine weighted distribution, projected area weight is
             # implicit in distribution, so set weight appropriately
@@ -58,7 +55,7 @@ class ObservingSphere(Observer0D):
 
         return rays
 
-    def _pixel_etendue(self):
+    def _pixel_sensitivity(self):
         return self._solid_angle * self._collection_area
 
 
@@ -84,8 +81,6 @@ observer = ObservingSphere([power], radius=collection_sphere_radius,
                            spectral_bins=1, pixel_samples=samples,
                            parent=world)
 
-from raysect.core.workflow import SerialEngine
-observer.render_engine = SerialEngine()
 
 # Emitter is a sphere volume emitter located at the origin
 # Volume of the sphere is 4/3 * Pi * r^3, emission over 4 * pi
@@ -104,11 +99,11 @@ measured_volume_error = power.value.error()
 volume_deviation = (measured_volume_emission - calculated_volume_emission) / measured_volume_error
 
 # Emitter is a sphere surface emitter located at the origin
-# Surface area of the sphere is 4 * Pi * r^2, emission over 2 * pi
+# Surface area of the sphere is 4 * Pi * r^2, lambert emitter
 # UniformSurfaceEmitter is configured to emit 1W/str/m^2/ x nm, where x is the wavelength interval
 
 print("Starting observations with surface emitter...")
-calculated_surface_emission = (2 * pi) * (4 * pi * emitting_sphere_radius**2) * (max_wl - min_wl)
+calculated_surface_emission = pi * (4 * pi * emitting_sphere_radius**2) * (max_wl - min_wl)
 
 emitter.material = UniformSurfaceEmitter(ConstantSF(1.0))
 observer.observe()
@@ -127,5 +122,3 @@ print()
 print('Expected surface emission => {:0.2f} W'.format(calculated_surface_emission))
 print('Measured surface emission => {:0.2f} +/- {:0.2f} W'.format(measured_surface_emission, measured_surface_error))
 print('Deviation: {:0.2f}'.format(surface_deviation))
-
-

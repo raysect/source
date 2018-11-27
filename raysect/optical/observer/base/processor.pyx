@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -57,14 +57,14 @@ cdef class PixelProcessor:
 
     """
 
-    cpdef object add_sample(self, Spectrum spectrum, double etendue):
+    cpdef object add_sample(self, Spectrum spectrum, double sensitivity):
         """
         Processes a spectrum and adds it to internal buffer.
 
         This is a virtual method and must be implemented in a sub class.
 
         :param Spectrum spectrum: The sampled spectrum.
-        :param float etendue: The pixel etendue.
+        :param float sensitivity: The pixel sensitivity.
         """
         raise NotImplementedError("Virtual method must be implemented by a sub-class.")
 

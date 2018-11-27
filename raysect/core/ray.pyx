@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -41,9 +41,26 @@ cdef class Ray:
     """
     Describes a line in space with an origin and direction.
 
+    Note that the core Ray class only implements the geometry calculations needed for
+    intersections and is not capable of any optical simulations. For that you would
+    need the derived optical Ray class (:meth:`raysect.optical.ray.Ray <raysect.optical.ray.Ray>`).
+
     :param Point3D origin: Point defining ray's origin (default is Point3D(0, 0, 0)).
     :param Vector3D direction: Vector defining ray's direction (default is Vector3D(0, 0, 1)).
     :param double max_distance: The terminating distance of the ray.
+
+    :ivar Point3D origin: The Ray's origin point.
+    :ivar Vector3D direction: The Ray's direction.
+    :ivar float max_distance: The terminating distance of the ray.
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import Point3D, Vector3D
+        >>> from raysect.core.ray import Ray as CoreRay
+        >>>
+        >>> intersection = world.hit(CoreRay(Point3D(0, 0, 0,), Vector3D(1, 0, 0)))
+        >>> if intersection is not None:
+        >>>     # do something with the intersection results
     """
 
     def __init__(self, Point3D origin=None, Vector3D direction=None, double max_distance=INFINITY):
@@ -84,6 +101,15 @@ cdef class Ray:
         :param double t: The distance along the ray.
         :return: A point at distance t along the ray direction measured from its origin.
         :rtype: Point3D
+
+        .. code-block:: pycon
+
+            >>> from raysect.core import Point3D, Vector3D
+            >>> from raysect.core.ray import Ray as CoreRay
+            >>>
+            >>> a = CoreRay(Point3D(0, 0, 0,), Vector3D(1, 0, 0))
+            >>> a.point_on(2)
+            Point3D(2.0, 0.0, 0.0)
         """
         cdef:
             Point3D origin = self.origin
@@ -101,6 +127,15 @@ cdef class Ray:
         :param Vector3D direction: Vector defining direction (default is Vector3D(0, 0, 1)).
         :return: A new Ray instance.
         :rtype: Ray
+
+        .. code-block:: pycon
+
+            >>> from raysect.core import Point3D, Vector3D
+            >>> from raysect.core.ray import Ray as CoreRay
+            >>>
+            >>> a = CoreRay(Point3D(0, 0, 0,), Vector3D(1, 0, 0))
+            >>> a.copy()
+            Ray(Point3D(0.0, 0.0, 0.0), Vector3D(1.0, 0.0, 0.0), inf)
         """
 
         if origin is None:

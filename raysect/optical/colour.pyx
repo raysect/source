@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@
 from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport InterpolatedSF
 from numpy import array, float64, zeros, linspace
+from numpy cimport ndarray
 cimport cython
 
 # CIE 1931 Standard Colorimetric Observer (normalised)
@@ -119,7 +120,7 @@ d65_white = InterpolatedSF(d65_wavelength_samples, d65_white_samples)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int bins):
+cpdef double[:,::1] resample_ciexyz(double min_wavelength, double max_wavelength, int bins):
     """
     Pre-calculates samples of XYZ sensitivity curves over desired spectral range.
 
@@ -129,7 +130,7 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
     :param float min_wavelength: Lower wavelength bound on spectrum
     :param float max_wavelength: Upper wavelength bound on spectrum
     :param int bins: Number of spectral bins in spectrum
-    :rtype: ndarray
+    :rtype: memoryview
     """
 
     cdef ndarray xyz
@@ -153,12 +154,13 @@ cpdef ndarray resample_ciexyz(double min_wavelength, double max_wavelength, int 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz=None):
+@cython.initializedcheck(False)
+cpdef (double, double, double) spectrum_to_ciexyz(Spectrum spectrum, double[:,::1] resampled_xyz=None):
     """
     Calculates a tuple of CIE X, Y, Z values from an input spectrum
 
     :param Spectrum spectrum: Spectrum to process
-    :param ndarray resampled_xyz: Pre-calculated XYZ sensitivity curves optimised
+    :param memoryview resampled_xyz: Pre-calculated XYZ sensitivity curves optimised
       for this spectral range (default=None).
     :rtype: tuple
     """
@@ -166,35 +168,26 @@ cpdef tuple spectrum_to_ciexyz(Spectrum spectrum, ndarray resampled_xyz=None):
     cdef:
         double x, y, z
         int index
-        double[::1] samples_view
-        double[:, ::1] xyz_view
 
-    if resampled_xyz is not None:
-        if resampled_xyz.ndim != 2 or resampled_xyz.shape[0] != spectrum.bins or resampled_xyz.shape[1] != 3:
-            raise ValueError("The supplied resampled_xyz array size is inconsistent with the number of spectral bins or channel count.")
-    else:
-        resampled_xyz = resample_ciexyz(spectrum.min_wavelength,
-                                        spectrum.max_wavelength,
-                                        spectrum.samples)
+    if resampled_xyz is None:
+        resampled_xyz = resample_ciexyz(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
 
-    samples_view = spectrum.samples
-    xyz_view = resampled_xyz
+    if resampled_xyz.shape[0] != spectrum.bins or resampled_xyz.shape[1] != 3:
+        raise ValueError("The supplied resampled_xyz array size is inconsistent with the number of spectral bins or channel count.")
 
     x = 0
     y = 0
     z = 0
-
     for index in range(spectrum.bins):
-        # treat samples as average value across bin
-        x += spectrum.delta_wavelength * samples_view[index] * xyz_view[index, 0]
-        y += spectrum.delta_wavelength * samples_view[index] * xyz_view[index, 1]
-        z += spectrum.delta_wavelength * samples_view[index] * xyz_view[index, 2]
+        x += spectrum.delta_wavelength * spectrum.samples_mv[index] * resampled_xyz[index, 0]
+        y += spectrum.delta_wavelength * spectrum.samples_mv[index] * resampled_xyz[index, 1]
+        z += spectrum.delta_wavelength * spectrum.samples_mv[index] * resampled_xyz[index, 2]
 
     return x, y, z
 
 
 @cython.cdivision(True)
-cpdef tuple ciexyy_to_ciexyz(double cx, double cy, double y):
+cpdef (double, double, double) ciexyy_to_ciexyz(double cx, double cy, double y):
     """
     Performs conversion from CIE xyY to CIE XYZ colour space
 
@@ -209,7 +202,7 @@ cpdef tuple ciexyy_to_ciexyz(double cx, double cy, double y):
 
 
 @cython.cdivision(True)
-cpdef tuple ciexyz_to_ciexyy(double x, double y, double z):
+cpdef (double, double, double) ciexyz_to_ciexyy(double x, double y, double z):
     """
     Performs conversion from CIE XYZ to CIE xyY colour space
 
@@ -239,7 +232,7 @@ cdef double srgb_transfer_function(double v):
         return 1.055 * v**0.4166666666666667 - 0.055
 
 
-cpdef tuple ciexyz_to_srgb(double x, double y, double z):
+cpdef (double, double, double) ciexyz_to_srgb(double x, double y, double z):
     """
     Convert CIE XYZ values to sRGB colour space.
 
@@ -286,7 +279,7 @@ cdef double srgb_transfer_function_inverse(double v):
         return (0.9478672985781991 * (v + 0.055))**2.4
 
 
-cpdef tuple srgb_to_ciexyz(double r, double g, double b):
+cpdef (double, double, double) srgb_to_ciexyz(double r, double g, double b):
     """
     Convert sRGB values to CIE XYZ colour space.
 

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -56,58 +56,36 @@ cdef class _Mat4:
         if isinstance(v, _Mat4):
 
             m = <_Mat4>v
-
             for i in range(0, 4):
-
                 for j in range(0, 4):
-
                     self.m[i][j] = m.m[i][j]
-
             return
 
         # try reading object as 4x4 array of elements with separate indexing
         try:
-
             for i in range(0, 4):
-
                 for j in range(0, 4):
-
                     self.m[i][j] = v[i][j]
-
             return
-
         except(IndexError, TypeError):
-
             pass
 
         # try reading object as 4x4 array of elements with tuple indexing
         try:
-
             for i in range(0, 4):
-
                 for j in range(0, 4):
-
                     self.m[i][j] = v[i,j]
-
             return
-
         except(IndexError, TypeError):
-
             pass
 
         # try reading object as row-major 16 element array
         try:
-
             for i in range(0, 4):
-
                 for j in range(0, 4):
-
                     self.m[i][j] = v[4*i + j]
-
             return
-
         except(IndexError, TypeError):
-
             raise TypeError("Matrix can only be initialised with an indexable object of 4 by 4 or 16 numerical values in row-major order.")
 
     def __getitem__(self, object i):
@@ -123,20 +101,15 @@ cdef class _Mat4:
         cdef int row, column
 
         try:
-
             row = i[0]
             column = i[1]
-
         except:
-
             raise IndexError("Index must be a tuple containing (at least) the row and column indicies e.g. matrix[1,3].")
 
         if row < 0 or row > 3:
-
             raise IndexError("Row index out of range [0, 3].")
 
         if column < 0 or column > 3:
-
             raise IndexError("Column index out of range [0, 3].")
 
         return self.m[row][column]
@@ -153,20 +126,15 @@ cdef class _Mat4:
         cdef int row, column
 
         try:
-
             row = i[0]
             column = i[1]
-
         except:
-
             raise IndexError("Index must be a tuple containing (at least) the row and column indicies e.g. matrix[1,3].")
 
         if row < 0 or row > 3:
-
             raise IndexError("Row index out of range [0, 3].")
 
         if column < 0 or column > 3:
-
             raise IndexError("Column index out of range [0, 3].")
 
         self.m[row][column] = v
@@ -210,3 +178,46 @@ cdef class _Mat4:
         """
 
         self.m[row][column] = v
+
+    cpdef bint is_identity(self, double tolerance=1e-8):
+        """
+        Identifies if the matrix is an identity matrix.
+        
+        Returns True if the matrix is an identify matrix, False otherwise.
+        
+        The method has a default tolerance of 1e-8 to account for errors due to
+        numerical accuracy limits. The tolerance may be altered by setting the
+        tolerance argument. 
+         
+        :param tolerance: Numerical tolerance (default: 1e-8)
+        :return: True/False
+        """
+
+        return self.is_close(_Mat4(), tolerance)
+
+    cpdef bint is_close(self, _Mat4 other, double tolerance=1e-8):
+        """
+        Is this matrix equal to another matrix within a numerical tolerance.
+        
+        The method has a default tolerance of 1e-8 to account for errors that
+        may have accumulated due to numerical accuracy limits. The tolerance
+        may be altered by setting the tolerance argument. 
+         
+        :param other: The other matrix.
+        :param tolerance: Numerical tolerance (default: 1e-8)
+        :return: True/False
+        """
+
+        cdef:
+            int i, j
+            double v
+
+        if tolerance < 0:
+            raise ValueError('Tolerance cannot be less than zero.')
+
+        for i in range(0, 4):
+            for j in range(0, 4):
+                if abs(self.m[i][j] - other.m[i][j]) >= tolerance:
+                    return False
+
+        return True

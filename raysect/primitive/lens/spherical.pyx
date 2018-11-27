@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -407,8 +407,8 @@ cdef class Meniscus(EncapsulatedPrimitive):
 
     :param diameter: The diameter of the lens body.
     :param center_thickness: The thickness of the lens measured along the lens axis.
-    :param front_curvature: The radius of curvature of the front surface.
-    :param back_curvature: The radius of curvature of the back surface.
+    :param front_curvature: The radius of curvature of the front (convex) surface.
+    :param back_curvature: The radius of curvature of the back (concave) surface.
     :param parent: Assigns the Node's parent to the specified scene-graph object.
     :param transform: Sets the affine transform associated with the Node.
     :param material: An object representing the material properties of the primitive.

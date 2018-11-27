@@ -39,7 +39,7 @@ from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.core.math.cython cimport find_index
 from raysect.optical cimport Ray, Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
 from raysect.optical.observer.base cimport Observer0D
-from raysect.optical.observer.pipeline.spectral import SpectralPipeline0D
+from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 from raysect.primitive.mesh.mesh cimport Mesh
 cimport cython
 
@@ -57,9 +57,10 @@ cdef class MeshPixel(Observer0D):
     """
     Uses a supplied mesh surface as a pixel.
 
-    Warning: you must be careful when using this camera to not double count radiance. For example,
-    if you have a concave mesh its possible for two surfaces to see the same emission. In cases
-    like this, the mesh should have an absorbing surface to prevent double counting.
+    .. Warning::
+       Users must be careful when using this camera to not double count radiance. For example,
+       if you have a concave mesh its possible for two surfaces to see the same emission. In cases
+       like this, the mesh should have an absorbing surface to prevent double counting.
 
     This observer samples over the surface defined by a triangular mesh. At each point on the surface
     the incoming radiance over a hemisphere is sampled.
@@ -67,14 +68,33 @@ cdef class MeshPixel(Observer0D):
     A mesh surface offset can be set to ensure sample don't collide with a coincident primitive. When set,
     the surface offset specifies the distance along the surface normal that the ray launch origin is shifted.
 
-    :param list pipelines: The list of pipelines that will process the spectrum measured
-      by this pixel (default=SpectralPipeline0D()).
+    :param Mesh mesh: The mesh instance to use for observations.
     :param float surface_offset: The offset from the mesh surface (default=0).
+    :param list pipelines: The list of pipelines that will process the spectrum measured
+      by this pixel (default=SpectralPowerPipeline0D()).
     :param kwargs: **kwargs from Observer0D and _ObserverBase
+
+    .. code-block:: pycon
+
+        >>> from raysect.primitive import Mesh
+        >>> from raysect.optical import World
+        >>> from raysect.optical.material import AbsorbingSurface
+        >>> from raysect.optical.observer import MeshPixel, PowerPipeline0D
+        >>>
+        >>> world = World()
+        >>>
+        >>> mesh = Mesh.from_file("my_mesh.rsm", material=AbsorbingSurface(), parent=world)
+        >>>
+        >>> power = PowerPipeline0D(accumulate=False)
+        >>> observer = MeshPixel(mesh, pipelines=[power], parent=world,
+        >>>                      min_wavelength=400, max_wavelength=750,
+        >>>                      spectral_bins=1, pixel_samples=10000, surface_offset=1E-6)
+        >>> observer.observe()
     """
 
     cdef:
         double _surface_offset, _solid_angle, _collection_area
+        readonly Mesh mesh
         float32_t[:, ::1] _vertices_mv
         float32_t[:, ::1] _face_normals_mv
         int32_t[:, ::1] _triangles_mv
@@ -85,16 +105,16 @@ cdef class MeshPixel(Observer0D):
     def __init__(self, Mesh mesh not None, surface_offset=None, pipelines=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
 
-        pipelines = pipelines or [SpectralPipeline0D()]
+        pipelines = pipelines or [SpectralPowerPipeline0D()]
 
         super().__init__(pipelines, parent=parent, transform=transform, name=name, render_engine=render_engine,
                          pixel_samples=pixel_samples, samples_per_task=samples_per_task, spectral_rays=spectral_rays,
                          spectral_bins=spectral_bins, min_wavelength=min_wavelength, max_wavelength=max_wavelength,
                          ray_extinction_prob=ray_extinction_prob, ray_extinction_min_depth=ray_extinction_min_depth,
                          ray_max_depth=ray_max_depth, ray_importance_sampling=ray_importance_sampling,
-                         ray_important_path_weight=ray_important_path_weight)
+                         ray_important_path_weight=ray_important_path_weight, quiet=quiet)
 
         surface_offset = surface_offset or 0.0
         if surface_offset < 0:
@@ -102,14 +122,49 @@ cdef class MeshPixel(Observer0D):
 
         self._surface_offset = surface_offset
 
-        # TODO - replace this with access to Mesh public methods when implemented, this breaks encapsulation, yuck!
-        self._vertices_mv = mesh._data.vertices
-        self._face_normals_mv = mesh._data.face_normals
-        self._triangles_mv = mesh._data.triangles
+        self.mesh = mesh
+        self._vertices_mv = mesh.data.vertices_mv
+        self._face_normals_mv = mesh.data.face_normals_mv
+        self._triangles_mv = mesh.data.triangles_mv
 
         self._vector_sampler = HemisphereCosineSampler()
         self._solid_angle = 2 * M_PI
         self._calculate_areas()
+
+    def __getstate__(self):
+
+        state = (
+            self._surface_offset,
+            self._solid_angle,
+            self._collection_area,
+            self.mesh,
+            self._cdf,
+            self._vector_sampler,
+            super().__getstate__()
+        )
+
+    def __setstate__(self, state):
+
+        (
+            self._surface_offset,
+            self._solid_angle,
+            self._collection_area,
+            self.mesh,
+            self._cdf,
+            self._vector_sampler,
+            super_state
+        ) = state
+
+        super().__setstate__(super_state)
+
+        # recreate memoryviews
+        self._cdf_mv = self._cdf
+        self._vertices_mv = self.mesh.data.vertices_mv
+        self._face_normals_mv = self.mesh.data.face_normals_mv
+        self._triangles_mv = self.mesh.data.triangles_mv
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -167,13 +222,13 @@ cdef class MeshPixel(Observer0D):
         return self._solid_angle
 
     @property
-    def etendue(self):
+    def sensitivity(self):
         """
-        The pixel's etendue measured in units of per area per solid angle (m^-2 str^-1).
+        The pixel's sensitivity measured in units of per area per solid angle (m^-2 str^-1).
 
         :rtype: float
         """
-        return self._pixel_etendue()
+        return self._pixel_sensitivity()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -189,7 +244,7 @@ cdef class MeshPixel(Observer0D):
             AffineMatrix3D surface_to_local
             int32_t triangle, v1i, v2i, v3i
 
-        directions = self._vector_sampler(ray_count)
+        directions = self._vector_sampler.samples(ray_count)
 
         rays = []
         for n in range(ray_count):
@@ -265,5 +320,5 @@ cdef class MeshPixel(Observer0D):
 
         return surface_to_primitive
 
-    cpdef double _pixel_etendue(self):
+    cpdef double _pixel_sensitivity(self):
         return self._solid_angle * self._collection_area

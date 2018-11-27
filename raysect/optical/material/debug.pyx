@@ -70,6 +70,7 @@ cdef class Light(NullVolume):
 
         cdef Spectrum spectrum
 
+        # todo: optimise
         spectrum = ray.new_spectrum()
         if self.intensity != 0.0:
             diffuse_intensity = self.intensity * max(0, -self.light_direction.transform(world_to_primitive).dot(normal))

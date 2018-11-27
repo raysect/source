@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -107,6 +107,10 @@ cdef class KDTree2DCore:
     cdef list _items_containing_leaf(self, int32_t id, Point2D point)
 
     cdef void _reset(self)
+
+    cdef double _read_double(self, object file)
+
+    cdef int32_t _read_int32(self, object file)
 
 
 cdef class KDTree2D(KDTree2DCore):

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -150,6 +150,45 @@ cdef class NullVolume(Material):
     but no volume properties (e.g. a metallic mirror). evaluate_surface() must be
     implemented by the deriving class.
     """
+
+    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+                                   Point3D start_point, Point3D end_point,
+                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # no volume contribution
+        return spectrum
+
+
+cdef class NullMaterial(Material):
+    """
+    A perfectly transparent material.
+
+    Behaves as if nothing is present, doesn't perturb the ray trajectories at all.
+    Useful for logging ray trajectories and designating areas of interest that may
+    not correspond to a physical material (i.e. a slit / aperture).
+    """
+
+    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+                                    bint exiting, Point3D inside_point, Point3D outside_point,
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            Point3D origin
+            Ray daughter_ray
+
+        # are we entering or leaving surface?
+        if exiting:
+            origin = outside_point.transform(primitive_to_world)
+        else:
+            origin = inside_point.transform(primitive_to_world)
+
+        daughter_ray = ray.spawn_daughter(origin, ray.direction)
+
+        # do not count null surfaces in ray depth
+        daughter_ray.depth -= 1
+
+        # prevent extinction on a null surface
+        return daughter_ray.trace(world, keep_alive=True)
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,

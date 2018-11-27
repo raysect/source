@@ -19,3 +19,6 @@ Spherical Lenses
 
 .. autoclass:: raysect.primitive.lens.spherical.PlanoConcave
    :members:
+
+.. autoclass:: raysect.primitive.lens.spherical.Meniscus
+   :members:

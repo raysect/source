@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,6 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-# TODO: split instance into its own method (e.g. mymesh.instance(), this change is planned for Interpolate2DMesh. Both classes should be consistent.
 
 import io
 import struct
@@ -79,13 +77,10 @@ DEF NO_INTERSECTION = -1
 DEF RSM_VERSION_MAJOR = 1
 DEF RSM_VERSION_MINOR = 0
 
-# TODO: expose triangles, vertices, etc, as attributes on Mesh and modify MeshPixel to stop using internals of this class
 # TODO: fire exceptions if degenerate triangles are found and tolerant mode is not enabled (the face normal call will fail @ normalisation)
 # TODO: tidy up the internal storage of triangles - separate the triangle reference arrays for vertices, normals etc...
 # TODO: the following code really is a bit opaque, needs a general tidy up
 # TODO: move load/save code to C?
-
-
 cdef class MeshData(KDTree3DCore):
     """
     Holds the mesh data and acceleration structures.
@@ -95,16 +90,19 @@ cdef class MeshData(KDTree3DCore):
 
     :param object vertices: A list/array or triangle vertices with shape Nx3,
       where N is the number of vertices.
-    :param object triangles: A list/array of triangles with shape Nx3 where N is
-      the number of triangles in the mesh. For each triangle there must be three
-      integers identifying the triangle vertices in the vertices array.
+    :param object triangles: A list/array of triangles with shape Nx3 or Nx6
+      where N is the number of triangles in the mesh. For each triangle there
+      must be three integers identifying the triangle's vertices in the vertices
+      array. If vertex normals are present then three additional integers
+      specify the triangle's vertex normals in the normals array.
     :param object normals: Optional array of triangle normals (default=None).
     :param bool smoothing: Turns on smoothing of triangle surface normals when
       calculating ray intersections (default=True).
     :param bool closed: Whether this mesh should be treated as a closed surface,
       i.e. no holes. (default=True)
-    :param bool tolerant: Toggles filtering out of degenerant triangles
+    :param bool tolerant: Toggles filtering out of degenerate triangles
       (default=True).
+    :param bool flip_normals: Inverts the direction of the surface normals (default=False).
     :param int max_depth: Maximum kd-Tree depth for this mesh (automatic if set to
       0, default=0).
     :param int min_items: The item count threshold for forcing creation of a
@@ -116,8 +114,8 @@ cdef class MeshData(KDTree3DCore):
     """
 
     def __init__(self, object vertices, object triangles, object normals=None, bint smoothing=True,
-                 bint closed=True, bint tolerant=True, int max_depth=0, int min_items=1,
-                 double hit_cost=20.0, double empty_bonus=0.2):
+                 bint closed=True, bint tolerant=True, bint flip_normals=False,
+                 int max_depth=0, int min_items=1, double hit_cost=20.0, double empty_bonus=0.2):
 
         self.smoothing = smoothing
         self.closed = closed
@@ -157,10 +155,15 @@ cdef class MeshData(KDTree3DCore):
             if invalid.any():
                 raise ValueError("The triangle array references non-existent normals.")
 
+        # assign to internal attributes
+        self._vertices = vertices
+        self._vertex_normals = vertex_normals
+        self._triangles = triangles
+
         # assign to memory views
-        self.vertices = vertices
-        self.vertex_normals = vertex_normals
-        self.triangles = triangles
+        self.vertices_mv = vertices
+        self.vertex_normals_mv = vertex_normals
+        self.triangles_mv = triangles
 
         # initial hit data
         self._u = -1.0
@@ -173,15 +176,128 @@ cdef class MeshData(KDTree3DCore):
         if tolerant:
             self._filter_triangles()
 
+        # flip normals if requested
+        if flip_normals:
+            self._flip_normals()
+
         # generate face normals
         self._generate_face_normals()
 
         # kd-Tree init requires the triangle's id (it's index here) and bounding box
         items = []
-        for i in range(self.triangles.shape[0]):
+        for i in range(self.triangles_mv.shape[0]):
             items.append(Item3D(i, self._generate_bounding_box(i)))
 
         super().__init__(items, max_depth, min_items, hit_cost, empty_bonus)
+
+    def __getstate__(self):
+        state = io.BytesIO()
+        self.save(state)
+        return state.getvalue()
+
+    def __setstate__(self, state):
+        self.load(io.BytesIO(state))
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
+
+    @property
+    def vertices(self):
+        return self._vertices.copy()
+
+    @property
+    def triangles(self):
+        return self._triangles.copy()
+
+    @property
+    def vertex_normals(self):
+        if self._vertex_normals is None:
+            return None
+        return self._vertex_normals.copy()
+
+    @property
+    def face_normals(self):
+        return self._face_normals.copy()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Point3D vertex(self, int index):
+        """
+        Returns the specified vertex.
+        
+        :param index: The vertex index.
+        :return: A Point3D object. 
+        """
+
+        if index < 0 or index >= self.vertices_mv.shape[0]:
+            raise ValueError('Vertex index is out of range: [0, {}].'.format(self.vertices_mv.shape[0]))
+
+        return new_point3d(
+            self.vertices_mv[index, X],
+            self.vertices_mv[index, Y],
+            self.vertices_mv[index, Z]
+        )
+
+    cpdef ndarray triangle(self, int index):
+        """
+        Returns the specified triangle.
+        
+        The returned data will either be a 3 or 6 element numpy array. The 
+        first three element are the triangle's vertex indices. If present, the
+        last three elements are the triangle's vertex normal indices.
+        
+        :param index: The triangle index.
+        :return: A numpy array. 
+        """
+
+        if index < 0 or index >= self.vertices_mv.shape[0]:
+            raise ValueError('Triangle index is out of range: [0, {}].'.format(self.triangles_mv.shape[0]))
+
+        return self._triangles[index, :].copy()
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Normal3D vertex_normal(self, int index):
+        """
+        Returns the specified vertex normal.
+        
+        :param index: The vertex normal's index.
+        :return: A Normal3D object. 
+        """
+
+        if self._vertex_normals is None:
+            raise ValueError('Mesh does not contain vertex normals.')
+
+        if index < 0 or index >= self.vertex_normals_mv.shape[0]:
+            raise ValueError('Vertex normal index is out of range: [0, {}].'.format(self.vertex_normals_mv.shape[0]))
+
+        return new_normal3d(
+            self.vertex_normals_mv[index, X],
+            self.vertex_normals_mv[index, Y],
+            self.vertex_normals_mv[index, Z]
+        )
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Normal3D face_normal(self, int index):
+        """
+        Returns the specified face normal.
+        
+        :param index: The face normal's index.
+        :return: A Normal3D object. 
+        """
+
+        if index < 0 or index >= self.face_normals_mv.shape[0]:
+            raise ValueError('Face normal index is out of range: [0, {}].'.format(self.face_normals_mv.shape[0]))
+
+        return new_normal3d(
+            self.face_normals_mv[index, X],
+            self.face_normals_mv[index, Y],
+            self.face_normals_mv[index, Z]
+        )
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -196,15 +312,15 @@ cdef class MeshData(KDTree3DCore):
 
         # scan triangles and make valid triangles contiguous
         valid = 0
-        for i in range(self.triangles.shape[0]):
+        for i in range(self.triangles_mv.shape[0]):
 
-            i1 = self.triangles[i, V1]
-            i2 = self.triangles[i, V2]
-            i3 = self.triangles[i, V3]
+            i1 = self.triangles_mv[i, V1]
+            i2 = self.triangles_mv[i, V2]
+            i3 = self.triangles_mv[i, V3]
 
-            p1 = new_point3d(self.vertices[i1, X], self.vertices[i1, Y], self.vertices[i1, Z])
-            p2 = new_point3d(self.vertices[i2, X], self.vertices[i2, Y], self.vertices[i2, Z])
-            p3 = new_point3d(self.vertices[i3, X], self.vertices[i3, Y], self.vertices[i3, Z])
+            p1 = new_point3d(self.vertices_mv[i1, X], self.vertices_mv[i1, Y], self.vertices_mv[i1, Z])
+            p2 = new_point3d(self.vertices_mv[i2, X], self.vertices_mv[i2, Y], self.vertices_mv[i2, Z])
+            p3 = new_point3d(self.vertices_mv[i3, X], self.vertices_mv[i3, Y], self.vertices_mv[i3, Z])
 
             # the cross product of two edge vectors of a degenerate triangle
             # (where 2 or more vertices are coincident or lie on the same line)
@@ -218,11 +334,35 @@ cdef class MeshData(KDTree3DCore):
                 continue
 
             # shift triangles
-            self.triangles[valid, :] = self.triangles[i, :]
+            self.triangles_mv[valid, :] = self.triangles_mv[i, :]
             valid += 1
 
         # reslice array to contain only valid triangles
-        self.triangles = self.triangles[:valid, :]
+        self.triangles_mv = self.triangles_mv[:valid, :]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef object _flip_normals(self):
+        """
+        Flip the face orientation of this mesh.
+        """
+
+        if self._vertex_normals is None:
+
+            for i in range(self.triangles_mv.shape[0]):
+                self.triangles_mv[i, 0], self.triangles_mv[i, 2] = self.triangles_mv[i, 2], self.triangles_mv[i, 0]
+
+        else:
+
+            for i in range(self.triangles_mv.shape[0]):
+                self.triangles_mv[i, 0], self.triangles_mv[i, 2] = self.triangles_mv[i, 2], self.triangles_mv[i, 0]
+                self.triangles_mv[i, 3], self.triangles_mv[i, 5] = self.triangles_mv[i, 5], self.triangles_mv[i, 3]
+
+            for i in range(self.vertex_normals_mv.shape[0]):
+                self.vertex_normals_mv[i, X] = -self.vertex_normals_mv[i, X]
+                self.vertex_normals_mv[i, Y] = -self.vertex_normals_mv[i, Y]
+                self.vertex_normals_mv[i, Z] = -self.vertex_normals_mv[i, Z]
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -243,24 +383,25 @@ cdef class MeshData(KDTree3DCore):
             Point3D p1, p2, p3
             Vector3D v1, v2, v3
 
-        self.face_normals = zeros((self.triangles.shape[0], 3), dtype=float32)
-        for i in range(self.face_normals.shape[0]):
+        self._face_normals = zeros((self.triangles_mv.shape[0], 3), dtype=float32)
+        self.face_normals_mv = self._face_normals
+        for i in range(self.face_normals_mv.shape[0]):
 
-            i1 = self.triangles[i, V1]
-            i2 = self.triangles[i, V2]
-            i3 = self.triangles[i, V3]
+            i1 = self.triangles_mv[i, V1]
+            i2 = self.triangles_mv[i, V2]
+            i3 = self.triangles_mv[i, V3]
 
-            p1 = new_point3d(self.vertices[i1, X], self.vertices[i1, Y], self.vertices[i1, Z])
-            p2 = new_point3d(self.vertices[i2, X], self.vertices[i2, Y], self.vertices[i2, Z])
-            p3 = new_point3d(self.vertices[i3, X], self.vertices[i3, Y], self.vertices[i3, Z])
+            p1 = new_point3d(self.vertices_mv[i1, X], self.vertices_mv[i1, Y], self.vertices_mv[i1, Z])
+            p2 = new_point3d(self.vertices_mv[i2, X], self.vertices_mv[i2, Y], self.vertices_mv[i2, Z])
+            p3 = new_point3d(self.vertices_mv[i3, X], self.vertices_mv[i3, Y], self.vertices_mv[i3, Z])
 
             v1 = p1.vector_to(p2)
             v2 = p1.vector_to(p3)
             v3 = v1.cross(v2).normalise()
 
-            self.face_normals[i, X] = v3.x
-            self.face_normals[i, Y] = v3.y
-            self.face_normals[i, Z] = v3.z
+            self.face_normals_mv[i, X] = v3.x
+            self.face_normals_mv[i, Y] = v3.y
+            self.face_normals_mv[i, Z] = v3.z
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -280,22 +421,26 @@ cdef class MeshData(KDTree3DCore):
             int32_t i1, i2, i3
             BoundingBox3D bbox
 
-        i1 = self.triangles[i, V1]
-        i2 = self.triangles[i, V2]
-        i3 = self.triangles[i, V3]
+        i1 = self.triangles_mv[i, V1]
+        i2 = self.triangles_mv[i, V2]
+        i3 = self.triangles_mv[i, V3]
 
         bbox = new_boundingbox3d(
             new_point3d(
-                min(self.vertices[i1, X], self.vertices[i2, X], self.vertices[i3, X]),
-                min(self.vertices[i1, Y], self.vertices[i2, Y], self.vertices[i3, Y]),
-                min(self.vertices[i1, Z], self.vertices[i2, Z], self.vertices[i3, Z]),
+                min(self.vertices_mv[i1, X], self.vertices_mv[i2, X], self.vertices_mv[i3, X]),
+                min(self.vertices_mv[i1, Y], self.vertices_mv[i2, Y], self.vertices_mv[i3, Y]),
+                min(self.vertices_mv[i1, Z], self.vertices_mv[i2, Z], self.vertices_mv[i3, Z]),
             ),
             new_point3d(
-                max(self.vertices[i1, X], self.vertices[i2, X], self.vertices[i3, X]),
-                max(self.vertices[i1, Y], self.vertices[i2, Y], self.vertices[i3, Y]),
-                max(self.vertices[i1, Z], self.vertices[i2, Z], self.vertices[i3, Z]),
+                max(self.vertices_mv[i1, X], self.vertices_mv[i2, X], self.vertices_mv[i3, X]),
+                max(self.vertices_mv[i1, Y], self.vertices_mv[i2, Y], self.vertices_mv[i3, Y]),
+                max(self.vertices_mv[i1, Z], self.vertices_mv[i2, Z], self.vertices_mv[i3, Z]),
             ),
         )
+
+        # The bounding box and triangle vertices may not align following coordinate
+        # transforms in the water tight mesh algorithm, therefore a small bit of padding
+        # is added to avoid numerical representation issues.
         bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
 
         return bbox
@@ -428,22 +573,22 @@ cdef class MeshData(KDTree3DCore):
             float det, det_reciprocal
 
         # obtain vertex ids
-        i1 = self.triangles[i, V1]
-        i2 = self.triangles[i, V2]
-        i3 = self.triangles[i, V3]
+        i1 = self.triangles_mv[i, V1]
+        i2 = self.triangles_mv[i, V2]
+        i3 = self.triangles_mv[i, V3]
 
         # center coordinate space on ray origin
-        v1[X] = self.vertices[i1, X] - ray.origin.x
-        v1[Y] = self.vertices[i1, Y] - ray.origin.y
-        v1[Z] = self.vertices[i1, Z] - ray.origin.z
+        v1[X] = self.vertices_mv[i1, X] - ray.origin.x
+        v1[Y] = self.vertices_mv[i1, Y] - ray.origin.y
+        v1[Z] = self.vertices_mv[i1, Z] - ray.origin.z
 
-        v2[X] = self.vertices[i2, X] - ray.origin.x
-        v2[Y] = self.vertices[i2, Y] - ray.origin.y
-        v2[Z] = self.vertices[i2, Z] - ray.origin.z
+        v2[X] = self.vertices_mv[i2, X] - ray.origin.x
+        v2[Y] = self.vertices_mv[i2, Y] - ray.origin.y
+        v2[Z] = self.vertices_mv[i2, Z] - ray.origin.z
 
-        v3[X] = self.vertices[i3, X] - ray.origin.x
-        v3[Y] = self.vertices[i3, Y] - ray.origin.y
-        v3[Z] = self.vertices[i3, Z] - ray.origin.z
+        v3[X] = self.vertices_mv[i3, X] - ray.origin.x
+        v3[Y] = self.vertices_mv[i3, Y] - ray.origin.y
+        v3[Z] = self.vertices_mv[i3, Z] - ray.origin.z
 
         # obtain ray transform
         ix = self._ix
@@ -530,9 +675,9 @@ cdef class MeshData(KDTree3DCore):
 
         # generate intersection description
         face_normal = new_normal3d(
-            self.face_normals[triangle, X],
-            self.face_normals[triangle, Y],
-            self.face_normals[triangle, Z]
+            self.face_normals_mv[triangle, X],
+            self.face_normals_mv[triangle, Y],
+            self.face_normals_mv[triangle, Z]
         )
         hit_point = new_point3d(
             ray.origin.x + ray.direction.x * t,
@@ -574,25 +719,25 @@ cdef class MeshData(KDTree3DCore):
 
         cdef int32_t n1, n2, n3
 
-        if self.smoothing and self.vertex_normals is not None:
+        if self.smoothing and self.vertex_normals_mv is not None:
 
-            n1 = self.triangles[self._i, N1]
-            n2 = self.triangles[self._i, N2]
-            n3 = self.triangles[self._i, N3]
+            n1 = self.triangles_mv[self._i, N1]
+            n2 = self.triangles_mv[self._i, N2]
+            n3 = self.triangles_mv[self._i, N3]
 
             return new_normal3d(
-                self._u * self.vertex_normals[n1, X] + self._v * self.vertex_normals[n2, X] + self._w * self.vertex_normals[n3, X],
-                self._u * self.vertex_normals[n1, Y] + self._v * self.vertex_normals[n2, Y] + self._w * self.vertex_normals[n3, Y],
-                self._u * self.vertex_normals[n1, Z] + self._v * self.vertex_normals[n2, Z] + self._w * self.vertex_normals[n3, Z]
+                self._u * self.vertex_normals_mv[n1, X] + self._v * self.vertex_normals_mv[n2, X] + self._w * self.vertex_normals_mv[n3, X],
+                self._u * self.vertex_normals_mv[n1, Y] + self._v * self.vertex_normals_mv[n2, Y] + self._w * self.vertex_normals_mv[n3, Y],
+                self._u * self.vertex_normals_mv[n1, Z] + self._v * self.vertex_normals_mv[n2, Z] + self._w * self.vertex_normals_mv[n3, Z]
             ).normalise()
 
         else:
 
             return new_normal3d(
-                self.face_normals[self._i, X],
-                self.face_normals[self._i, Y],
-                self.face_normals[self._i, Z]
-            )
+                self.face_normals_mv[self._i, X],
+                self.face_normals_mv[self._i, Y],
+                self.face_normals_mv[self._i, Z]
+            ).normalise()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -622,7 +767,7 @@ cdef class MeshData(KDTree3DCore):
 
         # inspect the Z component of the triangle face normal to identify orientation
         # this is an optimised version of ray.direction.dot(face_normal) as we know ray only propagating in Z
-        return self.face_normals[self._i, Z] > 0.0
+        return self.face_normals_mv[self._i, Z] > 0.0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -647,8 +792,8 @@ cdef class MeshData(KDTree3DCore):
         # TODO: padding should really be a function of mesh extent
         # convert vertices to world space and grow a bounding box around them
         bbox = BoundingBox3D()
-        for i in range(self.vertices.shape[0]):
-            vertex = new_point3d(self.vertices[i, X], self.vertices[i, Y], self.vertices[i, Z])
+        for i in range(self.vertices_mv.shape[0]):
+            vertex = new_point3d(self.vertices_mv[i, X], self.vertices_mv[i, Y], self.vertices_mv[i, Z])
             bbox.extend(vertex.transform(to_world), BOX_PADDING)
 
         return bbox
@@ -677,9 +822,9 @@ cdef class MeshData(KDTree3DCore):
             close = True
 
         # hold local references to avoid repeated memory view object checks
-        vertices = self.vertices
-        vertex_normals = self.vertex_normals
-        triangles = self.triangles
+        vertices = self.vertices_mv
+        vertex_normals = self.vertex_normals_mv
+        triangles = self.triangles_mv
 
         # write header
         file.write(b"RSM")
@@ -694,7 +839,7 @@ cdef class MeshData(KDTree3DCore):
         # item counts
         file.write(struct.pack("<i", vertices.shape[0]))
 
-        if self.vertex_normals is not None:
+        if self.vertex_normals_mv is not None:
             file.write(struct.pack("<i", vertex_normals.shape[0]))
         else:
             file.write(struct.pack("<i", 0))
@@ -740,9 +885,6 @@ cdef class MeshData(KDTree3DCore):
 
         cdef:
             int32_t i, j
-            float32_t[:, ::1] vertices
-            float32_t[:, ::1] vertex_normals
-            int32_t[:, ::1] triangles
 
         close = False
 
@@ -774,21 +916,23 @@ cdef class MeshData(KDTree3DCore):
         num_triangles = self._read_int32(file)
 
         # read vertices
-        vertices = zeros((num_vertices, 3), dtype=float32)
+        self._vertices = zeros((num_vertices, 3), dtype=float32)
+        self.vertices_mv = self._vertices
         for i in range(num_vertices):
             for j in range(3):
-                vertices[i, j] = self._read_float(file)
-        self.vertices = vertices
+                self.vertices_mv[i, j] = self._read_float(file)
 
         # read vertex normals
         if num_vertex_normals > 0:
-            vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
+            self._vertex_normals = zeros((num_vertex_normals, 3), dtype=float32)
+            self.vertex_normals_mv = self._vertex_normals
             for i in range(num_vertex_normals):
                 for j in range(3):
-                    vertex_normals[i, j] = self._read_float(file)
-            self.vertex_normals = vertex_normals
+                    self.vertex_normals_mv[i, j] = self._read_float(file)
+
         else:
-            self.vertex_normals = None
+            self._vertex_normals = None
+            self.vertex_normals_mv = None
 
         # read triangles
         width = 3
@@ -796,11 +940,11 @@ cdef class MeshData(KDTree3DCore):
             # we have vertex normals for each triangle
             width += 3
 
-        triangles = zeros((num_triangles, width), dtype=int32)
+        self._triangles = zeros((num_triangles, width), dtype=int32)
+        self.triangles_mv = self._triangles
         for i in range(num_triangles):
             for j in range(width):
-                triangles[i, j] = self._read_int32(file)
-        self.triangles = triangles
+                self.triangles_mv[i, j] = self._read_int32(file)
 
         # read kdtree
         super().load(file)
@@ -912,6 +1056,7 @@ cdef class Mesh(Primitive):
     :param bool closed: True is the mesh defines a closed volume (default=True).
     :param bool tolerant: Mesh will automatically correct meshes with degenerate
       triangles if set to True (default=True).
+    :param bool flip_normals: Inverts the direction of the surface normals (default=False).
     :param int kdtree_max_depth: The maximum tree depth (automatic if set to 0, default=0).
     :param int kdtree_min_items: The item count threshold for forcing creation of
       a new leaf node (default=1).
@@ -927,11 +1072,13 @@ cdef class Mesh(Primitive):
       (default=Material() instance).
     :param str name: A human friendly name to identity the mesh in the
       scene-graph (default="").
+
+    :ivar MeshData data: A class instance containing all the mesh data.
     """
 
     # TODO: calculate or measure triangle hit cost vs split traversal
     def __init__(self, object vertices, object triangles, object normals=None,
-                 bint smoothing=True, bint closed=True, bint tolerant=True,
+                 bint smoothing=True, bint closed=True, bint tolerant=True, bint flip_normals=False,
                  int kdtree_max_depth=-1, int kdtree_min_items=1, double kdtree_hit_cost=5.0,
                  double kdtree_empty_bonus=0.25, object parent=None,
                  AffineMatrix3D transform=None, Material material=None, str name=None):
@@ -942,7 +1089,9 @@ cdef class Mesh(Primitive):
             raise ValueError("Vertices and triangle arrays must be supplied if the mesh is not configured to be an instance.")
 
         # build the kd-Tree
-        self._data = MeshData(vertices, triangles, normals, smoothing, closed, tolerant, kdtree_max_depth, kdtree_min_items, kdtree_hit_cost, kdtree_empty_bonus)
+        self.data = MeshData(vertices, triangles, normals=normals, smoothing=smoothing, closed=closed,
+                             tolerant=tolerant, flip_normals=flip_normals, max_depth=kdtree_max_depth,
+                             min_items=kdtree_min_items, hit_cost=kdtree_hit_cost, empty_bonus=kdtree_empty_bonus)
 
         # initialise next intersection search
         self._seek_next_intersection = False
@@ -956,7 +1105,7 @@ cdef class Mesh(Primitive):
         super(Mesh, mesh).__init__(parent, transform, material, name)
 
         # copy the kd-Tree
-        mesh._data = self._data
+        mesh.data = self.data
 
         # initialise next intersection search
         self._seek_next_intersection = False
@@ -993,7 +1142,7 @@ cdef class Mesh(Primitive):
         self._ray_distance = 0
 
         # do we hit the mesh?
-        if self._data.trace(local_ray):
+        if self.data.trace(local_ray):
             return self._process_intersection(ray, local_ray)
 
         # there was no intersection so disable next intersection search
@@ -1020,7 +1169,7 @@ cdef class Mesh(Primitive):
         if self._seek_next_intersection:
 
             # do we hit the mesh again?
-            if self._data.trace(self._next_local_ray):
+            if self.data.trace(self._next_local_ray):
                 return self._process_intersection(self._next_world_ray, self._next_local_ray)
 
             # there was no intersection so disable further searching
@@ -1034,7 +1183,7 @@ cdef class Mesh(Primitive):
             Intersection intersection
 
         # obtain intersection details from the kd-tree
-        intersection = self._data.calc_intersection(local_ray)
+        intersection = self.data.calc_intersection(local_ray)
 
         # enable next intersection search and cache the local ray for the next intersection calculation
         # we must shift the new origin past the last intersection
@@ -1079,11 +1228,11 @@ cdef class Mesh(Primitive):
         """
 
         # avoid unnecessary transform by checking closed state early
-        if not self._data.closed:
+        if not self.data.closed:
             return False
 
         p = p.transform(self.to_local())
-        return self._data.contains(p)
+        return self.data.contains(p)
 
     cpdef BoundingBox3D bounding_box(self):
         """
@@ -1096,7 +1245,7 @@ cdef class Mesh(Primitive):
         :return: A BoundingBox3D object.
         """
 
-        return self._data.bounding_box(self.to_root())
+        return self.data.bounding_box(self.to_root())
 
     def save(self, object file):
         """
@@ -1106,6 +1255,13 @@ cdef class Mesh(Primitive):
         contains the mesh geometry and the mesh acceleration structures.
 
         :param file: File object or string path.
+
+        .. code-block:: pycon
+
+            >>> mesh
+            <raysect.primitive.mesh.mesh.Mesh at 0x7f2c09eac2e8>
+            >>> mesh.save("my_mesh.rsm")
+
         """
 
         # todo: keeping this here until I re add the kdtree parameter
@@ -1126,7 +1282,7 @@ cdef class Mesh(Primitive):
         # """
 
         # hand over to the mesh data object
-        self._data.save(file)
+        self.data.save(file)
 
     def load(self, object file):
         """
@@ -1139,7 +1295,7 @@ cdef class Mesh(Primitive):
         """
 
         # rebuild internal state
-        self._data = MeshData.from_file(file)
+        self.data = MeshData.from_file(file)
         self._seek_next_intersection = False
         self._next_world_ray = None
         self._next_local_ray = None
@@ -1160,10 +1316,24 @@ cdef class Mesh(Primitive):
         :param AffineMatrix3D transform: The co-ordinate transform between the mesh and its parent.
         :param Material material: The surface/volume material.
         :param str name: A human friendly name to identity the mesh in the scene-graph.
+
+        .. code-block:: pycon
+
+            >>> from raysect.optical import World, translate, rotate, ConstantSF, Sellmeier, Dielectric
+            >>> from raysect.primitive import Mesh
+            >>>
+            >>> world = World()
+            >>>
+            >>> diamond = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0), ConstantSF(1.0))
+            >>>
+            >>> mesh = Mesh.from_file("my_mesh.rsm", parent=world, material=diamond,
+            >>>                       transform=translate(0, 0, 0)*rotate(165, 0, 0))
+
         """
 
         m = Mesh.__new__(Mesh)
         super(Mesh, m).__init__(parent, transform, material, name)
         m.load(file)
         return m
+
 

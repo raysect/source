@@ -35,6 +35,11 @@ The easiest way to install Raysect is using `pip <https://pip.pypa.io/en/stable/
 
 For more detailed installation instructions see :any:`installation`.
 
+Need Help?
+----------
+
+Please post a question on the `github issue queue <https://github.com/raysect/source/issues>`_.
+
 .. toctree::
    :maxdepth: 2
    :numbered:
@@ -42,16 +47,16 @@ For more detailed installation instructions see :any:`installation`.
    :name: mastertoc
 
    introduction
+   license
    installation
    how_it_works
    quickstart_guide
+   observers
    primitives
    materials
-   observers
    conventions
    references
-   license
-   help
+   glossary
 
 
 .. toctree::

@@ -138,6 +138,15 @@ cdef class DiskSampler3D(SurfaceSampler3D):
     Generates Point3D samples from a disk centred in the x-y plane.
 
     :param double radius: The radius of the disk in metres (default=1).
+
+    .. code-block:: pycon
+
+        >>> from raysect.core.math import DiskSampler3D
+        >>>
+        >>> disk_sampler = DiskSampler3D()
+        >>> disk_sampler(2)
+        [Point3D(-0.8755314944066419, -0.36748751614554004, 0.0),
+         Point3D(-0.7515341075950953, 0.15368157833817775, 0.0)]
     """
 
     # TODO - validation
@@ -148,7 +157,7 @@ cdef class DiskSampler3D(SurfaceSampler3D):
         self._area_inv = 1 / self.area
 
     cdef Point3D sample(self):
-        cdef double r = sqrt(uniform())
+        cdef double r = sqrt(uniform()) * self.radius
         cdef double theta = 2.0 * PI * uniform()
         return new_point3d(r * cos(theta), r * sin(theta), 0)
 
@@ -163,6 +172,15 @@ cdef class RectangleSampler3D(SurfaceSampler3D):
 
     :param double width: The width of the rectangle.
     :param double height: The height of the rectangle.
+
+    .. code-block:: pycon
+
+        >>> from raysect.core.math import RectangleSampler3D
+        >>>
+        >>> rectangle_sampler = RectangleSampler3D(width=3, height=3)
+        >>> rectangle_sampler(2)
+        [Point3D(0.8755185034767394, -1.4596971179451579, 0.0),
+         Point3D(1.3514601271010727, 0.9710083493215418, 0.0)]
     """
 
     # TODO - validation
@@ -191,6 +209,18 @@ cdef class TriangleSampler3D(SurfaceSampler3D):
     :param Point3D v1: Triangle vertex 1.
     :param Point3D v2: Triangle vertex 2.
     :param Point3D v3: Triangle vertex 3.
+
+    .. code-block:: pycon
+
+        >>> from raysect.core.math import TriangleSampler3D
+        >>>
+        >>> tri_sampler = TriangleSampler3D(Point3D(0,0,0),
+                                            Point3D(1,0,0),
+                                            Point3D(1,1,0))
+        >>> tri_sampler(2)
+        [Point3D(0.9033819087428726, 0.053382913976399715, 0.0),
+         Point3D(0.857350441035813, 0.4243360393025779, 0.0)]
+
     """
 
     # TODO - add validation

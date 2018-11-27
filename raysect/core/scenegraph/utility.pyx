@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,29 @@ def print_scenegraph(node):
     The specified node will be highlighted in the tree by post-fixing the node
     with the string: "[referring node]".
 
-    :param _NodeBase node: The target node.
+    :param Node node: The target node.
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import Point3D, translate, print_scenegraph
+        >>> from raysect.primitive import Cylinder, Sphere, Box
+        >>> from raysect.optical import World
+        >>>
+        >>> world = World()
+        >>>
+        >>> cyl_x = Cylinder(1, 4.2, transform=translate(0, 0, -2.1), parent=world)
+        >>> sphere = Sphere(2.0, parent=world)
+        >>> cube = Box(Point3D(-1.5, -1.5, -1.5), Point3D(1.5, 1.5, 1.5), world)
+        >>>
+        >>> print_scenegraph(sphere)
+        <World at 0x7f11eee98e08>
+         |
+         |_ <Cylinder at 0x7f11e40c9588>
+         |
+         |_ <Sphere at 0x7f11ec063678> [referring node]
+         |
+         |_ <Box at 0x7f11e40c9648>
+
     """
 
     # start from root node

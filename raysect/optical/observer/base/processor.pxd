@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@ from raysect.optical cimport Spectrum
 
 cdef class PixelProcessor:
 
-    cpdef object add_sample(self, Spectrum spectrum, double etendue)
+    cpdef object add_sample(self, Spectrum spectrum, double sensitivity)
 
     cpdef tuple pack_results(self)
 

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@ cdef class _NodeBase:
     cdef readonly AffineMatrix3D _root_transform
     cdef readonly AffineMatrix3D _root_transform_inverse
     cdef bint _track_modifications
+    cdef public dict meta
 
 
 

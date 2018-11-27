@@ -1,12 +1,72 @@
 Raysect Changelog
 =================
 
-Release 1.0.0 (TBD)
--------------------
+Release 0.5.4 (1 Oct 2018)
+--------------------------
+
+Bug Fixes:
+* Spectrum class samples attribute is now publically accessible again, not readonly.
+
+New:
+* Optimised materials significantly by avoiding unnecessary memoryview creation, ~10-20% speedups depending on material.
+* Optimised observers leading to less overhead per pixel.
+* Added caching to 2D mesh interpolator evaluations.
+
+
+Release 0.5.3 (30 Aug 2018)
+---------------------------
+
+Bug Fixes:
+* Mesh load() not correctly populating vertex and triangle data arrays.
+* Missing import guard for OpenCV camera, users no longer forced to install OpenCV!
+* VTK importer no longer crashes when mesh name is None.
+
+New:
+* Pickle support added to all scenegraph objects. It is now possible to pickle a scenegraph.
+* Mesh normals can be flipped during import/creation with new flip_normals argument.
+* Optimised ImportanceManager gaining a 7% speedup for Cornell Box test case.
+* Optimised method call in optical.Ray gaining a 2% speedup for Cornell Box test case.
+
+
+Release 0.5.2 (7 Aug 2018)
+--------------------------
 
 API Changes:
-* VolumeEmitterHomogeneous renamed HomogeneousVolumeEmitter
-* VolumeEmitterInhomogeneous renamed InhomogeneousVolumeEmitter
+* Etendue replaced with sensitivity in the observers. [#202]
+
+Bug Fixes:
+* Raysect now builds with Cython 0.28.
+* Fixed pixel geometry changes not triggering a recalculation of the TargettedCCD pixel sensitivity. [#219]
+
+New:
+* Added MeshCamera. A camera that uses the triangles of a mesh as pixels. [#204]
+* Added Spectral and Monochromatic 1D pipelines. [supporting #204]
+* Added STL and OBJ mesh exporters. [#176]
+* Added limited support for PLY and VTK mesh importing/exporting. [#209, #224]
+* Added OpenCV camera. [#109]
+* Added sub-sampling (anti-aliasing) to VectorCamera. [#222]
+* Added masked samplers that allow users to limit the region being rendered. [#223]
+* Added meta dictionary attribute to scene-graph nodes to allow users to attach their own data. [#218]
+* Added is_identity() and is_close() comparison methods to AffineMatrix3D. [#199]
+* Added angle() to vector objects to compute angle between vectors. [#205]
+
+
+Release 0.5.0, 0.5.1 (7 Aug 2018)
+---------------------------------
+
+Bug Fixes:
+* setup.py broke installation in pip.
+
+
+Release 0.4.0 (11 Dec 2017)
+---------------------------
+
+API Changes:
+* VolumeEmitterHomogeneous renamed HomogeneousVolumeEmitter.
+* VolumeEmitterInhomogeneous renamed InhomogeneousVolumeEmitter.
+
+Bug Fixes:
+* Fixed normalisation bug in FibreOptic observer.
 
 New:
 * InhomogeneousVolumeEmitter integrator now pluggable.
@@ -14,6 +74,16 @@ New:
 * Added cython utility for determining polygon winding order for n-sided polygons.
 * Added triangulate2d function for splitting N-sided polygon into triangles.
 * Added lerp and slerp functions to Vector3D.
+* Added new utility methods to BoundingBox2D and 3D.
+* Added AnisotropicSurfaceEmitter material.
+* Added BoundingSphere3D.
+* Added MeshPixel. A pixel that uses a mesh as a collecting surface.
+* Added TargettedPixel. A pixel that fires additional samples at specific target primitives.
+* Added TargettedCCDArray. A CCD that fires additional samples at specific target primitives.
+* Added radiance pipelines.
+* Added instancing to primitives.
+* Added bounding sphere to primitives.
+* Tidied up samplers.
 
 
 Release 0.3.1 (17 Mar 2017)

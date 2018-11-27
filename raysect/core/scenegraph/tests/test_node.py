@@ -1,4 +1,4 @@
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -313,19 +313,15 @@ class TestNode(unittest.TestCase):
 
         # test tree at different depths to confirm resursive check succeeds
         with self.assertRaises(ValueError, msg = "Illegal cyclic parenting (a -> a) did not raise an exception."):
-
             a.parent = a
 
         with self.assertRaises(ValueError, msg = "Illegal cyclic parenting (a -> b) did not raise an exception."):
-
             a.parent = b
 
         with self.assertRaises(ValueError, msg = "Illegal cyclic parenting (a -> c2) did not raise an exception."):
-
             a.parent = c2
 
         with self.assertRaises(ValueError, msg = "Illegal cyclic parenting (b -> c1) did not raise an exception."):
-
             b.parent = c1
 
     def test_transform(self):

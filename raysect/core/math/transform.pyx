@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2016, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -52,6 +52,15 @@ cpdef AffineMatrix3D translate(double x, double y, double z):
     :param float y: y-coordinate
     :param float z: z-coordinate
     :rtype: AffineMatrix3D
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import translate
+        >>> translate(0, 1, 2)
+        AffineMatrix3D([[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 1.0],
+                        [0.0, 0.0, 1.0, 2.0],
+                        [0.0, 0.0, 0.0, 1.0]])
     """
 
     return new_affinematrix3d(1, 0, 0, x,
@@ -77,6 +86,15 @@ cpdef AffineMatrix3D rotate_x(double angle):
 
     :param float angle: The angle :math:`\\theta` specified in degrees.
     :rtype: AffineMatrix3D
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import rotate_x
+        >>> rotate_x(45)
+        AffineMatrix3D([[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 0.7071067811865476, -0.7071067811865475, 0.0],
+                        [0.0, 0.7071067811865475, 0.7071067811865476, 0.0],
+                        [0.0, 0.0, 0.0, 1.0]])
     """
 
     cdef double r
@@ -153,6 +171,15 @@ cpdef AffineMatrix3D rotate_vector(double angle, Vector3D v):
     :param float angle: The angle specified in degrees.
     :param Vector3D v: The vector about which to rotate.
     :rtype: AffineMatrix3D
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import rotate_vector
+        >>> rotate_vector(90, Vector3D(1, 0, 0))
+        AffineMatrix3D([[1.0, 0.0, 0.0, 0.0],
+                        [0.0, 0.0, -1.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0]])
     """
 
     cdef Vector3D vn
@@ -215,6 +242,15 @@ cpdef AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up):
     :param Vector3D forward: A Vector3D object defining the forward direction.
     :param Vector3D up: A Vector3D object defining the up direction.
     :rtype: AffineMatrix3D
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import rotate_basis, Vector3D
+        >>> rotate_basis(Vector3D(1, 0, 0), Vector3D(0, 0, 1))
+        AffineMatrix3D([[0.0, 0.0, 1.0, 0.0],
+                        [1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0]])
     """
 
     cdef Vector3D x, y, z

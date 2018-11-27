@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -67,6 +67,19 @@ cdef class Box(Primitive):
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the box's material (default = None).
     :param str name: A string specifying a user-friendly name for the box (default = "").
+
+    .. code-block:: pycon
+
+        >>> from raysect.core import Point3D, translate
+        >>> from raysect.primitive import Box
+        >>> from raysect.optical import World
+        >>> from raysect.optical.material import UniformSurfaceEmitter
+        >>> from raysect.optical.library.spectra.colours import red
+        >>>
+        >>> world = World()
+        >>>
+        >>> cube = Box(Point3D(0,0,0), Point3D(1,1,1), parent=world, transform=translate(0, 1, 0),
+                       material=UniformSurfaceEmitter(red), name="red cube")
     """
 
     def __init__(self, Point3D lower=None, Point3D upper=None, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):

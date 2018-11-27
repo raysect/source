@@ -1,3 +1,10 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1341346.svg)](https://doi.org/10.5281/zenodo.1341346)
+
+<a name="logo"/>
+<a href="https://www.raysect.org/" target="_blank">
+<img src="https://raysect.github.io/documentation/_images/RaysectLogo_small.png" alt="Raysect Logo"></img>
+</a>
+
 Raysect Python Raytracing Package
 =================================
 
@@ -17,9 +24,13 @@ Raysect currently only supports Linux. Windows support will come at a later stag
 
 Please note, for legal reasons we require the copyright to any contributed code to be passed to the Raysect project. Please see CONTRIBUTING.txt in the repository.
 
-The Raysect Development Team:
------------------------------
+Development Team
+----------------
 
 * Dr Alex Meakins
 * Dr Matthew Carr
 
+Citing the Code
+---------------
+
+* Dr Alex Meakins, & Matthew Carr. (2018, August 7). raysect/source: v0.5.2 Release (Version v0.5.2). Zenodo. http://doi.org/10.5281/zenodo.1341376

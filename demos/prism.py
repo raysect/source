@@ -4,12 +4,12 @@ from math import tan, pi
 import matplotlib.pyplot as plt
 
 # Raysect imports
+from raysect.primitive import Intersect, Subtract, Box, Cylinder, Sphere
 from raysect.optical import World, Node, Point3D, translate, rotate, d65_white, ConstantSF
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D
 from raysect.optical.material import Lambert
 from raysect.optical.material.emitter import UniformSurfaceEmitter
 from raysect.optical.library import schott
-from raysect.primitive import Intersect, Subtract, Box, Cylinder, Sphere
 
 
 # Utility method to construct a glass prism from CSG operations
@@ -104,6 +104,7 @@ camera.ray_extinction_prob = 0.01
 camera.spectral_bins = 32
 camera.spectral_rays = 32
 camera.pixel_samples = 100
+
 
 # start ray tracing
 plt.ion()
