@@ -60,7 +60,7 @@ cdef class VectorCamera(Observer2D):
     cdef:
         double _sensitivity
         double image_delta, image_start_x, image_start_y
-        np.ndarray pixel_origins, pixel_directions
+        readonly np.ndarray pixel_origins, pixel_directions
 
     def __init__(self, pixel_origins, pixel_directions, frame_sampler=None, pipelines=None, sensitivity=None, parent=None, transform=None, name=None):
 
