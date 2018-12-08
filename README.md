@@ -18,6 +18,12 @@ The aims of the Raysect project are as follows:
 
 The general development philosophy is ease of use trumps performance, but performance is not to be ignored.
 
+
+![Dispersion of light passing through a prism](docs/source/demonstrations/prism_720x360.jpg)
+
+*Caption: a simulation of Newton's classic experiment, white light being dispersed by a glass prism.*
+
+
 Please note, this code is currently under heavy development and subject to change.
 
 Raysect currently only supports Linux. Windows support will come at a later stage.
