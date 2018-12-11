@@ -1,4 +1,5 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1341346.svg)](https://doi.org/10.5281/zenodo.1341346)
+[![Build Status](https://travis-ci.com/raysect/source.svg?branch=master)](https://travis-ci.com/raysect/source)
 
 <a name="logo"/>
 <a href="https://www.raysect.org/" target="_blank">
