@@ -105,7 +105,7 @@ cdef class LoggingRay(Ray):
 
             # this is the primary ray, count starts at 1 as the primary ray is the first ray
             self.ray_count = 1
-            self.log = [self.origin]
+            self.log = [(self.origin, None)]
 
         # create a new spectrum object compatible with the ray
         spectrum = self.new_spectrum()
@@ -123,7 +123,7 @@ cdef class LoggingRay(Ray):
         # does the ray intersect with any of the primitives in the world?
         intersection = world.hit(self)
         if intersection is not None:
-            self.log.append(intersection.hit_point.transform(intersection.primitive_to_world))
+            self.log.append((intersection.hit_point.transform(intersection.primitive_to_world), intersection))
             spectrum = self._sample_surface(intersection, world)
             spectrum = self._sample_volumes(spectrum, intersection, world)
 
