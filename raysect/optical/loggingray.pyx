@@ -191,10 +191,13 @@ cdef class LoggingRay(Ray):
     @property
     def path_vertices(self):
 
+        cdef:
+            list vertices
+            Intersection intersection
+
         if self.log:
             vertices = [self.origin.copy()]
             vertices += [intersection.hit_point.transform(intersection.primitive_to_world) for intersection in self.log]
             return vertices
         else:
             return []
-
