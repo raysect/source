@@ -188,3 +188,13 @@ cdef class LoggingRay(Ray):
                           self.max_distance, self._extinction_prob, self._extinction_min_depth,
                           self._max_depth, self.importance_sampling, self._important_path_weight)
 
+    @property
+    def path_vertices(self):
+
+        if self.log:
+            vertices = [self.origin.copy()]
+            vertices += [intersection.hit_point.transform(intersection.primitive_to_world) for intersection in self.log]
+            return vertices
+        else:
+            return []
+
