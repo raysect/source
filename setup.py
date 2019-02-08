@@ -5,12 +5,12 @@ import os
 import os.path as path
 import multiprocessing
 
-use_cython = False
+use_cython = True
 force = False
 profile = False
 
-if "--use-cython" in sys.argv:
-    use_cython = True
+if "--skip-cython" in sys.argv:
+    use_cython = False
     del sys.argv[sys.argv.index("--use-cython")]
 
 if "--force" in sys.argv:
