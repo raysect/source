@@ -11,7 +11,7 @@ profile = False
 
 if "--skip-cython" in sys.argv:
     use_cython = False
-    del sys.argv[sys.argv.index("--use-cython")]
+    del sys.argv[sys.argv.index("--skip-cython")]
 
 if "--force" in sys.argv:
     force = True
