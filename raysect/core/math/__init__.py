@@ -39,4 +39,4 @@ from .interpolators import Interpolator2DMesh, Discrete2DMesh
 from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
 from .sampler import *
 from .polygon import triangulate2d
-
+from .utility import *
