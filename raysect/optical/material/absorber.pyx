@@ -31,7 +31,7 @@
 
 cimport cython
 
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
+from raysect.optical cimport Point3D, Vector3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
 
 
 cdef class AbsorbingSurface(NullVolume):
@@ -52,3 +52,6 @@ cdef class AbsorbingSurface(NullVolume):
                                     Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         return ray.new_spectrum()
+
+    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength):
+        return 0

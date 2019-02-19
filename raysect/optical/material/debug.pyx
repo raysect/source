@@ -128,6 +128,31 @@ cdef class PerfectReflectingSurface(Material):
 
         return reflected_ray.trace(world)
 
+    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength):
+
+        cdef:
+            double ci
+            Vector3D normal, omega_reflected
+
+        # ensure vectors are normalised for brdf calculation
+        omega_incoming = omega_incoming.normalise()
+        omega_outgoing = omega_outgoing.normalise()
+
+        # calculate cosine of angle between incident and normal
+        normal = new_vector3d(0, 0, 1)
+        ci = normal.dot(omega_incoming)
+
+        # reflection
+        temp = 2 * ci
+        omega_reflected = new_vector3d(omega_incoming.x - temp * normal.x,
+                                       omega_incoming.y - temp * normal.y,
+                                       omega_incoming.z - temp * normal.z)
+
+        if (omega_outgoing.x == omega_reflected.x and omega_outgoing.y == omega_reflected.y and
+            omega_outgoing.z == omega_reflected.z):
+            return 1
+        else:
+            return 0
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
