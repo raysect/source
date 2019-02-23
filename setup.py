@@ -82,7 +82,6 @@ setup(
         "Operating System :: POSIX :: Linux",
         "Programming Language :: Cython",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
         "Topic :: Multimedia :: Graphics :: 3D Rendering",
         "Topic :: Scientific/Engineering :: Physics"
     ],
