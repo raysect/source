@@ -145,6 +145,26 @@ cdef class Conductor(Material):
 
         return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
 
+    # TODO - consider moving _fresnel() into this function
+    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength):
+
+        cdef:
+            double n, k, ci
+            Vector3D normal
+
+        if omega_incoming.z < 0:
+            return 0
+
+        # TODO - this should be self.index.evaluate() but unfortunately SpectralFunction isn't a Function1D yet.
+        n = self.index(wavelength)
+        k = self.extinction(wavelength)
+
+        # calculate cosine of angle between incident and normal
+        normal = new_vector3d(0, 0, 1)
+        ci = normal.dot(omega_incoming)
+
+        return self._fresnel(ci, n, k)
+
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
@@ -333,6 +353,41 @@ cdef class RoughConductor(ContinuousBSDF):
         k2 = 2 * n * ci
         k3 = k0 + ci2
         return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
+
+    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength):
+
+        cdef:
+            double n, k, ci, microfacet_factor, fresnel_reflectance
+            Vector3D s_half, normal
+
+        if omega_outgoing.z < 0:
+            return 0
+
+        # ensure vectors are normalised for brdf calculation
+        omega_incoming = omega_incoming.normalise()
+        omega_outgoing = omega_outgoing.normalise()
+
+        # calculate half vector
+        s_half = new_vector3d(
+            omega_incoming.x + omega_outgoing.x,
+            omega_incoming.y + omega_outgoing.y,
+            omega_incoming.z + omega_outgoing.z
+        ).normalise()
+
+        # calculate cosine of angle between incident and normal
+        normal = new_vector3d(0, 0, 1)
+        ci = normal.dot(omega_incoming)
+
+        # Constant micro-facet factor
+        microfacet_factor = self._d(s_half) * self._g(omega_outgoing, omega_incoming) / (4 * omega_outgoing.z)
+
+        # Fresnel reflectance
+        # TODO - this should be self.index.evaluate() but unfortunately SpectralFunction isn't a Function1D yet.
+        n = self.index(wavelength)
+        k = self.extinction(wavelength)
+        fresnel_reflectance = self._fresnel_conductor(ci, n, k)
+
+        return  microfacet_factor * fresnel_reflectance
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,

@@ -71,3 +71,4 @@ cdef class ContinuousBSDF(Material):
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
 
+    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength)
