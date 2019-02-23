@@ -86,24 +86,6 @@ cdef class Material(CoreMaterial):
         """
         raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
 
-    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength):
-        """
-        Evaluates the surface bidirectional reflectance distribution function (BRDF) for a given
-        incoming and outgoing direction.
-        
-        The integral of the BRDF over :math:`2\pi` steradians equals the total fraction of light
-        that is reflected from the surface. The remainder is either absorbed or undergoes subsurface
-        transport through the material.
-        
-        :param Vector3D omega_incoming: The incoming vector, :math:`\omega_i`, along which light is incident
-          at the surface. 
-        :param Vector3D omega_outgoing: The outgoing vector, :math:`\omega_o`, along which light is reflected 
-          from the surface.
-        :param float wavelength: The wavelength :math:`\lambda` at which to perform the brdf calculation.
-        :return: The BRDF evaluated at the given point in brdf space :math:`(\omega_i, \omega_o)`.
-        """
-        raise NotImplementedError("This Material has not implemented the evaluate_brdf() method.")
-
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
                                    AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
@@ -380,6 +362,24 @@ cdef class ContinuousBSDF(Material):
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
+
+    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength):
+        """
+        Evaluates the surface bidirectional reflectance distribution function (BRDF) for a given
+        incoming and outgoing direction.
+        
+        The integral of the BRDF over :math:`2\pi` steradians equals the total fraction of light
+        that is reflected from the surface. The remainder is either absorbed or undergoes subsurface
+        transport through the material.
+        
+        :param Vector3D omega_incoming: The incoming vector, :math:`\omega_i`, along which light is incident
+          at the surface. 
+        :param Vector3D omega_outgoing: The outgoing vector, :math:`\omega_o`, along which light is reflected 
+          from the surface.
+        :param float wavelength: The wavelength :math:`\lambda` at which to perform the brdf calculation.
+        :return: The BRDF evaluated at the given point in brdf space :math:`(\omega_i, \omega_o)`.
+        """
+        raise NotImplementedError("This ContinuousBSDF material has not implemented the evaluate_brdf() method.")
 
 
 cdef tuple _generate_surface_transforms(Normal3D normal):
