@@ -6,7 +6,7 @@ Making Animations
 
 This example demonstrates how to render a series of raysect images and turn them into an animation for web.
 
-.. literalinclude:: ../../../demos/animation.py
+.. literalinclude:: ../../../../demos/animation.py
 
 .. image:: animation.gif
    :align: center

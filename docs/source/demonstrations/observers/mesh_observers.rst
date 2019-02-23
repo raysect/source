@@ -10,7 +10,7 @@ an observing pixel and saves the resulting power on the mesh to a
 vtk data file for later visualisation in paraview.
 
 
-.. literalinclude:: ../../../demos/observers/mesh_power.py
+.. literalinclude:: ../../../../demos/observers/mesh_power.py
 
 .. figure:: mesh_observers.jpg
 

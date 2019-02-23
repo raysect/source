@@ -13,7 +13,7 @@ To the original Cornell Box see:
 The wall colours and light spectrum used in this demo are the values measured
 for the physical Cornell Box.
 
-.. literalinclude:: ../../../demos/cornell_box.py
+.. literalinclude:: ../../../../demos/cornell_box.py
 
 .. image:: cornell_box_mis_1550_samples.png
    :align: center

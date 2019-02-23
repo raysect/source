@@ -19,18 +19,18 @@ for light_angle in [0, -25, -45, -70]:
     light_position = Point3D(np.sin(np.deg2rad(light_angle)), 0, np.cos(np.deg2rad(light_angle)))
     light_direction = origin.vector_to(light_position).normalise()
 
-    beryllium_brdfs = []
+    aluminium_brdfs = []
     for theta_step in thetas:
         detector_position = Point3D(np.sin(np.deg2rad(theta_step)), 0, np.cos(np.deg2rad(theta_step)))
         detector_normal = origin.vector_to(detector_position).normalise()
-        beryllium_brdfs.append(aluminium.evaluate_brdf(detector_normal, light_direction, 500.0))
+        aluminium_brdfs.append(aluminium.evaluate_brdf(detector_normal, light_direction, 500.0))
 
-    plt.plot(thetas, beryllium_brdfs, label='{} degrees'.format(light_angle))
+    plt.plot(thetas, aluminium_brdfs, label='{} degrees'.format(light_angle))
 
 plt.xlabel('Observation Angle (degrees)')
 plt.ylabel('BRDF() (probability density)')
 plt.legend()
-plt.title("The Beryllium BRDF VS observation angle")
+plt.title("The Aluminium BRDF VS observation angle")
 
 
 def plot_brdf(light_angle):

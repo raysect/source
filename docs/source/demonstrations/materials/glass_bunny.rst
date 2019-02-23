@@ -8,7 +8,7 @@ Glass materials can also be specified manually through their
 refractive index data.
 
 
-.. literalinclude:: ../../../demos/materials/bunny.py
+.. literalinclude:: ../../../../demos/materials/bunny.py
 
 .. image:: glass_bunny.jpg
    :align: center
