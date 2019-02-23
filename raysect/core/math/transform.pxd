@@ -31,6 +31,7 @@
 
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.math.point cimport Point3D
 
 
 cpdef AffineMatrix3D translate(double x, double y, double z)
@@ -47,3 +48,6 @@ cpdef AffineMatrix3D rotate(double yaw, double pitch, double roll)
 
 cpdef AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up)
 
+cpdef tuple to_cylindrical(Point3D point)
+
+cpdef Point3D from_cylindrical(double r, double z, double phi)
