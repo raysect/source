@@ -145,26 +145,6 @@ cdef class Conductor(Material):
 
         return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
 
-    # TODO - consider moving _fresnel() into this function
-    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength):
-
-        cdef:
-            double n, k, ci
-            Vector3D normal
-
-        if omega_incoming.z < 0:
-            return 0
-
-        # TODO - this should be self.index.evaluate() but unfortunately SpectralFunction isn't a Function1D yet.
-        n = self.index(wavelength)
-        k = self.extinction(wavelength)
-
-        # calculate cosine of angle between incident and normal
-        normal = new_vector3d(0, 0, 1)
-        ci = normal.dot(omega_incoming)
-
-        return self._fresnel(ci, n, k)
-
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,

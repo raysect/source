@@ -42,8 +42,6 @@ cdef class Conductor(Material):
 
     cdef double _fresnel(self, double ci, double n, double k) nogil
 
-    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength)
-
 
 cdef class RoughConductor(ContinuousBSDF):
 
