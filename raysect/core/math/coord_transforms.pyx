@@ -8,7 +8,7 @@ cdef:
     double DEG2RAD = (2 * M_PI) / 360
 
 
-cpdef tuple cartesian_to_cylindrical(Point3D point):
+cpdef tuple cart2cyl(Point3D point):
     """
     Convert the given 3D point in cartesian space to cylindrical coordinates. 
     
@@ -18,10 +18,10 @@ cpdef tuple cartesian_to_cylindrical(Point3D point):
     
     .. code-block:: pycon
     
-        >>> from raysect.core.math import cartesian_to_cylindrical, Point3D
+        >>> from raysect.core.math import cart2cyl, Point3D
         
         >>> point = Point3D(1, 1, 1)
-        >>> cartesian_to_cylindrical(point)
+        >>> cart2cyl(point)
         (1.4142135623730951, 1.0, 45.0)
     """
 
@@ -33,7 +33,7 @@ cpdef tuple cartesian_to_cylindrical(Point3D point):
     return r, point.z, phi
 
 
-cpdef Point3D cylindrical_to_cartesian(double r, double z, double phi):
+cpdef Point3D cyl2cart(double r, double z, double phi):
     """
     Convert a 3D point in cylindrical coordinates to a point in cartesian coordinates.
     
@@ -45,9 +45,9 @@ cpdef Point3D cylindrical_to_cartesian(double r, double z, double phi):
     
     .. code-block:: pycon
     
-        >>> from raysect.core.math import cylindrical_to_cartesian
+        >>> from raysect.core.math import cyl2cart
 
-        >>> cylindrical_to_cartesian(1, 0, 45)
+        >>> cyl2cart(1, 0, 45)
         Point3D(0.7071067811865476, 0.7071067811865475, 0.0)
     """
 
