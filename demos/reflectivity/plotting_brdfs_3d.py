@@ -13,7 +13,6 @@ origin = Point3D(0, 0, 0)
 
 aluminium = RoughAluminium(0.25)
 
-
 def calculate_brdf_surface(light_vector):
 
     thetas = np.arange(0, 91, step=5)
@@ -33,7 +32,7 @@ def calculate_brdf_surface(light_vector):
             phi = np.deg2rad(phis[i, j])
             outgoing = Vector3D(np.cos(phi)*np.sin(theta), np.sin(phi)*np.sin(theta), np.cos(theta))
 
-            radius = aluminium.evaluate_brdf(light_vector, outgoing, 500)
+            radius = aluminium.bsdf(light_vector, outgoing, 500)
             X[i, j] = radius * np.cos(phi) * np.sin(theta)
             Y[i, j] = radius * np.sin(phi) * np.sin(theta)
             Z[i, j] = radius * np.cos(theta)

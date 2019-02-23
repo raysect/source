@@ -23,7 +23,7 @@ for light_angle in [0, -25, -45, -70]:
     for theta_step in thetas:
         detector_position = Point3D(np.sin(np.deg2rad(theta_step)), 0, np.cos(np.deg2rad(theta_step)))
         detector_normal = origin.vector_to(detector_position).normalise()
-        aluminium_brdfs.append(aluminium.evaluate_brdf(detector_normal, light_direction, 500.0))
+        aluminium_brdfs.append(aluminium.bsdf(light_direction, detector_normal, 500.0))
 
     plt.plot(thetas, aluminium_brdfs, label='{} degrees'.format(light_angle))
 
@@ -49,7 +49,7 @@ def plot_brdf(light_angle):
             theta = np.deg2rad(thetas[i])
             phi = np.deg2rad(phis[j])
             outgoing = Vector3D(np.cos(phi) * np.sin(theta), np.sin(phi) * np.sin(theta), np.cos(theta))
-            values[i, j] = aluminium.evaluate_brdf(light_direction, outgoing, 500)
+            values[i, j] = aluminium.bsdf(light_direction, outgoing, 500.0)
 
     fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
     cs = ax.contourf(np.deg2rad(phis), thetas, values, extend="both")

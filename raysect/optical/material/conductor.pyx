@@ -280,6 +280,45 @@ cdef class RoughConductor(ContinuousBSDF):
         spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) / (4 * s_incoming.z))
         return self._f(spectrum, s_outgoing, s_half)
 
+    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
+
+        cdef:
+            double n, k, ci, microfacet_factor, fresnel_reflectance
+            Vector3D s_half, normal
+
+        # material does not transmit
+        if s_incident.z < 0.0:
+            return 0.0
+
+        # ignore parallel rays which could cause a divide by zero later
+        if s_reflected.z == 0:
+            return 0.0
+
+        # ensure vectors are normalised for bsdf calculation
+        s_reflected = s_reflected.normalise()
+        s_incident = s_incident.normalise()
+
+        # calculate half vector
+        s_half = new_vector3d(
+            s_reflected.x + s_incident.x,
+            s_reflected.y + s_incident.y,
+            s_reflected.z + s_incident.z
+        ).normalise()
+
+        # calculate cosine of angle between incident and normal
+        normal = new_vector3d(0, 0, 1)
+        ci = normal.dot(s_incident)
+
+        # Constant micro-facet factor
+        microfacet_factor = self._d(s_half) * self._g(s_reflected, s_incident) / (4 * s_reflected.z)
+
+        # Fresnel reflectance
+        n = self.index.evaluate(wavelength)
+        k = self.extinction.evaluate(wavelength)
+        fresnel_reflectance = self._fresnel_conductor(ci, n, k)
+
+        return microfacet_factor * fresnel_reflectance
+
     @cython.cdivision(True)
     cdef double _d(self, Vector3D s_half):
 
@@ -333,41 +372,6 @@ cdef class RoughConductor(ContinuousBSDF):
         k2 = 2 * n * ci
         k3 = k0 + ci2
         return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
-
-    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength):
-
-        cdef:
-            double n, k, ci, microfacet_factor, fresnel_reflectance
-            Vector3D s_half, normal
-
-        if omega_outgoing.z < 0:
-            return 0
-
-        # ensure vectors are normalised for brdf calculation
-        omega_incoming = omega_incoming.normalise()
-        omega_outgoing = omega_outgoing.normalise()
-
-        # calculate half vector
-        s_half = new_vector3d(
-            omega_incoming.x + omega_outgoing.x,
-            omega_incoming.y + omega_outgoing.y,
-            omega_incoming.z + omega_outgoing.z
-        ).normalise()
-
-        # calculate cosine of angle between incident and normal
-        normal = new_vector3d(0, 0, 1)
-        ci = normal.dot(omega_incoming)
-
-        # Constant micro-facet factor
-        microfacet_factor = self._d(s_half) * self._g(omega_outgoing, omega_incoming) / (4 * omega_outgoing.z)
-
-        # Fresnel reflectance
-        # TODO - this should be self.index.evaluate() but unfortunately SpectralFunction isn't a Function1D yet.
-        n = self.index(wavelength)
-        k = self.extinction(wavelength)
-        fresnel_reflectance = self._fresnel_conductor(ci, n, k)
-
-        return  microfacet_factor * fresnel_reflectance
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,

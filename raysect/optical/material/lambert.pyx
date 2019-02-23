@@ -104,13 +104,12 @@ cdef class Lambert(ContinuousBSDF):
         spectrum.mul_scalar(pdf)
         return spectrum
 
-    cpdef double evaluate_brdf(self, Vector3D omega_incoming, Vector3D omega_outgoing, double wavelength):
+    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
 
-        if omega_incoming.z < 0:
-            return 0
+        if s_reflected.z < 0.0:
+            return 0.0
         else:
-            # TODO - this should be self.reflectivity.evaluate() but unfortunately SpectralFunction isn't a Function1D yet.
-            return self.reflectivity(wavelength)
+            return self.reflectivity.evaluate(wavelength)
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
