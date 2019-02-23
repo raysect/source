@@ -1,0 +1,8 @@
+language: python
+python:
+  - "3.6"
+install:
+  - pip install numpy scipy matplotlib cython
+  - dev/build.sh
+# command to run tests
+script: dev/test.sh

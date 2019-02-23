@@ -1,4 +1,5 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1341346.svg)](https://doi.org/10.5281/zenodo.1341346)
+[![Build Status](https://travis-ci.com/raysect/source.svg?branch=master)](https://travis-ci.com/raysect/source)
 
 <a name="logo"/>
 <a href="https://www.raysect.org/" target="_blank">
@@ -17,6 +18,12 @@ The aims of the Raysect project are as follows:
 * the raytracer must be robust and high precision
 
 The general development philosophy is ease of use trumps performance, but performance is not to be ignored.
+
+
+![Dispersion of light passing through a prism](docs/source/demonstrations/prism_720x360.jpg)
+
+*Caption: a simulation of Newton's classic experiment, white light being dispersed by a glass prism.*
+
 
 Please note, this code is currently under heavy development and subject to change.
 
