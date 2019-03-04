@@ -7,7 +7,7 @@ In this example we make a custom volume emitter by specifying a custom 3D functi
 Note that this emission function can be arbitrary and doesn't necessarily need to
 be isotropic.
 
-.. literalinclude:: ../../../demos/materials/volume.py
+.. literalinclude:: ../../../../demos/materials/volume.py
 
 .. image:: volume_inhomogeneous.png
    :align: center

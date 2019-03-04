@@ -34,7 +34,6 @@ from raysect.optical.material cimport Material, ContinuousBSDF
 from raysect.optical cimport Vector3D, Spectrum
 
 
-
 cdef class Conductor(Material):
 
     cdef:

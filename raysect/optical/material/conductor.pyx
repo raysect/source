@@ -280,6 +280,45 @@ cdef class RoughConductor(ContinuousBSDF):
         spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) / (4 * s_incoming.z))
         return self._f(spectrum, s_outgoing, s_half)
 
+    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
+
+        cdef:
+            double n, k, ci, microfacet_factor, fresnel_reflectance
+            Vector3D s_half, normal
+
+        # material does not transmit
+        if s_incident.z < 0.0:
+            return 0.0
+
+        # ignore parallel rays which could cause a divide by zero later
+        if s_reflected.z == 0:
+            return 0.0
+
+        # ensure vectors are normalised for bsdf calculation
+        s_reflected = s_reflected.normalise()
+        s_incident = s_incident.normalise()
+
+        # calculate half vector
+        s_half = new_vector3d(
+            s_reflected.x + s_incident.x,
+            s_reflected.y + s_incident.y,
+            s_reflected.z + s_incident.z
+        ).normalise()
+
+        # calculate cosine of angle between incident and normal
+        normal = new_vector3d(0, 0, 1)
+        ci = normal.dot(s_incident)
+
+        # Constant micro-facet factor
+        microfacet_factor = self._d(s_half) * self._g(s_reflected, s_incident) / (4 * s_reflected.z)
+
+        # Fresnel reflectance
+        n = self.index.evaluate(wavelength)
+        k = self.extinction.evaluate(wavelength)
+        fresnel_reflectance = self._fresnel_conductor(ci, n, k)
+
+        return microfacet_factor * fresnel_reflectance
+
     @cython.cdivision(True)
     cdef double _d(self, Vector3D s_half):
 

@@ -44,6 +44,7 @@ cdef class SpectralFunction:
         double _sample_cache_max_wvl
         int _sample_cache_num_samp
 
+    cpdef double evaluate(self, double wavelength)
     cpdef double integrate(self, double min_wavelength, double max_wavelength)
     cpdef double average(self, double min_wavelength, double max_wavelength)
     cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int bins)

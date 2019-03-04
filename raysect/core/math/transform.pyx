@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,9 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport sin, cos, M_PI as pi
+from libc.math cimport sin, cos, sqrt, atan2, M_PI as pi
 from raysect.core.math.affinematrix cimport new_affinematrix3d
+from raysect.core.math.point cimport new_point3d
 cimport cython
+
+
+DEF RAD2DEG = 57.29577951308232000  # 180 / pi
+DEF DEG2RAD = 0.017453292519943295  # pi / 180
 
 
 cpdef AffineMatrix3D translate(double x, double y, double z):
@@ -279,3 +284,58 @@ cpdef AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up):
                               x.y, y.y, z.y, 0.0,
                               x.z, y.z, z.z, 0.0,
                               0.0, 0.0, 0.0, 1.0)
+
+
+cpdef tuple to_cylindrical(Point3D point):
+    """
+    Convert the given 3D point in cartesian space to cylindrical coordinates. 
+    
+    :param Point3D point: The 3D point to be transformed into cylindrical coordinates.
+    :rtype: tuple
+    :return: A tuple of r, z, phi coordinates.
+    
+    .. code-block:: pycon
+    
+        >>> from raysect.core.math import to_cylindrical, Point3D
+        
+        >>> point = Point3D(1, 1, 1)
+        >>> to_cylindrical(point)
+        (1.4142135623730951, 1.0, 45.0)
+    """
+
+    cdef double r, phi
+
+    r = sqrt(point.x*point.x + point.y*point.y)
+    phi = atan2(point.y, point.x) * RAD2DEG
+
+    return r, point.z, phi
+
+
+cpdef Point3D from_cylindrical(double r, double z, double phi):
+    """
+    Convert a 3D point in cylindrical coordinates to a point in cartesian coordinates.
+    
+    :param float r: The radial coordinate.
+    :param float z: The z-axis height coordinate.
+    :param float phi: The azimuthal coordinate in degrees.
+    :rtype: Point3D
+    :return: A Point3D in cartesian space.
+    
+    .. code-block:: pycon
+    
+        >>> from raysect.core.math import from_cylindrical
+
+        >>> from_cylindrical(1, 0, 45)
+        Point3D(0.7071067811865476, 0.7071067811865475, 0.0)
+    """
+
+
+    cdef double x, y
+
+    if r < 0:
+        raise ValueError("R coordinate cannot be less than 0.")
+
+    x = r * cos(phi * DEG2RAD)
+    y = r * sin(phi * DEG2RAD)
+
+    return new_point3d(x, y, z)

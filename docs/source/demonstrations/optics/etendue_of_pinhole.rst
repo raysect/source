@@ -11,7 +11,7 @@ limits. The method of calculation is described in Carr, M., Meakins, A., et al.
 by ray-tracing." Review of Scientific Instruments 89.8 (2018): 083506.
 
 
-.. literalinclude:: ../../../demos/optics/etendue_of_pinhole.py
+.. literalinclude:: ../../../../demos/optics/etendue_of_pinhole.py
 
 .. image:: etendue_of_pinhole.png
    :align: center

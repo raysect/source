@@ -18,6 +18,9 @@ Welcome to Raysect, an OOP ray-tracing framework for Python. Raysect has been bu
 * Easily extensible, written with user customisation of materials and emissive sources in mind.
 * Different observer types supported such as Pinhole cameras and optical fibres.
 
+.. image:: demonstrations/optics/prism_720x360.jpg
+   :align: center
+
 
 The Raysect Development Team:
 -----------------------------

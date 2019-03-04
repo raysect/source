@@ -28,8 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from raysect.core.math import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, Vector3D
+from raysect.core.math import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, Vector3D, Point3D, to_cylindrical, from_cylindrical
 from math import sin, cos, pi, sqrt
+import numpy as np
 
 # TODO: Port to Cython to allow testing of the Cython API
 
@@ -152,3 +153,43 @@ class TestTransform(unittest.TestCase):
         # invalid, coincident vectors
         with self.assertRaises(ValueError, msg="Coincident forward and up vectors did not raise a ValueError."):
             rotate_basis(Vector3D(1, 2, 3), Vector3D(1, 2, 3))
+
+    def test_to_cylindrical(self):
+        """Test the to_cylindrical() math utility function."""
+
+        origin = Point3D(0, 0, 0)
+        r, z, phi = to_cylindrical(origin)
+        self.assertEqual(r, 0.0, "Origin in cartesian (0, 0, 0) did not map to the origin in cylindrical coordinates.")
+        self.assertEqual(z, 0.0, "Origin in cartesian (0, 0, 0) did not map to the origin in cylindrical coordinates.")
+        self.assertEqual(phi, 0.0, "Origin in cartesian (0, 0, 0) did not map to the origin in cylindrical coordinates.")
+
+        point = Point3D(1, 1, 1)
+        r_test = np.sqrt(point.x**2 + point.y**2)
+        z_test = point.z
+        phi_test = np.rad2deg(np.arctan2(point.y, point.x))
+        r, z, phi = to_cylindrical(point)
+        self.assertEqual(r, r_test, "R coordinate did not map successfully.")
+        self.assertEqual(z, z_test, "Z coordinate did not map successfully.")
+        self.assertEqual(phi, phi_test, "Phi coordinate did not map successfully.")
+
+    def test_from_cylindrical(self):
+        """Test the from_cartesian() math utility function."""
+
+        r, z, phi = 0, 0, 0
+        cartesian_point = from_cylindrical(r, z, phi)
+        self.assertEqual(cartesian_point.x, 0.0, "Origin in cylindrical coordinates did not map to the origin in cartesian coordinates.")
+        self.assertEqual(cartesian_point.y, 0.0, "Origin in cylindrical coordinates did not map to the origin in cartesian coordinates.")
+        self.assertEqual(cartesian_point.z, 0.0, "Origin in cylindrical coordinates did not map to the origin in cartesian coordinates.")
+
+        # check invalid radial coordinate
+        with self.assertRaises(ValueError, msg="Invalid radial coordinate was not detected."):
+            cartesian_point = from_cylindrical(-1, 1, 1)
+
+        r, z, phi = 1, 1, 45
+        x_test = r * np.cos(np.deg2rad(phi))
+        y_test = r * np.sin(np.deg2rad(phi))
+        z_test = z
+        cartesian_point = from_cylindrical(r, z, phi)
+        self.assertEqual(cartesian_point.x, x_test, "X coordinate did not map successfully.")
+        self.assertEqual(cartesian_point.y, y_test, "Y coordinate did not map successfully.")
+        self.assertEqual(cartesian_point.z, z_test, "Z coordinate did not map successfully.")

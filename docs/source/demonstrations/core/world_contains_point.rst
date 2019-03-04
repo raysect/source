@@ -11,7 +11,7 @@ Each point is tested to see if it lies inside the sphere. The test points are
 plotted in the figure, coloured by their true (inside)/false (outside) categorisation.
 
 
-.. literalinclude:: ../../../demos/core/world_contains_point.py
+.. literalinclude:: ../../../../demos/core/world_contains_point.py
 
 .. image:: test_point_inside_material.png
    :align: center

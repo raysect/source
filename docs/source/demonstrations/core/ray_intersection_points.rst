@@ -17,7 +17,7 @@ Bunny model source:
   http://graphics.stanford.edu/data/3Dscanrep/
   Converted to obj format using MeshLab
 
-.. literalinclude:: ../../../demos/core/ray_intersection_hitpoints.py
+.. literalinclude:: ../../../../demos/core/ray_intersection_hitpoints.py
 
 .. figure:: ray_intersection_points_fig1.png
 

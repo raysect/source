@@ -71,7 +71,7 @@ cdef class OpenCVCamera(Observer2D):
     """
 
     cdef:
-        double image_delta, image_start_x, image_start_y, _etendue
+        double image_delta, image_start_x, image_start_y, _sensitivity
         np.ndarray camera_matrix, distortion, r_vector, t_vector, _rotation_matrix,
         Point3D _origin
         RectangleSampler3D point_sampler

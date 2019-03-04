@@ -99,6 +99,24 @@ cdef class SpectralFunction:
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
+    cpdef double evaluate(self, double wavelength):
+        """
+        Evaluate the spectral function f(wavelength)
+
+        :param float wavelength: Wavelength in nanometers.
+        :rtype: float
+        """
+        raise NotImplementedError("Virtual method evaluate() not implemented.")
+
+    def __call__(self, double wavelength):
+        """
+        Evaluate the spectral function f(wavelength)
+
+        :param float wavelength: Wavelength in nanometers.
+        :rtype: float
+        """
+        return self.evaluate(wavelength)
+
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         """
         Calculates the integrated radiance over the specified spectral range.
@@ -343,6 +361,16 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
+    cpdef double evaluate(self, double wavelength):
+        """
+        Evaluate the spectral function f(wavelength)
+
+        :param float wavelength: Wavelength in nanometers.
+        :rtype: float
+        """
+
+        return self.function(wavelength)
+
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         """
         Calculates the integrated radiance over the specified spectral range.
@@ -383,9 +411,6 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
         """
 
         raise NotImplementedError("Virtual method function() not implemented.")
-
-    def __call__(self, double wavelength):
-        return self.function(wavelength)
 
 
 cdef class InterpolatedSF(SpectralFunction):
@@ -458,6 +483,17 @@ cdef class InterpolatedSF(SpectralFunction):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.initializedcheck(False)
+    cpdef double evaluate(self, double wavelength):
+        """
+        Evaluate the spectral function f(wavelength)
+
+        :param float wavelength: Wavelength in nanometers.
+        :rtype: float
+        """
+
+        return interpolate(self.wavelengths_mv, self.samples_mv, wavelength)
+
+    @cython.initializedcheck(False)
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         """
         Calculates the integrated radiance over the specified spectral range.
@@ -468,10 +504,6 @@ cdef class InterpolatedSF(SpectralFunction):
         :rtype: float
         """
         return integrate(self.wavelengths_mv, self.samples_mv, min_wavelength, max_wavelength)
-
-    @cython.initializedcheck(False)
-    def __call__(self, double wavelength):
-        return interpolate(self.wavelengths_mv, self.samples_mv, wavelength)
 
 
 cdef class ConstantSF(SpectralFunction):
@@ -501,6 +533,15 @@ cdef class ConstantSF(SpectralFunction):
 
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
+
+    cpdef double evaluate(self, double wavelength):
+        """
+        Evaluate the spectral function f(wavelength)
+
+        :param float wavelength: Wavelength in nanometers.
+        :rtype: float
+        """
+        return self.value
 
     cpdef double integrate(self, double min_wavelength, double max_wavelength):
         """

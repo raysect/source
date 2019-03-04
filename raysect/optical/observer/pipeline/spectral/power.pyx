@@ -155,7 +155,10 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
 
             self._render_display()
             # workaround for interactivity for QT backend
-            plt.pause(0.1)
+            try:
+                plt.pause(0.1)
+            except NotImplementedError:
+                pass
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
