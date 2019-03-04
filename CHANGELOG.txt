@@ -4,9 +4,12 @@ Raysect Changelog
 Release 0.5.5 (4 Mar 2019)
 --------------------------
 
+API Changes:
+* LoggingRay now logs the full intersection object, not just the hit point.
+
 Bug fixes:
 * Fixed recursive call bug triggered by inspecting the process attribute of MulticoreEngine.
-* Added zip_safe=False to setup.py as installing raysect as a zip file prevents access to cython .pxd files.
+* Added zip_safe=False to setup.py as installing Raysect as a zip file prevents access to cython .pxd files.
 
 New:
 * Improved behaviour of pipeline displays when raysect used in a jupyter notebook.
