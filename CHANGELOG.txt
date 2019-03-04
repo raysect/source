@@ -1,10 +1,18 @@
 Raysect Changelog
 =================
 
-Release 0.5.5 (TBD)
--------------------
+Release 0.5.5 (4 Mar 2019)
+--------------------------
 
+Bug fixes:
+* Fixed recursive call bug triggered by inspecting the process attribute of MulticoreEngine.
+* Added zip_safe=False to setup.py as installing raysect as a zip file prevents access to cython .pxd files.
 
+New:
+* Improved behaviour of pipeline displays when raysect used in a jupyter notebook.
+* Added ability to directly sample the BSDF of ContinuousBSDF materials.
+* Added to_cylindrical and from_cylindrical coordinate system conversion functions.
+* All spectral functions are now callable. Calling a spectral function evaluates it at the specified wavelength.
 
 
 Release 0.5.4 (1 Oct 2018)
