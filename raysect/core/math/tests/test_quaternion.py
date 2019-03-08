@@ -32,7 +32,7 @@ Unit tests for the Quaternion object.
 """
 
 import unittest
-from raysect.core.math import Quaternion
+from raysect.core.math import Quaternion, rotate_x
 
 
 class TestQuaternion(unittest.TestCase):
@@ -286,7 +286,7 @@ class TestQuaternion(unittest.TestCase):
                                msg="Norm of a quaternion failed to produce the correct result.")
 
     def test_copy(self):
-        """Testing method copy()."""
+        """Testing method copy()"""
 
         q = Quaternion(1, 2, 3, 4)
         r = q.copy()
@@ -301,6 +301,53 @@ class TestQuaternion(unittest.TestCase):
         self.assertEqual(q.x, 2.0, "Copy failed [X].")
         self.assertEqual(q.y, 3.0, "Copy failed [Y].")
         self.assertEqual(q.z, 4.0, "Copy failed [Z].")
+
+    def test_to_transform(self):
+        """Test AffineMatrix3D generation from a quaternion"""
+
+        message = "Conversion of a Quaternion to AffineMatrix3D failed to produce the correct result."
+
+        matrix = Quaternion(0.5, 0.5, 0, 0).to_transform()
+        answer = rotate_x(90)
+
+        # TODO - replace this with a utility function e.g. _assert_matrix()
+        self.assertAlmostEqual(matrix[0, 0], answer[0, 0], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[0, 1], answer[0, 1], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[0, 2], answer[0, 2], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[0, 3], answer[0, 3], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[1, 0], answer[1, 0], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[1, 1], answer[1, 1], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[1, 2], answer[1, 2], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[1, 3], answer[1, 3], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[2, 0], answer[2, 0], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[2, 1], answer[2, 1], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[2, 2], answer[2, 2], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[2, 3], answer[2, 3], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[3, 0], answer[3, 0], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[3, 1], answer[3, 1], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[3, 2], answer[3, 2], delta=1e-10, msg=message)
+        self.assertAlmostEqual(matrix[3, 3], answer[3, 3], delta=1e-10, msg=message)
+
+        # TODO - increase the resolution of this test by calculating quaternion more accurately
+        matrix = Quaternion(0.923879, 0.3826834, 0, 0).to_transform()
+        answer = rotate_x(45)
+
+        self.assertAlmostEqual(matrix[0, 0], answer[0, 0], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[0, 1], answer[0, 1], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[0, 2], answer[0, 2], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[0, 3], answer[0, 3], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[1, 0], answer[1, 0], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[1, 1], answer[1, 1], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[1, 2], answer[1, 2], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[1, 3], answer[1, 3], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[2, 0], answer[2, 0], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[2, 1], answer[2, 1], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[2, 2], answer[2, 2], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[2, 3], answer[2, 3], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[3, 0], answer[3, 0], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[3, 1], answer[3, 1], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[3, 2], answer[3, 2], delta=1e-6, msg=message)
+        self.assertAlmostEqual(matrix[3, 3], answer[3, 3], delta=1e-6, msg=message)
 
 
 if __name__ == "__main__":

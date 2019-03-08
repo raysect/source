@@ -29,7 +29,7 @@ cdef class Quaternion:
 
     cpdef Quaternion copy(self)
 
-    cpdef AffineMatrix3D to_transform(self, Point3D origin=*)
+    cpdef AffineMatrix3D to_transform(self)
 
 
 cpdef Quaternion mat_to_quat(AffineMatrix3D matrix)

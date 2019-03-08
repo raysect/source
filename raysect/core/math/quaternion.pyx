@@ -385,7 +385,7 @@ cdef class Quaternion:
 
         return new_quaternion(self.s, self.x, self.y, self.z)
 
-    cpdef AffineMatrix3D to_transform(self, Point3D origin=Point3D(0, 0, 0)):
+    cpdef AffineMatrix3D to_transform(self):
         """
         Transforms the vector with the supplied AffineMatrix3D.
 
@@ -412,46 +412,40 @@ cdef class Quaternion:
         """
 
         cdef:
-            double sqs, sqx, sqy, sqz
+            double qs, qx, qy, qz
+            double qs2, qx2, qy2, qz2
             double m00, m01, m02, m03
             double m10, m11, m12, m13
             double m20, m21, m22, m23
             double m30, m31, m32, m33
             double temp1, temp2
-            Point3D o = origin
+            Quaternion unit_q
 
-        # 1 - 2*qy2 - 2*qz2 	2*qx*qy - 2*qz*qw 	2*qx*qz + 2*qy*qw
-        # 2*qx*qy + 2*qz*qw 	1 - 2*qx2 - 2*qz2 	2*qy*qz - 2*qx*qw
-        # 2*qx*qz - 2*qy*qw 	2*qy*qz + 2*qx*qw 	1 - 2*qx2 - 2*qy2
+        unit_q = self.normalise()
 
-        sqs = self.s * self.s
-        sqx = self.x * self.x
-        sqy = self.y * self.y
-        sqz = self.z * self.z
+        qs = unit_q.s
+        qx = unit_q.x
+        qy = unit_q.y
+        qz = unit_q.z
 
-        m00 = sqs + sqx - sqy - sqz
-        m11 = sqs -sqx + sqy - sqz
-        m22 = sqs -sqx - sqy + sqz
+        qs2 = qs * qs
+        qx2 = qx * qx
+        qy2 = qy * qy
+        qz2 = qz * qz
 
-        temp1 = self.x * self.y
-        temp2 = self.z * self.s
-        m01 = 2.0 * (temp1 + temp2)
-        m10 = 2.0 * (temp1 - temp2)
+        m00 = 1 - 2*qy2 - 2*qz2
+        m01 = 2*qx*qy - 2*qz*qs
+        m02 = 2*qx*qz + 2*qy*qs
 
-        temp1 = self.x * self.z
-        temp2 = self.y * self.s
-        m02 = 2.0 * (temp1 - temp2)
-        m20 = 2.0 * (temp1 + temp2)
+        m10 = 2*qx*qy + 2*qz*qs
+        m11 = 1 - 2*qx2 - 2*qz2
+        m12 = 2*qy*qz - 2*qx*qs
 
-        temp1 = self.y * self.z
-        temp2 = self.x * self.s
-        m12 = 2.0 * (temp1 + temp2)
-        m21 = 2.0 * (temp1 - temp2)
+        m20 = 2*qx*qz - 2*qy*qs
+        m21 = 2*qy*qz + 2*qx*qs
+        m22 = 1 - 2*qx2 - 2*qy2
 
-        m03 = o.x - o.x * m00 - o.y * m01 - o.z * m02
-        m13 = o.y - o.x * m10 - o.y * m11 - o.z * m12
-        m23 = o.z - o.x * m20 - o.y * m21 - o.z * m22
-
+        m03 = m13 = m23 = 0.0
         m30 = m31 = m32 = 0.0
         m33 = 1.0
 
