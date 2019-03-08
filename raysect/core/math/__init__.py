@@ -33,6 +33,7 @@ from .point import Point2D, Point3D
 from .vector import Vector2D, Vector3D
 from .normal import Normal3D
 from .affinematrix import AffineMatrix3D
+from .quaternion import Quaternion
 from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
 from .units import *
 from .interpolators import Interpolator2DMesh, Discrete2DMesh

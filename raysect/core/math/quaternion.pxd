@@ -5,7 +5,7 @@ from raysect.core.math.point cimport Point3D
 
 cdef class Quaternion:
 
-    cdef double s, x, y, z
+    cdef public double s, x, y, z
 
     cdef Quaternion neg(self)
 
@@ -13,19 +13,21 @@ cdef class Quaternion:
 
     cdef Quaternion sub(self, Quaternion q2)
 
-    cdef Quaternion mul(self, q2)
+    cdef Quaternion mul(self, Quaternion q2)
 
     cdef Quaternion mul_scalar(self, double d)
 
-    cdef Quaternion inv(self)
+    cpdef Quaternion inv(self)
 
-    cdef double norm(self)
+    cpdef double norm(self)
 
     cdef Quaternion div(self, Quaternion q2)
 
     cdef Quaternion div_scalar(self, double d)
 
     cpdef Quaternion normalise(self)
+
+    cpdef Quaternion copy(self)
 
     cpdef AffineMatrix3D to_transform(self, Point3D origin=*)
 
