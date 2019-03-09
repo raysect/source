@@ -467,6 +467,13 @@ cdef class Quaternion:
         :param float angle: An angle in degrees specifiying the magnitude of the
           rotation about the axis vector.
         :return: A new Quaternion object representing the specified rotation.
+
+        .. code-block:: pycon
+
+           >>> from raysect.core.math import Quaternion, Vector3D
+           >>>
+           >>> Quaternion.from_axis_angle(Vector3D(1, 0, 0), 45)
+           Quaternion(0.9238795325112867, <0.3826834323650898, 0.0, 0.0>)
         """
 
         if not isinstance(axis, Vector3D):
@@ -490,20 +497,35 @@ cdef class Quaternion:
         return new_quaternion(qs, qx, qy, qz)
 
 
-cpdef Quaternion mat_to_quat(AffineMatrix3D matrix):
+cpdef Quaternion matrix2quaternion(AffineMatrix3D matrix):
+    """
+    Extract the rotation part of an AffineMatrix3D as a Quaternion.
+    
+    Note, the translation component of this matrix will be ignored.
+    
+    :param AffineMatrix3D matrix: The AffineMatrix3D instance from which to extract the rotation component.
+    :return: A quaternion representation of the rotation specified in this transform matrix.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math import rotate_x, matrix2quaternion
+       >>>
+       >>> matrix2quaternion(rotate_x(90))
+       Quaternion(0.7071067811865476, <0.7071067811865475, 0.0, 0.0>)
+    """
 
     cdef:
         AffineMatrix3D m = matrix
         double qs, qx, qy, qz
         double trace, s
 
-    trace = m.m[0][0] + m.m[1][1] + m.m[2][2] + m.m[3][3]
+    trace = m.m[0][0] + m.m[1][1] + m.m[2][2]
 
     if trace > 0:
 
         s = sqrt(trace+1.0) * 2  # s = 4*qs
         qs = 0.25 * s
-        qs = (m.m[2][1] - m.m[1][2]) / s
+        qx = (m.m[2][1] - m.m[1][2]) / s
         qy = (m.m[0][2] - m.m[2][0]) / s
         qz = (m.m[1][0] - m.m[0][1]) / s
 

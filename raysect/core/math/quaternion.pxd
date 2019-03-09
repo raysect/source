@@ -33,7 +33,7 @@ cdef class Quaternion:
     cpdef AffineMatrix3D to_transform(self)
 
 
-cpdef Quaternion mat_to_quat(AffineMatrix3D matrix)
+cpdef Quaternion matrix2quaternion(AffineMatrix3D matrix)
 
 
 cdef inline Quaternion new_quaternion(double s, double x, double y, double z):

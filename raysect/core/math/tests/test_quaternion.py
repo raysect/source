@@ -32,7 +32,7 @@ Unit tests for the Quaternion object.
 """
 
 import unittest
-from raysect.core.math import Quaternion, rotate_x, Vector3D
+from raysect.core.math import Quaternion, AffineMatrix3D, Vector3D, rotate_x, matrix2quaternion
 
 
 class TestQuaternion(unittest.TestCase):
@@ -375,6 +375,38 @@ class TestQuaternion(unittest.TestCase):
                                msg="Converting axis angle to quaternion produced wrong result [Y].")
         self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
                                msg="Converting axis angle to quaternion produced wrong result [Z].")
+
+    def test_matrix2quaternion(self):
+        """Tests the extraction of a rotation quaternion from an AffineMatrix3D"""
+
+        result = matrix2quaternion(rotate_x(90))
+        answer = Quaternion(0.7071067811865476, 0.7071067811865475, 0.0, 0.0)
+
+        self.assertAlmostEqual(answer.s, result.s, delta=1e-10,
+                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [S].")
+        self.assertAlmostEqual(answer.x, result.x, delta=1e-10,
+                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [X].")
+        self.assertAlmostEqual(answer.y, result.y, delta=1e-10,
+                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [Y].")
+        self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
+                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [Z].")
+
+        matrix = AffineMatrix3D(((0.9330127, 0.0669873, -0.3535534, 0.0),
+                                 (0.0669873, 0.9330127, 0.3535534, 0.0),
+                                 (0.3535534, -0.3535534, 0.8660254, 0.0),
+                                 (0.0, 0.0, 0.0, 1.0)))
+
+        result = matrix2quaternion(matrix)
+        answer = Quaternion(0.9659258262890683, -0.1830127018922193, -0.1830127018922193, -0.0)
+
+        self.assertAlmostEqual(answer.s, result.s, delta=1e-6,
+                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [S].")
+        self.assertAlmostEqual(answer.x, result.x, delta=1e-6,
+                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [X].")
+        self.assertAlmostEqual(answer.y, result.y, delta=1e-6,
+                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [Y].")
+        self.assertAlmostEqual(answer.z, result.z, delta=1e-6,
+                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [Z].")
 
 
 if __name__ == "__main__":
