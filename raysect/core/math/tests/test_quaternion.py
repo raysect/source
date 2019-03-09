@@ -32,7 +32,7 @@ Unit tests for the Quaternion object.
 """
 
 import unittest
-from raysect.core.math import Quaternion, rotate_x
+from raysect.core.math import Quaternion, rotate_x, Vector3D
 
 
 class TestQuaternion(unittest.TestCase):
@@ -348,6 +348,33 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(matrix[3, 1], answer[3, 1], delta=1e-6, msg=message)
         self.assertAlmostEqual(matrix[3, 2], answer[3, 2], delta=1e-6, msg=message)
         self.assertAlmostEqual(matrix[3, 3], answer[3, 3], delta=1e-6, msg=message)
+
+    def test_from_axis_angle(self):
+        """Test generation of a quaternion from axis angle specification"""
+
+        result = Quaternion.from_axis_angle(Vector3D(1, 0, 0), 45)
+        answer = Quaternion(0.9238795325112867, 0.3826834323650898, 0.0, 0.0)
+
+        self.assertAlmostEqual(answer.s, result.s, delta=1e-10,
+                               msg="Converting axis angle to quaternion produced wrong result [S].")
+        self.assertAlmostEqual(answer.x, result.x, delta=1e-10,
+                               msg="Converting axis angle to quaternion produced wrong result [X].")
+        self.assertAlmostEqual(answer.y, result.y, delta=1e-10,
+                               msg="Converting axis angle to quaternion produced wrong result [Y].")
+        self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
+                               msg="Converting axis angle to quaternion produced wrong result [Z].")
+
+        result = Quaternion.from_axis_angle(Vector3D(0.5, 0.5, 0), -30)
+        answer = Quaternion(0.9659258262890683, -0.1830127018922193, -0.1830127018922193, -0.0)
+
+        self.assertAlmostEqual(answer.s, result.s, delta=1e-10,
+                               msg="Converting axis angle to quaternion produced wrong result [S].")
+        self.assertAlmostEqual(answer.x, result.x, delta=1e-10,
+                               msg="Converting axis angle to quaternion produced wrong result [X].")
+        self.assertAlmostEqual(answer.y, result.y, delta=1e-10,
+                               msg="Converting axis angle to quaternion produced wrong result [Y].")
+        self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
+                               msg="Converting axis angle to quaternion produced wrong result [Z].")
 
 
 if __name__ == "__main__":

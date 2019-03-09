@@ -1,9 +1,13 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt
+from libc.math cimport sqrt, sin, cos, M_PI
 
 from raysect.core.math.affinematrix cimport new_affinematrix3d
+
+
+cdef double DEG2RAD = 2*M_PI / 360
+cdef double RAD2DEG = 360 / 2*M_PI
 
 
 cdef class Quaternion:
@@ -453,6 +457,37 @@ cdef class Quaternion:
                                   m10, m11, m12, m13,
                                   m20, m21, m22, m23,
                                   m30, m31, m32, m33)
+
+    @classmethod
+    def from_axis_angle(cls, axis, angle):
+        """
+        Generates a new Quaternion from the axis-angle specification.
+
+        :param Vector3D axis: The axis about which rotation will be performed.
+        :param float angle: An angle in degrees specifiying the magnitude of the
+          rotation about the axis vector.
+        :return: A new Quaternion object representing the specified rotation.
+        """
+
+        if not isinstance(axis, Vector3D):
+            raise TypeError("The rotation axis must be specified with a Vector3D.")
+
+        if not isinstance(angle, (float, int)):
+            raise TypeError("The rotation angle must be specified with a real number.")
+
+        if not -180 <= angle <= 180:
+            raise ValueError("The angle of rotation must be in the range (-180, 180).")
+
+        axis = axis.normalise()
+
+        theta_2 = angle * DEG2RAD / 2
+
+        qs = cos(theta_2)
+        qx = axis.x * sin(theta_2)
+        qy = axis.y * sin(theta_2)
+        qz = axis.z * sin(theta_2)
+
+        return new_quaternion(qs, qx, qy, qz)
 
 
 cpdef Quaternion mat_to_quat(AffineMatrix3D matrix):

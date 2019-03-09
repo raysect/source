@@ -1,6 +1,7 @@
 
 from raysect.core.math.affinematrix cimport AffineMatrix3D
-from raysect.core.math.point cimport Point3D
+
+from raysect.core.math.vector cimport Vector3D
 
 
 cdef class Quaternion:
