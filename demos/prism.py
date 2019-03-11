@@ -1,15 +1,15 @@
-
 # External module imports
+import pickle
 from math import tan, pi
 import matplotlib.pyplot as plt
 
 # Raysect imports
 from raysect.primitive import Intersect, Subtract, Box, Cylinder, Sphere
 from raysect.optical import World, Node, Point3D, translate, rotate, d65_white, ConstantSF
-from raysect.optical.observer import PinholeCamera, RGBPipeline2D
+from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
 from raysect.optical.material import Lambert
 from raysect.optical.material.emitter import UniformSurfaceEmitter
-from raysect.optical.library import schott
+from raysect.optical.library import schott, RoughIron
 
 
 # Utility method to construct a glass prism from CSG operations
@@ -57,61 +57,70 @@ def light_box(parent, transform=None):
 
 world = World()
 
-
 # construct diffuse floor surface
-floor = Box(Point3D(-1000, -0.1, -1000), Point3D(1000, 0, 1000),
-            parent=world, material=Lambert())
-
+floor = Box(Point3D(-1000, -0.1, -1000), Point3D(1000, 0, 1000), parent=world, material=Lambert())
 
 # construct prism from utility method
-prism = equilateral_prism(0.06, 0.15, parent=world,
-                          material=schott("SF11"), transform=translate(0, 0.0 + 1e-6, 0))
-
+prism = equilateral_prism(0.06, 0.15, parent=world, material=schott("SF11"), transform=translate(0, 0.0 + 1e-6, 0))
 
 # Curved target screen for collecting rainbow light
-screen = Intersect(
+stand = Intersect(
     Box(Point3D(-10, -10, -10), Point3D(10, 10, 0)),
-    Subtract(Cylinder(0.22, 0.15),
+    Subtract(Cylinder(0.21, 0.15),
              Cylinder(0.20, 0.16, transform=translate(0, 0, -0.005)),
              transform=rotate(0, 90, 0)),
     parent=world,
-    material=Lambert()
+    material=RoughIron(0.25)
 )
 
+surface = Intersect(
+    Box(Point3D(-10, -10, -10), Point3D(10, 10, -0.01)),
+    Subtract(Cylinder(0.1999, 0.12, transform=translate(0, 0, 0.015)),
+             Cylinder(0.1998, 0.13, transform=translate(0, 0, 0.010)),
+             transform=rotate(0, 90, 0)),
+    parent=world,
+    material=Lambert(ConstantSF(1.0))
+)
 
 # construct main collimated light source
-prism_light = light_box(parent=world,
-                        transform=rotate(-35.5, 0, 0) * translate(0.10, 0, 0) * rotate(90, 0, 0))
-
+prism_light = light_box(parent=world, transform=rotate(-35.5, 0, 0) * translate(0.10, 0, 0) * rotate(90, 0, 0))
 
 # background light source
-top_light = Sphere(0.5, parent=world, transform=translate(0, 2, -1),
-                   material=UniformSurfaceEmitter(d65_white, scale=2))
-
+top_light = Sphere(0.25, parent=world, transform=translate(-1, 2, 1), material=UniformSurfaceEmitter(d65_white, scale=2))
 
 # Give the prism a high importance to ensure adequate sampling
 prism.material.importance = 9
 
 rgb = RGBPipeline2D()
+rgb.display_sensitivity = 3.0
+
+sampler = RGBAdaptiveSampler2D(rgb)
 
 # create and setup the camera
-camera = PinholeCamera((512, 256), fov=45, parent=world, pipelines=[rgb])
-camera.transform = translate(0, 0.05, -0.05) * rotate(180, -65, 0) * translate(0, 0, -0.75)
+camera = PinholeCamera((1920, 1080), fov=45, parent=world, pipelines=[rgb], frame_sampler=sampler)
+camera.transform = translate(0, 0.075, -0.075) * rotate(180, -45, 0) * translate(0, 0, -0.75)
 camera.ray_importance_sampling = True
 camera.ray_important_path_weight = 0.75
 camera.ray_max_depth = 500
 camera.ray_extinction_prob = 0.01
 camera.spectral_bins = 32
 camera.spectral_rays = 32
-camera.pixel_samples = 100
-
+camera.pixel_samples = 250
 
 # start ray tracing
 plt.ion()
 for p in range(0, 1000):
+
     print("Rendering pass {}".format(p+1))
     camera.observe()
+
+    # save image
     rgb.save("prisms_{}.png".format(p+1))
+
+    # save pipeline object
+    with open('prisms_{}.pickle'.format(p+1), 'wb') as f:
+        pickle.dump(rgb, f)
+
     print()
 
 # display final result
