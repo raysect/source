@@ -20,17 +20,25 @@ def equilateral_prism(width=1.0, height=1.0, parent=None, transform=None, materi
 
     centre = Box(Point3D(-half_width * 1.001, 0, 0), Point3D(half_width * 1.001, height, width))
 
-    left = Box(Point3D(0, -height * 0.001, -width * 0.001),
-               Point3D(width, height * 1.001, 2 * width),
-               transform=translate(half_width, 0, 0) * rotate(30, 0, 0))
+    left = Box(
+        Point3D(0, -height * 0.001, -width * 0.001),
+        Point3D(width, height * 1.001, 2 * width),
+        transform=translate(half_width, 0, 0) * rotate(30, 0, 0)
+    )
 
-    right = Box(Point3D(-width, -height * 0.001, -width * 0.001),
-                Point3D(0.0, height * 1.001, 2 * width),
-                transform=translate(-half_width, 0, 0) * rotate(-30, 0, 0))
+    right = Box(
+        Point3D(-width, -height * 0.001, -width * 0.001),
+        Point3D(0.0, height * 1.001, 2 * width),
+        transform=translate(-half_width, 0, 0) * rotate(-30, 0, 0)
+    )
 
-    csg_prism = Subtract(Subtract(centre, left), right,
-                     parent=parent, transform=transform * translate(0, 0, -mid_point),
-                     material=material)
+    csg_prism = Subtract(
+        Subtract(centre, left),
+        right,
+        parent=parent,
+        transform=transform * translate(0, 0, -mid_point),
+        material=material
+    )
 
     return csg_prism
 
@@ -47,10 +55,12 @@ def light_box(parent, transform=None):
 
     Subtract(outer, slit, parent=node, material=Lambert(reflectivity=ConstantSF(0.1)))
 
-    Box(Point3D(-0.0015, 0.03, -0.045),
+    Box(
+        Point3D(-0.0015, 0.03, -0.045),
         Point3D(0.0015, 0.12, -0.04),
         parent=node,
-        material=UniformSurfaceEmitter(d65_white, 250))
+        material=UniformSurfaceEmitter(d65_white, 250)
+    )
 
     return node
 
@@ -61,24 +71,29 @@ world = World()
 floor = Box(Point3D(-1000, -0.1, -1000), Point3D(1000, 0, 1000), parent=world, material=Lambert())
 
 # construct prism from utility method
-prism = equilateral_prism(0.06, 0.15, parent=world, material=schott("SF11"), transform=translate(0, 0.0 + 1e-6, 0))
+prism = equilateral_prism(0.06, 0.15, parent=world, material=schott("SF11"), transform=translate(0, 0.0 + 1e-6, 0.0))
 
 # Curved target screen for collecting rainbow light
 stand = Intersect(
     Box(Point3D(-10, -10, -10), Point3D(10, 10, 0)),
-    Subtract(Cylinder(0.21, 0.15),
-             Cylinder(0.20, 0.16, transform=translate(0, 0, -0.005)),
-             transform=rotate(0, 90, 0)),
+    Subtract(
+        Cylinder(0.21, 0.15),
+        Cylinder(0.20, 0.16, transform=translate(0, 0, -0.005)),
+        transform=rotate(0, 90, 0)
+    ),
+    transform=translate(0.0, 1e-6, 0.0),
     parent=world,
-    material=RoughIron(0.25)
+    material=schott("N-BK7")  # RoughIron(0.25)
 )
 
 surface = Intersect(
-    Box(Point3D(-10, -10, -10), Point3D(10, 10, -0.01)),
-    Subtract(Cylinder(0.1999, 0.12, transform=translate(0, 0, 0.015)),
-             Cylinder(0.1998, 0.13, transform=translate(0, 0, 0.010)),
-             transform=rotate(0, 90, 0)),
-    parent=world,
+    Box(Point3D(-10, -10, -10), Point3D(10, 10, -0.015)),
+    Subtract(
+        Cylinder(0.1999, 0.12, transform=translate(0, 0, 0.015)),
+        Cylinder(0.1998, 0.13, transform=translate(0, 0, 0.010)),
+        transform=rotate(0, 90, 0)
+    ),
+    parent=stand,
     material=Lambert(ConstantSF(1.0))
 )
 
@@ -86,19 +101,19 @@ surface = Intersect(
 prism_light = light_box(parent=world, transform=rotate(-35.5, 0, 0) * translate(0.10, 0, 0) * rotate(90, 0, 0))
 
 # background light source
-top_light = Sphere(0.25, parent=world, transform=translate(-1, 2, 1), material=UniformSurfaceEmitter(d65_white, scale=2))
+top_light = Sphere(0.25, parent=world, transform=translate(-1, 2, 1), material=UniformSurfaceEmitter(d65_white, scale=5))
 
 # Give the prism a high importance to ensure adequate sampling
 prism.material.importance = 9
 
 rgb = RGBPipeline2D()
-rgb.display_sensitivity = 3.0
+rgb.display_sensitivity = 2.0
 
-sampler = RGBAdaptiveSampler2D(rgb)
+sampler = RGBAdaptiveSampler2D(rgb, min_samples=500)
 
 # create and setup the camera
 camera = PinholeCamera((1920, 1080), fov=45, parent=world, pipelines=[rgb], frame_sampler=sampler)
-camera.transform = translate(0, 0.075, -0.075) * rotate(180, -45, 0) * translate(0, 0, -0.75)
+camera.transform = translate(0, 0.075, -0.05) * rotate(180, -45, 0) * translate(0, 0, -0.75)
 camera.ray_importance_sampling = True
 camera.ray_important_path_weight = 0.75
 camera.ray_max_depth = 500
