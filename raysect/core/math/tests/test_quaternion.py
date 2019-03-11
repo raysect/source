@@ -32,7 +32,7 @@ Unit tests for the Quaternion object.
 """
 
 import unittest
-from raysect.core.math import Quaternion, AffineMatrix3D, Vector3D, rotate_x, matrix2quaternion
+from raysect.core.math import Quaternion, AffineMatrix3D, Vector3D, rotate_x
 
 
 class TestQuaternion(unittest.TestCase):
@@ -251,7 +251,7 @@ class TestQuaternion(unittest.TestCase):
         """Inverse operation"""
 
         q = Quaternion(1, 0, 1, 0)
-        q_result = q.inv()
+        q_result = q.inverse()
 
         self.assertAlmostEqual(q_result.s, 0.5, delta=1e-10,
                                msg="Inverse of a quaternion failed to produce the correct result [S].")
@@ -302,12 +302,12 @@ class TestQuaternion(unittest.TestCase):
         self.assertEqual(q.y, 3.0, "Copy failed [Y].")
         self.assertEqual(q.z, 4.0, "Copy failed [Z].")
 
-    def test_to_transform(self):
+    def test_to_matrix(self):
         """Test AffineMatrix3D generation from a quaternion"""
 
         message = "Conversion of a Quaternion to AffineMatrix3D failed to produce the correct result."
 
-        matrix = Quaternion(0.5, 0.5, 0, 0).to_transform()
+        matrix = Quaternion(0.5, 0.5, 0, 0).to_matrix()
         answer = rotate_x(90)
 
         # TODO - replace this with a utility function e.g. _assert_matrix()
@@ -329,7 +329,7 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(matrix[3, 3], answer[3, 3], delta=1e-10, msg=message)
 
         # TODO - increase the resolution of this test by calculating quaternion more accurately
-        matrix = Quaternion(0.923879, 0.3826834, 0, 0).to_transform()
+        matrix = Quaternion(0.923879, 0.3826834, 0, 0).to_matrix()
         answer = rotate_x(45)
 
         self.assertAlmostEqual(matrix[0, 0], answer[0, 0], delta=1e-6, msg=message)
@@ -376,10 +376,10 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
                                msg="Converting axis angle to quaternion produced wrong result [Z].")
 
-    def test_matrix2quaternion(self):
+    def test_from_matrix(self):
         """Tests the extraction of a rotation quaternion from an AffineMatrix3D"""
 
-        result = matrix2quaternion(rotate_x(90))
+        result = Quaternion.from_matrix(rotate_x(90))
         answer = Quaternion(0.7071067811865476, 0.7071067811865475, 0.0, 0.0)
 
         self.assertAlmostEqual(answer.s, result.s, delta=1e-10,
@@ -396,7 +396,7 @@ class TestQuaternion(unittest.TestCase):
                                  (0.3535534, -0.3535534, 0.8660254, 0.0),
                                  (0.0, 0.0, 0.0, 1.0)))
 
-        result = matrix2quaternion(matrix)
+        result = Quaternion.from_matrix(matrix)
         answer = Quaternion(0.9659258262890683, -0.1830127018922193, -0.1830127018922193, -0.0)
 
         self.assertAlmostEqual(answer.s, result.s, delta=1e-6,

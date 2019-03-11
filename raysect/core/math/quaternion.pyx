@@ -1,13 +1,42 @@
 
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     1. Redistributions of source code must retain the above copyright notice,
+#        this list of conditions and the following disclaimer.
+#
+#     2. Redistributions in binary form must reproduce the above copyright
+#        notice, this list of conditions and the following disclaimer in the
+#        documentation and/or other materials provided with the distribution.
+#
+#     3. Neither the name of the Raysect Project nor the names of its
+#        contributors may be used to endorse or promote products derived from
+#        this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 import numbers
 cimport cython
-from libc.math cimport sqrt, sin, cos, M_PI
+from libc.math cimport sqrt, sin, cos
 
 from raysect.core.math.affinematrix cimport new_affinematrix3d
 
 
-cdef double DEG2RAD = 2*M_PI / 360
-cdef double RAD2DEG = 360 / 2*M_PI
+DEF RAD2DEG = 57.29577951308232000  # 180 / pi
+DEF DEG2RAD = 0.017453292519943295  # pi / 180
 
 
 cdef class Quaternion:
@@ -22,7 +51,7 @@ cdef class Quaternion:
     def __repr__(self):
         """Returns a string representation of the Quaternion object."""
 
-        return "Quaternion(" + str(self.s) + ", <" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ">)"
+        return "Quaternion(" + str(self.s) + ", " + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ")"
 
     def __getitem__(self, int i):
         """Returns the quaternion coordinates by index ([0,1,2,3] -> [s,x,y,z]).
@@ -53,7 +82,7 @@ cdef class Quaternion:
             >>> a = Quaternion(1, 0, 0, 0)
             >>> a[1] = 2
             >>> a
-            Quaternion(1.0, <2.0, 0.0, 0.0>)
+            Quaternion(1.0, 2.0, 0.0, 0.0)
         """
 
         if i == 0:
@@ -92,7 +121,7 @@ cdef class Quaternion:
 
             >>> a = Quaternion(1, 0, 0, 0)
             >>> -a
-            Quaternion(-1.0, <-0.0, -0.0, -0.0>)
+            Quaternion(-1.0, -0.0, -0.0, -0.0)
         """
 
         return new_quaternion(-self.s, -self.x, -self.y, -self.z)
@@ -131,7 +160,7 @@ cdef class Quaternion:
         .. code-block:: pycon
 
             >>> Quaternion(1, 0, 0, 0) + Quaternion(0, 1, 0, 0)
-            Quaternion(1.0, <1.0, 0.0, 0.0>)
+            Quaternion(1.0, 1.0, 0.0, 0.0)
         """
 
         cdef Quaternion q1, q2
@@ -153,7 +182,7 @@ cdef class Quaternion:
         .. code-block:: pycon
 
             >>> Quaternion(1, 0, 0, 0) - Quaternion(0, 1, 0, 0)
-            Quaternion(1.0, <-1.0, 0, 0>)
+            Quaternion(1.0, -1.0, 0, 0)
         """
 
         cdef Quaternion q1, q2
@@ -175,9 +204,9 @@ cdef class Quaternion:
         .. code-block:: pycon
 
             >>> Quaternion(1, 0, 1, 0) * 2
-            Quaternion(2.0, <0.0, 2.0, 0.0>)
+            Quaternion(2.0, 0.0, 2.0, 0.0)
             >>> Quaternion(1, 0, 1, 0) * Quaternion(0, 1, 2, 3)
-            Quaternion(-2.0, <4.0, 2.0, 2.0>)
+            Quaternion(-2.0, 4.0, 2.0, 2.0)
         """
 
         cdef double s
@@ -215,9 +244,9 @@ cdef class Quaternion:
         .. code-block:: pycon
 
             >>> Quaternion(1, 0, 1, 0) / 2
-            Quaternion(0.5, <0.0, 0.5, 0.0>)
+            Quaternion(0.5, 0.0, 0.5, 0.0)
             >>> Quaternion(1, 0, 1, 0) / Quaternion(0, 1, 2, 3)
-            Quaternion(0.14286, <-0.28571, -0.14286, -0.14286>)
+            Quaternion(0.14286, -0.28571, -0.14286, -0.14286)
         """
 
         cdef double d
@@ -300,14 +329,14 @@ cdef class Quaternion:
         return new_quaternion(d * q.s, d * q.x, d * q.y, d * q.z)
 
     @cython.cdivision(True)
-    cpdef Quaternion inv(self):
+    cpdef Quaternion inverse(self):
         """
         Inverse operator.
 
         .. code-block:: pycon
 
-            >>> Quaternion(0, 1, 2, 3).inv()
-            Quaternion(0.0, <-0.07143, -0.14286, -0.21429>)
+            >>> Quaternion(0, 1, 2, 3).inverse()
+            Quaternion(0.0, -0.07143, -0.14286, -0.21429)
         """
 
         cdef Quaternion q = self
@@ -338,7 +367,7 @@ cdef class Quaternion:
 
         cdef Quaternion q1 = self, q2_inv
 
-        q2_inv = q2.inv()
+        q2_inv = q2.inverse()
 
         return q1.mul(q2_inv)
 
@@ -367,7 +396,7 @@ cdef class Quaternion:
         
             >>> a = Quaternion(0, 1, 2, 3)
             >>> a.normalise()
-            Quaternion(0.0, <0.26726, 0.53452, 0.80178>)
+            Quaternion(0.0, 0.26726, 0.53452, 0.80178)
         """
 
         cdef double n
@@ -389,30 +418,20 @@ cdef class Quaternion:
 
         return new_quaternion(self.s, self.x, self.y, self.z)
 
-    cpdef AffineMatrix3D to_transform(self):
+    cpdef AffineMatrix3D to_matrix(self):
         """
-        Transforms the vector with the supplied AffineMatrix3D.
-
-        The vector is transformed by pre-multiplying the vector by the affine
-        matrix.
-
-        .. math::
-
-            \\vec{C} = \\textbf{A} \\times \\vec{B}
-
-        This method is substantially faster than using the multiplication
-        operator of AffineMatrix3D when called from cython code.
-
-        :param AffineMatrix3D m: The affine matrix describing the required coordinate transformation.
-        :return: A new instance of this vector that has been transformed with the supplied Affine Matrix.
-        :rtype: Vector3D
+        Generates an AffineMatrix3D representation of this Quaternion.
 
         .. code-block:: pycon
 
-            >>> z = Vector3D(0, 0, 1)
-            >>> y = z.transform(rotate_x(90))
-            >>> y
-            Vector3D(0.0, -1.0, 6.123233995736766e-17)
+           >>> from raysect.core.math import Quaternion
+           >>>
+           >>> q = Quaternion(0.5, 0.5, 0, 0)
+           >>> q.to_matrix()
+           AffineMatrix3D([[1.0, 0.0, 0.0, 0.0],
+                           [0.0, 0.0, -1.0, 0.0],
+                           [0.0, 1.0, 0.0, 0.0],
+                           [0.0, 0.0, 0.0, 1.0]])
         """
 
         cdef:
@@ -459,7 +478,66 @@ cdef class Quaternion:
                                   m30, m31, m32, m33)
 
     @classmethod
-    def from_axis_angle(cls, axis, angle):
+    def from_matrix(cls, AffineMatrix3D matrix):
+        """
+        Extract the rotation part of an AffineMatrix3D as a Quaternion.
+
+        Note, the translation component of this matrix will be ignored.
+
+        :param AffineMatrix3D matrix: The AffineMatrix3D instance from which to extract the rotation component.
+        :return: A quaternion representation of the rotation specified in this transform matrix.
+
+        .. code-block:: pycon
+
+           >>> from raysect.core.math import rotate_x, Quaternion
+           >>>
+           >>> Quaternion.from_matrix(rotate_x(90))
+           Quaternion(0.7071067811865476, 0.7071067811865475, 0.0, 0.0)
+        """
+
+        cdef:
+            AffineMatrix3D m = matrix
+            double qs, qx, qy, qz
+            double trace, s
+
+        trace = m.m[0][0] + m.m[1][1] + m.m[2][2]
+
+        if trace > 0:
+
+            s = sqrt(trace+1.0) * 2  # s = 4*qs
+            qs = 0.25 * s
+            qx = (m.m[2][1] - m.m[1][2]) / s
+            qy = (m.m[0][2] - m.m[2][0]) / s
+            qz = (m.m[1][0] - m.m[0][1]) / s
+
+        elif m.m[0][0] > m.m[1][1] and m.m[0][0] > m.m[2][2]:
+
+            s = sqrt(1.0 + m.m[0][0] - m.m[1][1] - m.m[2][2]) * 2  # s = 4*qx
+            qs = (m.m[2][1] - m.m[1][2]) / s
+            qx = 0.25 * s
+            qy = (m.m[0][1] + m.m[1][0]) / s
+            qz = (m.m[0][2] + m.m[2][0]) / s
+
+        elif m.m[1][1] > m.m[2][2]:
+
+            s = sqrt(1.0 + m.m[1][1] - m.m[0][0] - m.m[2][2]) * 2  # s = 4*qy
+            qs = (m.m[0][2] - m.m[2][0]) / s
+            qx = (m.m[0][1] + m.m[1][0]) / s
+            qy = 0.25 * s
+            qz = (m.m[1][2] + m.m[2][1]) / s
+
+        else:
+
+            s = sqrt(1.0 + m.m[2][2] - m.m[0][0] - m.m[1][1]) * 2  # s = 4*qz
+            qs = (m.m[1][0] - m.m[0][1]) / s
+            qx = (m.m[0][2] + m.m[2][0]) / s
+            qy = (m.m[1][2] + m.m[2][1]) / s
+            qz = 0.25 * s
+
+        return new_quaternion(qs, qx, qy, qz)
+
+    @classmethod
+    def from_axis_angle(cls, Vector3D axis, double angle):
         """
         Generates a new Quaternion from the axis-angle specification.
 
@@ -473,14 +551,8 @@ cdef class Quaternion:
            >>> from raysect.core.math import Quaternion, Vector3D
            >>>
            >>> Quaternion.from_axis_angle(Vector3D(1, 0, 0), 45)
-           Quaternion(0.9238795325112867, <0.3826834323650898, 0.0, 0.0>)
+           Quaternion(0.9238795325112867, 0.3826834323650898, 0.0, 0.0)
         """
-
-        if not isinstance(axis, Vector3D):
-            raise TypeError("The rotation axis must be specified with a Vector3D.")
-
-        if not isinstance(angle, (float, int)):
-            raise TypeError("The rotation angle must be specified with a real number.")
 
         if not -180 <= angle <= 180:
             raise ValueError("The angle of rotation must be in the range (-180, 180).")
@@ -495,62 +567,3 @@ cdef class Quaternion:
         qz = axis.z * sin(theta_2)
 
         return new_quaternion(qs, qx, qy, qz)
-
-
-cpdef Quaternion matrix2quaternion(AffineMatrix3D matrix):
-    """
-    Extract the rotation part of an AffineMatrix3D as a Quaternion.
-    
-    Note, the translation component of this matrix will be ignored.
-    
-    :param AffineMatrix3D matrix: The AffineMatrix3D instance from which to extract the rotation component.
-    :return: A quaternion representation of the rotation specified in this transform matrix.
-
-    .. code-block:: pycon
-
-       >>> from raysect.core.math import rotate_x, matrix2quaternion
-       >>>
-       >>> matrix2quaternion(rotate_x(90))
-       Quaternion(0.7071067811865476, <0.7071067811865475, 0.0, 0.0>)
-    """
-
-    cdef:
-        AffineMatrix3D m = matrix
-        double qs, qx, qy, qz
-        double trace, s
-
-    trace = m.m[0][0] + m.m[1][1] + m.m[2][2]
-
-    if trace > 0:
-
-        s = sqrt(trace+1.0) * 2  # s = 4*qs
-        qs = 0.25 * s
-        qx = (m.m[2][1] - m.m[1][2]) / s
-        qy = (m.m[0][2] - m.m[2][0]) / s
-        qz = (m.m[1][0] - m.m[0][1]) / s
-
-    elif m.m[0][0] > m.m[1][1] and m.m[0][0] > m.m[2][2]:
-
-        s = sqrt(1.0 + m.m[0][0] - m.m[1][1] - m.m[2][2]) * 2  # s = 4*qx
-        qs = (m.m[2][1] - m.m[1][2]) / s
-        qx = 0.25 * s
-        qy = (m.m[0][1] + m.m[1][0]) / s
-        qz = (m.m[0][2] + m.m[2][0]) / s
-
-    elif m.m[1][1] > m.m[2][2]:
-
-        s = sqrt(1.0 + m.m[1][1] - m.m[0][0] - m.m[2][2]) * 2  # s = 4*qy
-        qs = (m.m[0][2] - m.m[2][0]) / s
-        qx = (m.m[0][1] + m.m[1][0]) / s
-        qy = 0.25 * s
-        qz = (m.m[1][2] + m.m[2][1]) / s
-
-    else:
-
-        s = sqrt(1.0 + m.m[2][2] - m.m[0][0] - m.m[1][1]) * 2  # s = 4*qz
-        qs = (m.m[1][0] - m.m[0][1]) / s
-        qx = (m.m[0][2] + m.m[2][0]) / s
-        qy = (m.m[1][2] + m.m[2][1]) / s
-        qz = 0.25 * s
-
-    return new_quaternion(qs, qx, qy, qz)
