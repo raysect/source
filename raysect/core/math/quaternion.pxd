@@ -1,4 +1,3 @@
-# cython: language_level=3
 
 # Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -29,14 +28,53 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .point import Point2D, Point3D
-from .vector import Vector2D, Vector3D
-from .normal import Normal3D
-from .affinematrix import AffineMatrix3D
-from .quaternion import Quaternion
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
-from .units import *
-from .interpolators import Interpolator2DMesh, Discrete2DMesh
-from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
-from .sampler import *
-from .polygon import triangulate2d
+from raysect.core.math.affinematrix cimport AffineMatrix3D
+
+from raysect.core.math.vector cimport Vector3D
+
+
+cdef class Quaternion:
+
+    cdef public double s, x, y, z
+
+    cdef Quaternion neg(self)
+
+    cdef Quaternion add(self, Quaternion q2)
+
+    cdef Quaternion sub(self, Quaternion q2)
+
+    cdef Quaternion mul(self, Quaternion q2)
+
+    cdef Quaternion mul_scalar(self, double d)
+
+    cpdef Quaternion inverse(self)
+
+    cpdef double norm(self)
+
+    cdef Quaternion div(self, Quaternion q2)
+
+    cdef Quaternion div_scalar(self, double d)
+
+    cpdef Quaternion normalise(self)
+
+    cpdef Quaternion copy(self)
+
+    cpdef AffineMatrix3D to_matrix(self)
+
+
+cdef inline Quaternion new_quaternion(double s, double x, double y, double z):
+    """
+    Quaternion factory function.
+
+    Creates a new Quaternion object with less overhead than the equivalent Python
+    call. This function is callable from cython only.
+    """
+
+    cdef Quaternion q
+    q = Quaternion.__new__(Quaternion)
+    q.s = s
+    q.x = x
+    q.y = y
+    q.z = z
+    return q
+
