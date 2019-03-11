@@ -19,6 +19,8 @@ The aims of the Raysect project are as follows:
 
 The general development philosophy is ease of use trumps performance, but performance is not to be ignored.
 
+For more information, see the [documentation pages](http://www.raysect.org/).
+
 
 ![Dispersion of light passing through a prism](docs/source/demonstrations/optics/prism_720x360.jpg)
 
