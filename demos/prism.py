@@ -71,7 +71,7 @@ world = World()
 floor = Box(Point3D(-1000, -0.1, -1000), Point3D(1000, 0, 1000), parent=world, material=Lambert())
 
 # construct prism from utility method
-prism = equilateral_prism(0.06, 0.15, parent=world, material=schott("SF11"), transform=translate(0, 0.0 + 1e-6, 0.0))
+prism = equilateral_prism(0.06, 0.15, parent=world, material=schott("SF11"), transform=translate(0, 0.0 + 1e-6, -0.01))
 
 # Curved target screen for collecting rainbow light
 stand = Intersect(
