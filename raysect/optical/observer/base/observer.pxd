@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from libc.stdint cimport *
 from raysect.optical cimport Ray
 from raysect.optical cimport Observer
 from raysect.optical.observer.base.sampler cimport FrameSampler1D, FrameSampler2D
@@ -44,12 +45,12 @@ cdef class _ObserverBase(Observer):
         double _ray_extinction_prob
         public bint ray_importance_sampling
         double _ray_important_path_weight
-        int _stats_ray_count
-        int _stats_total_rays
+        uint64_t _stats_ray_count
+        uint64_t _stats_total_rays
         double _stats_start_time
         double _stats_progress_timer
-        int _stats_total_tasks
-        int _stats_completed_tasks
+        uint64_t _stats_total_tasks
+        uint64_t _stats_completed_tasks
         readonly bint render_complete
         public bint quiet
 
@@ -73,7 +74,7 @@ cdef class _ObserverBase(Observer):
 
     cpdef object _initialise_statistics(self, list tasks)
 
-    cpdef object _update_statistics(self, int sample_ray_count)
+    cpdef object _update_statistics(self, uint64_t sample_ray_count)
 
     cpdef object _finalise_statistics(self)
 
