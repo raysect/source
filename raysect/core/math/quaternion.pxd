@@ -47,6 +47,8 @@ cdef class Quaternion:
 
     cdef Quaternion mul_scalar(self, double d)
 
+    cpdef Quaternion conjugate(self)
+
     cpdef Quaternion inverse(self)
 
     cpdef double norm(self)
@@ -58,6 +60,8 @@ cdef class Quaternion:
     cpdef Quaternion normalise(self)
 
     cpdef Quaternion copy(self)
+
+    cpdef Vector3D transform_vector(self, Vector3D vector)
 
     cpdef AffineMatrix3D to_matrix(self)
 

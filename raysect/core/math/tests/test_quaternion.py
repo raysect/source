@@ -247,6 +247,20 @@ class TestQuaternion(unittest.TestCase):
         self.assertTrue(q2 / 2 == q_result,
                         "Division of a quaternion and a scalar failed to produce the correct result.")
 
+    def test_conjugate(self):
+        """Test conjugation operation"""
+
+        q = Quaternion(1, 2, -3, 0)
+        result = q.conjugate()
+        answer = Quaternion(1, -2, 3, 0)
+
+        self.assertEqual(result.x, answer.x,
+                         msg="Conjugation of a Quaternion failed to produce the correct result [X].")
+        self.assertEqual(result.y, answer.y,
+                         msg="Conjugation of a Quaternion failed to produce the correct result [Y].")
+        self.assertEqual(result.z, answer.z,
+                         msg="Conjugation of a Quaternion failed to produce the correct result [Z].")
+
     def test_inverse(self):
         """Inverse operation"""
 
@@ -375,6 +389,31 @@ class TestQuaternion(unittest.TestCase):
                                msg="Converting axis angle to quaternion produced wrong result [Y].")
         self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
                                msg="Converting axis angle to quaternion produced wrong result [Z].")
+
+    def test_transform_vector(self):
+        """Tests that a vector is correctly transformed by the quaternion"""
+
+        q = Quaternion(1, 0, 0, 0)
+        result = q.transform_vector(Vector3D(0, 1, 0))
+        answer = Vector3D(0, 1, 0)
+
+        self.assertAlmostEqual(answer.x, result.x, delta=1e-10,
+                               msg='Transforming a Vector3D with a Quaternion produced the wrong result [X].')
+        self.assertAlmostEqual(answer.y, result.y, delta=1e-10,
+                               msg='Transforming a Vector3D with a Quaternion produced the wrong result [Y].')
+        self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
+                               msg='Transforming a Vector3D with a Quaternion produced the wrong result [Z].')
+
+        q = Quaternion(0.6731265316174981, 0.02371918119564304, -0.0074266863424779506, -0.739109543441279)
+        result = q.transform_vector(Vector3D(1, 0, 0))
+        answer = Vector3D(-0.09267614575201093, -0.9953807967621223, -0.02506394713037894)
+
+        self.assertAlmostEqual(answer.x, result.x, delta=1e-10,
+                               msg='Transforming a Vector3D with a Quaternion produced the wrong result [X].')
+        self.assertAlmostEqual(answer.y, result.y, delta=1e-10,
+                               msg='Transforming a Vector3D with a Quaternion produced the wrong result [Y].')
+        self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
+                               msg='Transforming a Vector3D with a Quaternion produced the wrong result [Z].')
 
     def test_from_matrix(self):
         """Tests the extraction of a rotation quaternion from an AffineMatrix3D"""

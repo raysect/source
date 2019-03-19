@@ -33,6 +33,7 @@ cimport cython
 from libc.math cimport sqrt, sin, cos
 
 from raysect.core.math.affinematrix cimport new_affinematrix3d
+from raysect.core.math.vector cimport new_vector3d
 
 
 DEF RAD2DEG = 57.29577951308232000  # 180 / pi
@@ -328,6 +329,18 @@ cdef class Quaternion:
 
         return new_quaternion(d * q.s, d * q.x, d * q.y, d * q.z)
 
+    cpdef Quaternion conjugate(self):
+        """
+        Complex conjugate operator. 
+        
+        .. code-block:: pycon
+
+            >>> Quaternion(0, 1, 2, 3).conjugate()
+            Quaternion(0, -1, -2, -3)
+        """
+
+        return new_quaternion(self.s, -self.x, -self.y, -self.z)
+
     @cython.cdivision(True)
     cpdef Quaternion inverse(self):
         """
@@ -418,6 +431,25 @@ cdef class Quaternion:
 
         return new_quaternion(self.s, self.x, self.y, self.z)
 
+    cpdef Vector3D transform_vector(self, Vector3D vector):
+        """
+        Rotates the supplies vector to this quaternion's orientation.
+        
+        .. math::
+           
+           \\vec{v}` = q \\times \\vec{v} \\times q^{*}
+        
+        :param Vector3D vector: the vector to be transformed.
+        """
+
+        cdef Quaternion q_star, v, v_prime
+
+        v = new_quaternion(0, vector.x, vector.y, vector.z)
+        q_star = self.conjugate()
+        v_prime = self.mul(v).mul(q_star)
+
+        return new_vector3d(v_prime.x, v_prime.y, v_prime.z)
+
     cpdef AffineMatrix3D to_matrix(self):
         """
         Generates an AffineMatrix3D representation of this Quaternion.
@@ -437,10 +469,9 @@ cdef class Quaternion:
         cdef:
             double qs, qx, qy, qz
             double qs2, qx2, qy2, qz2
-            double m00, m01, m02, m03
-            double m10, m11, m12, m13
-            double m20, m21, m22, m23
-            double m30, m31, m32, m33
+            double m00, m01, m02
+            double m10, m11, m12
+            double m20, m21, m22
             double temp1, temp2
             Quaternion unit_q
 
@@ -468,14 +499,10 @@ cdef class Quaternion:
         m21 = 2*qy*qz + 2*qx*qs
         m22 = 1 - 2*qx2 - 2*qy2
 
-        m03 = m13 = m23 = 0.0
-        m30 = m31 = m32 = 0.0
-        m33 = 1.0
-
-        return new_affinematrix3d(m00, m01, m02, m03,
-                                  m10, m11, m12, m13,
-                                  m20, m21, m22, m23,
-                                  m30, m31, m32, m33)
+        return new_affinematrix3d(m00, m01, m02, 0,
+                                  m10, m11, m12, 0,
+                                  m20, m21, m22, 0,
+                                  0, 0, 0, 1)
 
     @classmethod
     def from_matrix(cls, AffineMatrix3D matrix):
