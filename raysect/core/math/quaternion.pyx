@@ -431,25 +431,6 @@ cdef class Quaternion:
 
         return new_quaternion(self.s, self.x, self.y, self.z)
 
-    cpdef Vector3D transform_vector(self, Vector3D vector):
-        """
-        Rotates the supplies vector to this quaternion's orientation.
-        
-        .. math::
-           
-           \\vec{v}` = q \\times \\vec{v} \\times q^{*}
-        
-        :param Vector3D vector: the vector to be transformed.
-        """
-
-        cdef Quaternion q_star, v, v_prime
-
-        v = new_quaternion(0, vector.x, vector.y, vector.z)
-        q_star = self.conjugate()
-        v_prime = self.mul(v).mul(q_star)
-
-        return new_vector3d(v_prime.x, v_prime.y, v_prime.z)
-
     cpdef AffineMatrix3D to_matrix(self):
         """
         Generates an AffineMatrix3D representation of this Quaternion.

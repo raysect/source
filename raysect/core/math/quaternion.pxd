@@ -61,8 +61,6 @@ cdef class Quaternion:
 
     cpdef Quaternion copy(self)
 
-    cpdef Vector3D transform_vector(self, Vector3D vector)
-
     cpdef AffineMatrix3D to_matrix(self)
 
 
