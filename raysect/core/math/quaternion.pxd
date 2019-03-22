@@ -47,6 +47,8 @@ cdef class Quaternion:
 
     cdef Quaternion mul_scalar(self, double d)
 
+    cpdef Quaternion conjugate(self)
+
     cpdef Quaternion inverse(self)
 
     cpdef double norm(self)

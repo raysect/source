@@ -247,6 +247,20 @@ class TestQuaternion(unittest.TestCase):
         self.assertTrue(q2 / 2 == q_result,
                         "Division of a quaternion and a scalar failed to produce the correct result.")
 
+    def test_conjugate(self):
+        """Test conjugation operation"""
+
+        q = Quaternion(1, 2, -3, 0)
+        result = q.conjugate()
+        answer = Quaternion(1, -2, 3, 0)
+
+        self.assertEqual(result.x, answer.x,
+                         msg="Conjugation of a Quaternion failed to produce the correct result [X].")
+        self.assertEqual(result.y, answer.y,
+                         msg="Conjugation of a Quaternion failed to produce the correct result [Y].")
+        self.assertEqual(result.z, answer.z,
+                         msg="Conjugation of a Quaternion failed to produce the correct result [Z].")
+
     def test_inverse(self):
         """Inverse operation"""
 
