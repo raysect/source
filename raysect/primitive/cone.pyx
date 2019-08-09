@@ -42,7 +42,7 @@ DEF BOX_PADDING = 1e-9
 
 # TODO - Perhaps should be calculated based on primitive scale
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-9
+DEF EPSILON = 1e-7
 
 # object type enumeration
 DEF NO_TYPE = -1
