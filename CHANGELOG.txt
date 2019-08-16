@@ -1,6 +1,13 @@
 Raysect Changelog
 =================
 
+Release 0.5.6 (TBD)
+-------------------
+
+Bug fixes:
+* Surface normal calculation for the Cone primitive was incorrect, this has been fixed.
+
+
 Release 0.5.5 (4 Mar 2019)
 --------------------------
 
