@@ -40,9 +40,8 @@ DEF INFINITY = 1e999
 # bounding box is padded by a small amount to avoid numerical accuracy issues
 DEF BOX_PADDING = 1e-9
 
-# TODO - Perhaps should be calculated based on primitive scale
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-7
+DEF EPSILON = 1e-9
 
 # object type enumeration
 DEF NO_TYPE = -1
@@ -148,7 +147,7 @@ cdef class Cone(Primitive):
             Point3D origin
             Vector3D direction
             double radius, height
-            double a, b, c, d, k, t0, t1, t0_z, t1_z, temp_d
+            double a, b, c, k, t0, t1, t0_z, t1_z, temp_d, r2
             int t0_type, t1_type, temp_i
             bint t0_outside, t1_outside
             double closest_intersection
@@ -183,8 +182,15 @@ cdef class Cone(Primitive):
             t0 = -b / (2.0 * a)
             t0_type = CONE
 
-            t1 = -origin.z / direction.z
-            t1_type = BASE
+            # does ray also intersect the base?
+            k = -origin.z / direction.z
+            r2 = (origin.x + k * direction.x)**2 + (origin.y + k * direction.y**2)
+            if r2 <= (self._radius * self._radius):
+                t1 = k
+                t1_type = BASE
+            else:
+                t1 = t0
+                t1_type = t0_type
 
         else:
 
@@ -202,7 +208,7 @@ cdef class Cone(Primitive):
                 # ray intersects cone outside of height range
                 return None
 
-            elif 0 < t0_z < height and t1_outside:
+            elif not t0_outside and t1_outside:
 
                 # t0 is in range, t1 is outside
                 t0_type = CONE
@@ -210,7 +216,7 @@ cdef class Cone(Primitive):
                 t1 = -origin.z / direction.z
                 t1_type = BASE
 
-            elif t0_outside and 0 < t1_z < height:
+            elif t0_outside and not t1_outside:
 
                 # t0 is outside range, t1 is inside
                 t0_type = BASE
@@ -274,9 +280,11 @@ cdef class Cone(Primitive):
             bint exiting
 
         # point of surface intersection in local space
-        hit_point = new_point3d(origin.x + ray_distance * direction.x,
-                                origin.y + ray_distance * direction.y,
-                                origin.z + ray_distance * direction.z)
+        hit_point = new_point3d(
+            origin.x + ray_distance * direction.x,
+            origin.y + ray_distance * direction.y,
+            origin.z + ray_distance * direction.z
+        )
 
         # calculate surface normal in local space
         if type == BASE:
@@ -284,7 +292,7 @@ cdef class Cone(Primitive):
             # cone base
             normal = new_normal3d(0, 0, -1)
 
-        elif type == CONE and hit_point.z == self._height:
+        elif type == CONE and hit_point.z >= self._height:
 
             # cone tip
             normal = new_normal3d(0, 0, 1)
@@ -292,70 +300,61 @@ cdef class Cone(Primitive):
         else:
 
             # cone body
-            # calculate unit vector that points from origin to hit_point in x-y
-            # plane at the base of the cone and rotate perpendicular to cone surface
-            a = self._radius / self._height
-            b = 1 / (a * sqrt(hit_point.x*hit_point.x + hit_point.y*hit_point.y))
-            normal = new_normal3d(b * hit_point.x, b * hit_point.y, a)
+            a = hit_point.y / hit_point.x
+            b = self._height / sqrt(1 + a*a)
+            b = -b if hit_point.x < 0 else b
+            normal = new_normal3d(b, b*a, self._radius)
             normal = normal.normalise()
 
         # displace hit_point away from surface to generate inner and outer points
-        inside_point = self._interior_point(hit_point, normal, type)
+        inside_point = self._interior_point(hit_point, normal)
 
-        outside_point = new_point3d(hit_point.x + EPSILON * normal.x,
-                                    hit_point.y + EPSILON * normal.y,
-                                    hit_point.z + EPSILON * normal.z)
+        outside_point = new_point3d(
+            hit_point.x + EPSILON * normal.x,
+            hit_point.y + EPSILON * normal.y,
+            hit_point.z + EPSILON * normal.z
+        )
 
         # is ray exiting surface
         exiting = direction.dot(normal) >= 0.0
 
-        return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
-                                normal, exiting, self.to_local(), self.to_root())
+        return new_intersection(
+            ray, ray_distance, self, hit_point, inside_point, outside_point,
+            normal, exiting, self.to_local(), self.to_root()
+        )
 
     @cython.cdivision(True)
-    cdef Point3D _interior_point(self, Point3D hit_point, Normal3D normal, int type):
+    cdef Point3D _interior_point(self, Point3D hit_point, Normal3D normal):
 
         cdef:
-            double x, y, z
-            double old_radius, new_radius, scale
-            double inner_height, inner_radius, hit_radius_sqr
+            double x, y, z, k
+            double inner_height, inner_radius, scale
 
-        inner_height = self._height - EPSILON
+        x = hit_point.x - EPSILON * normal.x
+        y = hit_point.y - EPSILON * normal.y
+        z = hit_point.z - EPSILON * normal.z
+        k = self._radius / self._height
 
-        if self._height >= hit_point.z > inner_height:
+        # If the hit point is near the tip of the cone, we need to ensure that the inside point is
+        # shifted down so that the inside point is at least an epsilon away from all the cone
+        # surfaces. This is done by identifying a new cone, inset from the outer cone by 1 epsilon
+        # If the inside point lies is above the tip of the inner cone, it is moved to the tip of the
+        # inner cone.
+        inner_height = self._height - EPSILON * sqrt(1 + k*k) / k
+        # assert inner_height >= EPSILON, 'Numerical failure in Cone, this occurs if the cone has an extreme aspect ratio or ray distances are too large compared with the cone size.'
+        if z > inner_height:
+            return new_point3d(0, 0, inner_height)
 
-            # Avoid tip of cone
-            x = 0.0
-            y = 0.0
-            z = inner_height
+        # is interior point too close to or below the base, if so shift up following the cone surface
+        if z < EPSILON:
 
-        elif hit_point.z < EPSILON:
+            # calculate the base radius for a cone inset from the base and sides of the cone by epsilon
+            inner_radius = k * (self._height - EPSILON) - EPSILON * sqrt(1 + k*k)
+            # assert inner_radius >= 0, 'Numerical failure in Cone, this occurs if the cone has an extreme aspect ratio or ray distances are too large compared with the cone size.'
 
-            inner_radius = self._radius - EPSILON
-            hit_radius_sqr = hit_point.x*hit_point.x + hit_point.y*hit_point.y
-
-            if hit_radius_sqr > (inner_radius*inner_radius):
-                # Avoid bottom edges of cone
-                scale = inner_radius / sqrt(hit_radius_sqr)
-                x = scale * hit_point.x
-                y = scale * hit_point.y
-                z = EPSILON
-
-            else:
-                # Avoid base of cone
-                x = hit_point.x
-                y = hit_point.y
-                z = EPSILON
-
-        else:
-            # Avoid sides of cone
-            old_radius = sqrt(hit_point.x*hit_point.x + hit_point.y*hit_point.y)
-            new_radius = old_radius - EPSILON
-
-            scale = new_radius / old_radius
-            x = scale * hit_point.x
-            y = scale * hit_point.y
-            z = hit_point.z
+            # rescale radius of inner point to lie on edge of inner cone base and shift point up by one epsilon
+            scale = inner_radius / sqrt(hit_point.x*hit_point.x + hit_point.y*hit_point.y)
+            return new_point3d(scale * hit_point.x, scale * hit_point.y, EPSILON)
 
         return new_point3d(x, y, z)
 
@@ -363,7 +362,7 @@ cdef class Cone(Primitive):
     cpdef bint contains(self, Point3D point) except -1:
 
         cdef:
-            double cone_radius, point_radius
+            double cone_radius_sqr, point_radius_sqr
 
         # convert point to local object space
         point = point.transform(self.to_local())
@@ -372,14 +371,15 @@ cdef class Cone(Primitive):
         if point.z < 0 or point.z > self._height:
             return False
 
-        # calculate the cone radius at that point along the height axis:
-        cone_radius = (self._height - point.z) * self._radius / self._height
-
         # calculate the point's orthogonal distance from the axis to compare against the cone radius:
-        point_radius = sqrt(point.x*point.x + point.y*point.y)
+        point_radius_sqr = point.x*point.x + point.y*point.y
 
-        # Points distance from axis must be less than cone radius at that height
-        return point_radius <= cone_radius
+        # calculate the cone radius at that point along the height axis:
+        cone_radius_sqr = (self._height - point.z) * self._radius / self._height
+        cone_radius_sqr *= cone_radius_sqr
+
+        # Points distance from axis must be less than cone radius at that height (compare squared radii to avoid costly sqrt)
+        return point_radius_sqr <= cone_radius_sqr
 
     cpdef BoundingBox3D bounding_box(self):
 

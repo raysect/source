@@ -45,4 +45,4 @@ cdef class Cone(Primitive):
     cdef Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance,
                                                     int type)
 
-    cdef Point3D _interior_point(self, Point3D hit_point, Normal3D normal, int type)
+    cdef Point3D _interior_point(self, Point3D hit_point, Normal3D normal)
