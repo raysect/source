@@ -35,7 +35,7 @@ from raysect.core.math.vector cimport Vector3D
 
 cdef class Quaternion:
 
-    cdef public double s, x, y, z
+    cdef public double x, y, z, s
 
     cdef Quaternion neg(self)
 
@@ -64,7 +64,7 @@ cdef class Quaternion:
     cpdef AffineMatrix3D to_matrix(self)
 
 
-cdef inline Quaternion new_quaternion(double s, double x, double y, double z):
+cdef inline Quaternion new_quaternion(double x, double y, double z, double s):
     """
     Quaternion factory function.
 
