@@ -50,7 +50,6 @@ DEF PARABOLA = 0
 DEF BASE = 1
 
 
-# TODO: INVERT ALONG Z-AXIS
 cdef class Parabola(Primitive):
     """
     A parabola primitive.
@@ -175,39 +174,57 @@ cdef class Parabola(Primitive):
         if not solve_quadratic(a, b, c, &t0, &t1):
             return None
 
-        # calculate z height of intersection points
-        t0_z = origin.z + t0 * direction.z
-        t1_z = origin.z + t1 * direction.z
+        if t0 == t1:
 
-        t0_outside = t0_z < 0
-        t1_outside = t1_z < 0
-
-        if t0_outside and t1_outside:
-
-            # ray intersects parabola outside of height range
-            return None
-
-        elif not t0_outside and t1_outside:
-
-            # t0 is inside, t1 is outside
+            # ray intersects the tip of the parabola
+            t0 = -b / (2.0 * a)
             t0_type = PARABOLA
 
-            t1 = -origin.z / direction.z
-            t1_type = BASE
-
-        elif t0_outside and not t1_outside:
-
-            # t0 is outside, t1 is inside
-            t0_type = BASE
-            t0 = -origin.z / direction.z
-
-            t1_type = PARABOLA
+            # does ray also intersect the base?
+            k = -origin.z / direction.z
+            r2 = (origin.x + k * direction.x)**2 + (origin.y + k * direction.y**2)
+            if r2 <= (self._radius * self._radius):
+                t1 = k
+                t1_type = BASE
+            else:
+                t1 = t0
+                t1_type = t0_type
 
         else:
 
-            # both intersections are valid and within the parabola body
-            t0_type = PARABOLA
-            t1_type = PARABOLA
+            # calculate z height of intersection points
+            t0_z = origin.z + t0 * direction.z
+            t1_z = origin.z + t1 * direction.z
+
+            t0_outside = t0_z < 0
+            t1_outside = t1_z < 0
+
+            if t0_outside and t1_outside:
+
+                # ray intersects parabola outside of height range
+                return None
+
+            elif not t0_outside and t1_outside:
+
+                # t0 is inside, t1 is outside
+                t0_type = PARABOLA
+
+                t1 = -origin.z / direction.z
+                t1_type = BASE
+
+            elif t0_outside and not t1_outside:
+
+                # t0 is outside, t1 is inside
+                t0_type = BASE
+                t0 = -origin.z / direction.z
+
+                t1_type = PARABOLA
+
+            else:
+
+                # both intersections are valid and within the parabola body
+                t0_type = PARABOLA
+                t1_type = PARABOLA
 
         # ensure t0 is always smaller (closer) than t1
         if t0 > t1:
@@ -261,9 +278,11 @@ cdef class Parabola(Primitive):
             bint exiting
 
         # point of surface intersection in local space
-        hit_point = new_point3d(origin.x + ray_distance * direction.x,
-                                origin.y + ray_distance * direction.y,
-                                origin.z + ray_distance * direction.z)
+        hit_point = new_point3d(
+            origin.x + ray_distance * direction.x,
+            origin.y + ray_distance * direction.y,
+            origin.z + ray_distance * direction.z
+        )
 
         # calculate surface normal in local space
         if type == BASE:
@@ -281,9 +300,11 @@ cdef class Parabola(Primitive):
         # displace hit_point away from surface to generate inner and outer points
         inside_point = self._interior_point(hit_point, normal, type)
 
-        outside_point = new_point3d(hit_point.x + EPSILON * normal.x,
-                                    hit_point.y + EPSILON * normal.y,
-                                    hit_point.z + EPSILON * normal.z)
+        outside_point = new_point3d(
+            hit_point.x + EPSILON * normal.x,
+            hit_point.y + EPSILON * normal.y,
+            hit_point.z + EPSILON * normal.z
+        )
 
         # is ray exiting surface
         exiting = direction.dot(normal) >= 0.0
@@ -299,18 +320,19 @@ cdef class Parabola(Primitive):
             double scale
             double inner_radius, hit_radius_sqr
 
+        x = hit_point.x
+        y = hit_point.y
+        z = hit_point.z
+
+        # todo: fix next time through the code as this is not 100% robust, but probability of inner point leaving volume is however vanishingly low
         inner_radius = self._radius - EPSILON
         hit_radius_sqr = hit_point.x * hit_point.x + hit_point.y * hit_point.y
-
         if hit_radius_sqr > (inner_radius * inner_radius):
             scale = inner_radius / sqrt(hit_radius_sqr)
             x = scale * hit_point.x
             y = scale * hit_point.y
-            z = EPSILON
 
-        elif hit_point.z < EPSILON:
-            x = hit_point.x
-            y = hit_point.y
+        if hit_point.z < EPSILON:
             z = EPSILON
 
         else:
