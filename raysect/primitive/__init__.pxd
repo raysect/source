@@ -27,11 +27,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .box import Box
-from .sphere import Sphere
-from .cylinder import Cylinder
-from .csg import Union, Intersect, Subtract
-from .mesh import Mesh, import_obj, export_obj, import_stl, export_stl, import_ply, export_ply, import_vtk, export_vtk
-from .cone import Cone
-from .parabola import Parabola
-from .utility import EncapsulatedPrimitive
+from raysect.primitive.box cimport Box
+from raysect.primitive.sphere cimport Sphere
+from raysect.primitive.cylinder cimport Cylinder
+from raysect.primitive.csg cimport Union, Intersect, Subtract
+from raysect.primitive.mesh cimport Mesh
+from raysect.primitive.cone cimport Cone
+from raysect.primitive.parabola cimport Parabola
+from raysect.primitive.utility cimport EncapsulatedPrimitive
