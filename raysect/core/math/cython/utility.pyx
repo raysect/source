@@ -435,3 +435,78 @@ def _point_inside_polygon(vertices, ptx, pty):
     return point_inside_polygon(vertices, ptx, pty)
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double max_(double[:] data) nogil:
+    """Return the maximum value in the buffer data
+
+    This is equivalent to Python's max() function, but is far faster
+    for objects supporting the buffer interface where each element is a
+    double.
+
+    :param double data: Memoryview of an array of 1D data
+    :rtype: double
+    """
+    cdef:
+        int i
+        double result
+    result = data[0]
+    for i in range(1, data.shape[0]):
+        result = max(result, data[i])
+    return result
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double min_(double[:] data) nogil:
+    """Return the minimum value in the buffer data
+
+    This is equivalent to Python's min() function, but is far faster
+    for objects supporting the buffer interface where each element is a
+    double.
+
+    :param double data: Memoryview of an array of 1D data
+    :rtype: double
+    """
+    cdef:
+        int i
+        double result
+    result = data[0]
+    for i in range(1, data.shape[0]):
+        result = min(result, data[i])
+    return result
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double ptp_(double[:] data) nogil:
+    """Return the peak-to-peak value in the buffer data
+
+    This is equivalent to Python's max() - min(), but is far faster
+    for objects supporting the buffer interface where each element is a
+    double.
+
+    :param double data: Memoryview of an array of 1D data
+    :rtype: double
+    """
+    cdef:
+        int i
+        double result, max_, min_
+    max_ = data[0]
+    min_ = data[0]
+    for i in range(1, data.shape[0]):
+        max_ = max(max_, data[i])
+        min_ = min(min_, data[i])
+    result = max_ - min_
+    return result
+
+
+# Expose the limits functions to Python for testing
+def _min(data):
+    return min_(data)
+
+def _max(data):
+    return max_(data)
+
+def _ptp(data):
+    return ptp_(data)
