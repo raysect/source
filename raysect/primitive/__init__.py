@@ -34,3 +34,4 @@ from .csg import Union, Intersect, Subtract
 from .mesh import Mesh, import_obj, export_obj, import_stl, export_stl, import_ply, export_ply, import_vtk, export_vtk
 from .cone import Cone
 from .parabola import Parabola
+from .utility import EncapsulatedPrimitive

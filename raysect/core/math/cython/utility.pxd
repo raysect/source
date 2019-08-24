@@ -40,6 +40,12 @@ cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil
 
 cdef double average(double[::1] x, double[::1] y, double x0, double x1) nogil
 
+cdef double maximum(double[::1] data) nogil
+
+cdef double minimum(double[::1] data) nogil
+
+cdef double peak_to_peak(double[::1] data) nogil
+
 cdef inline double clamp(double v, double minimum, double maximum) nogil:
     if v < minimum:
         return minimum

@@ -1,6 +1,20 @@
 Raysect Changelog
 =================
 
+Release 0.5.6 (24 Aug 2019)
+---------------------------
+
+Bug fixes:
+* Surface normal calculation for the Cone primitive was incorrect, this has been fixed.
+* Parabola tip intersection case was not handled fully, this has been fixed
+* Increased size of integers holding ray counts as they could overflow for extremely long renders.
+
+New:
+* Added quaternions to the core math package.
+* Added low level cython functions to calculate mininum, maximum and peak_to_peak for memoryviews. (contributor: Dr Jack Lovell)
+* Added a material blending modifier to the raysect.optical.material.modifiers package.
+
+
 Release 0.5.5 (4 Mar 2019)
 --------------------------
 

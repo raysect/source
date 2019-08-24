@@ -29,5 +29,7 @@
 
 from .roughen import *
 from .transform import *
+from .blend import *
+
 
 

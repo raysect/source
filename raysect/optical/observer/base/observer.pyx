@@ -377,7 +377,7 @@ cdef class _ObserverBase(Observer):
             World world
             list rays, pixel_processors
             PixelProcessor processor
-            int ray_count
+            uint64_t ray_count
             double sensitivity, projection_weight
             Ray ray
             Spectrum spectrum
@@ -436,7 +436,7 @@ cdef class _ObserverBase(Observer):
         cdef:
             tuple task
             list results
-            int ray_count
+            uint64_t ray_count
 
         # unpack worker results
         task, results, ray_count = packed_result
@@ -475,7 +475,7 @@ cdef class _ObserverBase(Observer):
         self._stats_total_tasks = len(tasks) * self.spectral_rays
         self._stats_completed_tasks = 0
 
-    cpdef object _update_statistics(self, int sample_ray_count):
+    cpdef object _update_statistics(self, uint64_t sample_ray_count):
         """
         Display progress statistics.
         """
@@ -490,7 +490,7 @@ cdef class _ObserverBase(Observer):
         if (time() - self._stats_progress_timer) > 1.0:
 
             current_time = time() - self._stats_start_time
-            completion = 100 * self._stats_completed_tasks / self._stats_total_tasks
+            completion = 100 * (self._stats_completed_tasks / self._stats_total_tasks)
             print("Render time: {:0.3f}s ({:0.2f}% complete, {:0.1f}k rays)".format(
                 current_time, completion, self._stats_ray_count / 1000))
 
