@@ -22,7 +22,7 @@ The general development philosophy is ease of use trumps performance, but perfor
 For more information, see the [documentation pages](http://www.raysect.org/).
 
 
-![Dispersion of light passing through a prism](docs/source/demonstrations/optics/prism_720x360.jpg)
+![Dispersion of light passing through a prism](docs/source/demonstrations/optics/prism_720x405.png)
 
 *Caption: a simulation of Newton's classic experiment, white light being dispersed by a glass prism.*
 
