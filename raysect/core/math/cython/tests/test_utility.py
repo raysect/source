@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,15 +28,34 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Unit tests for the Vector3D object.
+Unit tests for the utility package.
 """
 
 import unittest
 import numpy as np
+from raysect.core.math.cython.utility import _minimum as minimum, _maximum as maximum, _peak_to_peak as peak_to_peak
 from raysect.core.math.cython.utility import _test_winding2d as winding2d, _point_inside_polygon as point_inside_polygon
 
 
 class TestUtility(unittest.TestCase):
+
+    def test_maximum(self):
+        """Tests the maximum value calculation for memoryviews."""
+
+        data = np.array([2, 4, -3, 9], dtype=float)
+        self.assertEqual(maximum(data), 9)
+
+    def test_minimum(self):
+        """Tests the minimum value calculation for memoryviews."""
+
+        data = np.array([2, 4, -3, 9], dtype=float)
+        self.assertEqual(minimum(data), -3)
+
+    def test_peak_to_peak(self):
+        """Tests the peak to peak value calculation for memoryviews."""
+
+        data = np.array([2, 4, -3, 9], dtype=float)
+        self.assertEqual(peak_to_peak(data), 12)
 
     def test_clockwise_polygon_winding(self):
         """Tests the algorithm returns True (clockwise) for a clockwise polygon."""

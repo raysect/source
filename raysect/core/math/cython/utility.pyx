@@ -154,7 +154,7 @@ cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil:
     :param double[::1] y: A memory view to a double array of sample values corresponding to the x array points.
     :param double x0: Start point of integration.
     :param double x1: End point of integration.
-    :return: Integral between x0 and x1
+    :return: Integral between x0 and x1.
     :rtype: double
     """
 
@@ -262,7 +262,7 @@ cdef double average(double[::1] x, double[::1] y, double x0, double x1) nogil:
     :param double[::1] y: A memory view to a double array of sample values corresponding to the x array points.
     :param double x0: First point.
     :param double x1: Second point.
-    :return: Mean value between x0 and x1
+    :return: Mean value between x0 and x1.
     :rtype: double
     """
 
@@ -301,17 +301,102 @@ cdef double average(double[::1] x, double[::1] y, double x0, double x1) nogil:
         return integrate(x, y, x0, x1) / (x1 - x0)
 
 
-#TODO: docstring
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double maximum(double[:] data) nogil:
+    """
+    Return the maximum value in the buffer data.
+
+    This is equivalent to Python's max() function, but is far faster
+    for objects supporting the buffer interface where each element is a
+    double.
+
+    :param double data: Memoryview of an array of 1D data.
+    :rtype: double
+    """
+
+    cdef:
+        int i
+        double result
+
+    result = data[0]
+    for i in range(1, data.shape[0]):
+        result = max(result, data[i])
+    return result
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double minimum(double[:] data) nogil:
+    """
+    Return the minimum value in the buffer data.
+
+    This is equivalent to Python's min() function, but is far faster
+    for objects supporting the buffer interface where each element is a
+    double.
+
+    :param double data: Memoryview of an array of 1D data.
+    :rtype: double
+    """
+    cdef:
+        int i
+        double result
+    result = data[0]
+    for i in range(1, data.shape[0]):
+        result = min(result, data[i])
+    return result
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double peak_to_peak(double[:] data) nogil:
+    """
+    Return the peak-to-peak value in the buffer data.
+
+    This is equivalent to Python's max() - min(), but is far faster
+    for objects supporting the buffer interface where each element is a
+    double.
+
+    :param double data: Memoryview of an array of 1D data.
+    :rtype: double
+    """
+
+    cdef:
+        int i
+        double result, max_, min_
+
+    max_ = data[0]
+    min_ = data[0]
+    for i in range(1, data.shape[0]):
+        max_ = max(max_, data[i])
+        min_ = min(min_, data[i])
+    result = max_ - min_
+    return result
+
+
 @cython.cdivision(True)
 cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil:
     """
+    Calculates the real roots of a quadratic equation.
 
-    :param double a:
-    :param double b:
-    :param double c:
-    :param double t0:
-    :param double t1:
-    :return:
+    The a, b and c arguments are the three constants of the quadratic equation:
+
+        f = a.x^2 + b.x^2 + c
+        
+    If the quadratic equation has 1 or 2 real roots, this function will return
+    True. If there are no real roots this method will return False.
+    
+    The values of the real roots, are returned by setting the values of the
+    memory locations pointed to by t0 and t1. In the case of a single root,
+    both t0 and t1 will have the same value. If there are not roots, the values
+    of t0 and t1 will be undefined. 
+
+    :param double a: Quadratic constant. 
+    :param double b: Quadratic constant.
+    :param double c: Quadratic constant.
+    :param double t0: 1st root of the quadratic.
+    :param double t1: 2nd root of the quadratic.
+    :return: True if real roots found, False otherwise.
     :rtype: bint
     """
 
@@ -370,11 +455,6 @@ cdef bint winding2d(double[:,::1] vertices) nogil:
     return sum > 0
 
 
-def _test_winding2d(p):
-    """Expose cython function for testing."""
-    return winding2d(p)
-
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty):
@@ -429,9 +509,26 @@ cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty):
         return True
 
 
+def _maximum(data):
+    """Expose cython function for testing."""
+    return maximum(data)
+
+
+def _minimum(data):
+    """Expose cython function for testing."""
+    return minimum(data)
+
+
+def _peak_to_peak(data):
+    """Expose cython function for testing."""
+    return peak_to_peak(data)
+
+
+def _test_winding2d(p):
+    """Expose cython function for testing."""
+    return winding2d(p)
+
+
 def _point_inside_polygon(vertices, ptx, pty):
     """Expose cython function for testing."""
-
     return point_inside_polygon(vertices, ptx, pty)
-
-
