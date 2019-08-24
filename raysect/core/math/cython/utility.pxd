@@ -40,6 +40,12 @@ cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil
 
 cdef double average(double[::1] x, double[::1] y, double x0, double x1) nogil
 
+cdef double maximum(double[:] data) nogil
+
+cdef double minimum(double[:] data) nogil
+
+cdef double peak_to_peak(double[:] data) nogil
+
 cdef inline double clamp(double v, double minimum, double maximum) nogil:
     if v < minimum:
         return minimum
@@ -68,9 +74,3 @@ cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) 
 cdef bint winding2d(double[:,::1] vertices) nogil
 
 cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty)
-
-cdef double max_(double[:] data) nogil
-
-cdef double min_(double[:] data) nogil
-
-cdef double ptp_(double[:] data) nogil
