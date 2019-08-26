@@ -29,6 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cimport cython
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
 cdef double linear2d(double x0, double x1, double y0, double y1, double [:,::1] f, double x, double y) nogil:
     """
     :param x0: 
@@ -46,6 +51,9 @@ cdef double linear2d(double x0, double x1, double y0, double y1, double [:,::1] 
     return linear1d(y0, y1, k0, k1, y)
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
 cdef double linear3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f, double x, double y, double z) nogil:
     """
     :param x0: 
@@ -61,13 +69,15 @@ cdef double linear3d(double x0, double x1, double y0, double y1, double z0, doub
     :return: 
     """
 
-    cdef double k[2][2]
-
     # interpolate along x
-    k[0][0] = linear1d(x0, x1, f[0][0][0], f[1][0][0], x)
-    k[0][1] = linear1d(x0, x1, f[0][0][1], f[1][0][1], x)
-    k[1][0] = linear1d(x0, x1, f[0][1][0], f[1][1][0], x)
-    k[1][1] = linear1d(x0, x1, f[0][1][1], f[1][1][1], x)
+    cdef double k00 = linear1d(x0, x1, f[0][0][0], f[1][0][0], x)
+    cdef double k01 = linear1d(x0, x1, f[0][0][1], f[1][0][1], x)
+    cdef double k10 = linear1d(x0, x1, f[0][1][0], f[1][1][0], x)
+    cdef double k11 = linear1d(x0, x1, f[0][1][1], f[1][1][1], x)
 
-    # interpolate along y and z
-    return linear2d(y0, y1, z0, z1, k, y, z)
+    # interpolate along y
+    cdef double m0 = linear1d(y0, y1, k00, k10, y)
+    cdef double m1 = linear1d(y0, y1, k01, k11, y)
+
+    # interpolate along z
+    return linear1d(z0, z1, m0, m1, z)

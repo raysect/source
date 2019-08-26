@@ -44,5 +44,6 @@ cdef double cubic2d(double x0, double x1, double y0, double y1, double[:,:,::1] 
 cdef double cubic3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f,
                     double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
                     double[:,:,::1] dfdxdy, double[:,:,::1] dfdxdz, double[:,:,::1] dfdydz,
-                    double x, double y, double z) nogil
+                    double[:,:,::1] dfdxdydz, double x, double y, double z) nogil
+
 

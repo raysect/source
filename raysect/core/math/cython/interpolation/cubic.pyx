@@ -29,7 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cimport cython
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
 cdef double cubic2d(double x0, double x1, double y0, double y1, double[:,:,::1] f,
                     double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdxdy,
                     double x, double y) nogil:
@@ -37,9 +41,14 @@ cdef double cubic2d(double x0, double x1, double y0, double y1, double[:,:,::1] 
     raise NotImplementedError
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
 cdef double cubic3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f,
                     double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
                     double[:,:,::1] dfdxdy, double[:,:,::1] dfdxdz, double[:,:,::1] dfdydz,
                     double[:,:,::1] dfdxdydz, double x, double y, double z) nogil:
 
     raise NotImplementedError
+
+
