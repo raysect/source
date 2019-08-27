@@ -78,58 +78,8 @@ cdef double cubic2d(double[::1] vx, double[::1] vy, double[:,::1] f, double[:,::
             ndfdy[i][j] = dfdy[i][j] * dy
             nd2fdxdy[i][j] = d2fdxdy[i][j] * dx * dy
 
-    _calculate_coeff_2d(nf, ndfdx, ndfdy, nd2fdxdy, a)
-    return _evaluate_cubic_2d(a, nx, ny)
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.initializedcheck(False)
-cdef void _calculate_coeff_2d(double f[2][2], double dfdx[2][2], double dfdy[2][2], double d2fdxdy[2][2], double a[4][4]) nogil:
-
-    a[0][0] =   f[0][0]
-    a[0][1] =   dfdy[0][0]
-    a[0][2] = - 3*f[0][0] + 3*f[0][1] - 2*dfdy[0][0] - dfdy[0][1]
-    a[0][3] =   2*f[0][0] - 2*f[0][1] + dfdy[0][0] + dfdy[0][1]
-    a[1][0] =   dfdx[0][0]
-    a[1][1] =   d2fdxdy[0][0]
-    a[1][2] = - 3*dfdx[0][0] + 3*dfdx[0][1] - 2*d2fdxdy[0][0] - d2fdxdy[0][1]
-    a[1][3] =   2*dfdx[0][0] - 2*dfdx[0][1] + d2fdxdy[0][0] + d2fdxdy[0][1]
-    a[2][0] = - 3*f[0][0] + 3*f[1][0] - 2*dfdx[0][0] - dfdx[1][0]
-    a[2][1] = - 3*dfdy[0][0] + 3*dfdy[1][0] - 2*d2fdxdy[0][0] - d2fdxdy[1][0]
-    a[2][2] =   9*f[0][0] - 9*f[0][1] - 9*f[1][0] + 9*f[1][1] \
-              + 6*dfdx[0][0] - 6*dfdx[0][1] + 3*dfdx[1][0] - 3*dfdx[1][1] \
-              + 6*dfdy[0][0] + 3*dfdy[0][1] - 6*dfdy[1][0] - 3*dfdy[1][1] \
-              + 4*d2fdxdy[0][0] + 2*d2fdxdy[0][1] + 2*d2fdxdy[1][0] + d2fdxdy[1][1]
-    a[2][3] = - 6*f[0][0] + 6*f[0][1] + 6*f[1][0] - 6*f[1][1] \
-              - 4*dfdx[0][0] + 4*dfdx[0][1] - 2*dfdx[1][0] + 2*dfdx[1][1] \
-              - 3*dfdy[0][0] - 3*dfdy[0][1] + 3*dfdy[1][0] + 3*dfdy[1][1] \
-              - 2*d2fdxdy[0][0] - 2*d2fdxdy[0][1] - d2fdxdy[1][0] - d2fdxdy[1][1]
-    a[3][0] =   2*f[0][0] - 2*f[1][0] + dfdx[0][0] + dfdx[1][0]
-    a[3][1] =   2*dfdy[0][0] - 2*dfdy[1][0] + d2fdxdy[0][0] + d2fdxdy[1][0]
-    a[3][2] = - 6*f[0][0] + 6*f[0][1] + 6*f[1][0] - 6*f[1][1] \
-              - 3*dfdx[0][0] + 3*dfdx[0][1] - 3*dfdx[1][0] + 3*dfdx[1][1] \
-              - 4*dfdy[0][0] - 2*dfdy[0][1] + 4*dfdy[1][0] + 2*dfdy[1][1] \
-              - 2*d2fdxdy[0][0] - d2fdxdy[0][1] - 2*d2fdxdy[1][0] - d2fdxdy[1][1]
-    a[3][3] =   4*f[0][0] - 4*f[0][1] - 4*f[1][0] + 4*f[1][1] \
-              + 2*dfdx[0][0] - 2*dfdx[0][1] + 2*dfdx[1][0] - 2*dfdx[1][1] \
-              + 2*dfdy[0][0] + 2*dfdy[0][1] - 2*dfdy[1][0] - 2*dfdy[1][1] \
-              + d2fdxdy[0][0] + d2fdxdy[0][1] + d2fdxdy[1][0] + d2fdxdy[1][1]
-
-
-cdef double _evaluate_cubic_2d(double a[4][4], double x, double y) nogil:
-
-    cdef double x2 = x*x
-    cdef double x3 = x2*x
-
-    cdef double y2 = y*y
-    cdef double y3 = y2*y
-
-    # calculate cubic polynomial
-    return   a[0][0]    + a[0][1]*y    + a[0][2]*y2    + a[0][3]*y3 \
-           + a[1][0]*x  + a[1][1]*x*y  + a[1][2]*x*y2  + a[1][3]*x*y3 \
-           + a[2][0]*x2 + a[2][1]*x2*y + a[2][2]*x2*y2 + a[2][3]*x2*y3 \
-           + a[3][0]*x3 + a[3][1]*x3*y + a[3][2]*x3*y2 + a[3][3]*x3*y3
+    calc_coefficients_2d(nf, ndfdx, ndfdy, nd2fdxdy, a)
+    return evaluate_cubic_2d(a, nx, ny)
 
 
 # todo: SHOULD THIS DO NORMALISATION? OR SHOULD IT BE A UNIT SQUARE?
@@ -176,14 +126,49 @@ cdef double cubic3d(double[::1] vx, double[::1] vy, double[::1] vz, double[:,:,:
                 nd2fdydz[i][j][k] = d2fdxdy[i][j][k] * dy * dz
                 nd3fdxdydz[i][j][k] = d2fdxdy[i][j][k] * dx * dy * dz
 
-    _calculate_coeff_3d(nf, ndfdx, ndfdy, ndfdz, nd2fdxdy, nd2fdxdz, nd2fdydz, nd3fdxdydz, a)
-    return _evaluate_cubic_3d(a, nx, ny, nz)
+    calc_coefficients_3d(nf, ndfdx, ndfdy, ndfdz, nd2fdxdy, nd2fdxdz, nd2fdydz, nd3fdxdydz, a)
+    return evaluate_cubic_3d(a, nx, ny, nz)
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.initializedcheck(False)
-cdef void _calculate_coeff_3d(double f[2][2][2], double dfdx[2][2][2], double dfdy[2][2][2], double dfdz[2][2][2],
+cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2][2], double d2fdxdy[2][2], double a[4][4]) nogil:
+
+    a[0][0] =   f[0][0]
+    a[0][1] =   dfdy[0][0]
+    a[0][2] = - 3*f[0][0] + 3*f[0][1] - 2*dfdy[0][0] - dfdy[0][1]
+    a[0][3] =   2*f[0][0] - 2*f[0][1] + dfdy[0][0] + dfdy[0][1]
+    a[1][0] =   dfdx[0][0]
+    a[1][1] =   d2fdxdy[0][0]
+    a[1][2] = - 3*dfdx[0][0] + 3*dfdx[0][1] - 2*d2fdxdy[0][0] - d2fdxdy[0][1]
+    a[1][3] =   2*dfdx[0][0] - 2*dfdx[0][1] + d2fdxdy[0][0] + d2fdxdy[0][1]
+    a[2][0] = - 3*f[0][0] + 3*f[1][0] - 2*dfdx[0][0] - dfdx[1][0]
+    a[2][1] = - 3*dfdy[0][0] + 3*dfdy[1][0] - 2*d2fdxdy[0][0] - d2fdxdy[1][0]
+    a[2][2] =   9*f[0][0] - 9*f[0][1] - 9*f[1][0] + 9*f[1][1] \
+              + 6*dfdx[0][0] - 6*dfdx[0][1] + 3*dfdx[1][0] - 3*dfdx[1][1] \
+              + 6*dfdy[0][0] + 3*dfdy[0][1] - 6*dfdy[1][0] - 3*dfdy[1][1] \
+              + 4*d2fdxdy[0][0] + 2*d2fdxdy[0][1] + 2*d2fdxdy[1][0] + d2fdxdy[1][1]
+    a[2][3] = - 6*f[0][0] + 6*f[0][1] + 6*f[1][0] - 6*f[1][1] \
+              - 4*dfdx[0][0] + 4*dfdx[0][1] - 2*dfdx[1][0] + 2*dfdx[1][1] \
+              - 3*dfdy[0][0] - 3*dfdy[0][1] + 3*dfdy[1][0] + 3*dfdy[1][1] \
+              - 2*d2fdxdy[0][0] - 2*d2fdxdy[0][1] - d2fdxdy[1][0] - d2fdxdy[1][1]
+    a[3][0] =   2*f[0][0] - 2*f[1][0] + dfdx[0][0] + dfdx[1][0]
+    a[3][1] =   2*dfdy[0][0] - 2*dfdy[1][0] + d2fdxdy[0][0] + d2fdxdy[1][0]
+    a[3][2] = - 6*f[0][0] + 6*f[0][1] + 6*f[1][0] - 6*f[1][1] \
+              - 3*dfdx[0][0] + 3*dfdx[0][1] - 3*dfdx[1][0] + 3*dfdx[1][1] \
+              - 4*dfdy[0][0] - 2*dfdy[0][1] + 4*dfdy[1][0] + 2*dfdy[1][1] \
+              - 2*d2fdxdy[0][0] - d2fdxdy[0][1] - 2*d2fdxdy[1][0] - d2fdxdy[1][1]
+    a[3][3] =   4*f[0][0] - 4*f[0][1] - 4*f[1][0] + 4*f[1][1] \
+              + 2*dfdx[0][0] - 2*dfdx[0][1] + 2*dfdx[1][0] - 2*dfdx[1][1] \
+              + 2*dfdy[0][0] + 2*dfdy[0][1] - 2*dfdy[1][0] - 2*dfdy[1][1] \
+              + d2fdxdy[0][0] + d2fdxdy[0][1] + d2fdxdy[1][0] + d2fdxdy[1][1]
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
+cdef void calc_coefficients_3d(double f[2][2][2], double dfdx[2][2][2], double dfdy[2][2][2], double dfdz[2][2][2],
                               double d2fdxdy[2][2][2], double d2fdxdz[2][2][2], double d2fdydz[2][2][2],
                               double d3fdxdydz[2][2][2], double a[4][4][4]) nogil:
 
@@ -445,7 +430,22 @@ cdef void _calculate_coeff_3d(double f[2][2][2], double dfdx[2][2][2], double df
                  + d3fdxdydz[1][0][0] + d3fdxdydz[1][0][1] + d3fdxdydz[1][1][0] + d3fdxdydz[1][1][1]
 
 
-cdef double _evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) nogil:
+cdef double evaluate_cubic_2d(double a[4][4], double x, double y) nogil:
+
+    cdef double x2 = x*x
+    cdef double x3 = x2*x
+
+    cdef double y2 = y*y
+    cdef double y3 = y2*y
+
+    # calculate cubic polynomial
+    return   a[0][0]    + a[0][1]*y    + a[0][2]*y2    + a[0][3]*y3 \
+           + a[1][0]*x  + a[1][1]*x*y  + a[1][2]*x*y2  + a[1][3]*x*y3 \
+           + a[2][0]*x2 + a[2][1]*x2*y + a[2][2]*x2*y2 + a[2][3]*x2*y3 \
+           + a[3][0]*x3 + a[3][1]*x3*y + a[3][2]*x3*y2 + a[3][3]*x3*y3
+
+
+cdef double evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) nogil:
 
     cdef double x2 = x*x
     cdef double x3 = x2*x
