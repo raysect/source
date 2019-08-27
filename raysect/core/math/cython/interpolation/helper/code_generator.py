@@ -34,6 +34,12 @@ Generates code for the bicubic and tricubic interpolators.
 import numpy as np
 
 
+try:
+    from .equation import Term, Equation
+except ImportError:
+    from equation import Term, Equation
+
+
 def polynomial_evaluation_2d():
 
     s = 'v = '
@@ -65,141 +71,155 @@ def polynomial_evaluation_3d():
     return s
 
 
-class Term:
+def generate_equation_2d():
 
-    def __init__(self, const, exponents):
-
-        exponents = np.array(exponents, np.uint8)
-        if exponents.ndim != 1:
-            raise ValueError('Exponents must be a 1D list of integer exponents.')
-
-        self.const = const
-        self.exponents = exponents
-
-    def copy(self):
-        return Term(self.const, self.exponents)
-
-    def differentiate(self, *orders):
-
-        orders = np.array(orders, dtype=np.uint8)
-        if orders.shape != self.exponents.shape:
-            raise ValueError('The number of orders must match the number of exponents.')
-
-        term = self.copy()
-        for i, order in enumerate(orders):
-            self._differentiate(term, i, order)
-        return term
-
-    @staticmethod
-    def _differentiate(term, i, order):
-
-        if term.const == 0:
-            return
-
-        for _ in range(order):
-
-            if term.exponents[i] == 0:
-                term.const = 0
-                term.exponents[:] = 0
-                return
-
-            term.const *= term.exponents[i]
-            term.exponents[i] -= 1
-
-    def __repr__(self):
-        return '<Term: {}>'.format(self.__str__())
-
-    def __str__(self):
-
-        variables = 'abcdefghijklmnopqrstuvwxyz'
-
-        if self.const == 0:
-            return '0'
-
-        s = ''
-        for i in range(len(self.exponents)):
-            if self.exponents[i] == 1:
-                s += '*{}'.format(variables[i], self.exponents[i])
-            elif self.exponents[i] > 1:
-                s += '*{}^{}'.format(variables[i], self.exponents[i])
-
-        return '{}{}'.format(self.const, s)
+    terms = []
+    for i in range(4):
+        for j in range(4):
+            terms.append(Term(1, (i, j)))
+    return Equation(*terms)
 
 
-class Equation:
+def generate_equation_3d():
 
-    def __init__(self, *terms):
-        self.terms = terms
+    terms = []
+    for i in range(4):
+        for j in range(4):
+            for k in range(4):
+                terms.append(Term(1, (i, j, k)))
+    return Equation(*terms)
 
-    def differentiate(self, *order):
-        terms = []
-        for term in self.terms:
-            terms.append(term.differentiate(*order))
-        return Equation(*terms)
 
-    def __repr__(self):
-        return '<Equation: {}>'.format(self.__str__())
+def generate_matrix_2d(debug=False):
 
-    def __str__(self):
-        s = 'f = '
-        add = False
-        all_zero = True
-        for term in self.terms:
+    f = generate_equation_2d()
 
-            if term.const == 0:
-                continue
+    # generate differentials
+    dfdx = f.differentiate(1, 0)
+    dfdy = f.differentiate(0, 1)
 
-            if add:
-                s += ' + '
+    d2fdxdy = f.differentiate(1, 1)
 
-            s += str(term)
-            add = True
-            all_zero = False
+    # display
+    if debug:
+        print('f: ' + str(f))
+        print()
+        print('df/dx: ' + str(dfdx))
+        print()
+        print('df/dy: ' + str(dfdy))
+        print()
+        print('d2f/dxdy: ' + str(d2fdxdy))
+        print()
 
-        if all_zero:
-            s += '0'
+    # define each element of input vector
+    input_vector = []
+    for eqn in (f, dfdx, dfdy, d2fdxdy):
+        for j in range(2):
+            for i in range(2):
+                input_vector.append((eqn, i, j))
 
-        return s
+    if debug:
+        print('input_vector:')
+        print(input_vector)
+        print()
 
-    def total_constant(self, *exponents):
 
-        exponents = np.array(exponents, dtype=np.uint8)
-        k = 0
-        for term in self.terms:
-            if (term.exponents == exponents).all():
-                k += term.const
-        return k
+    # define each element of the output vector
+    output_vector = []
+    for j in range(4):
+        for i in range(4):
+            output_vector.append((i, j))
 
+    if debug:
+        print('output_vector:')
+        print(output_vector)
+        print()
+
+    # assemble matrix
+    matrix = np.zeros((16, 16))
+    u = 0
+    for eqn, xi, yi in input_vector:
+        v = 0
+        for xe, ye in output_vector:
+            term = eqn.find(xe, ye)
+            if term:
+                matrix[u][v] = term.evaluate(xi, yi)
+            else:
+                matrix[u][v] = 0
+            v += 1
+        u += 1
+
+    if debug:
+        print('uninverted matrix:')
+        print(matrix)
+        print()
+
+    # invert to obtain final matrix
+    return np.linalg.inv(matrix)
+
+
+
+def generate_matrix_3d(debug=False):
+
+    f = generate_equation_3d()
+
+    # generate differentials
+    dfdx = f.differentiate(1, 0, 0)
+    dfdy = f.differentiate(0, 1, 0)
+    dfdz = f.differentiate(0, 0, 1)
+
+    d2fdxdy = f.differentiate(1, 1, 0)
+    d2fdxdz = f.differentiate(1, 0, 1)
+    d2fdydz = f.differentiate(0, 1, 1)
+
+    d3fdxdydz = f.differentiate(1, 1, 1)
+
+    # display
+    if debug:
+        print('f: ' + str(f))
+        print()
+        print('df/dx: ' + str(dfdx))
+        print()
+        print('df/dy: ' + str(dfdy))
+        print()
+        print('df/dz: ' + str(dfdz))
+        print()
+        print('d2f/dxdy: ' + str(d2fdxdy))
+        print()
+        print('d2f/dxdz: ' + str(d2fdxdz))
+        print()
+        print('d2f/dydz: ' + str(d2fdydz))
+        print()
+        print('d3f/dxdydz: ' + str(d3fdxdydz))
+        print()
 
 
 
 if __name__ == '__main__':
 
-    # print('2D polynomial evaluation:\n')
-    # print(polynomial_evaluation_2d())
-    # print()
-    #
-    # print('3D polynomial evaluation:\n')
-    # print(polynomial_evaluation_3d())
-    # print()
-    #
+    print('2D polynomial equation:\n')
+    print(generate_equation_2d())
+    print()
 
-    e = Equation(
-        Term(8, (1, 0, 0)),
-        Term(20, (0, 1, 0)),
-        Term(1, (0, 0, 1)),
-        Term(-56, (2, 0, 0)),
-        Term(1, (1, 1, 0)),
-        Term(1, (1, 0, 1)),
-        Term(5, (2, 3, 2)),
-        Term(6, (2, 3, 2)),
-        Term(7, (2, 3, 2))
-    )
+    print('2D matrix:\n')
+    print(generate_matrix_2d(debug=True))
+    print()
 
-    print(e)
-    d = e.differentiate(1, 0, 0)
-    print(d)
+    print('2D polynomial evaluation code:\n')
+    print(polynomial_evaluation_2d())
+    print()
 
-    print(d.total_constant(0,0,0))
+    print('3D polynomial equation:\n')
+    print(generate_equation_3d())
+    print()
+
+    print('3D matrix:\n')
+    print(generate_matrix_3d(debug=True))
+    print()
+
+    print('3D polynomial evaluation code:\n')
+    print(polynomial_evaluation_3d())
+    print()
+
 
 
