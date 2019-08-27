@@ -262,7 +262,7 @@ def generate_matmul_code_2d(debug=False):
     s = ''
     u = 0
     for xe, ye in output_vector:
-        s += 'a[{}][{}] = '.format(xe, ye)
+        s += 'a[{}][{}] ='.format(xe, ye)
         v = 0
         add = False
         n_terms = 0
@@ -298,7 +298,7 @@ def generate_matmul_code_2d(debug=False):
                 add = True
                 n_terms += 1
                 if n_terms == max_terms:
-                    s += ' \\\n          '
+                    s += ' \\\n         '
                     n_terms = 0
 
             v += 1
@@ -334,7 +334,7 @@ def generate_matmul_code_3d(debug=False):
     s = ''
     u = 0
     for xe, ye, ze in output_vector:
-        s += 'a[{}][{}][{}] = '.format(xe, ye, ze)
+        s += 'a[{}][{}][{}] ='.format(xe, ye, ze)
         v = 0
         add = False
         n_terms = 0
@@ -370,7 +370,7 @@ def generate_matmul_code_3d(debug=False):
                 add = True
                 n_terms += 1
                 if n_terms == max_terms:
-                    s += ' \\\n             '
+                    s += ' \\\n            '
                     n_terms = 0
 
             v += 1
