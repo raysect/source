@@ -241,6 +241,9 @@ def generate_matrix_3d(debug=False):
 
 def generate_matmul_code_2d(debug=False):
 
+    max_terms = 4
+    term_justify = 0
+
     # define each element of input vector
     input_vector = []
     for eqn in ('f', 'dfdx', 'dfdy', 'd2fdxdy'):
@@ -262,6 +265,7 @@ def generate_matmul_code_2d(debug=False):
         s += 'a[{}][{}] = '.format(xe, ye)
         v = 0
         add = False
+        n_terms = 0
         for eqn, xi, yi in input_vector:
             m = matrix[u][v]
             if m != 0:
@@ -273,15 +277,29 @@ def generate_matmul_code_2d(debug=False):
                     else:
                         s += ' - '
                         m = -m
+                else:
+                    if m > 0:
+                        s += '   '
+                    else:
+                        s += ' - '
+                        m = -m
 
                 # constant
+                t = ''
                 if m != 1:
-                    s += '{}*'.format(m)
+                    t += '{}*'.format(m)
 
                 # array access
-                s += '{}[{}][{}]'.format(eqn, xi, yi)
+                t += '{}[{}][{}]'.format(eqn, xi, yi)
+                t = t.rjust(term_justify)
+
+                s += t
 
                 add = True
+                n_terms += 1
+                if n_terms == max_terms:
+                    s += ' \\\n          '
+                    n_terms = 0
 
             v += 1
 
@@ -292,6 +310,9 @@ def generate_matmul_code_2d(debug=False):
 
 
 def generate_matmul_code_3d(debug=False):
+
+    max_terms = 4
+    term_justify = 0
 
     # define each element of input vector
     input_vector = []
@@ -316,6 +337,7 @@ def generate_matmul_code_3d(debug=False):
         s += 'a[{}][{}][{}] = '.format(xe, ye, ze)
         v = 0
         add = False
+        n_terms = 0
         for eqn, xi, yi, zi in input_vector:
             m = matrix[u][v]
             if m != 0:
@@ -327,15 +349,29 @@ def generate_matmul_code_3d(debug=False):
                     else:
                         s += ' - '
                         m = -m
+                else:
+                    if m > 0:
+                        s += '   '
+                    else:
+                        s += ' - '
+                        m = -m
 
                 # constant
+                t = ''
                 if m != 1:
-                    s += '{}*'.format(m)
+                    t += '{}*'.format(m)
 
                 # array access
-                s += '{}[{}][{}][{}]'.format(eqn, xi, yi, zi)
+                t += '{}[{}][{}][{}]'.format(eqn, xi, yi, zi)
+                t = t.rjust(term_justify)
+
+                s += t
 
                 add = True
+                n_terms += 1
+                if n_terms == max_terms:
+                    s += ' \\\n             '
+                    n_terms = 0
 
             v += 1
 
