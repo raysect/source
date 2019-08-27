@@ -46,8 +46,11 @@ cdef double linear2d(double x0, double x1, double y0, double y1, double [:,::1] 
     :return: 
     """
 
+    # interpolate along x
     cdef double k0 = linear1d(x0, x1, f[0][0], f[1][0], x)
     cdef double k1 = linear1d(x0, x1, f[0][1], f[1][1], x)
+
+    # interpolate along y
     return linear1d(y0, y1, k0, k1, y)
 
 

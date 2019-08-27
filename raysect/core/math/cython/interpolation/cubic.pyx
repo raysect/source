@@ -40,13 +40,9 @@ cdef double cubic2d(double x0, double x1, double y0, double y1, double[:,:,::1] 
                     double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdxdy,
                     double x, double y) nogil:
 
-    # normalise x, y onto a unit square
-    cdef double xn = x - x0 / (x1 - x0)
-    cdef double yn = y - y0 / (y1 - y0)
-
     cdef double a[4][4]
     _calculate_coeff_2d(a)
-    return _evaluate_cubic_2d(a, xn, yn)
+    return _evaluate_cubic_2d(a, x, y)
 
 
 cdef void _calculate_coeff_2d(double a[4][4]) nogil:
@@ -76,18 +72,17 @@ cdef double cubic3d(double x0, double x1, double y0, double y1, double z0, doubl
                     double[:,:,::1] dfdxdy, double[:,:,::1] dfdxdz, double[:,:,::1] dfdydz,
                     double[:,:,::1] dfdxdydz, double x, double y, double z) nogil:
 
-    # normalise x, y, z onto a unit cube
-    cdef double xn = x - x0 / (x1 - x0)
-    cdef double yn = y - y0 / (y1 - y0)
-    cdef double zn = z - z0 / (z1 - z0)
-
     cdef double a[4][4][4]
     _calculate_coeff_3d(a)
-    return _evaluate_cubic_3d(a, xn, yn, zn)
+    return _evaluate_cubic_3d(a, x, y, z)
 
 
 cdef void _calculate_coeff_3d(double a[4][4][4]) nogil:
+
+
+
     pass
+
 
 cdef double _evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) nogil:
 
