@@ -114,8 +114,8 @@ def generate_matrix_2d(debug=False):
     # define each element of input vector
     input_vector = []
     for eqn in (f, dfdx, dfdy, d2fdxdy):
-        for j in range(2):
-            for i in range(2):
+        for i in range(2):
+            for j in range(2):
                 input_vector.append((eqn, i, j))
 
     if debug:
@@ -123,11 +123,10 @@ def generate_matrix_2d(debug=False):
         print(input_vector)
         print()
 
-
     # define each element of the output vector
     output_vector = []
-    for j in range(4):
-        for i in range(4):
+    for i in range(4):
+        for j in range(4):
             output_vector.append((i, j))
 
     if debug:
@@ -155,8 +154,7 @@ def generate_matrix_2d(debug=False):
         print()
 
     # invert to obtain final matrix
-    return np.linalg.inv(matrix)
-
+    return np.linalg.inv(matrix).astype(np.int32)
 
 
 def generate_matrix_3d(debug=False):
@@ -193,16 +191,176 @@ def generate_matrix_3d(debug=False):
         print('d3f/dxdydz: ' + str(d3fdxdydz))
         print()
 
+    # define each element of input vector
+    input_vector = []
+    for eqn in (f, dfdx, dfdy, dfdz, d2fdxdy, d2fdxdz, d2fdydz, d3fdxdydz):
+        for i in range(2):
+            for j in range(2):
+                for k in range(2):
+                    input_vector.append((eqn, i, j, k))
+
+    if debug:
+        print('input_vector:')
+        print(input_vector)
+        print()
+
+    # define each element of the output vector
+    output_vector = []
+    for i in range(4):
+        for j in range(4):
+            for k in range(4):
+                output_vector.append((i, j, k))
+
+    if debug:
+        print('output_vector:')
+        print(output_vector)
+        print()
+
+    # assemble matrix
+    matrix = np.zeros((64, 64))
+    u = 0
+    for eqn, xi, yi, zi in input_vector:
+        v = 0
+        for xe, ye, ze in output_vector:
+            term = eqn.find(xe, ye, ze)
+            if term:
+                matrix[u][v] = term.evaluate(xi, yi, zi)
+            else:
+                matrix[u][v] = 0
+            v += 1
+        u += 1
+
+    if debug:
+        print('uninverted matrix:')
+        print(matrix)
+        print()
+
+    # invert to obtain final matrix
+    return np.linalg.inv(matrix).astype(np.int32)
+
+
+def generate_matmul_code_2d(debug=False):
+
+    # define each element of input vector
+    input_vector = []
+    for eqn in ('f', 'dfdx', 'dfdy', 'd2fdxdy'):
+        for i in range(2):
+            for j in range(2):
+                input_vector.append((eqn, i, j))
+
+    # define each element of the output vector
+    output_vector = []
+    for i in range(4):
+        for j in range(4):
+            output_vector.append((i, j))
+
+    matrix = generate_matrix_2d()
+
+    s = ''
+    u = 0
+    for xe, ye in output_vector:
+        s += 'a[{}][{}] = '.format(xe, ye)
+        v = 0
+        add = False
+        for eqn, xi, yi in input_vector:
+            m = matrix[u][v]
+            if m != 0:
+
+                # operator
+                if add:
+                    if m > 0:
+                        s += ' + '
+                    else:
+                        s += ' - '
+                        m = -m
+
+                # constant
+                if m != 1:
+                    s += '{}*'.format(m)
+
+                # array access
+                s += '{}[{}][{}]'.format(eqn, xi, yi)
+
+                add = True
+
+            v += 1
+
+        s += '\n'
+        u += 1
+
+    return s
+
+
+def generate_matmul_code_3d(debug=False):
+
+    # define each element of input vector
+    input_vector = []
+    for eqn in ('f', 'dfdx', 'dfdy', 'dfdz', 'd2fdxdy', 'd2fdxdz', 'd2fdydz', 'd3fdxdydz'):
+        for i in range(2):
+            for j in range(2):
+                for k in range(2):
+                    input_vector.append((eqn, i, j, k))
+
+    # define each element of the output vector
+    output_vector = []
+    for i in range(4):
+        for j in range(4):
+            for k in range(4):
+                output_vector.append((i, j, k))
+
+    matrix = generate_matrix_3d()
+
+    s = ''
+    u = 0
+    for xe, ye, ze in output_vector:
+        s += 'a[{}][{}][{}] = '.format(xe, ye, ze)
+        v = 0
+        add = False
+        for eqn, xi, yi, zi in input_vector:
+            m = matrix[u][v]
+            if m != 0:
+
+                # operator
+                if add:
+                    if m > 0:
+                        s += ' + '
+                    else:
+                        s += ' - '
+                        m = -m
+
+                # constant
+                if m != 1:
+                    s += '{}*'.format(m)
+
+                # array access
+                s += '{}[{}][{}][{}]'.format(eqn, xi, yi, zi)
+
+                add = True
+
+            v += 1
+
+        s += '\n'
+        u += 1
+
+    return s
+
+
 
 
 if __name__ == '__main__':
+
+    np.set_printoptions(threshold=np.inf, linewidth=np.inf)
 
     print('2D polynomial equation:\n')
     print(generate_equation_2d())
     print()
 
     print('2D matrix:\n')
-    print(generate_matrix_2d(debug=True))
+    print(generate_matrix_2d(debug=False))
+    print()
+
+    print('2D matrix multiplication code:\n')
+    print(generate_matmul_code_2d(True))
     print()
 
     print('2D polynomial evaluation code:\n')
@@ -214,12 +372,13 @@ if __name__ == '__main__':
     print()
 
     print('3D matrix:\n')
-    print(generate_matrix_3d(debug=True))
+    print(generate_matrix_3d(debug=False))
     print()
 
     print('3D polynomial evaluation code:\n')
     print(polynomial_evaluation_3d())
     print()
 
-
-
+    print('3D matrix multiplication code:\n')
+    print(generate_matmul_code_3d(True))
+    print()

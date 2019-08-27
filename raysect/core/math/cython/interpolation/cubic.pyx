@@ -31,22 +31,53 @@
 
 cimport cython
 from libc.stdint cimport uint8_t
+import numpy as np
+cimport numpy as np
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.initializedcheck(False)
-cdef double cubic2d(double x0, double x1, double y0, double y1, double[:,:,::1] f,
-                    double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdxdy,
-                    double x, double y) nogil:
+cdef double cubic2d(double[::1] vx, double[::1] vy, double[:,::1] f, double[:,::1] dfdx, double[:,::1] dfdy,
+                    double[:,::1] d2fdxdy, double x, double y) nogil:
+
+    # normalise onto unit square
+
 
     cdef double a[4][4]
-    _calculate_coeff_2d(a)
+    _calculate_coeff_2d(f, dfdx, dfdy, d2fdxdy, a)
     return _evaluate_cubic_2d(a, x, y)
 
 
-cdef void _calculate_coeff_2d(double a[4][4]) nogil:
-    pass
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
+cdef void _calculate_coeff_2d(double[:,::1] f, double[:,::1] dfdx, double[:,::1] dfdy, double[:,::1] d2fdxdy, double a[4][4]) nogil:
+
+    a[0][0] = f[0][0]
+    a[0][1] = dfdy[0][0]
+    a[0][2] = -3*f[0][0] + 3*f[0][1] - 2*dfdy[0][0] - dfdy[0][1]
+    a[0][3] = 2*f[0][0] - 2*f[0][1] + dfdy[0][0] + dfdy[0][1]
+    a[1][0] = dfdx[0][0]
+    a[1][1] = d2fdxdy[0][0]
+    a[1][2] = -3*dfdx[0][0] + 3*dfdx[0][1] - 2*d2fdxdy[0][0] - d2fdxdy[0][1]
+    a[1][3] = 2*dfdx[0][0] - 2*dfdx[0][1] + d2fdxdy[0][0] + d2fdxdy[0][1]
+    a[2][0] = -3*f[0][0] + 3*f[1][0] - 2*dfdx[0][0] - dfdx[1][0]
+    a[2][1] = -3*dfdy[0][0] + 3*dfdy[1][0] - 2*d2fdxdy[0][0] - d2fdxdy[1][0]
+    a[2][2] = 9*f[0][0] - 9*f[0][1] - 9*f[1][0] + 9*f[1][1] + 6*dfdx[0][0] - 6*dfdx[0][1] + 3*dfdx[1][0] \
+              - 3*dfdx[1][1] + 6*dfdy[0][0] + 3*dfdy[0][1] - 6*dfdy[1][0] - 3*dfdy[1][1] + 4*d2fdxdy[0][0] \
+              + 2*d2fdxdy[0][1] + 2*d2fdxdy[1][0] + d2fdxdy[1][1]
+    a[2][3] = -6*f[0][0] + 6*f[0][1] + 6*f[1][0] - 6*f[1][1] - 4*dfdx[0][0] + 4*dfdx[0][1] - 2*dfdx[1][0] \
+              + 2*dfdx[1][1] - 3*dfdy[0][0] - 3*dfdy[0][1] + 3*dfdy[1][0] + 3*dfdy[1][1] - 2*d2fdxdy[0][0] \
+              - 2*d2fdxdy[0][1] - d2fdxdy[1][0] - d2fdxdy[1][1]
+    a[3][0] = 2*f[0][0] - 2*f[1][0] + dfdx[0][0] + dfdx[1][0]
+    a[3][1] = 2*dfdy[0][0] - 2*dfdy[1][0] + d2fdxdy[0][0] + d2fdxdy[1][0]
+    a[3][2] = -6*f[0][0] + 6*f[0][1] + 6*f[1][0] - 6*f[1][1] - 3*dfdx[0][0] + 3*dfdx[0][1] - 3*dfdx[1][0] \
+              + 3*dfdx[1][1] - 4*dfdy[0][0] - 2*dfdy[0][1] + 4*dfdy[1][0] + 2*dfdy[1][1] - 2*d2fdxdy[0][0] \
+              - d2fdxdy[0][1] - 2*d2fdxdy[1][0] - d2fdxdy[1][1]
+    a[3][3] = 4*f[0][0] - 4*f[0][1] - 4*f[1][0] + 4*f[1][1] + 2*dfdx[0][0] - 2*dfdx[0][1] + 2*dfdx[1][0] \
+              - 2*dfdx[1][1] + 2*dfdy[0][0] + 2*dfdy[0][1] - 2*dfdy[1][0] - 2*dfdy[1][1] + d2fdxdy[0][0] \
+              + d2fdxdy[0][1] + d2fdxdy[1][0] + d2fdxdy[1][1]
 
 
 cdef double _evaluate_cubic_2d(double a[4][4], double x, double y) nogil:
@@ -69,19 +100,266 @@ cdef double _evaluate_cubic_2d(double a[4][4], double x, double y) nogil:
 @cython.initializedcheck(False)
 cdef double cubic3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f,
                     double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
-                    double[:,:,::1] dfdxdy, double[:,:,::1] dfdxdz, double[:,:,::1] dfdydz,
-                    double[:,:,::1] dfdxdydz, double x, double y, double z) nogil:
+                    double[:,:,::1] d2fdxdy, double[:,:,::1] d2fdxdz, double[:,:,::1] d2fdydz,
+                    double[:,:,::1] d3fdxdydz, double x, double y, double z) nogil:
 
     cdef double a[4][4][4]
-    _calculate_coeff_3d(a)
+    _calculate_coeff_3d(f, dfdx, dfdy, dfdz, d2fdxdy, d2fdxdz, d2fdydz, d3fdxdydz, a)
     return _evaluate_cubic_3d(a, x, y, z)
 
 
-cdef void _calculate_coeff_3d(double a[4][4][4]) nogil:
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
+cdef void _calculate_coeff_3d(double[:,:,::1] f, double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
+                              double[:,:,::1] d2fdxdy, double[:,:,::1] d2fdxdz, double[:,:,::1] d2fdydz,
+                              double[:,:,::1] d3fdxdydz, double a[4][4][4]) nogil:
 
-
-
-    pass
+    a[0][0][0] = f[0][0][0]
+    a[0][0][1] = dfdz[0][0][0]
+    a[0][0][2] = -3*f[0][0][0] + 3*f[0][0][1] - 2*dfdz[0][0][0] - dfdz[0][0][1]
+    a[0][0][3] = 2*f[0][0][0] - 2*f[0][0][1] + dfdz[0][0][0] + dfdz[0][0][1]
+    a[0][1][0] = dfdy[0][0][0]
+    a[0][1][1] = d2fdydz[0][0][0]
+    a[0][1][2] = -3*dfdy[0][0][0] + 3*dfdy[0][0][1] - 2*d2fdydz[0][0][0] - d2fdydz[0][0][1]
+    a[0][1][3] = 2*dfdy[0][0][0] - 2*dfdy[0][0][1] + d2fdydz[0][0][0] + d2fdydz[0][0][1]
+    a[0][2][0] = -3*f[0][0][0] + 3*f[0][1][0] - 2*dfdy[0][0][0] - dfdy[0][1][0]
+    a[0][2][1] = -3*dfdz[0][0][0] + 3*dfdz[0][1][0] - 2*d2fdydz[0][0][0] - d2fdydz[0][1][0]
+    a[0][2][2] = 9*f[0][0][0] - 9*f[0][0][1] - 9*f[0][1][0] + 9*f[0][1][1] + 6*dfdy[0][0][0] \
+                 - 6*dfdy[0][0][1] + 3*dfdy[0][1][0] - 3*dfdy[0][1][1] + 6*dfdz[0][0][0] \
+                 + 3*dfdz[0][0][1] - 6*dfdz[0][1][0] - 3*dfdz[0][1][1] + 4*d2fdydz[0][0][0] \
+                 + 2*d2fdydz[0][0][1] + 2*d2fdydz[0][1][0] + d2fdydz[0][1][1]
+    a[0][2][3] = -6*f[0][0][0] + 6*f[0][0][1] + 6*f[0][1][0] - 6*f[0][1][1] - 4*dfdy[0][0][0] \
+                 + 4*dfdy[0][0][1] - 2*dfdy[0][1][0] + 2*dfdy[0][1][1] - 3*dfdz[0][0][0] \
+                 - 3*dfdz[0][0][1] + 3*dfdz[0][1][0] + 3*dfdz[0][1][1] - 2*d2fdydz[0][0][0] \
+                 - 2*d2fdydz[0][0][1] - d2fdydz[0][1][0] - d2fdydz[0][1][1]
+    a[0][3][0] = 2*f[0][0][0] - 2*f[0][1][0] + dfdy[0][0][0] + dfdy[0][1][0]
+    a[0][3][1] = 2*dfdz[0][0][0] - 2*dfdz[0][1][0] + d2fdydz[0][0][0] + d2fdydz[0][1][0]
+    a[0][3][2] = -6*f[0][0][0] + 6*f[0][0][1] + 6*f[0][1][0] - 6*f[0][1][1] - 3*dfdy[0][0][0] \
+                 + 3*dfdy[0][0][1] - 3*dfdy[0][1][0] + 3*dfdy[0][1][1] - 4*dfdz[0][0][0] \
+                 - 2*dfdz[0][0][1] + 4*dfdz[0][1][0] + 2*dfdz[0][1][1] - 2*d2fdydz[0][0][0] \
+                 - d2fdydz[0][0][1] - 2*d2fdydz[0][1][0] - d2fdydz[0][1][1]
+    a[0][3][3] = 4*f[0][0][0] - 4*f[0][0][1] - 4*f[0][1][0] + 4*f[0][1][1] + 2*dfdy[0][0][0] \
+                 - 2*dfdy[0][0][1] + 2*dfdy[0][1][0] - 2*dfdy[0][1][1] + 2*dfdz[0][0][0] \
+                 + 2*dfdz[0][0][1] - 2*dfdz[0][1][0] - 2*dfdz[0][1][1] + d2fdydz[0][0][0] \
+                 + d2fdydz[0][0][1] + d2fdydz[0][1][0] + d2fdydz[0][1][1]
+    a[1][0][0] = dfdx[0][0][0]
+    a[1][0][1] = d2fdxdz[0][0][0]
+    a[1][0][2] = -3*dfdx[0][0][0] + 3*dfdx[0][0][1] - 2*d2fdxdz[0][0][0] - d2fdxdz[0][0][1]
+    a[1][0][3] = 2*dfdx[0][0][0] - 2*dfdx[0][0][1] + d2fdxdz[0][0][0] + d2fdxdz[0][0][1]
+    a[1][1][0] = d2fdxdy[0][0][0]
+    a[1][1][1] = d3fdxdydz[0][0][0]
+    a[1][1][2] = -3*d2fdxdy[0][0][0] + 3*d2fdxdy[0][0][1] - 2*d3fdxdydz[0][0][0] - d3fdxdydz[0][0][1]
+    a[1][1][3] = 2*d2fdxdy[0][0][0] - 2*d2fdxdy[0][0][1] + d3fdxdydz[0][0][0] + d3fdxdydz[0][0][1]
+    a[1][2][0] = -3*dfdx[0][0][0] + 3*dfdx[0][1][0] - 2*d2fdxdy[0][0][0] - d2fdxdy[0][1][0]
+    a[1][2][1] = -3*d2fdxdz[0][0][0] + 3*d2fdxdz[0][1][0] - 2*d3fdxdydz[0][0][0] - d3fdxdydz[0][1][0]
+    a[1][2][2] = 9*dfdx[0][0][0] - 9*dfdx[0][0][1] - 9*dfdx[0][1][0] + 9*dfdx[0][1][1] \
+                 + 6*d2fdxdy[0][0][0] - 6*d2fdxdy[0][0][1] + 3*d2fdxdy[0][1][0] \
+                 - 3*d2fdxdy[0][1][1] + 6*d2fdxdz[0][0][0] + 3*d2fdxdz[0][0][1] \
+                 - 6*d2fdxdz[0][1][0] - 3*d2fdxdz[0][1][1] + 4*d3fdxdydz[0][0][0] \
+                 + 2*d3fdxdydz[0][0][1] + 2*d3fdxdydz[0][1][0] + d3fdxdydz[0][1][1]
+    a[1][2][3] = -6*dfdx[0][0][0] + 6*dfdx[0][0][1] + 6*dfdx[0][1][0] - 6*dfdx[0][1][1] \
+                 - 4*d2fdxdy[0][0][0] + 4*d2fdxdy[0][0][1] - 2*d2fdxdy[0][1][0] \
+                 + 2*d2fdxdy[0][1][1] - 3*d2fdxdz[0][0][0] - 3*d2fdxdz[0][0][1] \
+                 + 3*d2fdxdz[0][1][0] + 3*d2fdxdz[0][1][1] - 2*d3fdxdydz[0][0][0] \
+                 - 2*d3fdxdydz[0][0][1] - d3fdxdydz[0][1][0] - d3fdxdydz[0][1][1]
+    a[1][3][0] = 2*dfdx[0][0][0] - 2*dfdx[0][1][0] + d2fdxdy[0][0][0] + d2fdxdy[0][1][0]
+    a[1][3][1] = 2*d2fdxdz[0][0][0] - 2*d2fdxdz[0][1][0] + d3fdxdydz[0][0][0] + d3fdxdydz[0][1][0]
+    a[1][3][2] = -6*dfdx[0][0][0] + 6*dfdx[0][0][1] + 6*dfdx[0][1][0] - 6*dfdx[0][1][1] \
+                 - 3*d2fdxdy[0][0][0] + 3*d2fdxdy[0][0][1] - 3*d2fdxdy[0][1][0] + 3*d2fdxdy[0][1][1] \
+                 - 4*d2fdxdz[0][0][0] - 2*d2fdxdz[0][0][1] + 4*d2fdxdz[0][1][0] + 2*d2fdxdz[0][1][1] \
+                 - 2*d3fdxdydz[0][0][0] - d3fdxdydz[0][0][1] - 2*d3fdxdydz[0][1][0] - d3fdxdydz[0][1][1]
+    a[1][3][3] = 4*dfdx[0][0][0] - 4*dfdx[0][0][1] - 4*dfdx[0][1][0] + 4*dfdx[0][1][1] \
+                 + 2*d2fdxdy[0][0][0] - 2*d2fdxdy[0][0][1] + 2*d2fdxdy[0][1][0] - 2*d2fdxdy[0][1][1] \
+                 + 2*d2fdxdz[0][0][0] + 2*d2fdxdz[0][0][1] - 2*d2fdxdz[0][1][0] - 2*d2fdxdz[0][1][1] \
+                 + d3fdxdydz[0][0][0] + d3fdxdydz[0][0][1] + d3fdxdydz[0][1][0] + d3fdxdydz[0][1][1]
+    a[2][0][0] = -3*f[0][0][0] + 3*f[1][0][0] - 2*dfdx[0][0][0] - dfdx[1][0][0]
+    a[2][0][1] = -3*dfdz[0][0][0] + 3*dfdz[1][0][0] - 2*d2fdxdz[0][0][0] - d2fdxdz[1][0][0]
+    a[2][0][2] = 9*f[0][0][0] - 9*f[0][0][1] - 9*f[1][0][0] + 9*f[1][0][1] + 6*dfdx[0][0][0] \
+                 - 6*dfdx[0][0][1] + 3*dfdx[1][0][0] - 3*dfdx[1][0][1] + 6*dfdz[0][0][0] \
+                 + 3*dfdz[0][0][1] - 6*dfdz[1][0][0] - 3*dfdz[1][0][1] + 4*d2fdxdz[0][0][0] \
+                 + 2*d2fdxdz[0][0][1] + 2*d2fdxdz[1][0][0] + d2fdxdz[1][0][1]
+    a[2][0][3] = -6*f[0][0][0] + 6*f[0][0][1] + 6*f[1][0][0] - 6*f[1][0][1] - 4*dfdx[0][0][0] \
+                 + 4*dfdx[0][0][1] - 2*dfdx[1][0][0] + 2*dfdx[1][0][1] - 3*dfdz[0][0][0] \
+                 - 3*dfdz[0][0][1] + 3*dfdz[1][0][0] + 3*dfdz[1][0][1] - 2*d2fdxdz[0][0][0] \
+                 - 2*d2fdxdz[0][0][1] - d2fdxdz[1][0][0] - d2fdxdz[1][0][1]
+    a[2][1][0] = -3*dfdy[0][0][0] + 3*dfdy[1][0][0] - 2*d2fdxdy[0][0][0] - d2fdxdy[1][0][0]
+    a[2][1][1] = -3*d2fdydz[0][0][0] + 3*d2fdydz[1][0][0] - 2*d3fdxdydz[0][0][0] - d3fdxdydz[1][0][0]
+    a[2][1][2] = 9*dfdy[0][0][0] - 9*dfdy[0][0][1] - 9*dfdy[1][0][0] + 9*dfdy[1][0][1] \
+                 + 6*d2fdxdy[0][0][0] - 6*d2fdxdy[0][0][1] + 3*d2fdxdy[1][0][0] - 3*d2fdxdy[1][0][1] \
+                 + 6*d2fdydz[0][0][0] + 3*d2fdydz[0][0][1] - 6*d2fdydz[1][0][0] - 3*d2fdydz[1][0][1] \
+                 + 4*d3fdxdydz[0][0][0] + 2*d3fdxdydz[0][0][1] + 2*d3fdxdydz[1][0][0] + d3fdxdydz[1][0][1]
+    a[2][1][3] = -6*dfdy[0][0][0] + 6*dfdy[0][0][1] + 6*dfdy[1][0][0] - 6*dfdy[1][0][1] \
+                 - 4*d2fdxdy[0][0][0] + 4*d2fdxdy[0][0][1] - 2*d2fdxdy[1][0][0] + 2*d2fdxdy[1][0][1] \
+                 - 3*d2fdydz[0][0][0] - 3*d2fdydz[0][0][1] + 3*d2fdydz[1][0][0] + 3*d2fdydz[1][0][1] \
+                 - 2*d3fdxdydz[0][0][0] - 2*d3fdxdydz[0][0][1] - d3fdxdydz[1][0][0] - d3fdxdydz[1][0][1]
+    a[2][2][0] = 9*f[0][0][0] - 9*f[0][1][0] - 9*f[1][0][0] + 9*f[1][1][0] + 6*dfdx[0][0][0] \
+                 - 6*dfdx[0][1][0] + 3*dfdx[1][0][0] - 3*dfdx[1][1][0] + 6*dfdy[0][0][0] + 3*dfdy[0][1][0] \
+                 - 6*dfdy[1][0][0] - 3*dfdy[1][1][0] + 4*d2fdxdy[0][0][0] + 2*d2fdxdy[0][1][0] \
+                 + 2*d2fdxdy[1][0][0] + d2fdxdy[1][1][0]
+    a[2][2][1] = 9*dfdz[0][0][0] - 9*dfdz[0][1][0] - 9*dfdz[1][0][0] + 9*dfdz[1][1][0] + 6*d2fdxdz[0][0][0] \
+                 - 6*d2fdxdz[0][1][0] + 3*d2fdxdz[1][0][0] - 3*d2fdxdz[1][1][0] + 6*d2fdydz[0][0][0] \
+                 + 3*d2fdydz[0][1][0] - 6*d2fdydz[1][0][0] - 3*d2fdydz[1][1][0] + 4*d3fdxdydz[0][0][0] \
+                 + 2*d3fdxdydz[0][1][0] + 2*d3fdxdydz[1][0][0] + d3fdxdydz[1][1][0]
+    a[2][2][2] = -27*f[0][0][0] + 27*f[0][0][1] + 27*f[0][1][0] - 27*f[0][1][1] + 27*f[1][0][0] \
+                 - 27*f[1][0][1] - 27*f[1][1][0] + 27*f[1][1][1] - 18*dfdx[0][0][0] + 18*dfdx[0][0][1] \
+                 + 18*dfdx[0][1][0] - 18*dfdx[0][1][1] - 9*dfdx[1][0][0] + 9*dfdx[1][0][1] + 9*dfdx[1][1][0] \
+                 - 9*dfdx[1][1][1] - 18*dfdy[0][0][0] + 18*dfdy[0][0][1] - 9*dfdy[0][1][0] + 9*dfdy[0][1][1] \
+                 + 18*dfdy[1][0][0] - 18*dfdy[1][0][1] + 9*dfdy[1][1][0] - 9*dfdy[1][1][1] - 18*dfdz[0][0][0] \
+                 - 9*dfdz[0][0][1] + 18*dfdz[0][1][0] + 9*dfdz[0][1][1] + 18*dfdz[1][0][0] + 9*dfdz[1][0][1] \
+                 - 18*dfdz[1][1][0] - 9*dfdz[1][1][1] - 12*d2fdxdy[0][0][0] + 12*d2fdxdy[0][0][1] \
+                 - 6*d2fdxdy[0][1][0] + 6*d2fdxdy[0][1][1] - 6*d2fdxdy[1][0][0] + 6*d2fdxdy[1][0][1] \
+                 - 3*d2fdxdy[1][1][0] + 3*d2fdxdy[1][1][1] - 12*d2fdxdz[0][0][0] - 6*d2fdxdz[0][0][1] \
+                 + 12*d2fdxdz[0][1][0] + 6*d2fdxdz[0][1][1] - 6*d2fdxdz[1][0][0] - 3*d2fdxdz[1][0][1] \
+                 + 6*d2fdxdz[1][1][0] + 3*d2fdxdz[1][1][1] - 12*d2fdydz[0][0][0] - 6*d2fdydz[0][0][1] \
+                 - 6*d2fdydz[0][1][0] - 3*d2fdydz[0][1][1] + 12*d2fdydz[1][0][0] + 6*d2fdydz[1][0][1] \
+                 + 6*d2fdydz[1][1][0] + 3*d2fdydz[1][1][1] - 8*d3fdxdydz[0][0][0] - 4*d3fdxdydz[0][0][1] \
+                 - 4*d3fdxdydz[0][1][0] - 2*d3fdxdydz[0][1][1] - 4*d3fdxdydz[1][0][0] - 2*d3fdxdydz[1][0][1] \
+                 - 2*d3fdxdydz[1][1][0] - d3fdxdydz[1][1][1]
+    a[2][2][3] = 18*f[0][0][0] - 18*f[0][0][1] - 18*f[0][1][0] + 18*f[0][1][1] - 18*f[1][0][0] + 18*f[1][0][1] \
+                 + 18*f[1][1][0] - 18*f[1][1][1] + 12*dfdx[0][0][0] - 12*dfdx[0][0][1] - 12*dfdx[0][1][0] \
+                 + 12*dfdx[0][1][1] + 6*dfdx[1][0][0] - 6*dfdx[1][0][1] - 6*dfdx[1][1][0] + 6*dfdx[1][1][1] \
+                 + 12*dfdy[0][0][0] - 12*dfdy[0][0][1] + 6*dfdy[0][1][0] - 6*dfdy[0][1][1] - 12*dfdy[1][0][0] \
+                 + 12*dfdy[1][0][1] - 6*dfdy[1][1][0] + 6*dfdy[1][1][1] + 9*dfdz[0][0][0] + 9*dfdz[0][0][1] \
+                 - 9*dfdz[0][1][0] - 9*dfdz[0][1][1] - 9*dfdz[1][0][0] - 9*dfdz[1][0][1] + 9*dfdz[1][1][0] \
+                 + 9*dfdz[1][1][1] + 8*d2fdxdy[0][0][0] - 8*d2fdxdy[0][0][1] + 4*d2fdxdy[0][1][0] \
+                 - 4*d2fdxdy[0][1][1] + 4*d2fdxdy[1][0][0] - 4*d2fdxdy[1][0][1] + 2*d2fdxdy[1][1][0] \
+                 - 2*d2fdxdy[1][1][1] + 6*d2fdxdz[0][0][0] + 6*d2fdxdz[0][0][1] - 6*d2fdxdz[0][1][0] \
+                 - 6*d2fdxdz[0][1][1] + 3*d2fdxdz[1][0][0] + 3*d2fdxdz[1][0][1] - 3*d2fdxdz[1][1][0] \
+                 - 3*d2fdxdz[1][1][1] + 6*d2fdydz[0][0][0] + 6*d2fdydz[0][0][1] + 3*d2fdydz[0][1][0] \
+                 + 3*d2fdydz[0][1][1] - 6*d2fdydz[1][0][0] - 6*d2fdydz[1][0][1] - 3*d2fdydz[1][1][0] \
+                 - 3*d2fdydz[1][1][1] + 4*d3fdxdydz[0][0][0] + 4*d3fdxdydz[0][0][1] + 2*d3fdxdydz[0][1][0] \
+                 + 2*d3fdxdydz[0][1][1] + 2*d3fdxdydz[1][0][0] + 2*d3fdxdydz[1][0][1] + d3fdxdydz[1][1][0] \
+                 + d3fdxdydz[1][1][1]
+    a[2][3][0] = -6*f[0][0][0] + 6*f[0][1][0] + 6*f[1][0][0] - 6*f[1][1][0] - 4*dfdx[0][0][0] + 4*dfdx[0][1][0] \
+                 - 2*dfdx[1][0][0] + 2*dfdx[1][1][0] - 3*dfdy[0][0][0] - 3*dfdy[0][1][0] + 3*dfdy[1][0][0] \
+                 + 3*dfdy[1][1][0] - 2*d2fdxdy[0][0][0] - 2*d2fdxdy[0][1][0] - d2fdxdy[1][0][0] - d2fdxdy[1][1][0]
+    a[2][3][1] = -6*dfdz[0][0][0] + 6*dfdz[0][1][0] + 6*dfdz[1][0][0] - 6*dfdz[1][1][0] - 4*d2fdxdz[0][0][0] \
+                 + 4*d2fdxdz[0][1][0] - 2*d2fdxdz[1][0][0] + 2*d2fdxdz[1][1][0] - 3*d2fdydz[0][0][0] \
+                 - 3*d2fdydz[0][1][0] + 3*d2fdydz[1][0][0] + 3*d2fdydz[1][1][0] - 2*d3fdxdydz[0][0][0] \
+                 - 2*d3fdxdydz[0][1][0] - d3fdxdydz[1][0][0] - d3fdxdydz[1][1][0]
+    a[2][3][2] = 18*f[0][0][0] - 18*f[0][0][1] - 18*f[0][1][0] + 18*f[0][1][1] - 18*f[1][0][0] + 18*f[1][0][1] \
+                 + 18*f[1][1][0] - 18*f[1][1][1] + 12*dfdx[0][0][0] - 12*dfdx[0][0][1] - 12*dfdx[0][1][0] \
+                 + 12*dfdx[0][1][1] + 6*dfdx[1][0][0] - 6*dfdx[1][0][1] - 6*dfdx[1][1][0] + 6*dfdx[1][1][1] \
+                 + 9*dfdy[0][0][0] - 9*dfdy[0][0][1] + 9*dfdy[0][1][0] - 9*dfdy[0][1][1] - 9*dfdy[1][0][0] \
+                 + 9*dfdy[1][0][1] - 9*dfdy[1][1][0] + 9*dfdy[1][1][1] + 12*dfdz[0][0][0] + 6*dfdz[0][0][1] \
+                 - 12*dfdz[0][1][0] - 6*dfdz[0][1][1] - 12*dfdz[1][0][0] - 6*dfdz[1][0][1] + 12*dfdz[1][1][0] \
+                 + 6*dfdz[1][1][1] + 6*d2fdxdy[0][0][0] - 6*d2fdxdy[0][0][1] + 6*d2fdxdy[0][1][0] \
+                 - 6*d2fdxdy[0][1][1] + 3*d2fdxdy[1][0][0] - 3*d2fdxdy[1][0][1] + 3*d2fdxdy[1][1][0] \
+                 - 3*d2fdxdy[1][1][1] + 8*d2fdxdz[0][0][0] + 4*d2fdxdz[0][0][1] - 8*d2fdxdz[0][1][0] \
+                 - 4*d2fdxdz[0][1][1] + 4*d2fdxdz[1][0][0] + 2*d2fdxdz[1][0][1] - 4*d2fdxdz[1][1][0] \
+                 - 2*d2fdxdz[1][1][1] + 6*d2fdydz[0][0][0] + 3*d2fdydz[0][0][1] + 6*d2fdydz[0][1][0] \
+                 + 3*d2fdydz[0][1][1] - 6*d2fdydz[1][0][0] - 3*d2fdydz[1][0][1] - 6*d2fdydz[1][1][0] \
+                 - 3*d2fdydz[1][1][1] + 4*d3fdxdydz[0][0][0] + 2*d3fdxdydz[0][0][1] + 4*d3fdxdydz[0][1][0] \
+                 + 2*d3fdxdydz[0][1][1] + 2*d3fdxdydz[1][0][0] + d3fdxdydz[1][0][1] + 2*d3fdxdydz[1][1][0] \
+                 + d3fdxdydz[1][1][1]
+    a[2][3][3] = -12*f[0][0][0] + 12*f[0][0][1] + 12*f[0][1][0] - 12*f[0][1][1] + 12*f[1][0][0] - 12*f[1][0][1] \
+                 - 12*f[1][1][0] + 12*f[1][1][1] - 8*dfdx[0][0][0] + 8*dfdx[0][0][1] + 8*dfdx[0][1][0] \
+                 - 8*dfdx[0][1][1] - 4*dfdx[1][0][0] + 4*dfdx[1][0][1] + 4*dfdx[1][1][0] - 4*dfdx[1][1][1] \
+                 - 6*dfdy[0][0][0] + 6*dfdy[0][0][1] - 6*dfdy[0][1][0] + 6*dfdy[0][1][1] + 6*dfdy[1][0][0] \
+                 - 6*dfdy[1][0][1] + 6*dfdy[1][1][0] - 6*dfdy[1][1][1] - 6*dfdz[0][0][0] - 6*dfdz[0][0][1] \
+                 + 6*dfdz[0][1][0] + 6*dfdz[0][1][1] + 6*dfdz[1][0][0] + 6*dfdz[1][0][1] - 6*dfdz[1][1][0] \
+                 - 6*dfdz[1][1][1] - 4*d2fdxdy[0][0][0] + 4*d2fdxdy[0][0][1] - 4*d2fdxdy[0][1][0] \
+                 + 4*d2fdxdy[0][1][1] - 2*d2fdxdy[1][0][0] + 2*d2fdxdy[1][0][1] - 2*d2fdxdy[1][1][0] \
+                 + 2*d2fdxdy[1][1][1] - 4*d2fdxdz[0][0][0] - 4*d2fdxdz[0][0][1] + 4*d2fdxdz[0][1][0] \
+                 + 4*d2fdxdz[0][1][1] - 2*d2fdxdz[1][0][0] - 2*d2fdxdz[1][0][1] + 2*d2fdxdz[1][1][0] \
+                 + 2*d2fdxdz[1][1][1] - 3*d2fdydz[0][0][0] - 3*d2fdydz[0][0][1] - 3*d2fdydz[0][1][0] \
+                 - 3*d2fdydz[0][1][1] + 3*d2fdydz[1][0][0] + 3*d2fdydz[1][0][1] + 3*d2fdydz[1][1][0] \
+                 + 3*d2fdydz[1][1][1] - 2*d3fdxdydz[0][0][0] - 2*d3fdxdydz[0][0][1] - 2*d3fdxdydz[0][1][0] \
+                 - 2*d3fdxdydz[0][1][1] - d3fdxdydz[1][0][0] - d3fdxdydz[1][0][1] - d3fdxdydz[1][1][0] \
+                 - d3fdxdydz[1][1][1]
+    a[3][0][0] = 2*f[0][0][0] - 2*f[1][0][0] + dfdx[0][0][0] + dfdx[1][0][0]
+    a[3][0][1] = 2*dfdz[0][0][0] - 2*dfdz[1][0][0] + d2fdxdz[0][0][0] + d2fdxdz[1][0][0]
+    a[3][0][2] = -6*f[0][0][0] + 6*f[0][0][1] + 6*f[1][0][0] - 6*f[1][0][1] - 3*dfdx[0][0][0] + 3*dfdx[0][0][1] \
+                 - 3*dfdx[1][0][0] + 3*dfdx[1][0][1] - 4*dfdz[0][0][0] - 2*dfdz[0][0][1] + 4*dfdz[1][0][0] \
+                 + 2*dfdz[1][0][1] - 2*d2fdxdz[0][0][0] - d2fdxdz[0][0][1] - 2*d2fdxdz[1][0][0] - d2fdxdz[1][0][1]
+    a[3][0][3] = 4*f[0][0][0] - 4*f[0][0][1] - 4*f[1][0][0] + 4*f[1][0][1] + 2*dfdx[0][0][0] - 2*dfdx[0][0][1] \
+                 + 2*dfdx[1][0][0] - 2*dfdx[1][0][1] + 2*dfdz[0][0][0] + 2*dfdz[0][0][1] - 2*dfdz[1][0][0] \
+                 - 2*dfdz[1][0][1] + d2fdxdz[0][0][0] + d2fdxdz[0][0][1] + d2fdxdz[1][0][0] + d2fdxdz[1][0][1]
+    a[3][1][0] = 2*dfdy[0][0][0] - 2*dfdy[1][0][0] + d2fdxdy[0][0][0] + d2fdxdy[1][0][0]
+    a[3][1][1] = 2*d2fdydz[0][0][0] - 2*d2fdydz[1][0][0] + d3fdxdydz[0][0][0] + d3fdxdydz[1][0][0]
+    a[3][1][2] = -6*dfdy[0][0][0] + 6*dfdy[0][0][1] + 6*dfdy[1][0][0] - 6*dfdy[1][0][1] - 3*d2fdxdy[0][0][0] \
+                 + 3*d2fdxdy[0][0][1] - 3*d2fdxdy[1][0][0] + 3*d2fdxdy[1][0][1] - 4*d2fdydz[0][0][0] \
+                 - 2*d2fdydz[0][0][1] + 4*d2fdydz[1][0][0] + 2*d2fdydz[1][0][1] - 2*d3fdxdydz[0][0][0] \
+                 - d3fdxdydz[0][0][1] - 2*d3fdxdydz[1][0][0] - d3fdxdydz[1][0][1]
+    a[3][1][3] = 4*dfdy[0][0][0] - 4*dfdy[0][0][1] - 4*dfdy[1][0][0] + 4*dfdy[1][0][1] + 2*d2fdxdy[0][0][0] \
+                 - 2*d2fdxdy[0][0][1] + 2*d2fdxdy[1][0][0] - 2*d2fdxdy[1][0][1] + 2*d2fdydz[0][0][0] \
+                 + 2*d2fdydz[0][0][1] - 2*d2fdydz[1][0][0] - 2*d2fdydz[1][0][1] + d3fdxdydz[0][0][0] \
+                 + d3fdxdydz[0][0][1] + d3fdxdydz[1][0][0] + d3fdxdydz[1][0][1]
+    a[3][2][0] = -6*f[0][0][0] + 6*f[0][1][0] + 6*f[1][0][0] - 6*f[1][1][0] - 3*dfdx[0][0][0] + 3*dfdx[0][1][0] \
+                 - 3*dfdx[1][0][0] + 3*dfdx[1][1][0] - 4*dfdy[0][0][0] - 2*dfdy[0][1][0] + 4*dfdy[1][0][0] \
+                 + 2*dfdy[1][1][0] - 2*d2fdxdy[0][0][0] - d2fdxdy[0][1][0] - 2*d2fdxdy[1][0][0] - d2fdxdy[1][1][0]
+    a[3][2][1] = -6*dfdz[0][0][0] + 6*dfdz[0][1][0] + 6*dfdz[1][0][0] - 6*dfdz[1][1][0] - 3*d2fdxdz[0][0][0] \
+                 + 3*d2fdxdz[0][1][0] - 3*d2fdxdz[1][0][0] + 3*d2fdxdz[1][1][0] - 4*d2fdydz[0][0][0] \
+                 - 2*d2fdydz[0][1][0] + 4*d2fdydz[1][0][0] + 2*d2fdydz[1][1][0] - 2*d3fdxdydz[0][0][0] \
+                 - d3fdxdydz[0][1][0] - 2*d3fdxdydz[1][0][0] - d3fdxdydz[1][1][0]
+    a[3][2][2] = 18*f[0][0][0] - 18*f[0][0][1] - 18*f[0][1][0] + 18*f[0][1][1] - 18*f[1][0][0] + 18*f[1][0][1] \
+                 + 18*f[1][1][0] - 18*f[1][1][1] + 9*dfdx[0][0][0] - 9*dfdx[0][0][1] - 9*dfdx[0][1][0] \
+                 + 9*dfdx[0][1][1] + 9*dfdx[1][0][0] - 9*dfdx[1][0][1] - 9*dfdx[1][1][0] + 9*dfdx[1][1][1] \
+                 + 12*dfdy[0][0][0] - 12*dfdy[0][0][1] + 6*dfdy[0][1][0] - 6*dfdy[0][1][1] - 12*dfdy[1][0][0] \
+                 + 12*dfdy[1][0][1] - 6*dfdy[1][1][0] + 6*dfdy[1][1][1] + 12*dfdz[0][0][0] + 6*dfdz[0][0][1] \
+                 - 12*dfdz[0][1][0] - 6*dfdz[0][1][1] - 12*dfdz[1][0][0] - 6*dfdz[1][0][1] + 12*dfdz[1][1][0] \
+                 + 6*dfdz[1][1][1] + 6*d2fdxdy[0][0][0] - 6*d2fdxdy[0][0][1] + 3*d2fdxdy[0][1][0] \
+                 - 3*d2fdxdy[0][1][1] + 6*d2fdxdy[1][0][0] - 6*d2fdxdy[1][0][1] + 3*d2fdxdy[1][1][0] \
+                 - 3*d2fdxdy[1][1][1] + 6*d2fdxdz[0][0][0] + 3*d2fdxdz[0][0][1] - 6*d2fdxdz[0][1][0] \
+                 - 3*d2fdxdz[0][1][1] + 6*d2fdxdz[1][0][0] + 3*d2fdxdz[1][0][1] - 6*d2fdxdz[1][1][0] \
+                 - 3*d2fdxdz[1][1][1] + 8*d2fdydz[0][0][0] + 4*d2fdydz[0][0][1] + 4*d2fdydz[0][1][0] \
+                 + 2*d2fdydz[0][1][1] - 8*d2fdydz[1][0][0] - 4*d2fdydz[1][0][1] - 4*d2fdydz[1][1][0] \
+                 - 2*d2fdydz[1][1][1] + 4*d3fdxdydz[0][0][0] + 2*d3fdxdydz[0][0][1] + 2*d3fdxdydz[0][1][0] \
+                 + d3fdxdydz[0][1][1] + 4*d3fdxdydz[1][0][0] + 2*d3fdxdydz[1][0][1] + 2*d3fdxdydz[1][1][0] \
+                 + d3fdxdydz[1][1][1]
+    a[3][2][3] = -12*f[0][0][0] + 12*f[0][0][1] + 12*f[0][1][0] - 12*f[0][1][1] + 12*f[1][0][0] - 12*f[1][0][1] \
+                 - 12*f[1][1][0] + 12*f[1][1][1] - 6*dfdx[0][0][0] + 6*dfdx[0][0][1] + 6*dfdx[0][1][0] \
+                 - 6*dfdx[0][1][1] - 6*dfdx[1][0][0] + 6*dfdx[1][0][1] + 6*dfdx[1][1][0] - 6*dfdx[1][1][1] \
+                 - 8*dfdy[0][0][0] + 8*dfdy[0][0][1] - 4*dfdy[0][1][0] + 4*dfdy[0][1][1] + 8*dfdy[1][0][0] \
+                 - 8*dfdy[1][0][1] + 4*dfdy[1][1][0] - 4*dfdy[1][1][1] - 6*dfdz[0][0][0] - 6*dfdz[0][0][1] \
+                 + 6*dfdz[0][1][0] + 6*dfdz[0][1][1] + 6*dfdz[1][0][0] + 6*dfdz[1][0][1] - 6*dfdz[1][1][0] \
+                 - 6*dfdz[1][1][1] - 4*d2fdxdy[0][0][0] + 4*d2fdxdy[0][0][1] - 2*d2fdxdy[0][1][0] \
+                 + 2*d2fdxdy[0][1][1] - 4*d2fdxdy[1][0][0] + 4*d2fdxdy[1][0][1] - 2*d2fdxdy[1][1][0] \
+                 + 2*d2fdxdy[1][1][1] - 3*d2fdxdz[0][0][0] - 3*d2fdxdz[0][0][1] + 3*d2fdxdz[0][1][0] \
+                 + 3*d2fdxdz[0][1][1] - 3*d2fdxdz[1][0][0] - 3*d2fdxdz[1][0][1] + 3*d2fdxdz[1][1][0] \
+                 + 3*d2fdxdz[1][1][1] - 4*d2fdydz[0][0][0] - 4*d2fdydz[0][0][1] - 2*d2fdydz[0][1][0] \
+                 - 2*d2fdydz[0][1][1] + 4*d2fdydz[1][0][0] + 4*d2fdydz[1][0][1] + 2*d2fdydz[1][1][0] \
+                 + 2*d2fdydz[1][1][1] - 2*d3fdxdydz[0][0][0] - 2*d3fdxdydz[0][0][1] - d3fdxdydz[0][1][0] \
+                 - d3fdxdydz[0][1][1] - 2*d3fdxdydz[1][0][0] - 2*d3fdxdydz[1][0][1] - d3fdxdydz[1][1][0] \
+                 - d3fdxdydz[1][1][1]
+    a[3][3][0] = 4*f[0][0][0] - 4*f[0][1][0] - 4*f[1][0][0] + 4*f[1][1][0] + 2*dfdx[0][0][0] - 2*dfdx[0][1][0] \
+                 + 2*dfdx[1][0][0] - 2*dfdx[1][1][0] + 2*dfdy[0][0][0] + 2*dfdy[0][1][0] - 2*dfdy[1][0][0] \
+                 - 2*dfdy[1][1][0] + d2fdxdy[0][0][0] + d2fdxdy[0][1][0] + d2fdxdy[1][0][0] + d2fdxdy[1][1][0]
+    a[3][3][1] = 4*dfdz[0][0][0] - 4*dfdz[0][1][0] - 4*dfdz[1][0][0] + 4*dfdz[1][1][0] + 2*d2fdxdz[0][0][0] \
+                 - 2*d2fdxdz[0][1][0] + 2*d2fdxdz[1][0][0] - 2*d2fdxdz[1][1][0] + 2*d2fdydz[0][0][0] \
+                 + 2*d2fdydz[0][1][0] - 2*d2fdydz[1][0][0] - 2*d2fdydz[1][1][0] + d3fdxdydz[0][0][0] \
+                 + d3fdxdydz[0][1][0] + d3fdxdydz[1][0][0] + d3fdxdydz[1][1][0]
+    a[3][3][2] = -12*f[0][0][0] + 12*f[0][0][1] + 12*f[0][1][0] - 12*f[0][1][1] + 12*f[1][0][0] - 12*f[1][0][1] \
+                 - 12*f[1][1][0] + 12*f[1][1][1] - 6*dfdx[0][0][0] + 6*dfdx[0][0][1] + 6*dfdx[0][1][0] \
+                 - 6*dfdx[0][1][1] - 6*dfdx[1][0][0] + 6*dfdx[1][0][1] + 6*dfdx[1][1][0] - 6*dfdx[1][1][1] \
+                 - 6*dfdy[0][0][0] + 6*dfdy[0][0][1] - 6*dfdy[0][1][0] + 6*dfdy[0][1][1] + 6*dfdy[1][0][0] \
+                 - 6*dfdy[1][0][1] + 6*dfdy[1][1][0] - 6*dfdy[1][1][1] - 8*dfdz[0][0][0] - 4*dfdz[0][0][1] \
+                 + 8*dfdz[0][1][0] + 4*dfdz[0][1][1] + 8*dfdz[1][0][0] + 4*dfdz[1][0][1] - 8*dfdz[1][1][0] \
+                 - 4*dfdz[1][1][1] - 3*d2fdxdy[0][0][0] + 3*d2fdxdy[0][0][1] - 3*d2fdxdy[0][1][0] \
+                 + 3*d2fdxdy[0][1][1] - 3*d2fdxdy[1][0][0] + 3*d2fdxdy[1][0][1] - 3*d2fdxdy[1][1][0] \
+                 + 3*d2fdxdy[1][1][1] - 4*d2fdxdz[0][0][0] - 2*d2fdxdz[0][0][1] + 4*d2fdxdz[0][1][0] \
+                 + 2*d2fdxdz[0][1][1] - 4*d2fdxdz[1][0][0] - 2*d2fdxdz[1][0][1] + 4*d2fdxdz[1][1][0] \
+                 + 2*d2fdxdz[1][1][1] - 4*d2fdydz[0][0][0] - 2*d2fdydz[0][0][1] - 4*d2fdydz[0][1][0] \
+                 - 2*d2fdydz[0][1][1] + 4*d2fdydz[1][0][0] + 2*d2fdydz[1][0][1] + 4*d2fdydz[1][1][0] \
+                 + 2*d2fdydz[1][1][1] - 2*d3fdxdydz[0][0][0] - d3fdxdydz[0][0][1] - 2*d3fdxdydz[0][1][0] \
+                 - d3fdxdydz[0][1][1] - 2*d3fdxdydz[1][0][0] - d3fdxdydz[1][0][1] - 2*d3fdxdydz[1][1][0] \
+                 - d3fdxdydz[1][1][1]
+    a[3][3][3] = 8*f[0][0][0] - 8*f[0][0][1] - 8*f[0][1][0] + 8*f[0][1][1] - 8*f[1][0][0] + 8*f[1][0][1] \
+                 + 8*f[1][1][0] - 8*f[1][1][1] + 4*dfdx[0][0][0] - 4*dfdx[0][0][1] - 4*dfdx[0][1][0] \
+                 + 4*dfdx[0][1][1] + 4*dfdx[1][0][0] - 4*dfdx[1][0][1] - 4*dfdx[1][1][0] + 4*dfdx[1][1][1] \
+                 + 4*dfdy[0][0][0] - 4*dfdy[0][0][1] + 4*dfdy[0][1][0] - 4*dfdy[0][1][1] - 4*dfdy[1][0][0] \
+                 + 4*dfdy[1][0][1] - 4*dfdy[1][1][0] + 4*dfdy[1][1][1] + 4*dfdz[0][0][0] + 4*dfdz[0][0][1] \
+                 - 4*dfdz[0][1][0] - 4*dfdz[0][1][1] - 4*dfdz[1][0][0] - 4*dfdz[1][0][1] + 4*dfdz[1][1][0] \
+                 + 4*dfdz[1][1][1] + 2*d2fdxdy[0][0][0] - 2*d2fdxdy[0][0][1] + 2*d2fdxdy[0][1][0] \
+                 - 2*d2fdxdy[0][1][1] + 2*d2fdxdy[1][0][0] - 2*d2fdxdy[1][0][1] + 2*d2fdxdy[1][1][0] \
+                 - 2*d2fdxdy[1][1][1] + 2*d2fdxdz[0][0][0] + 2*d2fdxdz[0][0][1] - 2*d2fdxdz[0][1][0] \
+                 - 2*d2fdxdz[0][1][1] + 2*d2fdxdz[1][0][0] + 2*d2fdxdz[1][0][1] - 2*d2fdxdz[1][1][0] \
+                 - 2*d2fdxdz[1][1][1] + 2*d2fdydz[0][0][0] + 2*d2fdydz[0][0][1] + 2*d2fdydz[0][1][0] \
+                 + 2*d2fdydz[0][1][1] - 2*d2fdydz[1][0][0] - 2*d2fdydz[1][0][1] - 2*d2fdydz[1][1][0] \
+                 - 2*d2fdydz[1][1][1] + d3fdxdydz[0][0][0] + d3fdxdydz[0][0][1] + d3fdxdydz[0][1][0] \
+                 + d3fdxdydz[0][1][1] + d3fdxdydz[1][0][0] + d3fdxdydz[1][0][1] + d3fdxdydz[1][1][0] \
+                 + d3fdxdydz[1][1][1]
 
 
 cdef double _evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) nogil:
