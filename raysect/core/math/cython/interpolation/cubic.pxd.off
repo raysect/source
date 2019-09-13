@@ -31,9 +31,9 @@
 
 cimport cython
 
-@cython.cdivision(True)
-cdef inline double cubic1d(double x0, double x1, double f0, double f1, double dfdx0, double dfdx1, double x) nogil:
-    return ((f1 - f0) / (x1 - x0)) * (x - x0) + f0
+# @cython.cdivision(True)
+# cdef inline double cubic1d(double x0, double x1, double f0, double f1, double dfdx0, double dfdx1, double x) nogil:
+#     pass
 
 
 cdef double cubic2d(double x0, double x1, double y0, double y1, double[:,::1] f,
