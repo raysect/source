@@ -30,6 +30,10 @@ for i in range(9):
     temperature = temperature_scan[i]
     increment = angle_increments[i]
 
+    # WARNING: This is an unphysical demo, the attenuation of the glass is not applied to the black body emission.
+    # WARNING: The full volume emission is simply added to the light transmitted through the glass.
+    # WARNING: In practice, only all emitting volumes or all absorbing volumes can be physically combined.
+    # WARNING: This demo highlights the risks of using modifiers without considering the raytracing process.
     material = Add(schott("N-BK7"), UniformVolumeEmitter(BlackBody(temperature), scale=1.0), volume_only=True)
 
     Sphere(radius, world,
