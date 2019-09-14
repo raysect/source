@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.random cimport probability
-from raysect.optical cimport Point3D, Vector3D, Normal3D, new_normal3d, AffineMatrix3D, new_affinematrix3d, Primitive, World, Ray, Spectrum
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
 from raysect.optical.material cimport Material
 
 

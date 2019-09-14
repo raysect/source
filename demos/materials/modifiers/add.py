@@ -4,7 +4,7 @@ from matplotlib.pyplot import *
 from raysect.optical import World, translate, rotate, Point3D, d65_white
 from raysect.primitive import Sphere, Box, Cylinder
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D
-from raysect.optical.material import Lambert, UniformSurfaceEmitter, Add
+from raysect.optical.material import Lambert, UniformSurfaceEmitter, UniformVolumeEmitter, Add
 from raysect.optical.library import *
 
 
@@ -30,7 +30,7 @@ for i in range(9):
     temperature = temperature_scan[i]
     increment = angle_increments[i]
 
-    material = Add(schott("N-BK7"), UniformSurfaceEmitter(BlackBody(temperature)), surface_only=True)
+    material = Add(schott("N-BK7"), UniformVolumeEmitter(BlackBody(temperature), scale=1.0), volume_only=True)
 
     Sphere(radius, world,
            transform=rotate(increment * angle, 0, 0) * translate(0, radius + 0.00001, distance),
