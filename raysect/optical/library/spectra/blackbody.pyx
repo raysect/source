@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,17 +29,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport NumericallyIntegratedSF
+from raysect.optical cimport NumericallyIntegratedSF, SpectralFunction, ConstantSF
+from raysect.core.math.cython cimport clamp
 from libc.math cimport exp
 cimport cython
 
 
 cdef class BlackBody(NumericallyIntegratedSF):
+    """
 
+    Emissivity function is clamped to the range [0, 1].
+
+    """
     cdef readonly double temperature, scale
+    cdef readonly SpectralFunction emissivity
     cdef double c1, c2
 
-    def __init__(self, double temperature, double scale=1.0, double sample_resolution=5):
+    def __init__(self, double temperature, SpectralFunction emissivity=None, double scale=1.0, double sample_resolution=1):
 
         super().__init__(sample_resolution)
 
@@ -49,6 +55,7 @@ cdef class BlackBody(NumericallyIntegratedSF):
         if scale <= 0:
             raise ValueError("Scale factor must be greater than zero.")
 
+        self.emissivity = emissivity or ConstantSF(1.0)
         self.temperature = temperature
         self.scale = scale
 
@@ -69,7 +76,8 @@ cdef class BlackBody(NumericallyIntegratedSF):
     cpdef double function(self, double wavelength):
 
         # Planck's Law equation (wavelength in nm)
-        return self.c1 / (wavelength**5 * (exp(self.c2 / wavelength) - 1))
+        cdef double emissivity = clamp(self.emissivity.evaluate(wavelength), 0, 1)
+        return emissivity * self.c1 / (wavelength**5 * (exp(self.c2 / wavelength) - 1))
 
 
 
