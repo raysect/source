@@ -33,4 +33,3 @@ from .homogeneous import HomogeneousVolumeEmitter
 from .inhomogeneous import InhomogeneousVolumeEmitter, VolumeIntegrator, NumericalIntegrator
 from .checkerboard import Checkerboard
 from .anisotropic import AnisotropicSurfaceEmitter
-from .planck_emitter import PlanckEmitter
