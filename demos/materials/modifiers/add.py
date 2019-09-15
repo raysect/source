@@ -21,25 +21,6 @@ world = World()
 angle_increments = np.array([-4, -3, -2, -1, 0, 1, 2, 3, 4])
 temperature_scan = np.linspace(0, 2000, 9) + 273.15
 
-# glass spheres
-angle = 6
-distance = 3
-radius = 0.15
-
-for i in range(9):
-    temperature = temperature_scan[i]
-    increment = angle_increments[i]
-
-    # WARNING: This is an unphysical demo, the attenuation of the glass is not applied to the black body emission.
-    # WARNING: The full volume emission is simply added to the light transmitted through the glass.
-    # WARNING: In practice, only all emitting volumes or all absorbing volumes can be physically combined.
-    # WARNING: This demo highlights the risks of using modifiers without considering the raytracing process.
-    material = Add(schott("N-BK7"), UniformVolumeEmitter(BlackBody(temperature), scale=1.0), volume_only=True)
-
-    Sphere(radius, world,
-           transform=rotate(increment * angle, 0, 0) * translate(0, radius + 0.00001, distance),
-           material=material)
-
 # metal spheres
 angle = 6
 distance = 3.6
@@ -55,6 +36,24 @@ for i in range(9):
            transform=rotate(increment * angle, 0, 0) * translate(0, radius + 0.00001, distance),
            material=material)
 
+# glass spheres
+angle = 6
+distance = 3
+radius = 0.15
+
+for i in range(9):
+    temperature = temperature_scan[i]
+    increment = angle_increments[i]
+
+    # WARNING: This is an unphysical demo, the attenuation of the glass is not applied to the black body emission.
+    # WARNING: The full volume emission is simply added to the light transmitted through the glass.
+    # WARNING: In practice, only all emitting volumes or all absorbing volumes should be physically combined.
+    # WARNING: This demo highlights the risks of using modifiers without considering the raytracing process.
+    material = Add(schott("N-BK7"), UniformVolumeEmitter(BlackBody(temperature), scale=4.0), volume_only=True)
+
+    Sphere(radius, world,
+           transform=rotate(increment * angle, 0, 0) * translate(0, radius + 0.00001, distance),
+           material=material)
 
 # diffuse ground plane
 Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=Lambert())
