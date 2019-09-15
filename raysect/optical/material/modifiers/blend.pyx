@@ -36,7 +36,7 @@ from raysect.optical.material cimport Material
 
 cdef class Blend(Material):
     """
-    Blend combines the surface behaviours of two materials.
+    Blend combines the behaviours of two materials.
 
     This modifier is used to blend together the behaviours of two different
     materials. Which material handles the interaction for an incoming ray is

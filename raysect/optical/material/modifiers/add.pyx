@@ -34,25 +34,32 @@ from raysect.optical.material cimport Material
 
 
 cdef class Add(Material):
-    # """
-    # Blend combines the surface behaviours of two materials.
+    """
+    Adds the response of two materials.
+
+    # This modifier is used to blend together the behaviours of two different
+    # materials. Which material handles the interaction for an incoming ray is
+    # determined by a random choice, weighted by the ratio argument. Low values
+    # of ratio bias the selection towards material 1, high values to material 2.
     #
-    # This modifier is used to blend together the surface behaviours of two
-    # different materials. Which material handles the surface interaction for
-    # an incoming ray is determined by a random choice, weighted by the ratio
-    # argument. Low values of ratio bias the selection towards material 1, high
-    # values to material 2. The volume behaviour is always handled by material 1.
+    # By default both the volume and surface responses are blended. This may be
+    # configured with the surface_only and volume_only parameters. If blending
+    # is disabled the response from material 1 is returned.
     #
     # Blend can be used to approximate finely sputtered surfaces consisting of a
     # mix of materials. For example it can be used to crudely approximate a gold
     # coated glass surface:
     #
-    #     material = Blend(schott('N-BK7'), Gold(), 0.1)
+    #     material = Blend(schott('N-BK7'), Gold(), 0.1, surface_only=True)
     #
-    # :param m1: The first material.
-    # :param m2: The second material.
-    # :param ratio: A double value in the range (0, 1).
-    # """
+    # It is the responsibility of the user to ensure the material combination is
+    # physically valid.
+
+    :param m1: The first material.
+    :param m2: The second material.
+    :param surface_only: Only blend the surface response (default=False).
+    :param volume_only: Only blend the volume response (default=False).
+    """
 
     cdef:
         Material m1, m2
