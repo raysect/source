@@ -37,23 +37,35 @@ cdef class Add(Material):
     """
     Adds the response of two materials.
 
-    # This modifier is used to blend together the behaviours of two different
-    # materials. Which material handles the interaction for an incoming ray is
-    # determined by a random choice, weighted by the ratio argument. Low values
-    # of ratio bias the selection towards material 1, high values to material 2.
-    #
-    # By default both the volume and surface responses are blended. This may be
-    # configured with the surface_only and volume_only parameters. If blending
-    # is disabled the response from material 1 is returned.
-    #
-    # Blend can be used to approximate finely sputtered surfaces consisting of a
-    # mix of materials. For example it can be used to crudely approximate a gold
-    # coated glass surface:
-    #
-    #     material = Blend(schott('N-BK7'), Gold(), 0.1, surface_only=True)
-    #
-    # It is the responsibility of the user to ensure the material combination is
-    # physically valid.
+    This modifier is used to sum together the behaviours of two different
+    materials. The surface response is the simple sum of the two surface
+    material responses. The volume response is more nuanced. The volume method
+    of material 1 is applied first, followed by the volume method of material
+    2. Depending on the choice of volume material, this may result in a simple
+    summation or a more complex interaction.
+
+    The Add modifier should be used with caution, it is possible to produce
+    unphysical material combinations that violate energy conservation. It is
+    the responsibility of the user to ensure the material combination is
+    physically valid.
+
+    By default both the volume and surface responses are combined. This may be
+    configured with the surface_only and volume_only parameters. If summation
+    is disabled the response from material 1 is returned.
+
+    Add can be used to introduce a surface emission component to a non-emitting
+    surface. For example, A hot metal surface can be approximated by adding a
+    black body emitter to a metal material:
+
+        material = Add(
+            Iron(),
+            UniformSurfaceEmitter(BlackBody(800)),
+            surface_only=True
+        )
+
+    Combining volumes is more complex and must only be used with materials that
+    are mathematically commutative, for example two volume emitters or two
+    absorbing volumes.
 
     :param m1: The first material.
     :param m2: The second material.
