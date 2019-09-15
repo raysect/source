@@ -1,5 +1,3 @@
-
-
 Optical Surface Materials
 =========================
 
@@ -19,6 +17,11 @@ Emitters
 .. autoclass:: raysect.optical.material.emitter.UniformSurfaceEmitter
    :show-inheritance:
 
+.. autoclass:: raysect.optical.material.AnisotropicSurfaceEmitter
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.material.Checkerboard
+   :show-inheritance:
 
 Lambertian
 ----------
@@ -40,18 +43,24 @@ Conductors
 Dielectrics
 -----------
 
-.. autoclass:: raysect.optical.material.dielectric.Sellmeier
-   :show-inheritance:
-
 .. autoclass:: raysect.optical.material.dielectric.Dielectric
    :show-inheritance:
 
-.. autoclass:: raysect.optical.material.debug.PerfectReflectingSurface
+.. autoclass:: raysect.optical.material.dielectric.Sellmeier
    :show-inheritance:
 
 
 Modifiers
 ---------
+
+.. autoclass:: raysect.optical.material.Blend
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.material.Add
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.material.Transform
+   :show-inheritance:
 
 .. autoclass:: raysect.optical.material.modifiers.Roughen
    :show-inheritance:
@@ -66,4 +75,7 @@ This module contains materials to aid with debugging and creating test scenes.
    :show-inheritance:
 
 .. autoclass:: raysect.optical.material.debug.Light
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.material.debug.PerfectReflectingSurface
    :show-inheritance:

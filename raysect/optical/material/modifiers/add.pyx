@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,55 +29,63 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.random cimport probability
 from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
 from raysect.optical.material cimport Material
 
 
-cdef class Blend(Material):
+cdef class Add(Material):
     """
-    Blend combines the behaviours of two materials.
+    Adds the response of two materials.
 
-    This modifier is used to blend together the behaviours of two different
-    materials. Which material handles the interaction for an incoming ray is
-    determined by a random choice, weighted by the ratio argument. Low values
-    of ratio bias the selection towards material 1, high values to material 2.
+    This modifier is used to sum together the behaviours of two different
+    materials. The surface response is the simple sum of the two surface
+    material responses. The volume response is more nuanced. The volume method
+    of material 1 is applied first, followed by the volume method of material
+    2. Depending on the choice of volume material, this may result in a simple
+    summation or a more complex interaction.
 
-    It is the responsibility of the user to ensure the material combination is
+    The Add modifier should be used with caution, it is possible to produce
+    unphysical material combinations that violate energy conservation. It is
+    the responsibility of the user to ensure the material combination is
     physically valid.
 
-    By default both the volume and surface responses are blended. This may be
-    configured with the surface_only and volume_only parameters. If blending
+    By default both the volume and surface responses are combined. This may be
+    configured with the surface_only and volume_only parameters. If summation
     is disabled the response from material 1 is returned.
 
-    Blend can be used to approximate finely sputtered surfaces consisting of a
-    mix of materials. For example it can be used to crudely approximate a gold
-    coated glass surface:
+    Add can be used to introduce a surface emission component to a non-emitting
+    surface. For example, A hot metal surface can be approximated by adding a
+    black body emitter to a metal material:
 
-        material = Blend(schott('N-BK7'), Gold(), 0.1, surface_only=True)
+        material = Add(
+            Iron(),
+            UniformSurfaceEmitter(BlackBody(800)),
+            surface_only=True
+        )
+
+    Combining volumes is more complex and must only be used with materials that
+    are mathematically commutative, for example two volume emitters or two
+    absorbing volumes.
 
     :param m1: The first material.
     :param m2: The second material.
-    :param ratio: A double value in the range (0, 1).
     :param surface_only: Only blend the surface response (default=False).
     :param volume_only: Only blend the volume response (default=False).
     """
 
     cdef:
         Material m1, m2
-        double ratio
         bint surface_only, volume_only
 
-    def __init__(self, Material m1 not None, Material m2 not None, double ratio, bint surface_only=False, bint volume_only=False):
+    def __init__(self, Material m1 not None, Material m2 not None, bint surface_only=False, bint volume_only=False):
 
         super().__init__()
 
-        if ratio <= 0 or ratio >= 1.0:
-            raise ValueError("Ratio must be a floating point value in the range (0, 1).")
+        if surface_only and volume_only:
+            raise ValueError("Surface only and volume only cannot be enabled at the same time.")
 
         self.m1 = m1
         self.m2 = m2
-        self.ratio = ratio
 
         # ensure the highest importance is passed through
         self.importance = max(m1.importance, m2.importance)
@@ -89,20 +97,30 @@ cdef class Blend(Material):
                                     bint exiting, Point3D inside_point, Point3D outside_point,
                                     Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-        if not self.volume_only and probability(self.ratio):
-            return self.m2.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point,
-                                                  normal, world_to_primitive, primitive_to_world)
-        else:
-            return self.m1.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point,
-                                                  normal, world_to_primitive, primitive_to_world)
+        cdef Spectrum s1, s2
+
+        # sample material 1
+        s1 = self.m1.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, world_to_primitive, primitive_to_world)
+        if self.volume_only:
+            return s1
+
+        # sample material 2
+        s2 = self.m2.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, world_to_primitive, primitive_to_world)
+
+        # combine
+        s1.add_spectrum(s2)
+        return s1
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
                                    Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
                                    AffineMatrix3D to_local, AffineMatrix3D to_world):
 
-        if not self.surface_only and probability(self.ratio):
-            return self.m2.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
-        else:
-            return self.m1.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
+        # sample material 1
+        self.m1.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
+        if self.surface_only:
+            return spectrum
 
+        # sample material 2
+        self.m2.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
+        return spectrum
