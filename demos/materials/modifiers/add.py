@@ -49,7 +49,7 @@ for i in range(9):
     # WARNING: The full volume emission is simply added to the light transmitted through the glass.
     # WARNING: In practice, only all emitting volumes or all absorbing volumes should be physically combined.
     # WARNING: This demo highlights the risks of using modifiers without considering the raytracing process.
-    material = Add(schott("N-BK7"), UniformVolumeEmitter(BlackBody(temperature), scale=4.0), volume_only=True)
+    material = Add(schott("N-BK7"), UniformVolumeEmitter(BlackBody(temperature), scale=10.0), volume_only=True)
 
     Sphere(radius, world,
            transform=rotate(increment * angle, 0, 0) * translate(0, radius + 0.00001, distance),
