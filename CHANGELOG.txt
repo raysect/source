@@ -1,6 +1,18 @@
 Raysect Changelog
 =================
 
+Release 0.5.7 (TBD)
+-------------------
+
+API Changes:
+* Blend material modifier now blends the surface and volume by default. Use the surface_only and volume_only options to configure.
+* Cython minimum, maximum and peak to peak methods can now cope with arbitrary strides.
+
+New:
+* Added an Add material modifier than sums the contributions from two materials.
+* Added emissivity function to BlackBody.
+
+
 Release 0.5.6 (24 Aug 2019)
 ---------------------------
 

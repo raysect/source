@@ -37,10 +37,25 @@ cimport cython
 
 cdef class BlackBody(NumericallyIntegratedSF):
     """
+    Generates a black body radiation spectrum.
 
-    Emissivity function is clamped to the range [0, 1].
+    Implements Planck's Law to generate a black body spectrum for the given
+    body temperature. The temperature must be supplied in Kelvin.
 
+    An optional emissivity spectral function may be supplied. This function
+    should return a value in the range [0, 1]. Values outside this range will
+    be clamped.
+
+    Averages and integrals are calculated using numerical integration, the step
+    size of this integration can be controlled by the user. The default step
+    size in 1 nm.
+
+    :param temperature: The temperature in Kelvin.
+    :param emissivity: Emissivity function (default=ConstantSF(1.0)).
+    :param scale: Scales the spectra (default=1.0).
+    :param sample_resolution: Numerical integration step size (default=1nm).
     """
+
     cdef readonly double temperature, scale
     cdef readonly SpectralFunction emissivity
     cdef double c1, c2
@@ -74,6 +89,12 @@ cdef class BlackBody(NumericallyIntegratedSF):
 
     @cython.cdivision(True)
     cpdef double function(self, double wavelength):
+        """
+        Planck's Law.
+         
+        :param wavelength: Wavelength in nm. 
+        :return: Spectral radiance (W/m^2/str/nm).
+        """
 
         # Planck's Law equation (wavelength in nm)
         cdef double emissivity = clamp(self.emissivity.evaluate(wavelength), 0, 1)
