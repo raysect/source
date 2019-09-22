@@ -29,6 +29,7 @@
 
 from multiprocessing import Process, cpu_count, SimpleQueue
 from raysect.core.math import random
+import time
 
 
 class RenderEngine:
@@ -130,14 +131,16 @@ class MulticoreEngine(RenderEngine):
     is comparable to the latency of the inter process communication (IPC), the
     render may run significantly slower than expected due to waiting for the
     IPC to complete. To reduce the impact of the IPC overhead, multiple tasks
-    can be grouped together into jobs, requiring only one IPC wait for multiple
+    are grouped together into jobs, requiring only one IPC wait for multiple
     tasks.
 
-    By default a job consists of a single task. To increase the number of jobs
-    per tasks, increase the value of the tasks_per_job attribute.
+    By default the number of tasks per job is adjusted automatically. The
+    tasks_per_job attribute can be used to override this automatic adjustment.
+    To reenable the automated adjustment, set the tasks_per_job attribute to
+    None.
 
     :param processes: The number of worker processes, or None to use all available cores (default).
-    :param tasks_per_job: The number of tasks to group into a single job (default=1)
+    :param tasks_per_job: The number of tasks to group into a single job, or None if this should be determined automatically (default).
 
     .. code-block:: pycon
 
@@ -156,7 +159,7 @@ class MulticoreEngine(RenderEngine):
     def __init__(self, processes=None, tasks_per_job=None):
         super().__init__()
         self.processes = processes
-        self.tasks_per_job = tasks_per_job or 1
+        self.tasks_per_job = tasks_per_job
 
     @property
     def processes(self):
@@ -178,9 +181,14 @@ class MulticoreEngine(RenderEngine):
 
     @tasks_per_job.setter
     def tasks_per_job(self, value):
-        if value < 1:
-            raise ValueError("The number of tasks per job must be greater than zero.")
-        self._tasks_per_job = value
+        if value is None:
+            self._tasks_per_job = 1
+            self._auto_tasks_per_job = True
+        else:
+            if value < 1:
+                raise ValueError("The number of tasks per job must be greater than zero or None.")
+            self._tasks_per_job = value
+            self._auto_tasks_per_job = False
 
     def run(self, tasks, render, update, render_args=(), render_kwargs={}, update_args=(), update_kwargs={}):
 
@@ -216,15 +224,46 @@ class MulticoreEngine(RenderEngine):
 
     def _producer(self, tasks, job_queue):
 
-        # break task list into jobs
+        # initialise request rate controller constants
+        target_rate = 50  # requests per second
+        min_time = 1      # seconds
+        min_requests = min(target_rate, 5 * self._processes)
+        tasks_per_job = self._tasks_per_job
+
+        # split tasks into jobs and dispatch to workers
+        requests = 0
+        start_time = time.time_ns()
         while tasks:
+
+            # assemble job
             job = []
-            for _ in range(self._tasks_per_job):
+            for _ in range(tasks_per_job):
                 if tasks:
                     job.append(tasks.pop())
                     continue
                 break
+
+            # add job to queue
             job_queue.put(job)
+            requests += 1
+
+            # if enabled, auto adjust tasks per job to keep target requests per second
+            if self._auto_tasks_per_job:
+
+                elapsed_time = 1e-9 * (time.time_ns() - start_time)
+                if elapsed_time > min_time and requests > min_requests:
+
+                    # re-normalise the tasks per job based on previous work to propose a new value
+                    requests_rate = requests / elapsed_time
+                    proposed = tasks_per_job * requests_rate / target_rate
+
+                    # gradually adjust tasks per job to reduce risk of oscillation
+                    tasks_per_job = 0.25 * proposed + 0.75 * tasks_per_job
+                    tasks_per_job = max(1, round(tasks_per_job))
+
+                    # reset counters
+                    requests = 0
+                    start_time = time.time_ns()
 
     def _worker(self, render, args, kwargs, job_queue, result_queue):
 
