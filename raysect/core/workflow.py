@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from multiprocessing import Process, cpu_count, SimpleQueue
+from multiprocessing import Process, cpu_count, SimpleQueue, Value
 from raysect.core.math import random
 import time
 
@@ -195,9 +195,11 @@ class MulticoreEngine(RenderEngine):
         # establish ipc queues
         job_queue = SimpleQueue()
         result_queue = SimpleQueue()
+        tasks_per_job = Value('i')
 
         # start process to generate jobs
-        producer = Process(target=self._producer, args=(tasks, job_queue))
+        tasks_per_job.value = self._tasks_per_job
+        producer = Process(target=self._producer, args=(tasks, job_queue, tasks_per_job))
         producer.start()
 
         # start worker processes
@@ -219,19 +221,22 @@ class MulticoreEngine(RenderEngine):
         for _ in workers:
             job_queue.put(None)
 
+        # store tasks per job value for next run
+        self._tasks_per_job = tasks_per_job.value
+
     def worker_count(self):
         return self._processes
 
-    def _producer(self, tasks, job_queue):
+    def _producer(self, tasks, job_queue, stored_tasks_per_job):
 
         # initialise request rate controller constants
         target_rate = 50  # requests per second
         min_time = 1      # seconds
-        min_requests = min(target_rate, 5 * self._processes)
-        tasks_per_job = self._tasks_per_job
+        min_requests = min(2 * target_rate, 5 * self._processes)
+        tasks_per_job = stored_tasks_per_job.value
 
         # split tasks into jobs and dispatch to workers
-        requests = 0
+        requests = -self.processes  # ignore the initial jobs, the requests are instantaneous
         start_time = time.time_ns()
         while tasks:
 
@@ -258,12 +263,15 @@ class MulticoreEngine(RenderEngine):
                     proposed = tasks_per_job * requests_rate / target_rate
 
                     # gradually adjust tasks per job to reduce risk of oscillation
-                    tasks_per_job = 0.25 * proposed + 0.75 * tasks_per_job
+                    tasks_per_job = 0.1 * proposed + 0.9 * tasks_per_job
                     tasks_per_job = max(1, round(tasks_per_job))
 
                     # reset counters
                     requests = 0
                     start_time = time.time_ns()
+
+        # pass back new value
+        stored_tasks_per_job.value = tasks_per_job
 
     def _worker(self, render, args, kwargs, job_queue, result_queue):
 
