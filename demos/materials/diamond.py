@@ -11,7 +11,7 @@ from raysect.optical.material import UniformSurfaceEmitter, UniformVolumeEmitter
 
 
 # DIAMOND MATERIAL
-diamond_material = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0), ConstantSF(1))
+diamond_material = Dielectric(Sellmeier(0.3306, 4.3356, 0.0, 0.1750**2, 0.1060**2, 0.0), ConstantSF(0.998))
 diamond_material.importance = 2
 
 world = World()
@@ -32,24 +32,30 @@ Sphere(5, world, transform=translate(1, 8, -10), material=UniformVolumeEmitter(d
 Sphere(10, world, transform=translate(7, 20, 20), material=UniformSurfaceEmitter(d65_white, 0.15))
 
 # camera
-rgb_pipeline = RGBPipeline2D(display_update_time=15, display_unsaturated_fraction=0.998)
-sampler = RGBAdaptiveSampler2D(rgb_pipeline, min_samples=400, fraction=0.1)
-camera = PinholeCamera((1024, 1024), parent=world, transform=translate(0, 4, -3.5) * rotate(0, -46, 0), pipelines=[rgb_pipeline], frame_sampler=sampler)
-camera.spectral_bins = 18
-camera.spectral_rays = 9
-camera.pixel_samples = 200
-
+rgb = RGBPipeline2D(display_update_time=15, display_unsaturated_fraction=0.995)
+sampler = RGBAdaptiveSampler2D(rgb, min_samples=1000, fraction=0.1, cutoff=0.01)
+camera = PinholeCamera((1024, 1024), parent=world, transform=translate(0, 4, -3.5) * rotate(0, -46, 0), pipelines=[rgb], frame_sampler=sampler)
+camera.spectral_bins = 21
+camera.spectral_rays = 21
+camera.pixel_samples = 250
+camera.ray_max_depth = 10000
+camera.ray_extinction_min_depth = 3
+camera.ray_extinction_prob = 0.002
 
 # start ray tracing
 ion()
+name = 'diamond'
 timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-for p in range(1, 1000):
-    print("Rendering pass {}...".format(p))
+render_pass = 1
+while not camera.render_complete:
+
+    print("Rendering pass {}...".format(render_pass))
     camera.observe()
-    rgb_pipeline.save("demo_diamond_{}_pass_{}.png".format(timestamp, p))
+    rgb.save("{}_{}_pass_{}.png".format(name, timestamp, render_pass))
     print()
 
-# display final result
+    render_pass += 1
+
 ioff()
-rgb_pipeline.display()
-show()
+rgb.display()
+
