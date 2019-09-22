@@ -97,11 +97,13 @@ light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
             transform=translate(0, 1, 0) * rotate(0, 90, 0),
             material=UniformSurfaceEmitter(light_spectrum, 2))
 
+# alternate light #1
 # light = Box(Point3D(-0.4, -0.4, -0.01), Point3D(0.4, 0.4, 0.0),
 #             parent=enclosure,
 #             transform=translate(0, 1, 0) * rotate(0, 90, 0),
 #             material=UniformSurfaceEmitter(d65_white, 2))
 
+# alternate light #2
 # back_light = Sphere(0.1,
 #     parent=enclosure,
 #     transform=translate(0.80, -0.85, 0.80)*rotate(0, 0, 0),
@@ -140,13 +142,13 @@ bayer.display_update_time = 15
 
 pipelines = [rgb, power_unfiltered, power_green, power_red, bayer]
 
-sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.05)
+sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.01)
 
-camera = PinholeCamera((512, 512), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+camera = PinholeCamera((1024, 1024), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
 camera.frame_sampler = sampler
-camera.pixel_samples = 250
-camera.spectral_bins = 15
 camera.spectral_rays = 1
+camera.spectral_bins = 15
+camera.pixel_samples = 250
 camera.ray_importance_sampling = True
 camera.ray_important_path_weight = 0.25
 camera.ray_max_depth = 500
@@ -155,21 +157,22 @@ camera.ray_extinction_prob = 0.01
 
 # start ray tracing
 ion()
-p = 1
+name = 'cornell_box'
+timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+render_pass = 1
 while not camera.render_complete:
 
-    print("Rendering pass {}...".format(p))
-
+    print("Rendering pass {}...".format(render_pass))
     camera.observe()
-
-    rgb.save('cornell_box_rgb_pass_{:04d}.png'.format(p))
-    power_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
+    rgb.save("{}_{}_pass_{}.png".format(name, timestamp, render_pass))
+    # power_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
     # power_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
     # power_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
     # bayer.save('cornell_box_bayer_pass_{:04d}.png'.format(p))
-
     print()
-    p += 1
+
+    render_pass += 1
 
 ioff()
 rgb.display()
+
