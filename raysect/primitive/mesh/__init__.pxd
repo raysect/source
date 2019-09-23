@@ -29,4 +29,4 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.primitive.mesh cimport Mesh
+from raysect.primitive.mesh.mesh cimport Mesh
