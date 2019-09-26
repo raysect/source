@@ -237,7 +237,7 @@ class MulticoreEngine(RenderEngine):
 
         # split tasks into jobs and dispatch to workers
         requests = -self.processes  # ignore the initial jobs, the requests are instantaneous
-        start_time = time.time_ns()
+        start_time = time.time()
         while tasks:
 
             # assemble job
@@ -255,7 +255,7 @@ class MulticoreEngine(RenderEngine):
             # if enabled, auto adjust tasks per job to keep target requests per second
             if self._auto_tasks_per_job:
 
-                elapsed_time = 1e-9 * (time.time_ns() - start_time)
+                elapsed_time = (time.time() - start_time)
                 if elapsed_time > min_time and requests > min_requests:
 
                     # re-normalise the tasks per job based on previous work to propose a new value
@@ -268,7 +268,7 @@ class MulticoreEngine(RenderEngine):
 
                     # reset counters
                     requests = 0
-                    start_time = time.time_ns()
+                    start_time = time.time()
 
         # pass back new value
         stored_tasks_per_job.value = tasks_per_job
