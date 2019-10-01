@@ -34,10 +34,10 @@ cimport numpy as np
 from libc.math cimport M_PI
 from numpy cimport float32_t, int32_t
 
-from raysect.core.math.random cimport uniform, point_triangle
-from raysect.core.math.sampler cimport HemisphereCosineSampler
+from raysect.core.math.random cimport uniform, point_triangle, probability
+from raysect.core.math.sampler cimport HemisphereCosineSampler, TargettedHemisphereSampler
 from raysect.core.math.cython cimport find_index
-from raysect.optical cimport Ray, Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
+from raysect.optical cimport Ray, Primitive, Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 from raysect.primitive.mesh.mesh cimport Mesh
@@ -51,6 +51,8 @@ DEF Z = 2
 DEF V1 = 0
 DEF V2 = 1
 DEF V3 = 2
+
+DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 
 cdef class MeshPixel(Observer0D):
@@ -93,19 +95,22 @@ cdef class MeshPixel(Observer0D):
     """
 
     cdef:
-        double _surface_offset, _solid_angle, _collection_area
+        double _surface_offset, _solid_angle, _collection_area, _targetted_path_prob
         readonly Mesh mesh
         float32_t[:, ::1] _vertices_mv
         float32_t[:, ::1] _face_normals_mv
         int32_t[:, ::1] _triangles_mv
         np.ndarray _cdf
         double [::1] _cdf_mv
+        tuple _targets
+        TargettedHemisphereSampler _targetted_sampler
         HemisphereCosineSampler _vector_sampler
 
     def __init__(self, Mesh mesh not None, surface_offset=None, pipelines=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
-                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None, quiet=False):
+                 ray_max_depth=None, ray_importance_sampling=None, ray_important_path_weight=None,
+                 targets=None, targetted_path_prob=None, quiet=False):
 
         pipelines = pipelines or [SpectralPowerPipeline0D()]
 
@@ -130,6 +135,9 @@ cdef class MeshPixel(Observer0D):
         self._vector_sampler = HemisphereCosineSampler()
         self._solid_angle = 2 * M_PI
         self._calculate_areas()
+
+        self.targets = targets or tuple()
+        self.targetted_path_prob = targetted_path_prob or 0.7
 
     def __getstate__(self):
 
@@ -230,6 +238,54 @@ cdef class MeshPixel(Observer0D):
         """
         return self._pixel_sensitivity()
 
+    @property
+    def targets(self):
+        """
+        The list of primitives this mesh will target for sampling.
+
+        :rtype: tuple
+        """
+        return self._targets
+
+    @targets.setter
+    def targets(self, value):
+
+        # No targets?
+        if value is None:
+            self._targets = ()
+            return
+
+        value = tuple(value)
+
+        # List must contain only primitives
+        for target in value:
+            if not isinstance(target, Primitive):
+                raise TypeError("Target list must contain only primitives.")
+
+        self._targets = value
+
+    @property
+    def targetted_path_prob(self):
+        """
+        The probability that an individual sample will be fired at a target instead of a sample from the whole
+        observing hemisphere.
+
+        .. Warning..
+           If the target probability is set to 1, rays will only be fired directly towards the targets. The user must
+           ensure there are no sources of radiance outside of the targeted directions, otherwise they will not be
+           sampled and the result will be biased.
+
+        :rtype: float
+        """
+        return self._targetted_path_prob
+
+    @targetted_path_prob.setter
+    def targetted_path_prob(self, double value):
+
+        if value < 0 or value > 1:
+            raise ValueError("Targeted path probability must lie in the range [0, 1].")
+        self._targetted_path_prob = value
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
@@ -237,14 +293,17 @@ cdef class MeshPixel(Observer0D):
 
         cdef:
             list rays, origins, directions
-            Point3D origin
+            Point3D origin, surface_origin, sphere_centre
             Vector3D normal, direction
             int n
             double weight
-            AffineMatrix3D surface_to_local
+            AffineMatrix3D surface_to_local, local_to_surface
             int32_t triangle, v1i, v2i, v3i
 
-        directions = self._vector_sampler.samples(ray_count)
+        # test target primitives are in the same scene-graph as the observer
+        for target in self._targets:
+            if target.root is not self.root:
+                raise ValueError("Target primitive is not in the same scenegraph as the TargetedPixel observer.")
 
         rays = []
         for n in range(ray_count):
@@ -271,19 +330,54 @@ cdef class MeshPixel(Observer0D):
                 new_point3d(self._vertices_mv[v3i, X], self._vertices_mv[v3i, Y], self._vertices_mv[v3i, Z])
             )
 
-            # shift origin point forward along normal by distance in surface_offset
-            origin = origin.add(normal.mul(self._surface_offset))
-
             # generate the transform from the triangle surface normal to local (z-axis aligned)
             surface_to_local = self._surface_to_local(normal)
+            local_to_surface = surface_to_local.inverse()
+
+            # shift origin point forward along normal by distance in surface_offset
+            origin = origin.add(normal.mul(self._surface_offset))
+            surface_origin = origin.transform(local_to_surface)
+
+            if len(self._targets) > 0:
+
+                # generate bounding spheres and convert to local coordinate system
+                spheres = []
+                for target in self._targets:
+                    sphere = target.bounding_sphere()
+                    sphere_centre = sphere.centre.transform(self.to_local()).transform(surface_to_local)
+                    spheres.append((sphere_centre, sphere.radius, 1.0))
+
+                # instance targetted pixel sampler
+                targetted_sampler = TargettedHemisphereSampler(spheres)
+
+                if probability(self._targetted_path_prob):
+                    # obtain targetted vector sample
+                    direction = targetted_sampler.sample(surface_origin)
+
+                else:
+                    # obtain cosine weighted hemisphere sample
+                    direction = self._vector_sampler.sample()
+
+                # calculate combined pdf and ray weight
+                pdf = self._targetted_path_prob * targetted_sampler.pdf(origin, direction) + \
+                      (1-self._targetted_path_prob) * self._vector_sampler.pdf(direction)
+
+                # weight = 1 / (2 * pi) * cos(theta) * 1/pdf
+                weight = R_2_PI * direction.z / pdf
+
+            else:
+                # obtain cosine weighted hemisphere sample
+                direction = self._vector_sampler.sample()
+
+                # cosine weighted distribution
+                # projected area cosine is implicit in distribution
+                # weight = (1 / 2*pi) * (pi / cos(theta)) * cos(theta) = 0.5
+                weight = 0.5
 
             # rotate direction sample so z aligned with face normal
-            direction = (<Vector3D> directions[n]).transform(surface_to_local)
+            direction = direction.transform(surface_to_local)
 
-            # cosine weighted distribution
-            # projected area cosine is implicit in distribution
-            # weight = (1 / 2*pi) * (pi / cos(theta)) * cos(theta) = 0.5
-            rays.append((template.copy(origin, direction), 0.5))
+            rays.append((template.copy(origin, direction), weight))
 
         return rays
 
