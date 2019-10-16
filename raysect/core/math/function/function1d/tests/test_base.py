@@ -32,7 +32,7 @@ Unit tests for the Function1D class.
 """
 
 import unittest
-from raysect.core.math.function.function1d import PythonFunction1D
+from raysect.core.math.function.function1d.base import PythonFunction1D
 
 # TODO: expand tests to cover the cython interface
 class TestFunction1D(unittest.TestCase):
