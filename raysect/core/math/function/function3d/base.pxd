@@ -58,6 +58,14 @@ cdef class DivideFunction3D(Function3D):
     cdef Function3D _function1, _function2
 
 
+cdef class ModuloFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class PowFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
 cdef class AddScalar3D(Function3D):
     cdef double _value
     cdef Function3D _function
@@ -74,5 +82,25 @@ cdef class MultiplyScalar3D(Function3D):
 
 
 cdef class DivideScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class ModuloScalarFunction3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class ModuloFunctionScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class PowScalarFunction3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class PowFunctionScalar3D(Function3D):
     cdef double _value
     cdef Function3D _function

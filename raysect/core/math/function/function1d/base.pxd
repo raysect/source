@@ -56,6 +56,14 @@ cdef class DivideFunction1D(Function1D):
     cdef Function1D _function1, _function2
 
 
+cdef class PowFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class ModuloFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
 cdef class AddScalar1D(Function1D):
     cdef double _value
     cdef Function1D _function
@@ -72,5 +80,25 @@ cdef class MultiplyScalar1D(Function1D):
 
 
 cdef class DivideScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class ModuloScalarFunction1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class ModuloFunctionScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class PowScalarFunction1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class PowFunctionScalar1D(Function1D):
     cdef double _value
     cdef Function1D _function
