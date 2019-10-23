@@ -106,7 +106,7 @@ class TestFunction2D(unittest.TestCase):
         # Note that Function2D objects work with doubles, so the floating modulo
         # operator is used rather than the integer one. For accurate testing we
         # therefore need to use the math.fmod operator rather than % in Python.
-        v = [-1e1, -7, -0.001, 0.00003, 10, 12.3]
+        v = [-10, -7, -0.001, 0.00003, 10, 12.3]
         r1 = 5 % self.f1
         r2 = self.f1 % -7.8
         for x in v:
@@ -119,7 +119,7 @@ class TestFunction2D(unittest.TestCase):
             self.f1 % 0
 
     def test_pow_function2d_scalar(self):
-        v = [-1e1, -7, -0.001, 0.00003, 10, 12.3]
+        v = [-10, -7, -0.001, 0.00003, 10, 12.3]
         r1 = 5 ** self.f1
         r2 = self.f1 ** -7.8
         r3 = (-5) ** self.f1
@@ -196,7 +196,7 @@ class TestFunction2D(unittest.TestCase):
             r(-1, 0)
 
     def test_pow_3_arguments(self):
-        v = [-1e1, -7, -0.001, 0.00003, 2]
+        v = [-10, -7, -0.001, 0.00003, 2]
         r1 = pow(self.f1, 5, 3)
         r2 = pow(5, self.f1, 3)
         r3 = pow(5, self.f1, self.f2)

@@ -144,7 +144,7 @@ cdef class Function1D:
 
     def __pow__(a, b, c):
         if c is not None:
-            # Optimised impolementation of pow(a, b, c) not available: fall back
+            # Optimised implementation of pow(a, b, c) not available: fall back
             # to general implementation
             return (a ** b) % c
         if isinstance(a, Function1D):
