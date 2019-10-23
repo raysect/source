@@ -88,7 +88,7 @@ cdef class Function1D:
                 return SubtractScalar1D(<double> a, <Function1D> b)
         return NotImplemented
 
-    def __mul__(a, b):
+    def __mul__(object a, object b):
         if isinstance(a, Function1D):
             if isinstance(b, Function1D):
                 # a() * b()
@@ -103,7 +103,7 @@ cdef class Function1D:
         return NotImplemented
 
     @cython.cdivision(True)
-    def __truediv__(a, b):
+    def __truediv__(object a, object b):
         cdef double v
         if isinstance(a, Function1D):
             if isinstance(b, Function1D):
@@ -121,7 +121,7 @@ cdef class Function1D:
                 return DivideScalar1D(<double> a, <Function1D> b)
         return NotImplemented
 
-    def __mod__(a, b):
+    def __mod__(object a, object b):
         cdef double v
         if isinstance(a, Function1D):
             if isinstance(b, Function1D):
@@ -142,7 +142,7 @@ cdef class Function1D:
     def __neg__(self):
         return MultiplyScalar1D(-1, self)
 
-    def __pow__(a, b, c):
+    def __pow__(object a, object b, object c):
         if c is not None:
             # Optimised implementation of pow(a, b, c) not available: fall back
             # to general implementation
