@@ -32,6 +32,7 @@
 import numbers
 cimport cython
 from libc.math cimport floor
+from .autowrap cimport autowrap_function1d
 
 
 cdef class Function1D:
@@ -187,23 +188,6 @@ cdef class PythonFunction1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self.function(x)
-
-
-cdef Function1D autowrap_function1d(object function):
-    """
-    Automatically wraps the supplied python object in a PythonFunction1D object.
-
-    If this function is passed a valid Function1D object, then the Function1D
-    object is simply returned without wrapping.
-
-    This convenience function is provided to simplify the handling of Function1D
-    and python callable objects in constructors, functions and setters.
-    """
-
-    if isinstance(function, Function1D):
-        return <Function1D> function
-    else:
-        return PythonFunction1D(function)
 
 
 cdef class AddFunction1D(Function1D):

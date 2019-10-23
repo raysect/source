@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -29,5 +27,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import Function2D
-from .constant import Constant2D
+"""
+Unit tests for the autowrap_3d function
+"""
+
+import unittest
+from raysect.core.math.function.function3d.base import PythonFunction3D
+from raysect.core.math.function.function3d.autowrap import _autowrap_function3d
+from raysect.core.math.function.function3d.constant import Constant3D
+
+class TestAutowrap3D(unittest.TestCase):
+
+    def test_constant(self):
+        function = _autowrap_function3d(5.0)
+        self.assertIsInstance(function, Constant3D, "Autowrapped scalar float is not a Constant3D")
+
+    def test_python_function(self):
+        function = _autowrap_function3d(lambda x, y, z: 10*x + 5*y + 2*z)
+        self.assertIsInstance(function, PythonFunction3D, "Autowrapped function is not a PythonFunction3D")

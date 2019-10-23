@@ -30,3 +30,4 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .base import Function1D
+from .constant import Constant1D

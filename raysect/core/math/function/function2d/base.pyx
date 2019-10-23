@@ -32,6 +32,7 @@
 import numbers
 cimport cython
 from libc.math cimport floor
+from .autowrap cimport autowrap_function2d
 
 
 cdef class Function2D:
@@ -188,23 +189,6 @@ cdef class PythonFunction2D(Function2D):
 
     cdef double evaluate(self, double x, double y) except? -1e999:
         return self.function(x, y)
-
-
-cdef Function2D autowrap_function2d(object function):
-    """
-    Automatically wraps the supplied python object in a PythonFunction2D object.
-
-    If this function is passed a valid Function2D object, then the Function2D
-    object is simply returned without wrapping.
-
-    This convenience function is provided to simplify the handling of Function2D
-    and python callable objects in constructors, functions and setters.
-    """
-
-    if isinstance(function, Function2D):
-        return <Function2D> function
-    else:
-        return PythonFunction2D(function)
 
 
 cdef class AddFunction2D(Function2D):

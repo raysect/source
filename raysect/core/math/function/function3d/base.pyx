@@ -32,6 +32,7 @@
 import numbers
 cimport cython
 from libc.math cimport floor
+from .autowrap cimport autowrap_function3d
 
 
 cdef class Function3D:
@@ -187,23 +188,6 @@ cdef class PythonFunction3D(Function3D):
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return self.function(x, y, z)
-
-
-cdef Function3D autowrap_function3d(object function):
-    """
-    Automatically wraps the supplied python object in a PythonFunction3D object.
-
-    If this function is passed a valid Function3D object, then the Function3D
-    object is simply returned without wrapping.
-
-    This convenience function is provided to simplify the handling of Function3D
-    and python callable objects in constructors, functions and setters.
-    """
-
-    if isinstance(function, Function3D):
-        return <Function3D> function
-    else:
-        return PythonFunction3D(function)
 
 
 cdef class AddFunction3D(Function3D):

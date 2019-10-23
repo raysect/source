@@ -37,9 +37,6 @@ cdef class PythonFunction1D(Function1D):
     cdef public object function
 
 
-cdef Function1D autowrap_function1d(object function)
-
-
 cdef class AddFunction1D(Function1D):
     cdef Function1D _function1, _function2
 
