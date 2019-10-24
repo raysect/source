@@ -29,5 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import Function2D
-from .constant import Constant2D
+from .base cimport Function1D
+
+
+cdef class Constant1D(Function1D):
+    cdef double _value

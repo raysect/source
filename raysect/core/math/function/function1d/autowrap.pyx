@@ -29,5 +29,33 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import Function2D
-from .constant import Constant2D
+import numbers
+from .base cimport Function1D, PythonFunction1D
+from .constant cimport Constant1D
+
+
+cdef Function1D autowrap_function1d(object function):
+    """
+    Automatically wraps the supplied python object in a PythonFunction1D or Contant1D object.
+
+    If this function is passed a valid Function1D object, then the Function1D
+    object is simply returned without wrapping.
+
+    If this function is passed a numerical scalar (int or float), a Constant1D
+    object is returned.
+
+    This convenience function is provided to simplify the handling of Function1D
+    and python callable objects in constructors, functions and setters.
+    """
+
+    if isinstance(function, Function1D):
+        return <Function1D> function
+    elif isinstance(function, numbers.Real):
+        return Constant1D(function)
+    else:
+        return PythonFunction1D(function)
+
+
+def _autowrap_function1d(function):
+    """Expose cython function for testing."""
+    return autowrap_function1d(function)

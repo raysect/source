@@ -29,5 +29,33 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import Function2D
-from .constant import Constant2D
+import numbers
+from .base cimport Function3D, PythonFunction3D
+from .constant cimport Constant3D
+
+
+cdef Function3D autowrap_function3d(object function):
+    """
+    Automatically wraps the supplied python object in a PythonFunction3D or Contant3D object.
+
+    If this function is passed a valid Function3D object, then the Function3D
+    object is simply returned without wrapping.
+
+    If this function is passed a numerical scalar (int or float), a Constant3D
+    object is returned.
+
+    This convenience function is provided to simplify the handling of Function3D
+    and python callable objects in constructors, functions and setters.
+    """
+
+    if isinstance(function, Function3D):
+        return <Function3D> function
+    elif isinstance(function, numbers.Real):
+        return Constant3D(function)
+    else:
+        return PythonFunction3D(function)
+
+
+def _autowrap_function3d(function):
+    """Expose cython function for testing."""
+    return autowrap_function3d(function)
