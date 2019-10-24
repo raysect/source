@@ -30,13 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cdef class Function3D:
-
     cdef double evaluate(self, double x, double y, double z) except? -1e999
-
-
-cdef class PythonFunction3D(Function3D):
-
-    cdef public object function
 
 
 cdef class AddFunction3D(Function3D):

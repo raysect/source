@@ -34,11 +34,6 @@ cdef class Function2D:
     cdef double evaluate(self, double x, double y) except? -1e999
 
 
-cdef class PythonFunction2D(Function2D):
-
-    cdef public object function
-
-
 cdef class AddFunction2D(Function2D):
     cdef Function2D _function1, _function2
 

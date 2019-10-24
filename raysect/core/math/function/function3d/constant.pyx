@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base cimport Function3D
+from raysect.core.math.function.function3d.base cimport Function3D
 
 
 cdef class Constant3D(Function3D):

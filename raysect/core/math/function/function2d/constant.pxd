@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base cimport Function2D
+from raysect.core.math.function.function2d.base cimport Function2D
 
 
 cdef class Constant2D(Function2D):

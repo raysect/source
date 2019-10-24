@@ -32,8 +32,7 @@ Unit tests for the autowrap_2d function
 """
 
 import unittest
-from raysect.core.math.function.function2d.base import PythonFunction2D
-from raysect.core.math.function.function2d.autowrap import _autowrap_function2d
+from raysect.core.math.function.function2d.autowrap import _autowrap_function2d, PythonFunction2D
 from raysect.core.math.function.function2d.constant import Constant2D
 
 class TestAutowrap2D(unittest.TestCase):

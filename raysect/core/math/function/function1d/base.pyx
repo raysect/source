@@ -162,34 +162,6 @@ cdef class Function1D:
         return NotImplemented
 
 
-cdef class PythonFunction1D(Function1D):
-    """
-    Wraps a python callable object with a Function1D object.
-
-    This class allows a python object to interact with cython code that requires
-    a Function1D object. The python object must implement __call__() expecting
-    one argument.
-
-    This class is intended to be used to transparently wrap python objects that
-    are passed via constructors or methods into cython optimised code. It is not
-    intended that the users should need to directly interact with these wrapping
-    objects. Constructors and methods expecting a Function1D object should be
-    designed to accept a generic python object and then test that object to
-    determine if it is an instance of Function1D. If the object is not a
-    Function1D object it should be wrapped using this class for internal use.
-
-    See also: autowrap_function1d()
-
-    :param object function: the python function to wrap, __call__() function must be
-    implemented on the object.
-    """
-    def __init__(self, object function):
-        self.function = function
-
-    cdef double evaluate(self, double x) except? -1e999:
-        return self.function(x)
-
-
 cdef class AddFunction1D(Function1D):
     """
     A Function1D class that implements the addition of the results of two Function1D objects: f1() + f2()

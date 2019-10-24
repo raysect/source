@@ -29,6 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base cimport Function2D
+from raysect.core.math.function.function2d.base cimport Function2D
+
+cdef class PythonFunction2D(Function2D):
+    cdef public object function
 
 cdef Function2D autowrap_function2d(object function)
