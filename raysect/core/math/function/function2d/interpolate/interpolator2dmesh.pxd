@@ -31,14 +31,14 @@
 
 cimport numpy as np
 from raysect.core.math.function.function2d cimport Function2D
-from raysect.core.math.interpolators.common cimport MeshKDTree2D
+from raysect.core.math.function.function2d.interpolate.common cimport MeshKDTree2D
 
 
-cdef class Discrete2DMesh(Function2D):
+cdef class Interpolator2DMesh(Function2D):
 
     cdef:
-        np.ndarray _triangle_data
-        double[::1] _triangle_data_mv
+        np.ndarray _vertex_data
+        double[::1] _vertex_data_mv
         MeshKDTree2D _kdtree
         bint _limit
         double _default_value

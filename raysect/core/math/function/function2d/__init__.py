@@ -31,3 +31,4 @@
 
 from .base import Function2D
 from .constant import Constant2D
+from .interpolate import *
