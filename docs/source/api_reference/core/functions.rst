@@ -6,7 +6,7 @@ Functions and Interpolators
    :members:
    :special-members: __call__
 
-.. autoclass:: raysect.core.math.function.function1d.base.PythonFunction1D
+.. autoclass:: raysect.core.math.function.function1d.autowrap.PythonFunction1D
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.function.function1d.constant.Constant1D
@@ -16,7 +16,7 @@ Functions and Interpolators
    :members:
    :special-members: __call__
 
-.. autoclass:: raysect.core.math.function.function2d.base.PythonFunction2D
+.. autoclass:: raysect.core.math.function.function2d.autowrap.PythonFunction2D
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.function.function2d.constant.Constant2D
@@ -26,7 +26,7 @@ Functions and Interpolators
    :members:
    :special-members: __call__
 
-.. autoclass:: raysect.core.math.function.function3d.base.PythonFunction3D
+.. autoclass:: raysect.core.math.function.function3d.autowrap.PythonFunction3D
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.function.function3d.constant.Constant3D
