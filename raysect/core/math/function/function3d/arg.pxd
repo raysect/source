@@ -30,6 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.function.function3d.base cimport Function3D
-from raysect.core.math.function.function3d.constant cimport Constant3D
-from raysect.core.math.function.function3d.autowrap cimport autowrap_function3d
-from raysect.core.math.function.function3d.arg cimport Arg3D
+
+cdef enum ArgLabel:
+    X, Y, Z
+
+cdef class Arg3D(Function3D):
+    cdef ArgLabel _argument
