@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,40 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.function3d.base cimport Function3D
-from raysect.core.math.function.function3d.constant cimport Constant3D
-from raysect.core.math.function.function3d.autowrap cimport autowrap_function3d
-from raysect.core.math.function.function3d.arg cimport Arg3D
+from raysect.core.math.function.function2d.base cimport Function2D
+
+
+cdef class Arg2D(Function2D):
+    """
+    Returns one of the arguments the function is passed, unmodified
+
+    This is used to pass coordinates through to other functions in the
+    function framework which expect a Function2D object.
+
+    Valid options for argument are "x" and "y".
+
+    >>> argx = Arg2D("x")
+    >>> argx(2, 3)
+    2.0
+    >>> argy = Arg2D("y")
+    >>> argy(2, 3)
+    3.0
+    >>> squarerx = argx**2
+    >>> squarerx(2, 3)
+    4.0
+    >>> squarery = argy**2
+    >>> squarery(2, 3)
+    9.0
+
+    :param str argument: either "x" or "y", the argument to return
+    """
+    def __init__(self, object argument):
+        if argument == "x":
+            self._argument = X
+        elif argument == "y":
+            self._argument = Y
+        else:
+            raise ValueError("The argument to Arg2D must be either 'x' or 'y'")
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return x if self._argument == X else y

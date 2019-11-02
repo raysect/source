@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.function3d.base cimport Function3D
-from raysect.core.math.function.function3d.constant cimport Constant3D
-from raysect.core.math.function.function3d.autowrap cimport autowrap_function3d
-from raysect.core.math.function.function3d.arg cimport Arg3D
+from raysect.core.math.function.function1d.base cimport Function1D
+
+
+cdef class Arg1D(Function1D):
+    """
+    Returns the argument the function is passed, unmodified
+
+    This is used to pass coordinates through to other functions in the
+    function framework which expect a Function1D object.
+
+    >>> arg = Arg1D()
+    >>> arg(2)
+    2.0
+    >>> arg(-3.14)
+    -3.14
+    >>> squarer = Arg1D()**2
+    >>> squarer(2)
+    4.0
+    >>> squarer(-3.14)
+    9.8596
+    """
+    cdef double evaluate(self, double x) except? -1e999:
+        return x

@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -29,7 +27,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.function3d.base cimport Function3D
-from raysect.core.math.function.function3d.constant cimport Constant3D
-from raysect.core.math.function.function3d.autowrap cimport autowrap_function3d
-from raysect.core.math.function.function3d.arg cimport Arg3D
+"""
+Unit tests for the Arg1D class.
+"""
+
+import unittest
+from raysect.core.math.function.function1d.arg import Arg1D
+
+# TODO: expand tests to cover the cython interface
+class TestArg1D(unittest.TestCase):
+
+    def test_arg(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            arg = Arg1D()
+            self.assertEqual(arg(x), x, "Arg1D call did not match reference value")
