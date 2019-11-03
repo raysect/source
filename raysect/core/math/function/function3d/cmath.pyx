@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import Function2D
-from .constant import Constant2D
-from .interpolate import *
-from .arg import Arg2D
-from .cmath import *
+cimport libc.math as cmath
+from raysect.core.math.function.function3d.base cimport Function3D
+from raysect.core.math.function.function3d.autowrap cimport autowrap_function3d
+
+
+cdef class Exp3D(Function3D):
+    """
+    A Function3D class that implements the exponential of the result of a Function3D object: exp(f())
+
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return cmath.exp(self._function.evaluate(x, y, z))

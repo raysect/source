@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -29,8 +27,24 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import Function2D
-from .constant import Constant2D
-from .interpolate import *
-from .arg import Arg2D
-from .cmath import *
+"""
+Unit tests for the cmath wrapper classes.
+"""
+
+import math
+import unittest
+import raysect.core.math.function.function1d.cmath as cmath1d
+from raysect.core.math.function.function1d.autowrap import PythonFunction1D
+
+# TODO: expand tests to cover the cython interface
+class TestCmath1D(unittest.TestCase):
+
+    def setUp(self):
+        self.f1 = PythonFunction1D(lambda x: x / 10)
+
+    def test_exp(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            function = cmath1d.Exp1D(self.f1)
+            expected = math.exp(self.f1(x))
+            self.assertEqual(function(x), expected, "Exp1D call did not match reference value")

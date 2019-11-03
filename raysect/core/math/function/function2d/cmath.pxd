@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import Function2D
-from .constant import Constant2D
-from .interpolate import *
-from .arg import Arg2D
-from .cmath import *
+from raysect.core.math.function.function2d.base cimport Function2D
+
+
+cdef class Exp2D(Function2D):
+    cdef Function2D _function
