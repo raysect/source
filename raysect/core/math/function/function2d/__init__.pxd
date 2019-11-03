@@ -34,3 +34,4 @@ from raysect.core.math.function.function2d.constant cimport Constant2D
 from raysect.core.math.function.function2d.autowrap cimport autowrap_function2d
 from raysect.core.math.function.function2d.interpolate cimport *
 from raysect.core.math.function.function2d.arg cimport Arg2D
+from raysect.core.math.function.function2d.cmath cimport *

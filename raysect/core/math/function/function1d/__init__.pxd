@@ -33,3 +33,4 @@ from raysect.core.math.function.function1d.base cimport Function1D
 from raysect.core.math.function.function1d.constant cimport Constant1D
 from raysect.core.math.function.function1d.autowrap cimport autowrap_function1d
 from raysect.core.math.function.function1d.arg cimport Arg1D
+from raysect.core.math.function.function1d.cmath cimport *

@@ -15,6 +15,9 @@ Functions and Interpolators
 .. autoclass:: raysect.core.math.function.function1d.arg.Arg1D
    :show-inheritance:
 
+.. autoclass:: raysect.core.math.function.function1d.cmath.Exp1D
+   :show-inheritance:
+
 .. autoclass:: raysect.core.math.function.function2d.base.Function2D
    :members:
    :special-members: __call__
@@ -28,6 +31,9 @@ Functions and Interpolators
 .. autoclass:: raysect.core.math.function.function2d.arg.Arg2D
    :show-inheritance:
 
+.. autoclass:: raysect.core.math.function.function2d.cmath.Exp2D
+   :show-inheritance:
+
 .. autoclass:: raysect.core.math.function.function3d.base.Function3D
    :members:
    :special-members: __call__
@@ -39,6 +45,9 @@ Functions and Interpolators
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.function.function3d.arg.Arg3D
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.function.function3d.cmath.Exp3D
    :show-inheritance:
 
 .. automodule:: raysect.core.math.function.function2d.interpolate.discrete2dmesh
