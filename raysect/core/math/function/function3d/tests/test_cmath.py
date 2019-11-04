@@ -41,6 +41,7 @@ class TestCmath3D(unittest.TestCase):
 
     def setUp(self):
         self.f1 = PythonFunction3D(lambda x, y, z: x / 10 + y - z)
+        self.f2 = PythonFunction3D(lambda x, y, z: x * x + y * y - z * z)
 
     def test_exp(self):
         v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
@@ -50,3 +51,39 @@ class TestCmath3D(unittest.TestCase):
                     function = cmath3d.Exp3D(self.f1)
                     expected = math.exp(self.f1(x, y, z))
                     self.assertEqual(function(x, y, z), expected, "Exp3D call did not match reference value")
+
+    def test_sin(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                for z in v:
+                    function = cmath3d.Sin3D(self.f1)
+                    expected = math.sin(self.f1(x, y, z))
+                    self.assertEqual(function(x, y, z), expected, "Sin3D call did not match reference value")
+
+    def test_cos(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                for z in v:
+                    function = cmath3d.Cos3D(self.f1)
+                    expected = math.cos(self.f1(x, y, z))
+                    self.assertEqual(function(x, y, z), expected, "Cos3D call did not match reference value")
+
+    def test_atan(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                for z in v:
+                    function = cmath3d.Atan3D(self.f1)
+                    expected = math.atan(self.f1(x, y, z))
+                    self.assertEqual(function(x, y, z), expected, "Atan3D call did not match reference value")
+
+    def test_atan2(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                for z in v:
+                    function = cmath3d.Atan4Q3D(self.f1, self.f2)
+                    expected = math.atan2(self.f1(x, y, z), self.f2(x, y, z))
+                    self.assertEqual(function(x, y, z), expected, "Atan4Q3D call did not match reference value")
