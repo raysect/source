@@ -45,3 +45,60 @@ cdef class Exp3D(Function3D):
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return cmath.exp(self._function.evaluate(x, y, z))
+
+
+cdef class Sin3D(Function3D):
+    """
+    A Function3D class that implements the sine of the result of a Function3D object: sin(f())
+
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return cmath.sin(self._function.evaluate(x, y, z))
+
+
+cdef class Cos3D(Function3D):
+    """
+    A Function3D class that implements the cosine of the result of a Function3D object: cos(f())
+
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return cmath.cos(self._function.evaluate(x, y, z))
+
+
+cdef class Atan3D(Function3D):
+    """
+    A Function3D class that implements the arctangent of the result of a Function3D object: atan(f())
+
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return cmath.atan(self._function.evaluate(x, y, z))
+
+
+cdef class Atan4Q3D(Function3D):
+    """
+    A Function3D class that implements the arctangent of the result of 2 Function3D objects: atan2(f1(), f2())
+
+    This differs from Atan3D in that it takes separate functions for the
+    numerator and denominator, in order to get the quadrant correct.
+
+    :param Function3D numerator: A Function3D object representing the numerator
+    :param Function3D denominator: A Function3D object representing the denominator
+    """
+    def __init__(self, object numerator, object denominator):
+        self._numerator = autowrap_function3d(numerator)
+        self._denominator = autowrap_function3d(denominator)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return cmath.atan2(self._numerator.evaluate(x, y, z), self._denominator.evaluate(x, y, z))

@@ -41,6 +41,7 @@ class TestCmath2D(unittest.TestCase):
 
     def setUp(self):
         self.f1 = PythonFunction2D(lambda x, y: x / 10 + y)
+        self.f2 = PythonFunction2D(lambda x, y: x * x + y * y)
 
     def test_exp(self):
         v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
@@ -49,3 +50,35 @@ class TestCmath2D(unittest.TestCase):
                 function = cmath2d.Exp2D(self.f1)
                 expected = math.exp(self.f1(x, y))
                 self.assertEqual(function(x, y), expected, "Exp2D call did not match reference value")
+
+    def test_sin(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                function = cmath2d.Sin2D(self.f1)
+                expected = math.sin(self.f1(x, y))
+                self.assertEqual(function(x, y), expected, "Sin2D call did not match reference value")
+
+    def test_cos(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                function = cmath2d.Cos2D(self.f1)
+                expected = math.cos(self.f1(x, y))
+                self.assertEqual(function(x, y), expected, "Cos2D call did not match reference value")
+
+    def test_atan(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                function = cmath2d.Atan2D(self.f1)
+                expected = math.atan(self.f1(x, y))
+                self.assertEqual(function(x, y), expected, "Atan2D call did not match reference value")
+
+    def test_atan2(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                function = cmath2d.Atan4Q2D(self.f1, self.f2)
+                expected = math.atan2(self.f1(x, y), self.f2(x, y))
+                self.assertEqual(function(x, y), expected, "Atan4Q2D call did not match reference value")

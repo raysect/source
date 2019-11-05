@@ -45,3 +45,60 @@ cdef class Exp2D(Function2D):
 
     cdef double evaluate(self, double x, double y) except? -1e999:
         return cmath.exp(self._function.evaluate(x, y))
+
+
+cdef class Sin2D(Function2D):
+    """
+    A Function2D class that implements the sine of the result of a Function2D object: sin(f())
+
+    :param Function2D function: A Function2D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return cmath.sin(self._function.evaluate(x, y))
+
+
+cdef class Cos2D(Function2D):
+    """
+    A Function2D class that implements the cosine of the result of a Function2D object: cos(f())
+
+    :param Function2D function: A Function2D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return cmath.cos(self._function.evaluate(x, y))
+
+
+cdef class Atan2D(Function2D):
+    """
+    A Function2D class that implements the arctangent of the result of a Function2D object: atan(f())
+
+    :param Function2D function: A Function2D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return cmath.atan(self._function.evaluate(x, y))
+
+
+cdef class Atan4Q2D(Function2D):
+    """
+    A Function2D class that implements the arctangent of the result of 2 Function2D objects: atan2(f1(), f2())
+
+    This differs from Atan2D in that it takes separate functions for the
+    numerator and denominator, in order to get the quadrant correct.
+
+    :param Function2D numerator: A Function2D object representing the numerator
+    :param Function2D denominator: A Function2D object representing the denominator
+    """
+    def __init__(self, object numerator, object denominator):
+        self._numerator = autowrap_function2d(numerator)
+        self._denominator = autowrap_function2d(denominator)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return cmath.atan2(self._numerator.evaluate(x, y), self._denominator.evaluate(x, y))

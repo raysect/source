@@ -34,3 +34,19 @@ from raysect.core.math.function.function1d.base cimport Function1D
 
 cdef class Exp1D(Function1D):
     cdef Function1D _function
+
+
+cdef class Sin1D(Function1D):
+    cdef Function1D _function
+
+
+cdef class Cos1D(Function1D):
+    cdef Function1D _function
+
+
+cdef class Atan1D(Function1D):
+    cdef Function1D _function
+
+
+cdef class Atan4Q1D(Function1D):
+    cdef Function1D _numerator, _denominator
