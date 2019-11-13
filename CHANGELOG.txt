@@ -1,17 +1,25 @@
 Raysect Changelog
 =================
 
-Release 0.5.7 (TBD)
--------------------
+Release 0.6.0 (13 Nov 2019)
+---------------------------
 
 API Changes:
 * Blend material modifier now blends the surface and volume by default. Use the surface_only and volume_only options to configure.
 * Cython minimum, maximum and peak to peak methods can now cope with arbitrary strides.
+* Interpolator2DMesh and Discrete2DMesh have import has changed from raysect.core.math.interpolators to raysect.core.math.function.
 
 New:
 * Added an Add material modifier than sums the contributions from two materials.
 * Added emissivity function to BlackBody.
 * Extended Spectrum cython mathematical methods to simplify combining Spectrum objects.
+* Expanded the function framework:
+  - Constants are now autowrapped as ConstantXD objects automatically.
+  - Added PowXD, ExpXD, SinXD, CosXD, TanXD, AsinXD, AcosXD, AtanXD, Atan4QXD functions.
+  - Argument pass-through supported with ArgXD functions.
+  - Interpolation functions moved under raysect.core.math.function.
+* Improved the Multicore render engine by batching work to reduce IPC overhead. Renders with smaller amounts of work per pixel are now substantially quicker.
+* Improved multiple demos and related documentation.
 
 
 Release 0.5.6 (24 Aug 2019)
