@@ -24,6 +24,15 @@ Functions and Interpolators
 .. autoclass:: raysect.core.math.function.function1d.cmath.Cos1D
    :show-inheritance:
 
+.. autoclass:: raysect.core.math.function.function1d.cmath.Tan1D
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.function.function1d.cmath.Asin1D
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.function.function1d.cmath.Acos1D
+   :show-inheritance:
+
 .. autoclass:: raysect.core.math.function.function1d.cmath.Atan1D
    :show-inheritance:
 
@@ -52,6 +61,15 @@ Functions and Interpolators
 .. autoclass:: raysect.core.math.function.function2d.cmath.Cos2D
    :show-inheritance:
 
+.. autoclass:: raysect.core.math.function.function2d.cmath.Tan2D
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.function.function2d.cmath.Asin2D
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.function.function2d.cmath.Acos2D
+   :show-inheritance:
+
 .. autoclass:: raysect.core.math.function.function2d.cmath.Atan2D
    :show-inheritance:
 
@@ -78,6 +96,15 @@ Functions and Interpolators
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.function.function3d.cmath.Cos3D
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.function.function3d.cmath.Tan3D
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.function.function3d.cmath.Asin3D
+   :show-inheritance:
+
+.. autoclass:: raysect.core.math.function.function3d.cmath.Acos3D
    :show-inheritance:
 
 .. autoclass:: raysect.core.math.function.function3d.cmath.Atan3D
