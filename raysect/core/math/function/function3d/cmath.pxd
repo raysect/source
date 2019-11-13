@@ -44,6 +44,18 @@ cdef class Cos3D(Function3D):
     cdef Function3D _function
 
 
+cdef class Tan3D(Function3D):
+    cdef Function3D _function
+
+
+cdef class Asin3D(Function3D):
+    cdef Function3D _function
+
+
+cdef class Acos3D(Function3D):
+    cdef Function3D _function
+
+
 cdef class Atan3D(Function3D):
     cdef Function3D _function
 

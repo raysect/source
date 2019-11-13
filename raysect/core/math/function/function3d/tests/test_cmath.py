@@ -70,6 +70,35 @@ class TestCmath3D(unittest.TestCase):
                     expected = math.cos(self.f1(x, y, z))
                     self.assertEqual(function(x, y, z), expected, "Cos3D call did not match reference value")
 
+    def test_tan(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                for z in v:
+                    function = cmath3d.Tan3D(self.f1)
+                    expected = math.tan(self.f1(x, y, z))
+                    self.assertEqual(function(x, y, z), expected, "Tan3D call did not match reference value")
+
+    def test_asin(self):
+        v = [-10, -6, -2, -0.001, 0, 0.001, 2, 6, 10]
+        function = cmath3d.Asin3D(self.f1)
+        for x in v:
+            expected = math.asin(self.f1(x, 0, 0))
+            self.assertEqual(function(x, 0, 0), expected, "Asin3D call did not match reference value")
+
+        with self.assertRaises(ValueError, msg="Asin3D did not raise a ValueError with value outside domain."):
+            function(100, 0, 0)
+
+    def test_acos(self):
+        v = [-10, -6, -2, -0.001, 0, 0.001, 2, 6, 10]
+        function = cmath3d.Acos3D(self.f1)
+        for x in v:
+            expected = math.acos(self.f1(x, 0, 0))
+            self.assertEqual(function(x, 0, 0), expected, "Acos3D call did not match reference value")
+
+        with self.assertRaises(ValueError, msg="Acos3D did not raise a ValueError with value outside domain."):
+            function(100, 0, 0)
+
     def test_atan(self):
         v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
         for x in v:

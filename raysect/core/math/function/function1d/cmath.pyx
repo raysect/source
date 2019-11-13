@@ -104,7 +104,7 @@ cdef class Asin1D(Function1D):
 
 cdef class Acos1D(Function1D):
     """
-    A Function1D class that implements the arccosine of         return cmath.acos(self._function.evaluate(x))the result of a Function1D object: acos(f())
+    A Function1D class that implements the arccosine of the result of a Function1D object: acos(f())
 
     :param Function1D function: A Function1D object.
     """

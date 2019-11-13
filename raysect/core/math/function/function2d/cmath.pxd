@@ -44,6 +44,18 @@ cdef class Cos2D(Function2D):
     cdef Function2D _function
 
 
+cdef class Tan2D(Function2D):
+    cdef Function2D _function
+
+
+cdef class Asin2D(Function2D):
+    cdef Function2D _function
+
+
+cdef class Acos2D(Function2D):
+    cdef Function2D _function
+
+
 cdef class Atan2D(Function2D):
     cdef Function2D _function
 

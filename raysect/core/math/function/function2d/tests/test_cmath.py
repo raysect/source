@@ -67,6 +67,34 @@ class TestCmath2D(unittest.TestCase):
                 expected = math.cos(self.f1(x, y))
                 self.assertEqual(function(x, y), expected, "Cos2D call did not match reference value")
 
+    def test_tan(self):
+        v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
+        for x in v:
+            for y in v:
+                function = cmath2d.Tan2D(self.f1)
+                expected = math.tan(self.f1(x, y))
+                self.assertEqual(function(x, y), expected, "Tan2D call did not match reference value")
+
+    def test_asin(self):
+        v = [-10, -6, -2, -0.001, 0, 0.001, 2, 6, 10]
+        function = cmath2d.Asin2D(self.f1)
+        for x in v:
+            expected = math.asin(self.f1(x, 0))
+            self.assertEqual(function(x, 0), expected, "Asin2D call did not match reference value")
+
+        with self.assertRaises(ValueError, msg="Asin2D did not raise a ValueError with value outside domain."):
+            function(100, 0)
+
+    def test_acos(self):
+        v = [-10, -6, -2, -0.001, 0, 0.001, 2, 6, 10]
+        function = cmath2d.Acos2D(self.f1)
+        for x in v:
+            expected = math.acos(self.f1(x, 0))
+            self.assertEqual(function(x, 0), expected, "Acos2D call did not match reference value")
+
+        with self.assertRaises(ValueError, msg="Acos2D did not raise a ValueError with value outside domain."):
+            function(100, 0)
+
     def test_atan(self):
         v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
         for x in v:

@@ -73,6 +73,51 @@ cdef class Cos3D(Function3D):
         return cmath.cos(self._function.evaluate(x, y, z))
 
 
+cdef class Tan3D(Function3D):
+    """
+    A Function3D class that implements the tangent of the result of a Function3D object: tan(f())
+
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return cmath.tan(self._function.evaluate(x, y, z))
+
+
+cdef class Asin3D(Function3D):
+    """
+    A Function3D class that implements the arcsine of the result of a Function3D object: asin(f())
+
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        cdef double v = self._function.evaluate(x, y, z)
+        if -1.0 <= v <= 1.0:
+            return cmath.asin(v)
+        raise ValueError("The function returned a value outside of the arcsine domain of [-1, 1].")
+
+
+cdef class Acos3D(Function3D):
+    """
+    A Function3D class that implements the arccosine of the result of a Function3D object: acos(f())
+
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        cdef double v = self._function.evaluate(x, y, z)
+        if -1.0 <= v <= 1.0:
+            return cmath.acos(v)
+        raise ValueError("The function returned a value outside of the arccosine domain of [-1, 1].")
+
+
 cdef class Atan3D(Function3D):
     """
     A Function3D class that implements the arctangent of the result of a Function3D object: atan(f())
