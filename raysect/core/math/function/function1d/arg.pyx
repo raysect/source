@@ -29,14 +29,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .point import Point2D, Point3D
-from .vector import Vector2D, Vector3D
-from .normal import Normal3D
-from .affinematrix import AffineMatrix3D
-from .quaternion import Quaternion
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
-from .units import *
-from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
-from .sampler import *
-from .polygon import triangulate2d
-from .function import *
+from raysect.core.math.function.function1d.base cimport Function1D
+
+
+cdef class Arg1D(Function1D):
+    """
+    Returns the argument the function is passed, unmodified
+
+    This is used to pass coordinates through to other functions in the
+    function framework which expect a Function1D object.
+
+    >>> arg = Arg1D()
+    >>> arg(2)
+    2.0
+    >>> arg(-3.14)
+    -3.14
+    >>> squarer = Arg1D()**2
+    >>> squarer(2)
+    4.0
+    >>> squarer(-3.14)
+    9.8596
+    """
+    cdef double evaluate(self, double x) except? -1e999:
+        return x

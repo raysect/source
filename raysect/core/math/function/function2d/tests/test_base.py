@@ -31,8 +31,9 @@
 Unit tests for the Function2D class.
 """
 
+import math
 import unittest
-from raysect.core.math.function.function2d import PythonFunction2D
+from raysect.core.math.function.function2d.autowrap import PythonFunction2D
 
 # TODO: expand tests to cover the cython interface
 class TestFunction2D(unittest.TestCase):
@@ -101,28 +102,66 @@ class TestFunction2D(unittest.TestCase):
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when function returns zero."):
             r(0, 0)
 
-    def test_add_function1d(self):
+    def test_mod_function2d_scalar(self):
+        # Note that Function2D objects work with doubles, so the floating modulo
+        # operator is used rather than the integer one. For accurate testing we
+        # therefore need to use the math.fmod operator rather than % in Python.
+        v = [-10, -7, -0.001, 0.00003, 10, 12.3]
+        r1 = 5 % self.f1
+        r2 = self.f1 % -7.8
+        for x in v:
+            for y in v:
+                self.assertAlmostEqual(r1(x, y), math.fmod(5, self.f1_ref(x, y)), 15, "Function2D modulo scalar (K % f()) did not match reference function value.")
+                self.assertAlmostEqual(r2(x, y), math.fmod(self.f1_ref(x, y), -7.8), 15, "Function2D modulo scalar (f() % K) did not match reference function value.")
+        with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when function returns 0"):
+            r1(0, 0)
+        with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when modulo scalar is 0"):
+            self.f1 % 0
+
+    def test_pow_function2d_scalar(self):
+        v = [-10, -7, -0.001, 0.00003, 10, 12.3]
+        r1 = 5 ** self.f1
+        r2 = self.f1 ** -7.8
+        r3 = (-5) ** self.f1
+        for x in v:
+            for y in v:
+                self.assertAlmostEqual(r1(x, y), 5 ** self.f1_ref(x, y), 15, "Function2D power scalar (K ** f()) did not match reference function value.")
+                if self.f1_ref(x, y) < 0:
+                    with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral"):
+                        r2(x, y)
+                elif not float(self.f1_ref(x, y)).is_integer():
+                    with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral"):
+                        r3(x, y)
+                else:
+                    self.assertAlmostEqual(r2(x, y), self.f1_ref(x, y) ** -7.8, 15, "Function2D power scalar (f() ** K) did not match reference function value.")
+        with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when base is 0 and exponent negative"):
+            r2(0, 0)
+        with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when base is 0 and exponent negative"):
+            r4 = 0 ** self.f1
+            r4(-1, 0)
+
+    def test_add_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r = self.f1 + self.f2
         for x in v:
             for y in v:
                 self.assertEqual(r(x, y), self.f1_ref(x, y) + self.f2_ref(x, y), "Function2D add function (f1() + f2()) did not match reference function value.")
 
-    def test_sub_function1d(self):
+    def test_sub_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r = self.f1 - self.f2
         for x in v:
             for y in v:
                 self.assertEqual(r(x, y), self.f1_ref(x, y) - self.f2_ref(x, y), "Function2D subtract function (f1() - f2()) did not match reference function value.")
 
-    def test_mul_function1d(self):
+    def test_mul_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r = self.f1 * self.f2
         for x in v:
             for y in v:
                 self.assertEqual(r(x, y), self.f1_ref(x, y) * self.f2_ref(x, y), "Function2D multiply function (f1() * f2()) did not match reference function value.")
 
-    def test_div_function1d(self):
+    def test_div_function2d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e49]
         r = self.f1 / self.f2
         for x in v:
@@ -132,3 +171,39 @@ class TestFunction2D(unittest.TestCase):
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when function returns zero."):
             r(0, 0)
 
+    def test_mod_function2d(self):
+        v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e9]
+        r = self.f1 % self.f2
+        for x in v:
+            for y in v:
+                self.assertAlmostEqual(r(x, y), math.fmod(self.f1_ref(x, y), self.f2_ref(x, y)), delta=abs(r(x, y)) * 1e-12, msg="Function2D modulo function (f1() % f2()) did not match reference function value.")
+
+        with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when function returns zero."):
+            r(0, 0)
+
+    def test_pow_function2d_function2d(self):
+        v = [-3.0, -0.7, -0.001, 0.00003, 2]
+        r = self.f1 ** self.f2
+        for x in v:
+            for y in v:
+                if self.f1_ref(x, y) < 0 and not float(self.f2_ref(x, y)).is_integer():
+                    with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral"):
+                        r(x, y)
+                else:
+                    self.assertAlmostEqual(r(x, y), self.f1_ref(x, y) ** self.f2_ref(x, y), 15, "Function2D power function (f1() ** f2()) did not match reference function value.")
+        with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when f1() == 0 and f2() is negative"):
+            r = PythonFunction2D(lambda x, y: 0) ** self.f1
+            r(-1, 0)
+
+    def test_pow_3_arguments(self):
+        v = [-10, -7, -0.001, 0.00003, 2]
+        r1 = pow(self.f1, 5, 3)
+        r2 = pow(5, self.f1, 3)
+        r3 = pow(5, self.f1, self.f2)
+        # Can't use 3 argument pow() if all arguments aren't integers, so
+        # use fmod(a, b) % c instead
+        for x in v:
+            for y in v:
+                self.assertEqual(r1(x, y), math.fmod(self.f1_ref(x, y) ** 5, 3), "Function2D 3 argument pow(f1(), A, B) did not match reference value")
+                self.assertEqual(r2(x, y), math.fmod(5 ** self.f1_ref(x, y), 3), "Function2D 3 argument pow(A, f1(), B) did not match reference value")
+                self.assertEqual(r3(x, y), math.fmod(5 ** self.f1_ref(x, y), self.f2_ref(x, y)), "Function2D 3 argument pow(A, f1(), f2()) did not match reference value")

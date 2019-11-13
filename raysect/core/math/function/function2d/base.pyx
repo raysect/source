@@ -31,6 +31,9 @@
 
 import numbers
 cimport cython
+from libc.math cimport floor
+from .autowrap cimport autowrap_function2d
+
 
 cdef class Function2D:
     """
@@ -87,7 +90,7 @@ cdef class Function2D:
                 return SubtractScalar2D(<double> a, <Function2D> b)
         return NotImplemented
 
-    def __mul__(a, b):
+    def __mul__(object a, object b):
         if isinstance(a, Function2D):
             if isinstance(b, Function2D):
                 # a() * b()
@@ -102,7 +105,7 @@ cdef class Function2D:
         return NotImplemented
 
     @cython.cdivision(True)
-    def __truediv__(a, b):
+    def __truediv__(object a, object b):
         cdef double v
         if isinstance(a, Function2D):
             if isinstance(b, Function2D):
@@ -120,53 +123,44 @@ cdef class Function2D:
                 return DivideScalar2D(<double> a, <Function2D> b)
         return NotImplemented
 
+    def __mod__(object a, object b):
+        cdef double v
+        if isinstance(a, Function2D):
+            if isinstance(b, Function2D):
+                # a() % b()
+                return ModuloFunction2D(<Function2D> a, <Function2D> b)
+            elif isinstance(b, numbers.Real):
+                # a() % B
+                v = <double> b
+                if v == 0.0:
+                    raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
+                return ModuloFunctionScalar2D(<Function2D> a, v)
+        elif isinstance(a, numbers.Real):
+            if isinstance(b, Function2D):
+                # A % b()
+                return ModuloScalarFunction2D(<double> a, <Function2D> b)
+        return NotImplemented
+
     def __neg__(self):
         return MultiplyScalar2D(-1, self)
 
-
-cdef class PythonFunction2D(Function2D):
-    """
-    Wraps a python callable object with a Function2D object.
-
-    This class allows a python object to interact with cython code that requires
-    a Function2D object. The python object must implement __call__() expecting
-    two arguments.
-
-    This class is intended to be used to transparently wrap python objects that
-    are passed via constructors or methods into cython optimised code. It is not
-    intended that the users should need to directly interact with these wrapping
-    objects. Constructors and methods expecting a Function2D object should be
-    designed to accept a generic python object and then test that object to
-    determine if it is an instance of Function2D. If the object is not a
-    Function2D object it should be wrapped using this class for internal use.
-
-    See also: autowrap_function2d()
-
-    :param object function: the python function to wrap, __call__() function must
-    be implemented on the object.
-    """
-    def __init__(self, object function):
-        self.function = function
-
-    cdef double evaluate(self, double x, double y) except? -1e999:
-        return self.function(x, y)
-
-
-cdef Function2D autowrap_function2d(object function):
-    """
-    Automatically wraps the supplied python object in a PythonFunction2D object.
-
-    If this function is passed a valid Function2D object, then the Function2D
-    object is simply returned without wrapping.
-
-    This convenience function is provided to simplify the handling of Function2D
-    and python callable objects in constructors, functions and setters.
-    """
-
-    if isinstance(function, Function2D):
-        return <Function2D> function
-    else:
-        return PythonFunction2D(function)
+    def __pow__(object a, object b, object c):
+        if c is not None:
+            # Optimised implementation of pow(a, b, c) not available: fall back
+            # to general implementation
+            return (a ** b) % c
+        if isinstance(a, Function2D):
+            if isinstance(b, Function2D):
+                # a() ** b()
+                return PowFunction2D(<Function2D> a, <Function2D> b)
+            elif isinstance(b, numbers.Real):
+                # a() ** b
+                return PowFunctionScalar2D(<Function2D> a, <double> b)
+        elif isinstance(a, numbers.Real):
+            if isinstance(b, Function2D):
+                # a ** b()
+                return PowScalarFunction2D(<double> a, <Function2D> b)
+        return NotImplemented
 
 
 cdef class AddFunction2D(Function2D):
@@ -247,6 +241,53 @@ cdef class DivideFunction2D(Function2D):
         return self._function1.evaluate(x, y) / denominator
 
 
+cdef class ModuloFunction2D(Function2D):
+    """
+    A Function2D class that implements the modulo of the results of two Function2D objects: f1() % f2()
+
+    This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
+    Function2D object.
+
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
+    """
+    def __init__(self, function1, function2):
+        self._function1 = autowrap_function2d(function1)
+        self._function2 = autowrap_function2d(function2)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        cdef double divisor = self._function2.evaluate(x, y)
+        if divisor == 0.0:
+            raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
+        return self._function1.evaluate(x, y) % divisor
+
+
+cdef class PowFunction2D(Function2D):
+    """
+    A Function2D class that implements the pow() operator on two Function2D objects.
+
+    This class is not intended to be used directly, but rather returned as the result of a __pow__() call on a
+    Function2D object.
+
+    :param Function2D function1: A Function2D object.
+    :param Function2D function2: A Function2D object.
+    """
+    def __init__(self, function1, function2):
+        self._function1 = autowrap_function2d(function1)
+        self._function2 = autowrap_function2d(function2)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        cdef double base, exponent
+        base = self._function1.evaluate(x, y)
+        exponent = self._function2.evaluate(x, y)
+        if base < 0 and floor(exponent) != exponent:  # Would return a complex value rather than double
+            raise ValueError("Negative base and non-integral exponent is not supported")
+        if base == 0 and exponent < 0:
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+        return base ** exponent
+
+
 cdef class AddScalar2D(Function2D):
     """
     A Function2D class that implements the addition of scalar and the result of a Function2D object: K + f()
@@ -325,3 +366,92 @@ cdef class DivideScalar2D(Function2D):
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
         return self._value / denominator
+
+
+cdef class ModuloScalarFunction2D(Function2D):
+    """
+    A Function2D class that implements the modulo of scalar and the result of a Function2D object: K % f()
+
+    This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
+    Function2D object.
+
+    :param float value: A double value.
+    :param Function2D function: A Function2D object.
+    """
+    def __init__(self, double value, Function2D function):
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        cdef double divisor = self._function.evaluate(x, y)
+        if divisor == 0.0:
+            raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
+        return self._value % divisor
+
+
+cdef class ModuloFunctionScalar2D(Function2D):
+    """
+    A Function2D class that implements the modulo of the result of a Function2D object and a scalar: f() % K
+
+    This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
+    Function2D object.
+
+    :param Function2D function: A Function2D object.
+    :param float value: A double value.
+    """
+    def __init__(self, Function2D function, double value):
+        if value == 0:
+            raise ValueError("Divisor cannot be zero")
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._function.evaluate(x, y) % self._value
+
+
+cdef class PowScalarFunction2D(Function2D):
+    """
+    A Function2D class that implements the pow of scalar and the result of a Function2D object: K ** f()
+
+    This class is not intended to be used directly, but rather returned as the result of an __pow__() call on a
+    Function2D object.
+
+    :param float value: A double value.
+    :param Function2D function: A Function2D object.
+    """
+    def __init__(self, double value, Function2D function):
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        cdef double exponent = self._function.evaluate(x, y)
+        if self._value < 0 and floor(exponent) != exponent:
+            raise ValueError("Negative base and non-integral exponent is not supported")
+        if self._value == 0 and exponent < 0:
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+        return self._value ** exponent
+
+
+cdef class PowFunctionScalar2D(Function2D):
+    """
+    A Function2D class that implements the pow of the result of a Function2D object and a scalar: f() ** K
+
+    This class is not intended to be used directly, but rather returned as the result of an __pow__() call on a
+    Function2D object.
+
+    :param Function2D function: A Function2D object.
+    :param float value: A double value.
+    """
+    def __init__(self, Function2D function, double value):
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        cdef double base = self._function.evaluate(x, y)
+        if base < 0 and floor(self._value) != self._value:
+            raise ValueError("Negative base and non-integral exponent is not supported")
+        if base == 0 and self._value < 0:
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+        return base ** self._value

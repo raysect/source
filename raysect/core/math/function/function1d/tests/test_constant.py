@@ -1,6 +1,4 @@
-# cython: language_level=3
-
-# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,50 +27,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class Function3D:
+"""
+Unit tests for the Constant1D class.
+"""
 
-    cdef double evaluate(self, double x, double y, double z) except? -1e999
+import unittest
+from raysect.core.math.function.function1d.constant import Constant1D
 
+# TODO: expand tests to cover the cython interface
+class TestConstant1D(unittest.TestCase):
 
-cdef class PythonFunction3D(Function3D):
-
-    cdef public object function
-
-
-cdef Function3D autowrap_function3d(object function)
-
-
-cdef class AddFunction3D(Function3D):
-    cdef Function3D _function1, _function2
-
-
-cdef class SubtractFunction3D(Function3D):
-    cdef Function3D _function1, _function2
-
-
-cdef class MultiplyFunction3D(Function3D):
-    cdef Function3D _function1, _function2
-
-
-cdef class DivideFunction3D(Function3D):
-    cdef Function3D _function1, _function2
-
-
-cdef class AddScalar3D(Function3D):
-    cdef double _value
-    cdef Function3D _function
-
-
-cdef class SubtractScalar3D(Function3D):
-    cdef double _value
-    cdef Function3D _function
-
-
-cdef class MultiplyScalar3D(Function3D):
-    cdef double _value
-    cdef Function3D _function
-
-
-cdef class DivideScalar3D(Function3D):
-    cdef double _value
-    cdef Function3D _function
+    def test_constant(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            constant = Constant1D(x)
+            self.assertEqual(constant(500), x, "Constant1D call did not match reference value")

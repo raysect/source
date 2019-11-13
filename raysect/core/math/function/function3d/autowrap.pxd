@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,50 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class Function2D:
+from raysect.core.math.function.function3d.base cimport Function3D
 
-    cdef double evaluate(self, double x, double y) except? -1e999
-
-
-cdef class PythonFunction2D(Function2D):
-
+cdef class PythonFunction3D(Function3D):
     cdef public object function
 
-
-cdef Function2D autowrap_function2d(object function)
-
-
-cdef class AddFunction2D(Function2D):
-    cdef Function2D _function1, _function2
-
-
-cdef class SubtractFunction2D(Function2D):
-    cdef Function2D _function1, _function2
-
-
-cdef class MultiplyFunction2D(Function2D):
-    cdef Function2D _function1, _function2
-
-
-cdef class DivideFunction2D(Function2D):
-    cdef Function2D _function1, _function2
-
-
-cdef class AddScalar2D(Function2D):
-    cdef double _value
-    cdef Function2D _function
-
-
-cdef class SubtractScalar2D(Function2D):
-    cdef double _value
-    cdef Function2D _function
-
-
-cdef class MultiplyScalar2D(Function2D):
-    cdef double _value
-    cdef Function2D _function
-
-
-cdef class DivideScalar2D(Function2D):
-    cdef double _value
-    cdef Function2D _function
+cdef Function3D autowrap_function3d(object function)

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,14 +29,70 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .point import Point2D, Point3D
-from .vector import Vector2D, Vector3D
-from .normal import Normal3D
-from .affinematrix import AffineMatrix3D
-from .quaternion import Quaternion
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
-from .units import *
-from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
-from .sampler import *
-from .polygon import triangulate2d
-from .function import *
+cdef class Function2D:
+
+    cdef double evaluate(self, double x, double y) except? -1e999
+
+
+cdef class AddFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class SubtractFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class MultiplyFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class DivideFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class ModuloFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class PowFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class AddScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class SubtractScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class MultiplyScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class DivideScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class ModuloScalarFunction2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class ModuloFunctionScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class PowScalarFunction2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class PowFunctionScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function

@@ -31,6 +31,9 @@
 
 import numbers
 cimport cython
+from libc.math cimport floor
+from .autowrap cimport autowrap_function3d
+
 
 cdef class Function3D:
     """
@@ -88,7 +91,7 @@ cdef class Function3D:
                 return SubtractScalar3D(<double> a, <Function3D> b)
         return NotImplemented
 
-    def __mul__(a, b):
+    def __mul__(object a, object b):
         if isinstance(a, Function3D):
             if isinstance(b, Function3D):
                 # a() * b()
@@ -103,7 +106,7 @@ cdef class Function3D:
         return NotImplemented
 
     @cython.cdivision(True)
-    def __truediv__(a, b):
+    def __truediv__(object a, object b):
         cdef double v
         if isinstance(a, Function3D):
             if isinstance(b, Function3D):
@@ -121,51 +124,44 @@ cdef class Function3D:
                 return DivideScalar3D(<double> a, <Function3D> b)
         return NotImplemented
 
+    def __mod__(object a, object b):
+        cdef double v
+        if isinstance(a, Function3D):
+            if isinstance(b, Function3D):
+                # a() % b()
+                return ModuloFunction3D(<Function3D> a, <Function3D> b)
+            elif isinstance(b, numbers.Real):
+                # a() % B
+                v = <double> b
+                if v == 0.0:
+                    raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
+                return ModuloFunctionScalar3D(<Function3D> a, v)
+        elif isinstance(a, numbers.Real):
+            if isinstance(b, Function3D):
+                # A % b()
+                return ModuloScalarFunction3D(<double> a, <Function3D> b)
+        return NotImplemented
+
     def __neg__(self):
         return MultiplyScalar3D(-1, self)
 
-
-cdef class PythonFunction3D(Function3D):
-    """
-    Wraps a python callable object with a Function3D object.
-
-    This class allows a python object to interact with cython code that requires
-    a Function3D object. The python object must implement __call__() expecting
-    three arguments.
-
-    This class is intended to be used to transparently wrap python objects that
-    are passed via constructors or methods into cython optimised code. It is not
-    intended that the users should need to directly interact with these wrapping
-    objects. Constructors and methods expecting a Function3D object should be
-    designed to accept a generic python object and then test that object to
-    determine if it is an instance of Function3D. If the object is not a
-    Function3D object it should be wrapped using this class for internal use.
-
-    See also: autowrap_function3d()
-    """
-
-    def __init__(self, object function):
-        self.function = function
-
-    cdef double evaluate(self, double x, double y, double z) except? -1e999:
-        return self.function(x, y, z)
-
-
-cdef Function3D autowrap_function3d(object function):
-    """
-    Automatically wraps the supplied python object in a PythonFunction3D object.
-
-    If this function is passed a valid Function3D object, then the Function3D
-    object is simply returned without wrapping.
-
-    This convenience function is provided to simplify the handling of Function3D
-    and python callable objects in constructors, functions and setters.
-    """
-
-    if isinstance(function, Function3D):
-        return <Function3D> function
-    else:
-        return PythonFunction3D(function)
+    def __pow__(object a, object b, object c):
+        if c is not None:
+            # Optimised implementation of pow(a, b, c) not available: fall back
+            # to general implementation
+            return (a ** b) % c
+        if isinstance(a, Function3D):
+            if isinstance(b, Function3D):
+                # a() ** b()
+                return PowFunction3D(<Function3D> a, <Function3D> b)
+            elif isinstance(b, numbers.Real):
+                # a() ** b
+                return PowFunctionScalar3D(<Function3D> a, <double> b)
+        elif isinstance(a, numbers.Real):
+            if isinstance(b, Function3D):
+                # a ** b()
+                return PowScalarFunction3D(<double> a, <Function3D> b)
+        return NotImplemented
 
 
 cdef class AddFunction3D(Function3D):
@@ -248,6 +244,53 @@ cdef class DivideFunction3D(Function3D):
         return self._function1.evaluate(x, y, z) / denominator
 
 
+cdef class ModuloFunction3D(Function3D):
+    """
+    A Function3D class that implements the modulo of the results of two Function3D objects: f1() % f2()
+
+    This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
+    Function3D object.
+
+    :param Function3D function1: A Function3D object.
+    :param Function3D function2: A Function3D object.
+    """
+    def __init__(self, function1, function2):
+        self._function1 = autowrap_function3d(function1)
+        self._function2 = autowrap_function3d(function2)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        cdef double divisor = self._function2.evaluate(x, y, z)
+        if divisor == 0.0:
+            raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
+        return self._function1.evaluate(x, y, z) % divisor
+
+
+cdef class PowFunction3D(Function3D):
+    """
+    A Function3D class that implements the pow() operator on two Function3D objects.
+
+    This class is not intended to be used directly, but rather returned as the result of a __pow__() call on a
+    Function3D object.
+
+    :param Function3D function1: A Function3D object.
+    :param Function3D function2: A Function3D object.
+    """
+    def __init__(self, function1, function2):
+        self._function1 = autowrap_function3d(function1)
+        self._function2 = autowrap_function3d(function2)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        cdef double base, exponent
+        base = self._function1.evaluate(x, y, z)
+        exponent = self._function2.evaluate(x, y, z)
+        if base < 0 and floor(exponent) != exponent:  # Would return a complex value rather than double
+            raise ValueError("Negative base and non-integral exponent is not supported")
+        if base == 0 and exponent < 0:
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+        return base ** exponent
+
+
 cdef class AddScalar3D(Function3D):
     """
     A Function3D class that implements the addition of scalar and the result of a Function3D object: K + f()
@@ -326,3 +369,92 @@ cdef class DivideScalar3D(Function3D):
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
         return self._value / denominator
+
+
+cdef class ModuloScalarFunction3D(Function3D):
+    """
+    A Function3D class that implements the modulo of scalar and the result of a Function3D object: K % f()
+
+    This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
+    Function3D object.
+
+    :param float value: A double value.
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, double value, Function3D function):
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        cdef double divisor = self._function.evaluate(x, y, z)
+        if divisor == 0.0:
+            raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
+        return self._value % divisor
+
+
+cdef class ModuloFunctionScalar3D(Function3D):
+    """
+    A Function3D class that implements the modulo of the result of a Function3D object and a scalar: f() % K
+
+    This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
+    Function3D object.
+
+    :param Function3D function: A Function3D object.
+    :param float value: A double value.
+    """
+    def __init__(self, Function3D function, double value):
+        if value == 0:
+            raise ValueError("Divisor cannot be zero")
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._function.evaluate(x, y, z) % self._value
+
+
+cdef class PowScalarFunction3D(Function3D):
+    """
+    A Function3D class that implements the pow of scalar and the result of a Function3D object: K ** f()
+
+    This class is not intended to be used directly, but rather returned as the result of an __pow__() call on a
+    Function3D object.
+
+    :param float value: A double value.
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, double value, Function3D function):
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        cdef double exponent = self._function.evaluate(x, y, z)
+        if self._value < 0 and floor(exponent) != exponent:
+            raise ValueError("Negative base and non-integral exponent is not supported")
+        if self._value == 0 and exponent < 0:
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+        return self._value ** exponent
+
+
+cdef class PowFunctionScalar3D(Function3D):
+    """
+    A Function3D class that implements the pow of the result of a Function3D object and a scalar: f() ** K
+
+    This class is not intended to be used directly, but rather returned as the result of an __pow__() call on a
+    Function3D object.
+
+    :param Function3D function: A Function3D object.
+    :param float value: A double value.
+    """
+    def __init__(self, Function3D function, double value):
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        cdef double base = self._function.evaluate(x, y, z)
+        if base < 0 and floor(self._value) != self._value:
+            raise ValueError("Negative base and non-integral exponent is not supported")
+        if base == 0 and self._value < 0:
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+        return base ** self._value

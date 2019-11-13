@@ -29,14 +29,32 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .point import Point2D, Point3D
-from .vector import Vector2D, Vector3D
-from .normal import Normal3D
-from .affinematrix import AffineMatrix3D
-from .quaternion import Quaternion
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
-from .units import *
-from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
-from .sampler import *
-from .polygon import triangulate2d
-from .function import *
+from raysect.core.math.function.function3d.base cimport Function3D
+
+
+cdef class Constant3D(Function3D):
+    """
+    Wraps a scalar constant with a Function3D object.
+
+    This class allows a numeric Python scalar, such as a float or an integer, to
+    interact with cython code that requires a Function3D object. The scalar must
+    be convertible to double. The value of the scalar constant will be returned
+    independent of the arguments the function is called with.
+
+    This class is intended to be used to transparently wrap python objects that
+    are passed via constructors or methods into cython optimised code. It is not
+    intended that the users should need to directly interact with these wrapping
+    objects. Constructors and methods expecting a Function3D object should be
+    designed to accept a generic python object and then test that object to
+    determine if it is an instance of Function3D. If the object is not a
+    Function3D object it should be wrapped using this class for internal use.
+
+    See also: autowrap_function3d()
+
+    :param float value: the constant value to return when called
+    """
+    def __init__(self, double value):
+        self._value = value
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._value

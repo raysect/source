@@ -1,6 +1,4 @@
-# cython: language_level=3
-
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,14 +27,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .point import Point2D, Point3D
-from .vector import Vector2D, Vector3D
-from .normal import Normal3D
-from .affinematrix import AffineMatrix3D
-from .quaternion import Quaternion
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
-from .units import *
-from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
-from .sampler import *
-from .polygon import triangulate2d
-from .function import *
+"""
+Unit tests for the Constant3D class.
+"""
+
+import unittest
+from raysect.core.math.function.function3d.constant import Constant3D
+
+# TODO: expand tests to cover the cython interface
+class TestConstant3D(unittest.TestCase):
+
+    def test_constant(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            constant = Constant3D(x)
+            self.assertEqual(constant(500, 1.5, -3.14), x, "Constant3D call did not match reference value")

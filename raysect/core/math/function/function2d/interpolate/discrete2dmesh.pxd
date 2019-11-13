@@ -29,14 +29,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .point import Point2D, Point3D
-from .vector import Vector2D, Vector3D
-from .normal import Normal3D
-from .affinematrix import AffineMatrix3D
-from .quaternion import Quaternion
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
-from .units import *
-from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
-from .sampler import *
-from .polygon import triangulate2d
-from .function import *
+cimport numpy as np
+from raysect.core.math.function.function2d cimport Function2D
+from raysect.core.math.function.function2d.interpolate.common cimport MeshKDTree2D
+
+
+cdef class Discrete2DMesh(Function2D):
+
+    cdef:
+        np.ndarray _triangle_data
+        double[::1] _triangle_data_mv
+        MeshKDTree2D _kdtree
+        bint _limit
+        double _default_value
+
+    cdef double evaluate(self, double x, double y) except? -1e999

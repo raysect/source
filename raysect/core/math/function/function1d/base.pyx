@@ -31,6 +31,8 @@
 
 import numbers
 cimport cython
+from libc.math cimport floor
+from .autowrap cimport autowrap_function1d
 
 
 cdef class Function1D:
@@ -87,7 +89,7 @@ cdef class Function1D:
                 return SubtractScalar1D(<double> a, <Function1D> b)
         return NotImplemented
 
-    def __mul__(a, b):
+    def __mul__(object a, object b):
         if isinstance(a, Function1D):
             if isinstance(b, Function1D):
                 # a() * b()
@@ -102,7 +104,7 @@ cdef class Function1D:
         return NotImplemented
 
     @cython.cdivision(True)
-    def __truediv__(a, b):
+    def __truediv__(object a, object b):
         cdef double v
         if isinstance(a, Function1D):
             if isinstance(b, Function1D):
@@ -120,53 +122,44 @@ cdef class Function1D:
                 return DivideScalar1D(<double> a, <Function1D> b)
         return NotImplemented
 
+    def __mod__(object a, object b):
+        cdef double v
+        if isinstance(a, Function1D):
+            if isinstance(b, Function1D):
+                # a() % b()
+                return ModuloFunction1D(<Function1D> a, <Function1D> b)
+            elif isinstance(b, numbers.Real):
+                # a() % B
+                v = <double> b
+                if v == 0.0:
+                    raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
+                return ModuloFunctionScalar1D(<Function1D> a, v)
+        elif isinstance(a, numbers.Real):
+            if isinstance(b, Function1D):
+                # A % b()
+                return ModuloScalarFunction1D(<double> a, <Function1D> b)
+        return NotImplemented
+
     def __neg__(self):
         return MultiplyScalar1D(-1, self)
 
-
-cdef class PythonFunction1D(Function1D):
-    """
-    Wraps a python callable object with a Function1D object.
-
-    This class allows a python object to interact with cython code that requires
-    a Function1D object. The python object must implement __call__() expecting
-    one argument.
-
-    This class is intended to be used to transparently wrap python objects that
-    are passed via constructors or methods into cython optimised code. It is not
-    intended that the users should need to directly interact with these wrapping
-    objects. Constructors and methods expecting a Function1D object should be
-    designed to accept a generic python object and then test that object to
-    determine if it is an instance of Function1D. If the object is not a
-    Function1D object it should be wrapped using this class for internal use.
-
-    See also: autowrap_function1d()
-
-    :param object function: the python function to wrap, __call__() function must be
-    implemented on the object.
-    """
-    def __init__(self, object function):
-        self.function = function
-
-    cdef double evaluate(self, double x) except? -1e999:
-        return self.function(x)
-
-
-cdef Function1D autowrap_function1d(object function):
-    """
-    Automatically wraps the supplied python object in a PythonFunction1D object.
-
-    If this function is passed a valid Function1D object, then the Function1D
-    object is simply returned without wrapping.
-
-    This convenience function is provided to simplify the handling of Function1D
-    and python callable objects in constructors, functions and setters.
-    """
-
-    if isinstance(function, Function1D):
-        return <Function1D> function
-    else:
-        return PythonFunction1D(function)
+    def __pow__(object a, object b, object c):
+        if c is not None:
+            # Optimised implementation of pow(a, b, c) not available: fall back
+            # to general implementation
+            return (a ** b) % c
+        if isinstance(a, Function1D):
+            if isinstance(b, Function1D):
+                # a() ** b()
+                return PowFunction1D(<Function1D> a, <Function1D> b)
+            elif isinstance(b, numbers.Real):
+                # a() ** b
+                return PowFunctionScalar1D(<Function1D> a, <double> b)
+        elif isinstance(a, numbers.Real):
+            if isinstance(b, Function1D):
+                # a ** b()
+                return PowScalarFunction1D(<double> a, <Function1D> b)
+        return NotImplemented
 
 
 cdef class AddFunction1D(Function1D):
@@ -245,6 +238,53 @@ cdef class DivideFunction1D(Function1D):
         return self._function1.evaluate(x) / denominator
 
 
+cdef class ModuloFunction1D(Function1D):
+    """
+    A Function1D class that implements the modulo of the results of two Function1D objects: f1() % f2()
+
+    This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
+    Function1D object.
+
+    :param Function1D function1: A Function1D object.
+    :param Function1D function2: A Function1D object.
+    """
+    def __init__(self, function1, function2):
+        self._function1 = autowrap_function1d(function1)
+        self._function2 = autowrap_function1d(function2)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x) except? -1e999:
+        cdef double divisor = self._function2.evaluate(x)
+        if divisor == 0.0:
+            raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
+        return self._function1.evaluate(x) % divisor
+
+
+cdef class PowFunction1D(Function1D):
+    """
+    A Function1D class that implements the pow() operator on two Function1D objects.
+
+    This class is not intended to be used directly, but rather returned as the result of a __pow__() call on a
+    Function1D object.
+
+    :param Function1D function1: A Function1D object.
+    :param Function1D function2: A Function1D object.
+    """
+    def __init__(self, function1, function2):
+        self._function1 = autowrap_function1d(function1)
+        self._function2 = autowrap_function1d(function2)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        cdef double base, exponent
+        base = self._function1.evaluate(x)
+        exponent = self._function2.evaluate(x)
+        if base < 0 and floor(exponent) != exponent:  # Would return a complex value rather than double
+            raise ValueError("Negative base and non-integral exponent is not supported")
+        if base == 0 and exponent < 0:
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+        return base ** exponent
+
+
 cdef class AddScalar1D(Function1D):
     """
     A Function1D class that implements the addition of scalar and the result of a Function1D object: K + f()
@@ -301,7 +341,7 @@ cdef class MultiplyScalar1D(Function1D):
 
 cdef class DivideScalar1D(Function1D):
     """
-    A Function1D class that implements the subtraction of scalar and the result of a Function1D object: K / f()
+    A Function1D class that implements the division of scalar and the result of a Function1D object: K / f()
 
     This class is not intended to be used directly, but rather returned as the result of an __div__() call on a
     Function1D object.
@@ -319,3 +359,92 @@ cdef class DivideScalar1D(Function1D):
         if denominator == 0.0:
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
         return self._value / denominator
+
+
+cdef class ModuloScalarFunction1D(Function1D):
+    """
+    A Function1D class that implements the modulo of scalar and the result of a Function1D object: K % f()
+
+    This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
+    Function1D object.
+
+    :param float value: A double value.
+    :param Function1D function: A Function1D object.
+    """
+    def __init__(self, double value, Function1D function):
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x) except? -1e999:
+        cdef double divisor = self._function.evaluate(x)
+        if divisor == 0.0:
+            raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
+        return self._value % divisor
+
+
+cdef class ModuloFunctionScalar1D(Function1D):
+    """
+    A Function1D class that implements the modulo of the result of a Function1D object and a scalar: f() % K
+
+    This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
+    Function1D object.
+
+    :param Function1D function: A Function1D object.
+    :param float value: A double value.
+    """
+    def __init__(self, Function1D function, double value):
+        if value == 0:
+            raise ValueError("Divisor cannot be zero")
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    @cython.cdivision(True)
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._function.evaluate(x) % self._value
+
+
+cdef class PowScalarFunction1D(Function1D):
+    """
+    A Function1D class that implements the pow of scalar and the result of a Function1D object: K ** f()
+
+    This class is not intended to be used directly, but rather returned as the result of an __pow__() call on a
+    Function1D object.
+
+    :param float value: A double value.
+    :param Function1D function: A Function1D object.
+    """
+    def __init__(self, double value, Function1D function):
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        cdef double exponent = self._function.evaluate(x)
+        if self._value < 0 and floor(exponent) != exponent:
+            raise ValueError("Negative base and non-integral exponent is not supported")
+        if self._value == 0 and exponent < 0:
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+        return self._value ** exponent
+
+
+cdef class PowFunctionScalar1D(Function1D):
+    """
+    A Function1D class that implements the pow of the result of a Function1D object and a scalar: f() ** K
+
+    This class is not intended to be used directly, but rather returned as the result of an __pow__() call on a
+    Function1D object.
+
+    :param Function1D function: A Function1D object.
+    :param float value: A double value.
+    """
+    def __init__(self, Function1D function, double value):
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        cdef double base = self._function.evaluate(x)
+        if base < 0 and floor(self._value) != self._value:
+            raise ValueError("Negative base and non-integral exponent is not supported")
+        if base == 0 and self._value < 0:
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+        return base ** self._value

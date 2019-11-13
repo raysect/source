@@ -1,6 +1,4 @@
-# cython: language_level=3
-
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,14 +27,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .point import Point2D, Point3D
-from .vector import Vector2D, Vector3D
-from .normal import Normal3D
-from .affinematrix import AffineMatrix3D
-from .quaternion import Quaternion
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
-from .units import *
-from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
-from .sampler import *
-from .polygon import triangulate2d
-from .function import *
+"""
+Unit tests for the autowrap_1d function
+"""
+
+import unittest
+from raysect.core.math.function.function1d.autowrap import _autowrap_function1d, PythonFunction1D
+from raysect.core.math.function.function1d.constant import Constant1D
+
+
+class TestAutowrap1D(unittest.TestCase):
+
+    def test_constant(self):
+        function = _autowrap_function1d(5.0)
+        self.assertIsInstance(function, Constant1D, "Autowrapped scalar float is not a Constant1D")
+
+    def test_python_function(self):
+        function = _autowrap_function1d(lambda x: 10*x)
+        self.assertIsInstance(function, PythonFunction1D, "Autowrapped function is not a PythonFunction1D")

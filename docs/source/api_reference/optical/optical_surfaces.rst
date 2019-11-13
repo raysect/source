@@ -53,13 +53,13 @@ Dielectrics
 Modifiers
 ---------
 
-.. autoclass:: raysect.optical.material.Blend
+.. autoclass:: raysect.optical.material.modifiers.Blend
    :show-inheritance:
 
-.. autoclass:: raysect.optical.material.Add
+.. autoclass:: raysect.optical.material.modifiers.Add
    :show-inheritance:
 
-.. autoclass:: raysect.optical.material.Transform
+.. autoclass:: raysect.optical.material.modifiers.VolumeTransform
    :show-inheritance:
 
 .. autoclass:: raysect.optical.material.modifiers.Roughen

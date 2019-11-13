@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,5 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.interpolators.interpolator2dmesh cimport Interpolator2DMesh
-from raysect.core.math.interpolators.discrete2dmesh cimport Discrete2DMesh
+from .base import Function2D
+from .constant import Constant2D
+from .interpolate import *
+from .arg import Arg2D
+from .cmath import *

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2015, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,14 +29,69 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .point import Point2D, Point3D
-from .vector import Vector2D, Vector3D
-from .normal import Normal3D
-from .affinematrix import AffineMatrix3D
-from .quaternion import Quaternion
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
-from .units import *
-from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
-from .sampler import *
-from .polygon import triangulate2d
-from .function import *
+cdef class Function1D:
+    cdef double evaluate(self, double x) except? -1e999
+
+
+cdef class AddFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class SubtractFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class MultiplyFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class DivideFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class PowFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class ModuloFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class AddScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class SubtractScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class MultiplyScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class DivideScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class ModuloScalarFunction1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class ModuloFunctionScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class PowScalarFunction1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class PowFunctionScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function

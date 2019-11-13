@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,18 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport numpy as np
-from raysect.core.math.function.function2d cimport Function2D
-from raysect.core.math.interpolators.common cimport MeshKDTree2D
+from raysect.core.math.function.function3d.base cimport Function3D
 
 
-cdef class Interpolator2DMesh(Function2D):
-
-    cdef:
-        np.ndarray _vertex_data
-        double[::1] _vertex_data_mv
-        MeshKDTree2D _kdtree
-        bint _limit
-        double _default_value
-
-    cdef double evaluate(self, double x, double y) except? -1e999
+cdef class Constant3D(Function3D):
+    cdef double _value

@@ -1,6 +1,4 @@
-# cython: language_level=3
-
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,18 +27,25 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport numpy as np
-from raysect.core.math.function.function2d cimport Function2D
-from raysect.core.math.interpolators.common cimport MeshKDTree2D
+"""
+Unit tests for the Arg2D class.
+"""
 
+import unittest
+from raysect.core.math.function.function2d.arg import Arg2D
 
-cdef class Discrete2DMesh(Function2D):
+# TODO: expand tests to cover the cython interface
+class TestArg2D(unittest.TestCase):
 
-    cdef:
-        np.ndarray _triangle_data
-        double[::1] _triangle_data_mv
-        MeshKDTree2D _kdtree
-        bint _limit
-        double _default_value
+    def test_arg(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                argx = Arg2D("x")
+                argy = Arg2D("y")
+                self.assertEqual(argx(x, y), x, "Arg2D('x') call did not match reference value")
+                self.assertEqual(argy(x, y), y, "Arg2D('y') call did not match reference value")
 
-    cdef double evaluate(self, double x, double y) except? -1e999
+    def test_invalid_inputs(self):
+        with self.assertRaises(ValueError, msg="Arg2D did not raise ValueError with incorrect string"):
+            Arg2D("z")

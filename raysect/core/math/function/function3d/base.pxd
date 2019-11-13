@@ -29,48 +29,69 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class Function1D:
-    cdef double evaluate(self, double x) except? -1e999
+cdef class Function3D:
+    cdef double evaluate(self, double x, double y, double z) except? -1e999
 
 
-cdef class PythonFunction1D(Function1D):
-    cdef public object function
+cdef class AddFunction3D(Function3D):
+    cdef Function3D _function1, _function2
 
 
-cdef Function1D autowrap_function1d(object function)
+cdef class SubtractFunction3D(Function3D):
+    cdef Function3D _function1, _function2
 
 
-cdef class AddFunction1D(Function1D):
-    cdef Function1D _function1, _function2
+cdef class MultiplyFunction3D(Function3D):
+    cdef Function3D _function1, _function2
 
 
-cdef class SubtractFunction1D(Function1D):
-    cdef Function1D _function1, _function2
+cdef class DivideFunction3D(Function3D):
+    cdef Function3D _function1, _function2
 
 
-cdef class MultiplyFunction1D(Function1D):
-    cdef Function1D _function1, _function2
+cdef class ModuloFunction3D(Function3D):
+    cdef Function3D _function1, _function2
 
 
-cdef class DivideFunction1D(Function1D):
-    cdef Function1D _function1, _function2
+cdef class PowFunction3D(Function3D):
+    cdef Function3D _function1, _function2
 
 
-cdef class AddScalar1D(Function1D):
+cdef class AddScalar3D(Function3D):
     cdef double _value
-    cdef Function1D _function
+    cdef Function3D _function
 
 
-cdef class SubtractScalar1D(Function1D):
+cdef class SubtractScalar3D(Function3D):
     cdef double _value
-    cdef Function1D _function
+    cdef Function3D _function
 
 
-cdef class MultiplyScalar1D(Function1D):
+cdef class MultiplyScalar3D(Function3D):
     cdef double _value
-    cdef Function1D _function
+    cdef Function3D _function
 
 
-cdef class DivideScalar1D(Function1D):
+cdef class DivideScalar3D(Function3D):
     cdef double _value
-    cdef Function1D _function
+    cdef Function3D _function
+
+
+cdef class ModuloScalarFunction3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class ModuloFunctionScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class PowScalarFunction3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class PowFunctionScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
