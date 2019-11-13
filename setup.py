@@ -8,6 +8,7 @@ import multiprocessing
 use_cython = True
 force = False
 profile = False
+line_profile = False
 
 if "--skip-cython" in sys.argv:
     use_cython = False
@@ -21,6 +22,10 @@ if "--profile" in sys.argv:
     profile = True
     del sys.argv[sys.argv.index("--profile")]
 
+if "--line-profile" in sys.argv:
+    line_profile = True
+    del sys.argv[sys.argv.index("--line-profile")]
+
 source_paths = ['raysect', 'demos']
 compilation_includes = [".", numpy.get_include()]
 compilation_args = []
@@ -29,6 +34,11 @@ cython_directives = {
     'language_level': 3
 }
 setup_path = path.dirname(path.abspath(__file__))
+
+if line_profile:
+    compilation_args.append("-DCYTHON_TRACE=1")
+    compilation_args.append("-DCYTHON_TRACE_NOGIL=1")
+    cython_directives["linetrace"] = True
 
 if use_cython:
 

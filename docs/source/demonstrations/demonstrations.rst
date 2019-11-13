@@ -151,7 +151,7 @@ Optics
      - Preview
    * - :ref:`Prism dispersion <demo_prism_dispersion>`
      - White light is split into its component colours as it passes through a glass prism.
-     - .. image:: optics/prism_720x360.jpg
+     - .. image:: optics/prism_720x405.png
           :height: 150px
           :width: 150px
    * - :ref:`Etendue <demo_etendue_of_pinhole>`
