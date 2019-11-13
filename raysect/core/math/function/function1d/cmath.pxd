@@ -44,6 +44,18 @@ cdef class Cos1D(Function1D):
     cdef Function1D _function
 
 
+cdef class Tan1D(Function1D):
+    cdef Function1D _function
+
+
+cdef class Asin1D(Function1D):
+    cdef Function1D _function
+
+
+cdef class Acos1D(Function1D):
+    cdef Function1D _function
+
+
 cdef class Atan1D(Function1D):
     cdef Function1D _function
 
