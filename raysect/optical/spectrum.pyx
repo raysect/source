@@ -504,6 +504,30 @@ cdef class Spectrum(SpectralFunction):
         for index in range(self.samples_mv.shape[0]):
             self.samples_mv[index] /= array[index]
 
+    # low level spectrum maths functions
+    cdef void add_spectrum(self, Spectrum spectrum) nogil:
+        self.add_array(spectrum.samples_mv)
+
+    cdef void sub_spectrum(self, Spectrum spectrum) nogil:
+        self.sub_array(spectrum.samples_mv)
+
+    cdef void mul_spectrum(self, Spectrum spectrum) nogil:
+        self.mul_array(spectrum.samples_mv)
+
+    cdef void div_spectrum(self, Spectrum spectrum) nogil:
+        self.div_array(spectrum.samples_mv)
+
+    # multiply and add
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    cdef void mad_array(self, double[::1] a, double[::1] b) nogil:
+
+        cdef npy_intp index
+        for index in range(self.samples_mv.shape[0]):
+            self.samples_mv[index] += a[index] * b[index]    # low level array maths functions
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
@@ -513,16 +537,6 @@ cdef class Spectrum(SpectralFunction):
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):
             self.samples_mv[index] += scalar * array[index]
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    @cython.initializedcheck(False)
-    cdef void mad_array(self, double[::1] a, double[::1] b) nogil:
-
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] += a[index] * b[index]
 
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int bins):

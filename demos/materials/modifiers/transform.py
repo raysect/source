@@ -1,10 +1,7 @@
-
-# External imports
 from matplotlib.pyplot import *
 from numpy import sqrt, cos
 import time
 
-# Raysect imports
 from raysect.optical import World, translate, rotate, Point3D
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
 from raysect.optical.material import VolumeTransform, InhomogeneousVolumeEmitter
@@ -56,12 +53,12 @@ box_rotated = Box(
 floor = Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=RoughTitanium(0.1))
 
 # camera
-rgb_pipeline = RGBPipeline2D(display_update_time=5)
-sampler = RGBAdaptiveSampler2D(rgb_pipeline, min_samples=100, fraction=0.2)
-camera = PinholeCamera((512, 256), parent=world, transform=translate(0, 6.5, -10) * rotate(0, -30, 0), pipelines=[rgb_pipeline], frame_sampler=sampler)
-camera.spectral_bins = 15
+rgb = RGBPipeline2D()
+sampler = RGBAdaptiveSampler2D(rgb, min_samples=100, fraction=0.2, cutoff=0.01)
+camera = PinholeCamera((1024, 512), parent=world, transform=translate(0, 6.5, -10) * rotate(0, -30, 0), pipelines=[rgb], frame_sampler=sampler)
 camera.spectral_rays = 1
-camera.pixel_samples = 100
+camera.spectral_bins = 15
+camera.pixel_samples = 250
 
 # integration resolution
 box_unshifted.material.integrator.step = 0.05
@@ -71,14 +68,17 @@ box_rotated.material.material.integrator.step = 0.05
 
 # start ray tracing
 ion()
+name = 'modifier_transform'
 timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-for p in range(1, 1000):
-    print("Rendering pass {}...".format(p))
+render_pass = 1
+while not camera.render_complete:
+
+    print("Rendering pass {}...".format(render_pass))
     camera.observe()
-    rgb_pipeline.save("modifier_volume_transform_{}_pass_{}.png".format(timestamp, p))
+    rgb.save("{}_{}_pass_{}.png".format(name, timestamp, render_pass))
     print()
 
-# display final result
+    render_pass += 1
+
 ioff()
-rgb_pipeline.display()
-show()
+rgb.display()

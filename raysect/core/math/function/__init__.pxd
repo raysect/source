@@ -29,8 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.function1d cimport Function1D, autowrap_function1d
-from raysect.core.math.function.function2d cimport Function2D, autowrap_function2d
-from raysect.core.math.function.function3d cimport Function3D, autowrap_function3d
+from raysect.core.math.function.function1d cimport *
+from raysect.core.math.function.function2d cimport *
+from raysect.core.math.function.function3d cimport *
 
 

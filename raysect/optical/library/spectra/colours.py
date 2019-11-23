@@ -44,6 +44,7 @@ def _top_hat_spectralfn(center, width, rolloff):
 
     return InterpolatedSF([start, base_min, top_min, top_max, base_max, end], [0, 0, 1, 1, 0, 0], normalise=True)
 
+
 purple = _top_hat_spectralfn(423.1, 5.0, 1.0)
 blue = _top_hat_spectralfn(469.2, 5.0, 1.0)
 light_blue = _top_hat_spectralfn(478.8, 5.0, 1.0)

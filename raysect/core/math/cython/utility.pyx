@@ -303,7 +303,7 @@ cdef double average(double[::1] x, double[::1] y, double x0, double x1) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double maximum(double[::1] data) nogil:
+cdef double maximum(double[:] data) nogil:
     """
     Return the maximum value in the buffer data.
 
@@ -311,7 +311,7 @@ cdef double maximum(double[::1] data) nogil:
     for objects supporting the buffer interface where each element is a
     double.
 
-    :param double data: Memoryview of an array of 1D data.
+    :param double data: Memoryview of a data array.
     :rtype: double
     """
 
@@ -327,7 +327,7 @@ cdef double maximum(double[::1] data) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double minimum(double[::1] data) nogil:
+cdef double minimum(double[:] data) nogil:
     """
     Return the minimum value in the buffer data.
 
@@ -335,7 +335,7 @@ cdef double minimum(double[::1] data) nogil:
     for objects supporting the buffer interface where each element is a
     double.
 
-    :param double data: Memoryview of an array of 1D data.
+    :param double data: Memoryview of a data array.
     :rtype: double
     """
     cdef:
@@ -349,7 +349,7 @@ cdef double minimum(double[::1] data) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double peak_to_peak(double[::1] data) nogil:
+cdef double peak_to_peak(double[:] data) nogil:
     """
     Return the peak-to-peak value in the buffer data.
 
@@ -357,7 +357,7 @@ cdef double peak_to_peak(double[::1] data) nogil:
     for objects supporting the buffer interface where each element is a
     double.
 
-    :param double data: Memoryview of an array of 1D data.
+    :param double data: Memoryview of a data array.
     :rtype: double
     """
 

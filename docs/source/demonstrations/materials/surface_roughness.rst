@@ -8,7 +8,7 @@ Demonstration of the roughen material modifier. The back row is aluminium and
 the front row is glass. The surface roughness is increased from left to right
 from 0 to 50%.
 
-.. literalinclude:: ../../../../demos/materials/material_roughness_scan.py
+.. literalinclude:: ../../../../demos/materials/modifiers/roughen.py
 
 .. image:: surface_roughness.jpg
    :align: center
