@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numbers
+from cpython.object cimport Py_LT, Py_EQ, Py_GT, Py_LE, Py_NE, Py_GE
 cimport cython
 from libc.math cimport floor
 from .autowrap cimport autowrap_function2d
@@ -162,6 +163,39 @@ cdef class Function2D:
                 return PowScalarFunction2D(<double> a, b)
         return NotImplemented
 
+    def __richcmp__(self, object other, int op):
+        if is_callable(other):
+            if op == Py_EQ:
+                return EqualsFunction2D(self, other)
+            if op == Py_NE:
+                return NotEqualsFunction2D(self, other)
+            if op == Py_LT:
+                return LessThanFunction2D(self, other)
+            if op == Py_GT:
+                return GreaterThanFunction2D(self, other)
+            if op == Py_LE:
+                return LessEqualsFunction2D(self, other)
+            if op == Py_GE:
+                return GreaterEqualsFunction2D(self, other)
+        if isinstance(other, numbers.Real):
+            if op == Py_EQ:
+                return EqualsScalar2D(<double> other, self)
+            if op == Py_NE:
+                return NotEqualsScalar2D(<double> other, self)
+            if op == Py_LT:
+                # f() < K -> K > f
+                return GreaterThanScalar2D(<double> other, self)
+            if op == Py_GT:
+                # f() > K -> K < f
+                return LessThanScalar2D(<double> other, self)
+            if op == Py_LE:
+                # f() <= K -> K >= f
+                return GreaterEqualsScalar2D(<double> other, self)
+            if op == Py_GE:
+                # f() >= K -> K <= f
+                return LessEqualsScalar2D(<double> other, self)
+        return NotImplemented
+
 
 cdef class AddFunction2D(Function2D):
     """
@@ -288,6 +322,114 @@ cdef class PowFunction2D(Function2D):
         return base ** exponent
 
 
+cdef class EqualsFunction2D(Function2D):
+    """
+    A Function2D class that tests the equality of the results of two Function2D objects: f1() == f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __eq__() call on a
+    Function2D object.
+
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function2d(function1)
+        self._function2 = autowrap_function2d(function2)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._function1.evaluate(x, y) == self._function2.evaluate(x, y)
+
+
+cdef class NotEqualsFunction2D(Function2D):
+    """
+    A Function2D class that tests the inequality of the results of two Function2D objects: f1() != f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ne__() call on a
+    Function2D object.
+
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function2d(function1)
+        self._function2 = autowrap_function2d(function2)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._function1.evaluate(x, y) != self._function2.evaluate(x, y)
+
+
+cdef class LessThanFunction2D(Function2D):
+    """
+    A Function2D class that implements < of the results of two Function2D objects: f1() < f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __lt__() call on a
+    Function2D object.
+
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function2d(function1)
+        self._function2 = autowrap_function2d(function2)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._function1.evaluate(x, y) < self._function2.evaluate(x, y)
+
+
+cdef class GreaterThanFunction2D(Function2D):
+    """
+    A Function2D class that implements > of the results of two Function2D objects: f1() > f2()
+
+    This class is not intended to be used directly, but rather returned as the result of a __gt__() call on a
+    Function2D object.
+
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function2d(function1)
+        self._function2 = autowrap_function2d(function2)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._function1.evaluate(x, y) > self._function2.evaluate(x, y)
+
+
+cdef class LessEqualsFunction2D(Function2D):
+    """
+    A Function2D class that implements <= of the results of two Function2D objects: f1() <= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __le__() call on a
+    Function2D object.
+
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function2d(function1)
+        self._function2 = autowrap_function2d(function2)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._function1.evaluate(x, y) <= self._function2.evaluate(x, y)
+
+
+cdef class GreaterEqualsFunction2D(Function2D):
+    """
+    A Function2D class that implements >= of the results of two Function2D objects: f1() >= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ge__() call on a
+    Function2D object.
+
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function2d(function1)
+        self._function2 = autowrap_function2d(function2)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._function1.evaluate(x, y) >= self._function2.evaluate(x, y)
+
+
 cdef class AddScalar2D(Function2D):
     """
     A Function2D class that implements the addition of scalar and the result of a Function2D object: K + f()
@@ -315,7 +457,7 @@ cdef class SubtractScalar2D(Function2D):
     Function2D object.
 
     :param value: A double value.
-    :param function: A Function2D object.
+    :param function: A Function2D object or Python callable.
     """
 
     def __init__(self, double value, object function):
@@ -334,7 +476,7 @@ cdef class MultiplyScalar2D(Function2D):
     Function2D object.
 
     :param value: A double value.
-    :param function: A Function2D object.
+    :param function: A Function2D object or Python callable.
     """
 
     def __init__(self, double value, object function):
@@ -353,7 +495,7 @@ cdef class DivideScalar2D(Function2D):
     Function2D object.
 
     :param value: A double value.
-    :param function: A Function2D object.
+    :param function: A Function2D object or Python callable.
     """
 
     def __init__(self, double value, object function):
@@ -455,3 +597,111 @@ cdef class PowFunctionScalar2D(Function2D):
         if base == 0 and self._value < 0:
             raise ZeroDivisionError("0.0 cannot be raised to a negative power")
         return base ** self._value
+
+
+cdef class EqualsScalar2D(Function2D):
+    """
+    A Function2D class that tests the equality of a scalar and the result of a Function2D object: K == f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __eq__() call on a
+    Function2D object.
+
+    :param value: A double value.
+    :param object function: A Function2D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._value == self._function.evaluate(x, y)
+
+
+cdef class NotEqualsScalar2D(Function2D):
+    """
+    A Function2D class that tests the inequality of a scalar and the result of a Function2D object: K != f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ne__() call on a
+    Function2D object.
+
+    :param value: A double value.
+    :param object function: A Function2D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._value != self._function.evaluate(x, y)
+
+
+cdef class LessThanScalar2D(Function2D):
+    """
+    A Function2D class that implements < of a scalar and the result of a Function2D object: K < f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __lt__() call on a
+    Function2D object.
+
+    :param value: A double value.
+    :param object function: A Function2D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._value < self._function.evaluate(x, y)
+
+
+cdef class GreaterThanScalar2D(Function2D):
+    """
+    A Function2D class that implements > of a scalar and the result of a Function2D object: K > f2()
+
+    This class is not intended to be used directly, but rather returned as the result of a __gt__() call on a
+    Function2D object.
+
+    :param value: A double value.
+    :param object function: A Function2D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._value > self._function.evaluate(x, y)
+
+
+cdef class LessEqualsScalar2D(Function2D):
+    """
+    A Function2D class that implements <= of a scalar and the result of a Function2D object: K <= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __le__() call on a
+    Function2D object.
+
+    :param value: A double value.
+    :param object function: A Function2D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._value <= self._function.evaluate(x, y)
+
+
+cdef class GreaterEqualsScalar2D(Function2D):
+    """
+    A Function2D class that implements >= of a scalar and the result of a Function2D object: K >= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ge__() call on a
+    Function2D object.
+
+    :param value: A double value.
+    :param object function: A Function2D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return self._value >= self._function.evaluate(x, y)

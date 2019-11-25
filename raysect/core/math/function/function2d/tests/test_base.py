@@ -137,6 +137,126 @@ class TestFunction2D(unittest.TestCase):
             r4 = 0 ** self.f1
             r4(-1, 0)
 
+    def test_richcmp_scalar(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                ref_value = self.ref1(x, y)
+                higher_value = ref_value + abs(ref_value) + 1
+                lower_value = ref_value - abs(ref_value) - 1
+                self.assertEqual(
+                    (self.f1 == ref_value)(x, y), 1.0,
+                    msg="Function2D equals scalar (f() == K) did not return true when it should."
+                )
+                self.assertEqual(
+                    (ref_value == self.f1)(x, y), 1.0,
+                    msg="Scalar equals Function2D (K == f()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 == higher_value)(x, y), 0.0,
+                    msg="Function2D equals scalar (f() == K) did not return false when it should."
+                )
+                self.assertEqual(
+                    (higher_value == self.f1)(x, y), 0.0,
+                    msg="Scalar equals Function2D (K == f()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 != higher_value)(x, y), 1.0,
+                    msg="Function2D not equals scalar (f() != K) did not return true when it should."
+                )
+                self.assertEqual(
+                    (higher_value != self.f1)(x, y), 1.0,
+                    msg="Scalar not equals Function2D (K != f()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 != ref_value)(x, y), 0.0,
+                    msg="Function2D not equals scalar (f() != K) did not return false when it should."
+                )
+                self.assertEqual(
+                    (ref_value != self.f1)(x, y), 0.0,
+                    msg="Scalar not equals Function2D (K != f()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 < higher_value)(x, y), 1.0,
+                    msg="Function2D less than scalar (f() < K) did not return true when it should."
+                )
+                self.assertEqual(
+                    (lower_value < self.f1)(x, y), 1.0,
+                    msg="Scalar less than Function2D (K < f()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 < lower_value)(x, y), 0.0,
+                    msg="Function2D less than scalar (f() < K) did not return false when it should."
+                )
+                self.assertEqual(
+                    (higher_value < self.f1)(x, y), 0.0,
+                    msg="Scalar less than Function2D (K < f()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 > lower_value)(x, y), 1.0,
+                    msg="Function2D greater than scalar (f() > K) did not return true when it should."
+                )
+                self.assertEqual(
+                    (higher_value > self.f1)(x, y), 1.0,
+                    msg="Scalar greater than Function2D (K > f()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 > higher_value)(x, y), 0.0,
+                    msg="Function2D greater than scalar (f() > K) did not return false when it should."
+                )
+                self.assertEqual(
+                    (lower_value > self.f1)(x, y), 0.0,
+                    msg="Scalar greater than Function2D (K > f()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 <= higher_value)(x, y), 1.0,
+                    msg="Function2D less equals scalar (f() <= K) did not return true when it should."
+                )
+                self.assertEqual(
+                    (lower_value <= self.f1)(x, y), 1.0,
+                    msg="Scalar less equals Function2D (K <= f()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 <= ref_value)(x, y), 1.0,
+                    msg="Function2D less equals scalar (f() <= K) did not return true when it should."
+                )
+                self.assertEqual(
+                    (ref_value <= self.f1)(x, y), 1.0,
+                    msg="Scalar less equals Function2D (K <= f()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 <= lower_value)(x, y), 0.0,
+                    msg="Function2D less equals scalar (f() <= K) did not return false when it should."
+                )
+                self.assertEqual(
+                    (higher_value <= self.f1)(x, y), 0.0,
+                    msg="Scalar less equals Function2D (K <= f()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 >= lower_value)(x, y), 1.0,
+                    msg="Function2D greater equals scalar (f() >= K) did not return true when it should."
+                )
+                self.assertEqual(
+                    (higher_value >= self.f1)(x, y), 1.0,
+                    msg="Scalar greater equals Function2D (K >= f()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 >= ref_value)(x, y), 1.0,
+                    msg="Function2D greater equals scalar (f() >= K) did not return true when it should."
+                )
+                self.assertEqual(
+                    (ref_value >= self.f1)(x, y), 1.0,
+                    msg="Scalar greater equals Function2D (K >= f()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 >= higher_value)(x, y), 0.0,
+                    msg="Function2D greater equals scalar (f() >= K) did not return false when it should."
+                )
+                self.assertEqual(
+                    (lower_value >= self.f1)(x, y), 0.0,
+                    msg="Scalar greater equals Function2D (K >= f()) did not return false when it should."
+                )
+
     def test_add_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.f1 + self.f2
@@ -238,3 +358,200 @@ class TestFunction2D(unittest.TestCase):
                 self.assertEqual(r4(x, y), math.fmod(self.ref2(x, y) ** self.ref1(x, y), self.ref2(x, y)), "Function2D 3 argument pow(f2(), f1(), f2()) did not match reference value.")
                 self.assertEqual(r5(x, y), math.fmod(self.ref2(x, y) ** self.ref1(x, y), self.ref2(x, y)), "Function2D 3 argument pow(f2(), p1(), p2()) did not match reference value.")
                 self.assertEqual(r6(x, y), math.fmod(self.ref2(x, y) ** self.ref1(x, y), self.ref2(x, y)), "Function2D 3 argument pow(p2(), f1(), f2()) did not match reference value.")
+
+    def test_richcmp_function_callable(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                ref_value = self.ref1
+                higher_value = lambda x, y: self.ref1(x, y) + abs(self.ref1(x, y)) + 1
+                lower_value = lambda x, y: self.ref1(x, y) - abs(self.ref1(x, y)) - 1
+                self.assertEqual(
+                    (self.f1 == ref_value)(x, y), 1.0,
+                    msg="Function2D equals callable (f1() == f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 == higher_value)(x, y), 0.0,
+                    msg="Function2D equals callable (f1() == f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 != higher_value)(x, y), 1.0,
+                    msg="Function2D not equals callable (f1() != f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 != ref_value)(x, y), 0.0,
+                    msg="Function2D not equals callable (f1() != f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 < higher_value)(x, y), 1.0,
+                    msg="Function2D less than callable (f1() < f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 < lower_value)(x, y), 0.0,
+                    msg="Function2D less than callable (f1() < f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 > lower_value)(x, y), 1.0,
+                    msg="Function2D greater than callable (f1() > f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 > higher_value)(x, y), 0.0,
+                    msg="Function2D greater than callable (f1() > f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 <= higher_value)(x, y), 1.0,
+                    msg="Function2D less equals callable (f1() <= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 <= ref_value)(x, y), 1.0,
+                    msg="Function2D less equals callable (f1() <= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 <= lower_value)(x, y), 0.0,
+                    msg="Function2D less equals callable (f1() <= f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 >= lower_value)(x, y), 1.0,
+                    msg="Function2D equals callable (f1() >= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 >= ref_value)(x, y), 1.0,
+                    msg="Function2D greater equals callable (f1() >= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 >= higher_value)(x, y), 0.0,
+                    msg="Function2D equals callable (f1() >= f2()) did not return false when it should."
+                )
+
+    def test_richcmp_callable_function(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                ref_value = self.ref1
+                higher_value = lambda x, y: self.ref1(x, y) + abs(self.ref1(x, y)) + 1
+                lower_value = lambda x, y: self.ref1(x, y) - abs(self.ref1(x, y)) - 1
+                self.assertEqual(
+                    (ref_value == self.f1)(x, y), 1.0,
+                    msg="Callable equals Function2D (f1() == f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (higher_value == self.f1)(x, y), 0.0,
+                    msg="Callable equals Function2D (f1() == f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (higher_value != self.f1)(x, y), 1.0,
+                    msg="Callable not equals Function2D (f1() != f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (ref_value != self.f1)(x, y), 0.0,
+                    msg="Callable not equals Function2D (f1() != f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (lower_value < self.f1)(x, y), 1.0,
+                    msg="Callable less than Function2D (f1() < f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (higher_value < self.f1)(x, y), 0.0,
+                    msg="Callable less than Function2D (f1() < f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (higher_value > self.f1)(x, y), 1.0,
+                    msg="Callable greater than Function2D (f1() > f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (lower_value > self.f1)(x, y), 0.0,
+                    msg="Callable greater than Function2D (f1() > f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (lower_value <= self.f1)(x, y), 1.0,
+                    msg="Callable less equals Function2D (f1() <= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (ref_value <= self.f1)(x, y), 1.0,
+                    msg="Callable less equals Function2D (f1() <= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (higher_value <= self.f1)(x, y), 0.0,
+                    msg="Callable less equals Function2D (f1() <= f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (higher_value >= self.f1)(x, y), 1.0,
+                    msg="Callable equals Function2D (f1() >= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (ref_value >= self.f1)(x, y), 1.0,
+                    msg="Callable greater equals Function2D (f1() >= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (lower_value >= self.f1)(x, y), 0.0,
+                    msg="Callable equals Function2D (f1() >= f2()) did not return false when it should."
+                )
+
+    def test_richcmp_function_function(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                ref_value = self.f1
+                # Without Function2D.__abs__, manually ensure greater and less values are suitable
+                if self.f1(x, y) >= 0:
+                    higher_value = self.f1 + self.f1 + 1
+                    lower_value = self.f1 - self.f1 - 1
+                else:
+                    higher_value = self.f1 - self.f1 + 1
+                    lower_value = self.f1 + self.f1 - 1
+                self.assertEqual(
+                    (self.f1 == ref_value)(x, y), 1.0,
+                    msg="Function2D equals Function2D (f1() == f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 == higher_value)(x, y), 0.0,
+                    msg="Function2D equals Function2D (f1() == f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 != higher_value)(x, y), 1.0,
+                    msg="Function2D not equals Function2D (f1() != f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 != ref_value)(x, y), 0.0,
+                    msg="Function2D not equals Function2D (f1() != f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 < higher_value)(x, y), 1.0,
+                    msg="Function2D less than Function2D (f1() < f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 < lower_value)(x, y), 0.0,
+                    msg="Function2D less than Function2D (f1() < f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 > lower_value)(x, y), 1.0,
+                    msg="Function2D greater than Function2D (f1() > f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 > higher_value)(x, y), 0.0,
+                    msg="Function2D greater than Function2D (f1() > f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 <= higher_value)(x, y), 1.0,
+                    msg="Function2D less equals Function2D (f1() <= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 <= ref_value)(x, y), 1.0,
+                    msg="Function2D less equals Function2D (f1() <= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 <= lower_value)(x, y), 0.0,
+                    msg="Function2D less equals Function2D (f1() <= f2()) did not return false when it should."
+                )
+                self.assertEqual(
+                    (self.f1 >= lower_value)(x, y), 1.0,
+                    msg="Function2D equals Function2D (f1() >= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 >= ref_value)(x, y), 1.0,
+                    msg="Function2D greater equals Function2D (f1() >= f2()) did not return true when it should."
+                )
+                self.assertEqual(
+                    (self.f1 >= higher_value)(x, y), 0.0,
+                    msg="Function2D equals Function2D (f1() >= f2()) did not return false when it should."
+                )
