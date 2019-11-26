@@ -198,8 +198,12 @@ class TestFunction1D(unittest.TestCase):
         r3 = self.f1 ** self.p2
         for x in v:
             if self.ref1(x) < 0 and not float(self.ref2(x)).is_integer():
-                with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral"):
+                with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral (1/3)"):
                     r1(x)
+                with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral (2/3)"):
+                    r2(x)
+                with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral (3/3)"):
+                    r3(x)
             else:
                 self.assertAlmostEqual(r1(x), self.ref1(x) ** self.ref2(x), 15, "Function1D power function (f1() ** f2()) did not match reference function value.")
                 self.assertAlmostEqual(r2(x), self.ref1(x) ** self.ref2(x), 15, "Function1D power function (p1() ** f2()) did not match reference function value.")
