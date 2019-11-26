@@ -40,57 +40,60 @@ class TestFunction1D(unittest.TestCase):
 
     def setUp(self):
 
-        self.f1 = PythonFunction1D(lambda x: 10*x)
-        self.f2 = PythonFunction1D(lambda x: x*x)
+        self.p1 = lambda x: 10*x
+        self.p2 = lambda x: x*x
 
-    def f1_ref(self, x):
+        self.f1 = PythonFunction1D(self.p1)
+        self.f2 = PythonFunction1D(self.p2)
+
+    def ref1(self, x):
         return 10*x
 
-    def f2_ref(self, x):
+    def ref2(self, x):
         return x*x
 
     def test_call(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
-            self.assertEqual(self.f1(x), self.f1_ref(x), "Function1D call did not match reference function value.")
+            self.assertEqual(self.f1(x), self.ref1(x), "Function1D call did not match reference function value.")
 
     def test_negate(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r = -self.f1
         for x in v:
-            self.assertEqual(r(x), -self.f1_ref(x), "Function1D negate did not match reference function value.")
+            self.assertEqual(r(x), -self.ref1(x), "Function1D negate did not match reference function value.")
 
     def test_add_scalar(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = 8 + self.f1
         r2 = self.f1 + 65
         for x in v:
-            self.assertEqual(r1(x), 8 + self.f1_ref(x), "Function1D add scalar (K + f()) did not match reference function value.")
-            self.assertEqual(r2(x), self.f1_ref(x) + 65, "Function1D add scalar (f() + K) did not match reference function value.")
+            self.assertEqual(r1(x), 8 + self.ref1(x), "Function1D add scalar (K + f()) did not match reference function value.")
+            self.assertEqual(r2(x), self.ref1(x) + 65, "Function1D add scalar (f() + K) did not match reference function value.")
 
     def test_sub_scalar(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = 8 - self.f1
         r2 = self.f1 - 65
         for x in v:
-            self.assertEqual(r1(x), 8 - self.f1_ref(x), "Function1D subtract scalar (K - f()) did not match reference function value.")
-            self.assertEqual(r2(x), self.f1_ref(x) - 65, "Function1D subtract scalar (f() - K) did not match reference function value.")
+            self.assertEqual(r1(x), 8 - self.ref1(x), "Function1D subtract scalar (K - f()) did not match reference function value.")
+            self.assertEqual(r2(x), self.ref1(x) - 65, "Function1D subtract scalar (f() - K) did not match reference function value.")
 
     def test_mul_scalar(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = 5 * self.f1
         r2 = self.f1 * -7.8
         for x in v:
-            self.assertEqual(r1(x), 5 * self.f1_ref(x), "Function1D multiply scalar (K * f()) did not match reference function value.")
-            self.assertEqual(r2(x), self.f1_ref(x) * -7.8, "Function1D multiply scalar (f() * K) did not match reference function value.")
+            self.assertEqual(r1(x), 5 * self.ref1(x), "Function1D multiply scalar (K * f()) did not match reference function value.")
+            self.assertEqual(r2(x), self.ref1(x) * -7.8, "Function1D multiply scalar (f() * K) did not match reference function value.")
 
     def test_div_scalar(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e49]
         r1 = 5 / self.f1
         r2 = self.f1 / -7.8
         for x in v:
-            self.assertEqual(r1(x), 5 / self.f1_ref(x), "Function1D divide scalar (K / f()) did not match reference function value.")
-            self.assertAlmostEqual(r2(x), self.f1_ref(x) / -7.8, delta=abs(r2(x)) * 1e-12, msg="Function1D divide scalar (f() / K) did not match reference function value.")
+            self.assertEqual(r1(x), 5 / self.ref1(x), "Function1D divide scalar (K / f()) did not match reference function value.")
+            self.assertAlmostEqual(r2(x), self.ref1(x) / -7.8, delta=abs(r2(x)) * 1e-12, msg="Function1D divide scalar (f() / K) did not match reference function value.")
 
         r = 5 / self.f1
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when function returns zero."):
@@ -104,8 +107,8 @@ class TestFunction1D(unittest.TestCase):
         r1 = 5 % self.f1
         r2 = self.f1 % -7.8
         for x in v:
-            self.assertAlmostEqual(r1(x), math.fmod(5, self.f1_ref(x)), 15, "Function1D modulo scalar (K % f()) did not match reference function value.")
-            self.assertAlmostEqual(r2(x), math.fmod(self.f1_ref(x), -7.8), 15, "Function1D modulo scalar (f() % K) did not match reference function value.")
+            self.assertAlmostEqual(r1(x), math.fmod(5, self.ref1(x)), 15, "Function1D modulo scalar (K % f()) did not match reference function value.")
+            self.assertAlmostEqual(r2(x), math.fmod(self.ref1(x), -7.8), 15, "Function1D modulo scalar (f() % K) did not match reference function value.")
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when function returns 0"):
             r1(0)
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when modulo scalar is 0"):
@@ -117,15 +120,15 @@ class TestFunction1D(unittest.TestCase):
         r2 = self.f1 ** -7.8
         r3 = (-5) ** self.f1
         for x in v:
-            self.assertAlmostEqual(r1(x), 5 ** self.f1_ref(x), 15, "Function1D power scalar (K ** f()) did not match reference function value.")
-            if self.f1_ref(x) < 0:
+            self.assertAlmostEqual(r1(x), 5 ** self.ref1(x), 15, "Function1D power scalar (K ** f()) did not match reference function value.")
+            if self.ref1(x) < 0:
                 with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral"):
                     r2(x)
-            elif not float(self.f1_ref(x)).is_integer():
+            elif not float(self.ref1(x)).is_integer():
                 with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral"):
                     r3(x)
             else:
-                self.assertAlmostEqual(r2(x), self.f1_ref(x) ** -7.8, 15, "Function1D power scalar (f() ** K) did not match reference function value.")
+                self.assertAlmostEqual(r2(x), self.ref1(x) ** -7.8, 15, "Function1D power scalar (f() ** K) did not match reference function value.")
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when base is 0 and exponent negative"):
             r2(0)
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when base is 0 and exponent negative"):
@@ -134,61 +137,91 @@ class TestFunction1D(unittest.TestCase):
 
     def test_add_function1d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
-        r = self.f1 + self.f2
+        r1 = self.f1 + self.f2
+        r2 = self.p1 + self.f2
+        r3 = self.f1 + self.p2
         for x in v:
-            self.assertEqual(r(x), self.f1_ref(x) + self.f2_ref(x), "Function1D add function (f1() + f2()) did not match reference function value.")
+            self.assertEqual(r1(x), self.ref1(x) + self.ref2(x), "Function1D add function (f1() + f2()) did not match reference function value.")
+            self.assertEqual(r2(x), self.ref1(x) + self.ref2(x), "Function1D add function (p1() + f2()) did not match reference function value.")
+            self.assertEqual(r3(x), self.ref1(x) + self.ref2(x), "Function1D add function (f1() + p2()) did not match reference function value.")
 
     def test_sub_function1d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
-        r = self.f1 - self.f2
+        r1 = self.f1 - self.f2
+        r2 = self.p1 - self.f2
+        r3 = self.f1 - self.p2
         for x in v:
-            self.assertEqual(r(x), self.f1_ref(x) - self.f2_ref(x), "Function1D subtract function (f1() - f2()) did not match reference function value.")
+            self.assertEqual(r1(x), self.ref1(x) - self.ref2(x), "Function1D subtract function (f1() - f2()) did not match reference function value.")
+            self.assertEqual(r2(x), self.ref1(x) - self.ref2(x), "Function1D subtract function (p1() - f2()) did not match reference function value.")
+            self.assertEqual(r3(x), self.ref1(x) - self.ref2(x), "Function1D subtract function (f1() - p2()) did not match reference function value.")
 
     def test_mul_function1d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
-        r = self.f1 * self.f2
+        r1 = self.f1 * self.f2
+        r2 = self.p1 * self.f2
+        r3 = self.f1 * self.p2
         for x in v:
-            self.assertEqual(r(x), self.f1_ref(x) * self.f2_ref(x), "Function1D multiply function (f1() * f2()) did not match reference function value.")
+            self.assertEqual(r1(x), self.ref1(x) * self.ref2(x), "Function1D multiply function (f1() * f2()) did not match reference function value.")
+            self.assertEqual(r2(x), self.ref1(x) * self.ref2(x), "Function1D multiply function (p1() * f2()) did not match reference function value.")
+            self.assertEqual(r3(x), self.ref1(x) * self.ref2(x), "Function1D multiply function (f1() * p2()) did not match reference function value.")
 
     def test_div_function1d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e49]
-        r = self.f1 / self.f2
+        r1 = self.f1 / self.f2
+        r2 = self.p1 / self.f2
+        r3 = self.f1 / self.p2
         for x in v:
-            self.assertAlmostEqual(r(x), self.f1_ref(x) / self.f2_ref(x), delta=abs(r(x)) * 1e-12, msg="Function1D divide function (f1() / f2()) did not match reference function value.")
+            self.assertAlmostEqual(r1(x), self.ref1(x) / self.ref2(x), delta=abs(r1(x)) * 1e-12, msg="Function1D divide function (f1() / f2()) did not match reference function value.")
+            self.assertAlmostEqual(r2(x), self.ref1(x) / self.ref2(x), delta=abs(r2(x)) * 1e-12, msg="Function1D divide function (p1() / f2()) did not match reference function value.")
+            self.assertAlmostEqual(r3(x), self.ref1(x) / self.ref2(x), delta=abs(r3(x)) * 1e-12, msg="Function1D divide function (f1() / p2()) did not match reference function value.")
 
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when function returns zero."):
-            r(0)
+            r1(0)
 
     def test_mod_function1d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e9]
-        r = self.f1 % self.f2
+        r1 = self.f1 % self.f2
+        r2 = self.p1 % self.f2
+        r3 = self.f1 % self.p2
         for x in v:
-            self.assertAlmostEqual(r(x), math.fmod(self.f1_ref(x), self.f2_ref(x)), delta=abs(r(x)) * 1e-12, msg="Function1D modulo function (f1() % f2()) did not match reference function value.")
+            self.assertAlmostEqual(r1(x), math.fmod(self.ref1(x), self.ref2(x)), delta=abs(r1(x)) * 1e-12, msg="Function1D modulo function (f1() % f2()) did not match reference function value.")
+            self.assertAlmostEqual(r2(x), math.fmod(self.ref1(x), self.ref2(x)), delta=abs(r2(x)) * 1e-12, msg="Function1D modulo function (p1() % f2()) did not match reference function value.")
+            self.assertAlmostEqual(r3(x), math.fmod(self.ref1(x), self.ref2(x)), delta=abs(r3(x)) * 1e-12, msg="Function1D modulo function (f1() % p2()) did not match reference function value.")
 
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when function returns zero."):
-            r(0)
+            r1(0)
 
     def test_pow_function1d_function1d(self):
         v = [-10, -7, -0.001, 0.00003, 2]
-        r = self.f1 ** self.f2
+        r1 = self.f1 ** self.f2
+        r2 = self.p1 ** self.f2
+        r3 = self.f1 ** self.p2
         for x in v:
-            if self.f1_ref(x) < 0 and not float(self.f2_ref(x)).is_integer():
+            if self.ref1(x) < 0 and not float(self.ref2(x)).is_integer():
                 with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral"):
-                    r(x)
+                    r1(x)
             else:
-                self.assertAlmostEqual(r(x), self.f1_ref(x) ** self.f2_ref(x), 15, "Function1D power function (f1() ** f2()) did not match reference function value.")
+                self.assertAlmostEqual(r1(x), self.ref1(x) ** self.ref2(x), 15, "Function1D power function (f1() ** f2()) did not match reference function value.")
+                self.assertAlmostEqual(r2(x), self.ref1(x) ** self.ref2(x), 15, "Function1D power function (p1() ** f2()) did not match reference function value.")
+                self.assertAlmostEqual(r3(x), self.ref1(x) ** self.ref2(x), 15, "Function1D power function (f1() ** p2()) did not match reference function value.")
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when f1() == 0 and f2() is negative"):
-            r = PythonFunction1D(lambda x: 0) ** self.f1
-            r(-1)
+            r4 = PythonFunction1D(lambda x: 0) ** self.f1
+            r4(-1)
 
     def test_pow_3_arguments(self):
         v = [-10, -7, -0.001, 0.00003, 2]
         r1 = pow(self.f1, 5, 3)
         r2 = pow(5, self.f1, 3)
         r3 = pow(5, self.f1, self.f2)
+        r4 = pow(self.f2, self.f1, self.f2)
+        r5 = pow(self.f2, self.p1, self.p2)
+        r6 = pow(self.p2, self.f1, self.f2)
         # Can't use 3 argument pow() if all arguments aren't integers, so
         # use fmod(a, b) % c instead
         for x in v:
-            self.assertEqual(r1(x), math.fmod(self.f1_ref(x) ** 5, 3), "Function1D 3 argument pow(f1(), A, B) did not match reference value")
-            self.assertEqual(r2(x), math.fmod(5 ** self.f1_ref(x), 3), "Function1D 3 argument pow(A, f1(), B) did not match reference value")
-            self.assertEqual(r3(x), math.fmod(5 ** self.f1_ref(x), self.f2_ref(x)), "Function1D 3 argument pow(A, f1(), f2()) did not match reference value")
+            self.assertEqual(r1(x), math.fmod(self.ref1(x) ** 5, 3), "Function1D 3 argument pow(f1(), A, B) did not match reference value")
+            self.assertEqual(r2(x), math.fmod(5 ** self.ref1(x), 3), "Function1D 3 argument pow(A, f1(), B) did not match reference value")
+            self.assertEqual(r3(x), math.fmod(5 ** self.ref1(x), self.ref2(x)), "Function1D 3 argument pow(A, f1(), f2()) did not match reference value")
+            self.assertEqual(r4(x), math.fmod(self.ref2(x) ** self.ref1(x), self.ref2(x)), "Function1D 3 argument pow(f2(), f1(), f2()) did not match reference value")
+            self.assertEqual(r5(x), math.fmod(self.ref2(x) ** self.ref1(x), self.ref2(x)), "Function1D 3 argument pow(f2(), p1(), p2()) did not match reference value")
+            self.assertEqual(r6(x), math.fmod(self.ref2(x) ** self.ref1(x), self.ref2(x)), "Function1D 3 argument pow(p2(), f1(), f2()) did not match reference value")
