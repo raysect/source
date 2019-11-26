@@ -95,3 +95,13 @@ cdef class PowScalarFunction3D(Function3D):
 cdef class PowFunctionScalar3D(Function3D):
     cdef double _value
     cdef Function3D _function
+
+
+cdef inline bint is_callable(object f):
+    """
+    Tests if an object is a python callable or function object.
+    
+    :param object f: Object to test.  
+    :return: True if callable, False otherwise.
+    """
+    return isinstance(f, Function3D) or callable(f)

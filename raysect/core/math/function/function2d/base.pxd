@@ -96,3 +96,13 @@ cdef class PowScalarFunction2D(Function2D):
 cdef class PowFunctionScalar2D(Function2D):
     cdef double _value
     cdef Function2D _function
+
+
+cdef inline bint is_callable(object f):
+    """
+    Tests if an object is a python callable or function object.
+    
+    :param object f: Object to test.  
+    :return: True if callable, False otherwise.
+    """
+    return isinstance(f, Function2D) or callable(f)

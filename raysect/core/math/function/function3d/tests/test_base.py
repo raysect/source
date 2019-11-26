@@ -40,17 +40,11 @@ class TestFunction3D(unittest.TestCase):
 
     def setUp(self):
 
-        self.p1 = lambda x, y, z: 10 * x + 5 * y + 2 * z
-        self.p2 = lambda x, y, z: x + y + z
+        self.ref1 = lambda x, y, z: 10 * x + 5 * y + 2 * z
+        self.ref2 = lambda x, y, z: abs(x + y + z)
 
-        self.f1 = PythonFunction3D(self.p1)
-        self.f2 = PythonFunction3D(self.p2)
-
-    def ref1(self, x, y, z):
-        return 10*x + 5*y + 2*z
-
-    def ref2(self, x, y, z):
-        return x + y + z
+        self.f1 = PythonFunction3D(self.ref1)
+        self.f2 = PythonFunction3D(self.ref2)
 
     def test_call(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
@@ -162,8 +156,8 @@ class TestFunction3D(unittest.TestCase):
     def test_add_function3d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.f1 + self.f2
-        r2 = self.p1 + self.f2
-        r3 = self.f1 + self.p2
+        r2 = self.ref1 + self.f2
+        r3 = self.f1 + self.ref2
         for x in v:
             for y in v:
                 for z in v:
@@ -174,8 +168,8 @@ class TestFunction3D(unittest.TestCase):
     def test_sub_function3d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.f1 - self.f2
-        r2 = self.p1 - self.f2
-        r3 = self.f1 - self.p2
+        r2 = self.ref1 - self.f2
+        r3 = self.f1 - self.ref2
         for x in v:
             for y in v:
                 for z in v:
@@ -186,8 +180,8 @@ class TestFunction3D(unittest.TestCase):
     def test_mul_function3d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.f1 * self.f2
-        r2 = self.p1 * self.f2
-        r3 = self.f1 * self.p2
+        r2 = self.ref1 * self.f2
+        r3 = self.f1 * self.ref2
         for x in v:
             for y in v:
                 for z in v:
@@ -198,8 +192,8 @@ class TestFunction3D(unittest.TestCase):
     def test_div_function3d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e49]
         r1 = self.f1 / self.f2
-        r2 = self.p1 / self.f2
-        r3 = self.f1 / self.p2
+        r2 = self.ref1 / self.f2
+        r3 = self.f1 / self.ref2
         for x in v:
             for y in v:
                 for z in v:
@@ -213,8 +207,8 @@ class TestFunction3D(unittest.TestCase):
     def test_mod_function3d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e49]
         r1 = self.f1 % self.f2
-        r2 = self.p1 % self.f2
-        r3 = self.f1 % self.p2
+        r2 = self.ref1 % self.f2
+        r3 = self.f1 % self.ref2
         for x in v:
             for y in v:
                 for z in v:
@@ -228,8 +222,8 @@ class TestFunction3D(unittest.TestCase):
     def test_pow_function3d_function3d(self):
         v = [-3.0, -0.7, -0.001, 0.00003, 2]
         r1 = self.f1 ** self.f2
-        r2 = self.p1 ** self.f2
-        r3 = self.f1 ** self.p2
+        r2 = self.ref1 ** self.f2
+        r3 = self.f1 ** self.ref2
         for x in v:
             for y in v:
                 for z in v:
@@ -244,6 +238,7 @@ class TestFunction3D(unittest.TestCase):
                         self.assertAlmostEqual(r1(x, y, z), self.ref1(x, y, z) ** self.ref2(x, y, z), 15, "Function3D power function (f1() ** f2()) did not match reference function value.")
                         self.assertAlmostEqual(r2(x, y, z), self.ref1(x, y, z) ** self.ref2(x, y, z), 15, "Function3D power function (p1() ** f2()) did not match reference function value.")
                         self.assertAlmostEqual(r3(x, y, z), self.ref1(x, y, z) ** self.ref2(x, y, z), 15, "Function3D power function (f1() ** p2()) did not match reference function value.")
+
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when f1() == 0 and f2() is negative"):
             r4 = PythonFunction3D(lambda x, y, z: 0) ** self.f1
             r4(-1, 0, 0)
@@ -254,8 +249,8 @@ class TestFunction3D(unittest.TestCase):
         r2 = pow(5, self.f1, 3)
         r3 = pow(5, self.f1, self.f2)
         r4 = pow(self.f2, self.f1, self.f2)
-        r5 = pow(self.f2, self.p1, self.p2)
-        r6 = pow(self.p2, self.f1, self.f2)
+        r5 = pow(self.f2, self.ref1, self.ref2)
+        r6 = pow(self.ref2, self.f1, self.f2)
         # Can't use 3 argument pow() if all arguments aren't integers, so
         # use fmod(a, b) % c instead
         for x in v:

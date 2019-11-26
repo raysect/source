@@ -40,17 +40,11 @@ class TestFunction1D(unittest.TestCase):
 
     def setUp(self):
 
-        self.p1 = lambda x: 10*x
-        self.p2 = lambda x: x*x
+        self.ref1 = lambda x: 10 * x
+        self.ref2 = lambda x: x * x
 
-        self.f1 = PythonFunction1D(self.p1)
-        self.f2 = PythonFunction1D(self.p2)
-
-    def ref1(self, x):
-        return 10*x
-
-    def ref2(self, x):
-        return x*x
+        self.f1 = PythonFunction1D(self.ref1)
+        self.f2 = PythonFunction1D(self.ref2)
 
     def test_call(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
@@ -138,8 +132,8 @@ class TestFunction1D(unittest.TestCase):
     def test_add_function1d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.f1 + self.f2
-        r2 = self.p1 + self.f2
-        r3 = self.f1 + self.p2
+        r2 = self.ref1 + self.f2
+        r3 = self.f1 + self.ref2
         for x in v:
             self.assertEqual(r1(x), self.ref1(x) + self.ref2(x), "Function1D add function (f1() + f2()) did not match reference function value.")
             self.assertEqual(r2(x), self.ref1(x) + self.ref2(x), "Function1D add function (p1() + f2()) did not match reference function value.")
@@ -148,8 +142,8 @@ class TestFunction1D(unittest.TestCase):
     def test_sub_function1d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.f1 - self.f2
-        r2 = self.p1 - self.f2
-        r3 = self.f1 - self.p2
+        r2 = self.ref1 - self.f2
+        r3 = self.f1 - self.ref2
         for x in v:
             self.assertEqual(r1(x), self.ref1(x) - self.ref2(x), "Function1D subtract function (f1() - f2()) did not match reference function value.")
             self.assertEqual(r2(x), self.ref1(x) - self.ref2(x), "Function1D subtract function (p1() - f2()) did not match reference function value.")
@@ -158,8 +152,8 @@ class TestFunction1D(unittest.TestCase):
     def test_mul_function1d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.f1 * self.f2
-        r2 = self.p1 * self.f2
-        r3 = self.f1 * self.p2
+        r2 = self.ref1 * self.f2
+        r3 = self.f1 * self.ref2
         for x in v:
             self.assertEqual(r1(x), self.ref1(x) * self.ref2(x), "Function1D multiply function (f1() * f2()) did not match reference function value.")
             self.assertEqual(r2(x), self.ref1(x) * self.ref2(x), "Function1D multiply function (p1() * f2()) did not match reference function value.")
@@ -168,8 +162,8 @@ class TestFunction1D(unittest.TestCase):
     def test_div_function1d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e49]
         r1 = self.f1 / self.f2
-        r2 = self.p1 / self.f2
-        r3 = self.f1 / self.p2
+        r2 = self.ref1 / self.f2
+        r3 = self.f1 / self.ref2
         for x in v:
             self.assertAlmostEqual(r1(x), self.ref1(x) / self.ref2(x), delta=abs(r1(x)) * 1e-12, msg="Function1D divide function (f1() / f2()) did not match reference function value.")
             self.assertAlmostEqual(r2(x), self.ref1(x) / self.ref2(x), delta=abs(r2(x)) * 1e-12, msg="Function1D divide function (p1() / f2()) did not match reference function value.")
@@ -181,8 +175,8 @@ class TestFunction1D(unittest.TestCase):
     def test_mod_function1d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e9]
         r1 = self.f1 % self.f2
-        r2 = self.p1 % self.f2
-        r3 = self.f1 % self.p2
+        r2 = self.ref1 % self.f2
+        r3 = self.f1 % self.ref2
         for x in v:
             self.assertAlmostEqual(r1(x), math.fmod(self.ref1(x), self.ref2(x)), delta=abs(r1(x)) * 1e-12, msg="Function1D modulo function (f1() % f2()) did not match reference function value.")
             self.assertAlmostEqual(r2(x), math.fmod(self.ref1(x), self.ref2(x)), delta=abs(r2(x)) * 1e-12, msg="Function1D modulo function (p1() % f2()) did not match reference function value.")
@@ -194,8 +188,8 @@ class TestFunction1D(unittest.TestCase):
     def test_pow_function1d_function1d(self):
         v = [-10, -7, -0.001, 0.00003, 2]
         r1 = self.f1 ** self.f2
-        r2 = self.p1 ** self.f2
-        r3 = self.f1 ** self.p2
+        r2 = self.ref1 ** self.f2
+        r3 = self.f1 ** self.ref2
         for x in v:
             if self.ref1(x) < 0 and not float(self.ref2(x)).is_integer():
                 with self.assertRaises(ValueError, msg="ValueError not raised when base is negative and exponent non-integral (1/3)"):
@@ -218,8 +212,8 @@ class TestFunction1D(unittest.TestCase):
         r2 = pow(5, self.f1, 3)
         r3 = pow(5, self.f1, self.f2)
         r4 = pow(self.f2, self.f1, self.f2)
-        r5 = pow(self.f2, self.p1, self.p2)
-        r6 = pow(self.p2, self.f1, self.f2)
+        r5 = pow(self.f2, self.ref1, self.ref2)
+        r6 = pow(self.ref2, self.f1, self.f2)
         # Can't use 3 argument pow() if all arguments aren't integers, so
         # use fmod(a, b) % c instead
         for x in v:

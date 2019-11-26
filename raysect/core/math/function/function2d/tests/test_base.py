@@ -40,17 +40,11 @@ class TestFunction2D(unittest.TestCase):
 
     def setUp(self):
 
-        self.p1 = lambda x, y: 10*x + 5*y
-        self.p2 = lambda x, y: x*x + y*y
+        self.ref1 = lambda x, y: 10 * x + 5 * y
+        self.ref2 = lambda x, y: x * x + y * y
 
-        self.f1 = PythonFunction2D(self.p1)
-        self.f2 = PythonFunction2D(self.p2)
-
-    def ref1(self, x, y):
-        return 10*x + 5*y
-
-    def ref2(self, x, y):
-        return x*x + y*y
+        self.f1 = PythonFunction2D(self.ref1)
+        self.f2 = PythonFunction2D(self.ref2)
 
     def test_call(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
@@ -146,8 +140,8 @@ class TestFunction2D(unittest.TestCase):
     def test_add_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.f1 + self.f2
-        r2 = self.p1 + self.f2
-        r3 = self.f1 + self.p2
+        r2 = self.ref1 + self.f2
+        r3 = self.f1 + self.ref2
         for x in v:
             for y in v:
                 self.assertEqual(r1(x, y), self.ref1(x, y) + self.ref2(x, y), "Function2D add function (f1() + f2()) did not match reference function value.")
@@ -157,8 +151,8 @@ class TestFunction2D(unittest.TestCase):
     def test_sub_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r = self.f1 - self.f2
-        r2 = self.p1 - self.f2
-        r3 = self.f1 - self.p2
+        r2 = self.ref1 - self.f2
+        r3 = self.f1 - self.ref2
         for x in v:
             for y in v:
                 self.assertEqual(r(x, y), self.ref1(x, y) - self.ref2(x, y), "Function2D subtract function (f1() - f2()) did not match reference function value.")
@@ -168,22 +162,22 @@ class TestFunction2D(unittest.TestCase):
     def test_mul_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.f1 * self.f2
-        r2 = self.p1 * self.f2
-        r3 = self.f1 * self.p2
+        r2 = self.ref1 * self.f2
+        r3 = self.f1 * self.ref2
         for x in v:
             for y in v:
-                self.assertEqual(r(x, y), self.ref1(x, y) * self.ref2(x, y), "Function2D multiply function (f1() * f2()) did not match reference function value.")
+                self.assertEqual(r1(x, y), self.ref1(x, y) * self.ref2(x, y), "Function2D multiply function (f1() * f2()) did not match reference function value.")
                 self.assertEqual(r2(x, y), self.ref1(x, y) * self.ref2(x, y), "Function2D multiply function (p1() * f2()) did not match reference function value.")
                 self.assertEqual(r3(x, y), self.ref1(x, y) * self.ref2(x, y), "Function2D multiply function (f1() * p2()) did not match reference function value.")
 
     def test_div_function2d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e49]
         r1 = self.f1 / self.f2
-        r2 = self.p1 / self.f2
-        r3 = self.f1 / self.p2
+        r2 = self.ref1 / self.f2
+        r3 = self.f1 / self.ref2
         for x in v:
             for y in v:
-                self.assertAlmostEqual(r(x, y), self.ref1(x, y) / self.ref2(x, y), delta=abs(r(x, y)) * 1e-12, msg="Function2D divide function (f1() / f2()) did not match reference function value.")
+                self.assertAlmostEqual(r1(x, y), self.ref1(x, y) / self.ref2(x, y), delta=abs(r1(x, y)) * 1e-12, msg="Function2D divide function (f1() / f2()) did not match reference function value.")
                 self.assertAlmostEqual(r2(x, y), self.ref1(x, y) / self.ref2(x, y), delta=abs(r2(x, y)) * 1e-12, msg="Function2D divide function (p1() / f2()) did not match reference function value.")
                 self.assertAlmostEqual(r3(x, y), self.ref1(x, y) / self.ref2(x, y), delta=abs(r3(x, y)) * 1e-12, msg="Function2D divide function (f1() / p2()) did not match reference function value.")
 
@@ -193,8 +187,8 @@ class TestFunction2D(unittest.TestCase):
     def test_mod_function2d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e9]
         r1 = self.f1 % self.f2
-        r2 = self.p1 % self.f2
-        r3 = self.f1 % self.p2
+        r2 = self.ref1 % self.f2
+        r3 = self.f1 % self.ref2
         for x in v:
             for y in v:
                 self.assertAlmostEqual(r1(x, y), math.fmod(self.ref1(x, y), self.ref2(x, y)), delta=abs(r1(x, y)) * 1e-12, msg="Function2D modulo function (f1() % f2()) did not match reference function value.")
@@ -207,8 +201,8 @@ class TestFunction2D(unittest.TestCase):
     def test_pow_function2d_function2d(self):
         v = [-3.0, -0.7, -0.001, 0.00003, 2]
         r1 = self.f1 ** self.f2
-        r2 = self.p1 ** self.f2
-        r3 = self.f1 ** self.p2
+        r2 = self.ref1 ** self.f2
+        r3 = self.f1 ** self.ref2
         for x in v:
             for y in v:
                 if self.ref1(x, y) < 0 and not float(self.ref2(x, y)).is_integer():
@@ -220,8 +214,8 @@ class TestFunction2D(unittest.TestCase):
                         r3(x, y)
                 else:
                     self.assertAlmostEqual(r1(x, y), self.ref1(x, y) ** self.ref2(x, y), 15, "Function2D power function (f1() ** f2()) did not match reference function value.")
-                self.assertAlmostEqual(r2(x, y), self.ref1(x, y) ** self.ref2(x, y), 15, "Function2D power function (p1() ** f2()) did not match reference function value.")
-                self.assertAlmostEqual(r3(x, y), self.ref1(x, y) ** self.ref2(x, y), 15, "Function2D power function (f1() ** p2()) did not match reference function value.")
+                    self.assertAlmostEqual(r2(x, y), self.ref1(x, y) ** self.ref2(x, y), 15, "Function2D power function (p1() ** f2()) did not match reference function value.")
+                    self.assertAlmostEqual(r3(x, y), self.ref1(x, y) ** self.ref2(x, y), 15, "Function2D power function (f1() ** p2()) did not match reference function value.")
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when f1() == 0 and f2() is negative"):
             r4 = PythonFunction2D(lambda x, y: 0) ** self.f1
             r4(-1, 0)
@@ -232,8 +226,8 @@ class TestFunction2D(unittest.TestCase):
         r2 = pow(5, self.f1, 3)
         r3 = pow(5, self.f1, self.f2)
         r4 = pow(self.f2, self.f1, self.f2)
-        r5 = pow(self.f2, self.p1, self.p2)
-        r6 = pow(self.p2, self.f1, self.f2)
+        r5 = pow(self.f2, self.ref1, self.ref2)
+        r6 = pow(self.ref2, self.f1, self.f2)
         # Can't use 3 argument pow() if all arguments aren't integers, so
         # use fmod(a, b) % c instead
         for x in v:

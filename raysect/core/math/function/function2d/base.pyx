@@ -63,82 +63,82 @@ cdef class Function2D:
         return self.evaluate(x, y)
 
     def __add__(object a, object b):
-        if isinstance(a, Function2D):
-            if isinstance(b, Function2D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() + b()
-                return AddFunction2D(<Function2D> a, <Function2D> b)
+                return AddFunction2D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() + B -> B + a()
-                return AddScalar2D(<double> b, <Function2D> a)
+                return AddScalar2D(<double> b, a)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function2D):
+            if is_callable(b):
                 # A + b()
-                return AddScalar2D(<double> a, <Function2D> b)
+                return AddScalar2D(<double> a, b)
         return NotImplemented
 
     def __sub__(object a, object b):
-        if isinstance(a, Function2D):
-            if isinstance(b, Function2D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() - b()
-                return SubtractFunction2D(<Function2D> a, <Function2D> b)
+                return SubtractFunction2D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() - B -> -B + a()
-                return AddScalar2D(-(<double> b), <Function2D> a)
+                return AddScalar2D(-(<double> b), a)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function2D):
+            if is_callable(b):
                 # A - b()
-                return SubtractScalar2D(<double> a, <Function2D> b)
+                return SubtractScalar2D(<double> a, b)
         return NotImplemented
 
     def __mul__(object a, object b):
-        if isinstance(a, Function2D):
-            if isinstance(b, Function2D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() * b()
-                return MultiplyFunction2D(<Function2D> a, <Function2D> b)
+                return MultiplyFunction2D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() * B -> B * a()
-                return MultiplyScalar2D(<double> b, <Function2D> a)
+                return MultiplyScalar2D(<double> b, a)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function2D):
+            if is_callable(b):
                 # A * b()
-                return MultiplyScalar2D(<double> a, <Function2D> b)
+                return MultiplyScalar2D(<double> a, b)
         return NotImplemented
 
     @cython.cdivision(True)
     def __truediv__(object a, object b):
         cdef double v
-        if isinstance(a, Function2D):
-            if isinstance(b, Function2D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() / b()
-                return DivideFunction2D(<Function2D> a, <Function2D> b)
+                return DivideFunction2D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() / B -> 1/B * a()
                 v = <double> b
                 if v == 0.0:
                     raise ZeroDivisionError("Scalar used as the denominator of the division is zero valued.")
-                return MultiplyScalar2D(1/v, <Function2D> a)
+                return MultiplyScalar2D(1/v, a)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function2D):
+            if is_callable(b):
                 # A * b()
-                return DivideScalar2D(<double> a, <Function2D> b)
+                return DivideScalar2D(<double> a, b)
         return NotImplemented
 
     def __mod__(object a, object b):
         cdef double v
-        if isinstance(a, Function2D):
-            if isinstance(b, Function2D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() % b()
-                return ModuloFunction2D(<Function2D> a, <Function2D> b)
+                return ModuloFunction2D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() % B
                 v = <double> b
                 if v == 0.0:
                     raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
-                return ModuloFunctionScalar2D(<Function2D> a, v)
+                return ModuloFunctionScalar2D(a, v)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function2D):
+            if is_callable(b):
                 # A % b()
-                return ModuloScalarFunction2D(<double> a, <Function2D> b)
+                return ModuloScalarFunction2D(<double> a, b)
         return NotImplemented
 
     def __neg__(self):
@@ -149,17 +149,17 @@ cdef class Function2D:
             # Optimised implementation of pow(a, b, c) not available: fall back
             # to general implementation
             return (a ** b) % c
-        if isinstance(a, Function2D):
-            if isinstance(b, Function2D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() ** b()
-                return PowFunction2D(<Function2D> a, <Function2D> b)
+                return PowFunction2D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() ** b
-                return PowFunctionScalar2D(<Function2D> a, <double> b)
+                return PowFunctionScalar2D(a, <double> b)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function2D):
+            if is_callable(b):
                 # a ** b()
-                return PowScalarFunction2D(<double> a, <Function2D> b)
+                return PowScalarFunction2D(<double> a, b)
         return NotImplemented
 
 
@@ -170,10 +170,10 @@ cdef class AddFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of an __add__() call on a
     Function2D object.
 
-    :param Function2D function1: A Function2D object.
-    :param Function2D function2: A Function2D object.
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
     """
-    def __init__(self, Function2D function1, Function2D function2):
+    def __init__(self, object function1, object function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
@@ -188,10 +188,10 @@ cdef class SubtractFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __sub__() call on a
     Function2D object.
 
-    :param Function2D function1: A Function2D object.
-    :param Function2D function2: A Function2D object.
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
     """
-    def __init__(self, Function2D function1, Function2D function2):
+    def __init__(self, object function1, object function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
@@ -206,11 +206,11 @@ cdef class MultiplyFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __mul__() call on a
     Function2D object.
 
-    :param Function2D function1: A Function2D object.
-    :param Function2D function2: A Function2D object.
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
     """
 
-    def __init__(self, function1, function2):
+    def __init__(self, object function1, object function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
@@ -225,11 +225,11 @@ cdef class DivideFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __truediv__() call on a
     Function2D object.
 
-    :param Function2D function1: A Function2D object.
-    :param Function2D function2: A Function2D object.
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
     """
 
-    def __init__(self, function1, function2):
+    def __init__(self, object function1, object function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
@@ -248,10 +248,10 @@ cdef class ModuloFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
     Function2D object.
 
-    :param Function2D function1: A Function2D object.
-    :param Function2D function2: A Function2D object.
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
     """
-    def __init__(self, function1, function2):
+    def __init__(self, object function1, object function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
@@ -270,10 +270,10 @@ cdef class PowFunction2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __pow__() call on a
     Function2D object.
 
-    :param Function2D function1: A Function2D object.
-    :param Function2D function2: A Function2D object.
+    :param object function1: A Function2D object or Python callable.
+    :param object function2: A Function2D object or Python callable.
     """
-    def __init__(self, function1, function2):
+    def __init__(self, object function1, object function2):
         self._function1 = autowrap_function2d(function1)
         self._function2 = autowrap_function2d(function2)
 
@@ -296,10 +296,10 @@ cdef class AddScalar2D(Function2D):
     Function2D object.
 
     :param float value: A double value.
-    :param Function2D function: A Function2D object.
+    :param object function: A Function2D object or Python callable.
     """
 
-    def __init__(self, double value, Function2D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function2d(function)
 
@@ -318,7 +318,7 @@ cdef class SubtractScalar2D(Function2D):
     :param function: A Function2D object.
     """
 
-    def __init__(self, double value, Function2D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function2d(function)
 
@@ -337,7 +337,7 @@ cdef class MultiplyScalar2D(Function2D):
     :param function: A Function2D object.
     """
 
-    def __init__(self, double value, Function2D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function2d(function)
 
@@ -356,7 +356,7 @@ cdef class DivideScalar2D(Function2D):
     :param function: A Function2D object.
     """
 
-    def __init__(self, double value, Function2D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function2d(function)
 
@@ -376,9 +376,9 @@ cdef class ModuloScalarFunction2D(Function2D):
     Function2D object.
 
     :param float value: A double value.
-    :param Function2D function: A Function2D object.
+    :param object function: A Function2D object or Python callable.
     """
-    def __init__(self, double value, Function2D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function2d(function)
 
@@ -397,10 +397,10 @@ cdef class ModuloFunctionScalar2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
     Function2D object.
 
-    :param Function2D function: A Function2D object.
+    :param object function: A Function2D object or Python callable.
     :param float value: A double value.
     """
-    def __init__(self, Function2D function, double value):
+    def __init__(self, object function, double value):
         if value == 0:
             raise ValueError("Divisor cannot be zero")
         self._value = value
@@ -419,9 +419,9 @@ cdef class PowScalarFunction2D(Function2D):
     Function2D object.
 
     :param float value: A double value.
-    :param Function2D function: A Function2D object.
+    :param object function: A Function2D object or Python callable.
     """
-    def __init__(self, double value, Function2D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function2d(function)
 
@@ -441,10 +441,10 @@ cdef class PowFunctionScalar2D(Function2D):
     This class is not intended to be used directly, but rather returned as the result of an __pow__() call on a
     Function2D object.
 
-    :param Function2D function: A Function2D object.
+    :param object function: A Function2D object or Python callable.
     :param float value: A double value.
     """
-    def __init__(self, Function2D function, double value):
+    def __init__(self, object function, double value):
         self._value = value
         self._function = autowrap_function2d(function)
 
