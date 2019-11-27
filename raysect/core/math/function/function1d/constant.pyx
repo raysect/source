@@ -58,3 +58,6 @@ cdef class Constant1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._value
+
+    def __repr__(self):
+        return '{}'.format(self._value)
