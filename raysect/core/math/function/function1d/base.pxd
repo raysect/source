@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
 cdef class Function1D:
     cdef double evaluate(self, double x) except? -1e999
 
@@ -95,3 +96,13 @@ cdef class PowScalarFunction1D(Function1D):
 cdef class PowFunctionScalar1D(Function1D):
     cdef double _value
     cdef Function1D _function
+
+
+cdef inline bint is_callable(object f):
+    """
+    Tests if an object is a python callable or function object.
+    
+    :param object f: Object to test.  
+    :return: True if callable, False otherwise.
+    """
+    return isinstance(f, Function1D) or callable(f)
