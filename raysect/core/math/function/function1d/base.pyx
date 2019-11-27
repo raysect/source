@@ -63,14 +63,14 @@ cdef class Function1D:
 
     def __add__(object a, object b):
         if is_callable(a):
-            if is_callable(b) or callable(b):
+            if is_callable(b):
                 # a() + b()
                 return AddFunction1D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() + B -> B + a()
                 return AddScalar1D(<double> b, a)
         elif isinstance(a, numbers.Real):
-            if is_callable(b) or callable(b):
+            if is_callable(b):
                 # A + b()
                 return AddScalar1D(<double> a, b)
         return NotImplemented
