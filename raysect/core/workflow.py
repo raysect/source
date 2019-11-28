@@ -69,6 +69,10 @@ class RenderEngine:
 
     The render() function must return an object representing the results,
     this must be a picklable python object.
+
+    The execution order of tasks is not guaranteed to be in order. If the order
+    is critical, an identifier should be passed as part of the task definition
+    and returned in the result. This will permit the order to be reconstructed.
     """
 
     def run(self, tasks, render, update, render_args=(), render_kwargs={}, update_args=(), update_kwargs={}):
