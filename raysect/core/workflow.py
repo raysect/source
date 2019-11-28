@@ -27,9 +27,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from collections import deque
 from multiprocessing import Process, cpu_count, SimpleQueue, Value
-from raysect.core.math import random
 import time
+from raysect.core.math import random
 
 
 class RenderEngine:
@@ -237,6 +238,7 @@ class MulticoreEngine(RenderEngine):
 
         # split tasks into jobs and dispatch to workers
         requests = -self.processes  # ignore the initial jobs, the requests are instantaneous
+        tasks = deque(tasks)
         start_time = time.time()
         while tasks:
 
@@ -244,7 +246,7 @@ class MulticoreEngine(RenderEngine):
             job = []
             for _ in range(tasks_per_job):
                 if tasks:
-                    job.append(tasks.pop())
+                    job.append(tasks.popleft())
                     continue
                 break
 
@@ -295,8 +297,6 @@ class MulticoreEngine(RenderEngine):
 
 if __name__ == '__main__':
 
-    from time import time
-
     class Job:
 
         def __init__(self, engine=None):
@@ -319,10 +319,10 @@ if __name__ == '__main__':
 
     n = 2000
 
-    t = time()
+    t = time.time()
     j = Job(SerialEngine())
-    print(j.run(n), time() - t)
+    print(j.run(n), time.time() - t)
 
-    t = time()
+    t = time.time()
     j = Job(MulticoreEngine())
-    print(j.run(n), time() - t)
+    print(j.run(n), time.time() - t)
