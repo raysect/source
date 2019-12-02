@@ -165,7 +165,7 @@ cdef class Sqrt1D(Function1D):
 
 cdef class Erf1D(Function1D):
     """
-    A Function1D class that implements the error function of the result of a Function1D object: atan(f())
+    A Function1D class that implements the error function of the result of a Function1D object: erf(f())
 
     :param Function1D function: A Function1D object.
     """

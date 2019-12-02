@@ -110,7 +110,7 @@ class TestCmath1D(unittest.TestCase):
         function = cmath1d.Erf1D(self.f1)
         for x in v:
             expected = math.erf(self.f1(x))
-            self.assertEqual(function(x), expected, "Erf1D call did not match reference value.")
+            self.assertAlmostEqual(function(x), expected, 10, "Erf1D call did not match reference value.")
 
     def test_sqrt(self):
         v = [0.0, 0.00003, 10, 23.4, 1e5]
