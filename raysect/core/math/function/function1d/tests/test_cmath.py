@@ -119,4 +119,5 @@ class TestCmath1D(unittest.TestCase):
             expected = math.sqrt(self.f1(x))
             self.assertEqual(function(x), expected, "Sqrt1D call did not match reference value.")
 
-        self.assertTrue(math.isnan(function(-0.1)), msg="Sqrt1D did not return nan for negative value.")
+        with self.assertRaises(ValueError, msg="sqrt did not raise a ValueError with value outside domain."):
+            function(-0.1)

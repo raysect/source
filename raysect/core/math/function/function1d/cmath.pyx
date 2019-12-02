@@ -150,7 +150,7 @@ cdef class Atan4Q1D(Function1D):
 
 cdef class Sqrt1D(Function1D):
     """
-    A Function1D class that implements the square root of the result of a Function1D object: atan(f())
+    A Function1D class that implements the square root of the result of a Function1D object: sqrt(f())
 
     :param Function1D function: A Function1D object.
     """
@@ -159,6 +159,8 @@ cdef class Sqrt1D(Function1D):
         self._function = autowrap_function1d(function)
 
     cdef double evaluate(self, double x) except? -1e999:
+        if x < 0: # complex values are not supported
+            raise ValueError("Math domain error in sqrt({0}). Sqrt of a negative value is not supported.".format(x))
         return cmath.sqrt(self._function.evaluate(x))
 
 cdef class Erf1D(Function1D):
