@@ -62,3 +62,11 @@ cdef class Atan2D(Function2D):
 
 cdef class Atan4Q2D(Function2D):
     cdef Function2D _numerator, _denominator
+
+
+cdef class Sqrt2D(Function2D):
+    cdef Function2D _function
+
+
+cdef class Erf2D(Function2D):
+    cdef Function2D _function

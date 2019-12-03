@@ -62,3 +62,11 @@ cdef class Atan3D(Function3D):
 
 cdef class Atan4Q3D(Function3D):
     cdef Function3D _numerator, _denominator
+
+
+cdef class Sqrt3D(Function3D):
+    cdef Function3D _function
+
+
+cdef class Erf3D(Function3D):
+    cdef Function3D _function

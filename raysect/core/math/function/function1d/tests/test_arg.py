@@ -41,4 +41,4 @@ class TestArg1D(unittest.TestCase):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
             arg = Arg1D()
-            self.assertEqual(arg(x), x, "Arg1D call did not match reference value")
+            self.assertEqual(arg(x), x, "Arg1D call did not match reference value.")

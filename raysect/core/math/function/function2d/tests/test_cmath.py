@@ -49,7 +49,7 @@ class TestCmath2D(unittest.TestCase):
             for y in v:
                 function = cmath2d.Exp2D(self.f1)
                 expected = math.exp(self.f1(x, y))
-                self.assertEqual(function(x, y), expected, "Exp2D call did not match reference value")
+                self.assertEqual(function(x, y), expected, "Exp2D call did not match reference value.")
 
     def test_sin(self):
         v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
@@ -57,7 +57,7 @@ class TestCmath2D(unittest.TestCase):
             for y in v:
                 function = cmath2d.Sin2D(self.f1)
                 expected = math.sin(self.f1(x, y))
-                self.assertEqual(function(x, y), expected, "Sin2D call did not match reference value")
+                self.assertEqual(function(x, y), expected, "Sin2D call did not match reference value.")
 
     def test_cos(self):
         v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
@@ -65,7 +65,7 @@ class TestCmath2D(unittest.TestCase):
             for y in v:
                 function = cmath2d.Cos2D(self.f1)
                 expected = math.cos(self.f1(x, y))
-                self.assertEqual(function(x, y), expected, "Cos2D call did not match reference value")
+                self.assertEqual(function(x, y), expected, "Cos2D call did not match reference value.")
 
     def test_tan(self):
         v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
@@ -73,14 +73,14 @@ class TestCmath2D(unittest.TestCase):
             for y in v:
                 function = cmath2d.Tan2D(self.f1)
                 expected = math.tan(self.f1(x, y))
-                self.assertEqual(function(x, y), expected, "Tan2D call did not match reference value")
+                self.assertEqual(function(x, y), expected, "Tan2D call did not match reference value.")
 
     def test_asin(self):
         v = [-10, -6, -2, -0.001, 0, 0.001, 2, 6, 10]
         function = cmath2d.Asin2D(self.f1)
         for x in v:
             expected = math.asin(self.f1(x, 0))
-            self.assertEqual(function(x, 0), expected, "Asin2D call did not match reference value")
+            self.assertEqual(function(x, 0), expected, "Asin2D call did not match reference value.")
 
         with self.assertRaises(ValueError, msg="Asin2D did not raise a ValueError with value outside domain."):
             function(100, 0)
@@ -90,7 +90,7 @@ class TestCmath2D(unittest.TestCase):
         function = cmath2d.Acos2D(self.f1)
         for x in v:
             expected = math.acos(self.f1(x, 0))
-            self.assertEqual(function(x, 0), expected, "Acos2D call did not match reference value")
+            self.assertEqual(function(x, 0), expected, "Acos2D call did not match reference value.")
 
         with self.assertRaises(ValueError, msg="Acos2D did not raise a ValueError with value outside domain."):
             function(100, 0)
@@ -101,7 +101,7 @@ class TestCmath2D(unittest.TestCase):
             for y in v:
                 function = cmath2d.Atan2D(self.f1)
                 expected = math.atan(self.f1(x, y))
-                self.assertEqual(function(x, y), expected, "Atan2D call did not match reference value")
+                self.assertEqual(function(x, y), expected, "Atan2D call did not match reference value.")
 
     def test_atan2(self):
         v = [-10.0, -7, -0.001, 0.0, 0.00003, 10, 23.4]
@@ -109,4 +109,23 @@ class TestCmath2D(unittest.TestCase):
             for y in v:
                 function = cmath2d.Atan4Q2D(self.f1, self.f2)
                 expected = math.atan2(self.f1(x, y), self.f2(x, y))
-                self.assertEqual(function(x, y), expected, "Atan4Q2D call did not match reference value")
+                self.assertEqual(function(x, y), expected, "Atan4Q2D call did not match reference value.")
+
+    def test_erf(self):
+        v = [-1e5, -7, -0.001, 0.0, 0.00003, 10, 23.4, 1e5]
+        function = cmath2d.Erf2D(self.f1)
+        for x in v:
+            for y in v:
+                expected = math.erf(self.f1(x, y))
+                self.assertAlmostEqual(function(x, y), expected, 10, "Erf2D call did not match reference value.")
+
+    def test_sqrt(self):
+        v = [0.0, 0.00003, 10, 23.4, 1e5]
+        function = cmath2d.Sqrt2D(self.f1)
+        for x in v:
+            for y in v:
+                expected = math.sqrt(self.f1(x, y))
+                self.assertEqual(function(x, y), expected, "Sqrt2D call did not match reference value.")
+
+        with self.assertRaises(ValueError, msg="Sqrt2D did not raise a ValueError with value outside domain."):
+            function(-0.1, -0.1)
