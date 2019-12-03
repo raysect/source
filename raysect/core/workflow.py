@@ -215,10 +215,14 @@ class MulticoreEngine(RenderEngine):
 
         # consume results
         remaining = len(tasks)
+        exceptions = []
         while remaining:
             results = result_queue.get()
             for result in results:
-                update(result, *update_args, **update_kwargs)
+                if isinstance(result, Exception):
+                    exceptions.append(result)
+                else:
+                    update(result, *update_args, **update_kwargs)
                 remaining -= 1
 
         # shutdown workers
@@ -227,6 +231,9 @@ class MulticoreEngine(RenderEngine):
 
         # store tasks per job value for next run
         self._tasks_per_job = tasks_per_job.value
+
+        if exceptions:
+            raise RuntimeError("Errors raised in workers", exceptions)
 
     def worker_count(self):
         return self._processes
@@ -293,8 +300,11 @@ class MulticoreEngine(RenderEngine):
 
             results = []
             for task in job:
-                results.append(render(task, *args, **kwargs))
-            result_queue.put(results)
+                try:
+                    results.append(render(task, *args, **kwargs))
+                except Exception as e:
+                    results.append(e)
+                result_queue.put(results)
 
 
 if __name__ == '__main__':
