@@ -104,3 +104,20 @@ class TestCmath1D(unittest.TestCase):
         for x in v:
             expected = math.atan2(self.f1(x), self.f2(x))
             self.assertEqual(function(x), expected, "Atan4Q1D call did not match reference value")
+
+    def test_erf(self):
+        v = [-1e5, -7, -0.001, 0.0, 0.00003, 10, 23.4, 1e5]
+        function = cmath1d.Erf1D(self.f1)
+        for x in v:
+            expected = math.erf(self.f1(x))
+            self.assertAlmostEqual(function(x), expected, 10, "Erf1D call did not match reference value.")
+
+    def test_sqrt(self):
+        v = [0.0, 0.00003, 10, 23.4, 1e5]
+        function = cmath1d.Sqrt1D(self.f1)
+        for x in v:
+            expected = math.sqrt(self.f1(x))
+            self.assertEqual(function(x), expected, "Sqrt1D call did not match reference value.")
+
+        with self.assertRaises(ValueError, msg="sqrt did not raise a ValueError with value outside domain."):
+            function(-0.1)
