@@ -163,6 +163,9 @@ cdef class Function2D:
                 return PowScalarFunction2D(<double> a, b)
         return NotImplemented
 
+    def __abs__(self):
+        return AbsFunction2D(self)
+
     def __richcmp__(self, object other, int op):
         if is_callable(other):
             if op == Py_EQ:
@@ -320,6 +323,22 @@ cdef class PowFunction2D(Function2D):
         if base == 0 and exponent < 0:
             raise ZeroDivisionError("0.0 cannot be raised to a negative power")
         return base ** exponent
+
+
+cdef class AbsFunction2D(Function2D):
+    """
+    A Function2D class that implements the absolute value of the result of a Function2D object: abs(f()).
+
+    This class is not intended to be used directly, but rather returned as the
+    result of an __abs__() call on a Function2D object.
+
+    :param object function: A Function2D object or Python callable.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return abs(self._function.evaluate(x, y))
 
 
 cdef class EqualsFunction2D(Function2D):

@@ -359,6 +359,13 @@ class TestFunction2D(unittest.TestCase):
                 self.assertEqual(r5(x, y), math.fmod(self.ref2(x, y) ** self.ref1(x, y), self.ref2(x, y)), "Function2D 3 argument pow(f2(), p1(), p2()) did not match reference value.")
                 self.assertEqual(r6(x, y), math.fmod(self.ref2(x, y) ** self.ref1(x, y), self.ref2(x, y)), "Function2D 3 argument pow(p2(), f1(), f2()) did not match reference value.")
 
+    def test_abs(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.0003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                self.assertEqual(abs(self.f1)(x, y), abs(self.ref1(x, y)),
+                                 msg="abs(Function2D) did not match reference value")
+
     def test_richcmp_function_callable(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
@@ -492,13 +499,8 @@ class TestFunction2D(unittest.TestCase):
         for x in v:
             for y in v:
                 ref_value = self.f1
-                # Without Function2D.__abs__, manually ensure greater and less values are suitable
-                if self.f1(x, y) >= 0:
-                    higher_value = self.f1 + self.f1 + 1
-                    lower_value = self.f1 - self.f1 - 1
-                else:
-                    higher_value = self.f1 - self.f1 + 1
-                    lower_value = self.f1 + self.f1 - 1
+                higher_value = self.f1 + abs(self.f1) + 1
+                lower_value = self.f1 - abs(self.f1) - 1
                 self.assertEqual(
                     (self.f1 == ref_value)(x, y), 1.0,
                     msg="Function2D equals Function2D (f1() == f2()) did not return true when it should."

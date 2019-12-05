@@ -58,6 +58,10 @@ cdef class PowFunction2D(Function2D):
     cdef Function2D _function1, _function2
 
 
+cdef class AbsFunction2D(Function2D):
+    cdef Function2D _function
+
+
 cdef class EqualsFunction2D(Function2D):
     cdef Function2D _function1, _function2
 
