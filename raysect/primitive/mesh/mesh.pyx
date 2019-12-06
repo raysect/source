@@ -251,7 +251,7 @@ cdef class MeshData(KDTree3DCore):
         :return: A numpy array. 
         """
 
-        if index < 0 or index >= self.vertices_mv.shape[0]:
+        if index < 0 or index >= self.triangles_mv.shape[0]:
             raise ValueError('Triangle index is out of range: [0, {}].'.format(self.triangles_mv.shape[0]))
 
         return self._triangles[index, :].copy()
@@ -700,7 +700,8 @@ cdef class MeshData(KDTree3DCore):
         return new_intersection(
             ray, t, None,
             hit_point, inside_point, outside_point,
-            normal, exiting, None, None
+            normal, exiting, None, None,
+            primitive_coords=(triangle,)
         )
 
     @cython.boundscheck(False)

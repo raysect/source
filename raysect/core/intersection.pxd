@@ -46,20 +46,21 @@ cdef class Intersection:
     cdef public Normal3D normal
     cdef public AffineMatrix3D world_to_primitive
     cdef public AffineMatrix3D primitive_to_world
+    cdef public tuple primitive_coords
 
     cdef void _construct(self, Ray ray, double ray_distance, Primitive primitive,
                                 Point3D hit_point, Point3D inside_point, Point3D outside_point,
                                 Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive,
-                                AffineMatrix3D primitive_to_world)
+                                AffineMatrix3D primitive_to_world, tuple primitive_coords=*)
 
 
 
 cdef inline Intersection new_intersection(Ray ray, double ray_distance, Primitive primitive,
                                           Point3D hit_point, Point3D inside_point, Point3D outside_point,
                                           Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive,
-                                          AffineMatrix3D primitive_to_world):
+                                          AffineMatrix3D primitive_to_world, tuple primitive_coords=*):
 
     cdef Intersection intersection
     intersection = Intersection.__new__(Intersection)
-    intersection._construct(ray, ray_distance, primitive, hit_point, inside_point, outside_point, normal, exiting, world_to_primitive, primitive_to_world)
+    intersection._construct(ray, ray_distance, primitive, hit_point, inside_point, outside_point, normal, exiting, world_to_primitive, primitive_to_world, primitive_coords=primitive_coords)
     return intersection

@@ -84,14 +84,16 @@ cdef class Intersection:
 
     def __init__(self, Ray ray, double ray_distance, Primitive primitive,
                  Point3D hit_point, Point3D inside_point, Point3D outside_point,
-                 Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                 Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                 tuple primitive_coords=()):
 
-        self._construct(ray, ray_distance, primitive, hit_point, inside_point, outside_point, normal, exiting, world_to_primitive, primitive_to_world)
+        self._construct(ray, ray_distance, primitive, hit_point, inside_point, outside_point,
+                        normal, exiting, world_to_primitive, primitive_to_world, primitive_coords=primitive_coords)
 
     cdef void _construct(self, Ray ray, double ray_distance, Primitive primitive,
                                 Point3D hit_point, Point3D inside_point, Point3D outside_point,
                                 Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive,
-                                AffineMatrix3D primitive_to_world):
+                                AffineMatrix3D primitive_to_world, tuple primitive_coords=()):
 
         self.ray = ray
         self.ray_distance = ray_distance
@@ -103,6 +105,7 @@ cdef class Intersection:
         self.normal = normal
         self.world_to_primitive = world_to_primitive
         self.primitive_to_world = primitive_to_world
+        self.primitive_coords = primitive_coords
 
     def __repr__(self):
 
