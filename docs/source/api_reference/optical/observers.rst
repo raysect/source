@@ -80,4 +80,7 @@ properties of all observers and the overall observing workflow.
    :members:
    :show-inheritance:
 
+.. autoclass:: raysect.optical.observer.imaging.fieldofview.FovCamera
+   :members:
+   :show-inheritance:
 
