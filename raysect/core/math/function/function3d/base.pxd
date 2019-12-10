@@ -57,6 +57,34 @@ cdef class PowFunction3D(Function3D):
     cdef Function3D _function1, _function2
 
 
+cdef class AbsFunction3D(Function3D):
+    cdef Function3D _function
+
+
+cdef class EqualsFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class NotEqualsFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class LessThanFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class GreaterThanFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class LessEqualsFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
+cdef class GreaterEqualsFunction3D(Function3D):
+    cdef Function3D _function1, _function2
+
+
 cdef class AddScalar3D(Function3D):
     cdef double _value
     cdef Function3D _function
@@ -97,11 +125,41 @@ cdef class PowFunctionScalar3D(Function3D):
     cdef Function3D _function
 
 
+cdef class EqualsScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class NotEqualsScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class LessThanScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class GreaterThanScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class LessEqualsScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
+cdef class GreaterEqualsScalar3D(Function3D):
+    cdef double _value
+    cdef Function3D _function
+
+
 cdef inline bint is_callable(object f):
     """
     Tests if an object is a python callable or function object.
-    
-    :param object f: Object to test.  
+
+    :param object f: Object to test.
     :return: True if callable, False otherwise.
     """
     return isinstance(f, Function3D) or callable(f)

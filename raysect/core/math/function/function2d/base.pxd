@@ -58,6 +58,34 @@ cdef class PowFunction2D(Function2D):
     cdef Function2D _function1, _function2
 
 
+cdef class AbsFunction2D(Function2D):
+    cdef Function2D _function
+
+
+cdef class EqualsFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class NotEqualsFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class LessThanFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class GreaterThanFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class LessEqualsFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class GreaterEqualsFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
 cdef class AddScalar2D(Function2D):
     cdef double _value
     cdef Function2D _function
@@ -98,11 +126,41 @@ cdef class PowFunctionScalar2D(Function2D):
     cdef Function2D _function
 
 
+cdef class EqualsScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class NotEqualsScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class LessThanScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class GreaterThanScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class LessEqualsScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
+cdef class GreaterEqualsScalar2D(Function2D):
+    cdef double _value
+    cdef Function2D _function
+
+
 cdef inline bint is_callable(object f):
     """
     Tests if an object is a python callable or function object.
-    
-    :param object f: Object to test.  
+
+    :param object f: Object to test.
     :return: True if callable, False otherwise.
     """
     return isinstance(f, Function2D) or callable(f)
