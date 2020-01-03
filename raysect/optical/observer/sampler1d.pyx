@@ -107,7 +107,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @fraction.setter
     def fraction(self, value):
         if value <= 0 or value > 1.:
-            raise ValueError("Parameter 'fraction' must be in the range (0, 1].")
+            raise ValueError("Attribute 'fraction' must be in the range (0, 1].")
         self._fraction = value
 
     @property
@@ -117,7 +117,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @ratio.setter
     def ratio(self, value):
         if value < 1.:
-            raise ValueError("Parameter 'ratio' must be >= 1.")
+            raise ValueError("Attribute 'ratio' must be >= 1.")
         self._ratio = value
 
     @property
@@ -127,7 +127,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @min_samples.setter
     def min_samples(self, value):
         if value < 1:
-            raise ValueError("Parameter 'min_samples' must be >= 1.")
+            raise ValueError("Attribute 'min_samples' must be >= 1.")
         self._min_samples = value
 
     @property
@@ -137,7 +137,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @cutoff.setter
     def cutoff(self, value):
         if value < 0 or value > 1.:
-            raise ValueError("Parameter 'cutoff' must be in the range [0, 1].")
+            raise ValueError("Attribute 'cutoff' must be in the range [0, 1].")
         self._cutoff = value
 
     @cython.boundscheck(False)
