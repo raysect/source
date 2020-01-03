@@ -107,7 +107,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @fraction.setter
     def fraction(self, value):
         if value <= 0 or value > 1.:
-            raise ValueError("Parameter 'fraction' must be in the range (0, 1]")
+            raise ValueError("Parameter 'fraction' must be in the range (0, 1].")
         self._fraction = value
 
     @property
@@ -117,7 +117,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @ratio.setter
     def ratio(self, value):
         if value < 1.:
-            raise ValueError("Parameter 'ratio' must be >= 1")
+            raise ValueError("Parameter 'ratio' must be >= 1.")
         self._ratio = value
 
     @property
@@ -127,7 +127,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @min_samples.setter
     def min_samples(self, value):
         if value < 1:
-            raise ValueError("Parameter 'min_samples' must be >= 1")
+            raise ValueError("Parameter 'min_samples' must be >= 1.")
         self._min_samples = value
 
     @property
@@ -137,7 +137,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @cutoff.setter
     def cutoff(self, value):
         if value < 0 or value > 1.:
-            raise ValueError("Parameter 'cutoff' must be in the range [0, 1]")
+            raise ValueError("Parameter 'cutoff' must be in the range [0, 1].")
         self._cutoff = value
 
     @cython.boundscheck(False)
@@ -282,7 +282,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @fraction.setter
     def fraction(self, value):
         if value <= 0 or value > 1.:
-            raise ValueError("Attribute 'fraction' must be in the range (0, 1]")
+            raise ValueError("Attribute 'fraction' must be in the range (0, 1].")
         self._fraction = value
 
     @property
@@ -292,7 +292,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @ratio.setter
     def ratio(self, value):
         if value < 1.:
-            raise ValueError("Attribute 'ratio' must be >= 1")
+            raise ValueError("Attribute 'ratio' must be >= 1.")
         self._ratio = value
 
     @property
@@ -302,7 +302,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @min_samples.setter
     def min_samples(self, value):
         if value < 1:
-            raise ValueError("Attribute 'min_samples' must be >= 1")
+            raise ValueError("Attribute 'min_samples' must be >= 1.")
         self._min_samples = value
 
     @property
@@ -312,7 +312,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @cutoff.setter
     def cutoff(self, value):
         if value < 0 or value > 1.:
-            raise ValueError("Attribute 'cutoff' must be in the range [0, 1]")
+            raise ValueError("Attribute 'cutoff' must be in the range [0, 1].")
         self._cutoff = value
 
     @property
@@ -322,7 +322,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @reduction_method.setter
     def reduction_method(self, value):
         if value not in {'weighted', 'mean', 'percentile', 'power_percentile'}:
-            raise ValueError("Attribute 'reduction_method' must be 'weighted', 'mean', 'percentile' or 'power_percentile'")
+            raise ValueError("Attribute 'reduction_method' must be 'weighted', 'mean', 'percentile' or 'power_percentile'.")
         self._reduction_method = value
 
     @property
@@ -332,7 +332,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @percentile.setter
     def percentile(self, value):
         if value < 0 or value > 100.:
-            raise ValueError("Percentiles must be in the range [0, 100]")
+            raise ValueError("Percentiles must be in the range [0, 100].")
         self._percentile = value
 
     @cython.boundscheck(False)
@@ -375,7 +375,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
 
         else:
             raise ValueError("Attribute 'reduction_method' has wrong value: %s. " % self._reduction_method +
-                             "Must be 'weighted', 'mean', 'percentile' or 'power_percentile'")
+                             "Must be 'weighted', 'mean', 'percentile' or 'power_percentile'.")
 
         normalised_mv = normalised
 

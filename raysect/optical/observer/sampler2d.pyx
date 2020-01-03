@@ -65,7 +65,7 @@ cdef class FullFrameSampler2D(FrameSampler2D):
             self._mask = None
         else:
             if value.ndim != 2:
-                raise ValueError("Mask must be a 2D array")
+                raise ValueError("Mask must be a 2D array.")
             self._mask = value.astype(np.bool)
             self._mask_mv = np.frombuffer(self._mask, dtype=np.uint8).reshape(self.mask.shape)
 
@@ -157,7 +157,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
     @fraction.setter
     def fraction(self, value):
         if value <= 0 or value > 1.:
-            raise ValueError("Attribute 'fraction' must be in the range (0, 1]")
+            raise ValueError("Attribute 'fraction' must be in the range (0, 1].")
         self._fraction = value
 
     @property
@@ -167,7 +167,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
     @ratio.setter
     def ratio(self, value):
         if value < 1.:
-            raise ValueError("Attribute 'ratio' must be >= 1")
+            raise ValueError("Attribute 'ratio' must be >= 1.")
         self._ratio = value
 
     @property
@@ -177,7 +177,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
     @min_samples.setter
     def min_samples(self, value):
         if value < 1:
-            raise ValueError("Attribute 'min_samples' must be >= 1")
+            raise ValueError("Attribute 'min_samples' must be >= 1.")
         self._min_samples = value
 
     @property
@@ -187,7 +187,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
     @cutoff.setter
     def cutoff(self, value):
         if value < 0 or value > 1.:
-            raise ValueError("Attribute 'cutoff' must be in the range [0, 1]")
+            raise ValueError("Attribute 'cutoff' must be in the range [0, 1].")
         self._cutoff = value
 
     @property
@@ -200,7 +200,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
             self._mask = None
         else:
             if value.ndim != 2:
-                raise ValueError("Mask must be a 2D array")
+                raise ValueError("Mask must be a 2D array.")
             self._mask = value.astype(np.bool)
             self._mask_mv = np.frombuffer(self._mask, dtype=np.uint8).reshape(self.mask.shape)
 
@@ -393,7 +393,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
     @fraction.setter
     def fraction(self, value):
         if value <= 0 or value > 1.:
-            raise ValueError("Attribute 'fraction' must be in the range (0, 1]")
+            raise ValueError("Attribute 'fraction' must be in the range (0, 1].")
         self._fraction = value
 
     @property
@@ -403,7 +403,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
     @ratio.setter
     def ratio(self, value):
         if value < 1.:
-            raise ValueError("Attribute 'ratio' must be >= 1")
+            raise ValueError("Attribute 'ratio' must be >= 1.")
         self._ratio = value
 
     @property
@@ -413,7 +413,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
     @min_samples.setter
     def min_samples(self, value):
         if value < 1:
-            raise ValueError("Attribute 'min_samples' must be >= 1")
+            raise ValueError("Attribute 'min_samples' must be >= 1.")
         self._min_samples = value
 
     @property
@@ -423,7 +423,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
     @cutoff.setter
     def cutoff(self, value):
         if value < 0 or value > 1.:
-            raise ValueError("Attribute 'cutoff' must be in the range [0, 1]")
+            raise ValueError("Attribute 'cutoff' must be in the range [0, 1].")
         self._cutoff = value
 
     @property
@@ -433,7 +433,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
     @reduction_method.setter
     def reduction_method(self, value):
         if value not in {'weighted', 'mean', 'percentile', 'power_percentile'}:
-            raise ValueError("Attribute 'reduction_method' must be 'weighted', 'mean', 'percentile' or 'power_percentile'")
+            raise ValueError("Attribute 'reduction_method' must be 'weighted', 'mean', 'percentile' or 'power_percentile'.")
         self._reduction_method = value
 
     @property
@@ -443,7 +443,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
     @percentile.setter
     def percentile(self, value):
         if value < 0 or value > 100.:
-            raise ValueError("Percentiles must be in the range [0, 100]")
+            raise ValueError("Percentiles must be in the range [0, 100].")
         self._percentile = value
 
     @property
@@ -456,7 +456,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
             self._mask = None
         else:
             if value.ndim != 2:
-                raise ValueError("Mask must be a 2D array")
+                raise ValueError("Mask must be a 2D array.")
             self._mask = value.astype(np.bool)
             self._mask_mv = np.frombuffer(self._mask, dtype=np.uint8).reshape(self.mask.shape)
 
@@ -508,7 +508,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
 
         else:
             raise ValueError("Attribute 'reduction_method' has wrong value: %s. " % self._reduction_method +
-                             "Must be 'weighted', 'mean', 'percentile' or 'power_percentile'")
+                             "Must be 'weighted', 'mean', 'percentile' or 'power_percentile'.")
 
         normalised_mv = normalised
 
@@ -747,7 +747,7 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
     @fraction.setter
     def fraction(self, value):
         if value <= 0 or value > 1.:
-            raise ValueError("fraction must be in the range (0, 1]")
+            raise ValueError("Attribute 'fraction' must be in the range (0, 1].")
         self._fraction = value
 
     @property
@@ -757,7 +757,7 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
     @ratio.setter
     def ratio(self, value):
         if value < 1.:
-            raise ValueError("ratio must be >= 1")
+            raise ValueError("Attribute 'ratio' must be >= 1.")
         self._ratio = value
 
     @property
@@ -767,7 +767,7 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
     @min_samples.setter
     def min_samples(self, value):
         if value < 1:
-            raise ValueError("min_samples must be >= 1")
+            raise ValueError("Attribute 'min_samples' must be >= 1.")
         self._min_samples = value
 
     @property
@@ -777,7 +777,7 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
     @cutoff.setter
     def cutoff(self, value):
         if value < 0 or value > 1.:
-            raise ValueError("cutoff must be in the range [0, 1]")
+            raise ValueError("Attribute 'cutoff' must be in the range [0, 1].")
         self._cutoff = value
 
     @property
@@ -790,7 +790,7 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
             self._mask = None
         else:
             if value.ndim != 2:
-                raise ValueError("Mask must be a 2D array")
+                raise ValueError("Mask must be a 2D array.")
             self._mask = value.astype(np.bool)
             self._mask_mv = np.frombuffer(self._mask, dtype=np.uint8).reshape(self.mask.shape)
 
