@@ -107,7 +107,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @fraction.setter
     def fraction(self, value):
         if value <= 0 or value > 1.:
-            raise ValueError("fraction must be in the range (0, 1]")
+            raise ValueError("Parameter 'fraction' must be in the range (0, 1]")
         self._fraction = value
 
     @property
@@ -117,7 +117,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @ratio.setter
     def ratio(self, value):
         if value < 1.:
-            raise ValueError("ratio must be >= 1")
+            raise ValueError("Parameter 'ratio' must be >= 1")
         self._ratio = value
 
     @property
@@ -127,7 +127,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @min_samples.setter
     def min_samples(self, value):
         if value < 1:
-            raise ValueError("min_samples must be >= 1")
+            raise ValueError("Parameter 'min_samples' must be >= 1")
         self._min_samples = value
 
     @property
@@ -137,22 +137,24 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
     @cutoff.setter
     def cutoff(self, value):
         if value < 0 or value > 1.:
-            raise ValueError("cutoff must be in the range [0, 1]")
+            raise ValueError("Parameter 'cutoff' must be in the range [0, 1]")
         self._cutoff = value
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef list generate_tasks(self, int pixels):
 
         cdef:
             StatsArray1D frame
             int pixel, min_samples
             np.ndarray normalised
-            double[::1] error, normalised_mv
-            double percentile_error
+            double[:] error, mean, normalised_mv
+            int[:] samples
+            double percentile_error, cutoff
             list tasks
 
-        frame = self.pipeline.frame
+        frame = self._pipeline.frame
         if frame is None:
             # no frame data available, generate tasks for the full frame
             return self._full_frame(pixels)
@@ -161,25 +163,28 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
         if pixels != frame.length:
             raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the pipeline frame size.')
 
-        min_samples = max(self.min_samples, <int>(frame.samples.max() / self.ratio))
+        min_samples = max(self._min_samples, <int>(frame.samples.max() / self._ratio))
         error = frame.errors()
+        mean = frame.mean_mv  # does memoryview initialisation check before the loop
+        samples = frame.samples_mv  # same as above
         normalised = np.zeros(frame.length)
         normalised_mv = normalised
 
         # calculated normalised standard error
         for pixel in range(frame.length):
-            if frame.mean_mv[pixel] <= 0:
+            if mean[pixel] <= 0:
                 normalised_mv[pixel] = 0
             else:
-                normalised_mv[pixel] = error[pixel] / frame.mean_mv[pixel]
+                normalised_mv[pixel] = error[pixel] / mean[pixel]
 
         # locate error value corresponding to fraction of frame to process
-        percentile_error = np.percentile(normalised, (1 - self.fraction) * 100)
+        percentile_error = np.percentile(normalised, (1 - self._fraction) * 100)
+        cutoff = max(self._cutoff, percentile_error)
 
         # build tasks
         tasks = []
         for pixel in range(frame.length):
-            if frame.samples_mv[pixel] < min_samples or normalised_mv[pixel] > max(self.cutoff, percentile_error):
+            if samples[pixel] < min_samples or normalised_mv[pixel] > cutoff:
                 tasks.append((pixel, ))
 
         # perform tasks in random order so that image is assembled randomly rather than sequentially
@@ -226,16 +231,21 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
       cutoff of 0.01 corresponds to 1% standard error.
     :param str reduction_method: A method for obtaining spectral-average value of normalised
       error of a pixel from spectral array of errors (default='percentile').
-       - `reduction_method='weighted'`: the error of a pixel is calculated as power-weighted
-         average of the spectral errors,
-       - `reduction_method='mean'`: the error of a pixel is calculated as a mean
-         of the spectral errors excluding spectral bins with zero power,
-       - `reduction_method='percentile'`: the error of a pixel is calculated as a user-defined
-         percentile of the spectral errors excluding spectral bins with zero power.
-    :param double percentile: If `reduction_method='percentile'`, defines the percentile of
-      statistical errors of spectral bins with non-zero power, which is used to calculate
-      normalised error of a pixel (default=100). If `percentile=x`, extra sampling will be aborted
-      if `x`% of spectral bins of each pixel have normalised error lower than `cutoff`.
+        - `reduction_method='weighted'`: the error of a pixel is calculated as power-weighted
+          average of the spectral errors,
+        - `reduction_method='mean'`: the error of a pixel is calculated as a mean
+          of the spectral errors excluding spectral bins with zero power,
+        - `reduction_method='percentile'`: the error of a pixel is calculated as a user-defined
+          percentile of the spectral errors excluding spectral bins with zero power.
+        - `reduction_method='power_percentile'`: the error of a pixel is calculated as the highest
+          spectral error among a given percentage of spectral bins with the highest spectral power.
+    :param double percentile: Used only if `reduction_method='percentile'` or
+      `reduction_method='power_percentile'` (default=100).
+        - `reduction_method='percentile'`: If `percentile=x`, extra sampling will be aborted
+        if `x`% of spectral bins of each pixel have normalised error lower than `cutoff`.
+        - `reduction_method='power_percentile'`: If `percentile=x`, extra sampling will be aborted
+        if `x`% of spectral bins with the highest spectral power have normalised error lower
+        than `cutoff`.
     """
 
     cdef:
@@ -262,7 +272,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @pipeline.setter
     def pipeline(self, value):
         if not isinstance(value, (SpectralPowerPipeline1D, SpectralRadiancePipeline1D)):
-            raise TypeError('Sampler only compatible with SpectralPowerPipeLine1D or SpectralRadiancePipeline1D pipelines.')
+            raise TypeError('Sampler only compatible with SpectralPowerPipeline1D or SpectralRadiancePipeline1D pipelines.')
         self._pipeline = value
 
     @property
@@ -272,7 +282,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @fraction.setter
     def fraction(self, value):
         if value <= 0 or value > 1.:
-            raise ValueError("fraction must be in the range (0, 1]")
+            raise ValueError("Attribute 'fraction' must be in the range (0, 1]")
         self._fraction = value
 
     @property
@@ -282,7 +292,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @ratio.setter
     def ratio(self, value):
         if value < 1.:
-            raise ValueError("ratio must be >= 1")
+            raise ValueError("Attribute 'ratio' must be >= 1")
         self._ratio = value
 
     @property
@@ -292,7 +302,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @min_samples.setter
     def min_samples(self, value):
         if value < 1:
-            raise ValueError("min_samples must be >= 1")
+            raise ValueError("Attribute 'min_samples' must be >= 1")
         self._min_samples = value
 
     @property
@@ -302,7 +312,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
     @cutoff.setter
     def cutoff(self, value):
         if value < 0 or value > 1.:
-            raise ValueError("cutoff must be in the range [0, 1]")
+            raise ValueError("Attribute 'cutoff' must be in the range [0, 1]")
         self._cutoff = value
 
     @property
@@ -311,8 +321,8 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
 
     @reduction_method.setter
     def reduction_method(self, value):
-        if value not in {'weighted', 'mean', 'percentile'}:
-            raise ValueError("reduction_method must be 'weighted', 'mean' or 'percentile'")
+        if value not in {'weighted', 'mean', 'percentile', 'power_percentile'}:
+            raise ValueError("Attribute 'reduction_method' must be 'weighted', 'mean', 'percentile' or 'power_percentile'")
         self._reduction_method = value
 
     @property
@@ -327,18 +337,19 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef list generate_tasks(self, int pixels):
 
         cdef:
             StatsArray2D frame
-            int pixel, sbin, count, min_samples
-            np.ndarray normalised, spectral_normalised
-            double[::1] normalised_mv, spectral_normalised_mv
-            double[:, ::1] error
-            double percentile_error, pixel_power
+            int pixel, min_samples
+            np.ndarray normalised
+            double[::1] normalised_mv
+            int[::1] frame_min_samples
+            double percentile_error, cutoff
             list tasks
 
-        frame = self.pipeline.frame
+        frame = self._pipeline.frame
         if frame is None:
             # no frame data available, generate tasks for the full frame
             return self._full_frame(pixels)
@@ -347,56 +358,164 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
         if pixels != frame.nx:
             raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the pipeline frame size.')
 
-        min_samples = max(self.min_samples, <int>(frame.samples.max() / self.ratio))
-        error = frame.errors()
-        normalised = np.zeros(frame.nx)
-        normalised_mv = normalised
+        min_samples = max(self._min_samples, <int>(frame.samples.max() / self._ratio))
 
         # calculated normalised standard error
-        if self.reduction_method == 'weighted':
-            for pixel in range(frame.nx):
-                pixel_power = 0
-                for sbin in range(frame.ny):
-                    if frame.mean_mv[pixel, sbin] > 0:
-                        normalised_mv[pixel] += error[pixel, sbin]
-                        pixel_power += frame.mean_mv[pixel, sbin]
-                if pixel_power:
-                    normalised_mv[pixel] /= pixel_power
+        if self._reduction_method == 'weighted':
+            normalised = self._reduce_weighted()
 
-        elif self.reduction_method == 'mean':
-            for pixel in range(frame.nx):
-                count = 0
-                for sbin in range(frame.ny):
-                    if frame.mean_mv[pixel, sbin] > 0:
-                        normalised_mv[pixel] += error[pixel, sbin] / frame.mean_mv[pixel, sbin]
-                        count += 1
-                if count:
-                    normalised_mv[pixel] /= count
+        elif self._reduction_method == 'mean':
+            normalised = self._reduce_mean()
+
+        elif self._reduction_method == 'percentile':
+            normalised = self._reduce_percentile()
+
+        elif self._reduction_method == 'power_percentile':
+            normalised = self._reduce_power_percentile()
+
         else:
-            spectral_normalised = np.zeros(frame.ny)
-            spectral_normalised_mv = spectral_normalised
-            for pixel in range(frame.nx):
-                count = 0
-                for sbin in range(frame.ny):
-                    if frame.mean_mv[pixel, sbin] > 0:
-                        spectral_normalised_mv[count] = error[pixel, sbin] / frame.mean_mv[pixel, sbin]
-                        count += 1
-                if count:
-                    normalised_mv[pixel] = np.percentile(spectral_normalised[:count], self.percentile)
+            raise ValueError("Attribute 'reduction_method' has wrong value: %s. " % self._reduction_method +
+                             "Must be 'weighted', 'mean', 'percentile' or 'power_percentile'")
+
+        normalised_mv = normalised
 
         # locate error value corresponding to fraction of frame to process
-        percentile_error = np.percentile(normalised, (1 - self.fraction) * 100)
+        percentile_error = np.percentile(normalised, (1 - self._fraction) * 100)
+        cutoff = max(self._cutoff, percentile_error)
 
         # build tasks
         tasks = []
+        frame_min_samples = frame.samples.min(1)
         for pixel in range(frame.nx):
-            if frame.samples[pixel].min() < min_samples or normalised_mv[pixel] > max(self.cutoff, percentile_error):
+            if frame_min_samples[pixel] < min_samples or normalised_mv[pixel] > cutoff:
                 tasks.append((pixel, ))
 
         # perform tasks in random order so that image is assembled randomly rather than sequentially
         shuffle(tasks)
 
         return tasks
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef np.ndarray _reduce_weighted(self):
+
+        cdef:
+            StatsArray2D frame
+            np.ndarray normalised
+            double[:, ::1] error, mean
+            double[:] normalised_mv
+            int pixel, sbin
+            double pixel_power
+
+        frame = self._pipeline.frame
+        error = frame.errors()
+        mean = frame.mean_mv
+        normalised = np.zeros(frame.nx)
+        normalised_mv = normalised
+        for pixel in range(frame.nx):
+            pixel_power = 0
+            for sbin in range(frame.ny):
+                if mean[pixel, sbin] > 0:
+                    normalised_mv[pixel] += error[pixel, sbin]
+                    pixel_power += mean[pixel, sbin]
+            if pixel_power:
+                normalised_mv[pixel] /= pixel_power
+
+        return normalised
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef np.ndarray _reduce_mean(self):
+
+        cdef:
+            StatsArray2D frame
+            np.ndarray normalised
+            double[:, ::1] error, mean
+            double[:] normalised_mv
+            int pixel, sbin, count
+
+        frame = self._pipeline.frame
+        error = frame.errors()
+        mean = frame.mean_mv
+        normalised = np.zeros(frame.nx)
+        normalised_mv = normalised
+        for pixel in range(frame.nx):
+            count = 0
+            for sbin in range(frame.ny):
+                if mean[pixel, sbin] > 0:
+                    normalised_mv[pixel] += error[pixel, sbin] / mean[pixel, sbin]
+                    count += 1
+            if count:
+                normalised_mv[pixel] /= count
+
+        return normalised
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef np.ndarray _reduce_percentile(self):
+
+        cdef:
+            StatsArray2D frame
+            np.ndarray spectral_normalised, normalised
+            double[:, ::1] error, mean
+            double[:] normalised_mv
+            double[:] spectral_normalised_mv
+            int pixel, sbin, count
+
+        frame = self._pipeline.frame
+        error = frame.errors()
+        mean = frame.mean_mv
+        normalised = np.zeros(frame.nx)
+        normalised_mv = normalised
+        spectral_normalised = np.zeros(frame.ny)
+        spectral_normalised_mv = spectral_normalised
+        for pixel in range(frame.nx):
+            count = 0
+            for sbin in range(frame.ny):
+                if mean[pixel, sbin] > 0:
+                    spectral_normalised_mv[count] = error[pixel, sbin] / mean[pixel, sbin]
+                    count += 1
+            if count:
+                normalised_mv[pixel] = np.percentile(spectral_normalised[:count], self._percentile)
+
+        return normalised
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    cdef np.ndarray _reduce_power_percentile(self):
+
+        cdef:
+            StatsArray2D frame
+            np.ndarray normalised, spectral_power
+            double[:, ::1] error, mean
+            double[:] spectral_power_mv, normalised_mv
+            double power_threshold
+            int pixel, sbin, count
+
+        frame = self._pipeline.frame
+        error = frame.errors()
+        mean = frame.mean_mv
+        normalised = np.zeros(frame.nx)
+        normalised_mv = normalised
+        spectral_power = np.zeros(frame.ny)
+        spectral_power_mv = spectral_power
+        for pixel in range(frame.nx):
+            count = 0
+            for sbin in range(frame.ny):
+                if mean[pixel, sbin] > 0:
+                    spectral_power_mv[count] = mean[pixel, sbin]
+                    count += 1
+            if count:
+                power_threshold = np.percentile(spectral_power[:count], (100. - self._percentile))
+                for sbin in range(frame.ny):
+                    if mean[pixel, sbin] >= power_threshold:
+                        normalised_mv[pixel] = max(normalised_mv[pixel], error[pixel, sbin] / mean[pixel, sbin])
+
+        return normalised
 
     cpdef list _full_frame(self, int pixels):
 
