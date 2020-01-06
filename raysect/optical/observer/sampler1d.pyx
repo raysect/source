@@ -142,6 +142,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     @cython.cdivision(True)
     cpdef list generate_tasks(self, int pixels):
 
@@ -149,8 +150,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
             StatsArray1D frame
             int pixel, min_samples
             np.ndarray normalised
-            double[:] error, mean, normalised_mv
-            int[:] samples
+            double[:] error, normalised_mv
             double percentile_error, cutoff
             list tasks
 
@@ -165,17 +165,15 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
 
         min_samples = max(self._min_samples, <int>(frame.samples.max() / self._ratio))
         error = frame.errors()
-        mean = frame.mean_mv  # does memoryview initialisation check before the loop
-        samples = frame.samples_mv  # same as above
         normalised = np.zeros(frame.length)
         normalised_mv = normalised
 
         # calculated normalised standard error
         for pixel in range(frame.length):
-            if mean[pixel] <= 0:
+            if frame.mean_mv[pixel] <= 0:
                 normalised_mv[pixel] = 0
             else:
-                normalised_mv[pixel] = error[pixel] / mean[pixel]
+                normalised_mv[pixel] = error[pixel] / frame.mean_mv[pixel]
 
         # locate error value corresponding to fraction of frame to process
         percentile_error = np.percentile(normalised, (1 - self._fraction) * 100)
@@ -184,7 +182,7 @@ cdef class MonoAdaptiveSampler1D(FrameSampler1D):
         # build tasks
         tasks = []
         for pixel in range(frame.length):
-            if samples[pixel] < min_samples or normalised_mv[pixel] > cutoff:
+            if frame.samples_mv[pixel] < min_samples or normalised_mv[pixel] > cutoff:
                 tasks.append((pixel, ))
 
         # perform tasks in random order so that image is assembled randomly rather than sequentially
@@ -337,6 +335,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     @cython.cdivision(True)
     cpdef list generate_tasks(self, int pixels):
 
@@ -397,28 +396,28 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     @cython.cdivision(True)
     cdef np.ndarray _reduce_weighted(self):
 
         cdef:
             StatsArray2D frame
             np.ndarray normalised
-            double[:, ::1] error, mean
+            double[:, ::1] error
             double[:] normalised_mv
             int pixel, sbin
             double pixel_power
 
         frame = self._pipeline.frame
         error = frame.errors()
-        mean = frame.mean_mv
         normalised = np.zeros(frame.nx)
         normalised_mv = normalised
         for pixel in range(frame.nx):
             pixel_power = 0
             for sbin in range(frame.ny):
-                if mean[pixel, sbin] > 0:
+                if frame.mean_mv[pixel, sbin] > 0:
                     normalised_mv[pixel] += error[pixel, sbin]
-                    pixel_power += mean[pixel, sbin]
+                    pixel_power += frame.mean_mv[pixel, sbin]
             if pixel_power:
                 normalised_mv[pixel] /= pixel_power
 
@@ -426,26 +425,26 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     @cython.cdivision(True)
     cdef np.ndarray _reduce_mean(self):
 
         cdef:
             StatsArray2D frame
             np.ndarray normalised
-            double[:, ::1] error, mean
+            double[:, ::1] error
             double[:] normalised_mv
             int pixel, sbin, count
 
         frame = self._pipeline.frame
         error = frame.errors()
-        mean = frame.mean_mv
         normalised = np.zeros(frame.nx)
         normalised_mv = normalised
         for pixel in range(frame.nx):
             count = 0
             for sbin in range(frame.ny):
-                if mean[pixel, sbin] > 0:
-                    normalised_mv[pixel] += error[pixel, sbin] / mean[pixel, sbin]
+                if frame.mean_mv[pixel, sbin] > 0:
+                    normalised_mv[pixel] += error[pixel, sbin] / frame.mean_mv[pixel, sbin]
                     count += 1
             if count:
                 normalised_mv[pixel] /= count
@@ -454,20 +453,20 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     @cython.cdivision(True)
     cdef np.ndarray _reduce_percentile(self):
 
         cdef:
             StatsArray2D frame
             np.ndarray spectral_normalised, normalised
-            double[:, ::1] error, mean
+            double[:, ::1] error
             double[:] normalised_mv
             double[:] spectral_normalised_mv
             int pixel, sbin, count
 
         frame = self._pipeline.frame
         error = frame.errors()
-        mean = frame.mean_mv
         normalised = np.zeros(frame.nx)
         normalised_mv = normalised
         spectral_normalised = np.zeros(frame.ny)
@@ -475,8 +474,8 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
         for pixel in range(frame.nx):
             count = 0
             for sbin in range(frame.ny):
-                if mean[pixel, sbin] > 0:
-                    spectral_normalised_mv[count] = error[pixel, sbin] / mean[pixel, sbin]
+                if frame.mean_mv[pixel, sbin] > 0:
+                    spectral_normalised_mv[count] = error[pixel, sbin] / frame.mean_mv[pixel, sbin]
                     count += 1
             if count:
                 normalised_mv[pixel] = np.percentile(spectral_normalised[:count], self._percentile)
@@ -485,20 +484,20 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
+    @cython.initializedcheck(False)
     @cython.cdivision(True)
     cdef np.ndarray _reduce_power_percentile(self):
 
         cdef:
             StatsArray2D frame
             np.ndarray normalised, spectral_power
-            double[:, ::1] error, mean
+            double[:, ::1] error
             double[:] spectral_power_mv, normalised_mv
             double power_threshold
             int pixel, sbin, count
 
         frame = self._pipeline.frame
         error = frame.errors()
-        mean = frame.mean_mv
         normalised = np.zeros(frame.nx)
         normalised_mv = normalised
         spectral_power = np.zeros(frame.ny)
@@ -506,14 +505,14 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
         for pixel in range(frame.nx):
             count = 0
             for sbin in range(frame.ny):
-                if mean[pixel, sbin] > 0:
-                    spectral_power_mv[count] = mean[pixel, sbin]
+                if frame.mean_mv[pixel, sbin] > 0:
+                    spectral_power_mv[count] = frame.mean_mv[pixel, sbin]
                     count += 1
             if count:
                 power_threshold = np.percentile(spectral_power[:count], (100. - self._percentile))
                 for sbin in range(frame.ny):
-                    if mean[pixel, sbin] >= power_threshold:
-                        normalised_mv[pixel] = max(normalised_mv[pixel], error[pixel, sbin] / mean[pixel, sbin])
+                    if frame.mean_mv[pixel, sbin] >= power_threshold:
+                        normalised_mv[pixel] = max(normalised_mv[pixel], error[pixel, sbin] / frame.mean_mv[pixel, sbin])
 
         return normalised
 

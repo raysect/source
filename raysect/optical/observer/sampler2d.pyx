@@ -214,8 +214,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
             StatsArray2D frame
             int x, y, min_samples
             np.ndarray normalised
-            double[:, ::1] error, mean, normalised_mv
-            int[:, ::1] samples
+            double[:, ::1] error, normalised_mv
             double percentile_error, cutoff
             list tasks
 
@@ -238,16 +237,14 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
         min_samples = max(self._min_samples, <int>(frame.samples[self._mask].max() / self._ratio))
 
         error = frame.errors()
-        mean = frame.mean_mv  # does memoryview initialisation check before the loop
-        samples = frame.samples_mv  # same as above
         normalised = np.zeros((frame.nx, frame.ny))
         normalised_mv = normalised
 
         # calculated normalised standard error
         for x in range(frame.nx):
             for y in range(frame.ny):
-                if self._mask_mv[x, y] and mean[x, y] > 0:
-                    normalised_mv[x, y] = error[x, y] / mean[x, y]
+                if self._mask_mv[x, y] and frame.mean_mv[x, y] > 0:
+                    normalised_mv[x, y] = error[x, y] / frame.mean_mv[x, y]
 
         # locate error value corresponding to fraction of frame to process
         percentile_error = np.percentile(normalised[self._mask], (1 - self._fraction) * 100)
@@ -257,7 +254,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
         tasks = []
         for x in range(frame.nx):
             for y in range(frame.ny):
-                if self._mask_mv[x, y] and (samples[x, y] < min_samples or normalised_mv[x, y] > cutoff):
+                if self._mask_mv[x, y] and (frame.samples_mv[x, y] < min_samples or normalised_mv[x, y] > cutoff):
                     tasks.append((x, y))
 
         # perform tasks in random order so that image is assembled randomly rather than sequentially
@@ -539,13 +536,12 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
             StatsArray3D frame
             int x, y, z
             np.ndarray normalised
-            double[:, :, ::1] error, mean
+            double[:, :, ::1] error
             double[:, ::1] normalised_mv
             double pixel_power
 
         frame = self._pipeline.frame
         error = frame.errors()
-        mean = frame.mean_mv
         normalised = np.zeros((frame.nx, frame.ny))
         normalised_mv = normalised
         for x in range(frame.nx):
@@ -553,9 +549,9 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
                 if self._mask_mv[x, y]:
                     pixel_power = 0
                     for z in range(frame.nz):
-                        if mean[x, y, z] > 0:
+                        if frame.mean_mv[x, y, z] > 0:
                             normalised_mv[x, y] += error[x, y, z]
-                            pixel_power += mean[x, y, z]
+                            pixel_power += frame.mean_mv[x, y, z]
                     if pixel_power:
                         normalised_mv[x, y] /= pixel_power
 
@@ -571,12 +567,11 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
             StatsArray3D frame
             int x, y, z, count
             np.ndarray normalised
-            double[:, :, ::1] error, mean
+            double[:, :, ::1] error
             double[:, ::1] normalised_mv
 
         frame = self._pipeline.frame
         error = frame.errors()
-        mean = frame.mean_mv
         normalised = np.zeros((frame.nx, frame.ny))
         normalised_mv = normalised
         for x in range(frame.nx):
@@ -584,8 +579,8 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
                 if self._mask_mv[x, y]:
                     count = 0
                     for z in range(frame.nz):
-                        if mean[x, y, z] > 0:
-                            normalised_mv[x, y] += error[x, y, z] / mean[x, y, z]
+                        if frame.mean_mv[x, y, z] > 0:
+                            normalised_mv[x, y] += error[x, y, z] / frame.mean_mv[x, y, z]
                             count += 1
                     if count:
                         normalised_mv[x, y] /= count
@@ -602,13 +597,12 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
             StatsArray3D frame
             int x, y, z, count
             np.ndarray spectral_normalised, normalised
-            double[:, :, ::1] error, mean
+            double[:, :, ::1] error
             double[:, ::1] normalised_mv
             double[:] spectral_normalised_mv
 
         frame = self._pipeline.frame
         error = frame.errors()
-        mean = frame.mean_mv
         normalised = np.zeros((frame.nx, frame.ny))
         normalised_mv = normalised
         spectral_normalised = np.zeros(frame.nz)
@@ -618,8 +612,8 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
                 if self._mask_mv[x, y]:
                     count = 0
                     for z in range(frame.nz):
-                        if mean[x, y, z] > 0:
-                            spectral_normalised_mv[count] = error[x, y, z] / mean[x, y, z]
+                        if frame.mean_mv[x, y, z] > 0:
+                            spectral_normalised_mv[count] = error[x, y, z] / frame.mean_mv[x, y, z]
                             count += 1
                     if count:
                         normalised_mv[x, y] = np.percentile(spectral_normalised[:count], self._percentile)
@@ -636,14 +630,13 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
             StatsArray3D frame
             int x, y, z, count
             np.ndarray normalised, spectral_power
-            double[:, :, ::1] error, mean
+            double[:, :, ::1] error
             double[:, ::1] normalised_mv
             double[:] spectral_power_mv
             double power_threshold
 
         frame = self._pipeline.frame
         error = frame.errors()
-        mean = frame.mean_mv
         normalised = np.zeros((frame.nx, frame.ny))
         normalised_mv = normalised
         spectral_power = np.zeros(frame.nz)
@@ -653,14 +646,14 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
                 if self._mask_mv[x, y]:
                     count = 0
                     for z in range(frame.nz):
-                        if mean[x, y, z] > 0:
-                            spectral_power_mv[count] = mean[x, y, z]
+                        if frame.mean_mv[x, y, z] > 0:
+                            spectral_power_mv[count] = frame.mean_mv[x, y, z]
                             count += 1
                     if count:
                         power_threshold = np.percentile(spectral_power[:count], (100. - self._percentile))
                         for z in range(frame.nz):
-                            if mean[x, y, z] >= power_threshold:
-                                normalised_mv[x, y] = max(normalised_mv[x, y], error[x, y, z] / mean[x, y, z])
+                            if frame.mean_mv[x, y, z] >= power_threshold:
+                                normalised_mv[x, y] = max(normalised_mv[x, y], error[x, y, z] / frame.mean_mv[x, y, z])
 
         return normalised
 
@@ -804,9 +797,8 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
             StatsArray3D frame
             int x, y, c, min_samples, min_pixel_samples
             np.ndarray normalised
-            double[:, :, ::1] error, mean
+            double[:, :, ::1] error
             double[:, ::1] normalised_mv
-            int[:, :, ::1] samples
             double percentile_error, cutoff
             list tasks
             double[3] pixel_normalised
@@ -829,8 +821,6 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
 
         min_samples = max(self._min_samples, <int>(frame.samples[self._mask].max() / self._ratio))
         error = frame.errors()
-        mean = frame.mean_mv  # does memoryview initialisation check before the loop
-        samples = frame.samples_mv  # same as above
         normalised = np.zeros((frame.nx, frame.ny))
         normalised_mv = normalised
 
@@ -839,8 +829,8 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
             for y in range(frame.ny):
                 if self._mask_mv[x, y]:
                     for c in range(3):
-                        if mean[x, y, c] > 0:
-                            pixel_normalised[c] = error[x, y, c] / mean[x, y, c]
+                        if frame.mean_mv[x, y, c] > 0:
+                            pixel_normalised[c] = error[x, y, c] / frame.mean_mv[x, y, c]
                     normalised_mv[x, y] = max(pixel_normalised[0], pixel_normalised[1], pixel_normalised[2])
 
         # locate error value corresponding to fraction of frame to process
@@ -852,7 +842,7 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
         for x in range(frame.nx):
             for y in range(frame.ny):
                 if self._mask_mv[x, y]:
-                    min_pixel_samples = min(samples[x, y, 0], samples[x, y, 1], samples[x, y, 2])
+                    min_pixel_samples = min(frame.samples_mv[x, y, 0], frame.samples_mv[x, y, 1], frame.samples_mv[x, y, 2])
                     if min_pixel_samples < min_samples or normalised_mv[x, y] > cutoff:
                         tasks.append((x, y))
 
