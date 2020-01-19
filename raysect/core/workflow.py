@@ -216,7 +216,22 @@ class MulticoreEngine(RenderEngine):
         # consume results
         remaining = len(tasks)
         while remaining:
+
             results = result_queue.get()
+
+            # has a worker failed?
+            if isinstance(results, Exception):
+
+                # clean up
+                for worker in workers:
+                    if worker.is_alive():
+                        worker.terminate()
+                producer.terminate()
+
+                # raise the exception to inform the user
+                raise results
+
+            # update state with new results
             for result in results:
                 update(result, *update_args, **update_kwargs)
                 remaining -= 1
@@ -293,13 +308,18 @@ class MulticoreEngine(RenderEngine):
 
             results = []
             for task in job:
-                results.append(render(task, *args, **kwargs))
+                try:
+                    results.append(render(task, *args, **kwargs))
+                except Exception as e:
+                    # pass the exception back to the main process and quit
+                    result_queue.put(e)
+                    break
+
+            # hand back results
             result_queue.put(results)
 
 
 if __name__ == '__main__':
-
-    from time import time
 
     class Job:
 
@@ -321,12 +341,12 @@ if __name__ == '__main__':
         def update(self, result):
             self.total += result
 
-    n = 2000
+    n = 20000
 
-    t = time()
+    t = time.time()
     j = Job(SerialEngine())
-    print(j.run(n), time() - t)
+    print(j.run(n), time.time() - t)
 
-    t = time()
+    t = time.time()
     j = Job(MulticoreEngine())
-    print(j.run(n), time() - t)
+    print(j.run(n), time.time() - t)
