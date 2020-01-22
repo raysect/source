@@ -228,6 +228,11 @@ class MulticoreEngine(RenderEngine):
                         worker.terminate()
                 producer.terminate()
 
+                # wait for processes to terminate
+                for worker in workers:
+                    worker.join()
+                producer.join()
+
                 # raise the exception to inform the user
                 raise results
 
