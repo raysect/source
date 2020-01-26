@@ -29,6 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
 cdef class Function1D:
     cdef double evaluate(self, double x) except? -1e999
 
@@ -54,6 +55,34 @@ cdef class PowFunction1D(Function1D):
 
 
 cdef class ModuloFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class AbsFunction1D(Function1D):
+    cdef Function1D _function
+
+
+cdef class EqualsFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class NotEqualsFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class LessThanFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class GreaterThanFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class LessEqualsFunction1D(Function1D):
+    cdef Function1D _function1, _function2
+
+
+cdef class GreaterEqualsFunction1D(Function1D):
     cdef Function1D _function1, _function2
 
 
@@ -95,3 +124,43 @@ cdef class PowScalarFunction1D(Function1D):
 cdef class PowFunctionScalar1D(Function1D):
     cdef double _value
     cdef Function1D _function
+
+
+cdef class EqualsScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class NotEqualsScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class LessThanScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class GreaterThanScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class LessEqualsScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef class GreaterEqualsScalar1D(Function1D):
+    cdef double _value
+    cdef Function1D _function
+
+
+cdef inline bint is_callable(object f):
+    """
+    Tests if an object is a python callable or function object.
+
+    :param object f: Object to test.
+    :return: True if callable, False otherwise.
+    """
+    return isinstance(f, Function1D) or callable(f)

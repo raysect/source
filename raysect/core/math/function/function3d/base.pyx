@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numbers
+from cpython.object cimport Py_LT, Py_EQ, Py_GT, Py_LE, Py_NE, Py_GE
 cimport cython
 from libc.math cimport floor
 from .autowrap cimport autowrap_function3d
@@ -64,82 +65,82 @@ cdef class Function3D:
         return self.evaluate(x, y, z)
 
     def __add__(object a, object b):
-        if isinstance(a, Function3D):
-            if isinstance(b, Function3D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() + b()
-                return AddFunction3D(<Function3D> a, <Function3D> b)
+                return AddFunction3D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() + B -> B + a()
-                return AddScalar3D(<double> b, <Function3D> a)
+                return AddScalar3D(<double> b, a)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function3D):
+            if is_callable(b):
                 # A + b()
-                return AddScalar3D(<double> a, <Function3D> b)
+                return AddScalar3D(<double> a, b)
         return NotImplemented
 
     def __sub__(object a, object b):
-        if isinstance(a, Function3D):
-            if isinstance(b, Function3D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() - b()
-                return SubtractFunction3D(<Function3D> a, <Function3D> b)
+                return SubtractFunction3D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() - B -> -B + a()
-                return AddScalar3D(-(<double> b), <Function3D> a)
+                return AddScalar3D(-(<double> b), a)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function3D):
+            if is_callable(b):
                 # A - b()
-                return SubtractScalar3D(<double> a, <Function3D> b)
+                return SubtractScalar3D(<double> a, b)
         return NotImplemented
 
     def __mul__(object a, object b):
-        if isinstance(a, Function3D):
-            if isinstance(b, Function3D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() * b()
-                return MultiplyFunction3D(<Function3D> a, <Function3D> b)
+                return MultiplyFunction3D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() * B -> B * a()
-                return MultiplyScalar3D(<double> b, <Function3D> a)
+                return MultiplyScalar3D(<double> b, a)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function3D):
+            if is_callable(b):
                 # A * b()
-                return MultiplyScalar3D(<double> a, <Function3D> b)
+                return MultiplyScalar3D(<double> a, b)
         return NotImplemented
 
     @cython.cdivision(True)
     def __truediv__(object a, object b):
         cdef double v
-        if isinstance(a, Function3D):
-            if isinstance(b, Function3D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() / b()
-                return DivideFunction3D(<Function3D> a, <Function3D> b)
+                return DivideFunction3D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() / B -> 1/B * a()
                 v = <double> b
                 if v == 0.0:
                     raise ZeroDivisionError("Scalar used as the denominator of the division is zero valued.")
-                return MultiplyScalar3D(1/v, <Function3D> a)
+                return MultiplyScalar3D(1/v, a)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function3D):
+            if is_callable(b):
                 # A * b()
-                return DivideScalar3D(<double> a, <Function3D> b)
+                return DivideScalar3D(<double> a, b)
         return NotImplemented
 
     def __mod__(object a, object b):
         cdef double v
-        if isinstance(a, Function3D):
-            if isinstance(b, Function3D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() % b()
-                return ModuloFunction3D(<Function3D> a, <Function3D> b)
+                return ModuloFunction3D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() % B
                 v = <double> b
                 if v == 0.0:
                     raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
-                return ModuloFunctionScalar3D(<Function3D> a, v)
+                return ModuloFunctionScalar3D(a, v)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function3D):
+            if is_callable(b):
                 # A % b()
-                return ModuloScalarFunction3D(<double> a, <Function3D> b)
+                return ModuloScalarFunction3D(<double> a, b)
         return NotImplemented
 
     def __neg__(self):
@@ -150,17 +151,53 @@ cdef class Function3D:
             # Optimised implementation of pow(a, b, c) not available: fall back
             # to general implementation
             return (a ** b) % c
-        if isinstance(a, Function3D):
-            if isinstance(b, Function3D):
+        if is_callable(a):
+            if is_callable(b):
                 # a() ** b()
-                return PowFunction3D(<Function3D> a, <Function3D> b)
+                return PowFunction3D(a, b)
             elif isinstance(b, numbers.Real):
                 # a() ** b
-                return PowFunctionScalar3D(<Function3D> a, <double> b)
+                return PowFunctionScalar3D(a, <double> b)
         elif isinstance(a, numbers.Real):
-            if isinstance(b, Function3D):
+            if is_callable(b):
                 # a ** b()
-                return PowScalarFunction3D(<double> a, <Function3D> b)
+                return PowScalarFunction3D(<double> a, b)
+        return NotImplemented
+
+    def __abs__(self):
+        return AbsFunction3D(self)
+
+    def __richcmp__(self, object other, int op):
+        if is_callable(other):
+            if op == Py_EQ:
+                return EqualsFunction3D(self, other)
+            if op == Py_NE:
+                return NotEqualsFunction3D(self, other)
+            if op == Py_LT:
+                return LessThanFunction3D(self, other)
+            if op == Py_GT:
+                return GreaterThanFunction3D(self, other)
+            if op == Py_LE:
+                return LessEqualsFunction3D(self, other)
+            if op == Py_GE:
+                return GreaterEqualsFunction3D(self, other)
+        if isinstance(other, numbers.Real):
+            if op == Py_EQ:
+                return EqualsScalar3D(<double> other, self)
+            if op == Py_NE:
+                return NotEqualsScalar3D(<double> other, self)
+            if op == Py_LT:
+                # f() < K -> K > f
+                return GreaterThanScalar3D(<double> other, self)
+            if op == Py_GT:
+                # f() > K -> K < f
+                return LessThanScalar3D(<double> other, self)
+            if op == Py_LE:
+                # f() <= K -> K >= f
+                return GreaterEqualsScalar3D(<double> other, self)
+            if op == Py_GE:
+                # f() >= K -> K <= f
+                return LessEqualsScalar3D(<double> other, self)
         return NotImplemented
 
 
@@ -175,7 +212,7 @@ cdef class AddFunction3D(Function3D):
     :param function2: A Function3D object.
     """
 
-    def __init__(self, Function3D function1, Function3D function2):
+    def __init__(self, object function1, object function2):
         self._function1 = autowrap_function3d(function1)
         self._function2 = autowrap_function3d(function2)
 
@@ -194,7 +231,7 @@ cdef class SubtractFunction3D(Function3D):
     :param function2: A Function3D object.
     """
 
-    def __init__(self, Function3D function1, Function3D function2):
+    def __init__(self, object function1, object function2):
         self._function1 = autowrap_function3d(function1)
         self._function2 = autowrap_function3d(function2)
 
@@ -251,8 +288,8 @@ cdef class ModuloFunction3D(Function3D):
     This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
     Function3D object.
 
-    :param Function3D function1: A Function3D object.
-    :param Function3D function2: A Function3D object.
+    :param object function1: A Function3D object or Python callable.
+    :param object function2: A Function3D object or Python callable.
     """
     def __init__(self, function1, function2):
         self._function1 = autowrap_function3d(function1)
@@ -273,8 +310,8 @@ cdef class PowFunction3D(Function3D):
     This class is not intended to be used directly, but rather returned as the result of a __pow__() call on a
     Function3D object.
 
-    :param Function3D function1: A Function3D object.
-    :param Function3D function2: A Function3D object.
+    :param object function1: A Function3D object or Python callable.
+    :param object function2: A Function3D object or Python callable.
     """
     def __init__(self, function1, function2):
         self._function1 = autowrap_function3d(function1)
@@ -291,6 +328,130 @@ cdef class PowFunction3D(Function3D):
         return base ** exponent
 
 
+cdef class AbsFunction3D(Function3D):
+    """
+    A Function3D class that implements the absolute value of the result of a Function3D object: abs(f()).
+
+    This class is not intended to be used directly, but rather returned as the
+    result of an __abs__() call on a Function3D object.
+
+    :param object function: A Function3D object or Python callable.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return abs(self._function.evaluate(x, y, z))
+
+
+cdef class EqualsFunction3D(Function3D):
+    """
+    A Function3D class that tests the equality of the results of two Function3D objects: f1() == f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __eq__() call on a
+    Function3D object.
+
+    :param object function1: A Function3D object or Python callable.
+    :param object function2: A Function3D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function3d(function1)
+        self._function2 = autowrap_function3d(function2)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._function1.evaluate(x, y, z) == self._function2.evaluate(x, y, z)
+
+
+cdef class NotEqualsFunction3D(Function3D):
+    """
+    A Function3D class that tests the inequality of the results of two Function3D objects: f1() != f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ne__() call on a
+    Function3D object.
+
+    :param object function1: A Function3D object or Python callable.
+    :param object function2: A Function3D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function3d(function1)
+        self._function2 = autowrap_function3d(function2)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._function1.evaluate(x, y, z) != self._function2.evaluate(x, y, z)
+
+
+cdef class LessThanFunction3D(Function3D):
+    """
+    A Function3D class that implements < of the results of two Function3D objects: f1() < f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __lt__() call on a
+    Function3D object.
+
+    :param object function1: A Function3D object or Python callable.
+    :param object function2: A Function3D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function3d(function1)
+        self._function2 = autowrap_function3d(function2)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._function1.evaluate(x, y, z) < self._function2.evaluate(x, y, z)
+
+
+cdef class GreaterThanFunction3D(Function3D):
+    """
+    A Function3D class that implements > of the results of two Function3D objects: f1() > f2()
+
+    This class is not intended to be used directly, but rather returned as the result of a __gt__() call on a
+    Function3D object.
+
+    :param object function1: A Function3D object or Python callable.
+    :param object function2: A Function3D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function3d(function1)
+        self._function2 = autowrap_function3d(function2)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._function1.evaluate(x, y, z) > self._function2.evaluate(x, y, z)
+
+
+cdef class LessEqualsFunction3D(Function3D):
+    """
+    A Function3D class that implements <= of the results of two Function3D objects: f1() <= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __le__() call on a
+    Function3D object.
+
+    :param object function1: A Function3D object or Python callable.
+    :param object function2: A Function3D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function3d(function1)
+        self._function2 = autowrap_function3d(function2)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._function1.evaluate(x, y, z) <= self._function2.evaluate(x, y, z)
+
+
+cdef class GreaterEqualsFunction3D(Function3D):
+    """
+    A Function3D class that implements >= of the results of two Function3D objects: f1() >= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ge__() call on a
+    Function3D object.
+
+    :param object function1: A Function3D object or Python callable.
+    :param object function2: A Function3D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function3d(function1)
+        self._function2 = autowrap_function3d(function2)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._function1.evaluate(x, y, z) >= self._function2.evaluate(x, y, z)
+
+
 cdef class AddScalar3D(Function3D):
     """
     A Function3D class that implements the addition of scalar and the result of a Function3D object: K + f()
@@ -299,10 +460,10 @@ cdef class AddScalar3D(Function3D):
     Function3D object.
 
     :param value: A double value.
-    :param function: A Function3D object.
+    :param function: A Function3D object or Python callable.
     """
 
-    def __init__(self, double value, Function3D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function3d(function)
 
@@ -318,10 +479,10 @@ cdef class SubtractScalar3D(Function3D):
     Function3D object.
 
     :param value: A double value.
-    :param function: A Function3D object.
+    :param function: A Function3D object or Python callable.
     """
 
-    def __init__(self, double value, Function3D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function3d(function)
 
@@ -337,10 +498,10 @@ cdef class MultiplyScalar3D(Function3D):
     Function3D object.
 
     :param value: A double value.
-    :param function: A Function3D object.
+    :param function: A Function3D object or Python callable.
     """
 
-    def __init__(self, double value, Function3D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function3d(function)
 
@@ -356,10 +517,10 @@ cdef class DivideScalar3D(Function3D):
     Function3D object.
 
     :param value: A double value.
-    :param function: A Function3D object.
+    :param function: A Function3D object or Python callable.
     """
 
-    def __init__(self, double value, Function3D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function3d(function)
 
@@ -379,9 +540,9 @@ cdef class ModuloScalarFunction3D(Function3D):
     Function3D object.
 
     :param float value: A double value.
-    :param Function3D function: A Function3D object.
+    :param object function: A Function3D object or Python callable.
     """
-    def __init__(self, double value, Function3D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function3d(function)
 
@@ -400,10 +561,10 @@ cdef class ModuloFunctionScalar3D(Function3D):
     This class is not intended to be used directly, but rather returned as the result of a __mod__() call on a
     Function3D object.
 
-    :param Function3D function: A Function3D object.
+    :param object function: A Function3D object or Python callable.
     :param float value: A double value.
     """
-    def __init__(self, Function3D function, double value):
+    def __init__(self, object function, double value):
         if value == 0:
             raise ValueError("Divisor cannot be zero")
         self._value = value
@@ -422,9 +583,9 @@ cdef class PowScalarFunction3D(Function3D):
     Function3D object.
 
     :param float value: A double value.
-    :param Function3D function: A Function3D object.
+    :param object function: A Function3D object or Python callable.
     """
-    def __init__(self, double value, Function3D function):
+    def __init__(self, double value, object function):
         self._value = value
         self._function = autowrap_function3d(function)
 
@@ -444,10 +605,10 @@ cdef class PowFunctionScalar3D(Function3D):
     This class is not intended to be used directly, but rather returned as the result of an __pow__() call on a
     Function3D object.
 
-    :param Function3D function: A Function3D object.
+    :param object function: A Function3D object or Python callable.
     :param float value: A double value.
     """
-    def __init__(self, Function3D function, double value):
+    def __init__(self, object function, double value):
         self._value = value
         self._function = autowrap_function3d(function)
 
@@ -458,3 +619,111 @@ cdef class PowFunctionScalar3D(Function3D):
         if base == 0 and self._value < 0:
             raise ZeroDivisionError("0.0 cannot be raised to a negative power")
         return base ** self._value
+
+
+cdef class EqualsScalar3D(Function3D):
+    """
+    A Function3D class that tests the equality of a scalar and the result of a Function3D object: K == f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __eq__() call on a
+    Function3D object.
+
+    :param value: A double value.
+    :param object function: A Function3D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._value == self._function.evaluate(x, y, z)
+
+
+cdef class NotEqualsScalar3D(Function3D):
+    """
+    A Function3D class that tests the inequality of a scalar and the result of a Function3D object: K != f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ne__() call on a
+    Function3D object.
+
+    :param value: A double value.
+    :param object function: A Function3D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._value != self._function.evaluate(x, y, z)
+
+
+cdef class LessThanScalar3D(Function3D):
+    """
+    A Function3D class that implements < of a scalar and the result of a Function3D object: K < f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __lt__() call on a
+    Function3D object.
+
+    :param value: A double value.
+    :param object function: A Function3D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._value < self._function.evaluate(x, y, z)
+
+
+cdef class GreaterThanScalar3D(Function3D):
+    """
+    A Function3D class that implements > of a scalar and the result of a Function3D object: K > f2()
+
+    This class is not intended to be used directly, but rather returned as the result of a __gt__() call on a
+    Function3D object.
+
+    :param value: A double value.
+    :param object function: A Function3D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._value > self._function.evaluate(x, y, z)
+
+
+cdef class LessEqualsScalar3D(Function3D):
+    """
+    A Function3D class that implements <= of a scalar and the result of a Function3D object: K <= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __le__() call on a
+    Function3D object.
+
+    :param value: A double value.
+    :param object function: A Function3D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._value <= self._function.evaluate(x, y, z)
+
+
+cdef class GreaterEqualsScalar3D(Function3D):
+    """
+    A Function3D class that implements >= of a scalar and the result of a Function3D object: K >= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ge__() call on a
+    Function3D object.
+
+    :param value: A double value.
+    :param object function: A Function3D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return self._value >= self._function.evaluate(x, y, z)

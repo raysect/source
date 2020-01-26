@@ -148,3 +148,31 @@ cdef class Atan4Q2D(Function2D):
 
     cdef double evaluate(self, double x, double y) except? -1e999:
         return cmath.atan2(self._numerator.evaluate(x, y), self._denominator.evaluate(x, y))
+
+
+cdef class Sqrt2D(Function2D):
+    """
+    A Function2D class that implements the square root of the result of a Function2D object: sqrt(f())
+
+    :param Function2D function: A Function2D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        if x < 0: # complex values are not supported
+            raise ValueError("Math domain error in sqrt({0}). Sqrt of a negative value is not supported.".format(x))
+        return cmath.sqrt(self._function.evaluate(x, y))
+
+
+cdef class Erf2D(Function2D):
+    """
+    A Function2D class that implements the error function of the result of a Function2D object: erf(f())
+
+    :param Function2D function: A Function2D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function2d(function)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        return cmath.erf(self._function.evaluate(x, y))

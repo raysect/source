@@ -62,3 +62,11 @@ cdef class Atan1D(Function1D):
 
 cdef class Atan4Q1D(Function1D):
     cdef Function1D _numerator, _denominator
+
+
+cdef class Sqrt1D(Function1D):
+    cdef Function1D _function
+
+
+cdef class Erf1D(Function1D):
+    cdef Function1D _function
