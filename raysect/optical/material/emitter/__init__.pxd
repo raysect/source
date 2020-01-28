@@ -33,4 +33,6 @@ from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitt
 from raysect.optical.material.emitter.inhomogeneous cimport InhomogeneousVolumeEmitter, VolumeIntegrator, NumericalIntegrator
 from raysect.optical.material.emitter.checkerboard cimport Checkerboard
 from raysect.optical.material.emitter.anisotropic cimport AnisotropicSurfaceEmitter
+from raysect.optical.material.emitter.regular_grid_emitters cimport RegularGridEmitter, CartesianRegularEmitter, CylindricalRegularEmitter
+from raysect.optical.material.emitter.regular_grid_emitters cimport RegularGridIntegrator, CartesianRegularIntegrator, CylindricalRegularIntegrator
 

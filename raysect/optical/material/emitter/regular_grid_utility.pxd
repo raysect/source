@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2017, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,12 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .uniform import UniformSurfaceEmitter, UniformVolumeEmitter
-from .unity import UnitySurfaceEmitter, UnityVolumeEmitter
-from .homogeneous import HomogeneousVolumeEmitter
-from .inhomogeneous import InhomogeneousVolumeEmitter, VolumeIntegrator, NumericalIntegrator
-from .checkerboard import Checkerboard
-from .anisotropic import AnisotropicSurfaceEmitter
-from .regular_grid_emitters import RegularGridEmitter, CartesianRegularEmitter, CylindricalRegularEmitter
-from .regular_grid_emitters import RegularGridIntegrator, CartesianRegularIntegrator, CylindricalRegularIntegrator
-from .regular_grid_volumes import RegularGridVolume, RegularGridBox, RegularGridCylinder
+cdef object integrate_contineous(double[::1] x, object y, double x0, double x1, bint extrapolate=*)
+
+cdef object integrate_delta_function(double[::1] x, object y, double x0, double x1)
