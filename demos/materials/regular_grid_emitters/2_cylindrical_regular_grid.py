@@ -32,7 +32,7 @@ rmax = np.sqrt(2.)
 r, dr = np.linspace(rmin, rmax, 201, retstep=True)
 integration_step = 0.05
 r = r[:-1] + 0.5 * dr  # moving to the grid cell centers
-grid_shape = (200, 1, 1)
+grid_shape = (r.size, 1, 1)
 grid_steps = (dr, 360, zmax - zmin)  # axisymmetric emission
 
 # spectral emission profile
@@ -75,7 +75,7 @@ timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
 for p in range(1, 1000):
     print("Rendering pass {}...".format(p))
     camera.observe()
-    rgb_pipeline.save("demo_regular_grid_cylinder_{}_pass_{}.png".format(timestamp, p))
+    rgb_pipeline.save("demo_2_cylindrical)regular_grid_{}_pass_{}.png".format(timestamp, p))
     print()
 
 # display final result

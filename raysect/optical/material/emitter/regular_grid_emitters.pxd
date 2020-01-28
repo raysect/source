@@ -57,7 +57,7 @@ cdef class CartesianRegularIntegrator(RegularGridIntegrator):
 cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
 
     cdef:
-        readonly int nvoxel
+        readonly long nvoxel
         readonly bint contineous
         readonly bint cache_32bit_indices
         readonly ndarray wavelengths
@@ -81,9 +81,9 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         const long[::1] cache_indptr_64_mv
         const long[::1] cache_indices_64_mv
 
-    cdef int get_voxel_index(self, int i, int j, int k) nogil
+    cdef long get_voxel_index(self, int i, int j, int k) nogil
 
-    cpdef int voxel_index(self, int i, int j, int k)
+    cpdef long voxel_index(self, int i, int j, int k)
 
     cdef void _cache_init(self)
 

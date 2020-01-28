@@ -62,7 +62,8 @@ cdef object integrate_contineous(double[::1] x, object y, double x0, double x1, 
     cdef:
         object integral_sum
         double weight
-        int index, lower_index, upper_index, top_index, nvoxel
+        int index, lower_index, upper_index, top_index
+        long nvoxel
 
     nvoxel = y.shape[0]
 
@@ -162,7 +163,8 @@ cdef object integrate_delta_function(double[::1] x, object y, double x0, double 
     """
     cdef:
         object integral_sum
-        int i, nvoxel, nspec
+        int i, nspec
+        long nvoxel
 
     nvoxel = y.shape[0]
     nspec = y.shape[1]

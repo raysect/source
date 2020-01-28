@@ -83,7 +83,7 @@ timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
 for p in range(1, 1000):
     print("Rendering pass {}...".format(p))
     camera.observe()
-    rgb_pipeline.save("demo_regular_grid_box_{}_pass_{}.png".format(timestamp, p))
+    rgb_pipeline.save("demo_1_cartesian_regular_grid_{}_pass_{}.png".format(timestamp, p))
     print()
 
 # display final result

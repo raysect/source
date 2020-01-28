@@ -38,11 +38,6 @@ with other integrators is not guaranteed.
 
 Performance tips:
 
-  * Current version of `RegularGridEmitter` does not supports grids with more than
-    2147483647 grid cells or the caches with more than 2147483647 non-zero data points
-    (> 16 GB of data). If this an issue, try to divide the grid into several parts and
-    distribure it between multiple emitters.
-
   * If dispesive rendering is off (`camera.spectral_rays = 1`) and spectral properties of
     rays do not change during rendering, consider calling:
 
@@ -54,7 +49,7 @@ Performance tips:
     multi-process rendering, as well as some time between the calls of `camera.observe()`.
 
   * In case of insufficient memory, one can initialise the emitter with a dummy emission
-    array and then populate the cache directly with a pre-calculated `csr_matrix`.
+    array and then populate the cache with a pre-calculated `csr_matrix`.
 
     .. code-block:: pycon
         >>> grid_size = grid_shape[0] * grid_shape[1] * grid_shape[2]
@@ -65,7 +60,7 @@ Performance tips:
         >>> emitter.cache_override(cache, camera.min_wavelength, camera.max_wavelength)
 
     Note that `cache.shape` must be equal to `(grid_size, camera.spectral_bins)`.
-    This solution will work only if dispesive rendering is off (`camera.spectral_rays = 1`)
+    This solution will work only if dispersive rendering is off (`camera.spectral_rays = 1`)
     and spectral properties of rays do not change during rendering.
 
   * If the emission spectrum has some regions where the material does not emit, the emission should be
@@ -311,7 +306,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
     :ivar tuple grid_steps: The sizes of grid cells along each direction.
     :ivar csc_matrix ~.emission: The emission defined on a regular grid stored as a a сompressed
         sparse column matrix (`scipy.sparse.csc_matrix`).
-    :ivar np.ndarray wavelengths: The sorted wavelengths corresponding to the emission array.
+    :ivar ndarray wavelengths: The sorted wavelengths corresponding to the emission array.
     :ivar bool contineous: Defines whether the emission is porvided as a contineous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
     :ivar bool cache_32bit: Defines whether the cached data is stored in float32 (True) or
@@ -337,12 +332,10 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         for i in grid_shape:
             if i <= 0:
                 raise ValueError('Grid sizes must be > 0.')
-        if grid_shape[0] * grid_shape[1] * grid_shape[2] > np.iinfo('int32').max:
-            raise ValueError('Grids with more than %d cells are not supported.' % np.iinfo('int32').max +
-                             'Divide the grid into several parts and distribure it between mutiple emitters.')
-        self._grid_shape = grid_shape
 
-        self.nvoxel = self._grid_shape[0] * self._grid_shape[1] * self._grid_shape[2]
+        self.nvoxel = grid_shape[0] * grid_shape[1] * grid_shape[2]  # nvoxel is int64
+
+        self._grid_shape = grid_shape
 
         if emission.ndim == 2:
             if emission.shape[0] != self.nvoxel:
@@ -373,7 +366,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
 
         self.contineous = contineous
         self._extrapolate = extrapolate if self.contineous else False
-        self._cache_32bit = cache_32bit
+        self._cache_32bit = True if emission.dtype == np.float32 else cache_32bit
 
         self._cache_init()
 
@@ -398,7 +391,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         self._cache_32bit = value
 
     @cython.nonecheck(False)
-    cdef int get_voxel_index(self, int i, int j, int k) nogil:
+    cdef long get_voxel_index(self, int i, int j, int k) nogil:
         """
         Returns a flattened voxel index for provided i, j, k values.
         """
@@ -406,9 +399,9 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         if i < 0 or i >= self._grid_shape[0] or j < 0 or j >= self._grid_shape[1] or k < 0 or k >= self._grid_shape[2]:
             return -1  # out of grid
 
-        return i * self._grid_shape[1] * self._grid_shape[2] + j * self._grid_shape[2] + k
+        return <long>(i) * self._grid_shape[1] * self._grid_shape[2] + <long>(j) * self._grid_shape[2] + <long>(k)
 
-    cpdef int voxel_index(self, int i, int j, int k):
+    cpdef long voxel_index(self, int i, int j, int k):
         """
         Returns a flattened voxel index for provided i, j, k values.
         """
@@ -546,19 +539,19 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         self._cache_init()  # deleting current cache
 
         dtype = np.float32 if self._cache_32bit else np.float64
+        dtype_int = np.int32 if self.nvoxel < np.iinfo('int32').max else np.int64
 
         data = np.array([], dtype=dtype)
-        # neither number of grid cells nor number of spectral bins exceeds max(int32), so int32 is ok for both row_ind and col_ind
-        row_ind = np.array([], dtype=np.int32)
-        col_ind = np.array([], dtype=np.int32)
+        row_ind = np.array([], dtype=dtype_int)
+        col_ind = np.array([], dtype=dtype_int)
         delta = (max_wavelength - min_wavelength) / bins
         lower = min_wavelength
         for i in range(bins):
             upper = min_wavelength + (i + 1) * delta
             bin_integral = self.integrate(lower, upper)
             data = np.concatenate((data, (bin_integral.data / delta).astype(dtype)))
-            col_ind = np.concatenate((col_ind, i * np.ones(bin_integral.data.size, dtype=np.int32)))
-            row_ind = np.concatenate((row_ind, bin_integral.indices))  # bin_integral.indices is always int32 (1-column array)
+            col_ind = np.concatenate((col_ind, i * np.ones(bin_integral.data.size, dtype=dtype_int)))
+            row_ind = np.concatenate((row_ind, bin_integral.indices))
             lower = upper
 
         self._cache = csr_matrix((data, (row_ind, col_ind)), shape=(self.nvoxel, bins), dtype=dtype)
@@ -618,28 +611,32 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         """
 
         cdef:
-            int ivoxel, i32
-            long i64
+            int ivoxel32, i32
+            long ivoxel64, i64
 
-        # it's slightly faster than call get_voxel_index()
         if i < 0 or i >= self._grid_shape[0] or j < 0 or j >= self._grid_shape[1] or k < 0 or k >= self._grid_shape[2]:
             return
 
-        ivoxel = i * self._grid_shape[1] * self._grid_shape[2] + j * self._grid_shape[2] + k
+        if self.cache_32bit_indices:
 
-        if self._cache_32bit:
-            if self.cache_32bit_indices:
-                for i32 in range(self.cache_indptr_32_mv[ivoxel], self.cache_indptr_32_mv[ivoxel + 1]):
+            ivoxel32 = i * self._grid_shape[1] * self._grid_shape[2] + j * self._grid_shape[2] + k
+
+            if self._cache_32bit:
+                for i32 in range(self.cache_indptr_32_mv[ivoxel32], self.cache_indptr_32_mv[ivoxel32 + 1]):
                     samples_mv[self.cache_indices_32_mv[i32]] += ray_path * self.cache_data_32_mv[i32]
             else:
-                for i64 in range(self.cache_indptr_64_mv[ivoxel], self.cache_indptr_64_mv[ivoxel + 1]):
-                    samples_mv[self.cache_indices_64_mv[i64]] += ray_path * self.cache_data_32_mv[i64]
-        else:
-            if self.cache_32bit_indices:
-                for i32 in range(self.cache_indptr_32_mv[ivoxel], self.cache_indptr_32_mv[ivoxel + 1]):
+                for i32 in range(self.cache_indptr_32_mv[ivoxel32], self.cache_indptr_32_mv[ivoxel32 + 1]):
                     samples_mv[self.cache_indices_32_mv[i32]] += ray_path * self.cache_data_64_mv[i32]
+
+        else:
+
+            ivoxel64 = <long>(i) * self._grid_shape[1] * self._grid_shape[2] + <long>(j) * self._grid_shape[2] + <long>(k)
+
+            if self._cache_32bit:
+                for i64 in range(self.cache_indptr_64_mv[ivoxel64], self.cache_indptr_64_mv[ivoxel64 + 1]):
+                    samples_mv[self.cache_indices_64_mv[i64]] += ray_path * self.cache_data_32_mv[i64]
             else:
-                for i64 in range(self.cache_indptr_64_mv[ivoxel], self.cache_indptr_64_mv[ivoxel + 1]):
+                for i64 in range(self.cache_indptr_64_mv[ivoxel64], self.cache_indptr_64_mv[ivoxel64 + 1]):
                     samples_mv[self.cache_indices_64_mv[i64]] += ray_path * self.cache_data_64_mv[i64]
 
     @cython.initializedcheck(False)
@@ -705,7 +702,7 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
     :ivar tuple grid_steps: The sizes of grid cells along each direction.
     :ivar csc_matrix ~.emission: The emission defined on a regular grid stored as a a сompressed
         sparse column matrix (`scipy.sparse.csc_matrix`).
-    :ivar np.ndarray wavelengths: The sorted wavelengths corresponding to the emission array.
+    :ivar ndarray wavelengths: The sorted wavelengths corresponding to the emission array.
     :ivar int nvoxel: Total number of grid cells in the spatial grid.
     :ivar bool contineous: Defines whether the emission is porvided as a contineous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
@@ -914,7 +911,7 @@ cdef class CartesianRegularEmitter(RegularGridEmitter):
     :ivar tuple grid_steps: The sizes of grid cells along each direction.
     :ivar csc_matrix ~.emission: The emission defined on a regular grid stored as a a сompressed
         sparse column matrix (`scipy.sparse.csc_matrix`).
-    :ivar np.ndarray wavelengths: The sorted wavelengths corresponding to the emission array.
+    :ivar ndarray wavelengths: The sorted wavelengths corresponding to the emission array.
     :ivar int nvoxel: Total number of grid cells in the spatial grid.
     :ivar bool contineous: Defines whether the emission is porvided as a contineous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
@@ -1027,6 +1024,7 @@ cdef class CartesianRegularEmitter(RegularGridEmitter):
         integrator = integrator or CartesianRegularIntegrator(0.25 * min(grid_steps))
         super().__init__(grid_shape, grid_steps, emission, wavelengths, contineous=contineous, extrapolate=extrapolate,
                          cache_32bit=cache_32bit, integrator=integrator)
+
         self.dx = self._grid_steps[0]
         self.dy = self._grid_steps[1]
         self.dz = self._grid_steps[2]
