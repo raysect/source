@@ -14,8 +14,8 @@ to speed up volume integration through the emission profiles defined on a regula
 """
 
 
-""" Part 1: Contineous spectrum. """
-print('Part 1: Contineous spectrum.\n')
+""" Part 1: continuous spectrum. """
+print('Part 1: continuous spectrum.\n')
 
 
 # Let's define a simple 3x3x3 gird.
@@ -135,8 +135,8 @@ for i in range(grid_shape[0]):
         for k in range(grid_shape[2]):
             emission[i, j, k, i * grid_shape[0] * grid_shape[1] + j * grid_shape[1] + k] = 1.   # W / (m^3 str)
 # In the case of discrete emitters, the emission must be provided in W/(m^3 str) (not in W/(m^3 str nm)).
-# A special option 'contineous' must be set to False at initialisation.
-material = RegularGridEmitter(grid_shape, grid_steps, emission, wavelengths, contineous=False)
+# A special option 'continuous' must be set to False at initialisation.
+material = RegularGridEmitter(grid_shape, grid_steps, emission, wavelengths, continuous=False)
 
 
 # When integrating over wavelngth, this emitter acts similar to the delta-function.
@@ -165,7 +165,7 @@ bin_min_wl = ray.min_wavelength + bin_index * samples_delta
 print('Emission in %g nm - %g nm: %g W/(m^3 str nm)' % (bin_min_wl, bin_min_wl + samples_delta, samples[bin_index]))
 print('Spectral step: %g nm' % samples_delta)
 print()
-# Like in the case of contineous spectrum, sampling conserves the wavelength integral.
+# Like in the case of continuous spectrum, sampling conserves the wavelength integral.
 
 
 """ Part 3: Memory saving. """

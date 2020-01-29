@@ -29,6 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef object integrate_contineous(double[::1] x, object y, double x0, double x1, bint extrapolate=*)
+cdef object integrate_continuous(double[::1] x, object y, double x0, double x1, bint extrapolate=*)
 
 cdef object integrate_delta_function(double[::1] x, object y, double x0, double x1)

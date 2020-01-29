@@ -42,7 +42,7 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.initializedcheck(False)
-cdef object integrate_contineous(double[::1] x, object y, double x0, double x1, bint extrapolate=True):
+cdef object integrate_continuous(double[::1] x, object y, double x0, double x1, bint extrapolate=True):
     """
     Integrate the csc_matrix over its column axis in the specified range.
 

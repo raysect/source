@@ -58,7 +58,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
 
     cdef:
         readonly long nvoxel
-        readonly bint contineous
+        readonly bint continuous
         readonly bint cache_32bit_indices
         readonly ndarray wavelengths
         readonly object emission

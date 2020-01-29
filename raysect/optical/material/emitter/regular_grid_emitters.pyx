@@ -74,7 +74,7 @@ from scipy.sparse import csr_matrix, csc_matrix
 from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.material cimport VolumeIntegrator, InhomogeneousVolumeEmitter
 from libc.math cimport sqrt, atan2, M_PI as pi
-from .regular_grid_utility cimport integrate_contineous, integrate_delta_function
+from .regular_grid_utility cimport integrate_continuous, integrate_delta_function
 cimport numpy as np
 cimport cython
 
@@ -277,7 +277,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
     :param tuple grid_shape: The number of grid cells along each direction.
     :param tuple grid_steps: The sizes of grid cells along each direction.
     :param object ~.emission: The 2D or 4D array or scipy sparse matrix containing the
-        emission defined on a regular 3D grid in :math:`W/(str\,m^3\,nm)` (contineous
+        emission defined on a regular 3D grid in :math:`W/(str\,m^3\,nm)` (continuous
         spectrum) or in :math:`W/(str\,m^3)` (discrete spectrum).
         Spectral emission can be provided either for selected cells of the regular
         grid (2D array or sparse matrix) or for all grid cells (4D array).
@@ -290,13 +290,13 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
     :param ndarray wavelengths: The 1D array of wavelengths corresponding to the last axis of
         provided emission array. The size of this array must be equal to `emission.shape[-1]`.
         Initialisation will be faster if this array contains monotonically increasing values.
-    :param bool contineous: Defines whether the emission is porvided as a contineous spectrum
+    :param bool continuous: Defines whether the emission is porvided as a continuous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
-        Defaults to `contineous=True`.
+        Defaults to `continuous=True`.
     :param bool extrapolate: If True, the emission outside the provided spectral range
         will be equal to the emission at the borders of this range (nearest-neighbour
         extrapolation), otherwise it will be zero. Defaults to `extrapolate=True`.
-        This parameter is ignored if `contineous=False`.
+        This parameter is ignored if `continuous=False`.
     :param bool cache_32bit: If True, the cached data will be stored in float32 instead of
         float64, thus saving the memory.
     :param raysect.optical.material.VolumeIntegrator integrator: Volume integrator,
@@ -307,17 +307,17 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
     :ivar csc_matrix ~.emission: The emission defined on a regular grid stored as a a сompressed
         sparse column matrix (`scipy.sparse.csc_matrix`).
     :ivar ndarray wavelengths: The sorted wavelengths corresponding to the emission array.
-    :ivar bool contineous: Defines whether the emission is porvided as a contineous spectrum
+    :ivar bool continuous: Defines whether the emission is porvided as a continuous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
     :ivar bool cache_32bit: Defines whether the cached data is stored in float32 (True) or
         float64 (False).
     :ivar bool extrapolate: Defines whether the emission spectrum is extrapolated outside the
-        provided wavelength range (`True`) or not (`False`). Ignored if `contineous=False`.
+        provided wavelength range (`True`) or not (`False`). Ignored if `continuous=False`.
     :ivar int nvoxel: Total number of grid cells in the spatial grid.
     """
 
     def __init__(self, tuple grid_shape, tuple grid_steps, object emission, np.ndarray wavelengths,
-                 bint contineous=True, bint extrapolate=True, bint cache_32bit=False, VolumeIntegrator integrator=None):
+                 bint continuous=True, bint extrapolate=True, bint cache_32bit=False, VolumeIntegrator integrator=None):
 
         cdef:
             np.ndarray indx_sorted
@@ -364,8 +364,8 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
 
         self._wavelengths_mv = self.wavelengths
 
-        self.contineous = contineous
-        self._extrapolate = extrapolate if self.contineous else False
+        self.continuous = continuous
+        self._extrapolate = extrapolate if self.continuous else False
         self._cache_32bit = True if emission.dtype == np.float32 else cache_32bit
 
         self._cache_init()
@@ -378,7 +378,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
 
     @extrapolate.setter
     def extrapolate(self, bint value):
-        self._extrapolate = value if self.contineous else False
+        self._extrapolate = value if self.continuous else False
 
     @property
     def cache_32bit(self):
@@ -580,8 +580,8 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         :return: Integrated emission in :math:`W/(str\,m^3)`.
         """
 
-        if self.contineous:
-            return integrate_contineous(self._wavelengths_mv, self.emission, min_wavelength, max_wavelength, self._extrapolate)
+        if self.continuous:
+            return integrate_continuous(self._wavelengths_mv, self.emission, min_wavelength, max_wavelength, self._extrapolate)
         else:
             return integrate_delta_function(self._wavelengths_mv, self.emission, min_wavelength, max_wavelength)
 
@@ -670,7 +670,7 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
     :param tuple grid_steps: The sizes of grid cells along each direction.
     :param object ~.emission: The 2D or 4D array or scipy sparse matrix containing the
         emission defined on a regular :math:`(R, \phi, Z)` grid in :math:`W/(str\,m^3\,nm)`
-        (contineous spectrum) or in :math:`W/(str\,m^3)` (discrete spectrum).
+        (continuous spectrum) or in :math:`W/(str\,m^3)` (discrete spectrum).
         Spectral emission can be provided either for selected cells of the regular
         grid (2D array or sparse matrix) or for all grid cells (4D array).
         Note that if provided as a 2D array (or sparse matrix), the spatial index `(ir, iphi, iz)`
@@ -682,13 +682,13 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
     :param ndarray wavelengths: The 1D array of wavelengths corresponding to the last axis of
         provided emission array. The size of this array must be equal to `emission.shape[-1]`.
         Initialisation will be faster if this array contains monotonically increasing values.
-    :param bool contineous: Defines whether the emission is porvided as a contineous spectrum
+    :param bool continuous: Defines whether the emission is porvided as a continuous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
-        Defaults to `contineous=True`.
+        Defaults to `continuous=True`.
     :param bool extrapolate: If True, the emission outside the provided spectral range
         will be equal to the emission at the borders of this range (nearest-neighbour
         extrapolation), otherwise it will be zero. Defaults to `extrapolate=True`.
-        This parameter is ignored if `contineous=False`.
+        This parameter is ignored if `continuous=False`.
     :param bool cache_32bit: If True, the cached data will be stored in float32 instead of
         float64, thus saving the memory.
     :param raysect.optical.material.VolumeIntegrator integrator: Volume integrator, defaults to
@@ -701,7 +701,7 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
         sparse column matrix (`scipy.sparse.csc_matrix`).
     :ivar ndarray wavelengths: The sorted wavelengths corresponding to the emission array.
     :ivar int nvoxel: Total number of grid cells in the spatial grid.
-    :ivar bool contineous: Defines whether the emission is porvided as a contineous spectrum
+    :ivar bool continuous: Defines whether the emission is porvided as a continuous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
     :ivar bool extrapolate: Defines whether the emission spectrum is extrapolated outside the
         provided wavelength range (`True`) or not (`False`).
@@ -722,7 +722,7 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
         >>> from raysect.optical import World, translate, rotate
         >>> from raysect.primitive import Cylinder, Subtract
         >>> from raysect.optical.material import CylindricalRegularEmitter
-        >>> ### Contineous case ###
+        >>> ### continuous case ###
         >>> # grid parameters
         >>> rmin = 0
         >>> rmax = 2.
@@ -788,7 +788,7 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
         >>> world = World()
         >>> pipeline = SpectralRadiancePipeline2D()
         >>> material = CylindricalRegularEmitter(grid_shape, grid_steps, memission,
-                                                 wavelengths, rmin=rmin, contineous=False)
+                                                 wavelengths, rmin=rmin, continuous=False)
         >>> bounding_box = Subtract(Cylinder(rmax, zmax - zmin),
                                     Cylinder(rmin, zmax - zmin),
                                     material=material, parent=world)  # bounding primitive
@@ -810,13 +810,13 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
     """
 
     def __init__(self, tuple grid_shape, tuple grid_steps, object emission, np.ndarray wavelengths,
-                 bint contineous=True, bint extrapolate=True, bint cache_32bit=False, VolumeIntegrator integrator=None, double rmin=0):
+                 bint continuous=True, bint extrapolate=True, bint cache_32bit=False, VolumeIntegrator integrator=None, double rmin=0):
 
         if rmin < 0:
             raise ValueError("Attribute 'rmin' must be >= 0.")
 
         integrator = integrator or CylindricalRegularIntegrator(0.25 * min(grid_steps[0], grid_steps[2]))
-        super().__init__(grid_shape, grid_steps, emission, wavelengths, contineous=contineous, extrapolate=extrapolate,
+        super().__init__(grid_shape, grid_steps, emission, wavelengths, continuous=continuous, extrapolate=extrapolate,
                          cache_32bit=cache_32bit, integrator=integrator)
 
         cdef:
@@ -880,7 +880,7 @@ cdef class CartesianRegularEmitter(RegularGridEmitter):
     :param tuple grid_steps: The sizes of grid cells along each direction.
     :param object ~.emission: The 2D or 4D array or scipy sparse matrix containing the
         emission defined on a regular :math:`(X, Y, Z)` grid in :math:`W/(str\,m^3\,nm)`
-        (contineous spectrum) or in :math:`W/(str\,m^3)` (discrete spectrum).
+        (continuous spectrum) or in :math:`W/(str\,m^3)` (discrete spectrum).
         Spectral emission can be provided either for selected cells of the regular
         grid (2D array or sparse matrix) or for all grid cells (4D array).
         Note that if provided as a 2D array (or sparse matrix), the spatial index `(ix, iy, iz)`
@@ -892,13 +892,13 @@ cdef class CartesianRegularEmitter(RegularGridEmitter):
     :param ndarray wavelengths: The 1D array of wavelengths corresponding to the last axis of
         provided emission array. The size of this array must be equal to `emission.shape[-1]`.
         Initialisation will be faster if this array contains monotonically increasing values.
-    :param bool contineous: Defines whether the emission is porvided as a contineous spectrum
+    :param bool continuous: Defines whether the emission is porvided as a continuous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
-        Defaults to `contineous=True`.
+        Defaults to `continuous=True`.
     :param bool extrapolate: If True, the emission outside the provided spectral range
         will be equal to the emission at the borders of this range (nearest-neighbour
         extrapolation), otherwise it will be zero. Defaults to `extrapolate=True`.
-        This parameter is ignored if `contineous=False`.
+        This parameter is ignored if `continuous=False`.
     :param bool cache_32bit: If True, the cached data will be stored in float32 instead of
         float64, thus saving the memory.
     :param raysect.optical.material.VolumeIntegrator integrator: Volume integrator, defaults to
@@ -910,7 +910,7 @@ cdef class CartesianRegularEmitter(RegularGridEmitter):
         sparse column matrix (`scipy.sparse.csc_matrix`).
     :ivar ndarray wavelengths: The sorted wavelengths corresponding to the emission array.
     :ivar int nvoxel: Total number of grid cells in the spatial grid.
-    :ivar bool contineous: Defines whether the emission is porvided as a contineous spectrum
+    :ivar bool continuous: Defines whether the emission is porvided as a continuous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
     :ivar bool extrapolate: Defines whether the emission spectrum is extrapolated outside the
         provided wavelength range (`True`) or not (`False`).
@@ -994,7 +994,7 @@ cdef class CartesianRegularEmitter(RegularGridEmitter):
         >>> world = World()
         >>> pipeline = SpectralRadiancePipeline2D()
         >>> material = CartesianRegularEmitter(grid_shape, grid_steps, emission, wavelengths,
-                                               contineous=False)
+                                               continuous=False)
         >>> bounding_box = Box(lower=Point3D(0, 0, 0),
                                upper=Point3D(xmax - xmin, ymax - ymin, zmax - zmin),
                                material=material, parent=world,
@@ -1016,10 +1016,10 @@ cdef class CartesianRegularEmitter(RegularGridEmitter):
     """
 
     def __init__(self, tuple grid_shape, tuple grid_steps, object emission, np.ndarray wavelengths,
-                 bint contineous=True, bint extrapolate=True, bint cache_32bit=False, VolumeIntegrator integrator=None):
+                 bint continuous=True, bint extrapolate=True, bint cache_32bit=False, VolumeIntegrator integrator=None):
 
         integrator = integrator or CartesianRegularIntegrator(0.25 * min(grid_steps))
-        super().__init__(grid_shape, grid_steps, emission, wavelengths, contineous=contineous, extrapolate=extrapolate,
+        super().__init__(grid_shape, grid_steps, emission, wavelengths, continuous=continuous, extrapolate=extrapolate,
                          cache_32bit=cache_32bit, integrator=integrator)
 
         self.dx = self._grid_steps[0]

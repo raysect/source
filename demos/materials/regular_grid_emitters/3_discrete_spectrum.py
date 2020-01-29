@@ -39,7 +39,7 @@ for i, wl in enumerate(wavelengths):
 # scene
 world = World()
 emitter = RegularGridCylinder(emission, wavelengths, radius_outer=rmax, height=zmax - zmin, radius_inner=rmin,
-                              step=integration_step, contineous=False, parent=world)  # discrete emitter
+                              step=integration_step, continuous=False, parent=world)  # discrete emitter
 emitter.transform = translate(0, rmax, 0) * rotate(30, 0, 0) * translate(0, 0, zmin)
 floor = Box(Point3D(-100, -0.1, -100), Point3D(100, 0, 100), world, material=RoughTitanium(0.1))
 

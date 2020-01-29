@@ -86,7 +86,7 @@ class RegularGridCylinder(RegularGridVolume):
 
     :param object ~.emission: The 2D or 4D array or scipy sparse matrix containing the
         emission defined on a regular :math:`(R, \phi, Z)` grid in :math:`W/(str\,m^3\,nm)`
-        (contineous spectrum) or in :math:`W/(str\,m^3)` (discrete spectrum).
+        (continuous spectrum) or in :math:`W/(str\,m^3)` (discrete spectrum).
         Spectral emission can be provided either for selected cells of the regular
         grid (2D array or sparse matrix) or for all grid cells (4D array).
         Note that if provided as a 2D array (or sparse matrix), the argument `grid_shape`
@@ -110,13 +110,13 @@ class RegularGridCylinder(RegularGridVolume):
     :param float step: The step of integration along the ray (in meters), defaults to
         `0.25*min((radius_outer - radius_inner) / n_r, height / n_z)`, where n_r and n_z are
         the grid resolutions in `R` and `Z` directions.
-    :param bool contineous: Defines whether the emission is porvided as a contineous spectrum
+    :param bool continuous: Defines whether the emission is porvided as a continuous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
-        Defaults to `contineous=True`.
+        Defaults to `continuous=True`.
     :param bool extrapolate: If True, the emission outside the provided spectral range
         will be equal to the emission at the borders of this range (nearest-neighbour
         extrapolation), otherwise it will be zero. Defaults to `extrapolate=True`.
-        This parameter is ignored if `contineous=False`.
+        This parameter is ignored if `continuous=False`.
     :param Node parent: Scene-graph parent node or None (default = None).
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system
         relative to the scene-graph parent (default = identity matrix).
@@ -134,7 +134,7 @@ class RegularGridCylinder(RegularGridVolume):
         >>> from raysect.optical import World, translate, rotate
         >>> from raysect.primitive import Cylinder, Subtract
         >>> from raysect.optical.material import RegularGridCylinder
-        >>> ### Contineous case ###
+        >>> ### continuous case ###
         >>> # grid parameters
         >>> rmin = 0
         >>> rmax = 2.
@@ -197,7 +197,7 @@ class RegularGridCylinder(RegularGridVolume):
                                           height=zmax - zmin, radius_inner=rmin,
                                           period=phi_period, parent=world,
                                           transform = translate(0, 0, zmin),
-                                          contineous=False)
+                                          continuous=False)
         ...
         >>> camera.spectral_bins = 15
         >>> camera.min_wavelength = 457.
@@ -215,7 +215,7 @@ class RegularGridCylinder(RegularGridVolume):
     """
 
     def __init__(self, emission, wavelengths, radius_outer, height, radius_inner=0, period=360., grid_shape=None,
-                 step=None, contineous=True, extrapolate=True, parent=None, transform=None):
+                 step=None, continuous=True, extrapolate=True, parent=None, transform=None):
         if 360. % period > 1.e-3:
             raise ValueError("The period %.3f is not a multiple of 360." % period)
         if emission.ndim == 2:
@@ -237,7 +237,7 @@ class RegularGridCylinder(RegularGridVolume):
         dz = height / grid_shape[2]
         grid_steps = (dr, dphi, dz)
         step = step or 0.25 * min(dr, dz)
-        material = CylindricalRegularEmitter(grid_shape, grid_steps, emission, wavelengths, contineous=contineous, extrapolate=extrapolate,
+        material = CylindricalRegularEmitter(grid_shape, grid_steps, emission, wavelengths, continuous=continuous, extrapolate=extrapolate,
                                              integrator=CylindricalRegularIntegrator(step), rmin=radius_inner)
         primitive = Subtract(Cylinder(radius_outer, height), Cylinder(radius_inner, height),
                              material=material, parent=parent, transform=transform)
@@ -251,7 +251,7 @@ class RegularGridBox(RegularGridVolume):
 
     :param object ~.emission: The 2D or 4D array or scipy sparse matrix containing the
         emission defined on a regular :math:`(X, Y, Z)` grid in :math:`W/(str\,m^3\,nm)`
-        (contineous spectrum) or in :math:`W/(str\,m^3)` (discrete spectrum).
+        (continuous spectrum) or in :math:`W/(str\,m^3)` (discrete spectrum).
         Spectral emission can be provided either for selected cells of the regular
         grid (2D array or sparse matrix) or for all grid cells (4D array).
         Note that if provided as a 2D array (or sparse matrix), the argument `grid_shape`
@@ -271,13 +271,13 @@ class RegularGridBox(RegularGridVolume):
     :param float step: The step of integration along the ray (in meters), defaults to
         `step = 0.25 * min(xmax / n_x, ymax / n_y, zmax / n_z)`, where (n_x, n_y, n_z) is
         the grid resolution.
-    :param bool contineous: Defines whether the emission is porvided as a contineous spectrum
+    :param bool continuous: Defines whether the emission is porvided as a continuous spectrum
         (in :math:`W/(str\,m^3\,nm)`) or as a discrete spectrum (in :math:`W/(str\,m^3)`).
-        Defaults to `contineous=True`.
+        Defaults to `continuous=True`.
     :param bool extrapolate: If True, the emission outside the provided spectral range
         will be equal to the emission at the borders of this range (nearest-neighbour
         extrapolation), otherwise it will be zero. Defaults to `extrapolate=True`.
-        This parameter is ignored if `contineous=False`.
+        This parameter is ignored if `continuous=False`.
     :param Node parent: Scene-graph parent node or None (default = None).
     :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system
         relative to the scene-graph parent (default = identity matrix).
@@ -354,7 +354,7 @@ class RegularGridBox(RegularGridVolume):
         >>> world = World()
         >>> pipeline = SpectralRadiancePipeline2D()
         >>> material = RegularGridBox(emission, wavelengths, xmax - xmin, ymax - ymin, zmax - zmin,
-                                      contineous=False, transform=translate(xmin, ymin, zmin),
+                                      continuous=False, transform=translate(xmin, ymin, zmin),
                                       parent=world)
         ...
         >>> camera.spectral_bins = 15
@@ -373,7 +373,7 @@ class RegularGridBox(RegularGridVolume):
     """
 
     def __init__(self, emission, wavelengths, xmax, ymax, zmax, grid_shape=None, step=None,
-                 contineous=True, extrapolate=True, parent=None, transform=None):
+                 continuous=True, extrapolate=True, parent=None, transform=None):
 
         if emission.ndim == 2:
             if grid_shape is None:
@@ -394,7 +394,7 @@ class RegularGridBox(RegularGridVolume):
         dz = zmax / grid_shape[2]
         grid_steps = (dx, dy, dz)
         step = step or 0.25 * min(dx, dy, dz)
-        material = CartesianRegularEmitter(grid_shape, grid_steps, emission, wavelengths, contineous=contineous,
+        material = CartesianRegularEmitter(grid_shape, grid_steps, emission, wavelengths, continuous=continuous,
                                            extrapolate=extrapolate, integrator=CartesianRegularIntegrator(step))
         primitive = Box(lower=Point3D(0, 0, 0), upper=Point3D(xmax, ymax, zmax), material=material, parent=parent, transform=transform)
         super().__init__(primitive)
