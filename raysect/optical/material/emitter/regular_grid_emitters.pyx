@@ -466,36 +466,29 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
           >>> emitter = RegularGridEmitter(grid_shape, grid_steps, emission, wavelengths)
           >>> emitter.cache_override(cache, camera.min_wavelength, camera.max_wavelength)
 
-        Note that `cache.shape` must be equal to `(grid_size, camera.spectral_bins)`.
-        This solution will work only if dispesive rendering is off (`camera.spectral_rays = 1`)
-        and spectral properties of rays do not change during rendering.
+        Note that `cache.shape` must be equal to `(nvoxel, camera.spectral_bins)`.
+        Overriden cache remains valid until ray spectral properties change.
+        Cache overriding is useless in case of dispesive rendering (`camera.spectral_rays != 1`).
         """
-
-        if not isinstance(cache, csr_matrix):
-            raise TypeError("Argument 'cache' must be a 'csr_matrix' instance.")
 
         if cache.shape[0] != self.nvoxel:
             raise ValueError('Provided cache matrix does not match the grid size.')
 
         self._cache_init()  # deleting current cache
 
-        # if cache.indptr.dtype != np.int32 or cache.indices.dtype != np.int32:
-        #     raise ValueError('Provided cache matrix must have np.int32 indices.' +
-        #                      'Divide the grid into several parts and distribure it between mutiple emitters if it is too large.')
-        if cache.indptr.dtype == np.int32:
-            self.cache_32bit_indices = True
-        else:
-            self.cache_32bit_indices = False
+        self._cache = csr_matrix(cache)  # this does not create a copy if the cache is a csr_matrix
 
-        if cache.data.dtype == np.float32:
+        self.cache_32bit_indices = (self._cache.indptr.dtype == np.int32)
+
+        if self._cache.data.dtype == np.float32:
             self._cache_32bit = True
-        elif cache.data.dtype == np.float64:
+        elif self._cache.data.dtype == np.float64:
             self._cache_32bit = False
         else:
-            raise ValueError('Cache data must be in float32 or float64.')
+            # using current value of self._cache_32bit
+            self._cache.data = self._cache.data.astype(np.float32) if self._cache_32bit else self._cache.data.astype(np.float64)
 
-        self._cache = cache
-
+        # initialising memoryviews
         if self._cache_32bit:
             self.cache_data_32_mv = self._cache.data
         else:
@@ -538,6 +531,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
 
         self._cache_init()  # deleting current cache
 
+        # reducing memory usage if possible
         dtype = np.float32 if self._cache_32bit else np.float64
         dtype_int = np.int32 if self.nvoxel < np.iinfo('int32').max else np.int64
 
@@ -556,8 +550,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
 
         self._cache = csr_matrix((data, (row_ind, col_ind)), shape=(self.nvoxel, bins), dtype=dtype)
 
-        if self._cache.indptr.dtype == np.int64:
-            self.cache_32bit_indices = False  # cache_32bit_indices is True after _cache_init()
+        self.cache_32bit_indices = (self._cache.indptr.dtype == np.int32)  # depends on the data size, may not be equal to dtype_int
 
         if self._cache_32bit:
             self.cache_data_32_mv = self._cache.data
@@ -601,9 +594,9 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         Adds to the provided memoryview the spectral emission of the specified spatial cell,
         multiplied by the provided distance, travelled by ray through the cell.
 
-        Call this function only after the cache is built!!!
+        This function does not check the cache spectral range.
 
-        :param double[::1] samples_mv: Memoryview of the array with nbins elements.
+        :param double[::1] samples_mv: Memoryview of the array with ray.bins elements.
         :param int i: 1st index of the grid.
         :param int j: 2nd index of the grid.
         :param int k: 3rd index of the grid.
@@ -614,7 +607,11 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
             int ivoxel32, i32
             long ivoxel64, i64
 
+        if samples_mv.shape[0] != self._cache_num_samp:
+            raise ValueError('Provided array does not match the cache size.')
+
         if i < 0 or i >= self._grid_shape[0] or j < 0 or j >= self._grid_shape[1] or k < 0 or k >= self._grid_shape[2]:
+            # out of spatial grid
             return
 
         if self.cache_32bit_indices:
@@ -646,9 +643,9 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         Adds to the provided memoryview the spectral emission of the specified spatial cell,
         multiplied by the provided distance, travelled by ray through the cell.
 
-        Call this function only after the cache is built!!!
+        This function does not check the cache spectral range.
 
-        :param double[::1] samples_mv: Memoryview of the array with nbins elements.
+        :param double[::1] samples_mv: Memoryview of the array with ray.bins elements.
         :param int i: 1st index of the grid.
         :param int j: 2nd index of the grid.
         :param int k: 3rd index of the grid.
