@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -47,87 +47,87 @@ def test(x, y):
         y
     )
 
-# todo: SHOULD THIS DO NORMALISATION? OR SHOULD IT BE A UNIT SQUARE?
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.initializedcheck(False)
-@cython.cdivision(True)
-cdef double cubic2d(double[::1] vx, double[::1] vy, double[:,::1] f, double[:,::1] dfdx, double[:,::1] dfdy,
-                    double[:,::1] d2fdxdy, double tx, double ty) nogil:
+# # todo: SHOULD THIS DO NORMALISATION? OR SHOULD IT BE A UNIT SQUARE?
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
+# @cython.initializedcheck(False)
+# @cython.cdivision(True)
+# cdef double cubic2d(double[::1] vx, double[::1] vy, double[:,::1] f, double[:,::1] dfdx, double[:,::1] dfdy,
+#                     double[:,::1] d2fdxdy, double tx, double ty) nogil:
+#
+#     cdef:
+#         int i, j
+#         double dx, dy, nx, ny
+#         double nf[2][2]
+#         double ndfdx[2][2]
+#         double ndfdy[2][2]
+#         double nd2fdxdy[2][2]
+#         double a[4][4]
+#
+#     # normalise onto unit square
+#     dx = vx[1] - vx[0]
+#     dy = vy[1] - vy[0]
+#
+#     nx = (tx - vx[0]) / dx
+#     ny = (ty - vy[0]) / dy
+#
+#     for i in range(2):
+#         for j in range(2):
+#             nf[i][j] = f[i][j]
+#             ndfdx[i][j] = dfdx[i][j] * dx
+#             ndfdy[i][j] = dfdy[i][j] * dy
+#             nd2fdxdy[i][j] = d2fdxdy[i][j] * dx * dy
+#
+#     calc_coefficients_2d(nf, ndfdx, ndfdy, nd2fdxdy, a)
+#     return evaluate_cubic_2d(a, nx, ny)
 
-    cdef:
-        int i, j
-        double dx, dy, nx, ny
-        double nf[2][2]
-        double ndfdx[2][2]
-        double ndfdy[2][2]
-        double nd2fdxdy[2][2]
-        double a[4][4]
 
-    # normalise onto unit square
-    dx = vx[1] - vx[0]
-    dy = vy[1] - vy[0]
-
-    nx = (tx - vx[0]) / dx
-    ny = (ty - vy[0]) / dy
-
-    for i in range(2):
-        for j in range(2):
-            nf[i][j] = f[i][j]
-            ndfdx[i][j] = dfdx[i][j] * dx
-            ndfdy[i][j] = dfdy[i][j] * dy
-            nd2fdxdy[i][j] = d2fdxdy[i][j] * dx * dy
-
-    calc_coefficients_2d(nf, ndfdx, ndfdy, nd2fdxdy, a)
-    return evaluate_cubic_2d(a, nx, ny)
-
-
-# todo: SHOULD THIS DO NORMALISATION? OR SHOULD IT BE A UNIT SQUARE?
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.initializedcheck(False)
-@cython.cdivision(True)
-cdef double cubic3d(double[::1] vx, double[::1] vy, double[::1] vz, double[:,:,::1] f,
-                    double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
-                    double[:,:,::1] d2fdxdy, double[:,:,::1] d2fdxdz, double[:,:,::1] d2fdydz,
-                    double[:,:,::1] d3fdxdydz, double tx, double ty, double tz) nogil:
-
-    cdef:
-        int i, j, k
-        double dx, dy, dz, nx, ny, nz
-        double nf[2][2][2]
-        double ndfdx[2][2][2]
-        double ndfdy[2][2][2]
-        double ndfdz[2][2][2]
-        double nd2fdxdy[2][2][2]
-        double nd2fdxdz[2][2][2]
-        double nd2fdydz[2][2][2]
-        double nd3fdxdydz[2][2][2]
-        double a[4][4][4]
-
-    # normalise onto unit square
-    dx = vx[1] - vx[0]
-    dy = vy[1] - vy[0]
-    dz = vz[1] - vz[0]
-
-    nx = (tx - vx[0]) / dx
-    ny = (ty - vy[0]) / dy
-    nz = (tz - vz[0]) / dz
-
-    for i in range(2):
-        for j in range(2):
-            for k in range(2):
-                nf[i][j][k] = f[i][j][k]
-                ndfdx[i][j][k] = dfdx[i][j][k] * dx
-                ndfdy[i][j][k] = dfdy[i][j][k] * dy
-                ndfdz[i][j][k] = dfdy[i][j][k] * dz
-                nd2fdxdy[i][j][k] = d2fdxdy[i][j][k] * dx * dy
-                nd2fdxdz[i][j][k] = d2fdxdy[i][j][k] * dx * dz
-                nd2fdydz[i][j][k] = d2fdxdy[i][j][k] * dy * dz
-                nd3fdxdydz[i][j][k] = d2fdxdy[i][j][k] * dx * dy * dz
-
-    calc_coefficients_3d(nf, ndfdx, ndfdy, ndfdz, nd2fdxdy, nd2fdxdz, nd2fdydz, nd3fdxdydz, a)
-    return evaluate_cubic_3d(a, nx, ny, nz)
+# # todo: SHOULD THIS DO NORMALISATION? OR SHOULD IT BE A UNIT SQUARE?
+# @cython.boundscheck(False)
+# @cython.wraparound(False)
+# @cython.initializedcheck(False)
+# @cython.cdivision(True)
+# cdef double cubic3d(double[::1] vx, double[::1] vy, double[::1] vz, double[:,:,::1] f,
+#                     double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
+#                     double[:,:,::1] d2fdxdy, double[:,:,::1] d2fdxdz, double[:,:,::1] d2fdydz,
+#                     double[:,:,::1] d3fdxdydz, double tx, double ty, double tz) nogil:
+#
+#     cdef:
+#         int i, j, k
+#         double dx, dy, dz, nx, ny, nz
+#         double nf[2][2][2]
+#         double ndfdx[2][2][2]
+#         double ndfdy[2][2][2]
+#         double ndfdz[2][2][2]
+#         double nd2fdxdy[2][2][2]
+#         double nd2fdxdz[2][2][2]
+#         double nd2fdydz[2][2][2]
+#         double nd3fdxdydz[2][2][2]
+#         double a[4][4][4]
+#
+#     # normalise onto unit square
+#     dx = vx[1] - vx[0]
+#     dy = vy[1] - vy[0]
+#     dz = vz[1] - vz[0]
+#
+#     nx = (tx - vx[0]) / dx
+#     ny = (ty - vy[0]) / dy
+#     nz = (tz - vz[0]) / dz
+#
+#     for i in range(2):
+#         for j in range(2):
+#             for k in range(2):
+#                 nf[i][j][k] = f[i][j][k]
+#                 ndfdx[i][j][k] = dfdx[i][j][k] * dx
+#                 ndfdy[i][j][k] = dfdy[i][j][k] * dy
+#                 ndfdz[i][j][k] = dfdy[i][j][k] * dz
+#                 nd2fdxdy[i][j][k] = d2fdxdy[i][j][k] * dx * dy
+#                 nd2fdxdz[i][j][k] = d2fdxdy[i][j][k] * dx * dz
+#                 nd2fdydz[i][j][k] = d2fdxdy[i][j][k] * dy * dz
+#                 nd3fdxdydz[i][j][k] = d2fdxdy[i][j][k] * dx * dy * dz
+#
+#     calc_coefficients_3d(nf, ndfdx, ndfdy, ndfdz, nd2fdxdy, nd2fdxdz, nd2fdydz, nd3fdxdydz, a)
+#     return evaluate_cubic_3d(a, nx, ny, nz)
 
 
 @cython.boundscheck(False)
