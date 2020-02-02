@@ -122,23 +122,11 @@ Frame Samplers
 .. autoclass:: raysect.optical.observer.sampler2d.FullFrameSampler2D
    :show-inheritance:
 
-.. autoclass:: raysect.optical.observer.sampler2d.MaskedFrameSampler2D
-   :show-inheritance:
-
 .. autoclass:: raysect.optical.observer.sampler2d.MonoAdaptiveSampler2D
-   :show-inheritance:
-
-.. autoclass:: raysect.optical.observer.sampler2d.MaskedMonoAdaptiveSampler2D
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.sampler2d.SpectralAdaptiveSampler2D
    :show-inheritance:
 
-.. autoclass:: raysect.optical.observer.sampler2d.MaskedSpectralAdaptiveSampler2D
-   :show-inheritance:
-
 .. autoclass:: raysect.optical.observer.sampler2d.RGBAdaptiveSampler2D
-   :show-inheritance:
-
-.. autoclass:: raysect.optical.observer.sampler2d.MaskedRGBAdaptiveSampler2D
    :show-inheritance:
