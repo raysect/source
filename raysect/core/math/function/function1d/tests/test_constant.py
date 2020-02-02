@@ -41,4 +41,4 @@ class TestConstant1D(unittest.TestCase):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
             constant = Constant1D(x)
-            self.assertEqual(constant(500), x, "Constant1D call did not match reference value")
+            self.assertEqual(constant(500), x, "Constant1D call did not match reference value.")

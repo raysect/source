@@ -43,9 +43,9 @@ class TestArg2D(unittest.TestCase):
             for y in v:
                 argx = Arg2D("x")
                 argy = Arg2D("y")
-                self.assertEqual(argx(x, y), x, "Arg2D('x') call did not match reference value")
-                self.assertEqual(argy(x, y), y, "Arg2D('y') call did not match reference value")
+                self.assertEqual(argx(x, y), x, "Arg2D('x') call did not match reference value.")
+                self.assertEqual(argy(x, y), y, "Arg2D('y') call did not match reference value.")
 
     def test_invalid_inputs(self):
-        with self.assertRaises(ValueError, msg="Arg2D did not raise ValueError with incorrect string"):
+        with self.assertRaises(ValueError, msg="Arg2D did not raise ValueError with incorrect string."):
             Arg2D("z")
