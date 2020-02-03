@@ -28,9 +28,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-
+from raysect.core.math._vec3 cimport _Vec3
 from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 
 cdef class Quaternion:
@@ -60,6 +60,8 @@ cdef class Quaternion:
     cpdef Quaternion normalise(self)
 
     cpdef Quaternion copy(self)
+
+    cpdef Vector3D transform(self, _Vec3 vector)
 
     cpdef AffineMatrix3D to_matrix(self)
 

@@ -32,6 +32,7 @@ import numbers
 cimport cython
 from libc.math cimport sqrt, sin, cos
 
+from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.affinematrix cimport new_affinematrix3d
 
 DEF RAD2DEG = 57.29577951308232000  # 180 / pi
@@ -402,6 +403,35 @@ cdef class Quaternion:
 
         return new_quaternion(self.x, self.y, self.z, self.s)
 
+    cpdef Vector3D transform(self, _Vec3 vector):
+        """
+        Rotates a supplied vector by the rotation specified in this quaternion.
+        
+        Implements:
+        .. math::
+
+            v^* = q \\times v \\times q^{-1}
+            
+        .. code-block:: pycon
+
+           >>> from raysect.core.math import Quaternion, Vector3D
+           >>>
+           >>> q = Quaternion(0, 1, 0, 1).normalise()
+           >>> q.transform(Vector3D(2, 3, 4))
+           Vector3D(-3.999999999999999, 2.9999999999999996, 1.9999999999999998)
+        """
+
+        cdef:
+            Quaternion q_star, v, v_star
+            Vector3D v_rot
+
+        q_star = self.conjugate()
+        v = new_quaternion(vector.x, vector.y, vector.z, 0)
+        v_star = q_star.mul(v).mul(self)
+        v_rot = new_vector3d(v_star.x, v_star.y, v_star.z)
+
+        return v_rot
+
     cpdef AffineMatrix3D to_matrix(self):
         """
         Generates an AffineMatrix3D representation of this Quaternion.
@@ -410,7 +440,7 @@ cdef class Quaternion:
 
            >>> from raysect.core.math import Quaternion
            >>>
-           >>> q = Quaternion(0.5, 0, 0.5)
+           >>> q = Quaternion(0.5, 0, 0, 0.5)
            >>> q.to_matrix()
            AffineMatrix3D([[1.0, 0.0, 0.0, 0.0],
                            [0.0, 0.0, -1.0, 0.0],
