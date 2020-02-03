@@ -297,6 +297,27 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(q_result.s, 0.18257418583505536, delta=1e-10,
                                msg="Norm of a quaternion failed to produce the correct result.")
 
+    def test_is_unit(self):
+        """Testing method is_unit()"""
+
+        self.assertTrue(Quaternion(1, 0, 0, 0).is_unit(),
+                        "Quaternion is_unit() test failed to produce the correct result.")
+
+        self.assertTrue(Quaternion(0, 1, 0, 0).is_unit(),
+                        "Quaternion is_unit() test failed to produce the correct result.")
+
+        self.assertTrue(Quaternion(0, 0, 1, 0).is_unit(),
+                        "Quaternion is_unit() test failed to produce the correct result.")
+
+        self.assertTrue(Quaternion(0, 0, 0, 1).is_unit(),
+                        "Quaternion is_unit() test failed to produce the correct result.")
+
+        self.assertFalse(Quaternion(1, 2, 3, 4).is_unit(),
+                         "Quaternion is_unit() test failed to produce the correct result.")
+
+        self.assertFalse(Quaternion(-0.777777, 3.1214352, -0.9483527, 3.1415).is_unit(),
+                         "Quaternion is_unit() test failed to produce the correct result.")
+
     def test_copy(self):
         """Testing method copy()"""
 

@@ -59,6 +59,8 @@ cdef class Quaternion:
 
     cpdef Quaternion normalise(self)
 
+    cpdef bint is_unit(self, double tolerance=*)
+
     cpdef Quaternion copy(self)
 
     cpdef Vector3D transform(self, _Vec3 vector)

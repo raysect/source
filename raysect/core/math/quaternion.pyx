@@ -30,7 +30,7 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt, sin, cos
+from libc.math cimport sqrt, sin, cos, fabs
 
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.affinematrix cimport new_affinematrix3d
@@ -397,6 +397,16 @@ cdef class Quaternion:
         # normalise and rescale quaternion
         n = 1.0 / n
         return self.mul_scalar(n)
+
+    cpdef bint is_unit(self, double tolerance=1e-10):
+        """
+        Returns True if this is a unit quaternion (versor) to within specified tolerance.
+
+        :param float tolerance: the tested numerical tolerance by which the quaternion norm can differ by 1.0.
+        
+        
+        """
+        return fabs(1.0 - self.norm()) < tolerance
 
     cpdef Quaternion copy(self):
         """Returns a copy of this quaternion."""
