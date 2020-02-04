@@ -371,6 +371,47 @@ class TestQuaternion(unittest.TestCase):
                                msg="Decomposition of a quaternion into axis angle representation "
                                    "failed to produce the correct result.")
 
+    def test_euler_angle_decomposition(self):
+
+        q = Quaternion(0, 0, 0, 1)
+        yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
+
+        self.assertAlmostEqual(yaw, 0, delta=1e-10,
+                               msg="Decomposition of a quaternion into euler angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(pitch, 0, delta=1e-10,
+                               msg="Decomposition of a quaternion into euler angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(roll, 0, delta=1e-10,
+                               msg="Decomposition of a quaternion into euler angle representation "
+                                   "failed to produce the correct result.")
+
+        q = Quaternion(1, 1, 1, 1)
+        yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
+
+        self.assertAlmostEqual(yaw, 90, delta=1e-10,
+                               msg="Decomposition of a quaternion into euler angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(pitch, 0, delta=1e-10,
+                               msg="Decomposition of a quaternion into euler angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(roll, 90, delta=1e-10,
+                               msg="Decomposition of a quaternion into euler angle representation "
+                                   "failed to produce the correct result.")
+
+        q = Quaternion(2, 3, 4, 1)
+        yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
+
+        self.assertAlmostEqual(yaw, 81.86989764584403, delta=1e-10,
+                               msg="Decomposition of a quaternion into euler angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(pitch, -19.471220634490695, delta=1e-10,
+                               msg="Decomposition of a quaternion into euler angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(roll, 135, delta=1e-10,
+                               msg="Decomposition of a quaternion into euler angle representation "
+                                   "failed to produce the correct result.")
+
     def test_copy(self):
         """Testing method copy()"""
 

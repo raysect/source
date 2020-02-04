@@ -30,7 +30,7 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt, sin, cos, atan2, fabs, M_PI
+from libc.math cimport sqrt, sin, cos, asin, atan2, fabs, M_PI, copysign
 
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.affinematrix cimport new_affinematrix3d
@@ -448,6 +448,41 @@ cdef class Quaternion:
         # map back into (-pi, pi) and convert to degrees
         angle_radians = ((angle_radians + M_PI) % (2 * M_PI)) - M_PI
         return angle_radians * RAD2DEG
+
+    cpdef tuple to_euler_angles(self, str ordering="YXZ"):
+        """Decomposes this quaternion into intrinsic euler angles based on the specified ordering."""
+
+        cdef:
+            Quaternion q
+            double sinroll_cospitch, cosroll_cospitch
+            double discriminant
+            double sinyaw_cospitch, cosyaw_cospitch
+            double phi, theta, psi
+
+        q = self.normalise()
+
+        if ordering == "ZYX":
+            # roll (x''-axis rotation)
+            sinroll_cospitch = 2 * (q.s * q.x + q.y * q.z)
+            cosroll_cospitch = 1 - 2 * (q.x * q.x + q.y * q.y)
+            phi = atan2(sinroll_cospitch, cosroll_cospitch) * RAD2DEG
+
+            #  pitch (y'-axis rotation)
+            discriminant = (q.s * q.y - q.z * q.x)
+            if abs(discriminant) >= 1/2:
+                theta = copysign(M_PI / 2, discriminant) * RAD2DEG
+            else:
+                theta = asin(2*discriminant) * RAD2DEG
+
+            #  yaw (z-axis rotation)
+            sinyaw_cospitch = 2 * (q.s * q.z + q.x * q.y)
+            cosyaw_cospitch = 1 - 2 * (q.y * q.y + q.z * q.z)
+            psi = atan2(sinyaw_cospitch, cosyaw_cospitch) * RAD2DEG
+
+        else:
+            raise ValueError("Unrecognised / unsupported euler angle decomposition ordering.")
+
+        return phi, theta, psi
 
     cpdef Quaternion copy(self):
         """Returns a copy of this quaternion."""

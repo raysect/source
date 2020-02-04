@@ -65,6 +65,8 @@ cdef class Quaternion:
 
     cdef double get_angle(self)
 
+    cpdef tuple to_euler_angles(self, str ordering=*)
+
     cpdef Quaternion copy(self)
 
     cpdef Vector3D transform(self, _Vec3 vector)
