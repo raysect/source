@@ -429,12 +429,12 @@ class TestQuaternion(unittest.TestCase):
         self.assertEqual(r.z, 3.0, "Copy failed [Z].")
         self.assertEqual(r.s, 4.0, "Copy failed [S].")
 
-    def test_transform(self):
-        """Testing method transform()"""
+    def test_transform_vector(self):
+        """Testing method transform_vector()"""
 
         q = Quaternion(0, 1, 0, 1).normalise()
 
-        v_result = q.transform(Vector3D(1, 1, 1))
+        v_result = q.transform_vector(Vector3D(1, 1, 1))
         self.assertAlmostEqual(v_result.x, -1, delta=1e-10,
                                msg="Quaternion transform on a vector failed to produce the correct result.")
         self.assertAlmostEqual(v_result.y, 1, delta=1e-10,
@@ -442,7 +442,7 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(v_result.z, 1, delta=1e-10,
                                msg="Quaternion transform on a vector failed to produce the correct result.")
 
-        v_result = q.transform(Vector3D(2, 3, 4))
+        v_result = q.transform_vector(Vector3D(2, 3, 4))
         self.assertAlmostEqual(v_result.x, -4, delta=1e-10,
                                msg="Quaternion transform on a vector failed to produce the correct result.")
         self.assertAlmostEqual(v_result.y, 3, delta=1e-10,
@@ -452,7 +452,7 @@ class TestQuaternion(unittest.TestCase):
 
         q = Quaternion(0.5, 0.3, 0.1, 1).normalise()
 
-        v_result = q.transform(Vector3D(1, 1, 1))
+        v_result = q.transform_vector(Vector3D(1, 1, 1))
         self.assertAlmostEqual(v_result.x, 0.8518518518518516, delta=1e-10,
                                msg="Quaternion transform on a vector failed to produce the correct result.")
         self.assertAlmostEqual(v_result.y, 1.4740740740740739, delta=1e-10,
@@ -460,7 +460,7 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(v_result.z, 0.3185185185185185, delta=1e-10,
                                msg="Quaternion transform on a vector failed to produce the correct result.")
 
-        v_result = q.transform(Vector3D(2, 3, 4))
+        v_result = q.transform_vector(Vector3D(2, 3, 4))
         self.assertAlmostEqual(v_result.x, 1.3333333333333335, delta=1e-10,
                                msg="Quaternion transform on a vector failed to produce the correct result.")
         self.assertAlmostEqual(v_result.y, 5.133333333333333, delta=1e-10,

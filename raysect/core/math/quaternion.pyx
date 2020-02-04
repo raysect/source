@@ -489,7 +489,7 @@ cdef class Quaternion:
 
         return new_quaternion(self.x, self.y, self.z, self.s)
 
-    cpdef Vector3D transform(self, _Vec3 vector):
+    cpdef Vector3D transform_vector(self, _Vec3 vector):
         """
         Rotates a supplied vector by the rotation specified in this quaternion.
         
