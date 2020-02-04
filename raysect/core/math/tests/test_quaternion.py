@@ -318,6 +318,59 @@ class TestQuaternion(unittest.TestCase):
         self.assertFalse(Quaternion(-0.777777, 3.1214352, -0.9483527, 3.1415).is_unit(),
                          "Quaternion is_unit() test failed to produce the correct result.")
 
+    def test_axis_angle_decomposition(self):
+
+        q = Quaternion(1, 1, 1, 1)
+        axis = q.axis
+        angle = q.angle
+
+        self.assertAlmostEqual(axis.x, 0.5773502691896258, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(axis.y, 0.5773502691896258, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(axis.z, 0.5773502691896258, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(angle, 120, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+
+        q = Quaternion(2, 3, 4, 1)
+        axis = q.axis
+        angle = q.angle
+
+        self.assertAlmostEqual(axis.x, 0.3713906763541038, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(axis.y, 0.5570860145311557, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(axis.z, 0.7427813527082076, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(angle, 158.96053021868278, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+
+        q = Quaternion(0, 0, 0, 1)
+        axis = q.axis
+        angle = q.angle
+
+        self.assertAlmostEqual(axis.x, 0, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(axis.y, 0, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(axis.z, 0, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+        self.assertAlmostEqual(angle, 0, delta=1e-10,
+                               msg="Decomposition of a quaternion into axis angle representation "
+                                   "failed to produce the correct result.")
+
     def test_copy(self):
         """Testing method copy()"""
 

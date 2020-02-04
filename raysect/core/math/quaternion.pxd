@@ -61,6 +61,10 @@ cdef class Quaternion:
 
     cpdef bint is_unit(self, double tolerance=*)
 
+    cdef Vector3D get_axis(self, double tolerance=*)
+
+    cdef double get_angle(self)
+
     cpdef Quaternion copy(self)
 
     cpdef Vector3D transform(self, _Vec3 vector)

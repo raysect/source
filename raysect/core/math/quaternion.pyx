@@ -30,7 +30,7 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt, sin, cos, fabs
+from libc.math cimport sqrt, sin, cos, atan2, fabs, M_PI
 
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.affinematrix cimport new_affinematrix3d
@@ -407,6 +407,47 @@ cdef class Quaternion:
         
         """
         return fabs(1.0 - self.norm()) < tolerance
+
+    @property
+    def axis(self):
+        """The axis around which this quaternion rotates."""
+        return self.get_axis()
+
+    cdef Vector3D get_axis(self, double tolerance=1e-10):
+
+        cdef:
+            Quaternion q
+            double norm
+
+        q = self.normalise()
+        norm = sqrt(q.x * q.x + q.y * q.y + q.z * q.z)
+
+        if norm < tolerance:
+            return new_vector3d(0, 0, 0)
+        else:
+            return new_vector3d(q.x, q.y, q.z).div(norm)
+
+    @property
+    def angle(self):
+        """The magnitude of rotation around this quaternion's rotation axis in degrees."""
+        return self.get_angle()
+
+    @cython.cdivision(True)
+    cdef double get_angle(self):
+        """The magnitude of rotation around this quaternion's rotation axis in degrees."""
+
+        cdef:
+            Quaternion q
+            double norm, angle_radians
+
+        # extract the angle of rotation about rotation axis
+        q = self.normalise()
+        norm = sqrt(q.x * q.x + q.y * q.y + q.z * q.z)
+        angle_radians = (2.0 * atan2(norm, q.s))
+
+        # map back into (-pi, pi) and convert to degrees
+        angle_radians = ((angle_radians + M_PI) % (2 * M_PI)) - M_PI
+        return angle_radians * RAD2DEG
 
     cpdef Quaternion copy(self):
         """Returns a copy of this quaternion."""
