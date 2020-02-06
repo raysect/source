@@ -722,5 +722,52 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(zr.z, 1, delta=1e-10,
                                msg="Calculating the rotation delta from an angular velocity failed.")
 
+        omega = Vector3D(1/sqrt(2)*90, 0, 1/sqrt(2)*90)
+        q = rotation_delta(omega, 0.5)
+        yr = q.transform_vector(y)
+        self.assertAlmostEqual(yr.x, 0.5, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.y, 1/sqrt(2), delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.z, -0.5, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+
+        q = rotation_delta(omega, 1)
+        yr = q.transform_vector(y)
+        self.assertAlmostEqual(yr.x, 1/sqrt(2), delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.y, 0, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.z, -1/sqrt(2), delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+
+        q = rotation_delta(omega, 2)
+        yr = q.transform_vector(y)
+        self.assertAlmostEqual(yr.x, 0, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.y, -1, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.z, 0, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+
+        q = rotation_delta(omega, 3)
+        yr = q.transform_vector(y)
+        self.assertAlmostEqual(yr.x, -1/sqrt(2), delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.y, 0, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.z, 1/sqrt(2), delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+
+        q = rotation_delta(omega, 4)
+        yr = q.transform_vector(y)
+        self.assertAlmostEqual(yr.x, 0, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.y, 1.0, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+        self.assertAlmostEqual(yr.z, 0, delta=1e-10,
+                               msg="Calculating the rotation delta from an angular velocity failed.")
+
+
 if __name__ == "__main__":
     unittest.main()
