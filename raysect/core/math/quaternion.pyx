@@ -661,3 +661,38 @@ cdef class Quaternion:
         qs = cos(theta_2)
 
         return new_quaternion(qx, qy, qz, qs)
+
+
+cpdef Quaternion rotation_delta(Vector3D omega, double delta_t):
+    """
+    Calculates the quaternion representing a change in orientation for a given
+    angular velocity and time interval dt.
+
+    :param Vector3D omega: the angular velocity vector (degrees per second)
+    :param float delta_dt: the time increment dt over which the orientation
+    """
+
+    cdef:
+        double norm, sin_norm
+        Vector3D omega_rad, half_angle
+        Quaternion q, identity
+
+    omega_rad = new_vector3d(omega.x * DEG2RAD, omega.y * DEG2RAD, omega.z * DEG2RAD)
+    half_angle = omega_rad.mul(delta_t * 0.5)
+
+    norm = half_angle.get_length()
+
+    if norm > 0:
+
+        sin_norm = sin(norm) / norm
+
+        q = new_quaternion(half_angle.x * sin_norm,
+                           half_angle.y * sin_norm,
+                           half_angle.z * sin_norm,
+                           cos(norm))
+        q = q.normalise()
+
+    else:
+        q = new_quaternion(0, 0, 0, 1)
+
+    return q

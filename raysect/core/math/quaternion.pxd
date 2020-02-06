@@ -74,6 +74,9 @@ cdef class Quaternion:
     cpdef AffineMatrix3D to_matrix(self)
 
 
+cpdef Quaternion rotation_delta(Vector3D omega, double delta_t)
+
+
 cdef inline Quaternion new_quaternion(double x, double y, double z, double s):
     """
     Quaternion factory function.
