@@ -64,15 +64,17 @@ cdef class Quaternion:
 
     cpdef bint is_unit(self, double tolerance=*)
 
-    cdef Vector3D get_axis(self, double tolerance=*)
+    cdef Vector3D get_axis(self)
 
     cdef double get_angle(self)
 
-    cpdef tuple to_euler_angles(self, str ordering=*)
+    # cpdef tuple to_euler_angles(self, str ordering=*)
+
+    cpdef Quaternion transform(self, AffineMatrix3D m)
 
     cpdef Quaternion copy(self)
 
-    cpdef Vector3D transform_vector(self, _Vec3 vector)
+    # cpdef Vector3D transform_vector(self, _Vec3 vector)
 
     cpdef AffineMatrix3D to_matrix(self)
 

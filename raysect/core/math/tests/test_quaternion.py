@@ -33,7 +33,7 @@ Unit tests for the Quaternion object.
 
 import unittest
 from math import sqrt
-from raysect.core.math import Quaternion, AffineMatrix3D, Vector3D, rotate_x, rotation_delta
+from raysect.core.math import Quaternion, AffineMatrix3D, Vector3D, rotate_x, rotate_z, rotation_delta
 
 
 class TestQuaternion(unittest.TestCase):
@@ -275,13 +275,13 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(q_result.s, 0.5, delta=1e-10,
                                msg="Inverse of a quaternion failed to produce the correct result [S].")
 
-    def test_norm(self):
-        """Norm of a quaternion"""
+    def test_length(self):
+        """Length (norm) of a quaternion"""
 
         q = Quaternion(2, 3, 4, 1)
 
-        self.assertAlmostEqual(q.norm(), 5.477225575051661, delta=1e-10,
-                               msg="Norm of a quaternion failed to produce the correct result.")
+        self.assertAlmostEqual(q.length, 5.477225575051661, delta=1e-10,
+                               msg="Length of a quaternion failed to produce the correct result.")
 
     def test_normalise(self):
         """Normalising a quaternion"""
@@ -372,46 +372,46 @@ class TestQuaternion(unittest.TestCase):
                                msg="Decomposition of a quaternion into axis angle representation "
                                    "failed to produce the correct result.")
 
-    def test_euler_angle_decomposition(self):
-
-        q = Quaternion(0, 0, 0, 1)
-        yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
-
-        self.assertAlmostEqual(yaw, 0, delta=1e-10,
-                               msg="Decomposition of a quaternion into euler angle representation "
-                                   "failed to produce the correct result.")
-        self.assertAlmostEqual(pitch, 0, delta=1e-10,
-                               msg="Decomposition of a quaternion into euler angle representation "
-                                   "failed to produce the correct result.")
-        self.assertAlmostEqual(roll, 0, delta=1e-10,
-                               msg="Decomposition of a quaternion into euler angle representation "
-                                   "failed to produce the correct result.")
-
-        q = Quaternion(1, 1, 1, 1)
-        yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
-
-        self.assertAlmostEqual(yaw, 90, delta=1e-10,
-                               msg="Decomposition of a quaternion into euler angle representation "
-                                   "failed to produce the correct result.")
-        self.assertAlmostEqual(pitch, 0, delta=1e-10,
-                               msg="Decomposition of a quaternion into euler angle representation "
-                                   "failed to produce the correct result.")
-        self.assertAlmostEqual(roll, 90, delta=1e-10,
-                               msg="Decomposition of a quaternion into euler angle representation "
-                                   "failed to produce the correct result.")
-
-        q = Quaternion(2, 3, 4, 1)
-        yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
-
-        self.assertAlmostEqual(yaw, 81.86989764584403, delta=1e-10,
-                               msg="Decomposition of a quaternion into euler angle representation "
-                                   "failed to produce the correct result.")
-        self.assertAlmostEqual(pitch, -19.471220634490695, delta=1e-10,
-                               msg="Decomposition of a quaternion into euler angle representation "
-                                   "failed to produce the correct result.")
-        self.assertAlmostEqual(roll, 135, delta=1e-10,
-                               msg="Decomposition of a quaternion into euler angle representation "
-                                   "failed to produce the correct result.")
+    # def test_euler_angle_decomposition(self):
+    #
+    #     q = Quaternion(0, 0, 0, 1)
+    #     yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
+    #
+    #     self.assertAlmostEqual(yaw, 0, delta=1e-10,
+    #                            msg="Decomposition of a quaternion into euler angle representation "
+    #                                "failed to produce the correct result.")
+    #     self.assertAlmostEqual(pitch, 0, delta=1e-10,
+    #                            msg="Decomposition of a quaternion into euler angle representation "
+    #                                "failed to produce the correct result.")
+    #     self.assertAlmostEqual(roll, 0, delta=1e-10,
+    #                            msg="Decomposition of a quaternion into euler angle representation "
+    #                                "failed to produce the correct result.")
+    #
+    #     q = Quaternion(1, 1, 1, 1)
+    #     yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
+    #
+    #     self.assertAlmostEqual(yaw, 90, delta=1e-10,
+    #                            msg="Decomposition of a quaternion into euler angle representation "
+    #                                "failed to produce the correct result.")
+    #     self.assertAlmostEqual(pitch, 0, delta=1e-10,
+    #                            msg="Decomposition of a quaternion into euler angle representation "
+    #                                "failed to produce the correct result.")
+    #     self.assertAlmostEqual(roll, 90, delta=1e-10,
+    #                            msg="Decomposition of a quaternion into euler angle representation "
+    #                                "failed to produce the correct result.")
+    #
+    #     q = Quaternion(2, 3, 4, 1)
+    #     yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
+    #
+    #     self.assertAlmostEqual(yaw, 81.86989764584403, delta=1e-10,
+    #                            msg="Decomposition of a quaternion into euler angle representation "
+    #                                "failed to produce the correct result.")
+    #     self.assertAlmostEqual(pitch, -19.471220634490695, delta=1e-10,
+    #                            msg="Decomposition of a quaternion into euler angle representation "
+    #                                "failed to produce the correct result.")
+    #     self.assertAlmostEqual(roll, 135, delta=1e-10,
+    #                            msg="Decomposition of a quaternion into euler angle representation "
+    #                                "failed to produce the correct result.")
 
     def test_copy(self):
         """Testing method copy()"""
@@ -430,44 +430,68 @@ class TestQuaternion(unittest.TestCase):
         self.assertEqual(r.z, 3.0, "Copy failed [Z].")
         self.assertEqual(r.s, 4.0, "Copy failed [S].")
 
-    def test_transform_vector(self):
-        """Testing method transform_vector()"""
+    def test_transform(self):
 
-        q = Quaternion(0, 1, 0, 1).normalise()
+        # transform between space 1 and space 2
+        m = rotate_z(47)
 
-        v_result = q.transform_vector(Vector3D(1, 1, 1))
-        self.assertAlmostEqual(v_result.x, -1, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
-        self.assertAlmostEqual(v_result.y, 1, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
-        self.assertAlmostEqual(v_result.z, 1, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
+        # define in coordinate space 1
+        v1 = Vector3D(1, 0.3, -0.2)
+        q1 = Quaternion.from_axis_angle(Vector3D(0.1, -0.7, 0.2), 57)
 
-        v_result = q.transform_vector(Vector3D(2, 3, 4))
-        self.assertAlmostEqual(v_result.x, -4, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
-        self.assertAlmostEqual(v_result.y, 3, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
-        self.assertAlmostEqual(v_result.z, 2, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
+        # transform to coordinate space 2
+        v2 = v1.transform(m)
+        q2 = q1.transform(m)
 
-        q = Quaternion(0.5, 0.3, 0.1, 1).normalise()
+        # use quaternion to rotate vector in each space
+        r1 = v1.transform(q1.to_matrix())
+        r2 = v2.transform(q2.to_matrix())
 
-        v_result = q.transform_vector(Vector3D(1, 1, 1))
-        self.assertAlmostEqual(v_result.x, 0.8518518518518516, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
-        self.assertAlmostEqual(v_result.y, 1.4740740740740739, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
-        self.assertAlmostEqual(v_result.z, 0.3185185185185185, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
+        # convert result in space 2 to space 1 for comparison
+        r2_1 = r2.transform(m.inverse())
 
-        v_result = q.transform_vector(Vector3D(2, 3, 4))
-        self.assertAlmostEqual(v_result.x, 1.3333333333333335, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
-        self.assertAlmostEqual(v_result.y, 5.133333333333333, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
-        self.assertAlmostEqual(v_result.z, 0.9333333333333322, delta=1e-10,
-                               msg="Quaternion transform on a vector failed to produce the correct result.")
+        self.assertAlmostEqual(r1.x, r2_1.x, delta=1e-10, msg='Transform failed [X]')
+        self.assertAlmostEqual(r1.y, r2_1.y, delta=1e-10, msg='Transform failed [Y]')
+        self.assertAlmostEqual(r1.z, r2_1.z, delta=1e-10, msg='Transform failed [Z]')
+
+    # def test_transform_vector(self):
+    #     """Testing method transform_vector()"""
+    #
+    #     q = Quaternion(0, 1, 0, 1).normalise()
+    #
+    #     v_result = q.transform_vector(Vector3D(1, 1, 1))
+    #     self.assertAlmostEqual(v_result.x, -1, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #     self.assertAlmostEqual(v_result.y, 1, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #     self.assertAlmostEqual(v_result.z, 1, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #
+    #     v_result = q.transform_vector(Vector3D(2, 3, 4))
+    #     self.assertAlmostEqual(v_result.x, -4, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #     self.assertAlmostEqual(v_result.y, 3, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #     self.assertAlmostEqual(v_result.z, 2, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #
+    #     q = Quaternion(0.5, 0.3, 0.1, 1).normalise()
+    #
+    #     v_result = q.transform_vector(Vector3D(1, 1, 1))
+    #     self.assertAlmostEqual(v_result.x, 0.8518518518518516, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #     self.assertAlmostEqual(v_result.y, 1.4740740740740739, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #     self.assertAlmostEqual(v_result.z, 0.3185185185185185, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #
+    #     v_result = q.transform_vector(Vector3D(2, 3, 4))
+    #     self.assertAlmostEqual(v_result.x, 1.3333333333333335, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #     self.assertAlmostEqual(v_result.y, 5.133333333333333, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #     self.assertAlmostEqual(v_result.z, 0.9333333333333322, delta=1e-10,
+    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
 
     def test_to_matrix(self):
         """Test AffineMatrix3D generation from a quaternion"""

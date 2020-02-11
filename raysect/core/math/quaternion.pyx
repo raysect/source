@@ -31,10 +31,10 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt, sin, cos, asin, atan2, fabs, M_PI, copysign
+from libc.math cimport sqrt, sin, cos, asin, acos, atan2, fabs, M_PI, copysign
 
 from raysect.core.math.vector cimport new_vector3d
-from raysect.core.math.affinematrix cimport new_affinematrix3d
+from raysect.core.math.affinematrix cimport new_affinematrix3d, AffineMatrix3D
 
 DEF RAD2DEG = 57.29577951308232000  # 180 / pi
 DEF DEG2RAD = 0.017453292519943295  # pi / 180
@@ -219,7 +219,7 @@ cdef class Quaternion:
 
             q1 = <Quaternion> x
             q2 = <Quaternion> y
-            return q1.mul(q2)
+            return q1.mul_quaternion(q2)
 
         else:
             return NotImplemented()
@@ -249,7 +249,7 @@ cdef class Quaternion:
 
             q1 = <Quaternion> x
             q2 = <Quaternion> y
-            return q1.div(q2)
+            return q1.div_quaternion(q2)
 
         else:
 
@@ -302,6 +302,9 @@ cdef class Quaternion:
 
         return new_quaternion(nx, ny, nz, ns)
 
+    cdef Quaternion mul_scalar(self, double d):
+        return new_quaternion(d * self.x, d * self.y, d * self.z, d * self.s)
+
     cdef Quaternion div_quaternion(self, Quaternion q):
         """
         Fast division operator.
@@ -311,9 +314,6 @@ cdef class Quaternion:
         """
 
         return self.mul_quaternion(q.inverse())
-
-    cdef Quaternion mul_scalar(self, double d):
-        return new_quaternion(d * self.x, d * self.y, d * self.z, d * self.s)
 
     @cython.cdivision(True)
     cdef Quaternion div_scalar(self, double d):
@@ -441,19 +441,16 @@ cdef class Quaternion:
         """
         return self.get_axis()
 
-    cdef Vector3D get_axis(self, double tolerance=1e-10):
+    cdef Vector3D get_axis(self):
 
-        cdef:
-            Quaternion q
-            double norm
+        # quaternion vector component is scaled by a constant value, so simply re-normalise to obtain a unit vector
+        cdef Vector3D v = new_vector3d(self.x, self.y, self.z)
 
-        q = self.normalise()
-        norm = sqrt(q.x * q.x + q.y * q.y + q.z * q.z)
+        # a null (zero rotation) quaternion returns a null vector
+        if v.get_length() == 0:
+            return v
 
-        if norm < tolerance:
-            return new_vector3d(0, 0, 0)
-        else:
-            return new_vector3d(q.x, q.y, q.z).div(norm)
+        return v.normalise()
 
     @property
     def angle(self):
@@ -464,87 +461,93 @@ cdef class Quaternion:
     cdef double get_angle(self):
         """The magnitude of rotation around this quaternion's rotation axis in degrees."""
 
-        cdef:
-            Quaternion q
-            double norm, angle_radians
+        cdef Quaternion q = self.normalise()
+        return 2 * acos(q.s) * RAD2DEG
 
-        # extract the angle of rotation about rotation axis
-        q = self.normalise()
-        norm = sqrt(q.x * q.x + q.y * q.y + q.z * q.z)
-        angle_radians = (2.0 * atan2(norm, q.s))
-
-        # map back into (-pi, pi) and convert to degrees
-        angle_radians = ((angle_radians + M_PI) % (2 * M_PI)) - M_PI
-        return angle_radians * RAD2DEG
-
-    cpdef tuple to_euler_angles(self, str ordering="YXZ"):
-        """Decomposes this quaternion into intrinsic euler angles based on the specified ordering."""
-
-        cdef:
-            Quaternion q
-            double sinroll_cospitch, cosroll_cospitch
-            double discriminant
-            double sinyaw_cospitch, cosyaw_cospitch
-            double phi, theta, psi
-
-        q = self.normalise()
-
-        if ordering == "ZYX":
-            # roll (x''-axis rotation)
-            sinroll_cospitch = 2 * (q.s * q.x + q.y * q.z)
-            cosroll_cospitch = 1 - 2 * (q.x * q.x + q.y * q.y)
-            phi = atan2(sinroll_cospitch, cosroll_cospitch) * RAD2DEG
-
-            #  pitch (y'-axis rotation)
-            discriminant = (q.s * q.y - q.z * q.x)
-            if abs(discriminant) >= 1/2:
-                theta = copysign(M_PI / 2, discriminant) * RAD2DEG
-            else:
-                theta = asin(2*discriminant) * RAD2DEG
-
-            #  yaw (z-axis rotation)
-            sinyaw_cospitch = 2 * (q.s * q.z + q.x * q.y)
-            cosyaw_cospitch = 1 - 2 * (q.y * q.y + q.z * q.z)
-            psi = atan2(sinyaw_cospitch, cosyaw_cospitch) * RAD2DEG
-
-        else:
-            raise ValueError("Unrecognised / unsupported euler angle decomposition ordering.")
-
-        return phi, theta, psi
+    # todo: implement matrix to angle
+    # cpdef tuple to_euler_angles(self, str ordering="-Y-XZ"):
+    #     """Decomposes this quaternion into intrinsic euler angles based on the specified ordering."""
+    #
+    #     cdef:
+    #         Quaternion q
+    #         double sinroll_cospitch, cosroll_cospitch
+    #         double discriminant
+    #         double sinyaw_cospitch, cosyaw_cospitch
+    #         double phi, theta, psi
+    #
+    #     q = self.normalise()
+    #
+    #     if ordering == "ZYX":
+    #         # roll (x''-axis rotation)
+    #         sinroll_cospitch = 2 * (q.s * q.x + q.y * q.z)
+    #         cosroll_cospitch = 1 - 2 * (q.x * q.x + q.y * q.y)
+    #         phi = atan2(sinroll_cospitch, cosroll_cospitch) * RAD2DEG
+    #
+    #         #  pitch (y'-axis rotation)
+    #         discriminant = (q.s * q.y - q.z * q.x)
+    #         if abs(discriminant) >= 1/2:
+    #             theta = copysign(M_PI / 2, discriminant) * RAD2DEG
+    #         else:
+    #             theta = asin(2*discriminant) * RAD2DEG
+    #
+    #         #  yaw (z-axis rotation)
+    #         sinyaw_cospitch = 2 * (q.s * q.z + q.x * q.y)
+    #         cosyaw_cospitch = 1 - 2 * (q.y * q.y + q.z * q.z)
+    #         psi = atan2(sinyaw_cospitch, cosyaw_cospitch) * RAD2DEG
+    #
+    #     else:
+    #         raise ValueError("Unrecognised / unsupported euler angle decomposition ordering.")
+    #
+    #     return phi, theta, psi
 
     cpdef Quaternion copy(self):
         """Returns a copy of this quaternion."""
 
         return new_quaternion(self.x, self.y, self.z, self.s)
 
-    cpdef Vector3D transform_vector(self, _Vec3 vector):
+    cpdef Quaternion transform(self, AffineMatrix3D m):
         """
-        Rotates a supplied vector by the rotation specified in this quaternion.
-        
-        Implements:
-        .. math::
+        Transforms the quaternion with the supplied AffineMatrix3D.
 
-            v^* = q \\times v \\times q^{-1}
-            
-        .. code-block:: pycon
-
-           >>> from raysect.core.math import Quaternion, Vector3D
-           >>>
-           >>> q = Quaternion(0, 1, 0, 1).normalise()
-           >>> q.transform(Vector3D(2, 3, 4))
-           Vector3D(-3.999999999999999, 2.9999999999999996, 1.9999999999999998)
+        :param AffineMatrix3D m: The affine matrix describing the required coordinate transformation.
+        :return: A new instance of this quaternion that has been transformed with the supplied Affine Matrix.
+        :rtype: Quaternion
         """
 
-        cdef:
-            Quaternion q_star, v, v_star
-            Vector3D v_rot
+        cdef Quaternion q = Quaternion.from_axis_angle(self.axis.transform(m), self.angle)
+        q.set_length(self.get_length())
+        return q
 
-        q_star = self.conjugate()
-        v = new_quaternion(vector.x, vector.y, vector.z, 0)
-        v_star = q_star.mul(v).mul(self)
-        v_rot = new_vector3d(v_star.x, v_star.y, v_star.z)
-
-        return v_rot
+    # todo: resurrect on vector and normal in the future major version of raysect? Is slightly faster than generating the matrix and then transforming 1 or 2 vectors, but slower for more.
+    # cpdef Vector3D transform_vector(self, _Vec3 vector):
+    #     """
+    #     Rotates a supplied vector by the rotation specified in this quaternion.
+    #
+    #     Implements:
+    #     .. math::
+    #
+    #         v^* = q \\times v \\times q^{-1}
+    #
+    #     .. code-block:: pycon
+    #
+    #        >>> from raysect.core.math import Quaternion, Vector3D
+    #        >>>
+    #        >>> q = Quaternion(0, 1, 0, 1).normalise()
+    #        >>> q.transform(Vector3D(2, 3, 4))
+    #        Vector3D(-3.999999999999999, 2.9999999999999996, 1.9999999999999998)
+    #     """
+    #
+    #     cdef:
+    #         Quaternion q_star, v, v_star
+    #         Vector3D v_rot
+    #
+    #     # todo: optimise, this performs unnecessary calculation with zeros
+    #     q_star = self.conjugate()
+    #     v = new_quaternion(vector.x, vector.y, vector.z, 0)
+    #     v_star = q_star.mul_quaternion(v).mul_quaternion(self)
+    #     v_rot = new_vector3d(v_star.x, v_star.y, v_star.z)
+    #
+    #     return v_rot
 
     cpdef AffineMatrix3D to_matrix(self):
         """
@@ -665,7 +668,7 @@ cdef class Quaternion:
         Generates a new Quaternion from the axis-angle specification.
 
         :param Vector3D axis: The axis about which rotation will be performed.
-        :param float angle: An angle in degrees specifiying the magnitude of the
+        :param float angle: An angle in degrees specifying the magnitude of the
           rotation about the axis vector.
         :return: A new Quaternion object representing the specified rotation.
 
