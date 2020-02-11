@@ -1,3 +1,4 @@
+# cython: language_level=3
 
 # Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -37,25 +38,27 @@ cdef class Quaternion:
 
     cdef public double x, y, z, s
 
+    cdef double get_length(self) nogil
+
+    cdef object set_length(self, double value)
+
     cdef Quaternion neg(self)
 
     cdef Quaternion add(self, Quaternion q2)
 
     cdef Quaternion sub(self, Quaternion q2)
 
-    cdef Quaternion mul(self, Quaternion q2)
+    cdef Quaternion mul_quaternion(self, Quaternion q2)
 
     cdef Quaternion mul_scalar(self, double d)
+
+    cdef Quaternion div_quaternion(self, Quaternion q2)
+
+    cdef Quaternion div_scalar(self, double d)
 
     cpdef Quaternion conjugate(self)
 
     cpdef Quaternion inverse(self)
-
-    cpdef double norm(self)
-
-    cdef Quaternion div(self, Quaternion q2)
-
-    cdef Quaternion div_scalar(self, double d)
 
     cpdef Quaternion normalise(self)
 

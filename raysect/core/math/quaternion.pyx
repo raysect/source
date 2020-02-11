@@ -1,3 +1,4 @@
+# cython: language_level=3
 
 # Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -51,7 +52,7 @@ cdef class Quaternion:
     def __repr__(self):
         """Returns a string representation of the Quaternion object."""
 
-        return "Quaternion(" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ", " + str(self.s) + ")"
+        return f'Quaternion({self.x}, {self.y}, {self.z}, {self.s})'
 
     def __getitem__(self, int i):
         """Returns the quaternion coordinates by index ([0,1,2,3] -> [x,y,z,s]).
@@ -264,7 +265,7 @@ cdef class Quaternion:
 
         return new_quaternion(-self.x, -self.y, -self.z, -self.s)
 
-    cdef Quaternion add(self, Quaternion q2):
+    cdef Quaternion add(self, Quaternion q):
         """
         Fast addition operator.
 
@@ -272,10 +273,9 @@ cdef class Quaternion:
         to the equivalent python operator.
         """
 
-        cdef Quaternion q1 = self
-        return new_quaternion(q1.x + q2.x, q1.y + q2.y, q1.z + q2.z, q1.s + q2.s)
+        return new_quaternion(self.x + q.x, self.y + q.y, self.z + q.z, self.s + q.s)
 
-    cdef Quaternion sub(self, Quaternion q2):
+    cdef Quaternion sub(self, Quaternion q):
         """
         Fast subtraction operator.
 
@@ -283,10 +283,9 @@ cdef class Quaternion:
         to the equivalent python operator.
         """
 
-        cdef Quaternion q1 = self
-        return new_quaternion(q1.x - q2.x, q1.y - q2.y, q1.z - q2.z, q1.s - q2.s)
+        return new_quaternion(self.x - q.x, self.y - q.y, self.z - q.z, self.s - q.s)
 
-    cdef Quaternion mul(self, Quaternion q2):
+    cdef Quaternion mul_quaternion(self, Quaternion q):
         """
         Fast multiplication operator.
 
@@ -294,20 +293,37 @@ cdef class Quaternion:
         to the equivalent python operator.
         """
 
-        cdef Quaternion q1 = self
         cdef double ns, nx, ny, nz
 
-        nx = q1.s*q2.x + q1.x*q2.s + q1.y*q2.z - q1.z*q2.y
-        ny = q1.s*q2.y - q1.x*q2.z + q1.y*q2.s + q1.z*q2.x
-        nz = q1.s*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.s
-        ns = q1.s*q2.s - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z
+        nx = self.s*q.x + self.x*q.s + self.y*q.z - self.z*q.y
+        ny = self.s*q.y - self.x*q.z + self.y*q.s + self.z*q.x
+        nz = self.s*q.z + self.x*q.y - self.y*q.x + self.z*q.s
+        ns = self.s*q.s - self.x*q.x - self.y*q.y - self.z*q.z
 
         return new_quaternion(nx, ny, nz, ns)
 
-    cdef Quaternion mul_scalar(self, double d):
+    cdef Quaternion div_quaternion(self, Quaternion q):
+        """
+        Fast division operator.
 
-        cdef Quaternion q = self
-        return new_quaternion(d * q.x, d * q.y, d * q.z, d * q.s)
+        This is a cython only function and is substantially faster than a call
+        to the equivalent python operator.
+        """
+
+        return self.mul_quaternion(q.inverse())
+
+    cdef Quaternion mul_scalar(self, double d):
+        return new_quaternion(d * self.x, d * self.y, d * self.z, d * self.s)
+
+    @cython.cdivision(True)
+    cdef Quaternion div_scalar(self, double d):
+
+        # prevent divide by zero
+        if d == 0.0:
+            raise ZeroDivisionError("Cannot divide a quaternion by a zero scalar.")
+
+        d = 1.0 / d
+        return new_quaternion(d * self.x, d * self.y, d * self.z, d * self.s)
 
     cpdef Quaternion conjugate(self):
         """
@@ -332,45 +348,58 @@ cdef class Quaternion:
             Quaternion(-0.07143, -0.14286, -0.21429, 0.0)
         """
 
-        cdef Quaternion q = self
-        cdef double n = self.norm()**2
-        return new_quaternion(-q.x/n, -q.y/n, -q.z/n, q.s/n)
+        cdef double n = self.get_length()**2
+        return new_quaternion(-self.x/n, -self.y/n, -self.z/n, self.s/n)
 
-    cpdef double norm(self):
+    @property
+    def length(self):
         """
-        Calculates the norm of the quaternion.
+        Calculates the length (norm) of the quaternion.
 
         .. code-block:: pycon
 
-            >>> Quaternion(1, 2, 3, 0).norm()
+            >>> Quaternion(1, 2, 3, 0).length
             3.7416573867739413
         """
+        return self.get_length()
 
+    @length.setter
+    def length(self, value):
+        self.set_length(value)
+
+    cdef double get_length(self) nogil:
+        """
+        Fast function to obtain the quaternion length (norm).
+
+        Cython only, equivalent to length.__get__() property.
+
+        Use instead of Python attribute access in cython code.
+        """
         return sqrt(self.x * self.x + self.y * self.y + self.z * self.z + self.s * self.s)
 
-    cdef Quaternion div(self, Quaternion q2):
-        """
-        Fast division operator.
-
-        This is a cython only function and is substantially faster than a call
-        to the equivalent python operator.
-        """
-
-        cdef Quaternion q1 = self, q2_inv
-        q2_inv = q2.inverse()
-        return q1.mul(q2_inv)
-
     @cython.cdivision(True)
-    cdef Quaternion div_scalar(self, double d):
+    cdef object set_length(self, double v):
+        """
+        Fast function to set the quaternions length.
 
-        cdef Quaternion q = self
+        Cython only, equivalent to length.__set__() property.
 
-        # prevent divide my zero
-        if d == 0.0:
-            raise ZeroDivisionError("Cannot divide a quaternion by a zero scalar.")
+        Use instead of Python attribute access in cython code.
+        """
 
-        d = 1.0 / d
-        return new_quaternion(d * q.x, d * q.y, d * q.z, d * q.s)
+        cdef double t
+
+        # if current length is zero, problem is ill defined
+        t = self.x * self.x + self.y * self.y + self.z * self.z + self.s * self.s
+        if t == 0.0:
+            raise ZeroDivisionError("A zero length quaternion cannot be rescaled.")
+
+        # normalise and rescale quaternion
+        t = v / sqrt(t)
+        self.x = self.x * t
+        self.y = self.y * t
+        self.z = self.z * t
+        self.s = self.s * t
 
     @cython.cdivision(True)
     cpdef Quaternion normalise(self):
@@ -389,10 +418,9 @@ cdef class Quaternion:
         cdef double n
 
         # if current length is zero, problem is ill defined
-        n = self.norm()
+        n = self.get_length()
         if n == 0.0:
-            raise ZeroDivisionError("A zero length quaternion cannot be normalised as the direction "
-                                    "of a zero length quaternion is undefined.")
+            raise ZeroDivisionError("A zero length quaternion cannot be normalised.")
 
         # normalise and rescale quaternion
         n = 1.0 / n
@@ -402,15 +430,15 @@ cdef class Quaternion:
         """
         Returns True if this is a unit quaternion (versor) to within specified tolerance.
 
-        :param float tolerance: the tested numerical tolerance by which the quaternion norm can differ by 1.0.
-        
-        
+        :param float tolerance: The numerical tolerance by which the quaternion norm can differ by 1.0.
         """
-        return fabs(1.0 - self.norm()) < tolerance
+        return fabs(1.0 - self.get_length()) <= tolerance
 
     @property
     def axis(self):
-        """The axis around which this quaternion rotates."""
+        """
+        The axis around which this quaternion rotates.
+        """
         return self.get_axis()
 
     cdef Vector3D get_axis(self, double tolerance=1e-10):
