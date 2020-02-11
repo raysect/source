@@ -37,23 +37,7 @@ cdef class Quaternion:
 
     cdef public double x, y, z, s
 
-    cdef double get_length(self) nogil
-
-    cdef object set_length(self, double value)
-
-    cdef Quaternion neg(self)
-
-    cdef Quaternion add(self, Quaternion q2)
-
-    cdef Quaternion sub(self, Quaternion q2)
-
-    cdef Quaternion mul_quaternion(self, Quaternion q2)
-
-    cdef Quaternion mul_scalar(self, double d)
-
-    cdef Quaternion div_quaternion(self, Quaternion q2)
-
-    cdef Quaternion div_scalar(self, double d)
+    cpdef Quaternion copy(self)
 
     cpdef Quaternion conjugate(self)
 
@@ -63,22 +47,33 @@ cdef class Quaternion:
 
     cpdef bint is_unit(self, double tolerance=*)
 
+    cpdef Quaternion transform(self, AffineMatrix3D m)
+
+    cpdef AffineMatrix3D as_matrix(self)
+
+    cpdef Quaternion rotation_to(self, Quaternion q)
+
+    cdef Quaternion neg(self)
+
+    cdef Quaternion add(self, Quaternion q)
+
+    cdef Quaternion sub(self, Quaternion q)
+
+    cdef Quaternion mul_quaternion(self, Quaternion q)
+
+    cdef Quaternion mul_scalar(self, double d)
+
+    cdef Quaternion div_quaternion(self, Quaternion q)
+
+    cdef Quaternion div_scalar(self, double d)
+
     cdef Vector3D get_axis(self)
 
     cdef double get_angle(self)
 
-    # cpdef tuple to_euler_angles(self, str ordering=*)
+    cdef double get_length(self) nogil
 
-    cpdef Quaternion transform(self, AffineMatrix3D m)
-
-    cpdef Quaternion copy(self)
-
-    # cpdef Vector3D transform_vector(self, _Vec3 vector)
-
-    cpdef AffineMatrix3D to_matrix(self)
-
-
-# cpdef Quaternion rotation_delta(Vector3D omega, double delta_t)
+    cdef object set_length(self, double v)
 
 
 cdef inline Quaternion new_quaternion(double x, double y, double z, double s):
@@ -91,9 +86,9 @@ cdef inline Quaternion new_quaternion(double x, double y, double z, double s):
 
     cdef Quaternion q
     q = Quaternion.__new__(Quaternion)
-    q.s = s
     q.x = x
     q.y = y
     q.z = z
+    q.s = s
     return q
 
