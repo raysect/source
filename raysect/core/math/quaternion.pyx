@@ -414,13 +414,13 @@ cdef class Quaternion:
                                   m20, m21, m22, 0,
                                   0, 0, 0, 1)
 
-    cpdef Quaternion rotation_to(self, Quaternion q):
+    cpdef Quaternion quaternion_to(self, Quaternion q):
         """
-        Calculates the rotation between quaternions.
+        Calculates the quaternion between quaternions.
 
-        This method calculates the rotation quaternion required to rotate this
-        quaternion onto the supplied quaternion. Both quaternions will be
-        normalised and a normalised quaternion will be returned.
+        This method calculates the quaternion required to map this quaternion
+        onto the supplied quaternion. Both quaternions will be normalised and
+        a normalised quaternion will be returned.
         
         .. code-block:: pycon
         
@@ -428,7 +428,7 @@ cdef class Quaternion:
           >>>
           >>> q1 = Quaternion.from_axis_angle(Vector3D(1,0,0), 10) 
           >>> q2 = Quaternion.from_axis_angle(Vector3D(1,0,0), 25)
-          >>> d = q1.rotate_to(q2)
+          >>> d = q1.quaternion_to(q2)
           >>> d
           Quaternion(0.13052619222005157, 0.0, 0.0, 0.9914448613738104)
           >>> d.angle

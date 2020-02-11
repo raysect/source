@@ -372,47 +372,6 @@ class TestQuaternion(unittest.TestCase):
                                msg='Decomposition of a quaternion into axis angle representation '
                                    'failed to produce the correct result.')
 
-    # def test_euler_angle_decomposition(self):
-    #
-    #     q = Quaternion(0, 0, 0, 1)
-    #     yaw, pitch, roll = q.to_euler_angles(ordering='ZYX')
-    #
-    #     self.assertAlmostEqual(yaw, 0, delta=1e-10,
-    #                            msg='Decomposition of a quaternion into euler angle representation '
-    #                                'failed to produce the correct result.')
-    #     self.assertAlmostEqual(pitch, 0, delta=1e-10,
-    #                            msg='Decomposition of a quaternion into euler angle representation '
-    #                                'failed to produce the correct result.')
-    #     self.assertAlmostEqual(roll, 0, delta=1e-10,
-    #                            msg='Decomposition of a quaternion into euler angle representation '
-    #                                'failed to produce the correct result.')
-    #
-    #     q = Quaternion(1, 1, 1, 1)
-    #     yaw, pitch, roll = q.to_euler_angles(ordering='ZYX')
-    #
-    #     self.assertAlmostEqual(yaw, 90, delta=1e-10,
-    #                            msg='Decomposition of a quaternion into euler angle representation '
-    #                                'failed to produce the correct result.')
-    #     self.assertAlmostEqual(pitch, 0, delta=1e-10,
-    #                            msg='Decomposition of a quaternion into euler angle representation '
-    #                                'failed to produce the correct result.')
-    #     self.assertAlmostEqual(roll, 90, delta=1e-10,
-    #                            msg='Decomposition of a quaternion into euler angle representation '
-    #                                'failed to produce the correct result.')
-    #
-    #     q = Quaternion(2, 3, 4, 1)
-    #     yaw, pitch, roll = q.to_euler_angles(ordering='ZYX')
-    #
-    #     self.assertAlmostEqual(yaw, 81.86989764584403, delta=1e-10,
-    #                            msg='Decomposition of a quaternion into euler angle representation '
-    #                                'failed to produce the correct result.')
-    #     self.assertAlmostEqual(pitch, -19.471220634490695, delta=1e-10,
-    #                            msg='Decomposition of a quaternion into euler angle representation '
-    #                                'failed to produce the correct result.')
-    #     self.assertAlmostEqual(roll, 135, delta=1e-10,
-    #                            msg='Decomposition of a quaternion into euler angle representation '
-    #                                'failed to produce the correct result.')
-
     def test_copy(self):
         """Testing method copy()"""
 
@@ -444,8 +403,8 @@ class TestQuaternion(unittest.TestCase):
         q2 = q1.transform(m)
 
         # use quaternion to rotate vector in each space
-        r1 = v1.transform(q1.to_matrix())
-        r2 = v2.transform(q2.to_matrix())
+        r1 = v1.transform(q1.as_matrix())
+        r2 = v2.transform(q2.as_matrix())
 
         # convert result in space 2 to space 1 for comparison
         r2_1 = r2.transform(m.inverse())
@@ -454,51 +413,12 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(r1.y, r2_1.y, delta=1e-10, msg='Transform failed [Y]')
         self.assertAlmostEqual(r1.z, r2_1.z, delta=1e-10, msg='Transform failed [Z]')
 
-    # def test_transform_vector(self):
-    #     """Testing method transform_vector()"""
-    #
-    #     q = Quaternion(0, 1, 0, 1).normalise()
-    #
-    #     v_result = q.transform_vector(Vector3D(1, 1, 1))
-    #     self.assertAlmostEqual(v_result.x, -1, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #     self.assertAlmostEqual(v_result.y, 1, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #     self.assertAlmostEqual(v_result.z, 1, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #
-    #     v_result = q.transform_vector(Vector3D(2, 3, 4))
-    #     self.assertAlmostEqual(v_result.x, -4, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #     self.assertAlmostEqual(v_result.y, 3, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #     self.assertAlmostEqual(v_result.z, 2, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #
-    #     q = Quaternion(0.5, 0.3, 0.1, 1).normalise()
-    #
-    #     v_result = q.transform_vector(Vector3D(1, 1, 1))
-    #     self.assertAlmostEqual(v_result.x, 0.8518518518518516, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #     self.assertAlmostEqual(v_result.y, 1.4740740740740739, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #     self.assertAlmostEqual(v_result.z, 0.3185185185185185, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #
-    #     v_result = q.transform_vector(Vector3D(2, 3, 4))
-    #     self.assertAlmostEqual(v_result.x, 1.3333333333333335, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #     self.assertAlmostEqual(v_result.y, 5.133333333333333, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-    #     self.assertAlmostEqual(v_result.z, 0.9333333333333322, delta=1e-10,
-    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
-
-    def test_to_matrix(self):
+    def test_as_matrix(self):
         """Test AffineMatrix3D generation from a quaternion"""
 
         message = 'Conversion of a Quaternion to AffineMatrix3D failed to produce the correct result.'
 
-        matrix = Quaternion(0.5, 0, 0, 0.5).to_matrix()
+        matrix = Quaternion(0.5, 0, 0, 0.5).as_matrix()
         answer = rotate_x(90)
 
         # TODO - replace this with a utility function e.g. _assert_matrix()
@@ -520,7 +440,7 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(matrix[3, 3], answer[3, 3], delta=1e-10, msg=message)
 
         # TODO - increase the resolution of this test by calculating quaternion more accurately
-        matrix = Quaternion(0.3826834, 0, 0, 0.923879).to_matrix()
+        matrix = Quaternion(0.3826834, 0, 0, 0.923879).as_matrix()
         answer = rotate_x(45)
 
         self.assertAlmostEqual(matrix[0, 0], answer[0, 0], delta=1e-6, msg=message)
@@ -599,198 +519,21 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(answer.s, result.s, delta=1e-6,
                                msg='Extracting quaternion from AffineMatrix3D produced wrong result [S].')
 
-    # def test_rotation_delta(self):
-    #     """Test the rotation_delta() function."""
-    #
-    #     # reference vectors
-    #     x = Vector3D(1, 0, 0)
-    #     y = Vector3D(0, 1, 0)
-    #     z = Vector3D(0, 0, 1)
-    #
-    #     # rotate around x 90 degrees every second
-    #     omega = Vector3D(90, 0, 0)
-    #
-    #     # x should be un-effected by the rotations at all times
-    #     # z should return to its starting position over 4 seconds
-    #
-    #     # testing 0.5 seconds
-    #     q = rotation_delta(omega, 0.5)
-    #     xr = q.transform_vector(x)
-    #     zr = q.transform_vector(z)
-    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.y, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.z, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     # testing 1 seconds
-    #     q = rotation_delta(omega, 1)
-    #     xr = q.transform_vector(x)
-    #     zr = q.transform_vector(z)
-    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.y, 1, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.z, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     # testing 2 seconds
-    #     q = rotation_delta(omega, 2)
-    #     xr = q.transform_vector(x)
-    #     zr = q.transform_vector(z)
-    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.z, -1, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     # testing 2.5 seconds
-    #     q = rotation_delta(omega, 2.5)
-    #     xr = q.transform_vector(x)
-    #     zr = q.transform_vector(z)
-    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.y, -1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.z, -1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     # testing 4 seconds
-    #     q = rotation_delta(omega, 4)
-    #     xr = q.transform_vector(x)
-    #     zr = q.transform_vector(z)
-    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.z, 1, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     omega = Vector3D(0, 90, 0)
-    #     q = rotation_delta(omega, 0.5)
-    #     xr = q.transform_vector(x)
-    #     yr = q.transform_vector(y)
-    #     zr = q.transform_vector(z)
-    #     self.assertAlmostEqual(xr.x, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.z, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.x, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.y, 1, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.x, -1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.z, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     omega = Vector3D(0, 0, 90)
-    #     q = rotation_delta(omega, 0.5)
-    #     xr = q.transform_vector(x)
-    #     yr = q.transform_vector(y)
-    #     zr = q.transform_vector(z)
-    #     self.assertAlmostEqual(xr.x, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.y, -1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(xr.z, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.x, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.y, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(zr.z, 1, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     omega = Vector3D(1/sqrt(2)*90, 0, 1/sqrt(2)*90)
-    #     q = rotation_delta(omega, 0.5)
-    #     yr = q.transform_vector(y)
-    #     self.assertAlmostEqual(yr.x, 0.5, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.y, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.z, -0.5, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     q = rotation_delta(omega, 1)
-    #     yr = q.transform_vector(y)
-    #     self.assertAlmostEqual(yr.x, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.y, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.z, -1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     q = rotation_delta(omega, 2)
-    #     yr = q.transform_vector(y)
-    #     self.assertAlmostEqual(yr.x, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.y, -1, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     q = rotation_delta(omega, 3)
-    #     yr = q.transform_vector(y)
-    #     self.assertAlmostEqual(yr.x, -1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.y, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.z, 1/sqrt(2), delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #
-    #     q = rotation_delta(omega, 4)
-    #     yr = q.transform_vector(y)
-    #     self.assertAlmostEqual(yr.x, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.y, 1.0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
-    #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-    #                            msg='Calculating the rotation delta from an angular velocity failed.')
+    def test_quaternion_to(self):
+        """Tests the calculation of a quaternion between two quaternions."""
+
+        q1 = Quaternion.from_axis_angle(Vector3D(1.0, 0.3, -0.1), 10)
+        q2 = Quaternion.from_axis_angle(Vector3D(0.2, 1.0, 1.0), 25)
+        d = q1.quaternion_to(q2)
+
+        # transform a vector with q1 + d and q2, both should result in the same answer
+        v = Vector3D(1, 3, 4)
+        r1 = v.transform(q1.as_matrix()).transform(d.as_matrix())
+        r2 = v.transform(q2.as_matrix())
+
+        self.assertAlmostEqual(r1.x, r2.x, delta=1e-10, msg='Rotation_to failed [X]')
+        self.assertAlmostEqual(r1.y, r2.y, delta=1e-10, msg='Rotation_to failed [Y]')
+        self.assertAlmostEqual(r1.z, r2.z, delta=1e-10, msg='Rotation_to failed [Z]')
 
 
 if __name__ == '__main__':

@@ -51,7 +51,7 @@ cdef class Quaternion:
 
     cpdef AffineMatrix3D as_matrix(self)
 
-    cpdef Quaternion rotation_to(self, Quaternion q)
+    cpdef Quaternion quaternion_to(self, Quaternion q)
 
     cdef Quaternion neg(self)
 
