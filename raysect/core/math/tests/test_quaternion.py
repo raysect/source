@@ -599,198 +599,198 @@ class TestQuaternion(unittest.TestCase):
         self.assertAlmostEqual(answer.s, result.s, delta=1e-6,
                                msg="Extracting quaternion from AffineMatrix3D produced wrong result [S].")
 
-    def test_rotation_delta(self):
-        """Test the rotation_delta() function."""
-
-        # reference vectors
-        x = Vector3D(1, 0, 0)
-        y = Vector3D(0, 1, 0)
-        z = Vector3D(0, 0, 1)
-
-        # rotate around x 90 degrees every second
-        omega = Vector3D(90, 0, 0)
-
-        # x should be un-effected by the rotations at all times
-        # z should return to its starting position over 4 seconds
-
-        # testing 0.5 seconds
-        q = rotation_delta(omega, 0.5)
-        xr = q.transform_vector(x)
-        zr = q.transform_vector(z)
-        self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.y, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.z, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        # testing 1 seconds
-        q = rotation_delta(omega, 1)
-        xr = q.transform_vector(x)
-        zr = q.transform_vector(z)
-        self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.y, 1, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.z, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        # testing 2 seconds
-        q = rotation_delta(omega, 2)
-        xr = q.transform_vector(x)
-        zr = q.transform_vector(z)
-        self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.z, -1, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        # testing 2.5 seconds
-        q = rotation_delta(omega, 2.5)
-        xr = q.transform_vector(x)
-        zr = q.transform_vector(z)
-        self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.y, -1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.z, -1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        # testing 4 seconds
-        q = rotation_delta(omega, 4)
-        xr = q.transform_vector(x)
-        zr = q.transform_vector(z)
-        self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.z, 1, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        omega = Vector3D(0, 90, 0)
-        q = rotation_delta(omega, 0.5)
-        xr = q.transform_vector(x)
-        yr = q.transform_vector(y)
-        zr = q.transform_vector(z)
-        self.assertAlmostEqual(xr.x, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.z, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.x, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.y, 1, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.x, -1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.z, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        omega = Vector3D(0, 0, 90)
-        q = rotation_delta(omega, 0.5)
-        xr = q.transform_vector(x)
-        yr = q.transform_vector(y)
-        zr = q.transform_vector(z)
-        self.assertAlmostEqual(xr.x, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.y, -1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(xr.z, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.x, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.y, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(zr.z, 1, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        omega = Vector3D(1/sqrt(2)*90, 0, 1/sqrt(2)*90)
-        q = rotation_delta(omega, 0.5)
-        yr = q.transform_vector(y)
-        self.assertAlmostEqual(yr.x, 0.5, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.y, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.z, -0.5, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        q = rotation_delta(omega, 1)
-        yr = q.transform_vector(y)
-        self.assertAlmostEqual(yr.x, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.y, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.z, -1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        q = rotation_delta(omega, 2)
-        yr = q.transform_vector(y)
-        self.assertAlmostEqual(yr.x, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.y, -1, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        q = rotation_delta(omega, 3)
-        yr = q.transform_vector(y)
-        self.assertAlmostEqual(yr.x, -1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.y, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.z, 1/sqrt(2), delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-
-        q = rotation_delta(omega, 4)
-        yr = q.transform_vector(y)
-        self.assertAlmostEqual(yr.x, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.y, 1.0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
-        self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-                               msg="Calculating the rotation delta from an angular velocity failed.")
+    # def test_rotation_delta(self):
+    #     """Test the rotation_delta() function."""
+    #
+    #     # reference vectors
+    #     x = Vector3D(1, 0, 0)
+    #     y = Vector3D(0, 1, 0)
+    #     z = Vector3D(0, 0, 1)
+    #
+    #     # rotate around x 90 degrees every second
+    #     omega = Vector3D(90, 0, 0)
+    #
+    #     # x should be un-effected by the rotations at all times
+    #     # z should return to its starting position over 4 seconds
+    #
+    #     # testing 0.5 seconds
+    #     q = rotation_delta(omega, 0.5)
+    #     xr = q.transform_vector(x)
+    #     zr = q.transform_vector(z)
+    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.y, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.z, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     # testing 1 seconds
+    #     q = rotation_delta(omega, 1)
+    #     xr = q.transform_vector(x)
+    #     zr = q.transform_vector(z)
+    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.y, 1, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.z, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     # testing 2 seconds
+    #     q = rotation_delta(omega, 2)
+    #     xr = q.transform_vector(x)
+    #     zr = q.transform_vector(z)
+    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.z, -1, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     # testing 2.5 seconds
+    #     q = rotation_delta(omega, 2.5)
+    #     xr = q.transform_vector(x)
+    #     zr = q.transform_vector(z)
+    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.y, -1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.z, -1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     # testing 4 seconds
+    #     q = rotation_delta(omega, 4)
+    #     xr = q.transform_vector(x)
+    #     zr = q.transform_vector(z)
+    #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.z, 1, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     omega = Vector3D(0, 90, 0)
+    #     q = rotation_delta(omega, 0.5)
+    #     xr = q.transform_vector(x)
+    #     yr = q.transform_vector(y)
+    #     zr = q.transform_vector(z)
+    #     self.assertAlmostEqual(xr.x, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.z, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.x, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.y, 1, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.x, -1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.z, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     omega = Vector3D(0, 0, 90)
+    #     q = rotation_delta(omega, 0.5)
+    #     xr = q.transform_vector(x)
+    #     yr = q.transform_vector(y)
+    #     zr = q.transform_vector(z)
+    #     self.assertAlmostEqual(xr.x, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.y, -1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(xr.z, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.x, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.y, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(zr.z, 1, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     omega = Vector3D(1/sqrt(2)*90, 0, 1/sqrt(2)*90)
+    #     q = rotation_delta(omega, 0.5)
+    #     yr = q.transform_vector(y)
+    #     self.assertAlmostEqual(yr.x, 0.5, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.y, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.z, -0.5, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     q = rotation_delta(omega, 1)
+    #     yr = q.transform_vector(y)
+    #     self.assertAlmostEqual(yr.x, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.y, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.z, -1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     q = rotation_delta(omega, 2)
+    #     yr = q.transform_vector(y)
+    #     self.assertAlmostEqual(yr.x, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.y, -1, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     q = rotation_delta(omega, 3)
+    #     yr = q.transform_vector(y)
+    #     self.assertAlmostEqual(yr.x, -1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.y, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.z, 1/sqrt(2), delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #
+    #     q = rotation_delta(omega, 4)
+    #     yr = q.transform_vector(y)
+    #     self.assertAlmostEqual(yr.x, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.y, 1.0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
+    #                            msg="Calculating the rotation delta from an angular velocity failed.")
 
 
 if __name__ == "__main__":
