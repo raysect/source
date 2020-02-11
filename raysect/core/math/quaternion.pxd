@@ -1,3 +1,4 @@
+# cython: language_level=3
 
 # Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
 # All rights reserved.
@@ -28,40 +29,51 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.affinematrix cimport AffineMatrix3D
-
 from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.affinematrix cimport AffineMatrix3D
 
 
 cdef class Quaternion:
 
     cdef public double x, y, z, s
 
-    cdef Quaternion neg(self)
-
-    cdef Quaternion add(self, Quaternion q2)
-
-    cdef Quaternion sub(self, Quaternion q2)
-
-    cdef Quaternion mul(self, Quaternion q2)
-
-    cdef Quaternion mul_scalar(self, double d)
+    cpdef Quaternion copy(self)
 
     cpdef Quaternion conjugate(self)
 
     cpdef Quaternion inverse(self)
 
-    cpdef double norm(self)
+    cpdef Quaternion normalise(self)
 
-    cdef Quaternion div(self, Quaternion q2)
+    cpdef bint is_unit(self, double tolerance=*)
+
+    cpdef Quaternion transform(self, AffineMatrix3D m)
+
+    cpdef AffineMatrix3D as_matrix(self)
+
+    cpdef Quaternion quaternion_to(self, Quaternion q)
+
+    cdef Quaternion neg(self)
+
+    cdef Quaternion add(self, Quaternion q)
+
+    cdef Quaternion sub(self, Quaternion q)
+
+    cdef Quaternion mul_quaternion(self, Quaternion q)
+
+    cdef Quaternion mul_scalar(self, double d)
+
+    cdef Quaternion div_quaternion(self, Quaternion q)
 
     cdef Quaternion div_scalar(self, double d)
 
-    cpdef Quaternion normalise(self)
+    cdef Vector3D get_axis(self)
 
-    cpdef Quaternion copy(self)
+    cdef double get_angle(self)
 
-    cpdef AffineMatrix3D to_matrix(self)
+    cdef double get_length(self) nogil
+
+    cdef object set_length(self, double v)
 
 
 cdef inline Quaternion new_quaternion(double x, double y, double z, double s):
@@ -74,9 +86,9 @@ cdef inline Quaternion new_quaternion(double x, double y, double z, double s):
 
     cdef Quaternion q
     q = Quaternion.__new__(Quaternion)
-    q.s = s
     q.x = x
     q.y = y
     q.z = z
+    q.s = s
     return q
 
