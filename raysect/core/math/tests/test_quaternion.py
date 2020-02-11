@@ -15,7 +15,7 @@
 #        contributors may be used to endorse or promote products derived from
 #        this software without specific prior written permission.
 #
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS'
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
 # ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
@@ -33,7 +33,7 @@ Unit tests for the Quaternion object.
 
 import unittest
 from math import sqrt
-from raysect.core.math import Quaternion, AffineMatrix3D, Vector3D, rotate_x, rotate_z, rotation_delta
+from raysect.core.math import Quaternion, AffineMatrix3D, Vector3D, rotate_x, rotate_z
 
 
 class TestQuaternion(unittest.TestCase):
@@ -42,25 +42,25 @@ class TestQuaternion(unittest.TestCase):
         """Default initialisation, identity quaternion."""
 
         q = Quaternion()
-        self.assertEqual(q.x, 0.0, "Default initialisation is not (<0,0,0>,1) [X].")
-        self.assertEqual(q.y, 0.0, "Default initialisation is not (<0,0,0>,1) [Y].")
-        self.assertEqual(q.z, 0.0, "Default initialisation is not (<0,0,0>,1) [Z].")
-        self.assertEqual(q.s, 1.0, "Default initialisation is not (<0,0,0>,1) [S].")
+        self.assertEqual(q.x, 0.0, 'Default initialisation is not (<0,0,0>,1) [X].')
+        self.assertEqual(q.y, 0.0, 'Default initialisation is not (<0,0,0>,1) [Y].')
+        self.assertEqual(q.z, 0.0, 'Default initialisation is not (<0,0,0>,1) [Z].')
+        self.assertEqual(q.s, 1.0, 'Default initialisation is not (<0,0,0>,1) [S].')
 
     def test_initialise_indexable(self):
         """Initialisation with an indexable object."""
 
         q = Quaternion(1.0, 2.0, 3.0, 4.0)
-        self.assertEqual(q.x, 1.0, "Initialisation with indexable failed [X].")
-        self.assertEqual(q.y, 2.0, "Initialisation with indexable failed [Y].")
-        self.assertEqual(q.z, 3.0, "Initialisation with indexable failed [Z].")
-        self.assertEqual(q.s, 4.0, "Initialisation with indexable failed [S].")
+        self.assertEqual(q.x, 1.0, 'Initialisation with indexable failed [X].')
+        self.assertEqual(q.y, 2.0, 'Initialisation with indexable failed [Y].')
+        self.assertEqual(q.z, 3.0, 'Initialisation with indexable failed [Z].')
+        self.assertEqual(q.s, 4.0, 'Initialisation with indexable failed [S].')
 
     def test_initialise_invalid(self):
         """Initialisation with invalid types should raise a TypeError."""
 
-        with self.assertRaises(TypeError, msg="Initialised with a string."):
-            Quaternion("spoon")
+        with self.assertRaises(TypeError, msg='Initialised with a string.'):
+            Quaternion('spoon')
 
     def test_x(self):
         """Get/set x co-ordinate."""
@@ -68,11 +68,11 @@ class TestQuaternion(unittest.TestCase):
         q = Quaternion(2.5, 6.7, -4.6, 1.0)
 
         # get x attribute
-        self.assertEqual(q.x, 2.5, "Getting x attribute failed.")
+        self.assertEqual(q.x, 2.5, 'Getting x attribute failed.')
 
         # set x attribute
         q.x = 10.0
-        self.assertEqual(q.x, 10.0, "Setting x attribute failed.")
+        self.assertEqual(q.x, 10.0, 'Setting x attribute failed.')
 
     def test_y(self):
         """Get/set y co-ordinate."""
@@ -80,11 +80,11 @@ class TestQuaternion(unittest.TestCase):
         q = Quaternion(2.5, 6.7, -4.6, 1.0)
 
         # get y attribute
-        self.assertEqual(q.y, 6.7, "Getting y attribute failed.")
+        self.assertEqual(q.y, 6.7, 'Getting y attribute failed.')
 
         # set y attribute
         q.y = -7.1
-        self.assertEqual(q.y, -7.1, "Setting y attribute failed.")
+        self.assertEqual(q.y, -7.1, 'Setting y attribute failed.')
 
     def test_z(self):
         """Get/set z co-ordinate."""
@@ -92,11 +92,11 @@ class TestQuaternion(unittest.TestCase):
         q = Quaternion(2.5, 6.7, -4.6, 1.0)
 
         # get z attribute
-        self.assertEqual(q.z, -4.6, "Getting z attribute failed.")
+        self.assertEqual(q.z, -4.6, 'Getting z attribute failed.')
 
         # set z attribute
         q.z = 157.3
-        self.assertEqual(q.z, 157.3, "Setting z attribute failed.")
+        self.assertEqual(q.z, 157.3, 'Setting z attribute failed.')
 
     def test_s(self):
         """Get/set s co-ordinate."""
@@ -104,11 +104,11 @@ class TestQuaternion(unittest.TestCase):
         q = Quaternion(2.5, 6.7, -4.6, 1.0)
 
         # get x attribute
-        self.assertEqual(q.s, 1.0, "Getting s attribute failed.")
+        self.assertEqual(q.s, 1.0, 'Getting s attribute failed.')
 
         # set x attribute
         q.s = 10.0
-        self.assertEqual(q.s, 10.0, "Setting s attribute failed.")
+        self.assertEqual(q.s, 10.0, 'Setting s attribute failed.')
 
     def test_indexing(self):
         """Getting/setting components by indexing."""
@@ -121,56 +121,56 @@ class TestQuaternion(unittest.TestCase):
         q[3] = 1.5
 
         # check getting/setting via valid indexes
-        self.assertEqual(q[0], 2.0, "Indexing failed [X].")
-        self.assertEqual(q[1], 7.0, "Indexing failed [Y].")
-        self.assertEqual(q[2], 10.0, "Indexing failed [Z].")
-        self.assertEqual(q[3], 1.5, "Indexing failed [S].")
+        self.assertEqual(q[0], 2.0, 'Indexing failed [X].')
+        self.assertEqual(q[1], 7.0, 'Indexing failed [Y].')
+        self.assertEqual(q[2], 10.0, 'Indexing failed [Z].')
+        self.assertEqual(q[3], 1.5, 'Indexing failed [S].')
 
         # check invalid indexes
-        with self.assertRaises(IndexError, msg="Invalid positive index did not raise IndexError."):
+        with self.assertRaises(IndexError, msg='Invalid positive index did not raise IndexError.'):
             r = q[4]
 
-        with self.assertRaises(IndexError, msg="Invalid negative index did not raise IndexError."):
+        with self.assertRaises(IndexError, msg='Invalid negative index did not raise IndexError.'):
             r = q[-1]
 
     def test_equal(self):
         """Equality operator."""
 
         self.assertTrue(Quaternion(1, 2, 3, 4) == Quaternion(1, 2, 3, 4),
-                        "Equality operator returned false for equal quaternions.")
+                        'Equality operator returned false for equal quaternions.')
         self.assertFalse(Quaternion(5, 2, 3, 4) == Quaternion(1, 2, 3, 4),
-                         "Equality operator returned true for quaternions with non-equal x components.")
+                         'Equality operator returned true for quaternions with non-equal x components.')
         self.assertFalse(Quaternion(1, 5, 3, 4) == Quaternion(1, 2, 3, 4),
-                         "Equality operator returned true for quaternions with non-equal y components.")
+                         'Equality operator returned true for quaternions with non-equal y components.')
         self.assertFalse(Quaternion(1, 2, 5, 4) == Quaternion(1, 2, 3, 4),
-                         "Equality operator returned true for quaternions with non-equal z components.")
+                         'Equality operator returned true for quaternions with non-equal z components.')
         self.assertFalse(Quaternion(1, 2, 3, 5) == Quaternion(1, 2, 3, 4),
-                         "Equality operator returned true for quaternions with non-equal s components.")
+                         'Equality operator returned true for quaternions with non-equal s components.')
 
     def test_not_equal(self):
         """Inequality operator."""
 
         self.assertFalse(Quaternion(1, 2, 3, 4) != Quaternion(1, 2, 3, 4),
-                         "Inequality operator returned true for equal quaternions.")
+                         'Inequality operator returned true for equal quaternions.')
         self.assertTrue(Quaternion(5, 1, 3, 4) != Quaternion(1, 2, 3, 4),
-                        "Inequality operator returned false for quaternions with non-equal x components.")
+                        'Inequality operator returned false for quaternions with non-equal x components.')
         self.assertTrue(Quaternion(1, 5, 3, 4) != Quaternion(1, 2, 3, 4),
-                        "Inequality operator returned false for quaternions with non-equal y components.")
+                        'Inequality operator returned false for quaternions with non-equal y components.')
         self.assertTrue(Quaternion(1, 2, 5, 4) != Quaternion(1, 2, 3, 4),
-                        "Inequality operator returned false for quaternions with non-equal z components.")
+                        'Inequality operator returned false for quaternions with non-equal z components.')
         self.assertTrue(Quaternion(1, 2, 3, 5) != Quaternion(1, 2, 3, 4),
-                        "Inequality operator returned false for quaternions with non-equal s components.")
+                        'Inequality operator returned false for quaternions with non-equal s components.')
 
     def test_iter(self):
         """Obtain values by iteration."""
 
         q = Quaternion(2.5, 6.7, -4.6, 1.0)
         l = list(q)
-        self.assertEqual(len(l), 4, "Iteration failed to return the correct number of items.")
-        self.assertEqual(l[0], 2.5, "Iteration failed [X].")
-        self.assertEqual(l[1], 6.7, "Iteration failed [Y].")
-        self.assertEqual(l[2], -4.6, "Iteration failed [Z].")
-        self.assertEqual(l[3], 1.0, "Iteration failed [S].")
+        self.assertEqual(len(l), 4, 'Iteration failed to return the correct number of items.')
+        self.assertEqual(l[0], 2.5, 'Iteration failed [X].')
+        self.assertEqual(l[1], 6.7, 'Iteration failed [Y].')
+        self.assertEqual(l[2], -4.6, 'Iteration failed [Z].')
+        self.assertEqual(l[3], 1.0, 'Iteration failed [S].')
 
     def test_add(self):
         """Addition operator."""
@@ -181,10 +181,10 @@ class TestQuaternion(unittest.TestCase):
         q_theory = Quaternion(4, 0, 14, 1)
         q_result = q1 + q2
 
-        self.assertEqual(q_result.x, q_theory.x, "Addition of two quaternions failed [X].")
-        self.assertEqual(q_result.y, q_theory.y, "Addition of two quaternions failed [Y].")
-        self.assertEqual(q_result.z, q_theory.z, "Addition of two quaternions failed [Z].")
-        self.assertEqual(q_result.s, q_theory.s, "Addition of two quaternions failed [S].")
+        self.assertEqual(q_result.x, q_theory.x, 'Addition of two quaternions failed [X].')
+        self.assertEqual(q_result.y, q_theory.y, 'Addition of two quaternions failed [Y].')
+        self.assertEqual(q_result.z, q_theory.z, 'Addition of two quaternions failed [Z].')
+        self.assertEqual(q_result.s, q_theory.s, 'Addition of two quaternions failed [S].')
 
     def test_subtract(self):
         """Subtraction operator."""
@@ -196,10 +196,10 @@ class TestQuaternion(unittest.TestCase):
         q_theory = Quaternion(0, 6, -6, 1)
         q_result = q1 - q2
 
-        self.assertEqual(q_result.x, q_theory.x, "Subtraction of two quaternions failed [X].")
-        self.assertEqual(q_result.y, q_theory.y, "Subtraction of two quaternions failed [Y].")
-        self.assertEqual(q_result.z, q_theory.z, "Subtraction of two quaternions failed [Z].")
-        self.assertEqual(q_result.s, q_theory.s, "Subtraction of two quaternions failed [S].")
+        self.assertEqual(q_result.x, q_theory.x, 'Subtraction of two quaternions failed [X].')
+        self.assertEqual(q_result.y, q_theory.y, 'Subtraction of two quaternions failed [Y].')
+        self.assertEqual(q_result.z, q_theory.z, 'Subtraction of two quaternions failed [Z].')
+        self.assertEqual(q_result.s, q_theory.s, 'Subtraction of two quaternions failed [S].')
 
     def test_negation(self):
         """Negation operation"""
@@ -207,7 +207,7 @@ class TestQuaternion(unittest.TestCase):
         q = Quaternion(1, 2, 3, 4)
         q_result = Quaternion(-1, -2, -3, -4)
 
-        self.assertTrue(-q == q_result, "Negation of a quaternion failed to produce the correct result.")
+        self.assertTrue(-q == q_result, 'Negation of a quaternion failed to produce the correct result.')
 
     def test_multiplication(self):
         """Multiplication operation"""
@@ -217,12 +217,12 @@ class TestQuaternion(unittest.TestCase):
 
         q_result = Quaternion(0, 3, 0, 3)
         self.assertTrue(q1 * 3 == q_result,
-                        "Multiplication of a quaternion and a scalar failed to produce the correct result.")
+                        'Multiplication of a quaternion and a scalar failed to produce the correct result.')
         self.assertTrue(3 * q1 == q_result,
-                        "Multiplication of a quaternion and a scalar failed to produce the correct result.")
+                        'Multiplication of a quaternion and a scalar failed to produce the correct result.')
 
         q_result = Quaternion(1.25, 1.5, 0.25, 0.5)
-        self.assertTrue(q1 * q2 == q_result, "Multiplication of two quaternions failed to produce the correct result.")
+        self.assertTrue(q1 * q2 == q_result, 'Multiplication of two quaternions failed to produce the correct result.')
 
     def test_division(self):
         """Division operation"""
@@ -234,17 +234,17 @@ class TestQuaternion(unittest.TestCase):
         q_result = q1 / q2
 
         self.assertAlmostEqual(q_result.x, q_theory.x, delta=1e-10,
-                               msg="Division of two quaternions failed to produce the correct result [X].")
+                               msg='Division of two quaternions failed to produce the correct result [X].')
         self.assertAlmostEqual(q_result.y, q_theory.y, delta=1e-10,
-                               msg="Division of two quaternions failed to produce the correct result [Y].")
+                               msg='Division of two quaternions failed to produce the correct result [Y].')
         self.assertAlmostEqual(q_result.z, q_theory.z, delta=1e-10,
-                               msg="Division of two quaternions failed to produce the correct result [Z].")
+                               msg='Division of two quaternions failed to produce the correct result [Z].')
         self.assertAlmostEqual(q_result.s, q_theory.s, delta=1e-10,
-                               msg="Division of two quaternions failed to produce the correct result [S].")
+                               msg='Division of two quaternions failed to produce the correct result [S].')
 
         q_result = Quaternion(0.25, 0.25, 0.375, 0.5)
         self.assertTrue(q2 / 2 == q_result,
-                        "Division of a quaternion and a scalar failed to produce the correct result.")
+                        'Division of a quaternion and a scalar failed to produce the correct result.')
 
     def test_conjugate(self):
         """Test conjugation operation"""
@@ -254,11 +254,11 @@ class TestQuaternion(unittest.TestCase):
         answer = Quaternion(-2, 3, 0, 1)
 
         self.assertEqual(result.x, answer.x,
-                         msg="Conjugation of a Quaternion failed to produce the correct result [X].")
+                         msg='Conjugation of a Quaternion failed to produce the correct result [X].')
         self.assertEqual(result.y, answer.y,
-                         msg="Conjugation of a Quaternion failed to produce the correct result [Y].")
+                         msg='Conjugation of a Quaternion failed to produce the correct result [Y].')
         self.assertEqual(result.z, answer.z,
-                         msg="Conjugation of a Quaternion failed to produce the correct result [Z].")
+                         msg='Conjugation of a Quaternion failed to produce the correct result [Z].')
 
     def test_inverse(self):
         """Inverse operation"""
@@ -267,13 +267,13 @@ class TestQuaternion(unittest.TestCase):
         q_result = q.inverse()
 
         self.assertAlmostEqual(q_result.x, 0, delta=1e-10,
-                               msg="Inverse of a quaternion failed to produce the correct result [X].")
+                               msg='Inverse of a quaternion failed to produce the correct result [X].')
         self.assertAlmostEqual(q_result.y, -0.5, delta=1e-10,
-                               msg="Inverse of a quaternion failed to produce the correct result [Y].")
+                               msg='Inverse of a quaternion failed to produce the correct result [Y].')
         self.assertAlmostEqual(q_result.z, 0, delta=1e-10,
-                               msg="Inverse of a quaternion failed to produce the correct result [Z].")
+                               msg='Inverse of a quaternion failed to produce the correct result [Z].')
         self.assertAlmostEqual(q_result.s, 0.5, delta=1e-10,
-                               msg="Inverse of a quaternion failed to produce the correct result [S].")
+                               msg='Inverse of a quaternion failed to produce the correct result [S].')
 
     def test_length(self):
         """Length (norm) of a quaternion"""
@@ -281,7 +281,7 @@ class TestQuaternion(unittest.TestCase):
         q = Quaternion(2, 3, 4, 1)
 
         self.assertAlmostEqual(q.length, 5.477225575051661, delta=1e-10,
-                               msg="Length of a quaternion failed to produce the correct result.")
+                               msg='Length of a quaternion failed to produce the correct result.')
 
     def test_normalise(self):
         """Normalising a quaternion"""
@@ -290,34 +290,34 @@ class TestQuaternion(unittest.TestCase):
         q_result = q.normalise()
 
         self.assertAlmostEqual(q_result.x, 0.3651483716701107, delta=1e-10,
-                               msg="Norm of a quaternion failed to produce the correct result.")
+                               msg='Norm of a quaternion failed to produce the correct result.')
         self.assertAlmostEqual(q_result.y, 0.5477225575051661, delta=1e-10,
-                               msg="Norm of a quaternion failed to produce the correct result.")
+                               msg='Norm of a quaternion failed to produce the correct result.')
         self.assertAlmostEqual(q_result.z, 0.7302967433402214, delta=1e-10,
-                               msg="Norm of a quaternion failed to produce the correct result.")
+                               msg='Norm of a quaternion failed to produce the correct result.')
         self.assertAlmostEqual(q_result.s, 0.18257418583505536, delta=1e-10,
-                               msg="Norm of a quaternion failed to produce the correct result.")
+                               msg='Norm of a quaternion failed to produce the correct result.')
 
     def test_is_unit(self):
         """Testing method is_unit()"""
 
         self.assertTrue(Quaternion(1, 0, 0, 0).is_unit(),
-                        "Quaternion is_unit() test failed to produce the correct result.")
+                        'Quaternion is_unit() test failed to produce the correct result.')
 
         self.assertTrue(Quaternion(0, 1, 0, 0).is_unit(),
-                        "Quaternion is_unit() test failed to produce the correct result.")
+                        'Quaternion is_unit() test failed to produce the correct result.')
 
         self.assertTrue(Quaternion(0, 0, 1, 0).is_unit(),
-                        "Quaternion is_unit() test failed to produce the correct result.")
+                        'Quaternion is_unit() test failed to produce the correct result.')
 
         self.assertTrue(Quaternion(0, 0, 0, 1).is_unit(),
-                        "Quaternion is_unit() test failed to produce the correct result.")
+                        'Quaternion is_unit() test failed to produce the correct result.')
 
         self.assertFalse(Quaternion(1, 2, 3, 4).is_unit(),
-                         "Quaternion is_unit() test failed to produce the correct result.")
+                         'Quaternion is_unit() test failed to produce the correct result.')
 
         self.assertFalse(Quaternion(-0.777777, 3.1214352, -0.9483527, 3.1415).is_unit(),
-                         "Quaternion is_unit() test failed to produce the correct result.")
+                         'Quaternion is_unit() test failed to produce the correct result.')
 
     def test_axis_angle_decomposition(self):
 
@@ -326,92 +326,92 @@ class TestQuaternion(unittest.TestCase):
         angle = q.angle
 
         self.assertAlmostEqual(axis.x, 0.5773502691896258, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
         self.assertAlmostEqual(axis.y, 0.5773502691896258, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
         self.assertAlmostEqual(axis.z, 0.5773502691896258, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
         self.assertAlmostEqual(angle, 120, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
 
         q = Quaternion(2, 3, 4, 1)
         axis = q.axis
         angle = q.angle
 
         self.assertAlmostEqual(axis.x, 0.3713906763541038, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
         self.assertAlmostEqual(axis.y, 0.5570860145311557, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
         self.assertAlmostEqual(axis.z, 0.7427813527082076, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
         self.assertAlmostEqual(angle, 158.96053021868278, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
 
         q = Quaternion(0, 0, 0, 1)
         axis = q.axis
         angle = q.angle
 
         self.assertAlmostEqual(axis.x, 0, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
         self.assertAlmostEqual(axis.y, 0, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
         self.assertAlmostEqual(axis.z, 0, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
         self.assertAlmostEqual(angle, 0, delta=1e-10,
-                               msg="Decomposition of a quaternion into axis angle representation "
-                                   "failed to produce the correct result.")
+                               msg='Decomposition of a quaternion into axis angle representation '
+                                   'failed to produce the correct result.')
 
     # def test_euler_angle_decomposition(self):
     #
     #     q = Quaternion(0, 0, 0, 1)
-    #     yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
+    #     yaw, pitch, roll = q.to_euler_angles(ordering='ZYX')
     #
     #     self.assertAlmostEqual(yaw, 0, delta=1e-10,
-    #                            msg="Decomposition of a quaternion into euler angle representation "
-    #                                "failed to produce the correct result.")
+    #                            msg='Decomposition of a quaternion into euler angle representation '
+    #                                'failed to produce the correct result.')
     #     self.assertAlmostEqual(pitch, 0, delta=1e-10,
-    #                            msg="Decomposition of a quaternion into euler angle representation "
-    #                                "failed to produce the correct result.")
+    #                            msg='Decomposition of a quaternion into euler angle representation '
+    #                                'failed to produce the correct result.')
     #     self.assertAlmostEqual(roll, 0, delta=1e-10,
-    #                            msg="Decomposition of a quaternion into euler angle representation "
-    #                                "failed to produce the correct result.")
+    #                            msg='Decomposition of a quaternion into euler angle representation '
+    #                                'failed to produce the correct result.')
     #
     #     q = Quaternion(1, 1, 1, 1)
-    #     yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
+    #     yaw, pitch, roll = q.to_euler_angles(ordering='ZYX')
     #
     #     self.assertAlmostEqual(yaw, 90, delta=1e-10,
-    #                            msg="Decomposition of a quaternion into euler angle representation "
-    #                                "failed to produce the correct result.")
+    #                            msg='Decomposition of a quaternion into euler angle representation '
+    #                                'failed to produce the correct result.')
     #     self.assertAlmostEqual(pitch, 0, delta=1e-10,
-    #                            msg="Decomposition of a quaternion into euler angle representation "
-    #                                "failed to produce the correct result.")
+    #                            msg='Decomposition of a quaternion into euler angle representation '
+    #                                'failed to produce the correct result.')
     #     self.assertAlmostEqual(roll, 90, delta=1e-10,
-    #                            msg="Decomposition of a quaternion into euler angle representation "
-    #                                "failed to produce the correct result.")
+    #                            msg='Decomposition of a quaternion into euler angle representation '
+    #                                'failed to produce the correct result.')
     #
     #     q = Quaternion(2, 3, 4, 1)
-    #     yaw, pitch, roll = q.to_euler_angles(ordering="ZYX")
+    #     yaw, pitch, roll = q.to_euler_angles(ordering='ZYX')
     #
     #     self.assertAlmostEqual(yaw, 81.86989764584403, delta=1e-10,
-    #                            msg="Decomposition of a quaternion into euler angle representation "
-    #                                "failed to produce the correct result.")
+    #                            msg='Decomposition of a quaternion into euler angle representation '
+    #                                'failed to produce the correct result.')
     #     self.assertAlmostEqual(pitch, -19.471220634490695, delta=1e-10,
-    #                            msg="Decomposition of a quaternion into euler angle representation "
-    #                                "failed to produce the correct result.")
+    #                            msg='Decomposition of a quaternion into euler angle representation '
+    #                                'failed to produce the correct result.')
     #     self.assertAlmostEqual(roll, 135, delta=1e-10,
-    #                            msg="Decomposition of a quaternion into euler angle representation "
-    #                                "failed to produce the correct result.")
+    #                            msg='Decomposition of a quaternion into euler angle representation '
+    #                                'failed to produce the correct result.')
 
     def test_copy(self):
         """Testing method copy()"""
@@ -425,10 +425,10 @@ class TestQuaternion(unittest.TestCase):
         q.z = 7.0
         q.s = 8.0
 
-        self.assertEqual(r.x, 1.0, "Copy failed [X].")
-        self.assertEqual(r.y, 2.0, "Copy failed [Y].")
-        self.assertEqual(r.z, 3.0, "Copy failed [Z].")
-        self.assertEqual(r.s, 4.0, "Copy failed [S].")
+        self.assertEqual(r.x, 1.0, 'Copy failed [X].')
+        self.assertEqual(r.y, 2.0, 'Copy failed [Y].')
+        self.assertEqual(r.z, 3.0, 'Copy failed [Z].')
+        self.assertEqual(r.s, 4.0, 'Copy failed [S].')
 
     def test_transform(self):
 
@@ -461,42 +461,42 @@ class TestQuaternion(unittest.TestCase):
     #
     #     v_result = q.transform_vector(Vector3D(1, 1, 1))
     #     self.assertAlmostEqual(v_result.x, -1, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #     self.assertAlmostEqual(v_result.y, 1, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #     self.assertAlmostEqual(v_result.z, 1, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #
     #     v_result = q.transform_vector(Vector3D(2, 3, 4))
     #     self.assertAlmostEqual(v_result.x, -4, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #     self.assertAlmostEqual(v_result.y, 3, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #     self.assertAlmostEqual(v_result.z, 2, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #
     #     q = Quaternion(0.5, 0.3, 0.1, 1).normalise()
     #
     #     v_result = q.transform_vector(Vector3D(1, 1, 1))
     #     self.assertAlmostEqual(v_result.x, 0.8518518518518516, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #     self.assertAlmostEqual(v_result.y, 1.4740740740740739, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #     self.assertAlmostEqual(v_result.z, 0.3185185185185185, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #
     #     v_result = q.transform_vector(Vector3D(2, 3, 4))
     #     self.assertAlmostEqual(v_result.x, 1.3333333333333335, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #     self.assertAlmostEqual(v_result.y, 5.133333333333333, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
     #     self.assertAlmostEqual(v_result.z, 0.9333333333333322, delta=1e-10,
-    #                            msg="Quaternion transform on a vector failed to produce the correct result.")
+    #                            msg='Quaternion transform on a vector failed to produce the correct result.')
 
     def test_to_matrix(self):
         """Test AffineMatrix3D generation from a quaternion"""
 
-        message = "Conversion of a Quaternion to AffineMatrix3D failed to produce the correct result."
+        message = 'Conversion of a Quaternion to AffineMatrix3D failed to produce the correct result.'
 
         matrix = Quaternion(0.5, 0, 0, 0.5).to_matrix()
         answer = rotate_x(90)
@@ -547,25 +547,25 @@ class TestQuaternion(unittest.TestCase):
         answer = Quaternion(0.3826834323650898, 0.0, 0.0, 0.9238795325112867)
 
         self.assertAlmostEqual(answer.x, result.x, delta=1e-10,
-                               msg="Converting axis angle to quaternion produced wrong result [X].")
+                               msg='Converting axis angle to quaternion produced wrong result [X].')
         self.assertAlmostEqual(answer.y, result.y, delta=1e-10,
-                               msg="Converting axis angle to quaternion produced wrong result [Y].")
+                               msg='Converting axis angle to quaternion produced wrong result [Y].')
         self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
-                               msg="Converting axis angle to quaternion produced wrong result [Z].")
+                               msg='Converting axis angle to quaternion produced wrong result [Z].')
         self.assertAlmostEqual(answer.s, result.s, delta=1e-10,
-                               msg="Converting axis angle to quaternion produced wrong result [S].")
+                               msg='Converting axis angle to quaternion produced wrong result [S].')
 
         result = Quaternion.from_axis_angle(Vector3D(0.5, 0.5, 0), -30)
         answer = Quaternion(-0.1830127018922193, -0.1830127018922193, -0.0, 0.9659258262890683)
 
         self.assertAlmostEqual(answer.y, result.y, delta=1e-10,
-                               msg="Converting axis angle to quaternion produced wrong result [Y].")
+                               msg='Converting axis angle to quaternion produced wrong result [Y].')
         self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
-                               msg="Converting axis angle to quaternion produced wrong result [Z].")
+                               msg='Converting axis angle to quaternion produced wrong result [Z].')
         self.assertAlmostEqual(answer.x, result.x, delta=1e-10,
-                               msg="Converting axis angle to quaternion produced wrong result [X].")
+                               msg='Converting axis angle to quaternion produced wrong result [X].')
         self.assertAlmostEqual(answer.s, result.s, delta=1e-10,
-                               msg="Converting axis angle to quaternion produced wrong result [S].")
+                               msg='Converting axis angle to quaternion produced wrong result [S].')
 
     def test_from_matrix(self):
         """Tests the extraction of a rotation quaternion from an AffineMatrix3D"""
@@ -574,13 +574,13 @@ class TestQuaternion(unittest.TestCase):
         answer = Quaternion(0.7071067811865475, 0.0, 0.0, 0.7071067811865476)
 
         self.assertAlmostEqual(answer.x, result.x, delta=1e-10,
-                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [X].")
+                               msg='Extracting quaternion from AffineMatrix3D produced wrong result [X].')
         self.assertAlmostEqual(answer.y, result.y, delta=1e-10,
-                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [Y].")
+                               msg='Extracting quaternion from AffineMatrix3D produced wrong result [Y].')
         self.assertAlmostEqual(answer.z, result.z, delta=1e-10,
-                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [Z].")
+                               msg='Extracting quaternion from AffineMatrix3D produced wrong result [Z].')
         self.assertAlmostEqual(answer.s, result.s, delta=1e-10,
-                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [S].")
+                               msg='Extracting quaternion from AffineMatrix3D produced wrong result [S].')
 
         matrix = AffineMatrix3D(((0.9330127, 0.0669873, -0.3535534, 0.0),
                                  (0.0669873, 0.9330127, 0.3535534, 0.0),
@@ -591,13 +591,13 @@ class TestQuaternion(unittest.TestCase):
         answer = Quaternion(-0.1830127018922193, -0.1830127018922193, -0.0, 0.9659258262890683)
 
         self.assertAlmostEqual(answer.x, result.x, delta=1e-6,
-                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [X].")
+                               msg='Extracting quaternion from AffineMatrix3D produced wrong result [X].')
         self.assertAlmostEqual(answer.y, result.y, delta=1e-6,
-                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [Y].")
+                               msg='Extracting quaternion from AffineMatrix3D produced wrong result [Y].')
         self.assertAlmostEqual(answer.z, result.z, delta=1e-6,
-                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [Z].")
+                               msg='Extracting quaternion from AffineMatrix3D produced wrong result [Z].')
         self.assertAlmostEqual(answer.s, result.s, delta=1e-6,
-                               msg="Extracting quaternion from AffineMatrix3D produced wrong result [S].")
+                               msg='Extracting quaternion from AffineMatrix3D produced wrong result [S].')
 
     # def test_rotation_delta(self):
     #     """Test the rotation_delta() function."""
@@ -618,85 +618,85 @@ class TestQuaternion(unittest.TestCase):
     #     xr = q.transform_vector(x)
     #     zr = q.transform_vector(z)
     #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.y, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.z, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     # testing 1 seconds
     #     q = rotation_delta(omega, 1)
     #     xr = q.transform_vector(x)
     #     zr = q.transform_vector(z)
     #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.y, 1, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.z, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     # testing 2 seconds
     #     q = rotation_delta(omega, 2)
     #     xr = q.transform_vector(x)
     #     zr = q.transform_vector(z)
     #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.z, -1, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     # testing 2.5 seconds
     #     q = rotation_delta(omega, 2.5)
     #     xr = q.transform_vector(x)
     #     zr = q.transform_vector(z)
     #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.y, -1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.z, -1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     # testing 4 seconds
     #     q = rotation_delta(omega, 4)
     #     xr = q.transform_vector(x)
     #     zr = q.transform_vector(z)
     #     self.assertAlmostEqual(xr.x, 1.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.z, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.z, 1, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     omega = Vector3D(0, 90, 0)
     #     q = rotation_delta(omega, 0.5)
@@ -704,23 +704,23 @@ class TestQuaternion(unittest.TestCase):
     #     yr = q.transform_vector(y)
     #     zr = q.transform_vector(z)
     #     self.assertAlmostEqual(xr.x, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.y, 0.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.z, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.x, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.y, 1, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.x, -1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.z, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     omega = Vector3D(0, 0, 90)
     #     q = rotation_delta(omega, 0.5)
@@ -728,70 +728,70 @@ class TestQuaternion(unittest.TestCase):
     #     yr = q.transform_vector(y)
     #     zr = q.transform_vector(z)
     #     self.assertAlmostEqual(xr.x, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.y, -1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(xr.z, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.x, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.y, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.x, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.y, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(zr.z, 1, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     omega = Vector3D(1/sqrt(2)*90, 0, 1/sqrt(2)*90)
     #     q = rotation_delta(omega, 0.5)
     #     yr = q.transform_vector(y)
     #     self.assertAlmostEqual(yr.x, 0.5, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.y, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.z, -0.5, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     q = rotation_delta(omega, 1)
     #     yr = q.transform_vector(y)
     #     self.assertAlmostEqual(yr.x, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.y, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.z, -1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     q = rotation_delta(omega, 2)
     #     yr = q.transform_vector(y)
     #     self.assertAlmostEqual(yr.x, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.y, -1, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     q = rotation_delta(omega, 3)
     #     yr = q.transform_vector(y)
     #     self.assertAlmostEqual(yr.x, -1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.y, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.z, 1/sqrt(2), delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #
     #     q = rotation_delta(omega, 4)
     #     yr = q.transform_vector(y)
     #     self.assertAlmostEqual(yr.x, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.y, 1.0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
     #     self.assertAlmostEqual(yr.z, 0, delta=1e-10,
-    #                            msg="Calculating the rotation delta from an angular velocity failed.")
+    #                            msg='Calculating the rotation delta from an angular velocity failed.')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

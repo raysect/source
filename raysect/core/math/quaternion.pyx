@@ -95,7 +95,7 @@ cdef class Quaternion:
         elif i == 3:
             self.s = value
         else:
-            raise IndexError("Index out of range [0, 3].")
+            raise IndexError('Index out of range [0, 3].')
 
     def __iter__(self):
         """Iterates over the quaternion coordinates (x, y, z, s)
@@ -146,7 +146,7 @@ cdef class Quaternion:
             return q1.x == q2.x and q1.y == q2.y and q1.z == q2.z and q1.s == q2.s
 
         else:
-            raise TypeError("A quaternion can only be equality tested against another quaternion.")
+            raise TypeError('A quaternion can only be equality tested against another quaternion.')
 
     def __add__(object x, object y):
         """
@@ -253,7 +253,7 @@ cdef class Quaternion:
 
         else:
 
-            raise TypeError("Unsupported operand type. Expects a real number.")
+            raise TypeError('Unsupported operand type. Expects a real number.')
 
     cdef Quaternion neg(self):
         """
@@ -320,7 +320,7 @@ cdef class Quaternion:
 
         # prevent divide by zero
         if d == 0.0:
-            raise ZeroDivisionError("Cannot divide a quaternion by a zero scalar.")
+            raise ZeroDivisionError('Cannot divide a quaternion by a zero scalar.')
 
         d = 1.0 / d
         return new_quaternion(d * self.x, d * self.y, d * self.z, d * self.s)
@@ -392,7 +392,7 @@ cdef class Quaternion:
         # if current length is zero, problem is ill defined
         t = self.x * self.x + self.y * self.y + self.z * self.z + self.s * self.s
         if t == 0.0:
-            raise ZeroDivisionError("A zero length quaternion cannot be rescaled.")
+            raise ZeroDivisionError('A zero length quaternion cannot be rescaled.')
 
         # normalise and rescale quaternion
         t = v / sqrt(t)
@@ -420,7 +420,7 @@ cdef class Quaternion:
         # if current length is zero, problem is ill defined
         n = self.get_length()
         if n == 0.0:
-            raise ZeroDivisionError("A zero length quaternion cannot be normalised.")
+            raise ZeroDivisionError('A zero length quaternion cannot be normalised.')
 
         # normalise and rescale quaternion
         n = 1.0 / n
@@ -465,7 +465,7 @@ cdef class Quaternion:
         return 2 * acos(q.s) * RAD2DEG
 
     # todo: implement matrix to angle
-    # cpdef tuple to_euler_angles(self, str ordering="-Y-XZ"):
+    # cpdef tuple to_euler_angles(self, str ordering='-Y-XZ'):
     #     """Decomposes this quaternion into intrinsic euler angles based on the specified ordering."""
     #
     #     cdef:
@@ -477,7 +477,7 @@ cdef class Quaternion:
     #
     #     q = self.normalise()
     #
-    #     if ordering == "ZYX":
+    #     if ordering == 'ZYX':
     #         # roll (x''-axis rotation)
     #         sinroll_cospitch = 2 * (q.s * q.x + q.y * q.z)
     #         cosroll_cospitch = 1 - 2 * (q.x * q.x + q.y * q.y)
@@ -496,7 +496,7 @@ cdef class Quaternion:
     #         psi = atan2(sinyaw_cospitch, cosyaw_cospitch) * RAD2DEG
     #
     #     else:
-    #         raise ValueError("Unrecognised / unsupported euler angle decomposition ordering.")
+    #         raise ValueError('Unrecognised / unsupported euler angle decomposition ordering.')
     #
     #     return phi, theta, psi
 
@@ -681,7 +681,7 @@ cdef class Quaternion:
         """
 
         if not -180 <= angle <= 180:
-            raise ValueError("The angle of rotation must be in the range (-180, 180).")
+            raise ValueError('The angle of rotation must be in the range (-180, 180).')
 
         axis = axis.normalise()
         theta_2 = angle * DEG2RAD / 2
