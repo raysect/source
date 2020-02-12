@@ -519,8 +519,10 @@ cdef class Quaternion:
            Quaternion(0.3826834323650898, 0.0, 0.0, 0.9238795325112867)
         """
 
-        if not -180 <= angle <= 180:
-            raise ValueError('The angle of rotation must be in the range (-180, 180).')
+        # keep the angle inside [-180, 180) to avoid negative quaternions
+        angle = (angle + 180) % 360 - 180
+        if angle == 0:
+            return new_quaternion(0, 0, 0, 1)
 
         axis = axis.normalise()
         theta_2 = angle * DEG2RAD / 2
