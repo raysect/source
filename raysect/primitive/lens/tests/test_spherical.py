@@ -1,6 +1,6 @@
 import unittest
 
-from raysect.core import translate, Point3D, Vector3D
+from raysect.core import Point3D, Vector3D
 from raysect.primitive.lens.spherical import BiConvex, BiConcave, PlanoConvex, PlanoConcave, Meniscus
 
 import numpy as np
