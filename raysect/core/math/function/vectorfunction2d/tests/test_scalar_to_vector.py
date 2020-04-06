@@ -1,6 +1,4 @@
-# cython: language_level=3
-
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2020, Jack Lovell, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,6 +27,28 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import VectorFunction2D
-from .constant import ConstantVector2D
-from .scalar_to_vector import ScalarToVectorFunction2D
+"""
+Unit tests for the Constant2D class.
+"""
+
+from math import sin
+import unittest
+from raysect.core.math import Vector3D
+from raysect.core.math.function import Arg2D, Sin2D
+from raysect.core.math.function.vectorfunction2d import ScalarToVectorFunction2D
+
+# TODO: expand tests to cover the cython interface
+class TestScalarToVector2D(unittest.TestCase):
+
+    def test_scalar_to_vector(self):
+        vx = 1  # Will be auto-wrapped to Constant2D
+        vy = Arg2D('y')
+        vz = Sin2D(Arg2D('x'))
+        fv = ScalarToVectorFunction2D(vx, vy, vz)
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                expected = Vector3D(1, y, sin(x))
+                actual = fv(x, y)
+                self.assertEqual(actual, expected,
+                                 "ScalarToVector2D call did not match reference value.")

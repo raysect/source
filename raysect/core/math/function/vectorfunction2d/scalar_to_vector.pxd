@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2020, Jack Lovell, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import VectorFunction2D
-from .constant import ConstantVector2D
-from .scalar_to_vector import ScalarToVectorFunction2D
+from raysect.core.math.function.function2d.base cimport Function2D
+from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
+
+
+cdef class ScalarToVectorFunction2D(VectorFunction2D):
+    cdef Function2D _x, _y, _z
