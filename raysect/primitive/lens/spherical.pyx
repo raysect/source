@@ -502,7 +502,7 @@ cdef class Meniscus(EncapsulatedPrimitive):
         barrel_padding = self.edge_thickness * PAD_FACTOR
         barrel = Cylinder(radius, barrel_padding, transform=translate(0, 0, self.center_thickness - self.front_thickness - barrel_padding))
 
-        lens = Union(front, Subtract(barrel, back_sphere))
+        lens = Subtract(Union(front, barrel), back_sphere)
 
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
