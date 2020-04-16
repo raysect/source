@@ -52,7 +52,7 @@ cdef class ConstantVector2D(VectorFunction2D):
 
     See also: autowrap_vectorfunction2d()
 
-    :param Vector3D value: the constant value to return when called
+    :param object value: the constant value, convertible to Vector3D, to return when called.
     """
     def __init__(self, object value):
         self._value = Vector3D(*value)
