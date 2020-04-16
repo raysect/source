@@ -63,4 +63,8 @@ cdef class EqualsVectorFunction2D(Function2D):
     cdef VectorFunction2D _function1, _function2
 
 
+cdef class NotEqualsVectorFunction2D(Function2D):
+    cdef VectorFunction2D _function1, _function2
+
+
 cdef bint is_callable(object f)

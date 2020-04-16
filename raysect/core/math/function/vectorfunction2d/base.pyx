@@ -102,7 +102,7 @@ cdef class VectorFunction2D:
             if op == Py_EQ:
                 return EqualsVectorFunction2D(self, other)
             if op == Py_NE:
-                return 1 - EqualsVectorFunction2D(self, other)
+                return NotEqualsVectorFunction2D(self, other)
         return NotImplemented
 
 
@@ -219,7 +219,30 @@ cdef class EqualsVectorFunction2D(Function2D):
         cdef Vector3D v1, v2
         v1 = self._function1.evaluate(x, y)
         v2 = self._function2.evaluate(x, y)
-        return v1.x == v2.x and v1.y == v2.y and v1.z == v2.z
+        return 1.0 if (v1.x == v2.x and v1.y == v2.y and v1.z == v2.z) else 0.0
+
+
+cdef class NotEqualsVectorFunction2D(Function2D):
+    """
+    A Function2D class that tests the inequality of the results of two VectorFunction2D objects: f1() != f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __neq__() call on a
+    VectorFunction2D object.
+
+    N.B. This is a Function2D class, so returns a double rather than a Vector3D.
+
+    :param object function1: A VectorFunction2D object or Python callable.
+    :param object function2: A VectorFunction2D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_vectorfunction2d(function1)
+        self._function2 = autowrap_vectorfunction2d(function2)
+
+    cdef double evaluate(self, double x, double y) except? -1e999:
+        cdef Vector3D v1, v2
+        v1 = self._function1.evaluate(x, y)
+        v2 = self._function2.evaluate(x, y)
+        return 0.0 if (v1.x == v2.x and v1.y == v2.y and v1.z == v2.z) else 1.0
 
 
 cdef bint is_callable(object f):
