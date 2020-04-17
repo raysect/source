@@ -31,4 +31,4 @@
 
 from .base import VectorFunction2D
 from .constant import ConstantVector2D
-from .scalar_to_vector import ScalarToVectorFunction2D
+from .utility import *

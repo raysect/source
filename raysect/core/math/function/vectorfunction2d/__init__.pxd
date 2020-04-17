@@ -32,4 +32,4 @@
 from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
 from raysect.core.math.function.vectorfunction2d.constant cimport ConstantVector2D
 from raysect.core.math.function.vectorfunction2d.autowrap cimport autowrap_vectorfunction2d
-from raysect.core.math.function.vectorfunction2d.scalar_to_vector cimport ScalarToVectorFunction2D
+from raysect.core.math.function.vectorfunction2d.utility cimport *
