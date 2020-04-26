@@ -365,7 +365,7 @@ class TestFunction3D(unittest.TestCase):
             r4(-1, 0, 0)
 
     def test_pow_3_arguments(self):
-        v = [-10, -7, -0.001, 0.00003, 2]
+        v = [-10, -7, -0.001, 0.00003, 0.8]
         r1 = pow(self.f1, 5, 3)
         r2 = pow(5, self.f1, 3)
         r3 = pow(5, self.f1, self.f2)

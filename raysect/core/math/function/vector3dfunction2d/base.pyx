@@ -40,7 +40,7 @@ from raysect.core.math.function.function2d.base cimport is_callable as f2d_is_ca
 from .autowrap cimport autowrap_vectorfunction2d
 
 
-cdef class VectorFunction2D:
+cdef class Vector3DFunction2D(Vector3DFunction):
     """
     Cython optimised class for representing an arbitrary 2D vector function.
 
@@ -70,51 +70,51 @@ cdef class VectorFunction2D:
     def __add__(object a, object b):
         if is_callable(a) or isinstance(a, Vector3D):
             if is_callable(b) or isinstance(b, Vector3D):
-                return AddVectorFunction2D(a, b)
+                return AddVector3DFunction2D(a, b)
         return NotImplemented
 
     def __sub__(object a, object b):
         if is_callable(a) or isinstance(a, Vector3D):
             if is_callable(b) or isinstance(b, Vector3D):
-                return SubtractVectorFunction2D(a, b)
+                return SubtractVector3DFunction2D(a, b)
         return NotImplemented
 
     def __mul__(object a, object b):
         if is_callable(a) or isinstance(a, Vector3D):
             if f2d_is_callable(b) or isinstance(b, numbers.Real):
-                return MultiplyVectorFunction2D(a, b)
+                return MultiplyVector3DFunction2D(a, b)
         if is_callable(b) or isinstance(b, Vector3D):
             if f2d_is_callable(a) or isinstance(a, numbers.Real):
-                return MultiplyVectorFunction2D(b, a)
+                return MultiplyVector3DFunction2D(b, a)
         return NotImplemented
 
     def __truediv__(object a, object b):
         if is_callable(a) or isinstance(a, Vector3D):
             if f2d_is_callable(b) or isinstance(b, numbers.Real):
-                return DivideVectorFunction2D(a, b)
+                return DivideVector3DFunction2D(a, b)
         return NotImplemented
 
     def __neg__(self):
-        return NegVectorFunction2D(self)
+        return NegVector3DFunction2D(self)
 
     def __richcmp__(self, object other, int op):
         if is_callable(other) or isinstance(other, Vector3D):
             if op == Py_EQ:
-                return EqualsVectorFunction2D(self, other)
+                return EqualsVector3DFunction2D(self, other)
             if op == Py_NE:
-                return NotEqualsVectorFunction2D(self, other)
+                return NotEqualsVector3DFunction2D(self, other)
         return NotImplemented
 
 
-cdef class AddVectorFunction2D(VectorFunction2D):
+cdef class AddVector3DFunction2D(Vector3DFunction2D):
     """
-    A VectorFunction2D class that implements the addition of the results of two VectorFunction2D objects: f1() + f2()
+    A Vector3DFunction2D class that implements the addition of the results of two Vector3DFunction2D objects: f1() + f2()
 
     This class is not intended to be used directly, but rather returned as the result of an __add__() call on a
-    VectorFunction2D object.
+    Vector3DFunction2D object.
 
-    :param object function1: A VectorFunction2D object or Python callable.
-    :param object function2: A VectorFunction2D object or Python callable.
+    :param object function1: A Vector3DFunction2D object or Python callable.
+    :param object function2: A Vector3DFunction2D object or Python callable.
     """
     def __init__(self, object function1, object function2):
         self._function1 = autowrap_vectorfunction2d(function1)
@@ -124,15 +124,15 @@ cdef class AddVectorFunction2D(VectorFunction2D):
         return self._function1.evaluate(x, y).add(self._function2.evaluate(x, y))
 
 
-cdef class SubtractVectorFunction2D(VectorFunction2D):
+cdef class SubtractVector3DFunction2D(Vector3DFunction2D):
     """
-    A VectorFunction2D class that implements the subtraction of the results of two VectorFunction2D objects: f1() - f2()
+    A Vector3DFunction2D class that implements the subtraction of the results of two Vector3DFunction2D objects: f1() - f2()
 
     This class is not intended to be used directly, but rather returned as the result of a __sub__() call on a
-    VectorFunction2D object.
+    Vector3DFunction2D object.
 
-    :param object function1: A VectorFunction2D object or Python callable.
-    :param object function2: A VectorFunction2D object or Python callable.
+    :param object function1: A Vector3DFunction2D object or Python callable.
+    :param object function2: A Vector3DFunction2D object or Python callable.
     """
     def __init__(self, object function1, object function2):
         self._function1 = autowrap_vectorfunction2d(function1)
@@ -142,14 +142,14 @@ cdef class SubtractVectorFunction2D(VectorFunction2D):
         return self._function1.evaluate(x, y).sub(self._function2.evaluate(x, y))
 
 
-cdef class MultiplyVectorFunction2D(VectorFunction2D):
+cdef class MultiplyVector3DFunction2D(Vector3DFunction2D):
     """
-    A VectorFunction2D class that implements the multiplication of the result of a VectorFunction2D object with the result of a Function2D object scalar: f1() * f2().
+    A Vector3DFunction2D class that implements the multiplication of the result of a Vector3DFunction2D object with the result of a Function2D object scalar: f1() * f2().
 
     This class is not intended to be used directly, but rather returned as the result of a __sub__() call on a
-    VectorFunction2D object.
+    Vector3DFunction2D object.
 
-    :param object function1: A VectorFunction2D object or Python callable returning a Vector3D.
+    :param object function1: A Vector3DFunction2D object or Python callable returning a Vector3D.
     :param object function2: A Function2D object or Python callable returning a double.
     """
     def __init__(self, object function1, object function2):
@@ -160,14 +160,14 @@ cdef class MultiplyVectorFunction2D(VectorFunction2D):
         return self._function1.evaluate(x, y).mul(self._function2.evaluate(x, y))
 
 
-cdef class DivideVectorFunction2D(VectorFunction2D):
+cdef class DivideVector3DFunction2D(Vector3DFunction2D):
     """
-    A VectorFunction2D class that implements the division of the results of a VectorFunction2D object and a Function2D object: f1() / f2()
+    A Vector3DFunction2D class that implements the division of the results of a Vector3DFunction2D object and a Function2D object: f1() / f2()
 
     This class is not intended to be used directly, but rather returned as the result of a __truediv__() call on a
-    VectorFunction2D object.
+    Vector3DFunction2D object.
 
-    :param object function1: A VectorFunction2D object or Python callable returning a Vector3D.
+    :param object function1: A Vector3DFunction2D object or Python callable returning a Vector3D.
     :param object function2: A Function2D object or Python callable returning a double.
     """
 
@@ -183,12 +183,12 @@ cdef class DivideVectorFunction2D(VectorFunction2D):
         return self._function1.evaluate(x, y).div(denominator)
 
 
-cdef class NegVectorFunction2D(VectorFunction2D):
+cdef class NegVector3DFunction2D(Vector3DFunction2D):
     """
-    A VectorFunction2D class that implements the negation of the result of a VectorFunction2D: -f().
+    A Vector3DFunction2D class that implements the negation of the result of a Vector3DFunction2D: -f().
 
     This class is not intended to be used directly, but rather returned as the result of a __neg__() call on a
-    VectorFunction2D object.
+    Vector3DFunction2D object.
 
     :param object function1: A vectorFunction2D object or Python callable.
     """
@@ -199,17 +199,17 @@ cdef class NegVectorFunction2D(VectorFunction2D):
         return self._function1.evaluate(x, y).neg()
 
 
-cdef class EqualsVectorFunction2D(Function2D):
+cdef class EqualsVector3DFunction2D(Function2D):
     """
-    A Function2D class that tests the equality of the results of two VectorFunction2D objects: f1() == f2()
+    A Function2D class that tests the equality of the results of two Vector3DFunction2D objects: f1() == f2()
 
     This class is not intended to be used directly, but rather returned as the result of an __eq__() call on a
-    VectorFunction2D object.
+    Vector3DFunction2D object.
 
     N.B. This is a Function2D class, so returns a double rather than a Vector3D.
 
-    :param object function1: A VectorFunction2D object or Python callable.
-    :param object function2: A VectorFunction2D object or Python callable.
+    :param object function1: A Vector3DFunction2D object or Python callable.
+    :param object function2: A Vector3DFunction2D object or Python callable.
     """
     def __init__(self, object function1, object function2):
         self._function1 = autowrap_vectorfunction2d(function1)
@@ -222,17 +222,17 @@ cdef class EqualsVectorFunction2D(Function2D):
         return 1.0 if (v1.x == v2.x and v1.y == v2.y and v1.z == v2.z) else 0.0
 
 
-cdef class NotEqualsVectorFunction2D(Function2D):
+cdef class NotEqualsVector3DFunction2D(Function2D):
     """
-    A Function2D class that tests the inequality of the results of two VectorFunction2D objects: f1() != f2()
+    A Function2D class that tests the inequality of the results of two Vector3DFunction2D objects: f1() != f2()
 
     This class is not intended to be used directly, but rather returned as the result of an __neq__() call on a
-    VectorFunction2D object.
+    Vector3DFunction2D object.
 
     N.B. This is a Function2D class, so returns a double rather than a Vector3D.
 
-    :param object function1: A VectorFunction2D object or Python callable.
-    :param object function2: A VectorFunction2D object or Python callable.
+    :param object function1: A Vector3DFunction2D object or Python callable.
+    :param object function2: A Vector3DFunction2D object or Python callable.
     """
     def __init__(self, object function1, object function2):
         self._function1 = autowrap_vectorfunction2d(function1)
@@ -247,12 +247,12 @@ cdef class NotEqualsVectorFunction2D(Function2D):
 
 cdef bint is_callable(object f):
     """
-    Tests if an object is a python callable or VectorFunction2D object.
+    Tests if an object is a python callable or Vector3DFunction2D object.
 
     :param object f: Object to test.
     :return: True if callable, False otherwise.
     """
-    # VectorFunction2D and Function2D objects are not equivalent.
+    # Vector3DFunction2D and Function2D objects are not equivalent.
     if isinstance(f, Function2D):
         return False
-    return isinstance(f, VectorFunction2D) or callable(f)
+    return isinstance(f, Vector3DFunction2D) or callable(f)

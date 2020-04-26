@@ -29,9 +29,44 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.function2d.base cimport Function2D
-from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
+from raysect.core.math.vector cimport Vector3D, new_vector3d
+from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
+from raysect.core.math.function.function2d.autowrap cimport autowrap_function2d
 
 
-cdef class ScalarToVectorFunction2D(VectorFunction2D):
-    cdef Function2D _x, _y, _z
+cdef class FloatToVector3DFunction2D(Vector3DFunction2D):
+    """
+    Combines three Function2D objects to produce a Vector3DFunction2D.
+
+    The three Function2D objects correspond to the x, y and z components of the
+    resulting vector object.
+
+    :param Function2D x_function: the Vx(x, y) 2d function.
+    :param Function2D y_function: the Vy(x, y) 2d function.
+    :param Function2D z_function: the Vz(x, y) 2d function.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function import Sqrt2D, Exp2D
+       >>> from raysect.core.math.function import FloatToVector3DFunction2D
+       >>>
+       >>> vx = 1  # Will be auto-wrapped to Constant2D(1)
+       >>> vy = Arg2D('y')
+       >>> vz = Sqrt2D(Arg2D('x'))
+       >>>
+       >>> fv = FloatToVector3DFunction2D(vx, vy, vz)
+       >>> fv(4.0, 6.2)
+       Vector3D(1.0, 6.2, 2.0)
+    """
+
+    def __init__(self, object x_function, object y_function, object z_function):
+        self._x = autowrap_function2d(x_function)
+        self._y = autowrap_function2d(y_function)
+        self._z = autowrap_function2d(z_function)
+
+    cdef Vector3D evaluate(self, double x, double y):
+        cdef double vx, vy, vz
+        vx = self._x.evaluate(x, y)
+        vy = self._y.evaluate(x, y)
+        vz = self._z.evaluate(x, y)
+        return new_vector3d(vx, vy, vz)

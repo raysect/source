@@ -34,12 +34,12 @@ from cpython.object cimport Py_LT, Py_EQ, Py_GT, Py_LE, Py_NE, Py_GE
 cimport cython
 from libc.math cimport floor
 from .autowrap cimport autowrap_function2d
-from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
+from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
 
 
-cdef class Function2D:
+cdef class Function2D(FloatFunction):
     """
-    Cython optimised class for representing an arbitrary 2D function.
+    Cython optimised class for representing an arbitrary 2D function returning a float.
 
     Using __call__() in cython is slow. This class provides an overloadable
     cython cdef evaluate() method which has much less overhead than a python
@@ -735,6 +735,6 @@ cdef bint is_callable(object f):
     :return: True if callable, False otherwise.
     """
     # VectorFunction2D and Function2D objects are not equivalent.
-    if isinstance(f, VectorFunction2D):
+    if isinstance(f, Vector3DFunction2D):
         return False
     return isinstance(f, Function2D) or callable(f)

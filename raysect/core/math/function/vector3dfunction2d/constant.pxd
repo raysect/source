@@ -30,32 +30,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
+from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
 
 
-cdef class ConstantVector2D(VectorFunction2D):
-    """
-    Wraps a Vector3D object with a VectorFunction2D object.
-
-    This class allows a constant vector object to interact with cython code that
-    requires a VectorFunction2D object. The object must be convertible to a
-    Vector3D. The value of the Vector3D constant will be returned independent of
-    the arguments the function is called with.
-
-    This class is intended to be used to transparently wrap python objects that
-    are passed via constructors or methods into cython optimised code. It is not
-    intended that the users should need to directly interact with these wrapping
-    objects. Constructors and methods expecting a VectorFunction2D object should be
-    designed to accept a generic python object and then test that object to
-    determine if it is an instance of VectorFunction2D. If the object is not a
-    VectorFunction2D object it should be wrapped using this class for internal use.
-
-    See also: autowrap_vectorfunction2d()
-
-    :param object value: the constant value, convertible to Vector3D, to return when called.
-    """
-    def __init__(self, object value):
-        self._value = Vector3D(*value)
-
-    cdef Vector3D evaluate(self, double x, double y):
-        return self._value
+cdef class ConstantVector2D(Vector3DFunction2D):
+    cdef Vector3D _value

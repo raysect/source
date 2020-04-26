@@ -31,25 +31,25 @@
 
 import numbers
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
-from raysect.core.math.function.vectorfunction2d.constant cimport ConstantVector2D
+from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
+from raysect.core.math.function.vector3dfunction2d.constant cimport ConstantVector2D
 
 
-cdef class PythonVectorFunction2D(VectorFunction2D):
+cdef class PythonVector3DFunction2D(Vector3DFunction2D):
     """
-    Wraps a python callable object with a VectorFunction2D object.
+    Wraps a python callable object with a Vector3DFunction2D object.
 
     This class allows a python object to interact with cython code that requires
-    a VectorFunction2D object. The python object must implement __call__() expecting
+    a Vector3DFunction2D object. The python object must implement __call__() expecting
     two arguments.
 
     This class is intended to be used to transparently wrap python objects that
     are passed via constructors or methods into cython optimised code. It is not
     intended that the users should need to directly interact with these wrapping
-    objects. Constructors and methods expecting a VectorFunction2D object should be
+    objects. Constructors and methods expecting a Vector3DFunction2D object should be
     designed to accept a generic python object and then test that object to
-    determine if it is an instance of VectorFunction2D. If the object is not a
-    VectorFunction2D object it should be wrapped using this class for internal use.
+    determine if it is an instance of Vector3DFunction2D. If the object is not a
+    Vector3DFunction2D object it should be wrapped using this class for internal use.
 
     See also: autowrap_vectorfunction2d()
 
@@ -63,26 +63,26 @@ cdef class PythonVectorFunction2D(VectorFunction2D):
         return self.function(x, y)
 
 
-cdef VectorFunction2D autowrap_vectorfunction2d(object function):
+cdef Vector3DFunction2D autowrap_vectorfunction2d(object function):
     """
-    Automatically wraps the supplied python object in a PythonVectorFunction2D or ConstantVector2D object.
+    Automatically wraps the supplied python object in a PythonVector3DFunction2D or ConstantVector2D object.
 
-    If this function is passed a valid VectorFunction2D object, then the
-    VectorFunction2D object is simply returned without wrapping.
+    If this function is passed a valid Vector3DFunction2D object, then the
+    Vector3DFunction2D object is simply returned without wrapping.
 
     If this function is passed a Vector3D, a ConstantVector2D object is
     returned.
 
     This convenience function is provided to simplify the handling of
-    VectorFunction2D and python callable objects in constructors, functions and
+    Vector3DFunction2D and python callable objects in constructors, functions and
     setters.  """
 
-    if isinstance(function, VectorFunction2D):
-        return <VectorFunction2D> function
+    if isinstance(function, Vector3DFunction2D):
+        return <Vector3DFunction2D> function
     try:
         function = Vector3D(*function)
     except (TypeError, ValueError):  # Not an iterable which can be converted to Vector3D
-        return PythonVectorFunction2D(function)
+        return PythonVector3DFunction2D(function)
     else:
         return ConstantVector2D(function)
 

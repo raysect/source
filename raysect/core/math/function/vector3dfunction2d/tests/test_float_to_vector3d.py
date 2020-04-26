@@ -35,20 +35,20 @@ from math import sin
 import unittest
 from raysect.core.math import Vector3D
 from raysect.core.math.function import Arg2D, Sin2D
-from raysect.core.math.function.vectorfunction2d import ScalarToVectorFunction2D
+from raysect.core.math.function.vector3dfunction2d import FloatToVector3DFunction2D
 
 # TODO: expand tests to cover the cython interface
-class TestScalarToVector2D(unittest.TestCase):
+class TestFloatToVector2D(unittest.TestCase):
 
     def test_scalar_to_vector(self):
         vx = 1  # Will be auto-wrapped to Constant2D
         vy = Arg2D('y')
         vz = Sin2D(Arg2D('x'))
-        fv = ScalarToVectorFunction2D(vx, vy, vz)
+        fv = FloatToVector3DFunction2D(vx, vy, vz)
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
             for y in v:
                 expected = Vector3D(1, y, sin(x))
                 actual = fv(x, y)
                 self.assertEqual(actual, expected,
-                                 "ScalarToVector2D call did not match reference value.")
+                                 "FloatToVector3DFunction2D call did not match reference value.")

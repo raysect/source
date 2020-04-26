@@ -29,7 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef class Function2D:
+from raysect.core.math.function.base cimport FloatFunction
+
+
+cdef class Function2D(FloatFunction):
 
     cdef double evaluate(self, double x, double y) except? -1e999
 

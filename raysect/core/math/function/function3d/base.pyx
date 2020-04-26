@@ -36,9 +36,9 @@ from libc.math cimport floor
 from .autowrap cimport autowrap_function3d
 
 
-cdef class Function3D:
+cdef class Function3D(FloatFunction):
     """
-    Cython optimised class for representing an arbitrary 3D function.
+    Cython optimised class for representing an arbitrary 3D function returning a float.
 
     Using __call__() in cython is slow. This class provides an overloadable
     cython cdef evaluate() method which has much less overhead than a python

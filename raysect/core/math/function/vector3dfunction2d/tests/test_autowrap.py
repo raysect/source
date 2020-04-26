@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -29,42 +27,29 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.function.function2d.base cimport Function2D
+"""
+Unit tests for the autowrap_2d function
+"""
 
+import unittest
+from raysect.core.math import Vector3D
+from raysect.core.math.function.vector3dfunction2d.autowrap import _autowrap_vectorfunction2d
+from raysect.core.math.function.vector3dfunction2d.autowrap import PythonVector3DFunction2D
+from raysect.core.math.function.vector3dfunction2d.constant import ConstantVector2D
 
-cdef class VectorFunction2D:
-    cdef Vector3D evaluate(self, double x, double y)
+class TestAutowrap2D(unittest.TestCase):
 
+    def test_constant_vector(self):
+        function = _autowrap_vectorfunction2d(Vector3D(3.0, 4.0, 5.0))
+        self.assertIsInstance(function, ConstantVector2D,
+                              "Autowrapped Vector3D is not a ConstantVector2D.")
 
-cdef class AddVectorFunction2D(VectorFunction2D):
-    cdef VectorFunction2D _function1, _function2
+    def test_constant_iterable(self):
+        function = _autowrap_vectorfunction2d([3, 4, 5.0])
+        self.assertIsInstance(function, ConstantVector2D,
+                              "Autowrapped iterable is not a ConstantVector2D.")
 
-
-cdef class SubtractVectorFunction2D(VectorFunction2D):
-    cdef VectorFunction2D _function1, _function2
-
-
-cdef class MultiplyVectorFunction2D(VectorFunction2D):
-    cdef VectorFunction2D _function1
-    cdef Function2D _function2
-
-
-cdef class DivideVectorFunction2D(VectorFunction2D):
-    cdef VectorFunction2D _function1
-    cdef Function2D _function2
-
-
-cdef class NegVectorFunction2D(VectorFunction2D):
-    cdef VectorFunction2D _function1
-
-
-cdef class EqualsVectorFunction2D(Function2D):
-    cdef VectorFunction2D _function1, _function2
-
-
-cdef class NotEqualsVectorFunction2D(Function2D):
-    cdef VectorFunction2D _function1, _function2
-
-
-cdef bint is_callable(object f)
+    def test_python_function(self):
+        function = _autowrap_vectorfunction2d(lambda x, y: Vector3D(x, y, x + y))
+        self.assertIsInstance(function, PythonVector3DFunction2D,
+                              "Autowrapped function is not a PythonFunction2D.")

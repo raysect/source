@@ -29,9 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
+from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
 
+cdef class PythonVector3DFunction2D(Vector3DFunction2D):
+    cdef public object function
 
-cdef class ConstantVector2D(VectorFunction2D):
-    cdef Vector3D _value
+cdef Vector3DFunction2D autowrap_vectorfunction2d(object function)

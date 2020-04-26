@@ -28,28 +28,22 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Unit tests for the autowrap_2d function
+Unit tests for the Constant2D class.
 """
 
 import unittest
 from raysect.core.math import Vector3D
-from raysect.core.math.function.vectorfunction2d.autowrap import _autowrap_vectorfunction2d
-from raysect.core.math.function.vectorfunction2d.autowrap import PythonVectorFunction2D
-from raysect.core.math.function.vectorfunction2d.constant import ConstantVector2D
+from raysect.core.math.function.vector3dfunction2d.constant import ConstantVector2D
 
-class TestAutowrap2D(unittest.TestCase):
+# TODO: expand tests to cover the cython interface
+class TestConstantVector2D(unittest.TestCase):
 
-    def test_constant_vector(self):
-        function = _autowrap_vectorfunction2d(Vector3D(3.0, 4.0, 5.0))
-        self.assertIsInstance(function, ConstantVector2D,
-                              "Autowrapped Vector3D is not a ConstantVector2D.")
-
-    def test_constant_iterable(self):
-        function = _autowrap_vectorfunction2d([3, 4, 5.0])
-        self.assertIsInstance(function, ConstantVector2D,
-                              "Autowrapped iterable is not a ConstantVector2D.")
-
-    def test_python_function(self):
-        function = _autowrap_vectorfunction2d(lambda x, y: Vector3D(x, y, x + y))
-        self.assertIsInstance(function, PythonVectorFunction2D,
-                              "Autowrapped function is not a PythonFunction2D.")
+    def test_constant(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                for z in v:
+                    vector = Vector3D(x, y, z)
+                    constant = ConstantVector2D(vector)
+                    self.assertEqual(constant(500, -1.5), vector,
+                                     "ConstantVector2D call did not match reference value.")
