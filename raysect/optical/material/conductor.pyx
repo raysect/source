@@ -178,7 +178,7 @@ cdef class RoughConductor(ContinuousBSDF):
         >>> index = InterpolatedSF(wavelength, np.array(...))
         >>> extinction = InterpolatedSF(wavelength, np.array(...))
         >>>
-        >>> rough_metal = Conductor(index, extinction, 0.25)
+        >>> rough_metal = RoughConductor(index, extinction, 0.25)
     """
 
     def __init__(self, SpectralFunction index, SpectralFunction extinction, double roughness):

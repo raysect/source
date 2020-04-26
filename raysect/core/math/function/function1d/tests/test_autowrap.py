@@ -40,8 +40,8 @@ class TestAutowrap1D(unittest.TestCase):
 
     def test_constant(self):
         function = _autowrap_function1d(5.0)
-        self.assertIsInstance(function, Constant1D, "Autowrapped scalar float is not a Constant1D")
+        self.assertIsInstance(function, Constant1D, "Autowrapped scalar float is not a Constant1D.")
 
     def test_python_function(self):
         function = _autowrap_function1d(lambda x: 10*x)
-        self.assertIsInstance(function, PythonFunction1D, "Autowrapped function is not a PythonFunction1D")
+        self.assertIsInstance(function, PythonFunction1D, "Autowrapped function is not a PythonFunction1D.")

@@ -28,7 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import unittest
-from raysect.core.math import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, Vector3D, Point3D, to_cylindrical, from_cylindrical
+from raysect.core.math import Point3D, Vector3D
+from raysect.core.math.transform import *
 from math import sin, cos, pi, sqrt
 import numpy as np
 
@@ -193,3 +194,33 @@ class TestTransform(unittest.TestCase):
         self.assertEqual(cartesian_point.x, x_test, "X coordinate did not map successfully.")
         self.assertEqual(cartesian_point.y, y_test, "Y coordinate did not map successfully.")
         self.assertEqual(cartesian_point.z, z_test, "Z coordinate did not map successfully.")
+
+    def test_extract_rotation(self):
+
+        r = (-60, 23, -9)
+
+        # test z axis forward convention
+        mf = rotate(*r)
+        vf = extract_rotation(mf, 'forward')
+        self.assertAlmostEqual(vf[0], r[0], delta=1e-10, msg="Failed to extract yaw from affine matrix (z-axis forward).")
+        self.assertAlmostEqual(vf[1], r[1], delta=1e-10, msg="Failed to extract pitch from affine matrix (z-axis forward).")
+        self.assertAlmostEqual(vf[2], r[2], delta=1e-10, msg="Failed to extract roll from affine matrix (z-axis forward).")
+
+        # test z axis up convention
+        mu = rotate_z(r[0]) * rotate_y(r[1]) * rotate_x(r[2])
+        vu = extract_rotation(mu, 'up')
+        self.assertAlmostEqual(vu[0], r[0], delta=1e-10, msg="Failed to extract yaw from affine matrix (z-axis up).")
+        self.assertAlmostEqual(vu[1], r[1], delta=1e-10, msg="Failed to extract pitch from affine matrix (z-axis up).")
+        self.assertAlmostEqual(vu[2], r[2], delta=1e-10, msg="Failed to extract roll from affine matrix (z-axis up).")
+
+        # test invalid convention
+        with self.assertRaises(ValueError, msg="Extract rotation mishandled an invalid convention."):
+            extract_rotation(mu, 'banana')
+
+    def test_extract_translation(self):
+
+        r = (10, -20, 40)
+        m = translate(*r)
+        v = extract_translation(m)
+        self.assertAlmostEqual(v, r, delta=1e-10, msg="Failed to extract translation from affine matrix.")
+

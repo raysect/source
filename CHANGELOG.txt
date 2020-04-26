@@ -1,6 +1,26 @@
 Raysect Changelog
 =================
 
+Release 0.6.2 (TBC)
+-------------------
+
+New:
+* Added VectorFunctionxD objects, matching the FunctionxD framework of fast expression evaluations but with Vector3D objects in place of scalar floats.
+
+Release 0.6.1 (2 Feb 2019)
+---------------------------
+
+New:
+* Added relational operators to the FunctionXD objects.
+* Added abs() operator to FunctionXD objects.
+* Square root (SqrtXD) and error functions (ErfXD) added to FunctionXD package.
+* Added SpectralAdaptiveSampler1D and SpectralAdaptiveSampler2D.
+* FullFrameSampler2D, RGBAdaptiveSampler2D, MonoAdaptiveSampler2D now supports pixel masks directly.
+
+Bug fixes:
+* MulticoreEngine render engine now passes back exceptions from worker processes and correctly terminates the render.
+
+
 Release 0.6.0 (13 Nov 2019)
 ---------------------------
 
@@ -33,7 +53,7 @@ Bug fixes:
 New:
 * Added quaternions to the core math package.
 * Added low level cython functions to calculate mininum, maximum and peak_to_peak for memoryviews. (contributor: Dr Jack Lovell)
-* Added a material blending modifier to the raysect.optical.material.modifiers package.
+* Added a material blending modifier to the raysect.optical.material.modifiers package.relational
 
 
 Release 0.5.5 (4 Mar 2019)

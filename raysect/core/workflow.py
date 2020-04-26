@@ -69,6 +69,10 @@ class RenderEngine:
 
     The render() function must return an object representing the results,
     this must be a picklable python object.
+
+    The execution order of tasks is not guaranteed to be in order. If the order
+    is critical, an identifier should be passed as part of the task definition
+    and returned in the result. This will permit the order to be reconstructed.
     """
 
     def run(self, tasks, render, update, render_args=(), render_kwargs={}, update_args=(), update_kwargs={}):
@@ -212,7 +216,27 @@ class MulticoreEngine(RenderEngine):
         # consume results
         remaining = len(tasks)
         while remaining:
+
             results = result_queue.get()
+
+            # has a worker failed?
+            if isinstance(results, Exception):
+
+                # clean up
+                for worker in workers:
+                    if worker.is_alive():
+                        worker.terminate()
+                producer.terminate()
+
+                # wait for processes to terminate
+                for worker in workers:
+                    worker.join()
+                producer.join()
+
+                # raise the exception to inform the user
+                raise results
+
+            # update state with new results
             for result in results:
                 update(result, *update_args, **update_kwargs)
                 remaining -= 1
@@ -289,13 +313,18 @@ class MulticoreEngine(RenderEngine):
 
             results = []
             for task in job:
-                results.append(render(task, *args, **kwargs))
+                try:
+                    results.append(render(task, *args, **kwargs))
+                except Exception as e:
+                    # pass the exception back to the main process and quit
+                    result_queue.put(e)
+                    break
+
+            # hand back results
             result_queue.put(results)
 
 
 if __name__ == '__main__':
-
-    from time import time
 
     class Job:
 
@@ -317,12 +346,12 @@ if __name__ == '__main__':
         def update(self, result):
             self.total += result
 
-    n = 2000
+    n = 20000
 
-    t = time()
+    t = time.time()
     j = Job(SerialEngine())
-    print(j.run(n), time() - t)
+    print(j.run(n), time.time() - t)
 
-    t = time()
+    t = time.time()
     j = Job(MulticoreEngine())
-    print(j.run(n), time() - t)
+    print(j.run(n), time.time() - t)

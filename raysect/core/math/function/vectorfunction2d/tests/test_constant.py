@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,17 +28,22 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Unit tests for the Arg1D class.
+Unit tests for the Constant2D class.
 """
 
 import unittest
-from raysect.core.math.function.function1d.arg import Arg1D
+from raysect.core.math import Vector3D
+from raysect.core.math.function.vectorfunction2d.constant import ConstantVector2D
 
 # TODO: expand tests to cover the cython interface
-class TestArg1D(unittest.TestCase):
+class TestConstantVector2D(unittest.TestCase):
 
-    def test_arg(self):
+    def test_constant(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
-            arg = Arg1D()
-            self.assertEqual(arg(x), x, "Arg1D call did not match reference value.")
+            for y in v:
+                for z in v:
+                    vector = Vector3D(x, y, z)
+                    constant = ConstantVector2D(vector)
+                    self.assertEqual(constant(500, -1.5), vector,
+                                     "ConstantVector2D call did not match reference value.")

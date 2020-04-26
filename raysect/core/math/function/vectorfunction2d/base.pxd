@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,18 +29,42 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""
-Unit tests for the Arg1D class.
-"""
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.function.function2d.base cimport Function2D
 
-import unittest
-from raysect.core.math.function.function1d.arg import Arg1D
 
-# TODO: expand tests to cover the cython interface
-class TestArg1D(unittest.TestCase):
+cdef class VectorFunction2D:
+    cdef Vector3D evaluate(self, double x, double y)
 
-    def test_arg(self):
-        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
-        for x in v:
-            arg = Arg1D()
-            self.assertEqual(arg(x), x, "Arg1D call did not match reference value.")
+
+cdef class AddVectorFunction2D(VectorFunction2D):
+    cdef VectorFunction2D _function1, _function2
+
+
+cdef class SubtractVectorFunction2D(VectorFunction2D):
+    cdef VectorFunction2D _function1, _function2
+
+
+cdef class MultiplyVectorFunction2D(VectorFunction2D):
+    cdef VectorFunction2D _function1
+    cdef Function2D _function2
+
+
+cdef class DivideVectorFunction2D(VectorFunction2D):
+    cdef VectorFunction2D _function1
+    cdef Function2D _function2
+
+
+cdef class NegVectorFunction2D(VectorFunction2D):
+    cdef VectorFunction2D _function1
+
+
+cdef class EqualsVectorFunction2D(Function2D):
+    cdef VectorFunction2D _function1, _function2
+
+
+cdef class NotEqualsVectorFunction2D(Function2D):
+    cdef VectorFunction2D _function1, _function2
+
+
+cdef bint is_callable(object f)

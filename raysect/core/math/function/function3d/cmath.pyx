@@ -147,3 +147,32 @@ cdef class Atan4Q3D(Function3D):
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
         return cmath.atan2(self._numerator.evaluate(x, y, z), self._denominator.evaluate(x, y, z))
+
+
+cdef class Sqrt3D(Function3D):
+    """
+    A Function3D class that implements the square root of the result of a Function3D object: sqrt(f())
+
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, object function):
+
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        if x < 0: # complex values are not supported
+            raise ValueError("Math domain error in sqrt({0}). Sqrt of a negative value is not supported.".format(x))
+        return cmath.sqrt(self._function.evaluate(x, y, z))
+
+
+cdef class Erf3D(Function3D):
+    """
+    A Function3D class that implements the error function of the result of a Function3D object: erf(f())
+
+    :param Function3D function: A Function3D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function3d(function)
+
+    cdef double evaluate(self, double x, double y, double z) except? -1e999:
+        return cmath.erf(self._function.evaluate(x, y, z))

@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numbers
+from cpython.object cimport Py_LT, Py_EQ, Py_GT, Py_LE, Py_NE, Py_GE
 cimport cython
 from libc.math cimport floor
 from .autowrap cimport autowrap_function1d
@@ -161,8 +162,41 @@ cdef class Function1D:
                 return PowScalarFunction1D(<double> a, b)
         return NotImplemented
 
-    def __repr__(self):
-        return '{}(x)'.format(self.__class__.__name__)
+    def __abs__(self):
+        return AbsFunction1D(self)
+
+    def __richcmp__(self, object other, int op):
+        if is_callable(other):
+            if op == Py_EQ:
+                return EqualsFunction1D(self, other)
+            if op == Py_NE:
+                return NotEqualsFunction1D(self, other)
+            if op == Py_LT:
+                return LessThanFunction1D(self, other)
+            if op == Py_GT:
+                return GreaterThanFunction1D(self, other)
+            if op == Py_LE:
+                return LessEqualsFunction1D(self, other)
+            if op == Py_GE:
+                return GreaterEqualsFunction1D(self, other)
+        if isinstance(other, numbers.Real):
+            if op == Py_EQ:
+                return EqualsScalar1D(<double> other, self)
+            if op == Py_NE:
+                return NotEqualsScalar1D(<double> other, self)
+            if op == Py_LT:
+                # f() < K -> K > f
+                return GreaterThanScalar1D(<double> other, self)
+            if op == Py_GT:
+                # f() > K -> K < f
+                return LessThanScalar1D(<double> other, self)
+            if op == Py_LE:
+                # f() <= K -> K >= f
+                return GreaterEqualsScalar1D(<double> other, self)
+            if op == Py_GE:
+                # f() >= K -> K <= f
+                return LessEqualsScalar1D(<double> other, self)
+        return NotImplemented
 
 
 cdef class AddFunction1D(Function1D):
@@ -182,9 +216,6 @@ cdef class AddFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) + self._function2.evaluate(x)
 
-    def __repr__(self):
-        return '({} + {})'.format(self._function1, self._function2)
-
 
 cdef class SubtractFunction1D(Function1D):
     """
@@ -203,9 +234,6 @@ cdef class SubtractFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) - self._function2.evaluate(x)
 
-    def __repr__(self):
-        return '({} - {})'.format(self._function1, self._function2)
-
 
 cdef class MultiplyFunction1D(Function1D):
     """
@@ -223,9 +251,6 @@ cdef class MultiplyFunction1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) * self._function2.evaluate(x)
-
-    def __repr__(self):
-        return '({} * {})'.format(self._function1, self._function2)
 
 
 cdef class DivideFunction1D(Function1D):
@@ -249,9 +274,6 @@ cdef class DivideFunction1D(Function1D):
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
         return self._function1.evaluate(x) / denominator
 
-    def __repr__(self):
-        return '({} / {})'.format(self._function1, self._function2)
-
 
 cdef class ModuloFunction1D(Function1D):
     """
@@ -273,9 +295,6 @@ cdef class ModuloFunction1D(Function1D):
         if divisor == 0.0:
             raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
         return self._function1.evaluate(x) % divisor
-
-    def __repr__(self):
-        return '({} % {})'.format(self._function1, self._function2)
 
 
 cdef class PowFunction1D(Function1D):
@@ -302,8 +321,129 @@ cdef class PowFunction1D(Function1D):
             raise ZeroDivisionError("0.0 cannot be raised to a negative power")
         return base ** exponent
 
-    def __repr__(self):
-        return '({}**{})'.format(self._function1, self._function2)
+
+cdef class AbsFunction1D(Function1D):
+    """
+    A Function1D class that implements the absolute value of the result of a Function1D object: abs(f()).
+
+    This class is not intended to be used directly, but rather returned as the
+    result of an __abs__() call on a Function1D object.
+
+    :param object function: A Function1D object or Python callable.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return abs(self._function.evaluate(x))
+
+
+cdef class EqualsFunction1D(Function1D):
+    """
+    A Function1D class that tests the equality of the results of two Function1D objects: f1() == f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __eq__() call on a
+    Function1D object.
+
+    :param object function1: A Function1D object or Python callable.
+    :param object function2: A Function1D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function1d(function1)
+        self._function2 = autowrap_function1d(function2)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._function1.evaluate(x) == self._function2.evaluate(x)
+
+
+cdef class NotEqualsFunction1D(Function1D):
+    """
+    A Function1D class that tests the inequality of the results of two Function1D objects: f1() != f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ne__() call on a
+    Function1D object.
+
+    :param object function1: A Function1D object or Python callable.
+    :param object function2: A Function1D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function1d(function1)
+        self._function2 = autowrap_function1d(function2)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._function1.evaluate(x) != self._function2.evaluate(x)
+
+
+cdef class LessThanFunction1D(Function1D):
+    """
+    A Function1D class that implements < of the results of two Function1D objects: f1() < f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __lt__() call on a
+    Function1D object.
+
+    :param object function1: A Function1D object or Python callable.
+    :param object function2: A Function1D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function1d(function1)
+        self._function2 = autowrap_function1d(function2)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._function1.evaluate(x) < self._function2.evaluate(x)
+
+
+cdef class GreaterThanFunction1D(Function1D):
+    """
+    A Function1D class that implements > of the results of two Function1D objects: f1() > f2()
+
+    This class is not intended to be used directly, but rather returned as the result of a __gt__() call on a
+    Function1D object.
+
+    :param object function1: A Function1D object or Python callable.
+    :param object function2: A Function1D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function1d(function1)
+        self._function2 = autowrap_function1d(function2)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._function1.evaluate(x) > self._function2.evaluate(x)
+
+
+cdef class LessEqualsFunction1D(Function1D):
+    """
+    A Function1D class that implements <= of the results of two Function1D objects: f1() <= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __le__() call on a
+    Function1D object.
+
+    :param object function1: A Function1D object or Python callable.
+    :param object function2: A Function1D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function1d(function1)
+        self._function2 = autowrap_function1d(function2)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._function1.evaluate(x) <= self._function2.evaluate(x)
+
+
+cdef class GreaterEqualsFunction1D(Function1D):
+    """
+    A Function1D class that implements >= of the results of two Function1D objects: f1() >= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ge__() call on a
+    Function1D object.
+
+    :param object function1: A Function1D object or Python callable.
+    :param object function2: A Function1D object or Python callable.
+    """
+    def __init__(self, object function1, object function2):
+        self._function1 = autowrap_function1d(function1)
+        self._function2 = autowrap_function1d(function2)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._function1.evaluate(x) >= self._function2.evaluate(x)
 
 
 cdef class AddScalar1D(Function1D):
@@ -323,9 +463,6 @@ cdef class AddScalar1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._value + self._function.evaluate(x)
 
-    def __repr__(self):
-        return '({} + {})'.format(self._value, self._function)
-
 
 cdef class SubtractScalar1D(Function1D):
     """
@@ -344,9 +481,6 @@ cdef class SubtractScalar1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._value - self._function.evaluate(x)
 
-    def __repr__(self):
-        return '({} - {})'.format(self._value, self._function)
-
 
 cdef class MultiplyScalar1D(Function1D):
     """
@@ -364,9 +498,6 @@ cdef class MultiplyScalar1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._value * self._function.evaluate(x)
-
-    def __repr__(self):
-        return '({} * {})'.format(self._value, self._function)
 
 
 cdef class DivideScalar1D(Function1D):
@@ -390,9 +521,6 @@ cdef class DivideScalar1D(Function1D):
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
         return self._value / denominator
 
-    def __repr__(self):
-        return '({} / {})'.format(self._value, self._function)
-
 
 cdef class ModuloScalarFunction1D(Function1D):
     """
@@ -415,9 +543,6 @@ cdef class ModuloScalarFunction1D(Function1D):
             raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
         return self._value % divisor
 
-    def __repr__(self):
-        return '({} % {})'.format(self._value, self._function)
-
 
 cdef class ModuloFunctionScalar1D(Function1D):
     """
@@ -438,9 +563,6 @@ cdef class ModuloFunctionScalar1D(Function1D):
     @cython.cdivision(True)
     cdef double evaluate(self, double x) except? -1e999:
         return self._function.evaluate(x) % self._value
-
-    def __repr__(self):
-        return '({} % {})'.format(self._function, self._value)
 
 
 cdef class PowScalarFunction1D(Function1D):
@@ -465,9 +587,6 @@ cdef class PowScalarFunction1D(Function1D):
             raise ZeroDivisionError("0.0 cannot be raised to a negative power")
         return self._value ** exponent
 
-    def __repr__(self):
-        return '({}**{})'.format(self._value, self._function)
-
 
 cdef class PowFunctionScalar1D(Function1D):
     """
@@ -491,5 +610,110 @@ cdef class PowFunctionScalar1D(Function1D):
             raise ZeroDivisionError("0.0 cannot be raised to a negative power")
         return base ** self._value
 
-    def __repr__(self):
-        return '({}**{})'.format(self._function, self._value)
+
+cdef class EqualsScalar1D(Function1D):
+    """
+    A Function1D class that tests the equality of a scalar and the result of a Function1D object: K == f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __eq__() call on a
+    Function1D object.
+
+    :param value: A double value.
+    :param object function: A Function1D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._value == self._function.evaluate(x)
+
+
+cdef class NotEqualsScalar1D(Function1D):
+    """
+    A Function1D class that tests the inequality of a scalar and the result of a Function1D object: K != f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ne__() call on a
+    Function1D object.
+
+    :param value: A double value.
+    :param object function: A Function1D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._value != self._function.evaluate(x)
+
+
+cdef class LessThanScalar1D(Function1D):
+    """
+    A Function1D class that implements < of a scalar and the result of a Function1D object: K < f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __lt__() call on a
+    Function1D object.
+
+    :param value: A double value.
+    :param object function: A Function1D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._value < self._function.evaluate(x)
+
+
+cdef class GreaterThanScalar1D(Function1D):
+    """
+    A Function1D class that implements > of a scalar and the result of a Function1D object: K > f2()
+
+    This class is not intended to be used directly, but rather returned as the result of a __gt__() call on a
+    Function1D object.
+
+    :param value: A double value.
+    :param object function: A Function1D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._value > self._function.evaluate(x)
+
+
+cdef class LessEqualsScalar1D(Function1D):
+    """
+    A Function1D class that implements <= of a scalar and the result of a Function1D object: K <= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __le__() call on a
+    Function1D object.
+
+    :param value: A double value.
+    :param object function: A Function1D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._value <= self._function.evaluate(x)
+
+
+cdef class GreaterEqualsScalar1D(Function1D):
+    """
+    A Function1D class that implements >= of a scalar and the result of a Function1D object: K >= f2()
+
+    This class is not intended to be used directly, but rather returned as the result of an __ge__() call on a
+    Function1D object.
+
+    :param value: A double value.
+    :param object function: A Function1D object or Python callable.
+    """
+    def __init__(self, double value, object function):
+        self._value = value
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return self._value >= self._function.evaluate(x)

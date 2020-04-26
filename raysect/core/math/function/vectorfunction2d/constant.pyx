@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,18 +29,33 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""
-Unit tests for the Arg1D class.
-"""
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
 
-import unittest
-from raysect.core.math.function.function1d.arg import Arg1D
 
-# TODO: expand tests to cover the cython interface
-class TestArg1D(unittest.TestCase):
+cdef class ConstantVector2D(VectorFunction2D):
+    """
+    Wraps a Vector3D object with a VectorFunction2D object.
 
-    def test_arg(self):
-        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
-        for x in v:
-            arg = Arg1D()
-            self.assertEqual(arg(x), x, "Arg1D call did not match reference value.")
+    This class allows a constant vector object to interact with cython code that
+    requires a VectorFunction2D object. The object must be convertible to a
+    Vector3D. The value of the Vector3D constant will be returned independent of
+    the arguments the function is called with.
+
+    This class is intended to be used to transparently wrap python objects that
+    are passed via constructors or methods into cython optimised code. It is not
+    intended that the users should need to directly interact with these wrapping
+    objects. Constructors and methods expecting a VectorFunction2D object should be
+    designed to accept a generic python object and then test that object to
+    determine if it is an instance of VectorFunction2D. If the object is not a
+    VectorFunction2D object it should be wrapped using this class for internal use.
+
+    See also: autowrap_vectorfunction2d()
+
+    :param object value: the constant value, convertible to Vector3D, to return when called.
+    """
+    def __init__(self, object value):
+        self._value = Vector3D(*value)
+
+    cdef Vector3D evaluate(self, double x, double y):
+        return self._value

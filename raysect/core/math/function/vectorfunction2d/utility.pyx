@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,66 +29,44 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.affinematrix cimport AffineMatrix3D
+from raysect.core.math.vector cimport Vector3D, new_vector3d
+from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
+from raysect.core.math.function.function2d.autowrap cimport autowrap_function2d
 
 
-cdef class Quaternion:
-
-    cdef public double x, y, z, s
-
-    cpdef Quaternion copy(self)
-
-    cpdef Quaternion conjugate(self)
-
-    cpdef Quaternion inverse(self)
-
-    cpdef Quaternion normalise(self)
-
-    cpdef bint is_unit(self, double tolerance=*)
-
-    cpdef Quaternion transform(self, AffineMatrix3D m)
-
-    cpdef AffineMatrix3D as_matrix(self)
-
-    cpdef Quaternion quaternion_to(self, Quaternion q)
-
-    cdef Quaternion neg(self)
-
-    cdef Quaternion add(self, Quaternion q)
-
-    cdef Quaternion sub(self, Quaternion q)
-
-    cdef Quaternion mul_quaternion(self, Quaternion q)
-
-    cdef Quaternion mul_scalar(self, double d)
-
-    cdef Quaternion div_quaternion(self, Quaternion q)
-
-    cdef Quaternion div_scalar(self, double d)
-
-    cdef Vector3D get_axis(self)
-
-    cdef double get_angle(self)
-
-    cdef double get_length(self) nogil
-
-    cdef object set_length(self, double v)
-
-
-cdef inline Quaternion new_quaternion(double x, double y, double z, double s):
+cdef class ScalarToVectorFunction2D(VectorFunction2D):
     """
-    Quaternion factory function.
+    Combines three Function2D objects to produce a VectorFunction2D.
 
-    Creates a new Quaternion object with less overhead than the equivalent Python
-    call. This function is callable from cython only.
+    The three Function2D objects correspond to the x, y and z components of the
+    resulting vector object.
+
+    :param Function2D x_function: the Vx(x, y) 2d function.
+    :param Function2D y_function: the Vy(x, y) 2d function.
+    :param Function2D z_function: the Vz(x, y) 2d function.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function import Sqrt2D, Exp2D
+       >>> from raysect.core.math.function import ScalarToVectorFunction2D
+       >>>
+       >>> vx = 1  # Will be auto-wrapped to Constant2D(1)
+       >>> vy = Arg2D('y')
+       >>> vz = Sqrt2D(Arg2D('x'))
+       >>>
+       >>> fv = ScalarToVectorFunction2D(vx, vy, vz)
+       >>> fv(4.0, 6.2)
+       Vector3D(1.0, 6.2, 2.0)
     """
 
-    cdef Quaternion q
-    q = Quaternion.__new__(Quaternion)
-    q.x = x
-    q.y = y
-    q.z = z
-    q.s = s
-    return q
+    def __init__(self, object x_function, object y_function, object z_function):
+        self._x = autowrap_function2d(x_function)
+        self._y = autowrap_function2d(y_function)
+        self._z = autowrap_function2d(z_function)
 
+    cdef Vector3D evaluate(self, double x, double y):
+        cdef double vx, vy, vz
+        vx = self._x.evaluate(x, y)
+        vy = self._y.evaluate(x, y)
+        vz = self._z.evaluate(x, y)
+        return new_vector3d(vx, vy, vz)

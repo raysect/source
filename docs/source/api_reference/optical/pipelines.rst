@@ -61,6 +61,9 @@ Power
 .. autoclass:: raysect.optical.observer.pipeline.mono.PowerPipeline0D
    :show-inheritance:
 
+.. autoclass:: raysect.optical.observer.pipeline.mono.PowerPipeline1D
+   :show-inheritance:
+
 .. autoclass:: raysect.optical.observer.pipeline.mono.PowerPipeline2D
    :members: display_auto_exposure, display_unsaturated_fraction, display_update_time, save
    :show-inheritance:
@@ -70,6 +73,9 @@ Radiance
 --------
 
 .. autoclass:: raysect.optical.observer.pipeline.mono.RadiancePipeline0D
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.pipeline.mono.RadiancePipeline1D
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.pipeline.mono.RadiancePipeline2D
@@ -86,6 +92,13 @@ Spectral
    :members: to_spectrum
    :show-inheritance:
 
+.. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralPowerPipeline1D
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralRadiancePipeline1D
+   :members: to_spectrum
+   :show-inheritance:
+
 .. autoclass:: raysect.optical.observer.pipeline.spectral.SpectralPowerPipeline2D
    :show-inheritance:
 
@@ -97,10 +110,22 @@ Spectral
 Frame Samplers
 --------------
 
+.. autoclass:: raysect.optical.observer.sampler1d.FullFrameSampler1D
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.sampler1d.MonoAdaptiveSampler1D
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.sampler1d.SpectralAdaptiveSampler1D
+   :show-inheritance:
+
 .. autoclass:: raysect.optical.observer.sampler2d.FullFrameSampler2D
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.sampler2d.MonoAdaptiveSampler2D
+   :show-inheritance:
+
+.. autoclass:: raysect.optical.observer.sampler2d.SpectralAdaptiveSampler2D
    :show-inheritance:
 
 .. autoclass:: raysect.optical.observer.sampler2d.RGBAdaptiveSampler2D

@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2019, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,18 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""
-Unit tests for the Arg1D class.
-"""
+from raysect.core.math.function.vectorfunction2d.base cimport VectorFunction2D
 
-import unittest
-from raysect.core.math.function.function1d.arg import Arg1D
+cdef class PythonVectorFunction2D(VectorFunction2D):
+    cdef public object function
 
-# TODO: expand tests to cover the cython interface
-class TestArg1D(unittest.TestCase):
-
-    def test_arg(self):
-        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
-        for x in v:
-            arg = Arg1D()
-            self.assertEqual(arg(x), x, "Arg1D call did not match reference value.")
+cdef VectorFunction2D autowrap_vectorfunction2d(object function)

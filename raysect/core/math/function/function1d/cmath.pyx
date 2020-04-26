@@ -46,9 +46,6 @@ cdef class Exp1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return cmath.exp(self._function.evaluate(x))
 
-    def __repr__(self):
-        return 'e**{}'.format(self._function)
-
 
 cdef class Sin1D(Function1D):
     """
@@ -61,9 +58,6 @@ cdef class Sin1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return cmath.sin(self._function.evaluate(x))
-
-    def __repr__(self):
-        return 'sin({})'.format(self._function)
 
 
 cdef class Cos1D(Function1D):
@@ -78,9 +72,6 @@ cdef class Cos1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return cmath.cos(self._function.evaluate(x))
 
-    def __repr__(self):
-        return 'cos({})'.format(self._function)
-
 
 cdef class Tan1D(Function1D):
     """
@@ -93,9 +84,6 @@ cdef class Tan1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return cmath.tan(self._function.evaluate(x))
-
-    def __repr__(self):
-        return 'tan({})'.format(self._function)
 
 
 cdef class Asin1D(Function1D):
@@ -113,9 +101,6 @@ cdef class Asin1D(Function1D):
             return cmath.asin(v)
         raise ValueError("The function returned a value outside of the arcsine domain of [-1, 1].")
 
-    def __repr__(self):
-        return 'asin({})'.format(self._function)
-
 
 cdef class Acos1D(Function1D):
     """
@@ -132,9 +117,6 @@ cdef class Acos1D(Function1D):
             return cmath.acos(v)
         raise ValueError("The function returned a value outside of the arccosine domain of [-1, 1].")
 
-    def __repr__(self):
-        return 'acos({})'.format(self._function)
-
 
 cdef class Atan1D(Function1D):
     """
@@ -147,9 +129,6 @@ cdef class Atan1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return cmath.atan(self._function.evaluate(x))
-
-    def __repr__(self):
-        return 'atan({})'.format(self._function)
 
 
 cdef class Atan4Q1D(Function1D):
@@ -169,5 +148,32 @@ cdef class Atan4Q1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return cmath.atan2(self._numerator.evaluate(x), self._denominator.evaluate(x))
 
-    def __repr__(self):
-        return 'atan4q({}, {})'.format(self._numerator, self._denominator)
+
+cdef class Sqrt1D(Function1D):
+    """
+    A Function1D class that implements the square root of the result of a Function1D object: sqrt(f())
+
+    :param Function1D function: A Function1D object.
+    """
+    def __init__(self, object function):
+
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        if x < 0: # complex values are not supported
+            raise ValueError("Math domain error in sqrt({0}). Sqrt of a negative value is not supported.".format(x))
+        return cmath.sqrt(self._function.evaluate(x))
+
+
+cdef class Erf1D(Function1D):
+    """
+    A Function1D class that implements the error function of the result of a Function1D object: erf(f())
+
+    :param Function1D function: A Function1D object.
+    """
+    def __init__(self, object function):
+        self._function = autowrap_function1d(function)
+
+    cdef double evaluate(self, double x) except? -1e999:
+        return cmath.erf(self._function.evaluate(x))
+

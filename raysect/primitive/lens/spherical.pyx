@@ -201,7 +201,7 @@ cdef class BiConcave(EncapsulatedPrimitive):
         # construct lens using CSG
         front = Sphere(front_curvature, transform=translate(0, 0, center_thickness + front_curvature))
         back = Sphere(back_curvature, transform=translate(0, 0, -back_curvature))
-        barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding, transform=translate(0, 0, -0.5 * padding + self.back_thickness))
+        barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding, transform=translate(0, 0, -0.5 * padding - self.back_thickness))
         lens = Subtract(Subtract(barrel, front), back)
 
         # attach to local root (performed in EncapsulatedPrimitive init)

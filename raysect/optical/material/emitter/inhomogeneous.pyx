@@ -147,10 +147,10 @@ cdef class NumericalIntegrator(VolumeIntegrator):
 
         # numerical integration
         c = 0.5 * step
-        for interval in range(1, intervals):
+        for interval in range(0, intervals):
 
-            # calculate location of new sample point
-            t = interval * step
+            # calculate location of sample point at the top of the interval
+            t = (interval + 1) * step
             sample_point = new_point3d(
                 start.x + t * integration_direction.x,
                 start.y + t * integration_direction.y,
