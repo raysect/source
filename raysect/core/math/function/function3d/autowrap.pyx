@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numbers
+from raysect.core.math.function.base cimport Function
 from raysect.core.math.function.function3d.base cimport Function3D
 from raysect.core.math.function.function3d.constant cimport Constant3D
 
@@ -60,7 +61,7 @@ cdef class PythonFunction3D(Function3D):
         return self.function(x, y, z)
 
 
-cdef Function3D autowrap_function3d(object function):
+cdef Function3D autowrap_function3d(object obj):
     """
     Automatically wraps the supplied python object in a PythonFunction3D or Contant3D object.
 
@@ -74,14 +75,16 @@ cdef Function3D autowrap_function3d(object function):
     and python callable objects in constructors, functions and setters.
     """
 
-    if isinstance(function, Function3D):
-        return <Function3D> function
-    elif isinstance(function, numbers.Real):
-        return Constant3D(function)
+    if isinstance(obj, Function3D):
+        return <Function3D> obj
+    elif isinstance(obj, Function):
+        raise TypeError('A Function3D object is required.')
+    elif isinstance(obj, numbers.Real):
+        return Constant3D(obj)
     else:
-        return PythonFunction3D(function)
+        return PythonFunction3D(obj)
 
 
-def _autowrap_function3d(function):
+def _autowrap_function3d(obj):
     """Expose cython function for testing."""
-    return autowrap_function3d(function)
+    return autowrap_function3d(obj)

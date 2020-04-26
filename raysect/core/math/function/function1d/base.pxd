@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.base cimport FloatFunction
+from raysect.core.math.function.base cimport Function, FloatFunction
 
 
 cdef class Function1D(FloatFunction):
@@ -160,9 +160,16 @@ cdef class GreaterEqualsScalar1D(Function1D):
 
 cdef inline bint is_callable(object f):
     """
-    Tests if an object is a python callable or function object.
+    Tests if an object is a python callable or a Function1D object.
 
     :param object f: Object to test.
     :return: True if callable, False otherwise.
     """
-    return isinstance(f, Function1D) or callable(f)
+    if isinstance(f, Function1D):
+        return True
+
+    # other function classes are incompatible
+    if isinstance(f, Function):
+        return False
+
+    return callable(f)

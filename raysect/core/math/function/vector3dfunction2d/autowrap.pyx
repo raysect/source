@@ -31,6 +31,7 @@
 
 import numbers
 from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.function.base cimport Function
 from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
 from raysect.core.math.function.vector3dfunction2d.constant cimport ConstantVector2D
 
@@ -63,7 +64,7 @@ cdef class PythonVector3DFunction2D(Vector3DFunction2D):
         return self.function(x, y)
 
 
-cdef Vector3DFunction2D autowrap_vectorfunction2d(object function):
+cdef Vector3DFunction2D autowrap_vectorfunction2d(object obj):
     """
     Automatically wraps the supplied python object in a PythonVector3DFunction2D or ConstantVector2D object.
 
@@ -77,16 +78,18 @@ cdef Vector3DFunction2D autowrap_vectorfunction2d(object function):
     Vector3DFunction2D and python callable objects in constructors, functions and
     setters.  """
 
-    if isinstance(function, Vector3DFunction2D):
-        return <Vector3DFunction2D> function
+    if isinstance(obj, Vector3DFunction2D):
+        return <Vector3DFunction2D> obj
+    elif isinstance(obj, Function):
+        raise TypeError('A Vector3DFunction1D object is required.')
     try:
-        function = Vector3D(*function)
+        obj = Vector3D(*obj)
     except (TypeError, ValueError):  # Not an iterable which can be converted to Vector3D
-        return PythonVector3DFunction2D(function)
+        return PythonVector3DFunction2D(obj)
     else:
-        return ConstantVector2D(function)
+        return ConstantVector2D(obj)
 
 
-def _autowrap_vectorfunction2d(function):
+def _autowrap_vectorfunction2d(obj):
     """Expose cython function for testing."""
-    return autowrap_vectorfunction2d(function)
+    return autowrap_vectorfunction2d(obj)

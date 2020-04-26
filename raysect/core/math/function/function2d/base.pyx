@@ -34,7 +34,6 @@ from cpython.object cimport Py_LT, Py_EQ, Py_GT, Py_LE, Py_NE, Py_GE
 cimport cython
 from libc.math cimport floor
 from .autowrap cimport autowrap_function2d
-from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
 
 
 cdef class Function2D(FloatFunction):
@@ -725,16 +724,3 @@ cdef class GreaterEqualsScalar2D(Function2D):
 
     cdef double evaluate(self, double x, double y) except? -1e999:
         return self._value >= self._function.evaluate(x, y)
-
-
-cdef bint is_callable(object f):
-    """
-    Tests if an object is a python callable or Function2D object.
-
-    :param object f: Object to test.
-    :return: True if callable, False otherwise.
-    """
-    # VectorFunction2D and Function2D objects are not equivalent.
-    if isinstance(f, Vector3DFunction2D):
-        return False
-    return isinstance(f, Function2D) or callable(f)

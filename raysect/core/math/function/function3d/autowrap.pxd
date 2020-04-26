@@ -34,4 +34,4 @@ from raysect.core.math.function.function3d.base cimport Function3D
 cdef class PythonFunction3D(Function3D):
     cdef public object function
 
-cdef Function3D autowrap_function3d(object function)
+cdef Function3D autowrap_function3d(object obj)

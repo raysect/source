@@ -34,4 +34,4 @@ from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction
 cdef class PythonVector3DFunction2D(Vector3DFunction2D):
     cdef public object function
 
-cdef Vector3DFunction2D autowrap_vectorfunction2d(object function)
+cdef Vector3DFunction2D autowrap_vectorfunction2d(object obj)

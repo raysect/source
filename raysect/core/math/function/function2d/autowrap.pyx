@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numbers
+from raysect.core.math.function.base cimport Function
 from raysect.core.math.function.function2d.base cimport Function2D
 from raysect.core.math.function.function2d.constant cimport Constant2D
 
@@ -62,7 +63,7 @@ cdef class PythonFunction2D(Function2D):
         return self.function(x, y)
 
 
-cdef Function2D autowrap_function2d(object function):
+cdef Function2D autowrap_function2d(object obj):
     """
     Automatically wraps the supplied python object in a PythonFunction2D or Contant2D object.
 
@@ -76,14 +77,16 @@ cdef Function2D autowrap_function2d(object function):
     and python callable objects in constructors, functions and setters.
     """
 
-    if isinstance(function, Function2D):
-        return <Function2D> function
-    elif isinstance(function, numbers.Real):
-        return Constant2D(function)
+    if isinstance(obj, Function2D):
+        return <Function2D> obj
+    elif isinstance(obj, Function):
+        raise TypeError('A Function2D object is required.')
+    elif isinstance(obj, numbers.Real):
+        return Constant2D(obj)
     else:
-        return PythonFunction2D(function)
+        return PythonFunction2D(obj)
 
 
-def _autowrap_function2d(function):
+def _autowrap_function2d(obj):
     """Expose cython function for testing."""
-    return autowrap_function2d(function)
+    return autowrap_function2d(obj)

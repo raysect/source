@@ -243,16 +243,3 @@ cdef class NotEqualsVector3DFunction2D(Function2D):
         v1 = self._function1.evaluate(x, y)
         v2 = self._function2.evaluate(x, y)
         return 0.0 if (v1.x == v2.x and v1.y == v2.y and v1.z == v2.z) else 1.0
-
-
-cdef bint is_callable(object f):
-    """
-    Tests if an object is a python callable or Vector3DFunction2D object.
-
-    :param object f: Object to test.
-    :return: True if callable, False otherwise.
-    """
-    # Vector3DFunction2D and Function2D objects are not equivalent.
-    if isinstance(f, Function2D):
-        return False
-    return isinstance(f, Vector3DFunction2D) or callable(f)

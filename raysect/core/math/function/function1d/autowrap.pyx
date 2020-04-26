@@ -30,8 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numbers
+from raysect.core.math.function.base cimport Function
 from raysect.core.math.function.function1d.base cimport Function1D
-from .constant cimport Constant1D
+from raysect.core.math.function.function1d.constant cimport Constant1D
 
 
 cdef class PythonFunction1D(Function1D):
@@ -62,7 +63,7 @@ cdef class PythonFunction1D(Function1D):
         return self.function(x)
 
 
-cdef Function1D autowrap_function1d(object function):
+cdef Function1D autowrap_function1d(object obj):
     """
     Automatically wraps the supplied python object in a PythonFunction1D or Contant1D object.
 
@@ -76,14 +77,16 @@ cdef Function1D autowrap_function1d(object function):
     and python callable objects in constructors, functions and setters.
     """
 
-    if isinstance(function, Function1D):
-        return <Function1D> function
-    elif isinstance(function, numbers.Real):
-        return Constant1D(function)
+    if isinstance(obj, Function1D):
+        return <Function1D> obj
+    elif isinstance(obj, Function):
+        raise TypeError('A Function1D object is required.')
+    elif isinstance(obj, numbers.Real):
+        return Constant1D(obj)
     else:
-        return PythonFunction1D(function)
+        return PythonFunction1D(obj)
 
 
-def _autowrap_function1d(function):
+def _autowrap_function1d(obj):
     """Expose cython function for testing."""
-    return autowrap_function1d(function)
+    return autowrap_function1d(obj)

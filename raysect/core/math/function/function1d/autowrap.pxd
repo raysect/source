@@ -34,4 +34,4 @@ from raysect.core.math.function.function1d.base cimport Function1D
 cdef class PythonFunction1D(Function1D):
     cdef public object function
 
-cdef Function1D autowrap_function1d(object function)
+cdef Function1D autowrap_function1d(object obj)

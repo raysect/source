@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.function.base cimport Vector3DFunction
+from raysect.core.math.function.base cimport Function, Vector3DFunction
 from raysect.core.math.function.function2d.base cimport Function2D
 
 
@@ -68,4 +68,18 @@ cdef class NotEqualsVector3DFunction2D(Function2D):
     cdef Vector3DFunction2D _function1, _function2
 
 
-cdef bint is_callable(object f)
+cdef inline bint is_callable(object f):
+    """
+    Tests if an object is a python callable or a Vector3DFunction2D object.
+
+    :param object f: Object to test.
+    :return: True if callable, False otherwise.
+    """
+    if isinstance(f, Vector3DFunction2D):
+        return True
+
+    # other function classes are incompatible
+    if isinstance(f, Function):
+        return False
+
+    return callable(f)
