@@ -1,6 +1,12 @@
 Raysect Changelog
 =================
 
+Release 0.6.2 (TBC)
+-------------------
+
+New:
+* Added VectorFunctionxD objects, matching the FunctionxD framework of fast expression evaluations but with Vector3D objects in place of scalar floats.
+
 Release 0.6.1 (2 Feb 2019)
 ---------------------------
 
