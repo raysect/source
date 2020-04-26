@@ -62,6 +62,9 @@ cdef class Function1D(FloatFunction):
         """
         return self.evaluate(x)
 
+    def __repr__(self):
+        return 'Function1D(x)'
+
     def __add__(object a, object b):
         if is_callable(a):
             if is_callable(b):
@@ -216,6 +219,9 @@ cdef class AddFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) + self._function2.evaluate(x)
 
+    def __repr__(self):
+        return '({}) + ({})'.format(self._function1, self._function2)
+
 
 cdef class SubtractFunction1D(Function1D):
     """
@@ -234,6 +240,9 @@ cdef class SubtractFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) - self._function2.evaluate(x)
 
+    def __repr__(self):
+        return '({}) - ({})'.format(self._function1, self._function2)
+
 
 cdef class MultiplyFunction1D(Function1D):
     """
@@ -251,6 +260,9 @@ cdef class MultiplyFunction1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) * self._function2.evaluate(x)
+
+    def __repr__(self):
+        return '({}) * ({})'.format(self._function1, self._function2)
 
 
 cdef class DivideFunction1D(Function1D):
@@ -274,6 +286,9 @@ cdef class DivideFunction1D(Function1D):
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
         return self._function1.evaluate(x) / denominator
 
+    def __repr__(self):
+        return '({}) / ({})'.format(self._function1, self._function2)
+
 
 cdef class ModuloFunction1D(Function1D):
     """
@@ -295,6 +310,9 @@ cdef class ModuloFunction1D(Function1D):
         if divisor == 0.0:
             raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
         return self._function1.evaluate(x) % divisor
+
+    def __repr__(self):
+        return '({}) % ({})'.format(self._function1, self._function2)
 
 
 cdef class PowFunction1D(Function1D):
@@ -321,6 +339,9 @@ cdef class PowFunction1D(Function1D):
             raise ZeroDivisionError("0.0 cannot be raised to a negative power")
         return base ** exponent
 
+    def __repr__(self):
+        return '({})**({})'.format(self._function1, self._function2)
+
 
 cdef class AbsFunction1D(Function1D):
     """
@@ -336,6 +357,9 @@ cdef class AbsFunction1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return abs(self._function.evaluate(x))
+
+    def __repr__(self):
+        return 'abs({})'.format(self._function)
 
 
 cdef class EqualsFunction1D(Function1D):
@@ -355,6 +379,9 @@ cdef class EqualsFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) == self._function2.evaluate(x)
 
+    def __repr__(self):
+        return '({}) == ({})'.format(self._function1, self._function2)
+
 
 cdef class NotEqualsFunction1D(Function1D):
     """
@@ -372,6 +399,9 @@ cdef class NotEqualsFunction1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) != self._function2.evaluate(x)
+
+    def __repr__(self):
+        return '({}) != ({})'.format(self._function1, self._function2)
 
 
 cdef class LessThanFunction1D(Function1D):
@@ -391,6 +421,9 @@ cdef class LessThanFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) < self._function2.evaluate(x)
 
+    def __repr__(self):
+        return '({}) < ({})'.format(self._function1, self._function2)
+
 
 cdef class GreaterThanFunction1D(Function1D):
     """
@@ -408,6 +441,9 @@ cdef class GreaterThanFunction1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) > self._function2.evaluate(x)
+
+    def __repr__(self):
+        return '({}) > ({})'.format(self._function1, self._function2)
 
 
 cdef class LessEqualsFunction1D(Function1D):
@@ -427,6 +463,9 @@ cdef class LessEqualsFunction1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) <= self._function2.evaluate(x)
 
+    def __repr__(self):
+        return '({}) <= ({})'.format(self._function1, self._function2)
+
 
 cdef class GreaterEqualsFunction1D(Function1D):
     """
@@ -444,6 +483,9 @@ cdef class GreaterEqualsFunction1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._function1.evaluate(x) >= self._function2.evaluate(x)
+
+    def __repr__(self):
+        return '({}) >= ({})'.format(self._function1, self._function2)
 
 
 cdef class AddScalar1D(Function1D):
@@ -463,6 +505,9 @@ cdef class AddScalar1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._value + self._function.evaluate(x)
 
+    def __repr__(self):
+        return '{} + ({})'.format(self._value, self._function)
+
 
 cdef class SubtractScalar1D(Function1D):
     """
@@ -481,6 +526,9 @@ cdef class SubtractScalar1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._value - self._function.evaluate(x)
 
+    def __repr__(self):
+        return '{} - ({})'.format(self._value, self._function)
+
 
 cdef class MultiplyScalar1D(Function1D):
     """
@@ -498,6 +546,9 @@ cdef class MultiplyScalar1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._value * self._function.evaluate(x)
+
+    def __repr__(self):
+        return '{} * ({})'.format(self._value, self._function)
 
 
 cdef class DivideScalar1D(Function1D):
@@ -521,6 +572,9 @@ cdef class DivideScalar1D(Function1D):
             raise ZeroDivisionError("Function used as the denominator of the division returned a zero value.")
         return self._value / denominator
 
+    def __repr__(self):
+        return '{} / ({})'.format(self._value, self._function)
+
 
 cdef class ModuloScalarFunction1D(Function1D):
     """
@@ -543,6 +597,9 @@ cdef class ModuloScalarFunction1D(Function1D):
             raise ZeroDivisionError("Function used as the divisor of the modulo returned a zero value.")
         return self._value % divisor
 
+    def __repr__(self):
+        return '{} % ({})'.format(self._value, self._function)
+
 
 cdef class ModuloFunctionScalar1D(Function1D):
     """
@@ -563,6 +620,9 @@ cdef class ModuloFunctionScalar1D(Function1D):
     @cython.cdivision(True)
     cdef double evaluate(self, double x) except? -1e999:
         return self._function.evaluate(x) % self._value
+
+    def __repr__(self):
+        return '({}) % {}'.format(self._function, self._value)
 
 
 cdef class PowScalarFunction1D(Function1D):
@@ -587,6 +647,9 @@ cdef class PowScalarFunction1D(Function1D):
             raise ZeroDivisionError("0.0 cannot be raised to a negative power")
         return self._value ** exponent
 
+    def __repr__(self):
+        return '{}**({})'.format(self._value, self._function)
+
 
 cdef class PowFunctionScalar1D(Function1D):
     """
@@ -610,6 +673,9 @@ cdef class PowFunctionScalar1D(Function1D):
             raise ZeroDivisionError("0.0 cannot be raised to a negative power")
         return base ** self._value
 
+    def __repr__(self):
+        return '({})**{}'.format(self._function, self._value)
+
 
 cdef class EqualsScalar1D(Function1D):
     """
@@ -627,6 +693,9 @@ cdef class EqualsScalar1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._value == self._function.evaluate(x)
+
+    def __repr__(self):
+        return '{} == ({})'.format(self._value, self._function)
 
 
 cdef class NotEqualsScalar1D(Function1D):
@@ -646,6 +715,9 @@ cdef class NotEqualsScalar1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._value != self._function.evaluate(x)
 
+    def __repr__(self):
+        return '{} != ({})'.format(self._value, self._function)
+
 
 cdef class LessThanScalar1D(Function1D):
     """
@@ -663,6 +735,9 @@ cdef class LessThanScalar1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._value < self._function.evaluate(x)
+
+    def __repr__(self):
+        return '{} < ({})'.format(self._value, self._function)
 
 
 cdef class GreaterThanScalar1D(Function1D):
@@ -682,6 +757,9 @@ cdef class GreaterThanScalar1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._value > self._function.evaluate(x)
 
+    def __repr__(self):
+        return '{} > ({})'.format(self._value, self._function)
+
 
 cdef class LessEqualsScalar1D(Function1D):
     """
@@ -700,6 +778,9 @@ cdef class LessEqualsScalar1D(Function1D):
     cdef double evaluate(self, double x) except? -1e999:
         return self._value <= self._function.evaluate(x)
 
+    def __repr__(self):
+        return '{} <= ({})'.format(self._value, self._function)
+
 
 cdef class GreaterEqualsScalar1D(Function1D):
     """
@@ -717,3 +798,6 @@ cdef class GreaterEqualsScalar1D(Function1D):
 
     cdef double evaluate(self, double x) except? -1e999:
         return self._value >= self._function.evaluate(x)
+
+    def __repr__(self):
+        return '{} >= ({})'.format(self._value, self._function)
