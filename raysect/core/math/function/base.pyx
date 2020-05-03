@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
 cdef class Function:
     """
     The base class of the Raysect function framework.
@@ -39,26 +38,4 @@ cdef class Function:
 
     def __repr__(self):
         return 'Function()'
-
-
-cdef class FloatFunction(Function):
-    """
-    The base class of all functions that return a float.
-
-    All functions that return a float or double derive from this class.
-    """
-
-    def __repr__(self):
-        return 'FloatFunction()'
-
-
-cdef class Vector3DFunction(Function):
-    """
-    The base class of all functions that return a Vector3D.
-
-    All functions that return a Vector3D derive from this class.
-    """
-
-    def __repr__(self):
-        return 'Vector3DFunction()'
 
