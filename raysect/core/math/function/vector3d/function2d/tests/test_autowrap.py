@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -29,9 +27,29 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.function2d.base cimport Function2D
-from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
+"""
+Unit tests for the autowrap_2d function
+"""
 
+import unittest
+from raysect.core.math import Vector3D
+from raysect.core.math.function.vector3d.function2d.autowrap import _autowrap_function2d
+from raysect.core.math.function.vector3d.function2d.autowrap import PythonFunction2D
+from raysect.core.math.function.vector3d.function2d.constant import Constant2D
 
-cdef class FloatToVector3DFunction2D(Vector3DFunction2D):
-    cdef Function2D _x, _y, _z
+class TestAutowrap2D(unittest.TestCase):
+
+    def test_constant_vector(self):
+        function = _autowrap_function2d(Vector3D(3.0, 4.0, 5.0))
+        self.assertIsInstance(function, Constant2D,
+                              "Autowrapped Vector3D is not a vector3d.Constant2D.")
+
+    def test_constant_iterable(self):
+        function = _autowrap_function2d([3, 4, 5.0])
+        self.assertIsInstance(function, Constant2D,
+                              "Autowrapped iterable is not a vector3d.Constant2D.")
+
+    def test_python_function(self):
+        function = _autowrap_function2d(lambda x, y: Vector3D(x, y, x + y))
+        self.assertIsInstance(function, PythonFunction2D,
+                              "Autowrapped function is not a vector3d.PythonFunction2D.")

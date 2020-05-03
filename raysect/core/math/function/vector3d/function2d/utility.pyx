@@ -30,25 +30,26 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.vector cimport Vector3D, new_vector3d
-from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
-from raysect.core.math.function.function2d.autowrap cimport autowrap_function2d
+from raysect.core.math.function.float cimport autowrap_function2d as autowrap_floatfunction2d
+from .base cimport Function2D
 
 
-cdef class FloatToVector3DFunction2D(Vector3DFunction2D):
+
+cdef class FloatToVector3DFunction2D(Function2D):
     """
-    Combines three Function2D objects to produce a Vector3DFunction2D.
+    Combines three float.Function2D objects to produce a vector3d.Function2D.
 
-    The three Function2D objects correspond to the x, y and z components of the
-    resulting vector object.
+    The three float.Function2D objects correspond to the x, y and z components
+    of the resulting vector object.
 
-    :param Function2D x_function: the Vx(x, y) 2d function.
-    :param Function2D y_function: the Vy(x, y) 2d function.
-    :param Function2D z_function: the Vz(x, y) 2d function.
+    :param float.Function2D x_function: the Vx(x, y) 2d function.
+    :param float.Function2D y_function: the Vy(x, y) 2d function.
+    :param float.Function2D z_function: the Vz(x, y) 2d function.
 
     .. code-block:: pycon
 
-       >>> from raysect.core.math.function import Sqrt2D, Exp2D
-       >>> from raysect.core.math.function import FloatToVector3DFunction2D
+       >>> from raysect.core.math.function.float import Sqrt2D, Exp2D, Arg2D
+       >>> from raysect.core.math.function.vector3d import FloatToVector3DFunction2D
        >>>
        >>> vx = 1  # Will be auto-wrapped to Constant2D(1)
        >>> vy = Arg2D('y')
@@ -60,9 +61,9 @@ cdef class FloatToVector3DFunction2D(Vector3DFunction2D):
     """
 
     def __init__(self, object x_function, object y_function, object z_function):
-        self._x = autowrap_function2d(x_function)
-        self._y = autowrap_function2d(y_function)
-        self._z = autowrap_function2d(z_function)
+        self._x = autowrap_floatfunction2d(x_function)
+        self._y = autowrap_floatfunction2d(y_function)
+        self._z = autowrap_floatfunction2d(z_function)
 
     cdef Vector3D evaluate(self, double x, double y):
         cdef double vx, vy, vz

@@ -30,4 +30,4 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from . import float
-# from . import vector3d
+from . import vector3d

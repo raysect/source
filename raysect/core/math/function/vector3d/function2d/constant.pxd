@@ -29,5 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function cimport float
-from raysect.core.math.function cimport vector3d
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.function.vector3d.function2d.base cimport Function2D
+
+
+cdef class Constant2D(Function2D):
+    cdef Vector3D _value

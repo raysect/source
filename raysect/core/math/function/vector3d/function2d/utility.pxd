@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -27,23 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-"""
-Unit tests for the Constant2D class.
-"""
+from raysect.core.math.function.float.function2d.base cimport Function2D as FloatFunction2D
+from raysect.core.math.function.vector3d.function2d.base cimport Function2D
 
-import unittest
-from raysect.core.math import Vector3D
-from raysect.core.math.function.vector3dfunction2d.constant import ConstantVector2D
 
-# TODO: expand tests to cover the cython interface
-class TestConstantVector2D(unittest.TestCase):
-
-    def test_constant(self):
-        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
-        for x in v:
-            for y in v:
-                for z in v:
-                    vector = Vector3D(x, y, z)
-                    constant = ConstantVector2D(vector)
-                    self.assertEqual(constant(500, -1.5), vector,
-                                     "ConstantVector2D call did not match reference value.")
+cdef class FloatToVector3DFunction2D(Function2D):
+    cdef FloatFunction2D _x, _y, _z

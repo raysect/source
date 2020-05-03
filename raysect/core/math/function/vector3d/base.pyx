@@ -29,5 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function cimport float
-from raysect.core.math.function cimport vector3d
+cdef class Vector3DFunction(Function):
+    """
+    The base class of all functions that return a Vector3D.
+
+    All functions that return a Vector3D derive from this class.
+    """
+
+    def __repr__(self):
+        return 'Vector3DFunction()'

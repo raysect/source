@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2020, Dr Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,57 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.vector cimport Vector3D
-from raysect.core.math.function.base cimport Function, Vector3DFunction
-from raysect.core.math.function.function2d.base cimport Function2D
-
-
-cdef class Vector3DFunction2D(Vector3DFunction):
-    cdef Vector3D evaluate(self, double x, double y)
-
-
-cdef class AddVector3DFunction2D(Vector3DFunction2D):
-    cdef Vector3DFunction2D _function1, _function2
-
-
-cdef class SubtractVector3DFunction2D(Vector3DFunction2D):
-    cdef Vector3DFunction2D _function1, _function2
-
-
-cdef class MultiplyVector3DFunction2D(Vector3DFunction2D):
-    cdef Vector3DFunction2D _function1
-    cdef Function2D _function2
-
-
-cdef class DivideVector3DFunction2D(Vector3DFunction2D):
-    cdef Vector3DFunction2D _function1
-    cdef Function2D _function2
-
-
-cdef class NegVector3DFunction2D(Vector3DFunction2D):
-    cdef Vector3DFunction2D _function1
-
-
-cdef class EqualsVector3DFunction2D(Function2D):
-    cdef Vector3DFunction2D _function1, _function2
-
-
-cdef class NotEqualsVector3DFunction2D(Function2D):
-    cdef Vector3DFunction2D _function1, _function2
-
-
-cdef inline bint is_callable(object f):
-    """
-    Tests if an object is a python callable or a Vector3DFunction2D object.
-
-    :param object f: Object to test.
-    :return: True if callable, False otherwise.
-    """
-    if isinstance(f, Vector3DFunction2D):
-        return True
-
-    # other function classes are incompatible
-    if isinstance(f, Function):
-        return False
-
-    return callable(f)
+from .base import Function2D
+from .constant import Constant2D
+from .utility import *

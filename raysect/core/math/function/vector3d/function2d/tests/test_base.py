@@ -28,16 +28,16 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Unit tests for the Vector3DFunction2D class.
+Unit tests for the vector3d.Function2D class.
 """
 
 import unittest
 from raysect.core.math import Vector3D
-from raysect.core.math.function.function2d.autowrap import PythonFunction2D
-from raysect.core.math.function.vector3dfunction2d.autowrap import PythonVector3DFunction2D
+from raysect.core.math.function.float.function2d.autowrap import PythonFunction2D as PythonFloatFunction2D
+from raysect.core.math.function.vector3d.function2d.autowrap import PythonFunction2D as PythonVector3DFunction2D
 
 # TODO: expand tests to cover the cython interface
-class TestVector3DFunction2D(unittest.TestCase):
+class TestFunction2D(unittest.TestCase):
 
     def setUp(self):
 
@@ -50,21 +50,21 @@ class TestVector3DFunction2D(unittest.TestCase):
         self.ref1 = lambda x, y: 10 * x + 5 * y
         self.ref2 = lambda x, y: x * x + y * y
 
-        self.f1 = PythonFunction2D(self.ref1)
-        self.f2 = PythonFunction2D(self.ref2)
+        self.f1 = PythonFloatFunction2D(self.ref1)
+        self.f2 = PythonFloatFunction2D(self.ref2)
 
     def test_call(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
             for y in v:
-                self.assertEqual(self.vf1(x, y), self.refv1(x, y), "Vector3DFunction2D call did not match reference function value.")
+                self.assertEqual(self.vf1(x, y), self.refv1(x, y), "vector3d.Function2D call did not match reference function value.")
 
     def test_negate(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r = -self.vf1
         for x in v:
             for y in v:
-                self.assertEqual(r(x, y), -self.refv1(x, y), "Vector3DFunction2D negate did not match reference function value.")
+                self.assertEqual(r(x, y), -self.refv1(x, y), "vector3d.Function2D negate did not match reference function value.")
 
     def test_add_vector(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
@@ -74,8 +74,8 @@ class TestVector3DFunction2D(unittest.TestCase):
         r2 = self.vf1 + c2
         for x in v:
             for y in v:
-                self.assertEqual(r1(x, y), c1 + self.refv1(x, y), "Vector3DFunction2D add Vector3D (V + vf()) did not match reference function value.")
-                self.assertEqual(r2(x, y), self.refv1(x, y) + c2, "Vector3DFunction2D add Vector3D (vf() + V) did not match reference function value.")
+                self.assertEqual(r1(x, y), c1 + self.refv1(x, y), "vector3d.Function2D add Vector3D (V + vf()) did not match reference function value.")
+                self.assertEqual(r2(x, y), self.refv1(x, y) + c2, "vector3d.Function2D add Vector3D (vf() + V) did not match reference function value.")
 
     def test_sub_vector(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
@@ -85,22 +85,22 @@ class TestVector3DFunction2D(unittest.TestCase):
         r2 = self.vf1 - c2
         for x in v:
             for y in v:
-                self.assertEqual(r1(x, y), c1 - self.refv1(x, y), "Vector3DFunction2D subtract Vector3D (V - vf()) did not match reference function value.")
-                self.assertEqual(r2(x, y), self.refv1(x, y) - c2, "Vector3DFunction2D subtract Vector3D (vf() - V) did not match reference function value.")
+                self.assertEqual(r1(x, y), c1 - self.refv1(x, y), "vector3d.Function2D subtract Vector3D (V - vf()) did not match reference function value.")
+                self.assertEqual(r2(x, y), self.refv1(x, y) - c2, "vector3d.Function2D subtract Vector3D (vf() - V) did not match reference function value.")
 
     def test_mul_vector(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r = self.vf1 * -7.8
         for x in v:
             for y in v:
-                self.assertEqual(r(x, y), self.refv1(x, y) * -7.8, "Vector3DFunction2D multiply Vector3D (vf() * V) did not match reference function value.")
+                self.assertEqual(r(x, y), self.refv1(x, y) * -7.8, "vector3d.Function2D multiply Vector3D (vf() * V) did not match reference function value.")
 
     def test_div_vector(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e49]
         r = self.vf1 / -7.8
         for x in v:
             for y in v:
-                self.assertEqual(r(x, y), self.refv1(x, y) / -7.8, "Vector3DFunction2D divide Vector3D (vf() / V) did not match reference function value.")
+                self.assertEqual(r(x, y), self.refv1(x, y) / -7.8, "vector3d.Function2D divide Vector3D (vf() / V) did not match reference function value.")
 
         with self.assertRaises(TypeError, msg="TypeError not raised when dividing Vector3D by function."):
             r = 5 / self.vf1
@@ -113,60 +113,60 @@ class TestVector3DFunction2D(unittest.TestCase):
                 not_ref_value = ref_value + Vector3D(*[ref + abs(ref) + 1 for ref in ref_value])
                 self.assertEqual(
                     (self.vf1 == ref_value)(x, y), 1.0,
-                    msg="Vector3DFunction2D equals Vector3D (vf() == V) did not return true when it should."
+                    msg="vector3d.Function2D equals Vector3D (vf() == V) did not return true when it should."
                 )
                 self.assertEqual(
                     (ref_value == self.vf1)(x, y), 1.0,
-                    msg="Vector3D equals Vector3DFunction2D(V == vf()) did not return true when it should."
+                    msg="Vector3D equals vector3d.Function2D(V == vf()) did not return true when it should."
                 )
                 self.assertEqual(
                     (self.vf1 == not_ref_value)(x, y), 0.0,
-                    msg="Vector3DFunction2D equals Vector3D (vf() == V) did not return false when it should."
+                    msg="vector3d.Function2D equals Vector3D (vf() == V) did not return false when it should."
                 )
                 self.assertEqual(
                     (not_ref_value == self.vf1)(x, y), 0.0,
-                    msg="Vector3D equals Vector3DFunction2D(V == vf()) did not return false when it should."
+                    msg="Vector3D equals vector3d.Function2D(V == vf()) did not return false when it should."
                 )
                 self.assertEqual(
                     (self.vf1 != not_ref_value)(x, y), 1.0,
-                    msg="Vector3DFunction2D not equals Vector3D (vf() != V) did not return true when it should."
+                    msg="vector3d.Function2D not equals Vector3D (vf() != V) did not return true when it should."
                 )
                 self.assertEqual(
                     (not_ref_value != self.vf1)(x, y), 1.0,
-                    msg="Vector3D not equals Vector3DFunction2D(V != vf()) did not return true when it should."
+                    msg="Vector3D not equals vector3d.Function2D(V != vf()) did not return true when it should."
                 )
                 self.assertEqual(
                     (self.vf1 != ref_value)(x, y), 0.0,
-                    msg="Vector3DFunction2D not equals Vector3D (vf() != V) did not return false when it should."
+                    msg="vector3d.Function2D not equals Vector3D (vf() != V) did not return false when it should."
                 )
                 self.assertEqual(
                     (ref_value != self.vf1)(x, y), 0.0,
-                    msg="Vector3D not equals Vector3DFunction2D(V != vf()) did not return false when it should."
+                    msg="Vector3D not equals vector3d.Function2D(V != vf()) did not return false when it should."
                 )
 
-    def test_add_vectorfunction2d(self):
+    def test_add_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.vf1 + self.vf2
         r2 = self.refv1 + self.vf2
         r3 = self.vf1 + self.refv2
         for x in v:
             for y in v:
-                self.assertEqual(r1(x, y), self.refv1(x, y) + self.refv2(x, y), "Vector3DFunction2D add function (vf1() + vf2()) did not match reference function value.")
-                self.assertEqual(r2(x, y), self.refv1(x, y) + self.refv2(x, y), "Vector3DFunction2D add function (p1() + vf2()) did not match reference function value.")
-                self.assertEqual(r3(x, y), self.refv1(x, y) + self.refv2(x, y), "Vector3DFunction2D add function (vf1() + p2()) did not match reference function value.")
+                self.assertEqual(r1(x, y), self.refv1(x, y) + self.refv2(x, y), "vector3d.Function2D add function (vf1() + vf2()) did not match reference function value.")
+                self.assertEqual(r2(x, y), self.refv1(x, y) + self.refv2(x, y), "vector3d.Function2D add function (p1() + vf2()) did not match reference function value.")
+                self.assertEqual(r3(x, y), self.refv1(x, y) + self.refv2(x, y), "vector3d.Function2D add function (vf1() + p2()) did not match reference function value.")
 
-    def test_sub_vectorfunction2d(self):
+    def test_sub_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r = self.vf1 - self.vf2
         r2 = self.refv1 - self.vf2
         r3 = self.vf1 - self.refv2
         for x in v:
             for y in v:
-                self.assertEqual(r(x, y), self.refv1(x, y) - self.refv2(x, y), "Vector3DFunction2D subtract function (vf1() - vf2()) did not match reference function value.")
-                self.assertEqual(r2(x, y), self.refv1(x, y) - self.refv2(x, y), "Vector3DFunction2D subtract function (p1() - vf2()) did not match reference function value.")
-                self.assertEqual(r3(x, y), self.refv1(x, y) - self.refv2(x, y), "Vector3DFunction2D subtract function (vf1() - p2()) did not match reference function value.")
+                self.assertEqual(r(x, y), self.refv1(x, y) - self.refv2(x, y), "vector3d.Function2D subtract function (vf1() - vf2()) did not match reference function value.")
+                self.assertEqual(r2(x, y), self.refv1(x, y) - self.refv2(x, y), "vector3d.Function2D subtract function (p1() - vf2()) did not match reference function value.")
+                self.assertEqual(r3(x, y), self.refv1(x, y) - self.refv2(x, y), "vector3d.Function2D subtract function (vf1() - p2()) did not match reference function value.")
 
-    def test_mul_vectorfunction2d(self):
+    def test_mul_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         r1 = self.vf1 * self.f2
         # No r2 = self.refv1 * self.f2, as p1() * f2() is treated as PythonFunction2D * Function2D
@@ -174,24 +174,24 @@ class TestVector3DFunction2D(unittest.TestCase):
         r3 = self.vf1 * self.ref2
         for x in v:
             for y in v:
-                self.assertEqual(r1(x, y), self.refv1(x, y) * self.ref2(x, y), "Vector3DFunction2D multiply function (vf1() * f2()) did not match reference function value.")
-                self.assertEqual(r2(x, y), self.ref1(x, y) * self.refv2(x, y), "Vector3DFunction2D multiply function (f1() * vf2()) did not match reference function value.")
-                self.assertEqual(r3(x, y), self.refv1(x, y) * self.ref2(x, y), "Vector3DFunction2D multiply function (vf1() * p2()) did not match reference function value.")
+                self.assertEqual(r1(x, y), self.refv1(x, y) * self.ref2(x, y), "vector3d.Function2D multiply function (vf1() * f2()) did not match reference function value.")
+                self.assertEqual(r2(x, y), self.ref1(x, y) * self.refv2(x, y), "vector3d.Function2D multiply function (f1() * vf2()) did not match reference function value.")
+                self.assertEqual(r3(x, y), self.refv1(x, y) * self.ref2(x, y), "vector3d.Function2D multiply function (vf1() * p2()) did not match reference function value.")
 
-    def test_div_vectorfunction2d(self):
+    def test_div_function2d(self):
         v = [-1e10, -7, -0.001, 0.00003, 10, 2.3e49]
         r1 = self.vf1 / self.f2
         # No r2 = self.refv1 / self.f2, as p1() / f2() is treated as PythonFunction2D / Function2D
         r3 = self.vf1 / self.ref2
         for x in v:
             for y in v:
-                self.assertEqual(r1(x, y), self.refv1(x, y) / self.ref2(x, y), msg="Vector3DFunction2D divide function (vf1() / f2()) did not match reference function value.")
-                self.assertEqual(r3(x, y), self.refv1(x, y) / self.ref2(x, y), msg="Vector3DFunction2D divide function (vf1() / p2()) did not match reference function value.")
+                self.assertEqual(r1(x, y), self.refv1(x, y) / self.ref2(x, y), msg="vector3d.Function2D divide function (vf1() / f2()) did not match reference function value.")
+                self.assertEqual(r3(x, y), self.refv1(x, y) / self.ref2(x, y), msg="vector3d.Function2D divide function (vf1() / p2()) did not match reference function value.")
 
         with self.assertRaises(ZeroDivisionError, msg="ZeroDivisionError not raised when function returns zero."):
             r1(0, 0)
 
-    def test_richcmp_vectorfunction2d_callable(self):
+    def test_richcmp_function2d_callable(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
             for y in v:
@@ -203,22 +203,22 @@ class TestVector3DFunction2D(unittest.TestCase):
 
                 self.assertEqual(
                     (self.vf1 == ref_value)(x, y), 1.0,
-                    msg="Vector3DFunction2D equals callable (vf1() == f2()) did not return true when it should."
+                    msg="vector3d.Function2D equals callable (vf1() == f2()) did not return true when it should."
                 )
                 self.assertEqual(
                     (self.vf1 == not_ref_value)(x, y), 0.0,
-                    msg="Vector3DFunction2D equals callable (vf1() == f2()) did not return false when it should."
+                    msg="vector3d.Function2D equals callable (vf1() == f2()) did not return false when it should."
                 )
                 self.assertEqual(
                     (self.vf1 != not_ref_value)(x, y), 1.0,
-                    msg="Vector3DFunction2D not equals callable (vf1() != f2()) did not return true when it should."
+                    msg="vector3d.Function2D not equals callable (vf1() != f2()) did not return true when it should."
                 )
                 self.assertEqual(
                     (self.vf1 != ref_value)(x, y), 0.0,
-                    msg="Vector3DFunction2D not equals callable (vf1() != f2()) did not return false when it should."
+                    msg="vector3d.Function2D not equals callable (vf1() != f2()) did not return false when it should."
                 )
 
-    def test_richcmp_callable_vectorfunction2d(self):
+    def test_richcmp_callable_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
             for y in v:
@@ -230,22 +230,22 @@ class TestVector3DFunction2D(unittest.TestCase):
 
                 self.assertEqual(
                     (ref_value == self.vf1)(x, y), 1.0,
-                    msg="Callable equals Vector3DFunction2D(f1() == vf2()) did not return true when it should."
+                    msg="Callable equals vector3d.Function2D(f1() == vf2()) did not return true when it should."
                 )
                 self.assertEqual(
                     (not_ref_value == self.vf1)(x, y), 0.0,
-                    msg="Callable equals Vector3DFunction2D(f1() == vf2()) did not return false when it should."
+                    msg="Callable equals vector3d.Function2D(f1() == vf2()) did not return false when it should."
                 )
                 self.assertEqual(
                     (not_ref_value != self.vf1)(x, y), 1.0,
-                    msg="Callable not equals Vector3DFunction2D(f1() != vf2()) did not return true when it should."
+                    msg="Callable not equals vector3d.Function2D(f1() != vf2()) did not return true when it should."
                 )
                 self.assertEqual(
                     (ref_value != self.vf1)(x, y), 0.0,
-                    msg="Callable not equals Vector3DFunction2D(f1() != vf2()) did not return false when it should."
+                    msg="Callable not equals vector3d.Function2D(f1() != vf2()) did not return false when it should."
                 )
 
-    def test_richcmp_vectorfunction2d_vectorfunction2d(self):
+    def test_richcmp_function2d_function2d(self):
         v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
         for x in v:
             for y in v:
@@ -254,17 +254,17 @@ class TestVector3DFunction2D(unittest.TestCase):
                 not_ref_value = self.vf1 + shift
                 self.assertEqual(
                     (self.vf1 == ref_value)(x, y), 1.0,
-                    msg="Vector3DFunction2D equals Vector3DFunction2D (vf1() == vf2()) did not return true when it should."
+                    msg="vector3d.Function2D equals vector3d.Function2D (vf1() == vf2()) did not return true when it should."
                 )
                 self.assertEqual(
                     (self.vf1 == not_ref_value)(x, y), 0.0,
-                    msg="Vector3DFunction2D equals Vector3DFunction2D (vf1() == vf2()) did not return false when it should."
+                    msg="vector3d.Function2D equals vector3d.Function2D (vf1() == vf2()) did not return false when it should."
                 )
                 self.assertEqual(
                     (self.vf1 != not_ref_value)(x, y), 1.0,
-                    msg="Vector3DFunction2D not equals Vector3DFunction2D (vf1() != vf2()) did not return true when it should."
+                    msg="vector3d.Function2D not equals vector3d.Function2D (vf1() != vf2()) did not return true when it should."
                 )
                 self.assertEqual(
                     (self.vf1 != ref_value)(x, y), 0.0,
-                    msg="Vector3DFunction2D not equals Vector3DFunction2D (vf1() != vf2()) did not return false when it should."
+                    msg="vector3d.Function2D not equals vector3d.Function2D (vf1() != vf2()) did not return false when it should."
                 )

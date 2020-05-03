@@ -29,5 +29,58 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function cimport float
-from raysect.core.math.function cimport vector3d
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.function.base cimport Function
+from raysect.core.math.function.vector3d.base cimport Vector3DFunction
+from raysect.core.math.function.float cimport Function2D as FloatFunction2D
+
+
+cdef class Function2D(Vector3DFunction):
+    cdef Vector3D evaluate(self, double x, double y)
+
+
+cdef class AddFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class SubtractFunction2D(Function2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class MultiplyFunction2D(Function2D):
+    cdef Function2D _function1
+    cdef FloatFunction2D _function2
+
+
+cdef class DivideFunction2D(Function2D):
+    cdef Function2D _function1
+    cdef FloatFunction2D _function2
+
+
+cdef class NegFunction2D(Function2D):
+    cdef Function2D _function
+
+
+cdef class EqualsFunction2D(FloatFunction2D):
+    cdef Function2D _function1, _function2
+
+
+cdef class NotEqualsFunction2D(FloatFunction2D):
+    cdef Function2D _function1, _function2
+
+
+cdef inline bint is_callable(object f):
+    """
+    Tests if an object is a python callable or a vector3d.Function2D object.
+
+    :param object f: Object to test.
+    :return: True if callable, False otherwise.
+    """
+    if isinstance(f, Function2D):
+        return True
+
+    # other function classes are incompatible
+    if isinstance(f, Function):
+        return False
+
+    return callable(f)

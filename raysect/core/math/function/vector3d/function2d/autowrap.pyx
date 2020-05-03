@@ -29,16 +29,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import numbers
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.function.base cimport Function
-from raysect.core.math.function.vector3dfunction2d.base cimport Vector3DFunction2D
-from raysect.core.math.function.vector3dfunction2d.constant cimport ConstantVector2D
+from raysect.core.math.function.vector3d.function2d.base cimport Function2D
+from raysect.core.math.function.vector3d.function2d.constant cimport Constant2D
 
 
-cdef class PythonVector3DFunction2D(Vector3DFunction2D):
+cdef class PythonFunction2D(Function2D):
     """
-    Wraps a python callable object with a Vector3DFunction2D object.
+    Wraps a python callable object with a Function2D object.
 
     This class allows a python object to interact with cython code that requires
     a Vector3DFunction2D object. The python object must implement __call__() expecting
@@ -64,7 +63,7 @@ cdef class PythonVector3DFunction2D(Vector3DFunction2D):
         return self.function(x, y)
 
 
-cdef Vector3DFunction2D autowrap_vectorfunction2d(object obj):
+cdef Function2D autowrap_function2d(object obj):
     """
     Automatically wraps the supplied python object in a PythonVector3DFunction2D or ConstantVector2D object.
 
@@ -78,18 +77,18 @@ cdef Vector3DFunction2D autowrap_vectorfunction2d(object obj):
     Vector3DFunction2D and python callable objects in constructors, functions and
     setters.  """
 
-    if isinstance(obj, Vector3DFunction2D):
-        return <Vector3DFunction2D> obj
+    if isinstance(obj, Function2D):
+        return <Function2D> obj
     elif isinstance(obj, Function):
-        raise TypeError('A Vector3DFunction1D object is required.')
+        raise TypeError('A vector3d.Function1D object is required.')
     try:
         obj = Vector3D(*obj)
     except (TypeError, ValueError):  # Not an iterable which can be converted to Vector3D
-        return PythonVector3DFunction2D(obj)
+        return PythonFunction2D(obj)
     else:
-        return ConstantVector2D(obj)
+        return Constant2D(obj)
 
 
-def _autowrap_vectorfunction2d(obj):
+def _autowrap_function2d(obj):
     """Expose cython function for testing."""
-    return autowrap_vectorfunction2d(obj)
+    return autowrap_function2d(obj)
