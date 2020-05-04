@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -29,6 +27,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.vector3d.function1d cimport *
-from raysect.core.math.function.vector3d.function2d cimport *
-from raysect.core.math.function.vector3d.function3d cimport *
+"""
+Unit tests for the Constant3D class.
+"""
+
+import unittest
+from raysect.core.math import Vector3D
+from raysect.core.math.function.vector3d.function3d.constant import Constant3D
+
+# TODO: expand tests to cover the cython interface
+class TestConstant3D(unittest.TestCase):
+
+    def test_constant(self):
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                for z in v:
+                    vector = Vector3D(x, y, z)
+                    constant = Constant3D(vector)
+                    self.assertEqual(constant(500, -1.5, 8e4), vector,
+                                     "vector3d.Constant3D call did not match reference value.")

@@ -29,6 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.vector3d.function1d cimport *
-from raysect.core.math.function.vector3d.function2d cimport *
-from raysect.core.math.function.vector3d.function3d cimport *
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.function.vector3d.function3d.base cimport Function3D
+
+
+cdef class Constant3D(Function3D):
+    cdef Vector3D _value

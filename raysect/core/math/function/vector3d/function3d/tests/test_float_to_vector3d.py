@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -29,6 +27,29 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.vector3d.function1d cimport *
-from raysect.core.math.function.vector3d.function2d cimport *
-from raysect.core.math.function.vector3d.function3d cimport *
+"""
+Unit tests for the Constant3D class.
+"""
+
+from math import sin
+import unittest
+from raysect.core.math import Vector3D
+from raysect.core.math.function.float import Arg3D, Sin3D
+from raysect.core.math.function.vector3d import FloatToVector3DFunction3D
+
+# TODO: expand tests to cover the cython interface
+class TestFloatToVector3D(unittest.TestCase):
+
+    def test_scalar_to_vector(self):
+        vx = 2 * Arg3D('z')  # Will be auto-wrapped to Constant3D
+        vy = Arg3D('y')
+        vz = Sin3D(Arg3D('x'))
+        fv = FloatToVector3DFunction3D(vx, vy, vz)
+        v = [-1e10, -7, -0.001, 0.0, 0.00003, 10, 2.3e49]
+        for x in v:
+            for y in v:
+                for z in v:
+                    expected = Vector3D(2 * z, y, sin(x))
+                    actual = fv(x, y, z)
+                    self.assertEqual(actual, expected,
+                                     "FloatToVector3DFunction3D call did not match reference value.")
