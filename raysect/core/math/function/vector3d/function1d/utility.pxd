@@ -29,6 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .function1d import *
-from .function2d import *
-# from .function3d import *
+from raysect.core.math.function.float.function1d.base cimport Function1D as FloatFunction1D
+from raysect.core.math.function.vector3d.function1d.base cimport Function1D
+
+
+cdef class FloatToVector3DFunction1D(Function1D):
+    cdef FloatFunction1D _x, _y, _z
