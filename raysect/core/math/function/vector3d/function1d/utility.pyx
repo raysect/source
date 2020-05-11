@@ -29,6 +29,45 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.vector3d.function1d cimport *
-from raysect.core.math.function.vector3d.function2d cimport *
-from raysect.core.math.function.vector3d.function3d cimport *
+from raysect.core.math.vector cimport Vector3D, new_vector3d
+from raysect.core.math.function.float cimport autowrap_function1d as autowrap_floatfunction1d
+from .base cimport Function1D
+
+
+
+cdef class FloatToVector3DFunction1D(Function1D):
+    """
+    Combines three float.Function1D objects to produce a vector3d.Function1D.
+
+    The three float.Function1D objects correspond to the x, y and z components
+    of the resulting vector object.
+
+    :param float.Function1D x_function: the Vx(x) 1d function.
+    :param float.Function1D y_function: the Vy(x) 1d function.
+    :param float.Function1D z_function: the Vz(x) 1d function.
+
+    .. code-block:: pycon
+
+       >>> from raysect.core.math.function.float import Sqrt1D, Exp1D, Arg1D
+       >>> from raysect.core.math.function.vector3d import FloatToVector3DFunction1D
+       >>>
+       >>> vx = 1  # Will be auto-wrapped to Constant1D(1)
+       >>> vy = Arg1D('y')
+       >>> vz = Sqrt1D(Arg1D('x'))
+       >>>
+       >>> fv = FloatToVector3DFunction1D(vx, vy, vz)
+       >>> fv(4.0, 6.2)
+       Vector3D(1.0, 6.2, 2.0)
+    """
+
+    def __init__(self, object x_function, object y_function, object z_function):
+        self._x = autowrap_floatfunction1d(x_function)
+        self._y = autowrap_floatfunction1d(y_function)
+        self._z = autowrap_floatfunction1d(z_function)
+
+    cdef Vector3D evaluate(self, double x):
+        cdef double vx, vy, vz
+        vx = self._x.evaluate(x)
+        vy = self._y.evaluate(x)
+        vz = self._z.evaluate(x)
+        return new_vector3d(vx, vy, vz)
