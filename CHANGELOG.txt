@@ -1,6 +1,16 @@
 Raysect Changelog
 =================
 
+Release 0.7.0 (TBC)
+-------------------
+
+API Changes:
+* The core.math.function package has been redesigned to introduce functions with different return types. The existing FunctionXD classes now live under core.math.function.float.
+
+New:
+* Added core.math.function.vector3d.FunctionXD objects which return Vector3D objects.
+
+
 Release 0.6.1 (2 Feb 2019)
 ---------------------------
 
