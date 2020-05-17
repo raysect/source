@@ -479,7 +479,7 @@ cdef class SpectralPowerPixelProcessor(PixelProcessor):
 
         cdef int index
         for index in range(self.bins.length):
-            self.bins.add_sample(index, spectrum.samples_mv[index] * sensitivity)
+            self.bins.add_sample(index, spectrum.samples_ptr[index] * sensitivity)
 
     cpdef tuple pack_results(self):
         return self.bins.mean, self.bins.variance

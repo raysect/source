@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.spectralfunction cimport SpectralFunction
+from cpython cimport array
 from numpy cimport ndarray
 
 cdef class Spectrum(SpectralFunction):
@@ -39,9 +40,9 @@ cdef class Spectrum(SpectralFunction):
         readonly double max_wavelength
         readonly int bins
         readonly double delta_wavelength
-        public ndarray samples
-        ndarray _wavelengths
-        double[::1] samples_mv
+        readonly array.array samples
+        array.array _wavelengths
+        double *samples_ptr
 
     cdef void _wavelength_check(self, double min_wavelength, double max_wavelength)
     cdef void _attribute_check(self)

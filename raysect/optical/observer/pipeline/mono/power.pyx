@@ -774,7 +774,7 @@ cdef class PowerPixelProcessor(PixelProcessor):
 
         # apply filter curve and integrate
         for index in range(spectrum.bins):
-            total += spectrum.samples_mv[index] * self.filter[index] * sensitivity * spectrum.delta_wavelength
+            total += spectrum.samples_ptr[index] * self.filter[index] * sensitivity * spectrum.delta_wavelength
 
         self.bin.add_sample(total)
 

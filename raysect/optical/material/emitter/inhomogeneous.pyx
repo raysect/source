@@ -159,11 +159,10 @@ cdef class NumericalIntegrator(VolumeIntegrator):
 
             # sample point and sanity check as bounds checking is disabled
             emission = material.emission_function(sample_point, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
-            self._check_dimensions(emission, spectrum.bins)
 
             # trapezium rule integration
             for index in range(spectrum.bins):
-                spectrum.samples_mv[index] += c * (emission.samples_mv[index] + emission_previous.samples_mv[index])
+                spectrum.samples_ptr[index] += c * (emission.samples_ptr[index] + emission_previous.samples_ptr[index])
 
             # swap buffers and clear the active buffer
             temp = emission_previous
@@ -172,10 +171,6 @@ cdef class NumericalIntegrator(VolumeIntegrator):
             emission.clear()
 
         return spectrum
-
-    cdef int _check_dimensions(self, Spectrum spectrum, int bins) except -1:
-        if spectrum.samples.ndim != 1 or spectrum.samples.shape[0] != bins:
-            raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
 
 cdef class InhomogeneousVolumeEmitter(NullSurface):

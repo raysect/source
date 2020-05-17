@@ -82,13 +82,9 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
         # emission function specifies direction from ray origin to hit-point
         emission = self.emission_function(direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
 
-        # sanity check as bounds checking is disabled
-        if emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]:
-            raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
-
         # integrate emission density along ray path
         for index in range(spectrum.bins):
-            spectrum.samples_mv[index] += emission.samples_mv[index] * length
+            spectrum.samples_ptr[index] += emission.samples_ptr[index] * length
 
         return spectrum
 

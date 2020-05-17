@@ -129,7 +129,7 @@ cdef class Conductor(Material):
         # calculate reflection coefficients at each wavelength and apply
         ci = fabs(ci)
         for i in range(spectrum.bins):
-            spectrum.samples_mv[i] *= self._fresnel(ci, n[i], k[i])
+            spectrum.samples_ptr[i] *= self._fresnel(ci, n[i], k[i])
 
         return spectrum
 
@@ -359,7 +359,7 @@ cdef class RoughConductor(ContinuousBSDF):
 
         ci = s_normal.dot(s_outgoing)
         for i in range(spectrum.bins):
-            spectrum.samples_mv[i] *= self._fresnel_conductor(ci, n[i], k[i])
+            spectrum.samples_ptr[i] *= self._fresnel_conductor(ci, n[i], k[i])
 
         return spectrum
 

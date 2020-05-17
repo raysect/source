@@ -77,7 +77,7 @@ cdef class UniformSurfaceEmitter(NullVolume):
         spectrum = ray.new_spectrum()
         emission = self.emission_spectrum.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         for index in range(spectrum.bins):
-            spectrum.samples_mv[index] = emission[index] * self.scale
+            spectrum.samples_ptr[index] = emission[index] * self.scale
         return spectrum
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
@@ -128,7 +128,7 @@ cdef class UniformVolumeEmitter(HomogeneousVolumeEmitter):
 
         emission = self.emission_spectrum.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         for index in range(spectrum.bins):
-            spectrum.samples_mv[index] += emission[index] * self.scale
+            spectrum.samples_ptr[index] += emission[index] * self.scale
 
         return spectrum
 

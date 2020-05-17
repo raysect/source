@@ -501,7 +501,8 @@ cdef class Ray(CoreRay):
         normalisation = 1 / <double> count
         while count:
             sample = self.trace(world)
-            spectrum.mad_scalar(normalisation, sample.samples_mv)
+            sample.mul_scalar(normalisation)
+            spectrum.add_spectrum(sample)
             count -= 1
 
         return spectrum
