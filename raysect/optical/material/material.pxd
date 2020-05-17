@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.material cimport Material as CoreMaterial
-from raysect.optical cimport Point3D, Vector3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
+from raysect.optical cimport Point3D, Vector3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, Intersection
 
 
 cdef class Material(CoreMaterial):
@@ -39,7 +39,8 @@ cdef class Material(CoreMaterial):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection)
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
@@ -58,7 +59,8 @@ cdef class DiscreteBSDF(Material):
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
+                                    Intersection intersection)
 
 
 cdef class ContinuousBSDF(Material):
@@ -69,6 +71,7 @@ cdef class ContinuousBSDF(Material):
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
+                                    Intersection intersection)
 
     cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength)

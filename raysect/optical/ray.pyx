@@ -419,7 +419,8 @@ cdef class Ray(CoreRay):
                                          intersection.outside_point,
                                          intersection.normal,
                                          intersection.world_to_primitive,
-                                         intersection.primitive_to_world)
+                                         intersection.primitive_to_world,
+                                         intersection)
 
     cdef Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):
 

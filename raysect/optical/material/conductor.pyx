@@ -31,7 +31,7 @@
 
 from numpy cimport ndarray
 from raysect.core.math.random cimport uniform
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, new_vector3d
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, new_vector3d, Intersection
 from libc.math cimport M_PI, sqrt, fabs, atan, cos, sin
 cimport cython
 
@@ -76,7 +76,8 @@ cdef class Conductor(Material):
     @cython.initializedcheck(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
 
         cdef:
             Vector3D incident, reflected
@@ -248,7 +249,8 @@ cdef class RoughConductor(ContinuousBSDF):
     @cython.cdivision(True)
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
+                                    Intersection intersection):
 
         cdef:
             Vector3D s_half
