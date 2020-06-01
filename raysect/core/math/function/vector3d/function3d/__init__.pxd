@@ -29,4 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.core.math.function.vector3d.function3d.base cimport Function3D
+from raysect.core.math.function.vector3d.function3d.constant cimport Constant3D
+from raysect.core.math.function.vector3d.function3d.autowrap cimport autowrap_function3d
 from raysect.core.math.function.vector3d.function3d.utility cimport *
