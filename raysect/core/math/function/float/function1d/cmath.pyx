@@ -183,9 +183,10 @@ cdef class Sqrt1D(Function1D):
         self._function = autowrap_function1d(function)
 
     cdef double evaluate(self, double x) except? -1e999:
-        if x < 0: # complex values are not supported
-            raise ValueError("Math domain error in sqrt({0}). Sqrt of a negative value is not supported.".format(x))
-        return cmath.sqrt(self._function.evaluate(x))
+        cdef double f = self._function.evaluate(x)
+        if f < 0: # complex values are not supported
+            raise ValueError("Math domain error in sqrt({0}). Sqrt of a negative value is not supported.".format(f))
+        return cmath.sqrt(f)
 
     def __repr__(self):
         return 'sqrt({})'.format(self._function)

@@ -156,13 +156,13 @@ cdef class Sqrt3D(Function3D):
     :param Function3D function: A Function3D object.
     """
     def __init__(self, object function):
-
         self._function = autowrap_function3d(function)
 
     cdef double evaluate(self, double x, double y, double z) except? -1e999:
-        if x < 0: # complex values are not supported
-            raise ValueError("Math domain error in sqrt({0}). Sqrt of a negative value is not supported.".format(x))
-        return cmath.sqrt(self._function.evaluate(x, y, z))
+        cdef double f = self._function.evaluate(x, y, z)
+        if f < 0: # complex values are not supported
+            raise ValueError("Math domain error in sqrt({0}). Sqrt of a negative value is not supported.".format(f))
+        return cmath.sqrt(f)
 
 
 cdef class Erf3D(Function3D):
