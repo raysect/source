@@ -17,7 +17,7 @@ class TestSphericalLens(unittest.TestCase):
     """
 
     pad_constant = 1e-6  # offset ratio to construct inside and outside points
-    tolerance_distance = 12
+    tolerance_distance = 10
     tolerance_angle = 10
     n_testpoints = 10  # points to test lens surfaces at
     test_altitudes = np.linspace(1 - pad_constant, 0, 10, endpoint=True)  # ratio of the lens radius (x-y plane) to test at
@@ -26,7 +26,7 @@ class TestSphericalLens(unittest.TestCase):
 
     def test_biconvex(self):
         """
-        Test planoconvex lens for a range of curvatures and center thickness combinations.
+        Test biconvex lens for a range of curvatures and center thickness combinations.
         """
 
         # combinations of lens parameters to test
@@ -78,7 +78,7 @@ class TestSphericalLens(unittest.TestCase):
 
     def test_biconcave(self):
         """
-        Test planoconvex lens for a range of curvatures and center thickness combinations.
+        Test biconvex lens for a range of curvatures and center thickness combinations.
         """
 
         # combinations of lens parameters to test
@@ -177,7 +177,7 @@ class TestSphericalLens(unittest.TestCase):
 
     def test_planoconcave(self):
         """
-        Test planoconvex lens for a range of curvatures and center thickness combinations.
+        Test planoconcave lens for a range of curvatures and center thickness combinations.
         """
 
         # combinations of lens parameters to test
