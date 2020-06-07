@@ -41,7 +41,6 @@ Basic spherical lens primitives.
 """
 
 DEF PADDING = 0.000001
-DEF PAD_FACTOR = 1.000001
 
 
 cdef class BiConvex(EncapsulatedPrimitive):
@@ -103,6 +102,7 @@ cdef class BiConvex(EncapsulatedPrimitive):
         if self.edge_thickness < 0:
             raise ValueError("The curvatures and/or thickness are too small to produce a lens of the specified diameter.")
 
+        # construct lens
         if self._is_short():
             lens = self._build_short_lens()
         else:
@@ -128,14 +128,14 @@ cdef class BiConvex(EncapsulatedPrimitive):
 
     cdef bint _is_short(self):
         """
-        Do the facing spheres overlap sufficiently to build a lens using their intersection?        
+        Do the facing spheres overlap sufficiently to build a lens using just their intersection?        
         """
 
-        cdef double max_short_edge = min(
+        cdef double available_thickness = min(
             2 * (self.front_curvature - self.front_thickness),
             2 * (self.back_curvature - self.back_thickness)
         )
-        return self.edge_thickness <= max_short_edge
+        return self.edge_thickness <= available_thickness
 
     cdef Primitive _build_short_lens(self):
         """
@@ -218,8 +218,6 @@ cdef class BiConcave(EncapsulatedPrimitive):
         self.center_thickness = center_thickness
         self.front_curvature = front_curvature
         self.back_curvature = back_curvature
-        self._calc_geometry()
-        radius = 0.5 * diameter
 
         # validate
         if diameter <= 0:
@@ -228,11 +226,7 @@ cdef class BiConcave(EncapsulatedPrimitive):
         if center_thickness <= 0:
             raise ValueError("The lens thickness must be greater than zero.")
 
-        if front_curvature <= 0:
-            raise ValueError("The front radius of curvature must be greater than zero.")
-
-        if back_curvature <= 0:
-            raise ValueError("The back radius of curvature must be greater than zero.")
+        radius = 0.5 * diameter
 
         if front_curvature < radius:
             raise ValueError("The radius of curvature of the front face cannot be less than the barrel radius.")
@@ -240,13 +234,12 @@ cdef class BiConcave(EncapsulatedPrimitive):
         if back_curvature < radius:
             raise ValueError("The radius of curvature of the back face cannot be less than the barrel radius.")
 
-        # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
-        padding = self.edge_thickness * PAD_FACTOR
+        self._calc_geometry()
 
         # construct lens using CSG
         front = Sphere(front_curvature, transform=translate(0, 0, center_thickness + front_curvature))
         back = Sphere(back_curvature, transform=translate(0, 0, -back_curvature))
-        barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding, transform=translate(0, 0, -0.5 * padding - self.back_thickness))
+        barrel = Cylinder(radius, self.edge_thickness, transform=translate(0, 0, -self.back_thickness))
         lens = Subtract(Subtract(barrel, front), back)
 
         # attach to local root (performed in EncapsulatedPrimitive init)
@@ -307,8 +300,6 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
         self.diameter = diameter
         self.center_thickness = center_thickness
         self.curvature = curvature
-        self._calc_geometry()
-        radius = 0.5 * diameter
 
         # validate
         if diameter <= 0:
@@ -317,34 +308,21 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
         if center_thickness <= 0:
             raise ValueError("The lens thickness must be greater than zero.")
 
-        if curvature <= 0:
-            raise ValueError("The radius of curvature must be greater than zero.")
+        radius = 0.5 * diameter
 
         if curvature < radius:
             raise ValueError("The radius of curvature of the face cannot be less than the barrel radius.")
 
+        self._calc_geometry()
+
         if self.edge_thickness < 0:
             raise ValueError("The curvature and/or thickness is too small to produce a lens of the specified diameter.")
 
-        radius = 0.5 * self.diameter
-        thickness_ratio = self.edge_thickness / self.center_thickness #factor in interval <0,1), and which -> 0 for edge_thickness -> 0
-
-        # lens is constructed from 2 cylinders and a sphere. The Sphere and a cylinder form the front surface part of the lens
-        # the third cylinder forms the back surface and the barrel which fills in any possible unwanted voids
-
-        # construct lens front surface part
-        front_padding = self.curve_thickness * PAD_FACTOR
-        front_barrel_shift = self.edge_thickness - 0.5 * (front_padding  - self.curve_thickness) * thickness_ratio
-        front_sphere = Sphere(self.curvature, transform=translate(0, 0, self.center_thickness - self.curvature))
-        front_barrel = Cylinder(radius, front_padding, transform=translate(0, 0,  front_barrel_shift))
-        front = Intersect(front_barrel, front_sphere)
-
-        # construct center barrel stretched between back surface and center of surface of curvatures to fill any possible voids
-        if self.edge_thickness == 0:
-            lens = front
+        # construct lens
+        if self._is_short():
+            lens = self._build_short_lens()
         else:
-            center_barrel = Cylinder(radius, self.edge_thickness)
-            lens = Union(center_barrel, front)
+            lens = self._build_long_lens()
 
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
@@ -362,6 +340,47 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
 
         # edge thickness is the length of the barrel without the curved surfaces
         self.edge_thickness = self.center_thickness - self.curve_thickness
+
+    cdef bint _is_short(self):
+        """
+        Does the front sphere have sufficient radius to build the lens with just an intersection?        
+        """
+
+        cdef double available_thickness = 2 * (self.curvature - self.curve_thickness)
+        return self.edge_thickness <= available_thickness
+
+    cdef Primitive _build_short_lens(self):
+        """
+        Short lens requires 2 primitives.
+        """
+
+        # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
+        padding = self.center_thickness * PADDING
+
+        # construct lens using CSG
+        front = Sphere(self.curvature, transform=translate(0, 0, self.center_thickness - self.curvature))
+        barrel = Cylinder(0.5 * self.diameter, self.center_thickness + padding)
+        return Intersect(barrel, front)
+
+    cdef Primitive _build_long_lens(self):
+        """
+        Long lens requires 3 primitives.
+        """
+
+        # padding to avoid potential numerical accuracy issues
+        padding = self.center_thickness * PADDING
+        radius = 0.5 * self.diameter
+
+        # curved face
+        curved_sphere = Sphere(self.curvature, transform=translate(0, 0, self.center_thickness - self.curvature))
+        curved_barrel = Cylinder(radius, self.curve_thickness + 2 * padding, transform=translate(0, 0, self.edge_thickness - padding))
+        curved_element = Intersect(curved_sphere, curved_barrel)
+
+        # barrel
+        barrel = Cylinder(radius, self.edge_thickness)
+
+        # construct lens
+        return Union(barrel, curved_element)
 
     cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
         return PlanoConvex(self.diameter, self.center_thickness, self.curvature, parent, transform, material, name)
@@ -403,8 +422,6 @@ cdef class PlanoConcave(EncapsulatedPrimitive):
         self.diameter = diameter
         self.center_thickness = center_thickness
         self.curvature = curvature
-        self._calc_geometry()
-        radius = 0.5 * diameter
 
         # validate
         if diameter <= 0:
@@ -413,18 +430,16 @@ cdef class PlanoConcave(EncapsulatedPrimitive):
         if center_thickness <= 0:
             raise ValueError("The lens thickness must be greater than zero.")
 
-        if curvature <= 0:
-            raise ValueError("The radius of curvature must be greater than zero.")
+        radius = 0.5 * diameter
 
         if curvature < radius:
             raise ValueError("The radius of curvature of the face cannot be less than the barrel radius.")
 
-        # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
-        padding = self.edge_thickness * PAD_FACTOR
+        self._calc_geometry()
 
         # construct lens using CSG
         curve = Sphere(curvature, transform=translate(0, 0, center_thickness + curvature))
-        barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding)
+        barrel = Cylinder(radius, self.edge_thickness)
         lens = Subtract(barrel, curve)
 
         # attach to local root (performed in EncapsulatedPrimitive init)
@@ -517,7 +532,7 @@ cdef class Meniscus(EncapsulatedPrimitive):
         thickness_ratio = self.edge_thickness / full_thickness
 
         # construct lens using CSG
-        front_padding = self.front_thickness * PAD_FACTOR
+        front_padding = self.front_thickness * (1 + PADDING)
         front_barrel_shift = center_thickness - self.front_thickness - 0.5 * (front_padding - self.front_thickness) * thickness_ratio
         front_sphere = Sphere(self.front_curvature, transform=translate(0, 0, self.center_thickness - self.front_curvature))
         front_barrel = Cylinder(radius, front_padding, transform=translate(0, 0,  front_barrel_shift))
@@ -525,7 +540,7 @@ cdef class Meniscus(EncapsulatedPrimitive):
 
         back_sphere = Sphere(self.back_curvature, transform=translate(0, 0, -self.back_curvature))
 
-        barrel_padding = self.edge_thickness * PAD_FACTOR
+        barrel_padding = self.edge_thickness * (1 + PADDING)
         barrel = Cylinder(radius, barrel_padding, transform=translate(0, 0, self.center_thickness - self.front_thickness - barrel_padding))
 
         lens = Subtract(Union(front, barrel), back_sphere)
