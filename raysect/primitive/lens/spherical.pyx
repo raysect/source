@@ -29,11 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.primitive import Intersect, Subtract, Sphere, Cylinder
+from raysect.primitive import Intersect, Subtract, Union, Sphere, Cylinder
 
+from raysect.core cimport Primitive
 from raysect.core cimport AffineMatrix3D, translate, Material
 from raysect.primitive.utility cimport EncapsulatedPrimitive
-from libc.math cimport sqrt
+from libc.math cimport sqrt, abs
 
 """
 Basic spherical lens primitives.
@@ -104,14 +105,32 @@ cdef class BiConvex(EncapsulatedPrimitive):
         if self.edge_thickness < 0:
             raise ValueError("The curvatures and/or thickness are too small to produce a lens of the specified diameter.")
 
-        # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
-        padding = center_thickness * PAD_FACTOR
+        radius = 0.5 * self.diameter
+        thickness_ratio = self.edge_thickness / self.center_thickness #factor in interval <0,1), and which -> 0 for edge_thickness -> 0
 
-        # construct lens using CSG
-        front = Sphere(front_curvature, transform=translate(0, 0, center_thickness - front_curvature))
-        back = Sphere(back_curvature, transform=translate(0, 0, back_curvature))
-        barrel = Cylinder(0.5 * diameter, center_thickness + padding, transform=translate(0, 0, -0.5 * padding))
-        lens = Intersect(barrel, Intersect(front, back))
+        # lens is constructed from 3 cylinders and two spheres. Sphere and a cylinder form the front or back surface part of the lens
+        # the third cylinder forms the barrel which fills in any possible unwanted voids
+
+        # construct lens back surface part
+        back_padding = self.back_thickness * PAD_FACTOR
+        back_barrel_shift = (back_padding - self.back_thickness) *  (1 - 0.5 * thickness_ratio) #shift -> padded thickness for edge_thickness -> 0
+        back_sphere = Sphere(self.back_curvature, transform=translate(0, 0, self.back_curvature))
+        back_barrel = Cylinder(radius, back_padding, transform=translate(0, 0, -back_barrel_shift))
+        back = Intersect(back_barrel, back_sphere)
+
+        # construct lens front surface part
+        front_padding = self.front_thickness * PAD_FACTOR
+        front_barrel_shift = self.back_thickness + self.edge_thickness - 0.5 * (front_padding  - self.front_thickness) * thickness_ratio
+        front_sphere = Sphere(self.front_curvature, transform=translate(0, 0, self.center_thickness - self.front_curvature))
+        front_barrel = Cylinder(radius, front_padding, transform=translate(0, 0,  front_barrel_shift))
+        front = Intersect(front_barrel, front_sphere)
+
+        # construct center barrel stretched between centers of curvatures to fill any possible voids if center thickness is larger than 0
+        if self.edge_thickness == 0:
+            lens = Union(front, back)
+        else:
+            center_barrel = Cylinder(radius, self.edge_thickness, transform=translate(0, 0, self.back_thickness))
+            lens = Union(front, Union(center_barrel, back))
 
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
@@ -281,17 +300,29 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
         if self.edge_thickness < 0:
             raise ValueError("The curvature and/or thickness is too small to produce a lens of the specified diameter.")
 
-        # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
-        padding = self.edge_thickness * PAD_FACTOR
+        radius = 0.5 * self.diameter
+        thickness_ratio = self.edge_thickness / self.center_thickness #factor in interval <0,1), and which -> 0 for edge_thickness -> 0
 
-        # construct lens using CSG
-        curve = Sphere(curvature, transform=translate(0, 0, center_thickness - curvature))
-        barrel = Cylinder(0.5 * diameter, self.edge_thickness + padding)
-        lens = Intersect(barrel, curve)
+        # lens is constructed from 2 cylinders and a sphere. The Sphere and a cylinder form the front surface part of the lens
+        # the third cylinder forms the back surface and the barrel which fills in any possible unwanted voids
+
+        # construct lens front surface part
+        front_padding = self.curve_thickness * PAD_FACTOR
+        front_barrel_shift = self.edge_thickness - 0.5 * (front_padding  - self.curve_thickness) * thickness_ratio
+        front_sphere = Sphere(self.curvature, transform=translate(0, 0, self.center_thickness - self.curvature))
+        front_barrel = Cylinder(radius, front_padding, transform=translate(0, 0,  front_barrel_shift))
+        front = Intersect(front_barrel, front_sphere)
+
+        # construct center barrel stretched between back surface and center of surface of curvatures to fill any possible voids
+        if self.edge_thickness == 0:
+            lens = front
+        else:
+            center_barrel = Cylinder(radius, self.edge_thickness)
+            lens = Union(center_barrel, front)
 
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
-
+    
     cdef void _calc_geometry(self):
 
         cdef double radius, radius_sqr
@@ -457,13 +488,21 @@ cdef class Meniscus(EncapsulatedPrimitive):
 
         # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
         full_thickness = self.edge_thickness + self.front_thickness
-        padding = full_thickness * PAD_FACTOR
+        thickness_ratio = self.edge_thickness / full_thickness
 
         # construct lens using CSG
-        front = Sphere(front_curvature, transform=translate(0, 0, center_thickness - front_curvature))
-        back = Sphere(back_curvature, transform=translate(0, 0, -back_curvature))
-        barrel = Cylinder(0.5 * diameter, full_thickness + padding, transform=translate(0, 0, -0.5 * padding - self.back_thickness))
-        lens = Intersect(barrel, Subtract(front, back))
+        front_padding = self.front_thickness * PAD_FACTOR
+        front_barrel_shift = center_thickness - self.front_thickness - 0.5 * (front_padding - self.front_thickness) * thickness_ratio
+        front_sphere = Sphere(self.front_curvature, transform=translate(0, 0, self.center_thickness - self.front_curvature))
+        front_barrel = Cylinder(radius, front_padding, transform=translate(0, 0,  front_barrel_shift))
+        front = Intersect(front_barrel, front_sphere)
+
+        back_sphere = Sphere(self.back_curvature, transform=translate(0, 0, -self.back_curvature))
+
+        barrel_padding = self.edge_thickness * PAD_FACTOR
+        barrel = Cylinder(radius, barrel_padding, transform=translate(0, 0, self.center_thickness - self.front_thickness - barrel_padding))
+
+        lens = Subtract(Union(front, barrel), back_sphere)
 
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
