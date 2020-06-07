@@ -10,25 +10,25 @@ from math import sqrt, cos, sin, asin, fabs, pi
 
 class TestSphericalLens(unittest.TestCase):
     """
-    Test for Raysect spherical lenses. Based on comparison of predicted position of intersection point
-    and angle of incidence of a ray launched from outside against the lens surface. Lens front and back surface
-    and barrel surface are tested.
+    Tests for spherical lenses.
+
+    Based on comparison of predicted position of intersection point and angle of incidence of a ray launched
+    from outside against the lens surface. Lens front and back surface and barrel surface are tested.
     """
 
     pad_constant = 1e-6  # offset ratio to construct inside and outside points
     tolerance_distance = 12
     tolerance_angle = 10
-    # points to test lens surfaces at
-    n_testpoints = 10
+    n_testpoints = 10  # points to test lens surfaces at
     test_altitudes = np.linspace(1 - pad_constant, 0, 10, endpoint=True)  # ratio of the lens radius (x-y plane) to test at
     test_azimuths = np.linspace(0, 2 * pi, 20)  # angles in xy plane to test the surface at
     test_barrel_z_points = np.linspace(0, 1, endpoint=True)  # points along lens barrel
 
     def test_biconvex(self):
         """
-        Test Raysect planoconvex lens for a range of curvatures and center thickess combinations.
-        :return:
+        Test planoconvex lens for a range of curvatures and center thickness combinations.
         """
+
         # combinations of lens parameters to test
         diameter = 75
         front_curvatures = np.array([0.5, 0.75, 1, 1.5, 5]) * diameter
@@ -38,9 +38,9 @@ class TestSphericalLens(unittest.TestCase):
         radius = diameter / 2
         radius2 = radius ** 2
 
-        for _, front_curvature in enumerate(front_curvatures):
-            for _, back_curvature in enumerate(back_curvatures):
-                for _, threshold_ratio in enumerate(threshold_ratios):
+        for front_curvature in front_curvatures:
+            for back_curvature in back_curvatures:
+                for threshold_ratio in threshold_ratios:
 
                     # center thickness calculated from the minimum threshold
                     front_thickness = front_curvature - sqrt(front_curvature ** 2 - radius2)
@@ -60,14 +60,12 @@ class TestSphericalLens(unittest.TestCase):
                     max_altitude = asin(radius / back_curvature) - self.pad_constant
                     altitude = np.linspace(max_altitude, min_altitude, self.n_testpoints, endpoint=True)
                     radii = back_curvature * np.sin(altitude)
-                    self._check_spherical_surface(back_curvature, lens, center_back, False, False,
-                                                  azimuths, radii)
+                    self._check_spherical_surface(back_curvature, lens, center_back, False, False, azimuths, radii)
 
                     max_altitude = asin(radius / front_curvature) - self.pad_constant
                     altitude = np.linspace(max_altitude, min_altitude, self.n_testpoints, endpoint=True)
                     radii = front_curvature * np.sin(altitude)
-                    self._check_spherical_surface(front_curvature, lens, center_front, False, True,
-                                                  azimuths, radii)
+                    self._check_spherical_surface(front_curvature, lens, center_front, False, True, azimuths, radii)
 
                     # check lens barrel surface by inside and outside envelope
                     min_z = back_thickness
@@ -75,15 +73,12 @@ class TestSphericalLens(unittest.TestCase):
                     if max_z - min_z <= 3 * self.pad_constant:
                         barrel_z = np.array(((min_z + max_z) / 2), ndmin=1)
                     else:
-                        barrel_z = np.linspace(min_z + self.pad_constant, max_z - self.pad_constant, self.n_testpoints,
-                                               endpoint=True)
-
+                        barrel_z = np.linspace(min_z + self.pad_constant, max_z - self.pad_constant, self.n_testpoints, endpoint=True)
                     self._check_barrel_surface(lens, azimuths, barrel_z)
 
     def test_biconcave(self):
         """
-        Test Raysect planoconvex lens for a range of curvatures and center thickess combinations.
-        :return:
+        Test planoconvex lens for a range of curvatures and center thickness combinations.
         """
 
         # combinations of lens parameters to test
@@ -95,9 +90,9 @@ class TestSphericalLens(unittest.TestCase):
         radius = diameter / 2
         radius2 = radius ** 2
 
-        for _, front_curvature in enumerate(front_curvatures):
-            for _, back_curvature in enumerate(back_curvatures):
-                for _, threshold_ratio in enumerate(threshold_ratios):
+        for front_curvature in front_curvatures:
+            for back_curvature in back_curvatures:
+                for threshold_ratio in threshold_ratios:
 
                     # center thickness calculated from the minimum threshold
                     front_thickness = front_curvature - sqrt(front_curvature ** 2 - radius2)
@@ -117,14 +112,12 @@ class TestSphericalLens(unittest.TestCase):
                     max_altitude = asin(radius / back_curvature) - self.pad_constant
                     altitude = np.linspace(max_altitude, min_altitude, self.n_testpoints, endpoint=True)
                     radii = back_curvature * np.sin(altitude)
-                    self._check_spherical_surface(back_curvature, lens, center_back, True, True,
-                                                  azimuths, radii)
+                    self._check_spherical_surface(back_curvature, lens, center_back, True, True, azimuths, radii)
 
                     max_altitude = asin(radius / front_curvature) - self.pad_constant
                     altitude = np.linspace(max_altitude, min_altitude, self.n_testpoints, endpoint=True)
                     radii = front_curvature * np.sin(altitude)
-                    self._check_spherical_surface(front_curvature, lens, center_front, True, False,
-                                                  azimuths, radii)
+                    self._check_spherical_surface(front_curvature, lens, center_front, True, False, azimuths, radii)
 
                     # check lens barrel surface by inside and outside envelope
                     min_z = -back_thickness
@@ -132,15 +125,12 @@ class TestSphericalLens(unittest.TestCase):
                     if max_z - min_z <= 3 * self.pad_constant:
                         barrel_z = np.array(((min_z + max_z) / 2), ndmin=1)
                     else:
-                        barrel_z = np.linspace(min_z + self.pad_constant, max_z - self.pad_constant,
-                                               self.n_testpoints, endpoint=True)
-
+                        barrel_z = np.linspace(min_z + self.pad_constant, max_z - self.pad_constant, self.n_testpoints, endpoint=True)
                     self._check_barrel_surface(lens, azimuths, barrel_z)
 
     def test_planoconvex(self):
         """
-        Test Raysect planoconvex lens for a range of curvatures and center thickess combinations.
-        :return:
+        Test planoconvex lens for a range of curvatures and center thickness combinations.
         """
 
         # combinations of lens parameters to test
@@ -151,8 +141,8 @@ class TestSphericalLens(unittest.TestCase):
         radius = diameter / 2
         radius2 = radius ** 2
 
-        for _, curvature in enumerate(curvatures):
-            for _, threshold_ratio in enumerate(threshold_ratios):
+        for curvature in curvatures:
+            for threshold_ratio in threshold_ratios:
 
                 # center thickness calculated from the minimum threshold
                 front_thickness = curvature - sqrt(curvature ** 2 - radius2)
@@ -182,15 +172,12 @@ class TestSphericalLens(unittest.TestCase):
                 if max_z - min_z <= 3 * self.pad_constant:
                     barrel_z = np.array(((min_z + max_z) / 2), ndmin=1)
                 else:
-                    barrel_z = np.linspace(min_z + self.pad_constant, max_z - self.pad_constant, self.n_testpoints,
-                                           endpoint=True)
-
+                    barrel_z = np.linspace(min_z + self.pad_constant, max_z - self.pad_constant, self.n_testpoints, endpoint=True)
                 self._check_barrel_surface(lens, azimuths, barrel_z)
 
     def test_planoconcave(self):
         """
-        Test Raysect planoconvex lens for a range of curvatures and center thickess combinations.
-        :return:
+        Test planoconvex lens for a range of curvatures and center thickness combinations.
         """
 
         # combinations of lens parameters to test
@@ -201,8 +188,8 @@ class TestSphericalLens(unittest.TestCase):
         radius = diameter / 2
         radius2 = radius ** 2
 
-        for _, curvature in enumerate(curvatures):
-            for _, threshold_ratio in enumerate(threshold_ratios):
+        for curvature in curvatures:
+            for threshold_ratio in threshold_ratios:
 
                 # center thickness calculated from the minimum threshold
                 front_thickness = curvature - sqrt(curvature ** 2 - radius2)
@@ -220,8 +207,7 @@ class TestSphericalLens(unittest.TestCase):
                 max_altitude = asin(radius / curvature) - self.pad_constant
                 altitude = np.linspace(max_altitude, min_altitude, self.n_testpoints, endpoint=True)
                 radii = curvature * np.sin(altitude)
-                self._check_spherical_surface(curvature, lens, center_front, True, False,
-                                              azimuths, radii)
+                self._check_spherical_surface(curvature, lens, center_front, True, False, azimuths, radii)
 
                 radii = np.linspace(radius - self.pad_constant, self.pad_constant, self.n_testpoints)
                 self._check_plane_surface(lens, azimuths, radii)
@@ -232,15 +218,12 @@ class TestSphericalLens(unittest.TestCase):
                 if max_z - min_z <= 3 * self.pad_constant:
                     barrel_z = np.array(((min_z + max_z) / 2), ndmin=1)
                 else:
-                    barrel_z = np.linspace(min_z + self.pad_constant, max_z - self.pad_constant, self.n_testpoints,
-                                           endpoint=True)
-
+                    barrel_z = np.linspace(min_z + self.pad_constant, max_z - self.pad_constant, self.n_testpoints, endpoint=True)
                 self._check_barrel_surface(lens, azimuths, barrel_z)
 
     def test_meniscus(self):
         """
-        Test Raysect meniscus lens for a range of curvatures and center thickess combinations.
-        :return:
+        Test meniscus lens for a range of curvatures and center thickness combinations.
         """
 
         # define range of lens parameter combinations to test
@@ -254,9 +237,9 @@ class TestSphericalLens(unittest.TestCase):
         radius = diameter / 2
         radius2 = radius ** 2
 
-        for _, front_curvature in enumerate(front_curvatures):
-            for _, back_curvature in enumerate(back_curvatures):
-                for _, threshold_ratio in enumerate(threshold_ratios):
+        for front_curvature in front_curvatures:
+            for back_curvature in back_curvatures:
+                for threshold_ratio in threshold_ratios:
 
                     # center thickness calculated from the minimum threshold
                     front_thickness = front_curvature - sqrt(front_curvature ** 2 - radius2)
@@ -302,15 +285,16 @@ class TestSphericalLens(unittest.TestCase):
         """
         Checks barrel surface of a lens by calculating ray-lens intersection. Hit point position and angle of incidence
         are compared to predicted ones.
+
         :param curvature: Curvature radius of the surface
-        :param lens: Raysect spherical lens object to test plane surface of.
+        :param lens: Spherical lens object to test plane surface of.
         :param center_curvature: Point3D with center of curvature coordinates.
         :param is_inside: If True, the lens body is within the curvature sphere.
         :param positive_curvature: Orientation of the lens surface with respect to the center of curvature. If positive,
         :param azimuths: Azimuth angles to test lens surface at.
         :param radii: Radii to test lens surface at.
-        :return:
         """
+
         # set the direction of the test ray
         if is_inside is True:
             ray_direction = 1
@@ -325,9 +309,9 @@ class TestSphericalLens(unittest.TestCase):
 
         curvature2 = curvature ** 2
 
-        for _, radius in enumerate(radii):
+        for radius in radii:
             z = sqrt(curvature2 - radius ** 2)
-            for _, ta in enumerate(azimuths):
+            for ta in azimuths:
                 # calculate position vector pointing from the curvature center to the surface point
                 x = radius * cos(ta)
                 y = radius * sin(ta)
@@ -358,15 +342,16 @@ class TestSphericalLens(unittest.TestCase):
         """
         Checks barrel surface of a lens by calculating ray-lens intersection. Hit point position and angle of incidence
         are compared to predicted ones.
-        :param lens: Raysect spherical lens object to test plane surface of.
+
+        :param lens: Spherical lens object to test plane surface of.
         :param azimuths: Azimuth angles to test lens surface at.
         :param barrel_z:
-        :return:
         """
+
         lens_radius = lens.diameter / 2
 
-        for _, z in enumerate(barrel_z):
-            for _, ta in enumerate(azimuths):
+        for z in barrel_z:
+            for ta in azimuths:
                 # get x-y coordinates of the surface point from azimuth
                 x = lens_radius * cos(ta)
                 y = lens_radius * sin(ta)
@@ -395,14 +380,14 @@ class TestSphericalLens(unittest.TestCase):
         """
         Checks plane surface of a lens by calculating ray-lens intersection. Hit point position and angle of incidence
         are compared to predicted ones.
-        :param lens: Raysect spherical lens object to test plane surface of.
+
+        :param lens: Spherical lens object to test plane surface of.
         :param azimuths: Azimuth angles to test lens surface at.
         :param radii: Radii to test plane surface at.
-        :return:
         """
 
-        for _, radius in enumerate(radii):
-            for _, ta in enumerate(azimuths):
+        for radius in radii:
+            for ta in azimuths:
                 # get coordinates of the surface point from azimuth
                 x = radius * cos(ta)
                 y = radius * sin(ta)
