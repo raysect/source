@@ -502,8 +502,6 @@ cdef class Meniscus(EncapsulatedPrimitive):
         self.center_thickness = center_thickness
         self.front_curvature = front_curvature
         self.back_curvature = back_curvature
-        self._calc_geometry()
-        radius = 0.5 * diameter
 
         # validate
         if diameter <= 0:
@@ -512,11 +510,7 @@ cdef class Meniscus(EncapsulatedPrimitive):
         if center_thickness <= 0:
             raise ValueError("The lens thickness must be greater than zero.")
 
-        if front_curvature <= 0:
-            raise ValueError("The front radius of curvature must be greater than zero.")
-
-        if back_curvature <= 0:
-            raise ValueError("The back radius of curvature must be greater than zero.")
+        radius = 0.5 * diameter
 
         if front_curvature < radius:
             raise ValueError("The radius of curvature of the front face cannot be less than the barrel radius.")
@@ -524,26 +518,16 @@ cdef class Meniscus(EncapsulatedPrimitive):
         if back_curvature < radius:
             raise ValueError("The radius of curvature of the back face cannot be less than the barrel radius.")
 
+        self._calc_geometry()
+
         if self.edge_thickness < 0:
             raise ValueError("The curvatures and/or thickness are not compatible with the specified diameter.")
 
-        # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
-        full_thickness = self.edge_thickness + self.front_thickness
-        thickness_ratio = self.edge_thickness / full_thickness
-
-        # construct lens using CSG
-        front_padding = self.front_thickness * (1 + PADDING)
-        front_barrel_shift = center_thickness - self.front_thickness - 0.5 * (front_padding - self.front_thickness) * thickness_ratio
-        front_sphere = Sphere(self.front_curvature, transform=translate(0, 0, self.center_thickness - self.front_curvature))
-        front_barrel = Cylinder(radius, front_padding, transform=translate(0, 0,  front_barrel_shift))
-        front = Intersect(front_barrel, front_sphere)
-
-        back_sphere = Sphere(self.back_curvature, transform=translate(0, 0, -self.back_curvature))
-
-        barrel_padding = self.edge_thickness * (1 + PADDING)
-        barrel = Cylinder(radius, barrel_padding, transform=translate(0, 0, self.center_thickness - self.front_thickness - barrel_padding))
-
-        lens = Subtract(Union(front, barrel), back_sphere)
+        # construct lens
+        if self._is_short():
+            lens = self._build_short_lens()
+        else:
+            lens = self._build_long_lens()
 
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
@@ -560,8 +544,53 @@ cdef class Meniscus(EncapsulatedPrimitive):
         self.front_thickness = self.front_curvature - sqrt(self.front_curvature * self.front_curvature - radius_sqr)
         self.back_thickness = self.back_curvature - sqrt(self.back_curvature * self.back_curvature - radius_sqr)
 
-        # edge thickness is the length of the barrel without the curved surfaces
-        self.edge_thickness = self.center_thickness -self.front_thickness + self.back_thickness
+        # edge thickness is the length of the barrel without the front surface
+        self.edge_thickness = self.center_thickness - self.front_thickness + self.back_thickness
+
+    cdef bint _is_short(self):
+        """
+        Does the front sphere have sufficient radius to build the lens with just an intersection?        
+        """
+
+        cdef double available_thickness = 2 * self.front_curvature - self.front_thickness
+        return (self.center_thickness + self.back_thickness) <= available_thickness
+
+    cdef Primitive _build_short_lens(self):
+        """
+        Short lens requires 3 primitives.
+        """
+
+        # padding to add to the barrel cylinder to avoid potential numerical accuracy issues
+        padding = (self.back_thickness + self.center_thickness) * PADDING
+
+        # construct lens using CSG
+        front = Sphere(self.front_curvature, transform=translate(0, 0, self.center_thickness - self.front_curvature))
+        back = Sphere(self.back_curvature, transform=translate(0, 0, -self.back_curvature))
+        barrel = Cylinder(0.5 * self.diameter, self.back_thickness + self.center_thickness + padding, transform=translate(0, 0, -self.back_thickness))
+        return Subtract(Intersect(barrel, front), back)
+
+    cdef Primitive _build_long_lens(self):
+        """
+        Long lens requires 4 primitives.
+        """
+
+        # padding to avoid potential numerical accuracy issues
+        padding = (self.back_thickness + self.center_thickness) * PADDING
+        radius = 0.5 * self.diameter
+
+        # front face
+        front_sphere = Sphere(self.front_curvature, transform=translate(0, 0, self.center_thickness - self.front_curvature))
+        front_barrel = Cylinder(radius, self.front_thickness + 2 * padding, transform=translate(0, 0, self.center_thickness - self.front_thickness - padding))
+        front_element = Intersect(front_sphere, front_barrel)
+
+        # back face
+        back_element = Sphere(self.back_curvature, transform=translate(0, 0, -self.back_curvature))
+
+        # barrel
+        barrel = Cylinder(radius, self.edge_thickness, transform=translate(0, 0, -self.back_thickness))
+
+        # construct lens
+        return Subtract(Union(barrel, front_element), back_element)
 
     cpdef object instance(self, object parent=None, AffineMatrix3D transform=None, Material material=None, str name=None):
         return Meniscus(self.diameter, self.center_thickness, self.front_curvature, self.back_curvature, parent, transform, material, name)
