@@ -170,8 +170,8 @@ l2_stop = Subtract(
 
 # L3 lens mount/stop
 l3_stop = Subtract(
-    Cylinder(mm(25.5), mm(4.0), transform=translate(0, 0, mm(0))),
-    Cylinder(mm(9.01), mm(4.1), transform=translate(0, 0, mm(-0.05))),
+    Cylinder(mm(25.5), mm(5.0), transform=translate(0, 0, mm(0))),
+    Cylinder(mm(9.01), mm(5.1), transform=translate(0, 0, mm(-0.05))),
     parent=l3, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
 )
 
@@ -207,9 +207,9 @@ ccd = TargettedCCDArray(
     pipelines=pipelines
 )
 ccd.frame_sampler = sampler
-ccd.spectral_rays = 5
+ccd.spectral_rays = 1
 ccd.spectral_bins = 15
-ccd.pixel_samples = 100
+ccd.pixel_samples = 250
 ccd.ray_importance_sampling = True
 ccd.ray_important_path_weight = 0.25
 ccd.ray_max_depth = 500
