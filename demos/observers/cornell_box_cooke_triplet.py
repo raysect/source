@@ -1,14 +1,12 @@
-
 from matplotlib.pyplot import *
-
 from raysect.primitive import Sphere, Box, Cylinder, Subtract
+from raysect.primitive.lens import Meniscus, BiConcave, BiConvex
 from raysect.optical import World, Node, translate, rotate, Point3D
-from raysect.optical.material import Lambert, UniformSurfaceEmitter, Checkerboard, NullMaterial, AbsorbingSurface
+from raysect.optical.material import Lambert, UniformSurfaceEmitter, AbsorbingSurface
 from raysect.optical.library import *
-from raysect.optical.observer import PinholeCamera, TargettedCCDArray
+from raysect.optical.observer import TargettedCCDArray
 from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, PowerPipeline2D
 from raysect.optical.observer import RGBAdaptiveSampler2D
-from raysect.primitive.lens import Meniscus, BiConcave, BiConvex
 from raysect.core.math import mm
 
 
@@ -149,29 +147,36 @@ l3.material.importance = 0.0
 
 # cylinder body holding the lenses and CCD
 body = Subtract(
-    Cylinder(mm(26), mm(65.0), transform=translate(0, 0, mm(-62))),
-    Cylinder(mm(25), mm(64.1), transform=translate(0, 0, mm(-61))),
+    Cylinder(mm(26), mm(80.0), transform=translate(0, 0, mm(-62))),
+    Cylinder(mm(25), mm(79.1), transform=translate(0, 0, mm(-61))),
     parent=camera, transform=translate(0, 0, 0), material=AbsorbingSurface()
 )
 
-# L1 lens mount/stop
-l1_stop = Subtract(
+# L1 lens mount
+l1_mount = Subtract(
     Cylinder(mm(25.5), mm(5.0), transform=translate(0, 0, mm(0))),
-    Cylinder(mm(10.51), mm(5.1), transform=translate(0, 0, mm(-0.05))),
+    Cylinder(mm(21 / 2 + 0.01), mm(5.1), transform=translate(0, 0, mm(-0.05))),
     parent=l1, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
 )
 
-# L2 lens mount/stop
-l2_stop = Subtract(
+# L2 lens mount
+l2_mount = Subtract(
     Cylinder(mm(25.5), mm(4.0), transform=translate(0, 0, mm(0))),
-    Cylinder(mm(6.51), mm(4.1), transform=translate(0, 0, mm(-0.05))),
+    Cylinder(mm(13 / 2 + 0.01), mm(4.1), transform=translate(0, 0, mm(-0.05))),
     parent=l2, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
 )
 
-# L3 lens mount/stop
-l3_stop = Subtract(
-    Cylinder(mm(25.5), mm(5.0), transform=translate(0, 0, mm(0))),
-    Cylinder(mm(9.01), mm(5.1), transform=translate(0, 0, mm(-0.05))),
+# L2-L3 stop
+stop = Subtract(
+    Cylinder(mm(25.5), mm(1.0), transform=translate(0, 0, mm(0))),
+    Cylinder(mm(12 / 2 + 0.01), mm(1.1), transform=translate(0, 0, mm(-0.05))),
+    parent=l2, transform=translate(0, 0, mm(-3)), material=AbsorbingSurface()
+)
+
+# L3 lens mount
+l3_mount = Subtract(
+    Cylinder(mm(25.5), mm(4.0), transform=translate(0, 0, mm(0))),
+    Cylinder(mm(18 / 2 + 0.01), mm(4.1), transform=translate(0, 0, mm(-0.05))),
     parent=l3, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
 )
 
