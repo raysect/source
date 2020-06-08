@@ -490,7 +490,6 @@ cdef class Meniscus(EncapsulatedPrimitive):
         readonly double diameter
         readonly double center_thickness
         readonly double edge_thickness
-        readonly double full_thickness
         readonly double front_thickness
         readonly double back_thickness
         readonly double front_curvature
