@@ -128,7 +128,7 @@ sphere = Sphere(0.4,
 # The camera assembly uses a Cooke triplet lens system. The lens system based on design in:
 # https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/L20_OPTI517_Cooke_triplet.pdf
 
-camera = Node(parent=world, transform=translate(0, 0, -3.6)*rotate(0, 0, 0))
+camera = Node(parent=world, transform=translate(0, 0, -3.8)*rotate(0, 0, 0))
 
 # Cooke triplet system
 lenses = Node(parent=camera)
