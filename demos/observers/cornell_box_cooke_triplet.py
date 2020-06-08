@@ -2,13 +2,12 @@ from matplotlib.pyplot import *
 from raysect.primitive import Sphere, Box, Cylinder, Subtract
 from raysect.primitive.lens import Meniscus, BiConcave, BiConvex
 from raysect.optical import World, Node, translate, rotate, Point3D
-from raysect.optical.material import Lambert, UniformSurfaceEmitter, AbsorbingSurface
+from raysect.optical.material import Lambert, UniformSurfaceEmitter, AbsorbingSurface, Checkerboard
 from raysect.optical.library import *
 from raysect.optical.observer import TargettedCCDArray
 from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, PowerPipeline2D
 from raysect.optical.observer import RGBAdaptiveSampler2D
 from raysect.core.math import mm
-
 
 """
 Cornell Box With Cooke Triplet Camera Lens System and CCD
@@ -22,8 +21,6 @@ To the original Cornell Box see:
 
 The wall colours and light spectrum used in this demo are the values measured
 for the physical Cornell Box.
-
-The lens system produces a large lens flare, visible in the rendered image as a ring.
 
 None of the lenses have anti-reflection coatings.
 """
@@ -170,7 +167,7 @@ l2_mount = Subtract(
 stop = Subtract(
     Cylinder(mm(25.5), mm(1.0), transform=translate(0, 0, mm(0))),
     Cylinder(mm(12 / 2 + 0.01), mm(1.1), transform=translate(0, 0, mm(-0.05))),
-    parent=l2, transform=translate(0, 0, mm(-3)), material=AbsorbingSurface()
+    parent=l2, transform=translate(0, 0, mm(-2)), material=AbsorbingSurface()
 )
 
 # L3 lens mount
@@ -180,36 +177,16 @@ l3_mount = Subtract(
     parent=l3, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
 )
 
-# filter definitions for filtered pipelines
-filter_red = InterpolatedSF([100, 650, 660, 670, 680, 800], [0, 0, 1, 1, 0, 0])
-filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0])
-filter_blue = InterpolatedSF([100, 480, 490, 500, 510, 800], [0, 0, 1, 1, 0, 0])
-
-# create and setup the camera
-power_unfiltered = PowerPipeline2D(display_unsaturated_fraction=0.96, name="Unfiltered")
-power_unfiltered.display_update_time = 15
-
-power_green = PowerPipeline2D(filter=filter_green, display_unsaturated_fraction=0.96, name="Green Filter")
-power_green.display_update_time = 15
-
-power_red = PowerPipeline2D(filter=filter_red, display_unsaturated_fraction=0.96, name="Red Filter")
-power_red.display_update_time = 15
-
-bayer = BayerPipeline2D(filter_red, filter_green, filter_blue, display_unsaturated_fraction=0.96, name="Bayer Filter")
-bayer.display_update_time = 15
-
+# CCD pipeline and sampler
 rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
-
-pipelines = [rgb, power_unfiltered, power_green, power_red, bayer]
-
-sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cutoff=0.01)
+sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=1000, cutoff=0.01)
 
 # CCD targetting all rays at last lens element for speed
 ccd = TargettedCCDArray(
     targetted_path_prob=1.0, targets=[l3],
     width=mm(35), pixels=(512, 512),
     parent=image_plane, transform=translate(0, 0, 0)*rotate(0, 0, 180),
-    pipelines=pipelines
+    pipelines=[rgb]
 )
 ccd.frame_sampler = sampler
 ccd.spectral_rays = 1
@@ -231,10 +208,6 @@ while not ccd.render_complete:
     print("Rendering pass {}...".format(render_pass))
     ccd.observe()
     rgb.save("{}_{}_pass_{}.png".format(name, timestamp, render_pass))
-    # power_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
-    # power_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
-    # power_green.save('cornell_box_green_filter_pass_{:04d}.png'.format(p))
-    # bayer.save('cornell_box_bayer_pass_{:04d}.png'.format(p))
     print()
 
     render_pass += 1
