@@ -833,7 +833,8 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
         self.nz = self._grid_shape[2]
 
         period = self.nphi * self.dphi
-        if 360. % period > 1.e-3:
+        num_sectors = 360. / period
+        if abs(round(num_sectors) - num_sectors) > 1.e-3:
             raise ValueError("The period %.3f (grid_shape[1] * grid_steps[1]) is not a multiple of 360." % period)
         self.period = period
 

@@ -216,7 +216,8 @@ class RegularGridCylinder(RegularGridVolume):
 
     def __init__(self, emission, wavelengths, radius_outer, height, radius_inner=0, period=360., grid_shape=None,
                  step=None, continuous=True, extrapolate=True, parent=None, transform=None):
-        if 360. % period > 1.e-3:
+        num_sectors = 360. / period
+        if abs(round(num_sectors) - num_sectors) > 1.e-3:
             raise ValueError("The period %.3f is not a multiple of 360." % period)
         if emission.ndim == 2:
             if grid_shape is None:
