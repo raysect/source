@@ -120,11 +120,11 @@ def test(x, y):
 #                 nf[i][j][k] = f[i][j][k]
 #                 ndfdx[i][j][k] = dfdx[i][j][k] * dx
 #                 ndfdy[i][j][k] = dfdy[i][j][k] * dy
-#                 ndfdz[i][j][k] = dfdy[i][j][k] * dz
+#                 ndfdz[i][j][k] = dfdz[i][j][k] * dz
 #                 nd2fdxdy[i][j][k] = d2fdxdy[i][j][k] * dx * dy
-#                 nd2fdxdz[i][j][k] = d2fdxdy[i][j][k] * dx * dz
-#                 nd2fdydz[i][j][k] = d2fdxdy[i][j][k] * dy * dz
-#                 nd3fdxdydz[i][j][k] = d2fdxdy[i][j][k] * dx * dy * dz
+#                 nd2fdxdz[i][j][k] = d2fdxdz[i][j][k] * dx * dz
+#                 nd2fdydz[i][j][k] = d2fdydz[i][j][k] * dy * dz
+#                 nd3fdxdydz[i][j][k] = d3fdxdydz[i][j][k] * dx * dy * dz
 #
 #     calc_coefficients_3d(nf, ndfdx, ndfdy, ndfdz, nd2fdxdy, nd2fdxdz, nd2fdydz, nd3fdxdydz, a)
 #     return evaluate_cubic_3d(a, nx, ny, nz)
@@ -134,6 +134,20 @@ def test(x, y):
 @cython.wraparound(False)
 @cython.initializedcheck(False)
 cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2][2], double d2fdxdy[2][2], double a[4][4]) nogil:
+    """
+    Calculates the cubic coefficients for a unit square.
+    
+    This function calculates the polynomial coefficients for a 2D cubic. It
+    requires the values and differentials at each vertex of the square. The
+    domain over which the polynomial is valid is [0, 1] in each dimension.
+    
+    :param f: 
+    :param dfdx: 
+    :param dfdy: 
+    :param d2fdxdy: 
+    :param a: 
+    :return: 
+    """
 
     a[0][0] =   f[0][0]
     a[0][1] =   dfdy[0][0]
@@ -171,6 +185,24 @@ cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2]
 cdef void calc_coefficients_3d(double f[2][2][2], double dfdx[2][2][2], double dfdy[2][2][2], double dfdz[2][2][2],
                               double d2fdxdy[2][2][2], double d2fdxdz[2][2][2], double d2fdydz[2][2][2],
                               double d3fdxdydz[2][2][2], double a[4][4][4]) nogil:
+    """
+    Calculates the cubic coefficients for a unit cubic.
+    
+    This function calculates the polynomial coefficients for a 3D cubic. It
+    requires the values and differentials at each vertex of the cubic. The
+    domain over which the polynomial is valid is [0, 1] in each dimension.
+    
+    :param f: 
+    :param dfdx: 
+    :param dfdy: 
+    :param dfdz: 
+    :param d2fdxdy: 
+    :param d2fdxdz: 
+    :param d2fdydz: 
+    :param d3fdxdydz: 
+    :param a: 
+    :return:
+    """
 
     a[0][0][0] =   f[0][0][0]
     a[0][0][1] =   dfdz[0][0][0]
