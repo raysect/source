@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@ from .vector import Vector2D, Vector3D
 from .normal import Normal3D
 from .affinematrix import AffineMatrix3D
 from .quaternion import Quaternion
-from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical
+from .transform import translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical, extract_rotation, extract_translation
 from .units import *
 from .statsarray import StatsBin, StatsArray1D, StatsArray2D, StatsArray3D
 from .sampler import *

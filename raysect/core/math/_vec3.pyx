@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -137,7 +137,7 @@ cdef class _Vec3:
             54.735610317245346
         """
 
-        return acos(self.dot(v) / (self.get_length() * v.get_length())) * 180 / M_PI
+        return acos(min(1, self.dot(v) / (self.get_length() * v.get_length()))) * 180 / M_PI
 
     cdef double get_length(self) nogil:
         """

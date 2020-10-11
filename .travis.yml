@@ -1,8 +1,13 @@
 language: python
 python:
   - "3.6"
+  - "3.7"
+env:
+  - NUMPY_VERSION=1.14.6
+  - NUMPY_VERSION=1.16.6
+  - NUMPY_VERSION=1.18.1
 install:
-  - pip install numpy scipy matplotlib cython
+  - pip install numpy==$NUMPY_VERSION scipy matplotlib cython>=0.28
   - dev/build.sh
 # command to run tests
 script: dev/test.sh
