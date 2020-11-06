@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-17, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,24 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.cython.utility cimport *
-from raysect.core.math.cython.transform cimport *
-from raysect.core.math.cython.triangle cimport *
-from raysect.core.math.cython.tetrahedra cimport *
+
+cdef bint inside_tetrahedra(double v1x, double v1y, double v1z,
+                            double v2x, double v2y, double v2z,
+                            double v3x, double v3y, double v3z,
+                            double v4x, double v4y, double v4z,
+                            double px, double py, double pz) nogil
+
+
+cdef void barycentric_coords_tetra(double v1x, double v1y, double v1z,
+                                   double v2x, double v2y, double v2z,
+                                   double v3x, double v3y, double v3z,
+                                   double v4x, double v4y, double v4z,
+                                   double px, double py, double pz,
+                                   double *alpha, double *beta, double *gamma, double *delta) nogil
+
+
+cdef bint barycentric_inside_tetrahedra(double alpha, double beta, double gamma, double delta) nogil
+
+
+cdef double barycentric_interpolation_tetra(double alpha, double beta, double gamma, double delta,
+                                            double va, double vb, double vc, double vd) nogil
