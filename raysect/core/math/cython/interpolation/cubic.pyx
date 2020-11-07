@@ -129,6 +129,7 @@ def test(x, y):
 #     calc_coefficients_3d(nf, ndfdx, ndfdy, ndfdz, nd2fdxdy, nd2fdxdz, nd2fdydz, nd3fdxdydz, a)
 #     return evaluate_cubic_3d(a, nx, ny, nz)
 
+# todo: maybe switch unit (normalised) calculations to (u,v,w) from (x,y,z) for clarity
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
