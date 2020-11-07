@@ -130,12 +130,15 @@ sphere = Sphere(0.4,
 
 camera = Node(parent=world, transform=translate(0, 0, -3.8)*rotate(0, 0, 0))
 
+# uncomment to show a 0.5m checkerboard ruler
+#ruler = Box(Point3D(-0.1, -0.005, 0.0), Point3D(0.1, 0.005, 5.0), parent=camera, transform=translate(0, -0.1, 0.0), material=Checkerboard(width=0.5, scale1=0, scale2=1.0))
+
 # Cooke triplet system
 lenses = Node(parent=camera)
 l1 = Meniscus(mm(21), mm(4.831), mm(23.713), mm(7331.288), parent=lenses, transform=translate(0, 0, mm(-4.831)), material=schott("N-LAK9"))
 l2 = BiConcave(mm(13), mm(0.975), mm(24.456), mm(21.896), parent=l1, transform=translate(0, 0, mm(-6.835)), material=schott("SF5"))
 l3 = BiConvex(mm(18), mm(3.127), mm(86.759), mm(20.4942), parent=l2, transform=translate(0, 0, mm(-7.949)), material=schott("N-LAK9"))
-image_plane = Node(parent=l3, transform=translate(0, 0, mm(-41.10346)))
+image_plane = Node(parent=l3, transform=translate(0, 0, mm(-41.5)))  # tweaked position gives a sharper image (original: 41.10346 mm)
 
 # disable importance sampling of the lenses (enabled by default for dielectrics and emitters)
 l1.material.importance = 0.0
@@ -144,8 +147,8 @@ l3.material.importance = 0.0
 
 # cylinder body holding the lenses and CCD
 body = Subtract(
-    Cylinder(mm(26), mm(80.0), transform=translate(0, 0, mm(-62))),
-    Cylinder(mm(25), mm(79.1), transform=translate(0, 0, mm(-61))),
+    Cylinder(mm(26), mm(80.0), transform=translate(0, 0, mm(-63))),
+    Cylinder(mm(25), mm(79.1), transform=translate(0, 0, mm(-62))),
     parent=camera, transform=translate(0, 0, 0), material=AbsorbingSurface()
 )
 
