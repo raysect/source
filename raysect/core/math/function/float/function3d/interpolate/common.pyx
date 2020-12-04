@@ -202,8 +202,8 @@ cdef class MeshKDTree3D(KDTree3DCore):
 
             barycentric_coords_tetra(self._vertices_mv[i1, X], self._vertices_mv[i1, Y], self._vertices_mv[i1, Z],
                                      self._vertices_mv[i2, X], self._vertices_mv[i2, Y], self._vertices_mv[i2, Z],
-                                     self._vertices_mv[i3, X], self._vertices_mv[i3, Y], self._vertices_mv[i3, Z]
-                                     self._vertices_mv[i4, X], self._vertices_mv[i4, Y], self._vertices_mv[i4, Z]
+                                     self._vertices_mv[i3, X], self._vertices_mv[i3, Y], self._vertices_mv[i3, Z],
+                                     self._vertices_mv[i4, X], self._vertices_mv[i4, Y], self._vertices_mv[i4, Z],
                                      point.x, point.y, point.z, &alpha, &beta, &gamma, &delta)
 
             if barycentric_inside_tetrahedra(alpha, beta, gamma, delta):
