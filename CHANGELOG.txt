@@ -1,6 +1,19 @@
 Raysect Changelog
 =================
 
+Release 1.0.0 (TBD)
+-------------------
+
+API Changes:
+*
+
+New:
+*
+
+Bug fixes:
+*
+
+
 Release 0.7.0 (7 Nov 2020)
 --------------------------
 
