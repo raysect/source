@@ -63,80 +63,38 @@ cdef bint inside_tetrahedra(double v1x, double v1y, double v1z,
     :rtype: bool
     """
 
+    # return true it the point is outside of tetrahedra.
+    return (_side(v1x, v1y, v1z, v4x, v4y, v4z, v2x, v2y, v2z, px, py, pz) &
+            _side(v2x, v2y, v2z, v4x, v4y, v4z, v3x, v3y, v3z, px, py, pz) &
+            _side(v3x, v3y, v3z, v4x, v4y, v4z, v1x, v1y, v1z, px, py, pz) &
+            _side(v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z, px, py, pz))
+
+cdef bint _side(double v1x, double v1y, double v1z,
+                double v2x, double v2y, double v2z,
+                double v3x, double v3y, double v3z,
+                double px, double py, double pz) nogil:
+    """
+    calculate inner product of vectors between,
+    cross vector of (v2 - v1 & v3 - v1) and vector p - v1.
+    The point is outside of surface if the above result is negative
+
+    :param double v1x: x coord of vertix 1.
+    :param double v1y: y coord of vertix 1.
+    :param double v1z: z coord of vertix 1.
+    :param double v2x: x coord of vertix 2.
+    :param double v2y: y coord of vertix 2.
+    :param double v2z: z coord of vertix 2.
+    :param double v3x: x coord of vertix 3.
+    :param double v3y: y coord of vertix 3.
+    :param double v3z: z coord of vertix 3.
+    :param double px: x coord of test point.
+    :param double py: y coord of test point.
+    :param double pz: z coord of test point.
+    :type: bint
+    """
+
     cdef:
         double ux, uy, uz, vx, vy, vz, wx, wy, wz, tx, ty, tz
-
-    # calculate vectors
-    ux = v4x - v1x
-    uy = v4y - v1y
-    uz = v4z - v1z
-
-    vx = v2x - v1x
-    vy = v2y - v1y
-    vz = v2z - v1z
-
-    tx = px - v1x
-    ty = py - v1y
-    tz = pz - v1z
-
-    # calculate cross product of vectors between u & v
-    wx = uy * vz - uz * vy
-    wy = uz * vx - ux * vz
-    wz = ux * vy - uy * vx
-
-
-    # calculate inner product of vectors betwee, w & t
-    # point is outside of surface if w.dot(t) is negative
-    if (wx * tx + wy * ty + wz * tz) < 0:
-        return False
-
-    # calculate vectors
-    ux = v4x - v2x
-    uy = v4y - v2y
-    uz = v4z - v2z
-
-    vx = v3x - v2x
-    vy = v3y - v2y
-    vz = v3z - v2z
-
-    tx = px - v2x
-    ty = py - v2y
-    tz = pz - v2z
-
-    # calculate cross product of vectors between u & v
-    wx = uy * vz - uz * vy
-    wy = uz * vx - ux * vz
-    wz = ux * vy - uy * vx
-
-
-    # calculate inner product of vectors betwee, w & t
-    # point is outside of surface if w.dot(t) is negative
-    if (wx * tx + wy * ty + wz * tz) < 0:
-        return False
-
-    # calculate vectors
-    ux = v4x - v3x
-    uy = v4y - v3y
-    uz = v4z - v3z
-
-    vx = v1x - v3x
-    vy = v1y - v3y
-    vz = v1z - v3z
-
-    tx = px - v3x
-    ty = py - v3y
-    tz = pz - v3z
-
-    # calculate cross product of vectors between u & v
-    wx = uy * vz - uz * vy
-    wy = uz * vx - ux * vz
-    wz = ux * vy - uy * vx
-
-
-    # calculate inner product of vectors betwee, w & t
-    # point is outside of surface if w.dot(t) is negative
-    if (wx * tx + wy * ty + wz * tz) < 0:
-        return False
 
     # calculate vectors
     ux = v2x - v1x
@@ -155,21 +113,14 @@ cdef bint inside_tetrahedra(double v1x, double v1y, double v1z,
     wx = uy * vz - uz * vy
     wy = uz * vx - ux * vz
     wz = ux * vy - uy * vx
-
-
-    # calculate inner product of vectors betwee, w & t
-    # point is outside of surface if w.dot(t) is negative
-    if (wx * tx + wy * ty + wz * tz) < 0:
-        return False
-
-    return True
+    return (wx * tx + wy * ty + wz * tz) >= 0
 
 
 def _test_inside_tetrahedra(v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
-                                   v4x, v4y, v4z, px, py, pz):
+                            v4x, v4y, v4z, px, py, pz):
     """Expose cython function for testing."""
     return inside_tetrahedra(v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
-                                   v4x, v4y, v4z, px, py, pz)
+                             v4x, v4y, v4z, px, py, pz)
 
 
 @cython.boundscheck(False)

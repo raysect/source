@@ -27,7 +27,7 @@ class UnityEmitter(InhomogeneousVolumeEmitter):
         return spectrum
 
 
-# Pig tetrahedra mesh emitter
+# Rabbit tetrahedra mesh emitter
 mesh = Tetmesh(os.path.join(BASE_PATH, "../resources/stanford_bunny.mesh"))
 tetra = Discrete3DMesh(mesh.vertices, mesh.tets, np.ones((mesh.num_tets)), False, 0)
 
