@@ -53,30 +53,30 @@ DEF Z = 2
 
 cdef class MeshKDTree3D(KDTree3DCore):
 
-    def __init__(self, object vertices not None, object tetrahedras not None):
+    def __init__(self, object vertices not None, object tetrahedra not None):
 
         vertices = np.array(vertices, dtype=np.double)
-        tetrahedras = np.array(tetrahedras, dtype=np.int32)
+        tetrahedra = np.array(tetrahedra, dtype=np.int32)
 
         # check dimensions are correct
         if vertices.ndim != 2 or vertices.shape[1] != 3:
             raise ValueError("The vertex array must have dimensions Nx3.")
 
-        if tetrahedras.ndim != 2 or tetrahedras.shape[1] != 4:
+        if tetrahedra.ndim != 2 or tetrahedra.shape[1] != 4:
             raise ValueError("The tetrahedra array must have dimensions Mx4.")
 
-        # check tetrahedras contains only valid indices
-        invalid = (tetrahedras[:, 0:4] < 0) | (tetrahedras[:, 0:4] >= vertices.shape[0])
+        # check tetrahedra contains only valid indices
+        invalid = (tetrahedra[:, 0:4] < 0) | (tetrahedra[:, 0:4] >= vertices.shape[0])
         if invalid.any():
             raise ValueError("The tetrahedra array references non-existent vertices.")
 
         # assign to internal attributes
         self._vertices = vertices
-        self._tetrahedras = tetrahedras
+        self._tetrahedra = tetrahedra
 
         # assign to memory views
         self._vertices_mv = vertices
-        self._tetrahedras_mv = tetrahedras
+        self._tetrahedra_mv = tetrahedra
 
         # initialise hit state attributes
         self.tetrahedra_id = -1
@@ -91,11 +91,11 @@ cdef class MeshKDTree3D(KDTree3DCore):
 
         # kd-Tree init
         items = []
-        for tetrahedra in range(self._tetrahedras.shape[0]):
+        for tetrahedra in range(self._tetrahedra.shape[0]):
             items.append(Item3D(tetrahedra, self._generate_bounding_box(tetrahedra)))
         super().__init__(items, max_depth=0, min_items=1, hit_cost=50.0, empty_bonus=0.2)
 
-        # todo: (possible enhancement) check if tetrahedras are overlapping?
+        # todo: (possible enhancement) check if tetrahedra are overlapping?
         # (any non-owned vertex lying inside another tetrahedra)
 
         # init cache
@@ -106,16 +106,16 @@ cdef class MeshKDTree3D(KDTree3DCore):
         self._cached_result = False
 
     def __getstate__(self):
-        return self._tetrahedras, self._vertices, super().__getstate__()
+        return self._tetrahedra, self._vertices, super().__getstate__()
 
     def __setstate__(self, state):
 
-        self._tetrahedras, self._vertices, super_state = state
+        self._tetrahedra, self._vertices, super_state = state
         super().__setstate__(super_state)
 
         # rebuild memory views
         self._vertices_mv = self._vertices
-        self._tetrahedras_mv = self._tetrahedras
+        self._tetrahedra_mv = self._tetrahedra
 
         # initialise hit state attributes
         self.tetrahedra_id = -1
@@ -156,10 +156,10 @@ cdef class MeshKDTree3D(KDTree3DCore):
             np.int32_t i1, i2, i3, i4
             BoundingBox3D bbox
 
-        i1 = self._tetrahedras_mv[tetrahedra, V1]
-        i2 = self._tetrahedras_mv[tetrahedra, V2]
-        i3 = self._tetrahedras_mv[tetrahedra, V3]
-        i4 = self._tetrahedras_mv[tetrahedra, V4]
+        i1 = self._tetrahedra_mv[tetrahedra, V1]
+        i2 = self._tetrahedra_mv[tetrahedra, V2]
+        i3 = self._tetrahedra_mv[tetrahedra, V3]
+        i4 = self._tetrahedra_mv[tetrahedra, V4]
 
         bbox = new_boundingbox3d(
             new_point3d(
@@ -174,7 +174,7 @@ cdef class MeshKDTree3D(KDTree3DCore):
             ),
         )
 
-        # The bounding box and tetrahedra vertices may not align following coordinate
+        # The bounding box and tetrahedral vertices may not align following coordinate
         # transforms in the water tight mesh algorithm, therefore a small bit of padding
         # is added to avoid numerical representation issues.
         bbox.pad(max(BOX_PADDING, bbox.largest_extent() * BOX_PADDING))
@@ -195,10 +195,10 @@ cdef class MeshKDTree3D(KDTree3DCore):
 
             # obtain vertex indices
             tetrahedra = self._nodes[id].items[index]
-            i1 = self._tetrahedras_mv[tetrahedra, V1]
-            i2 = self._tetrahedras_mv[tetrahedra, V2]
-            i3 = self._tetrahedras_mv[tetrahedra, V3]
-            i4 = self._tetrahedras_mv[tetrahedra, V4]
+            i1 = self._tetrahedra_mv[tetrahedra, V1]
+            i2 = self._tetrahedra_mv[tetrahedra, V2]
+            i3 = self._tetrahedra_mv[tetrahedra, V3]
+            i4 = self._tetrahedra_mv[tetrahedra, V4]
 
             barycentric_coords_tetra(self._vertices_mv[i1, X], self._vertices_mv[i1, Y], self._vertices_mv[i1, Z],
                                      self._vertices_mv[i2, X], self._vertices_mv[i2, Y], self._vertices_mv[i2, Z],

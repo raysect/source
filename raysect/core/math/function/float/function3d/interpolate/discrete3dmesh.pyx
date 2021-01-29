@@ -43,10 +43,10 @@ cdef class Discrete3DMesh(Function3D):
     The mesh is specified as a set of 3D vertices supplied as an Nx3 numpy
     array or a suitably sized sequence that can be converted to a numpy array.
 
-    The mesh tetrahedras are defined with a Mx4 array where the four values are
+    The mesh tetrahedra are defined with a Mx4 array where the four values are
     indices into the vertex array that specify the tetrahedra vertices. The
-    mesh must not contain overlapping tetrahedras. Supplying a mesh with
-    overlapping tetrahedras will result in undefined behaviour.
+    mesh must not contain overlapping tetrahedra. Supplying a mesh with
+    overlapping tetrahedra will result in undefined behaviour.
 
     A data array of length M, containing a value for each tetrahedra, holds the
     data to be interpolated across the mesh.
@@ -58,7 +58,7 @@ cdef class Discrete3DMesh(Function3D):
     return can be specified by setting the default_value attribute (default is
     0.0).
 
-    To optimise the lookup of tetrahedras, the interpolator builds an
+    To optimise the lookup of tetrahedra, the interpolator builds an
     acceleration structure (a KD-Tree) from the specified mesh data. Depending
     on the size of the mesh, this can be quite slow to construct. If the user
     wishes to interpolate a number of different data sets across the same mesh
@@ -71,25 +71,25 @@ cdef class Discrete3DMesh(Function3D):
     acceleration structure.
 
     :param ndarray vertex_coords: An array of vertex coordinates (x, y, z) with shape Nx3.
-    :param ndarray tetrahedras: An array of vertex indices defining the mesh tetrahedras, with shape Mx4.
+    :param ndarray tetrahedra: An array of vertex indices defining the mesh tetrahedra, with shape Mx4.
     :param ndarray tetrahedra_data: An array containing data for each tetrahedra of shape Mx1.
     :param bool limit: Raise an exception outside mesh limits - True (default) or False.
     :param float default_value: The value to return outside the mesh limits if limit is set to False.
     """
 
-    def __init__(self, object vertex_coords not None, object tetrahedras not None, object tetrahedra_data not None, bint limit=True, double default_value=0.0):
+    def __init__(self, object vertex_coords not None, object tetrahedra not None, object tetrahedra_data not None, bint limit=True, double default_value=0.0):
 
         # use numpy arrays to store data internally
         vertex_coords = np.array(vertex_coords, dtype=np.float64)
-        tetrahedras = np.array(tetrahedras, dtype=np.int32)
+        tetrahedra = np.array(tetrahedra, dtype=np.int32)
         tetrahedra_data = np.array(tetrahedra_data, dtype=np.float64)
 
         # validate tetrahedra_data
-        if tetrahedra_data.ndim != 1 or tetrahedra_data.shape[0] != tetrahedras.shape[0]:
-            raise ValueError("tetrahedra_data dimensions ({}) are incompatible with the number of tetrahedras ({}).".format(tetrahedra_data.shape[0], tetrahedras.shape[0]))
+        if tetrahedra_data.ndim != 1 or tetrahedra_data.shape[0] != tetrahedra.shape[0]:
+            raise ValueError("tetrahedra_data dimensions ({}) are incompatible with the number of tetrahedra ({}).".format(tetrahedra_data.shape[0], tetrahedra.shape[0]))
 
         # build kdtree
-        self._kdtree = MeshKDTree3D(vertex_coords, tetrahedras)
+        self._kdtree = MeshKDTree3D(vertex_coords, tetrahedra)
 
         # populate internal attributes
         self._tetrahedra_data = tetrahedra_data
@@ -143,7 +143,7 @@ cdef class Discrete3DMesh(Function3D):
         else:
             m._tetrahedra_data = np.array(tetrahedra_data, dtype=np.float64)
             if m._tetrahedra_data.ndim != 1 or m._tetrahedra_data.shape[0] != instance._tetrahedra_data.shape[0]:
-                raise ValueError("tetrahedra_data dimensions ({}) are incompatible with the number of tetrahedras ({}).".format(m._tetrahedra_data.shape[0], instance._tetrahedra_data.shape[0]))
+                raise ValueError("tetrahedra_data dimensions ({}) are incompatible with the number of tetrahedra ({}).".format(m._tetrahedra_data.shape[0], instance._tetrahedra_data.shape[0]))
 
         # create memoryview
         m._tetrahedra_data_mv = m._tetrahedra_data

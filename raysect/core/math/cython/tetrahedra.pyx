@@ -177,13 +177,21 @@ cdef void barycentric_coords_tetra(double v1x, double v1y, double v1z,
     z3 = v3z - v4z
     z4 = pz - v4z
 
-    norm = 1 / (x1 * y2 * z3 + x2 * y3 * z1 + x3 * y1 * z2 - x3 * y2 * z1 - x2 * y1 * z3 - x1 * y3 * z2)
+    norm = 1.0 / (x1 * y2 * z3 + x2 * y3 * z1 + x3 * y1 * z2
+                 - (x3 * y2 * z1 + x2 * y1 * z3 + x1 * y3 * z2)
+                 )
 
     # compute barycentric coordinates
-    alpha[0] = norm * ((y2 * z3 - y3 * z2) * x4 - (x2 * z3 - x3 * z2) * y4 + (x2 * y3 - x3 * y2) * z4)
-    beta[0] = norm * (-1 * (y1 * z3 - y3 * z1) * x4 + (x1 * z3 - x3 * z1) * y4 - (x1 * y3 - x3 * y1) * z4)
-    gamma[0] = norm * ((y1 * z2 - y2 * z1) * x4 - (x1 * z2 - x2 * z1) * y4 + (x1 * y2 - x2 * y1) * z4)
-    delta[0] = 1.0 - alpha[0] - beta[0] - gamma[0]
+    alpha[0] = norm * ((y2 * z3 - y3 * z2) * x4
+                     - (x2 * z3 - x3 * z2) * y4
+                     + (x2 * y3 - x3 * y2) * z4)
+    beta[0] = norm * ((y3 * z1 - y1 * z3) * x4
+                    + (x1 * z3 - x3 * z1) * y4
+                    - (x1 * y3 - x3 * y1) * z4)
+    gamma[0] = norm * ((y1 * z2 - y2 * z1) * x4
+                     - (x1 * z2 - x2 * z1) * y4
+                     + (x1 * y2 - x2 * y1) * z4)
+    delta[0] = 1.0 - (alpha[0] + beta[0] + gamma[0])
 
 
 cdef bint barycentric_inside_tetrahedra(double alpha, double beta, double gamma, double delta) nogil:
@@ -218,3 +226,45 @@ cdef double barycentric_interpolation_tetra(double alpha, double beta, double ga
     :rtype: double
     """
     return alpha * va + beta * vb + gamma * vc + delta * vd
+
+
+def _test_barycentric_tetrahedra(vertices, point):
+    """Expose cython function for testing.
+    Obtain the barycentric coords.
+
+    :param array-like (4, 3)
+    :param vector-like (1, 2)
+    :rtype: tuple: (alpha, beta, gamma, delta)
+    """
+    v1x, v1y, v1z = vertices[0, 0], vertices[0, 1], vertices[0, 2]
+    v2x, v2y, v2z = vertices[1, 0], vertices[1, 1], vertices[1, 2]
+    v3x, v3y, v3z = vertices[2, 0], vertices[2, 1], vertices[2, 2]
+    v4x, v4y, v4z = vertices[3, 0], vertices[3, 1], vertices[3, 2]
+
+    px, py, pz = point[0], point[1], point[2]
+
+    alpha = 0.0
+    beta = 0.0
+    gamma = 0.0
+    delta = 0.0
+
+    barycentric_coords_tetra(v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
+                             v4x, v4y, v4z, px, py, pz,
+                             &alpha, &beta, &gamma, &delta)
+
+    return (alpha, beta, gamma, delta)
+
+
+def _test_barycentric_inside_tetrahedra(v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
+                                        v4x, v4y, v4z, px, py, pz):
+    """Expose cython function for testing."""
+    alpha = 0.0
+    beta = 0.0
+    gamma = 0.0
+    delta = 0.0
+
+    barycentric_coords_tetra(v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z,
+                             v4x, v4y, v4z, px, py, pz,
+                             &alpha, &beta, &gamma, &delta)
+
+    return barycentric_inside_tetrahedra(alpha, beta, gamma, delta)

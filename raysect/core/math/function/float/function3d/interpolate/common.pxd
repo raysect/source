@@ -38,9 +38,9 @@ cdef class MeshKDTree3D(KDTree3DCore):
 
     cdef:
         np.ndarray _vertices
-        np.ndarray _tetrahedras
+        np.ndarray _tetrahedra
         double[:, ::1] _vertices_mv
-        np.int32_t[:, ::1] _tetrahedras_mv
+        np.int32_t[:, ::1] _tetrahedra_mv
         np.int32_t tetrahedra_id
         np.int32_t i1, i2, i3, i4
         double alpha, beta, gamma, delta

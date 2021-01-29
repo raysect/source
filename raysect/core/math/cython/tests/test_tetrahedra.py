@@ -33,7 +33,8 @@ Unit tests for the Vector3D object.
 
 import unittest
 import numpy as np
-from raysect.core.math.cython.tetrahedra import _test_inside_tetrahedra as inside_tetrahedra
+# from raysect.core.math.cython.tetrahedra import _test_inside_tetrahedra as inside_tetrahedra
+from raysect.core.math.cython.tetrahedra import _test_barycentric_inside_tetrahedra as inside_tetrahedra
 
 
 class TestTetrahedra(unittest.TestCase):
