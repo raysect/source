@@ -31,4 +31,5 @@
 
 from .base import Function3D
 from .constant import Constant3D
+from .blend import Blend3D
 from .utility import *

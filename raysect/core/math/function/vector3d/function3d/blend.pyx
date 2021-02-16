@@ -29,8 +29,33 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.vector3d.function2d.base cimport Function2D
-from raysect.core.math.function.vector3d.function2d.constant cimport Constant2D
-from raysect.core.math.function.vector3d.function2d.blend cimport Blend2D
-from raysect.core.math.function.vector3d.function2d.autowrap cimport autowrap_function2d
-from raysect.core.math.function.vector3d.function2d.utility cimport *
+from raysect.core.math.function.vector3d.function3d.autowrap cimport autowrap_function3d as autowrap_vecfn3d
+from raysect.core.math.function.float.function3d.autowrap cimport autowrap_function3d as autowrap_fltfn3d
+from raysect.core.math.vector cimport Vector3D
+from raysect.core.math.cython cimport clamp
+
+
+cdef class Blend3D(VecFn3D):
+    """
+    """
+
+    def __init__(self, object f1, object f2, object mask):
+        self._f1 = autowrap_vecfn3d(f1)
+        self._f2 = autowrap_vecfn3d(f2)
+        self._mask = autowrap_fltfn3d(mask)
+
+    cdef Vector3D evaluate(self, double x, double y, double z):
+
+        cdef double t = clamp(self._mask.evaluate(x, y, z), 0.0, 1.0)
+
+        # sample endpoints directly
+        if t == 0:
+            return self._f1.evaluate(x, y, z)
+
+        if t == 1:
+            return self._f2.evaluate(x, y, z)
+
+        # slerp between function vectors
+        cdef Vector3D f1 = self._f1.evaluate(x, y, z)
+        cdef Vector3D f2 = self._f2.evaluate(x, y, z)
+        return f1.slerp(f2, t)

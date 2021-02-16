@@ -31,5 +31,6 @@
 
 from raysect.core.math.function.vector3d.function1d.base cimport Function1D
 from raysect.core.math.function.vector3d.function1d.constant cimport Constant1D
+from raysect.core.math.function.vector3d.function1d.blend cimport Blend1D
 from raysect.core.math.function.vector3d.function1d.autowrap cimport autowrap_function1d
 from raysect.core.math.function.vector3d.function1d.utility cimport *
