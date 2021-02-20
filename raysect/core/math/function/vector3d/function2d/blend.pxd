@@ -29,8 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.function.vector3d.function2d.base cimport Function2D
-from raysect.core.math.function.vector3d.function2d.constant cimport Constant2D
-from raysect.core.math.function.vector3d.function2d.blend cimport Blend2D
-from raysect.core.math.function.vector3d.function2d.autowrap cimport autowrap_function2d
-from raysect.core.math.function.vector3d.function2d.utility cimport *
+from raysect.core.math.function.vector3d.function2d.base cimport Function2D as VecFn2D
+from raysect.core.math.function.float.function2d.base cimport Function2D as FltFn2D
+
+
+cdef class Blend2D(VecFn2D):
+    cdef VecFn2D _f1, _f2
+    cdef FltFn2D _mask
