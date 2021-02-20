@@ -37,9 +37,26 @@ from raysect.core.math.cython cimport clamp
 
 cdef class Blend2D(VecFn2D):
     """
+    Performs a spherical linear interpolation between two vector functions, modulated by a 3rd scalar function.
+
+    The value of the scalar mask function is used to spherically interpolated
+    between the vectors returned by the two functions. Mathematically the value
+    returned by this function is as follows:
+
+    .. math::
+        v = (1 - f_m(x)) f_1(x) + f_m(x) f_2(x)
+
+    The value of the mask function is clamped to the range [0, 1] if the
+    sampled value exceeds the required range.
     """
 
     def __init__(self, object f1, object f2, object mask):
+        """
+        :param vector3d.Function2D f1: First vector function.
+        :param vector3d.Function2D f2: Second vector function.
+        :param float.Function2D mask: Scalar function returning a value in the range [0, 1].
+        """
+
         self._f1 = autowrap_vecfn2d(f1)
         self._f2 = autowrap_vecfn2d(f2)
         self._mask = autowrap_fltfn2d(mask)
