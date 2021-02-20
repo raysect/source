@@ -33,6 +33,6 @@ from raysect.core.math.function.vector3d.function1d.base cimport Function1D as V
 from raysect.core.math.function.float.function1d.base cimport Function1D as FltFn1D
 
 
-cdef class Blend2D(VecFn1D):
+cdef class Blend1D(VecFn1D):
     cdef VecFn1D _f1, _f2
     cdef FltFn1D _mask
