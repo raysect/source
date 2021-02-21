@@ -31,4 +31,5 @@
 
 from .base import Function2D
 from .constant import Constant2D
+from .blend import Blend2D
 from .utility import *
