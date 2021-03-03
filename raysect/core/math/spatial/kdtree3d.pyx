@@ -481,6 +481,95 @@ cdef class KDTree3DCore:
         self._next_node += 1
         return id
 
+    cpdef bint is_contained(self, Point3D point):
+        """
+        Traverses the kd-Tree to identify if the point is contained by an any item.
+
+        :param point: A Point3D object.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        return self._is_contained(point)
+
+    cdef bint _is_contained(self, Point3D point):
+        """
+        Starts contains traversal of the kd-Tree.
+
+        :param point: A Point3D object.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        # exit early if point is not inside bounds of the kd-Tree
+        if not self.bounds.contains(point):
+            return False
+
+        # start search
+        return self._is_contained_node(ROOT_NODE, point)
+
+    cdef bint _is_contained_node(self, int32_t id, Point3D point):
+        """
+        Dispatches contains point look-ups to the relevant node handler.
+
+        :param id: Index of node in node array.
+        :param point: Point3D to evaluate.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        if self._nodes[id].type == LEAF:
+            return self._is_contained_leaf(id, point)
+        else:
+            return self._is_contained_branch(id, point)
+
+    cdef bint _is_contained_branch(self, int32_t id, Point3D point):
+        """
+        Locates the kd-Tree node containing the point.
+
+        :param id: Index of node in node array.
+        :param point: Point3D to evaluate.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        cdef:
+            int32_t axis
+            double split
+            int32_t lower_id, upper_id
+
+        # unpack branch kdnode
+        # notes:
+        #  * the branch type enumeration is the same as axis index
+        #  * the lower_id is always the next node in the array
+        #  * the upper_id is stored in the count attribute
+        axis = self._nodes[id].type
+        split = self._nodes[id].split
+        lower_id = id + 1
+        upper_id = self._nodes[id].count
+
+        if point.get_index(axis) < split:
+            return self._is_contained_node(lower_id, point)
+        else:
+            return self._is_contained_node(upper_id, point)
+
+    cdef bint _is_contained_leaf(self, int32_t id, Point3D point):
+        """
+        Tests each item in the node to identify if they enclose the point.
+
+        This is a virtual method and must be implemented in a derived class if
+        the identification of an item enclosing a point is required. This method
+        must return True is the point lies inside an item or False otherwise.
+
+        Derived classes may need to wish to return additional information about
+        the enclosing item(s). This can be done by setting object attributes
+        prior to returning. Any attributes set when _is_contained_leaf() returns
+        are guaranteed not to be further modified.
+
+        :param id: Index of node in node array.
+        :param point: Point3D to evaluate.
+        :return: True if the point lies inside an item, false otherwise.
+        """
+
+        # virtual function that must be implemented by derived classes
+        raise NotImplementedError("KDTree3DCore _is_contained_leaf() method not implemented.")
+
     cpdef bint trace(self, Ray ray):
         """
         Traverses the kd-Tree to find the first intersection with an item stored in the tree.
