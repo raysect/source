@@ -14,8 +14,8 @@ from raysect.optical.material import RegularGridBox
 RegularGridBox Demonstration
 ----------------------------
 
-This file demonstrates how to use RegularGridBox to effectively integrate through
-the emission profiles defined on a regular grid.
+This file demonstrates how the RegularGridBox helps to effectively integrate
+the emissivity defined on a regular grid.
 
 This demonstration uses exactly the same emission profile as
 demos/material/volume.py demonstration. It is recomended to run the

@@ -14,7 +14,7 @@ from raysect.optical.material import RegularGridCylinder
 Demonstration of discrete emitter
 ---------------------------------
 
-This file demonstrates how to define the regular grid emitter with discrete spectrum.
+This file demonstrates how to define a regular grid emitter with discrete spectrum.
 """
 
 # axisymmetric cylindrical grid

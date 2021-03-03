@@ -78,7 +78,7 @@ class RegularGridVolume:
 
 
 class RegularGridCylinder(RegularGridVolume):
-    """
+    r"""
     Regular Grid Volume for cylindrical emitter defined on a regular 3D :math:`(R, \phi, Z)` grid.
     The emitter is periodic in :math:`\phi` direction.
     The base of the cylinder is located at `Z = 0` plane. Use `transform`
@@ -246,7 +246,7 @@ class RegularGridCylinder(RegularGridVolume):
 
 
 class RegularGridBox(RegularGridVolume):
-    """
+    r"""
     Regular Grid Volume for rectangular emitter defined on a regular 3D :math:`(X, Y, Z)` grid.
     The grid starts at (0, 0, 0). Use `transform` parameter to move it.
 

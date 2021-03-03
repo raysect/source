@@ -14,8 +14,8 @@ from raysect.optical.material import CylindricalRegularEmitter
 CylindricalRegularEmitter Demonstration
 ---------------------------------------
 
-This file demonstrates how to use CylindricalRegularEmitter material to effectively
-integrate through the emission profiles defined on a regular grid.
+This file demonstrates how the RegularGridCylinder helps to effectively integrate
+the emissivity defined on a regular grid in Cartesian coordinates.
 
 The same emission profile as in RegularGridBox demo is defined here in cylindrical
 coordinates. Due to rectangular shape of the emission profile, we cannot use

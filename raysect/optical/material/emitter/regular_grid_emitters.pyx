@@ -117,10 +117,10 @@ cdef class RegularGridIntegrator(VolumeIntegrator):
 
 
 cdef class CylindricalRegularIntegrator(RegularGridIntegrator):
-    """
+    r"""
     Integrates the spectral emissivity defined on a regular grid
     in cylindrical coordinate system: :math:`(R, \phi, Z)` along the ray's trajectory.
-    This integrator must be used with the `CylindricalRegularEmitter` material class. 
+    This integrator must be used with the `CylindricalRegularEmitter` material class.
     It is assumed that the emitter is periodic in :math:`\phi` direction with a period
     equal to `material.period`.
     This integrator does not perform interpolation, so the spectral emissivity at
@@ -201,7 +201,7 @@ cdef class CartesianRegularIntegrator(RegularGridIntegrator):
     """
     Integrates the spectral emissivity defined on a regular grid
     in Cartesian coordinate system: :math:`(X, Y, Z)` along the ray's trajectory.
-    This integrator must be used with the `CartesianRegularEmitter` material class. 
+    This integrator must be used with the `CartesianRegularEmitter` material class.
     This integrator does not perform interpolation, so the spectral emissivity at
     any spatial point along the ray's trajectory is equal to that of the grid cell
     where this point is located.
@@ -270,7 +270,7 @@ cdef class CartesianRegularIntegrator(RegularGridIntegrator):
 
 
 cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
-    """
+    r"""
     Basic class for the emitters defined on a regular 3D grid.
     The emission anywhere outside the specified grid is zero.
 
@@ -570,7 +570,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
         self._cache_num_samp = bins
 
     cpdef object integrate(self, double min_wavelength, double max_wavelength):
-        """
+        r"""
         Integrate the emission in the specified wavelength range and returns the result in the
         form of one-column `csc_matrix`.
 
@@ -660,8 +660,7 @@ cdef class RegularGridEmitter(InhomogeneousVolumeEmitter):
 
 
 cdef class CylindricalRegularEmitter(RegularGridEmitter):
-
-    """
+    r"""
     Spectral emitter defined on a regular 3D grid in cylindrical
     coordinates: :math:`(R, \phi, Z)`. This emitter is periodic in :math:`\phi` direction.
     The emission enywhere outsode the provided spatial grid is zero.
@@ -694,7 +693,7 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
     :param raysect.optical.material.VolumeIntegrator integrator: Volume integrator, defaults to
         `CylindricalRegularIntegrator(step=0.25 * min(grid_steps[0], grid_steps[2]))`.
     :param float rmin: Lower bound of grid in `R` direction (in meters), defaults to `rmin=0`.
-    
+
     :ivar tuple grid_shape: The shape of regular grid.
     :ivar tuple grid_steps: The sizes of grid cells along each direction.
     :ivar csc_matrix ~.emission: The emission defined on a regular grid stored as a a сompressed
@@ -712,9 +711,9 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
     :ivar float rmin: Lower bound of grid in `R` direction.
     :ivar float dr: The size of grid cell in `R` direction (equals to `grid_steps[0]`).
     :ivar float dphi: The size of grid cell in :math:`\phi` direction (equals to `grid_steps[1]`).
-    :ivar float dz: The size of grid cell in `Z` direction (equals to `grid_steps[2]`). 
+    :ivar float dz: The size of grid cell in `Z` direction (equals to `grid_steps[2]`).
 
-    Continoues spectrum example:   
+    Continoues spectrum example:
 
     .. code-block:: pycon
 
@@ -872,8 +871,7 @@ cdef class CylindricalRegularEmitter(RegularGridEmitter):
 
 
 cdef class CartesianRegularEmitter(RegularGridEmitter):
-
-    """
+    r"""
     Spectral emitter defined on a regular 3D grid in Cartesian
     coordinates. The emission enywhere outsode the provided spatial grid is zero.
 

@@ -9,8 +9,9 @@ from raysect.optical.material import RegularGridEmitter
 Demonstration of RegularGridEmitter functionality
 -------------------------------------------------
 
-This file demonstrates basic functions of RegularGridEmitter, the emitter material created
-to speed up volume integration through the emission profiles defined on a regular 3D spatial grids.
+This file demonstrates basic functions of the `RegularGridEmitter` class, an emitter
+material designed to speed up ray-path integration of the emission profiles defined
+on a regular 3D spatial grids.
 """
 
 
