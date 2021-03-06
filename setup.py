@@ -5,6 +5,8 @@ import os
 import os.path as path
 import multiprocessing
 
+multiprocessing.set_start_method('fork')
+
 use_cython = True
 force = False
 profile = False
