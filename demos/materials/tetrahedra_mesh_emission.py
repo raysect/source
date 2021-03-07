@@ -29,7 +29,11 @@ class UnityEmitter(InhomogeneousVolumeEmitter):
 
 # Rabbit tetrahedra mesh emitter
 mesh = Tetmesh(os.path.join(BASE_PATH, "../resources/stanford_bunny.mesh"))
-tetra = Discrete3DMesh(mesh.vertices, mesh.tets, np.ones((mesh.num_tets)), False, 0)
+
+try:
+    tetra = Discrete3DMesh(mesh.vertices, mesh.polys, np.ones((mesh.num_polys)), False, 0)
+except AttributeError:  # for backward compatibility with older versions of Py3DViewer
+    tetra = Discrete3DMesh(mesh.vertices, mesh.tets, np.ones((mesh.num_tets)), False, 0)
 
 # scene
 world = World()
