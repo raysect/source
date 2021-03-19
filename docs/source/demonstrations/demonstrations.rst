@@ -79,6 +79,11 @@ Materials
      - .. image:: materials/volume_inhomogeneous.png
           :height: 150px
           :width: 150px
+   * - :ref:`Tetrahedral volume mesh emitters <demo_tetrahedra_mesh_emitters>`
+     - Make a tetrahedral volume mesh emitter.
+     - .. image:: materials/tetrahedra_mesh_emitter.png
+          :height: 150px
+          :width: 150px
    * - :ref:`Polar BRDF plots <demo_polar_brdf_plots>`
      - Producing polar plots of material BRDFs.
      - .. image:: materials/brdf_polar_plots.png

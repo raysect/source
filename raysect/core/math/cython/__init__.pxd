@@ -32,5 +32,4 @@
 from raysect.core.math.cython.utility cimport *
 from raysect.core.math.cython.transform cimport *
 from raysect.core.math.cython.triangle cimport *
-
-
+from raysect.core.math.cython.tetrahedra cimport *

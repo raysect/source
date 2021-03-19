@@ -31,6 +31,7 @@
 
 from raysect.core.math.function.float.function2d.base cimport Function2D
 from raysect.core.math.function.float.function2d.constant cimport Constant2D
+from raysect.core.math.function.float.function2d.blend cimport Blend2D
 from raysect.core.math.function.float.function2d.autowrap cimport autowrap_function2d
 from raysect.core.math.function.float.function2d.interpolate cimport *
 from raysect.core.math.function.float.function2d.arg cimport Arg2D
