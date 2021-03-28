@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -27,11 +29,28 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .ray import *
-from .spectrum import *
-from .stokes import *
-from .mueller import *
+
+cdef class StokesVector:
+
+    cdef readonly double i, q, u, v
+    cpdef double polarised_fraction(self)
+    cpdef double linear_fraction(self)
+    cpdef double circular_fraction(self)
 
 
+cdef inline StokesVector new_stokesvector(double i, double q, double u, double v):
+    """
+    StokesVector factory function.
 
+    Creates a new StokeVector object with less overhead than the equivalent Python
+    call. This function is callable from cython only and performs no checks.
+    """
+
+    cdef StokesVector a
+    a = StokesVector.__new__(StokesVector)
+    a.i = i
+    a.q = q
+    a.u = u
+    a.v = v
+    return a
 

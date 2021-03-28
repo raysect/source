@@ -116,9 +116,6 @@ cpdef MuellerMatrix diattenuator(tx, ty):
     )
 
 
-# retarder
-
-
 cpdef MuellerMatrix rotate_angle(double angle):
     """
     Rotates a Stoke's vector to from a source frame to a target frame by angle.

@@ -27,10 +27,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .ray import *
-from .spectrum import *
-from .stokes import *
-from .mueller import *
+from raysect.optical.polarised.ray cimport *
+from raysect.optical.polarised.spectrum cimport *
+from raysect.optical.polarised.stokes cimport *
+from raysect.optical.polarised.mueller cimport *
 
 
 

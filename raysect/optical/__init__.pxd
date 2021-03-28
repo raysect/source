@@ -40,6 +40,8 @@ from raysect.optical.spectrum cimport *
 from raysect.optical.spectralfunction cimport *
 from raysect.optical.scenegraph cimport *
 
+# from raysect.optical cimport polarised
+
 
 
 
