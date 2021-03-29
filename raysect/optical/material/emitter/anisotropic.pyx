@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from libc.math cimport fabs
-from raysect.optical cimport World, Ray, Primitive, Point3D, AffineMatrix3D, Vector3D, Normal3D
+from raysect.optical cimport World, Primitive, Point3D, AffineMatrix3D, Vector3D, Normal3D
 cimport cython
 
 
@@ -50,13 +50,14 @@ cdef class AnisotropicSurfaceEmitter(NullVolume):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Vector3D incident
-            Spectrum spectrum
+            USpectrum spectrum
             double cosine, angle
             bint back_face
 
@@ -73,7 +74,7 @@ cdef class AnisotropicSurfaceEmitter(NullVolume):
         cosine = fabs(cosine)
 
         # obtain emission spectrum
-        spectrum = self.emission_function(ray.new_spectrum(), cosine, back_face)
+        spectrum = self.emission_function_unpolarised(ray.new_spectrum(), cosine, back_face)
 
         # check spectrum object
         if spectrum.samples.ndim != 1 or spectrum.samples.shape[0] != ray.get_bins():
@@ -81,7 +82,7 @@ cdef class AnisotropicSurfaceEmitter(NullVolume):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Spectrum spectrum, double cosine, bint back_face):
+    cpdef USpectrum emission_function_unpolarised(self, USpectrum spectrum, double cosine, bint back_face):
         """
         Returns the emission along the observation direction.
 

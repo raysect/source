@@ -32,7 +32,7 @@ from raysect.optical.observer.pipeline import RGBPipeline2D
 from raysect.optical.observer.sampler2d import RGBAdaptiveSampler2D
 
 from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, RectangleSampler3D
-from raysect.optical cimport Ray
+from raysect.optical.unpolarised cimport Ray
 from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
 

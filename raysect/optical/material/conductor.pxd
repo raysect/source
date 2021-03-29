@@ -31,7 +31,8 @@
 
 from raysect.optical cimport SpectralFunction
 from raysect.optical.material cimport Material, ContinuousBSDF
-from raysect.optical cimport Vector3D, Spectrum
+from raysect.optical cimport Vector3D
+from raysect.optical.unpolarised cimport Spectrum as USpectrum
 
 
 cdef class Conductor(Material):
@@ -56,6 +57,6 @@ cdef class RoughConductor(ContinuousBSDF):
 
     cdef double _g1(self, Vector3D v)
 
-    cdef Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal)
+    cdef USpectrum _f(self, USpectrum spectrum, Vector3D s_outgoing, Vector3D s_normal)
 
     cdef double _fresnel_conductor(self, double ci, double n, double k) nogil

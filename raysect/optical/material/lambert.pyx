@@ -30,8 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.sampler cimport HemisphereCosineSampler
-from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF
+from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, SpectralFunction, ConstantSF
 from raysect.optical.material cimport ContinuousBSDF
+from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
 from numpy cimport ndarray
 
 
@@ -75,13 +76,14 @@ cdef class Lambert(ContinuousBSDF):
     cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):
         return hemisphere_sampler.sample()
 
-    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
-                                    Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+    cpdef USpectrum evaluate_shading_unpolarised(
+        self, World world, URay ray, Vector3D s_incoming, Vector3D s_outgoing,
+        Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+        AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
 
         cdef:
-            Spectrum spectrum
-            Ray reflected
+            USpectrum spectrum
+            URay reflected
             double[::1] reflectivity
             double pdf
 
@@ -111,9 +113,10 @@ cdef class Lambert(ContinuousBSDF):
         else:
             return self.reflectivity.evaluate(wavelength)
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_volume_unpolarised(
+        self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+        Point3D start_point, Point3D end_point,
+        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # no volume contribution
         return spectrum

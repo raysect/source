@@ -30,8 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.sampler cimport HemisphereCosineSampler
-from raysect.optical cimport Point3D, Vector3D, Normal3D, new_normal3d, AffineMatrix3D, new_affinematrix3d, Primitive, World, Ray, Spectrum
+from raysect.optical cimport Point3D, Vector3D, Normal3D, new_normal3d, AffineMatrix3D, new_affinematrix3d, Primitive, World
 from raysect.optical.material cimport Material
+from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
 
 # sets the maximum number of attempts to find a valid perturbed normal
 # it is highly unlikely (REALLY!) this number will ever be reached, it is just there for my paranoia
@@ -78,12 +79,13 @@ cdef class Roughen(Material):
         self.roughness = roughness
         self.material = material
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
-            Ray reflected
+            URay reflected
             Vector3D s_incident, s_random
             Normal3D s_normal
             AffineMatrix3D surface_to_primitive
@@ -117,15 +119,18 @@ cdef class Roughen(Material):
                 normal = s_normal.transform(surface_to_primitive).normalise()
                 break
 
-        return self.material.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point,
-                                              normal, world_to_primitive, primitive_to_world)
+        return self.material.evaluate_surface_unpolarised(
+            world, ray, primitive, hit_point, exiting, inside_point, outside_point,
+            normal, world_to_primitive, primitive_to_world
+        )
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
+    cpdef USpectrum evaluate_volume_unpolarised(
+        self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
-        return self.material.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
+        return self.material.evaluate_volume_unpolarised(
+            spectrum, world, ray, primitive, start_point, end_point, to_local, to_world
+        )
 
     cdef tuple _generate_surface_transforms(self, Normal3D normal):
         """

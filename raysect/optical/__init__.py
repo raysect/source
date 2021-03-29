@@ -56,13 +56,12 @@ from raysect.core.math import *
 from raysect.core.boundingbox import *
 
 # optical modules
-from .ray import *
-from .colour import *
-from .spectrum import *
 from .spectralfunction import *
 from .scenegraph import *
 from .material import *
+from .colour import *
 
+#from . import unpolarised
 
 
 

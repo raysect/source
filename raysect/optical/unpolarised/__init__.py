@@ -1,5 +1,3 @@
-# cython: language_level=3
-
 # Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -29,11 +27,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material cimport NullVolume
-from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
+from .ray import *
+from .loggingray import *
+from .spectrum import *
 
 
-cdef class AnisotropicSurfaceEmitter(NullVolume):
 
-    cpdef USpectrum emission_function_unpolarised(self, USpectrum spectrum, double cosine, bint back_face)
 

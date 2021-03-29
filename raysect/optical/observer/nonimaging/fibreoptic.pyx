@@ -33,7 +33,7 @@ from libc.math cimport cos, M_PI as PI
 
 from raysect.core cimport Vector3D
 from raysect.core.math.sampler cimport DiskSampler3D, ConeUniformSampler
-from raysect.optical cimport Ray
+from raysect.optical.unpolarised cimport Ray
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 cimport cython

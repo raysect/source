@@ -50,16 +50,15 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_volume_unpolarised(
+        self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Point3D start, end
             Vector3D direction
             double length
-            Spectrum emission
+            USpectrum emission
             int index
 
         # convert start and end points to local space
@@ -80,7 +79,7 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
         emission = ray.new_spectrum()
 
         # emission function specifies direction from ray origin to hit-point
-        emission = self.emission_function(direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
+        emission = self.emission_function_unpolarised(direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
 
         # sanity check as bounds checking is disabled
         if emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]:
@@ -92,9 +91,10 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
 
         return spectrum
 
-    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum emission_function_unpolarised(
+            self, Vector3D direction, USpectrum spectrum,
+            World world, URay ray, Primitive primitive,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
         """
         The emission function for the material.
 

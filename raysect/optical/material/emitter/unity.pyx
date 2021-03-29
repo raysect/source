@@ -55,11 +55,12 @@ cdef class UnitySurfaceEmitter(NullVolume):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-        cdef Spectrum spectrum
+        cdef USpectrum spectrum
 
         spectrum = ray.new_spectrum()
         spectrum.samples_mv[:] = 1.0
@@ -89,8 +90,9 @@ cdef class UnityVolumeEmitter(HomogeneousVolumeEmitter):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum emission_function_unpolarised(
+        self, Vector3D direction, USpectrum spectrum, World world, URay ray, Primitive primitive,
+        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
         spectrum.samples_mv[:] = 1.0
         return spectrum

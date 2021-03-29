@@ -34,14 +34,10 @@ from raysect.core.boundingbox cimport *
 from raysect.core.math cimport *
 
 # optical modules
-from raysect.optical.ray cimport *
 from raysect.optical.colour cimport *
-from raysect.optical.spectrum cimport *
 from raysect.optical.spectralfunction cimport *
 from raysect.optical.scenegraph cimport *
 
 # from raysect.optical cimport polarised
-
-
 
 

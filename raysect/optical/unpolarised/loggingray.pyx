@@ -32,9 +32,9 @@
 from raysect.core cimport Intersection, Point3D, Vector3D
 from raysect.core.math.random cimport probability
 
-from raysect.optical.ray cimport Ray
+from raysect.optical.unpolarised.ray cimport Ray
+from raysect.optical.unpolarised.spectrum cimport Spectrum
 from raysect.optical.scenegraph cimport World, Primitive
-from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.material.material cimport Material
 
 cimport cython

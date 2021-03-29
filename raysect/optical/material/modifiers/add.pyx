@@ -29,8 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World
 from raysect.optical.material cimport Material
+from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
 
 
 cdef class Add(Material):
@@ -93,34 +94,44 @@ cdef class Add(Material):
         self.surface_only = surface_only
         self.volume_only = volume_only
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-        cdef Spectrum s1, s2
+        cdef USpectrum s1, s2
 
         # sample material 1
-        s1 = self.m1.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, world_to_primitive, primitive_to_world)
+        s1 = self.m1.evaluate_surface_unpolarised(
+            world, ray, primitive, hit_point, exiting, inside_point, outside_point,
+            normal, world_to_primitive, primitive_to_world
+        )
         if self.volume_only:
             return s1
 
         # sample material 2
-        s2 = self.m2.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, world_to_primitive, primitive_to_world)
+        s2 = self.m2.evaluate_surface_unpolarised(
+            world, ray, primitive, hit_point, exiting, inside_point, outside_point,
+            normal, world_to_primitive, primitive_to_world
+        )
 
         # combine
         s1.add_spectrum(s2)
         return s1
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
+    cpdef USpectrum evaluate_volume_unpolarised(
+        self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         # sample material 1
-        self.m1.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
+        self.m1.evaluate_volume_unpolarised(
+            spectrum, world, ray, primitive, start_point, end_point, to_local, to_world
+        )
         if self.surface_only:
             return spectrum
 
         # sample material 2
-        self.m2.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
+        self.m2.evaluate_volume_unpolarised(
+            spectrum, world, ray, primitive, start_point, end_point, to_local, to_world
+        )
         return spectrum

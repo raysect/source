@@ -29,12 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport World, Primitive, Ray, Spectrum, Vector3D, AffineMatrix3D
+from raysect.optical cimport World, Primitive, Vector3D, AffineMatrix3D
 from raysect.optical.material.material cimport NullSurface
+from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
 
 
 cdef class HomogeneousVolumeEmitter(NullSurface):
 
-    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix3D to_local, AffineMatrix3D to_world)
+    cpdef USpectrum emission_function_unpolarised(
+            self, Vector3D direction, USpectrum spectrum,
+            World world, URay ray, Primitive primitive,
+            AffineMatrix3D to_local, AffineMatrix3D to_world)

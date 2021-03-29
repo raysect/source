@@ -30,20 +30,38 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.material cimport Material as CoreMaterial
-from raysect.optical cimport Point3D, Vector3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
+from raysect.optical cimport Point3D, Vector3D, Normal3D, AffineMatrix3D, Primitive, World
+from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
+# from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
 
 
 cdef class Material(CoreMaterial):
 
     cdef double _importance
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
+    )
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+    cpdef USpectrum evaluate_volume_unpolarised(
+        self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+        Point3D start_point, Point3D end_point,
+        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
+    )
+
+    # cpdef PSpectrum evaluate_surface_polarised(
+    #     self, World world, PRay ray, Primitive primitive, Point3D hit_point,
+    #     bint exiting, Point3D inside_point, Point3D outside_point,
+    #     Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
+    # )
+    #
+    # cpdef PSpectrum evaluate_volume_polarised(
+    #     self, USpectrum spectrum, World world, PRay ray, Primitive primitive,
+    #     Point3D start_point, Point3D end_point,
+    #     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
+    # )
 
 
 cdef class NullSurface(Material):
@@ -56,9 +74,11 @@ cdef class NullVolume(Material):
 
 cdef class DiscreteBSDF(Material):
 
-    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming,
-                                    Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
+    cpdef USpectrum evaluate_shading_unpolarised(
+        self, World world, URay ray, Vector3D s_incoming,
+        Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+        AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world
+    )
 
 
 cdef class ContinuousBSDF(Material):
@@ -67,8 +87,10 @@ cdef class ContinuousBSDF(Material):
 
     cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face)
 
-    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
-                                    Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world)
+    cpdef USpectrum evaluate_shading_unpolarised(
+        self, World world, URay ray, Vector3D s_incoming, Vector3D s_outgoing,
+        Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+        AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world
+    )
 
-    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength)
+    cpdef double bsdf_unpolarised(self, Vector3D s_incident, Vector3D s_reflected, double wavelength)

@@ -41,9 +41,10 @@ cdef class VolumeIntegrator:
     The deriving class must implement the integrate() method.
     """
 
-    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
-                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum integrate(
+            self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+            InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
         """
         Performs a customised integration of the emission through a volume emitter.
 
@@ -105,15 +106,16 @@ cdef class NumericalIntegrator(VolumeIntegrator):
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
-                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum integrate(
+            self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+            InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Point3D start, end
             Vector3D integration_direction, ray_direction
             double length, step, t, c
-            Spectrum emission, emission_previous, temp
+            USpectrum emission, emission_previous, temp
             int intervals, interval, index
 
         # convert start and end points to local space
@@ -142,7 +144,9 @@ cdef class NumericalIntegrator(VolumeIntegrator):
         emission_previous = ray.new_spectrum()
 
         # sample point and sanity check as bounds checking is disabled
-        emission_previous = material.emission_function(start, ray_direction, emission_previous, world, ray, primitive, world_to_primitive, primitive_to_world)
+        emission_previous = material.emission_function_unpolarised(
+            start, ray_direction, emission_previous, world, ray, primitive, world_to_primitive, primitive_to_world
+        )
         self._check_dimensions(emission_previous, spectrum.bins)
 
         # numerical integration
@@ -158,7 +162,9 @@ cdef class NumericalIntegrator(VolumeIntegrator):
             )
 
             # sample point and sanity check as bounds checking is disabled
-            emission = material.emission_function(sample_point, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
+            emission = material.emission_function_unpolarised(
+                sample_point, ray_direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world
+            )
             self._check_dimensions(emission, spectrum.bins)
 
             # trapezium rule integration
@@ -173,7 +179,7 @@ cdef class NumericalIntegrator(VolumeIntegrator):
 
         return spectrum
 
-    cdef int _check_dimensions(self, Spectrum spectrum, int bins) except -1:
+    cdef int _check_dimensions(self, USpectrum spectrum, int bins) except -1:
         if spectrum.samples.ndim != 1 or spectrum.samples.shape[0] != bins:
             raise ValueError("Spectrum returned by emission function has the wrong number of samples.")
 
@@ -196,18 +202,20 @@ cdef class InhomogeneousVolumeEmitter(NullSurface):
         self.integrator = integrator or NumericalIntegrator(step=0.01, min_samples=5)
         self.importance = 1.0
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_volume_unpolarised(
+            self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
+            Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # pass to volume integrator class
-        return self.integrator.integrate(spectrum, world, ray, primitive, self, start_point, end_point,
-                                         world_to_primitive, primitive_to_world)
+        return self.integrator.integrate(
+            spectrum, world, ray, primitive, self, start_point, end_point,
+            world_to_primitive, primitive_to_world
+        )
 
-    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum emission_function_unpolarised(
+            self, Point3D point, Vector3D direction, USpectrum spectrum,
+            World world, URay ray, Primitive primitive,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
         """
         The emission function for the material at a given sample point.
 

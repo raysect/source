@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.spectrum cimport Spectrum
+from raysect.optical.unpolarised.spectrum cimport Spectrum
 
 cpdef double[:,::1] resample_ciexyz(double min_wavelength, double max_wavelength, int bins)
 

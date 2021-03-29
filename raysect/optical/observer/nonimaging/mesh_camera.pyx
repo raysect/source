@@ -36,7 +36,8 @@ from numpy cimport float32_t, int32_t
 
 from raysect.core.math.random cimport point_triangle
 from raysect.core.math.sampler cimport HemisphereCosineSampler
-from raysect.optical cimport Ray, Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
+from raysect.optical cimport Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
+from raysect.optical.unpolarised cimport Ray
 from raysect.optical.observer.base cimport Observer1D
 from raysect.optical.observer.pipeline.mono import PowerPipeline1D
 from raysect.optical.observer.sampler1d import FullFrameSampler1D

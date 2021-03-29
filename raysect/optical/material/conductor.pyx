@@ -31,7 +31,8 @@
 
 from numpy cimport ndarray
 from raysect.core.math.random cimport uniform
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, new_vector3d
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, new_vector3d
+from raysect.optical.unpolarised cimport Ray as URay
 from libc.math cimport M_PI, sqrt, fabs, atan, cos, sin
 cimport cython
 
@@ -74,16 +75,17 @@ cdef class Conductor(Material):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Vector3D incident, reflected
             double temp, ci
             ndarray reflection_coefficient
-            Ray reflected_ray
-            Spectrum spectrum
+            URay reflected_ray
+            USpectrum spectrum
             double[::1] n, k
             int i
 
@@ -145,10 +147,9 @@ cdef class Conductor(Material):
 
         return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_volume_unpolarised(
+        self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # do nothing!
         return spectrum
@@ -246,14 +247,15 @@ cdef class RoughConductor(ContinuousBSDF):
         )
 
     @cython.cdivision(True)
-    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
-                                    Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+    cpdef USpectrum evaluate_shading_unpolarised(
+        self, World world, URay ray, Vector3D s_incoming, Vector3D s_outgoing,
+        Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+        AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
 
         cdef:
             Vector3D s_half
-            Spectrum spectrum
-            Ray reflected
+            USpectrum spectrum
+            URay reflected
 
         # outgoing ray is sampling incident light so s_outgoing = incident
 
@@ -280,7 +282,7 @@ cdef class RoughConductor(ContinuousBSDF):
         spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) / (4 * s_incoming.z))
         return self._f(spectrum, s_outgoing, s_half)
 
-    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
+    cpdef double bsdf_unpolarised(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
 
         cdef:
             double n, k, ci, microfacet_factor, fresnel_reflectance
@@ -344,7 +346,7 @@ cdef class RoughConductor(ContinuousBSDF):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal):
+    cdef USpectrum _f(self, USpectrum spectrum, Vector3D s_outgoing, Vector3D s_normal):
 
         cdef:
             double[::1] n, k
@@ -373,9 +375,9 @@ cdef class RoughConductor(ContinuousBSDF):
         k3 = k0 + ci2
         return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_volume_unpolarised(
+        self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # no volume contribution
         return spectrum

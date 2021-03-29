@@ -31,7 +31,8 @@
 
 cimport cython
 
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World
+from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
 
 
 cdef class AbsorbingSurface(NullVolume):
@@ -47,8 +48,9 @@ cdef class AbsorbingSurface(NullVolume):
         >>> absorber = Sphere(radius=0.01, parent=world, material=AbsorbingSurface())
     """
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         return ray.new_spectrum()

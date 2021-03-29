@@ -29,15 +29,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D
+from raysect.optical cimport World, Primitive, Point3D, Vector3D, AffineMatrix3D
 from raysect.optical.material.material cimport NullSurface
+from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
 
 
 cdef class VolumeIntegrator:
 
-    cpdef Spectrum integrate(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                             InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
-                             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+    cpdef USpectrum integrate(
+            self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+            InhomogeneousVolumeEmitter material, Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
 
 cdef class NumericalIntegrator(VolumeIntegrator):
@@ -46,13 +48,14 @@ cdef class NumericalIntegrator(VolumeIntegrator):
         double _step
         int _min_samples
 
-    cdef int _check_dimensions(self, Spectrum spectrum, int bins) except -1
+    cdef int _check_dimensions(self, USpectrum spectrum, int bins) except -1
 
 
 cdef class InhomogeneousVolumeEmitter(NullSurface):
 
     cdef public VolumeIntegrator integrator
 
-    cpdef Spectrum emission_function(self, Point3D point, Vector3D direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix3D to_local, AffineMatrix3D to_world)
+    cpdef USpectrum emission_function_unpolarised(
+            self, Point3D point, Vector3D direction, USpectrum spectrum,
+            World world, URay ray, Primitive primitive,
+            AffineMatrix3D to_local, AffineMatrix3D to_world)

@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.optical.spectrum cimport Spectrum
+from raysect.optical.unpolarised.spectrum cimport Spectrum
 cimport cython
 
 

@@ -29,13 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI as PI, asin, cos
-
 from raysect.core cimport Intersection
 from raysect.core.math.random cimport probability
 from raysect.core.math.cython cimport clamp
 from raysect.optical.material.material cimport Material
-from raysect.optical.spectrum cimport new_spectrum
+from raysect.optical.unpolarised.spectrum cimport new_spectrum
 from raysect.optical.scenegraph cimport Primitive
 cimport cython
 
@@ -410,16 +408,11 @@ cdef class Ray(CoreRay):
 
         # request surface contribution to spectrum from primitive material
         material = intersection.primitive.get_material()
-        return material.evaluate_surface(world,
-                                         self,
-                                         intersection.primitive,
-                                         intersection.hit_point,
-                                         intersection.exiting,
-                                         intersection.inside_point,
-                                         intersection.outside_point,
-                                         intersection.normal,
-                                         intersection.world_to_primitive,
-                                         intersection.primitive_to_world)
+        return material.evaluate_surface_unpolarised(
+            world, self, intersection.primitive, intersection.hit_point, intersection.exiting,
+            intersection.inside_point, intersection.outside_point, intersection.normal,
+            intersection.world_to_primitive, intersection.primitive_to_world
+        )
 
     cdef Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):
 
@@ -443,15 +436,9 @@ cdef class Ray(CoreRay):
             for primitive in primitives:
 
                 material = primitive.get_material()
-                spectrum = material.evaluate_volume(
-                    spectrum,
-                    world,
-                    self,
-                    primitive,
-                    start_point,
-                    end_point,
-                    primitive.to_local(),
-                    primitive.to_root()
+                spectrum = material.evaluate_volume_unpolarised(
+                    spectrum, world, self, primitive, start_point, end_point,
+                    primitive.to_local(), primitive.to_root()
                 )
 
         return spectrum
@@ -550,7 +537,6 @@ cdef class Ray(CoreRay):
 
         return ray
 
-    # TODO: PROFILE ME, ray--> cython new_ray for optical ray
     cpdef Ray copy(self, Point3D origin=None, Vector3D direction=None):
         """
         Obtain a new Ray object with the same configuration settings.

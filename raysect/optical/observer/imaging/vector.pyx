@@ -33,7 +33,7 @@ cimport numpy as np
 
 from raysect.core cimport Point3D, Vector3D, Point2D
 from raysect.core.math.random cimport point_square
-from raysect.optical cimport Ray
+from raysect.optical.unpolarised cimport Ray
 from raysect.optical.observer.base cimport Observer2D
 from raysect.optical.observer.sampler2d import FullFrameSampler2D, RGBAdaptiveSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D

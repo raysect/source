@@ -34,7 +34,8 @@ from numpy import array, float64
 from numpy cimport ndarray
 from libc.math cimport sqrt, pow as cpow
 from raysect.core.math.random cimport probability
-from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
+from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF
+from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
 
 
 cdef class Sellmeier(NumericallyIntegratedSF):
@@ -150,16 +151,17 @@ cdef class Dielectric(Material):
         self.importance = 1.0
 
     @cython.cdivision(True)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point, Normal3D normal,
+        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Vector3D incident, reflected, transmitted
             double internal_index, external_index, n1, n2
             double c1, c2s, gamma, reflectivity, transmission, temp
-            Ray reflected_ray, transmitted_ray
-            Spectrum spectrum
+            URay reflected_ray, transmitted_ray
+            USpectrum spectrum
 
         # convert ray direction normal to local coordinates
         incident = ray.direction.transform(world_to_primitive)
@@ -309,10 +311,9 @@ cdef class Dielectric(Material):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_volume_unpolarised(
+        self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             double length

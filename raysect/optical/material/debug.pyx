@@ -34,7 +34,8 @@ This module contains materials to aid with debugging.
 """
 
 from raysect.optical import d65_white
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Spectrum, World, Primitive, Ray, new_vector3d
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, World, Primitive, new_vector3d
+from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
 cimport cython
 
 
@@ -64,11 +65,12 @@ cdef class Light(NullVolume):
         else:
             self.spectrum = spectrum
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-        cdef Spectrum spectrum
+        cdef USpectrum spectrum
 
         # todo: optimise
         spectrum = ray.new_spectrum()
@@ -85,14 +87,15 @@ cdef class PerfectReflectingSurface(Material):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_surface_unpolarised(
+        self, World world, URay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Vector3D incident, reflected
             double temp, ci
-            Ray reflected_ray
+            URay reflected_ray
 
         # convert ray direction normal to local coordinates
         incident = ray.direction.transform(world_to_primitive)
@@ -128,13 +131,11 @@ cdef class PerfectReflectingSurface(Material):
 
         return reflected_ray.trace(world)
 
-
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef USpectrum evaluate_volume_unpolarised(
+        self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # do nothing!
         return spectrum
