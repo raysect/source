@@ -271,6 +271,27 @@ cdef class Spectrum:
                 spectrum.samples_mv[i, j] = self.samples_mv[i, j]
         return spectrum
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void mul_scalar(self, double value) nogil:
+
+        cdef npy_intp i, j
+        for i in range(self.samples_mv.shape[0]):
+            for j in range(self.samples_mv.shape[1]):
+                self.samples_mv[i, j] *= value
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
+    cdef void mad_scalar(self, double scalar, double[:,::1] array) nogil:
+
+        cdef npy_intp i, j
+        for i in range(self.samples_mv.shape[0]):
+            for j in range(self.samples_mv.shape[1]):
+              self.samples_mv[i, j] += scalar * array[i, j]
+
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int bins):
 

@@ -31,7 +31,7 @@
 
 from raysect.core cimport Ray as CoreRay, Point3D, Vector3D, Intersection
 from raysect.optical.scenegraph cimport World
-from raysect.optical.spectrum cimport Spectrum
+from raysect.optical.polarised.spectrum cimport Spectrum
 
 
 cdef class Ray(CoreRay):

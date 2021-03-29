@@ -372,6 +372,9 @@ cdef class Ray(CoreRay):
             Material material
             double normalisation
 
+        if not world:
+            raise TypeError('The world argument must be a valid World object.')
+
         # reset ray statistics
         if self._primary_ray is None:
 

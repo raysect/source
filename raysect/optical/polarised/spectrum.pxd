@@ -57,20 +57,20 @@ cdef class Spectrum:
 
     # cdef void add_scalar(self, double value) nogil
     # cdef void sub_scalar(self, double value) nogil
-    # cdef void mul_scalar(self, double value) nogil
+    cdef void mul_scalar(self, double value) nogil
     # cdef void div_scalar(self, double value) nogil
-    #
-    # cdef void add_array(self, double[::1] array) nogil
-    # cdef void sub_array(self, double[::1] array) nogil
-    # cdef void mul_array(self, double[::1] array) nogil
-    # cdef void div_array(self, double[::1] array) nogil
-    #
+
+    # cdef void add_array(self, double[:,::1] array) nogil
+    # cdef void sub_array(self, double[:,::1] array) nogil
+    # cdef void mul_array(self, double[:,::1] array) nogil
+    # cdef void div_array(self, double[:,::1] array) nogil
+
     # cdef void add_spectrum(self, Spectrum spectrum) nogil
     # cdef void sub_spectrum(self, Spectrum spectrum) nogil
     # cdef void mul_spectrum(self, Spectrum spectrum) nogil
     # cdef void div_spectrum(self, Spectrum spectrum) nogil
-    #
-    # cdef void mad_scalar(self, double scalar, double[::1] array) nogil
+
+    cdef void mad_scalar(self, double scalar, double[:,::1] array) nogil
     # cdef void mad_array(self, double[::1] a, double[::1] b) nogil
 
 

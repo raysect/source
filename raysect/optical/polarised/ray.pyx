@@ -395,6 +395,9 @@ cdef class Ray(CoreRay):
             Material material
             double normalisation
 
+        if not world:
+            raise TypeError('The world argument must be a valid World object.')
+
         # ensure orientation is orthogonal to direction
         self._make_orthogonal()
 
