@@ -33,7 +33,8 @@ from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, SpectralFunction, ConstantSF
 from raysect.optical.material cimport ContinuousBSDF
 from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
-from numpy cimport ndarray
+from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
+cimport cython
 
 
 cdef HemisphereCosineSampler hemisphere_sampler = HemisphereCosineSampler()
@@ -45,6 +46,8 @@ cdef class Lambert(ContinuousBSDF):
 
     A Lambertian is a perfectly diffuse surface that scatters light equally in
     all directions. It is a good approximation to many real world surfaces.
+
+    Polarised light reflecting from a Lambert surface is becomes depolarised.
 
     :param SpectralFunction reflectivity: Reflectance function which defines the
       fraction of light scattered at each wavelength.
@@ -77,9 +80,9 @@ cdef class Lambert(ContinuousBSDF):
         return hemisphere_sampler.sample()
 
     cpdef USpectrum evaluate_shading_unpolarised(
-        self, World world, URay ray, Vector3D s_incoming, Vector3D s_outgoing,
-        Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-        AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+            self, World world, URay ray, Vector3D s_incoming, Vector3D s_outgoing,
+            Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+            AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
 
         cdef:
             USpectrum spectrum
@@ -106,20 +109,64 @@ cdef class Lambert(ContinuousBSDF):
         spectrum.mul_scalar(pdf)
         return spectrum
 
-    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
-
-        if s_reflected.z < 0.0:
-            return 0.0
-        else:
-            return self.reflectivity.evaluate(wavelength)
-
     cpdef USpectrum evaluate_volume_unpolarised(
-        self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+            self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+            Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # no volume contribution
+        return spectrum
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef PSpectrum evaluate_shading_polarised(
+            self, World world, PRay ray, Vector3D s_incoming, Vector3D s_outgoing,
+            Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+            AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+
+        cdef:
+            PSpectrum spectrum
+            PRay reflected
+            Vector3D w_outgoing, w_orientation
+            double[::1] reflectivity
+            double pdf
+            int bin
+
+        # outgoing ray is sampling incident light so s_outgoing = incident
+
+        # lambert material does not transmit
+        pdf = hemisphere_sampler.pdf(s_outgoing)
+        if pdf == 0.0:
+            return ray.new_spectrum()
+
+        # lambert depolarises, generate a random ray orientation
+        w_outgoing = s_outgoing.transform(surface_to_world)
+        w_orientation = w_outgoing.orthogonal()
+
+        # generate and trace ray
+        reflected = ray.spawn_daughter(w_reflection_origin, w_outgoing, w_orientation)
+        spectrum = reflected.trace(world)
+
+        # obtain samples of reflectivity
+        reflectivity = self.reflectivity.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+
+        # combine and normalise, and de-polarise
+        with nogil:
+            for bin in range(spectrum.bins):
+                spectrum.samples_mv[bin, 0] *= pdf * reflectivity[bin]
+                spectrum.samples_mv[bin, 1] = 0.0
+                spectrum.samples_mv[bin, 2] = 0.0
+                spectrum.samples_mv[bin, 3] = 0.0
+
+        return spectrum
+
+    cpdef PSpectrum evaluate_volume_polarised(
+        self, PSpectrum spectrum, World world, PRay ray, Primitive primitive,
         Point3D start_point, Point3D end_point,
         AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # no volume contribution
         return spectrum
-
 
 

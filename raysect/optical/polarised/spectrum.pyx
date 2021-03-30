@@ -285,6 +285,21 @@ cdef class Spectrum:
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
+    cdef void div_scalar(self, double value) nogil:
+
+        cdef:
+            double reciprocal
+            npy_intp i, j
+
+        reciprocal = 1.0 / value
+        for i in range(self.samples_mv.shape[0]):
+            for j in range(self.samples_mv.shape[1]):
+                self.samples_mv[i, j] *= reciprocal
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+    @cython.initializedcheck(False)
     cdef void mad_scalar(self, double scalar, double[:,::1] array) nogil:
 
         cdef npy_intp i, j

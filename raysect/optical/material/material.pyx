@@ -244,7 +244,7 @@ cdef class NullVolume(Material):
         return spectrum
 
 
-cdef class NullMaterial(Material):
+cdef class NullMaterial(NullSurface):
     """
     A perfectly transparent material.
 
@@ -253,37 +253,21 @@ cdef class NullMaterial(Material):
     not correspond to a physical material (i.e. a slit / aperture).
     """
 
-    cpdef USpectrum evaluate_surface_unpolarised(
-        self, World world, URay ray, Primitive primitive, Point3D hit_point,
-        bint exiting, Point3D inside_point, Point3D outside_point,
-        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-
-        cdef:
-            Point3D origin
-            URay daughter_ray
-
-        # are we entering or leaving surface?
-        if exiting:
-            origin = outside_point.transform(primitive_to_world)
-        else:
-            origin = inside_point.transform(primitive_to_world)
-
-        daughter_ray = ray.spawn_daughter(origin, ray.direction)
-
-        # do not count null surfaces in ray depth
-        daughter_ray.depth -= 1
-
-        # prevent extinction on a null surface
-        return daughter_ray.trace(world, keep_alive=True)
-
     cpdef USpectrum evaluate_volume_unpolarised(
-        self, USpectrum spectrum, World world, URay ray, Primitive primitive,
-        Point3D start_point, Point3D end_point,
-        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+            self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+            Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # no volume contribution
         return spectrum
 
+    cpdef PSpectrum evaluate_volume_polarised(
+            self, PSpectrum spectrum, World world, PRay ray, Primitive primitive,
+            Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # no volume contribution
+        return spectrum
 
 # Surface space
 #
@@ -306,9 +290,9 @@ cdef class DiscreteBSDF(Material):
     """
 
     cpdef USpectrum evaluate_surface_unpolarised(
-        self, World world, URay ray, Primitive primitive, Point3D p_hit_point,
-        bint exiting, Point3D p_inside_point, Point3D p_outside_point,
-        Normal3D p_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+            self, World world, URay ray, Primitive primitive, Point3D p_hit_point,
+            bint exiting, Point3D p_inside_point, Point3D p_outside_point,
+            Normal3D p_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Vector3D w_outgoing, s_incoming
@@ -347,11 +331,59 @@ cdef class DiscreteBSDF(Material):
         )
 
     cpdef USpectrum evaluate_shading_unpolarised(
-        self, World world, URay ray, Vector3D s_incoming,
+            self, World world, URay ray, Vector3D s_incoming,
+            Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+            AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+
+        raise NotImplementedError("Virtual method evaluate_shading_unpolarised() has not been implemented.")
+
+    cpdef PSpectrum evaluate_surface_polarised(
+        self, World world, PRay ray, Primitive primitive, Point3D p_hit_point,
+        bint exiting, Point3D p_inside_point, Point3D p_outside_point,
+        Normal3D p_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            Vector3D w_outgoing, s_incoming
+            Point3D w_reflection_origin, w_transmission_origin
+            AffineMatrix3D world_to_surface, surface_to_world, primitive_to_surface, surface_to_primitive
+
+        # surface space is aligned relative to the incoming ray
+        # define ray launch points and orient normal appropriately
+        if exiting:
+
+            # ray incident on back face
+            w_reflection_origin = p_inside_point.transform(primitive_to_world)
+            w_transmission_origin = p_outside_point.transform(primitive_to_world)
+
+            # flip normal
+            p_normal = p_normal.neg()
+
+        else:
+
+            # ray incident on front face
+            w_reflection_origin = p_outside_point.transform(primitive_to_world)
+            w_transmission_origin = p_inside_point.transform(primitive_to_world)
+
+        # obtain surface space transforms
+        primitive_to_surface, surface_to_primitive = _generate_surface_transforms(p_normal)
+        world_to_surface = primitive_to_surface.mul(world_to_primitive)
+        surface_to_world = primitive_to_world.mul(surface_to_primitive)
+
+        # convert ray direction to surface space incident direction
+        s_incoming = ray.direction.transform(world_to_surface).neg()
+
+        # bsdf sampling
+        return self.evaluate_shading_polarised(
+            world, ray, s_incoming, w_reflection_origin, w_transmission_origin,
+            exiting, world_to_surface, surface_to_world
+        )
+
+    cpdef PSpectrum evaluate_shading_polarised(
+        self, World world, PRay ray, Vector3D s_incoming,
         Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
         AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
 
-        raise NotImplementedError("Virtual method evaluate_shading_unpolarised() has not been implemented.")
+        raise NotImplementedError("Virtual method evaluate_shading_polarised() has not been implemented.")
 
 
 # Surface space
@@ -452,14 +484,6 @@ cdef class ContinuousBSDF(Material):
             spectrum.div_scalar(pdf)
             return spectrum
 
-    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
-
-        raise NotImplementedError("Virtual method pdf() has not been implemented.")
-
-    cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):
-
-        raise NotImplementedError("Virtual method sample() has not been implemented.")
-
     cpdef USpectrum evaluate_shading_unpolarised(
         self, World world, URay ray, Vector3D s_incoming, Vector3D s_outgoing,
         Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
@@ -467,19 +491,98 @@ cdef class ContinuousBSDF(Material):
 
         raise NotImplementedError("Virtual method evaluate_shading_unpolarised() has not been implemented.")
 
-    cpdef double bsdf_unpolarised(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
-        """
-        Returns the unpolarised surface bi-directional scattering distribution function (BSDF).
-         
-        The BSDF is calculated for the given wavelength, incoming and outgoing surface space directions.
-        
-        :param Vector3D s_incident: The surface space incident vector, :math:`\omega_i`.
-        :param Vector3D s_reflected: The surface space reflected vector, :math:`\omega_o`.
-        :param float wavelength: The wavelength :math:`\lambda` at which to perform the BSDF evaluation.
-        :return: The BSDF value, :math:`BSDF(\omega_i, \omega_o, \lambda)`
-        """
+    cpdef PSpectrum evaluate_surface_polarised(
+        self, World world, PRay ray, Primitive primitive, Point3D p_hit_point,
+        bint exiting, Point3D p_inside_point, Point3D p_outside_point,
+        Normal3D p_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-        raise NotImplementedError("This ContinuousBSDF material has not implemented the bsdf() method.")
+        cdef:
+            double pdf, pdf_importance, pdf_bsdf
+            Vector3D w_outgoing, s_incoming, s_outgoing
+            Point3D w_hit_point, w_reflection_origin, w_transmission_origin
+            AffineMatrix3D world_to_surface, surface_to_world, primitive_to_surface, surface_to_primitive
+
+        # surface space is aligned relative to the incoming ray
+        # define ray launch points and orient normal appropriately
+        if exiting:
+
+            # ray incident on back face
+            w_reflection_origin = p_inside_point.transform(primitive_to_world)
+            w_transmission_origin = p_outside_point.transform(primitive_to_world)
+
+            # flip normal
+            p_normal = p_normal.neg()
+
+        else:
+
+            # ray incident on front face
+            w_reflection_origin = p_outside_point.transform(primitive_to_world)
+            w_transmission_origin = p_inside_point.transform(primitive_to_world)
+
+        # obtain surface space transforms
+        primitive_to_surface, surface_to_primitive = _generate_surface_transforms(p_normal)
+        world_to_surface = primitive_to_surface.mul(world_to_primitive)
+        surface_to_world = primitive_to_world.mul(surface_to_primitive)
+
+        # convert ray direction to surface space incident direction
+        s_incoming = ray.direction.transform(world_to_surface).neg()
+
+        if ray.importance_sampling and world.has_important_primitives():
+
+            w_hit_point = p_hit_point.transform(primitive_to_world)
+
+            # multiple importance sampling
+            if probability(ray.get_important_path_weight()):
+
+                # sample important path pdf
+                w_outgoing = world.important_direction_sample(w_hit_point)
+                s_outgoing = w_outgoing.transform(world_to_surface)
+
+            else:
+
+                # sample bsdf pdf
+                s_outgoing = self.sample(s_incoming, exiting)
+                w_outgoing = s_outgoing.transform(surface_to_world)
+
+            # compute combined pdf
+            pdf_important = world.important_direction_pdf(w_hit_point, w_outgoing)
+            pdf_bsdf = self.pdf(s_incoming, s_outgoing, exiting)
+            pdf = ray.get_important_path_weight() * pdf_important + (1 - ray.get_important_path_weight()) * pdf_bsdf
+
+            # evaluate bsdf and normalise
+            spectrum = self.evaluate_shading_polarised(
+                world, ray, s_incoming, s_outgoing, w_reflection_origin, w_transmission_origin,
+                exiting, world_to_surface, surface_to_world
+            )
+            spectrum.div_scalar(pdf)
+            return spectrum
+
+        else:
+
+            # bsdf sampling
+            s_outgoing = self.sample(s_incoming, exiting)
+            spectrum = self.evaluate_shading_polarised(
+                world, ray, s_incoming, s_outgoing, w_reflection_origin, w_transmission_origin,
+                exiting, world_to_surface, surface_to_world
+            )
+            pdf = self.pdf(s_incoming, s_outgoing, exiting)
+            spectrum.div_scalar(pdf)
+            return spectrum
+
+    cpdef PSpectrum evaluate_shading_polarised(
+        self, World world, PRay ray, Vector3D s_incoming, Vector3D s_outgoing,
+        Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+        AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+
+        raise NotImplementedError("Virtual method evaluate_shading_polarised() has not been implemented.")
+
+    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
+
+        raise NotImplementedError("Virtual method pdf() has not been implemented.")
+
+    cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):
+
+        raise NotImplementedError("Virtual method sample() has not been implemented.")
 
 
 cdef tuple _generate_surface_transforms(Normal3D normal):
