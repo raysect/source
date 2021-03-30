@@ -66,6 +66,21 @@ cdef class UnitySurfaceEmitter(NullVolume):
         spectrum.samples_mv[:] = 1.0
         return spectrum
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef PSpectrum evaluate_surface_polarised(
+            self, World world, PRay ray, Primitive primitive, Point3D hit_point,
+            bint exiting, Point3D inside_point, Point3D outside_point, Normal3D normal,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef PSpectrum spectrum
+
+        # unpolarised unity emitter, only populate I component of stokes vector
+        spectrum = ray.new_spectrum()
+        spectrum.samples_mv[:,0] = 1.0
+        return spectrum
+
 
 cdef class UnityVolumeEmitter(HomogeneousVolumeEmitter):
     """
@@ -95,4 +110,16 @@ cdef class UnityVolumeEmitter(HomogeneousVolumeEmitter):
         AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         spectrum.samples_mv[:] = 1.0
+        return spectrum
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef PSpectrum emission_function_polarised(
+            self, Vector3D direction, PSpectrum spectrum,
+            World world, PRay ray, Primitive primitive,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # unpolarised unity emitter, only populate I component of stokes vector
+        spectrum.samples_mv[:, 0] = 1.0
         return spectrum

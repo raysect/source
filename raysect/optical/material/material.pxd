@@ -32,7 +32,7 @@
 from raysect.core.material cimport Material as CoreMaterial
 from raysect.optical cimport Point3D, Vector3D, Normal3D, AffineMatrix3D, Primitive, World
 from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
-# from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
+from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
 
 
 cdef class Material(CoreMaterial):
@@ -40,28 +40,24 @@ cdef class Material(CoreMaterial):
     cdef double _importance
 
     cpdef USpectrum evaluate_surface_unpolarised(
-        self, World world, URay ray, Primitive primitive, Point3D hit_point,
-        bint exiting, Point3D inside_point, Point3D outside_point,
-        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
-    )
+            self, World world, URay ray, Primitive primitive, Point3D hit_point,
+            bint exiting, Point3D inside_point, Point3D outside_point,
+            Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
     cpdef USpectrum evaluate_volume_unpolarised(
-        self, USpectrum spectrum, World world, URay ray, Primitive primitive,
-        Point3D start_point, Point3D end_point,
-        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
-    )
+            self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+            Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
-    # cpdef PSpectrum evaluate_surface_polarised(
-    #     self, World world, PRay ray, Primitive primitive, Point3D hit_point,
-    #     bint exiting, Point3D inside_point, Point3D outside_point,
-    #     Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
-    # )
-    #
-    # cpdef PSpectrum evaluate_volume_polarised(
-    #     self, USpectrum spectrum, World world, PRay ray, Primitive primitive,
-    #     Point3D start_point, Point3D end_point,
-    #     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
-    # )
+    cpdef PSpectrum evaluate_surface_polarised(
+            self, World world, PRay ray, Primitive primitive, Point3D hit_point,
+            bint exiting, Point3D inside_point, Point3D outside_point, Normal3D normal,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
+
+    cpdef PSpectrum evaluate_volume_polarised(
+            self, PSpectrum spectrum, World world, PRay ray, Primitive primitive,
+            Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
 
 
 cdef class NullSurface(Material):

@@ -491,7 +491,7 @@ cdef class Ray(CoreRay):
             for primitive in primitives:
 
                 material = primitive.get_material()
-                spectrum = material.evaluate_volume_unpolarised(
+                spectrum = material.evaluate_volume_polarised(
                     spectrum,
                     world,
                     self,

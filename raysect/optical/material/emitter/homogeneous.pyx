@@ -82,7 +82,7 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
         emission = self.emission_function_unpolarised(direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
 
         # sanity check as bounds checking is disabled
-        if emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]:
+        if emission.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]:
             raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
 
         # integrate emission density along ray path
@@ -91,9 +91,52 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
 
         return spectrum
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef PSpectrum evaluate_volume_polarised(
+        self, PSpectrum spectrum, World world, PRay ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            Point3D start, end
+            Vector3D direction
+            double length
+            PSpectrum emission
+            int i, j
+
+        # convert start and end points to local space
+        start = start_point.transform(world_to_primitive)
+        end = end_point.transform(world_to_primitive)
+
+        # obtain local space ray direction (travels end->start) and integration length
+        direction = end.vector_to(start)
+        length = direction.get_length()
+
+        # nothing to contribute?
+        if length == 0:
+            return spectrum
+
+        direction = direction.normalise()
+
+        # obtain emission density from emission function (W/m^3/str)
+        emission = ray.new_spectrum()
+
+        # emission function specifies direction from ray origin to hit-point
+        emission = self.emission_function_polarised(direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
+
+        # sanity check as bounds checking is disabled
+        if emission.samples.ndim != 2 or emission.samples.shape[0] != spectrum.samples.shape[0] or emission.samples.shape[1] != 4:
+            raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
+
+        # integrate emission density along ray path
+        for i in range(spectrum.bins):
+            for j in range(4):
+                spectrum.samples_mv[i, j] += emission.samples_mv[i, j] * length
+        return spectrum
+
     cpdef USpectrum emission_function_unpolarised(
-            self, Vector3D direction, USpectrum spectrum,
-            World world, URay ray, Primitive primitive,
+            self, Vector3D direction, USpectrum spectrum, World world, URay ray, Primitive primitive,
             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
         """
         The emission function for the material.
@@ -113,4 +156,27 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
           transform from the primitive's local space to world space.
         """
 
-        raise NotImplementedError("Virtual method emission_function() has not been implemented.")
+        raise NotImplementedError("Virtual method emission_function_unpolarised() has not been implemented.")
+
+    cpdef PSpectrum emission_function_polarised(
+            self, Vector3D direction, PSpectrum spectrum, World world, PRay ray, Primitive primitive,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        """
+        The emission function for the material.
+
+        This is a virtual method and must be implemented in a sub class.
+
+        :param Vector3D direction: The emission direction vector in local coordinates.
+        :param Spectrum spectrum: Spectrum measured so far along ray path. Add your emission
+          to this spectrum, don't override it.
+        :param World world: The world scene-graph.
+        :param Ray ray: The ray being traced.
+        :param Primitive primitive: The geometric primitive to which this material belongs
+          (i.e. a cylinder or a mesh).
+        :param AffineMatrix3D world_to_primitive: Affine matrix defining the coordinate
+          transform from world space to the primitive's local space.
+        :param AffineMatrix3D primitive_to_world: Affine matrix defining the coordinate
+          transform from the primitive's local space to world space.
+        """
+
+        raise NotImplementedError("Virtual method emission_function_polarised() has not been implemented.")

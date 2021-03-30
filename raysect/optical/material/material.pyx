@@ -32,7 +32,7 @@
 from raysect.core.math.random cimport probability
 from raysect.optical cimport new_affinematrix3d
 
-
+# todo: only base class currently supports polarisation
 cdef class Material(CoreMaterial):
     """
     Base class for optical material classes.
@@ -63,9 +63,9 @@ cdef class Material(CoreMaterial):
         self.notify_material_change()
 
     cpdef USpectrum evaluate_surface_unpolarised(
-        self, World world, URay ray, Primitive primitive, Point3D hit_point,
-        bint exiting, Point3D inside_point, Point3D outside_point, Normal3D normal,
-        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+           self, World world, URay ray, Primitive primitive, Point3D hit_point,
+           bint exiting, Point3D inside_point, Point3D outside_point, Normal3D normal,
+           AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
         """
         Virtual method for evaluating the unpolarised spectrum at a material surface.
 
@@ -88,9 +88,9 @@ cdef class Material(CoreMaterial):
         raise NotImplementedError("Material virtual method evaluate_surface_unpolarised() has not been implemented.")
 
     cpdef USpectrum evaluate_volume_unpolarised(
-        self, USpectrum spectrum, World world, URay ray, Primitive primitive,
-        Point3D start_point, Point3D end_point,
-        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+            self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+            Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
         """
         Virtual method for evaluating the unpolarised spectrum emitted/absorbed along the
         rays trajectory through a material surface.
@@ -113,58 +113,56 @@ cdef class Material(CoreMaterial):
         """
         raise NotImplementedError("Material virtual method evaluate_volume_unpolarised() has not been implemented.")
 
-    # cpdef PSpectrum evaluate_surface_polarised(
-    #     self, World world, PRay ray, Primitive primitive, Point3D hit_point,
-    #     bint exiting, Point3D inside_point, Point3D outside_point, Normal3D normal,
-    #     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
-    # ):
-    #     """
-    #     Virtual method for evaluating the polarised spectrum at a material surface.
-    #
-    #     :param World world: The world scenegraph belonging to this material.
-    #     :param polarised.Ray ray: The ray incident at the material surface.
-    #     :param Primitive primitive: The geometric shape the holds this material
-    #       (i.e. mesh, cylinder, etc.).
-    #     :param Point3D hit_point: The point where the ray is incident on the
-    #       primitive surface.
-    #     :param bool exiting: Boolean toggle indicating if this ray is exiting or
-    #       entering the material surface (True means ray is exiting).
-    #     :param Point3D inside_point:
-    #     :param Point3D outside_point:
-    #     :param Normal3D normal: The surface normal vector at location of hit_point.
-    #     :param AffineMatrix3D world_to_primitive: Affine matrix defining transformation
-    #       from world space to local primitive space.
-    #     :param AffineMatrix3D primitive_to_world: Affine matrix defining transformation
-    #       from local primitive space to world space.
-    #     """
-    #     raise NotImplementedError("Material virtual method evaluate_surface_polarised() has not been implemented.")
-    #
-    # cpdef PSpectrum evaluate_volume_polarised(
-    #     self, PSpectrum spectrum, World world, PRay ray, Primitive primitive,
-    #     Point3D start_point, Point3D end_point,
-    #     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
-    # ):
-    #     """
-    #     Virtual method for evaluating the polarised spectrum emitted/absorbed along the
-    #     rays trajectory through a material surface.
-    #
-    #     :param polarised.Spectrum spectrum: The spectrum already accumulated along the ray path.
-    #       Don't overwrite this array, add the materials emission/absorption to the existing
-    #       spectrum.
-    #     :param World world: The world scenegraph belonging to this material.
-    #     :param polarised.Ray ray: The ray incident at the material surface.
-    #     :param Primitive primitive: The geometric shape the holds this material
-    #       (i.e. mesh, cylinder, etc.).
-    #     :param Point3D start_point: The starting point of the ray's trajectory
-    #       through the material.
-    #     :param Point3D end_point: The end point of the ray's trajectory through
-    #       the material.
-    #     :param AffineMatrix3D world_to_primitive: Affine matrix defining transformation
-    #       from world space to local primitive space.
-    #     :param AffineMatrix3D primitive_to_world: Affine matrix defining transformation
-    #       from local primitive space to world space.
-    #     """
-    #     raise NotImplementedError("Material virtual method evaluate_volume_polarised() has not been implemented.")
+    cpdef PSpectrum evaluate_surface_polarised(
+            self, World world, PRay ray, Primitive primitive, Point3D hit_point,
+            bint exiting, Point3D inside_point, Point3D outside_point, Normal3D normal,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        """
+        Virtual method for evaluating the polarised spectrum at a material surface.
+
+        :param World world: The world scenegraph belonging to this material.
+        :param polarised.Ray ray: The ray incident at the material surface.
+        :param Primitive primitive: The geometric shape the holds this material
+          (i.e. mesh, cylinder, etc.).
+        :param Point3D hit_point: The point where the ray is incident on the
+          primitive surface.
+        :param bool exiting: Boolean toggle indicating if this ray is exiting or
+          entering the material surface (True means ray is exiting).
+        :param Point3D inside_point:
+        :param Point3D outside_point:
+        :param Normal3D normal: The surface normal vector at location of hit_point.
+        :param AffineMatrix3D world_to_primitive: Affine matrix defining transformation
+          from world space to local primitive space.
+        :param AffineMatrix3D primitive_to_world: Affine matrix defining transformation
+          from local primitive space to world space.
+        """
+        raise NotImplementedError("Material virtual method evaluate_surface_polarised() has not been implemented.")
+
+    cpdef PSpectrum evaluate_volume_polarised(
+            self, PSpectrum spectrum, World world, PRay ray, Primitive primitive,
+            Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        """
+        Virtual method for evaluating the polarised spectrum emitted/absorbed along the
+        rays trajectory through a material surface.
+
+        :param polarised.Spectrum spectrum: The spectrum already accumulated along the ray path.
+          Don't overwrite this array, add the materials emission/absorption to the existing
+          spectrum.
+        :param World world: The world scenegraph belonging to this material.
+        :param polarised.Ray ray: The ray incident at the material surface.
+        :param Primitive primitive: The geometric shape the holds this material
+          (i.e. mesh, cylinder, etc.).
+        :param Point3D start_point: The starting point of the ray's trajectory
+          through the material.
+        :param Point3D end_point: The end point of the ray's trajectory through
+          the material.
+        :param AffineMatrix3D world_to_primitive: Affine matrix defining transformation
+          from world space to local primitive space.
+        :param AffineMatrix3D primitive_to_world: Affine matrix defining transformation
+          from local primitive space to world space.
+        """
+        raise NotImplementedError("Material virtual method evaluate_volume_polarised() has not been implemented.")
 
 
 cdef class NullSurface(Material):
@@ -176,9 +174,9 @@ cdef class NullSurface(Material):
     """
 
     cpdef USpectrum evaluate_surface_unpolarised(
-        self, World world, URay ray, Primitive primitive, Point3D hit_point,
-        bint exiting, Point3D inside_point, Point3D outside_point,
-        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+            self, World world, URay ray, Primitive primitive, Point3D hit_point,
+            bint exiting, Point3D inside_point, Point3D outside_point,
+            Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Point3D origin
@@ -198,6 +196,29 @@ cdef class NullSurface(Material):
         # prevent extinction on a null surface
         return daughter_ray.trace(world, keep_alive=True)
 
+    cpdef PSpectrum evaluate_surface_polarised(
+            self, World world, PRay ray, Primitive primitive, Point3D hit_point,
+            bint exiting, Point3D inside_point, Point3D outside_point,
+            Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            Point3D origin
+            PRay daughter_ray
+
+        # are we entering or leaving surface?
+        if exiting:
+            origin = outside_point.transform(primitive_to_world)
+        else:
+            origin = inside_point.transform(primitive_to_world)
+
+        daughter_ray = ray.spawn_daughter(origin, ray.direction, ray.orientation)
+
+        # do not count null surfaces in ray depth
+        daughter_ray.depth -= 1
+
+        # prevent extinction on a null surface
+        return daughter_ray.trace(world, keep_alive=True)
+
 
 cdef class NullVolume(Material):
     """
@@ -207,9 +228,17 @@ cdef class NullVolume(Material):
     """
 
     cpdef USpectrum evaluate_volume_unpolarised(
-        self, USpectrum spectrum, World world, URay ray, Primitive primitive,
-        Point3D start_point, Point3D end_point,
-        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+            self, USpectrum spectrum, World world, URay ray, Primitive primitive,
+            Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # no volume contribution
+        return spectrum
+
+    cpdef PSpectrum evaluate_volume_polarised(
+            self, PSpectrum spectrum, World world, PRay ray, Primitive primitive,
+            Point3D start_point, Point3D end_point,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # no volume contribution
         return spectrum
