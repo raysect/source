@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: POLARISATION
+
 from numpy cimport ndarray
 from raysect.core.math.random cimport uniform
 from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, new_vector3d

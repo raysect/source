@@ -33,6 +33,7 @@ from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.optical cimport Point3D, Vector3D, Normal3D, new_normal3d, AffineMatrix3D, new_affinematrix3d, Primitive, World
 from raysect.optical.material cimport Material
 from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
+from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
 
 # sets the maximum number of attempts to find a valid perturbed normal
 # it is highly unlikely (REALLY!) this number will ever be reached, it is just there for my paranoia
@@ -129,6 +130,59 @@ cdef class Roughen(Material):
         Point3D end_point, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         return self.material.evaluate_volume_unpolarised(
+            spectrum, world, ray, primitive, start_point, end_point, to_local, to_world
+        )
+
+    cpdef PSpectrum evaluate_surface_polarised(
+        self, World world, PRay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            PRay reflected
+            Vector3D s_incident, s_random
+            Normal3D s_normal
+            AffineMatrix3D surface_to_primitive
+            int attempt
+
+        # generate surface transforms
+        primitive_to_surface, surface_to_primitive = self._generate_surface_transforms(normal)
+
+        # convert ray direction to surface space
+        s_incident = ray.direction.transform(world_to_primitive).transform(primitive_to_surface)
+
+        # attempt to find a valid (intersectable by ray) surface perturbation
+        s_normal = new_normal3d(0, 0, 1)
+        for attempt in range(SAMPLE_ATTEMPTS):
+
+            # Generate a new normal about the original normal by lerping between a random vector and the original normal.
+            # The lerp strength is determined by the roughness. Calculation performed in surface space, so the original
+            # normal is aligned with the z-axis.
+            s_random = hemisphere_sampler.sample()
+            s_normal.x = self.roughness * s_random.x
+            s_normal.y = self.roughness * s_random.y
+            s_normal.z = self.roughness * s_random.z + (1 - self.roughness)
+
+            # Only accept the new normal if it does not change the side of the surface the incident ray is on.
+            # An incident ray could not hit a surface facet that is facing away from it.
+            # If (incident.normal) * (incident.perturbed_normal) < 0 the ray has swapped sides.
+            # Note: normal in surface space is Normal3D(0, 0, 1), therefore incident.normal is just incident.z.
+            if (s_incident.z * s_incident.dot(s_normal)) > 0:
+
+                # we have found a valid perturbation, re-assign normal
+                normal = s_normal.transform(surface_to_primitive).normalise()
+                break
+
+        return self.material.evaluate_surface_polarised(
+            world, ray, primitive, hit_point, exiting, inside_point, outside_point,
+            normal, world_to_primitive, primitive_to_world
+        )
+
+    cpdef PSpectrum evaluate_volume_polarised(
+        self, PSpectrum spectrum, World world, PRay ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D to_local, AffineMatrix3D to_world):
+
+        return self.material.evaluate_volume_polarised(
             spectrum, world, ray, primitive, start_point, end_point, to_local, to_world
         )
 
