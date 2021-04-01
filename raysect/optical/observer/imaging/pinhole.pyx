@@ -27,12 +27,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: hacked for polarisation - incomplete
+
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 from raysect.optical.observer.sampler2d import RGBAdaptiveSampler2D
 
 from raysect.core cimport Point3D, new_point3d, Vector3D, new_vector3d, RectangleSampler3D
-from raysect.optical.unpolarised cimport Ray
+from raysect.optical.polarised cimport Ray
 from libc.math cimport M_PI as pi, tan
 from raysect.optical.observer.base cimport Observer2D
 

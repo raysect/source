@@ -31,6 +31,7 @@
 
 from raysect.optical cimport World, Primitive, Point3D, Vector3D, AffineMatrix3D, Normal3D
 from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
+from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
 cimport cython
 
 
@@ -81,11 +82,24 @@ cdef class UniformSurfaceEmitter(NullVolume):
             spectrum.samples_mv[index] = emission[index] * self.scale
         return spectrum
 
-    cpdef USpectrum evaluate_volume_unpolarised(
-        self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
-        Point3D end_point, AffineMatrix3D to_local, AffineMatrix3D to_world):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef PSpectrum evaluate_surface_polarised(
+        self, World world, PRay ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-        # no volume contribution
+        cdef:
+            PSpectrum spectrum
+            double[::1] emission
+            int index
+
+        spectrum = ray.new_spectrum()
+        emission = self.emission_spectrum.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        for index in range(spectrum.bins):
+            # unpolarised emission, only populate total radiance component of stokes vector
+            spectrum.samples_mv[index, 0] = emission[index] * self.scale
         return spectrum
 
 
@@ -133,3 +147,20 @@ cdef class UniformVolumeEmitter(HomogeneousVolumeEmitter):
 
         return spectrum
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef PSpectrum emission_function_polarised(
+        self, Vector3D direction, PSpectrum spectrum, World world, PRay ray, Primitive primitive,
+        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            double[::1] emission
+            int index
+
+        emission = self.emission_spectrum.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        for index in range(spectrum.bins):
+            # unpolarised emission, only add to total radiance component of stokes vector
+            spectrum.samples_mv[index, 0] += emission[index] * self.scale
+
+        return spectrum

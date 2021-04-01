@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: hacked for polarisation (unpolarised spectrum is replaced by polarised)
+
 from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport InterpolatedSF
 from numpy import array, float64, zeros, linspace
@@ -179,9 +181,9 @@ cpdef (double, double, double) spectrum_to_ciexyz(Spectrum spectrum, double[:,::
     y = 0
     z = 0
     for index in range(spectrum.bins):
-        x += spectrum.delta_wavelength * spectrum.samples_mv[index] * resampled_xyz[index, 0]
-        y += spectrum.delta_wavelength * spectrum.samples_mv[index] * resampled_xyz[index, 1]
-        z += spectrum.delta_wavelength * spectrum.samples_mv[index] * resampled_xyz[index, 2]
+        x += spectrum.delta_wavelength * spectrum.samples_mv[index, 0] * resampled_xyz[index, 0]
+        y += spectrum.delta_wavelength * spectrum.samples_mv[index, 0] * resampled_xyz[index, 1]
+        z += spectrum.delta_wavelength * spectrum.samples_mv[index, 0] * resampled_xyz[index, 2]
 
     return x, y, z
 

@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: hacked for polarisation - incomplete
+
 import numpy as np
 cimport numpy as np
 from libc.math cimport M_PI
@@ -38,7 +40,7 @@ from raysect.core.math.random cimport uniform, point_triangle
 from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.core.math.cython cimport find_index
 from raysect.optical cimport Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
-from raysect.optical.unpolarised cimport Ray
+from raysect.optical.polarised cimport Ray
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 from raysect.primitive.mesh.mesh cimport Mesh

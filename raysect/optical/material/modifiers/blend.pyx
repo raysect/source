@@ -33,7 +33,7 @@ from raysect.core.math.random cimport probability
 from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World
 from raysect.optical.material cimport Material
 from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
-from raysect.optical.unpolarised cimport Ray as PRay, Spectrum as PSpectrum
+from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
 
 
 cdef class Blend(Material):
@@ -132,7 +132,7 @@ cdef class Blend(Material):
                 normal, world_to_primitive, primitive_to_world
             )
 
-    cpdef USpectrum evaluate_volume_polarised(
+    cpdef PSpectrum evaluate_volume_polarised(
         self, PSpectrum spectrum, World world, PRay ray, Primitive primitive, Point3D start_point,
         Point3D end_point, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
