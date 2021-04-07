@@ -34,7 +34,7 @@
 from raysect.optical.observer import SpectralPowerPipeline0D
 
 from raysect.optical cimport new_point3d, new_vector3d
-from raysect.optical.polarised cimport Ray
+from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer0D
 
 

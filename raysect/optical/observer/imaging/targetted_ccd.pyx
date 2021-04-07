@@ -36,8 +36,7 @@ from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
 from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
-from raysect.optical cimport Primitive, BoundingSphere3D, AffineMatrix3D, Point3D, Vector3D, translate
-from raysect.optical.polarised cimport Ray
+from raysect.optical cimport Primitive, BoundingSphere3D, AffineMatrix3D, Point3D, Vector3D, translate, Ray
 from libc.math cimport M_PI
 from raysect.optical.observer.base cimport Observer2D
 cimport cython

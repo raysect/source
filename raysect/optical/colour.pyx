@@ -29,8 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: hacked for polarisation (unpolarised spectrum is replaced by polarised)
-
 from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport InterpolatedSF
 from numpy import array, float64, zeros, linspace

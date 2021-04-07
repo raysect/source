@@ -29,9 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World
-from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
-from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
 
 
 cdef class AbsorbingSurface(NullVolume):
@@ -47,15 +45,8 @@ cdef class AbsorbingSurface(NullVolume):
         >>> absorber = Sphere(radius=0.01, parent=world, material=AbsorbingSurface())
     """
 
-    cpdef USpectrum evaluate_surface_unpolarised(
-            self, World world, URay ray, Primitive primitive, Point3D hit_point,
-            bint exiting, Point3D inside_point, Point3D outside_point,
-            Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-
-        return ray.new_spectrum()
-
-    cpdef PSpectrum evaluate_surface_polarised(
-            self, World world, PRay ray, Primitive primitive, Point3D hit_point,
+    cpdef Spectrum evaluate_surface(
+            self, World world, Ray ray, Primitive primitive, Point3D hit_point,
             bint exiting, Point3D inside_point, Point3D outside_point,
             Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 

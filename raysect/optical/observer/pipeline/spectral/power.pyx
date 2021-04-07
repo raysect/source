@@ -33,7 +33,7 @@ cimport cython
 import numpy as np
 from matplotlib import pyplot as plt
 
-from raysect.optical.polarised.spectrum cimport Spectrum
+from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.observer.base.slice cimport SpectralSlice
 
 

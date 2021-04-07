@@ -30,8 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from libc.stdint cimport *
-from raysect.optical cimport Observer
-from raysect.optical.polarised cimport Ray
+from raysect.optical cimport Observer, Ray
 from raysect.optical.observer.base.sampler cimport FrameSampler1D, FrameSampler2D
 
 

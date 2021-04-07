@@ -32,8 +32,7 @@
 from raysect.optical cimport World, Primitive, Point3D, Vector3D, Normal3D, AffineMatrix3D
 from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
 from raysect.optical.material.material cimport NullVolume
-from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
-from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
+from raysect.optical cimport Ray, Spectrum
 
 
 cdef class UnitySurfaceEmitter(NullVolume):
@@ -42,12 +41,7 @@ cdef class UnitySurfaceEmitter(NullVolume):
 
 cdef class UnityVolumeEmitter(HomogeneousVolumeEmitter):
 
-    cpdef USpectrum emission_function_unpolarised(
-            self, Vector3D direction, USpectrum spectrum,
-            World world, URay ray, Primitive primitive,
-            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)
-
-    cpdef PSpectrum emission_function_polarised(
-            self, Vector3D direction, PSpectrum spectrum,
-            World world, PRay ray, Primitive primitive,
+    cpdef Spectrum emission_function(
+            self, Vector3D direction, Spectrum spectrum,
+            World world, Ray ray, Primitive primitive,
             AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world)

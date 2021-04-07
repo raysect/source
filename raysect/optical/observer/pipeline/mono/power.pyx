@@ -38,7 +38,7 @@ cimport numpy as np
 from raysect.core.math.cython cimport clamp
 from raysect.optical.spectralfunction cimport SpectralFunction, ConstantSF
 from raysect.core.math cimport StatsBin, StatsArray1D, StatsArray2D
-from raysect.optical.polarised.spectrum cimport Spectrum
+from raysect.optical.spectrum cimport Spectrum
 from libc.math cimport pow
 
 

@@ -37,7 +37,9 @@ from raysect.core.math cimport *
 from raysect.optical.colour cimport *
 from raysect.optical.spectralfunction cimport *
 from raysect.optical.scenegraph cimport *
-
-# from raysect.optical cimport polarised
+from raysect.optical.ray cimport *
+from raysect.optical.spectrum cimport *
+from raysect.optical.stokes cimport *
+from raysect.optical.mueller cimport *
 
 

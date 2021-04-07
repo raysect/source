@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from raysect.optical.polarised.stokes cimport StokesVector, new_stokesvector
+from raysect.optical.stokes cimport StokesVector, new_stokesvector
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 
 # Plank's constant * speed of light in a vacuum

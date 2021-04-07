@@ -36,7 +36,7 @@ from raysect.core.math.random cimport probability
 from raysect.core.math.cython cimport clamp
 from raysect.optical.material.material cimport Material
 from raysect.optical.scenegraph cimport Primitive
-from raysect.optical.polarised.spectrum cimport new_spectrum
+from raysect.optical.spectrum cimport new_spectrum
 cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
@@ -456,7 +456,7 @@ cdef class Ray(CoreRay):
 
         # request surface contribution to spectrum from primitive material
         material = intersection.primitive.get_material()
-        return material.evaluate_surface_polarised(
+        return material.evaluate_surface(
             world,
             self,
             intersection.primitive,
@@ -491,7 +491,7 @@ cdef class Ray(CoreRay):
             for primitive in primitives:
 
                 material = primitive.get_material()
-                spectrum = material.evaluate_volume_polarised(
+                spectrum = material.evaluate_volume(
                     spectrum,
                     world,
                     self,

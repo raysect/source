@@ -60,8 +60,10 @@ from .spectralfunction import *
 from .scenegraph import *
 from .material import *
 from .colour import *
-
-#from . import unpolarised
+from .ray import *
+from .spectrum import *
+from .stokes import *
+from .mueller import *
 
 
 

@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.polarised.stokes cimport StokesVector
+from raysect.optical.stokes cimport StokesVector
 from numpy cimport ndarray, npy_intp
 
 cdef class Spectrum:

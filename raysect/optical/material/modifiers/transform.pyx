@@ -29,10 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
 from raysect.optical.material cimport Material
-from raysect.optical.unpolarised cimport Ray as URay, Spectrum as USpectrum
-from raysect.optical.polarised cimport Ray as PRay, Spectrum as PSpectrum
 
 
 cdef class VolumeTransform(Material):
@@ -79,46 +77,24 @@ cdef class VolumeTransform(Material):
         self._transform = m
         self._transform_inv = m.inverse()
 
-    cpdef USpectrum evaluate_surface_unpolarised(
-            self, World world, URay ray, Primitive primitive, Point3D hit_point,
+    cpdef Spectrum evaluate_surface(
+            self, World world, Ray ray, Primitive primitive, Point3D hit_point,
             bint exiting, Point3D inside_point, Point3D outside_point,
             Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
-        return self.material.evaluate_surface_unpolarised(
+        return self.material.evaluate_surface(
             world, ray, primitive, hit_point, exiting, inside_point, outside_point,
             normal, world_to_primitive, primitive_to_world
         )
 
-    cpdef USpectrum evaluate_volume_unpolarised(
-            self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
+    cpdef Spectrum evaluate_volume(
+            self, Spectrum spectrum, World world, Ray ray, Primitive primitive, Point3D start_point,
             Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef AffineMatrix3D m = primitive_to_world.mul(self._transform_inv.mul(world_to_primitive))
         start_point = start_point.transform(m)
         end_point = end_point.transform(m)
-        return self.material.evaluate_volume_unpolarised(
-            spectrum, world, ray, primitive, start_point, end_point,
-            world_to_primitive, primitive_to_world
-        )
-
-    cpdef PSpectrum evaluate_surface_polarised(
-            self, World world, PRay ray, Primitive primitive, Point3D hit_point,
-            bint exiting, Point3D inside_point, Point3D outside_point,
-            Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-
-        return self.material.evaluate_surface_polarised(
-            world, ray, primitive, hit_point, exiting, inside_point, outside_point,
-            normal, world_to_primitive, primitive_to_world
-        )
-
-    cpdef PSpectrum evaluate_volume_polarised(
-            self, PSpectrum spectrum, World world, PRay ray, Primitive primitive, Point3D start_point,
-            Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-
-        cdef AffineMatrix3D m = primitive_to_world.mul(self._transform_inv.mul(world_to_primitive))
-        start_point = start_point.transform(m)
-        end_point = end_point.transform(m)
-        return self.material.evaluate_volume_polarised(
+        return self.material.evaluate_volume(
             spectrum, world, ray, primitive, start_point, end_point,
             world_to_primitive, primitive_to_world
         )

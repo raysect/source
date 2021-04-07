@@ -27,10 +27,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# todo: polarisation: reenable imports when implemented
+
 from raysect.optical.material.emitter.uniform cimport UniformSurfaceEmitter, UniformVolumeEmitter
 from raysect.optical.material.emitter.unity cimport UnitySurfaceEmitter, UnityVolumeEmitter
 from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
-from raysect.optical.material.emitter.inhomogeneous cimport InhomogeneousVolumeEmitter, VolumeIntegrator, NumericalIntegrator
-from raysect.optical.material.emitter.checkerboard cimport Checkerboard
-from raysect.optical.material.emitter.anisotropic cimport AnisotropicSurfaceEmitter
+# from raysect.optical.material.emitter.inhomogeneous cimport InhomogeneousVolumeEmitter, VolumeIntegrator, NumericalIntegrator
+# from raysect.optical.material.emitter.checkerboard cimport Checkerboard
+# from raysect.optical.material.emitter.anisotropic cimport AnisotropicSurfaceEmitter
 

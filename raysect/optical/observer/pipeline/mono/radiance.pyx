@@ -30,7 +30,7 @@
 # TODO: hacked for polarisation - incomplete
 
 from raysect.optical.spectralfunction cimport SpectralFunction
-from raysect.optical.polarised.spectrum cimport Spectrum
+from raysect.optical.spectrum cimport Spectrum
 cimport cython
 
 

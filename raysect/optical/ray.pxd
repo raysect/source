@@ -31,12 +31,13 @@
 
 from raysect.core cimport Ray as CoreRay, Point3D, Vector3D, Intersection
 from raysect.optical.scenegraph cimport World
-from raysect.optical.unpolarised.spectrum cimport Spectrum
+from raysect.optical.spectrum cimport Spectrum
 
 
 cdef class Ray(CoreRay):
 
     cdef:
+        public Vector3D orientation
         public bint importance_sampling
         double _important_path_weight
         int _bins
@@ -52,16 +53,17 @@ cdef class Ray(CoreRay):
     cpdef Spectrum new_spectrum(self)
     cpdef Spectrum trace(self, World world, bint keep_alive=*)
     cpdef Spectrum sample(self, World world, int samples)
-    cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction)
+    cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction, Vector3D orientation)
     cdef int get_bins(self) nogil
     cdef double get_min_wavelength(self) nogil
     cdef double get_max_wavelength(self) nogil
     cdef double get_important_path_weight(self) nogil
+    cdef object _make_orthogonal(self)
     cdef Spectrum _sample_surface(self, Intersection intersection, World world)
     cdef Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world)
 
 
-cdef inline Ray new_ray(Point3D origin, Vector3D direction,
+cdef inline Ray new_ray(Point3D origin, Vector3D direction, Vector3D orientation,
                         double min_wavelength, double max_wavelength, int bins,
                         double max_distance,
                         double extinction_prob, int extinction_min_depth, int max_depth,
@@ -72,6 +74,7 @@ cdef inline Ray new_ray(Point3D origin, Vector3D direction,
     ray = Ray.__new__(Ray)
     ray.origin = origin
     ray.direction = direction
+    ray.orientation = orientation
     ray.max_distance = max_distance
     ray._bins = bins
     ray._min_wavelength = min_wavelength

@@ -40,7 +40,7 @@ from raysect.core.math.random cimport uniform, point_triangle
 from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.core.math.cython cimport find_index
 from raysect.optical cimport Point3D, new_point3d, new_vector3d, Vector3D, AffineMatrix3D, new_affinematrix3d
-from raysect.optical.polarised cimport Ray
+from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 from raysect.primitive.mesh.mesh cimport Mesh

@@ -31,7 +31,7 @@
 
 import numbers
 
-from raysect.optical.polarised.mueller cimport MuellerMatrix
+from raysect.optical.mueller cimport MuellerMatrix
 from libc.math cimport sqrt
 cimport cython
 
