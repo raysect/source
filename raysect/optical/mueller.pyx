@@ -5,6 +5,7 @@ from libc.math cimport sqrt, sin, cos
 DEF RAD2DEG = 57.29577951308232000  # 180 / pi
 DEF DEG2RAD = 0.017453292519943295  # pi / 180
 
+
 # todo: write docstring
 cdef class MuellerMatrix(_Mat4):
     """
@@ -106,7 +107,7 @@ cpdef MuellerMatrix diattenuator(double tx, double ty):
 
     cdef double a = 0.5 * (tx + ty)
     cdef double b = 0.5 * (tx - ty)
-    cdef double c = 0.5 * sqrt(tx * ty)
+    cdef double c = sqrt(tx * ty)
 
     return new_muellermatrix(
         a, b, 0, 0,
