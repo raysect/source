@@ -90,7 +90,7 @@ cpdef MuellerMatrix depolariser():
     )
 
 
-cpdef MuellerMatrix diattenuator(tx, ty):
+cpdef MuellerMatrix diattenuator(double tx, double ty):
     """
     Mueller matrix for a linear diattenuator (polariser).
     
@@ -119,17 +119,18 @@ cpdef MuellerMatrix diattenuator(tx, ty):
 cpdef MuellerMatrix rotate_angle(double angle):
     """
     Rotates a Stoke's vector to from a source frame to a target frame by angle.
-    
+
     :param double angle: Angle in degrees between the source and target frames.
     """
 
-    angle = RAD2DEG * angle
-    cdef double s = sin(2*angle)
-    cdef double c = cos(2*angle)
+    angle = DEG2RAD * angle
+    cdef double s = sin(2 * angle)
+    cdef double c = cos(2 * angle)
 
     return new_muellermatrix(
         1, 0, 0, 0,
         0, c, s, 0,
         0, -s, c, 0,
-        0 ,0 ,0 ,1
+        0, 0, 0, 1
     )
+

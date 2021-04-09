@@ -68,3 +68,11 @@ cdef inline MuellerMatrix new_muellermatrix(
     v.m[3][2] = m32
     v.m[3][3] = m33
     return v
+
+
+cpdef MuellerMatrix depolariser()
+
+cpdef MuellerMatrix diattenuator(double tx, double ty)
+
+cpdef MuellerMatrix rotate_angle(double angle)
+

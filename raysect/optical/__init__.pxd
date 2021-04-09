@@ -39,7 +39,7 @@ from raysect.optical.spectralfunction cimport *
 from raysect.optical.scenegraph cimport *
 from raysect.optical.ray cimport *
 from raysect.optical.spectrum cimport *
-from raysect.optical.stokes cimport *
-from raysect.optical.mueller cimport *
+from raysect.optical.stokes cimport StokesVector
+from raysect.optical.mueller cimport MuellerMatrix
 
 

@@ -42,9 +42,6 @@ cimport cython
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
 
-# if ray orientation and direction are too closely aligned the dot product
-DEF EPSILON = (1.0 - 1.0e-9)
-
 # todo: Rework raysect core ray to stop direction and origin being public, can then use setters
 #  and getters in cython to ensure orientation is orthogonal. This will remove the need for expensive
 #  _make_orthogonal every trace.
@@ -94,10 +91,12 @@ cdef class Ray(CoreRay):
     #     <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e048>
     # """
 
+    # ORIENTATION IS ALIGNED WITH HORIZONTAL POLARISATION (aligned with the Ex component of the field)
+
     def __init__(self,
-                 Point3D origin = Point3D(0, 0, 0),
-                 Vector3D direction = Vector3D(0, 0, 1),
-                 Vector3D orientation = Vector3D(0, 1, 0),
+                 Point3D origin = None,
+                 Vector3D direction = None,
+                 Vector3D orientation = None,
                  double min_wavelength = 375,
                  double max_wavelength = 785,
                  int bins = 40,
@@ -120,10 +119,12 @@ cdef class Ray(CoreRay):
         if important_path_weight < 0 or important_path_weight > 1.0:
             raise ValueError("Important path weight must be in the range [0, 1].")
 
-        super().__init__(origin, direction, max_distance)
+        origin = origin or Point3D(0, 0, 0)
+        direction = direction or Vector3D(0, 0, 1)
+        orientation = orientation or direction.orthogonal()
 
-        self.orientation = orientation
-        self._make_orthogonal()
+        super().__init__(origin, direction, max_distance)
+        self.orientation = direction.orthogonal(orientation)
 
         self._bins = bins
         self._min_wavelength = min_wavelength
@@ -399,7 +400,7 @@ cdef class Ray(CoreRay):
             raise TypeError('The world argument must be a valid World object.')
 
         # ensure orientation is orthogonal to direction
-        self._make_orthogonal()
+        self.orientation = self.direction.orthogonal(self.orientation)
 
         # reset ray statistics
         if self._primary_ray is None:
@@ -429,25 +430,6 @@ cdef class Ray(CoreRay):
         # apply normalisation to ensure the sampling remains unbiased
         spectrum.mul_scalar(normalisation)
         return spectrum
-
-    cdef object _make_orthogonal(self):
-
-        cdef Vector3D direction = self.direction.normalise()
-        cdef Vector3D orientation = self.orientation.normalise()
-
-        # calculate component of orientation along direction
-        cdef double m = self.direction.dot(self.orientation)
-        if m > EPSILON:
-            raise ValueError('Ray direction and orientation are too close to coincidence.')
-
-        # remove coincident component and re-normalise
-        orientation.x = orientation.x - m * direction.x
-        orientation.y = orientation.y - m * direction.y
-        orientation.z = orientation.z - m * direction.z
-        orientation = orientation.normalise()
-
-        # update ray state
-        self.orientation = orientation
 
     @cython.cdivision(True)
     cdef Spectrum _sample_surface(self, Intersection intersection, World world):
@@ -523,8 +505,7 @@ cdef class Ray(CoreRay):
         .. code-block:: pycon
 
             >>> from raysect.core import Point3D, Vector3D
-            >>> from raysect.optical import World
-            >>> from raysect.optical.polarised import Ray
+            >>> from raysect.optical import World, Ray
             >>>
             >>> world = World()
             >>>

@@ -58,7 +58,6 @@ cdef class Ray(CoreRay):
     cdef double get_min_wavelength(self) nogil
     cdef double get_max_wavelength(self) nogil
     cdef double get_important_path_weight(self) nogil
-    cdef object _make_orthogonal(self)
     cdef Spectrum _sample_surface(self, Intersection intersection, World world)
     cdef Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world)
 

@@ -29,31 +29,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.mueller cimport MuellerMatrix
+from raysect.optical cimport SpectralFunction
+from raysect.optical.material cimport NullSurface
+from raysect.optical cimport MuellerMatrix
 
 
-cdef class StokesVector:
-
-    cdef readonly double i, q, u, v
-    cpdef double polarised_fraction(self)
-    cpdef double linear_fraction(self)
-    cpdef double circular_fraction(self)
-    cpdef StokesVector apply(self, MuellerMatrix m)
+cdef class UniformAttenuator(NullSurface):
+    cdef public SpectralFunction transmission
 
 
-cdef inline StokesVector new_stokesvector(double i, double q, double u, double v):
-    """
-    StokesVector factory function.
-
-    Creates a new StokeVector object with less overhead than the equivalent Python
-    call. This function is callable from cython only and performs no checks.
-    """
-
-    cdef StokesVector a
-    a = StokesVector.__new__(StokesVector)
-    a.i = i
-    a.q = q
-    a.u = u
-    a.v = v
-    return a
 

@@ -29,6 +29,7 @@
 
 from .material import *
 from .emitter import *
+from .attenuator import *
 from .absorber import *
 from .lambert import *
 from .dielectric import *

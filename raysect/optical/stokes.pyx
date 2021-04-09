@@ -31,7 +31,6 @@
 
 import numbers
 
-from raysect.optical.mueller cimport MuellerMatrix
 from libc.math cimport sqrt
 cimport cython
 
@@ -57,7 +56,7 @@ cdef class StokesVector:
             * horizontal linear polarisation aligns with the x axis
             * vertical linear polarisation aligns with the y axis
             * beam propagation is along the z axis
-            * right hand circular light rotates counter-clockwise looking along the beam in the direction of propagation
+            * right hand circular light rotates counter-clockwise looking along the beam in the direction of light propagation
 
         """
 
@@ -252,3 +251,23 @@ cdef class StokesVector:
         else:
             return NotImplemented
 
+    cpdef StokesVector apply(self, MuellerMatrix m):
+        """
+        Applies the Mueller matrix operation to the Stoke's vector.
+
+        The Mueller matrix operation is applied by pre-multiplying the Stoke's
+        vector with the matrix. This method is substantially faster than using
+        the multiplication operator of MuellerMatrix when called from cython
+        code.
+
+        :param MuellerMatrix m: The Mueller matrix
+        :return: A modified StokesVector object.
+        :rtype: StokesVector
+        """
+
+        return new_stokesvector(
+            m.m[0][0] * self.i + m.m[0][1] * self.q + m.m[0][2] * self.u + m.m[0][3] * self.v,
+            m.m[1][0] * self.i + m.m[1][1] * self.q + m.m[1][2] * self.u + m.m[1][3] * self.v,
+            m.m[2][0] * self.i + m.m[2][1] * self.q + m.m[2][2] * self.u + m.m[2][3] * self.v,
+            m.m[3][0] * self.i + m.m[3][1] * self.q + m.m[3][2] * self.u + m.m[3][3] * self.v
+        )

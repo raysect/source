@@ -29,6 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# todo: add getters and setters for arrays of stokes components
+# todo: add maths utilities to simplify update of each stokes component e.g. mul_i_array, mul_q_scalar, mad_q_scalar etc...
+#  or use an enumeration for the first array index e.g. mul_array(Q, ....) where I=0, Q=1, etc... or better yest just use s0-s3 notation and an index
+# todo: add utility functions to check the stokes vector validity (i >= sqrt(q**2...))
+
 cimport cython
 from raysect.optical.stokes cimport StokesVector, new_stokesvector
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
@@ -41,7 +46,7 @@ import_array()
 
 # todo: only the most rudimentary functions have been implemented for now, these will be fleshed out before the v1 release
 # todo: for v1 rewrite using array.array or malloc/free
-@cython.freelist(128)
+@cython.freelist(256)
 cdef class Spectrum:
     # todo: update docstring
     """

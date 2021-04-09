@@ -62,8 +62,8 @@ from .material import *
 from .colour import *
 from .ray import *
 from .spectrum import *
-from .stokes import *
-from .mueller import *
+from .stokes import StokesVector
+from .mueller import MuellerMatrix
 
 
 
