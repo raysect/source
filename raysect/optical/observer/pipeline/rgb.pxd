@@ -35,7 +35,7 @@ from raysect.core.math cimport StatsArray3D, StatsArray1D
 cdef class RGBPipeline2D(Pipeline2D):
 
     cdef:
-        str name
+        public str name
         public bint display_progress
         double _display_timer
         double _display_update_time
