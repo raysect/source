@@ -287,7 +287,7 @@ cdef class Vector3D(_Vec3):
         # if current length is zero, problem is ill defined
         t = self.x * self.x + self.y * self.y + self.z * self.z
         if t == 0.0:
-            raise ZeroDivisionError("A zero length vector can not be normalised as the direction of a zero length vector is undefined.")
+            raise ZeroDivisionError("A zero length vector cannot be normalised as the direction of a zero length vector is undefined.")
 
         # normalise and rescale vector
         t = 1.0 / sqrt(t)
