@@ -56,39 +56,26 @@ def fresnel_tp(n1, n2, angle):
         return 0.0
 
     t = transmission_angle(n1, n2, angle)
-    if t == 0 or angle == 0:
-        return 1.0
-    # return 2 * n1 * math.cos(angle) / (n2 * math.cos(angle) + n1 * math.cos(t))
-    return math.sqrt(math.sin(2*angle) * math.sin(2*t) / (math.sin(angle+t) * math.cos(angle-t))**2)
+    ci = math.cos(angle)
+    ct = math.cos(t)
+    return 2*n1*ci / (n2*ci + n1*ct)
 
 
 def fresnel_ts(n1, n2, angle):
     """
     Fresnel transmission coefficient for perpendicular E-field.
     """
-    # if angle == 0:
-    #     # todo: take limit of original eqn?
-    #     #return 1 + fresnel_rs(n1, n2, angle)
-    #     return 1 + (n1 - n2) / (n1 + n2)
 
     if n1 > n2 and angle > total_internal_reflection_angle(n1, n2):
         return 0.0
 
     t = transmission_angle(n1, n2, angle)
-    if t == 0 or angle == 0:
-        return 1.0
-    # return 2 * n1 * math.cos(angle) / (n1 * math.cos(angle) + n2 * math.cos(t))
-    return math.sqrt(math.cos(angle - t)**2 * math.sin(2*angle) * math.sin(2*t) / (math.sin(angle+t) * math.cos(angle-t))**2)
+    ci = math.cos(angle)
+    ct = math.cos(t)
+    return 2*n1*ci / (n1*ci + n2*ct)
 
 
 def plot_fresnel(n1, n2):
-    # incident_angle = math.radians(25)
-    # transmitted_angle = transmission_angle(n1, n2, incident_angle)
-    #
-    # print(f'incident angle: {math.degrees(incident_angle)}')
-    # print(f'transmission angle: {math.degrees(transmitted_angle)}')
-    # print(f'Brewster\'s angle: {math.degrees(brewster_angle(n1, n2))}')
-    # print(f'TIR angle: {math.degrees(total_internal_reflection_angle(n1, n2))}')
 
     n = 1000
     a = np.linspace(0, 90, n)
@@ -101,14 +88,21 @@ def plot_fresnel(n1, n2):
     Tp = np.zeros(n)
     Ts = np.zeros(n)
     for i in range(n):
-        rp[i] = fresnel_rp(n1, n2, math.radians(a[i]))
-        rs[i] = fresnel_rs(n1, n2, math.radians(a[i]))
-        tp[i] = fresnel_tp(n1, n2, math.radians(a[i]))
-        ts[i] = fresnel_ts(n1, n2, math.radians(a[i]))
-        Rp[i] = rp[i]**2
-        Rs[i] = rs[i]**2
-        Tp[i] = tp[i]**2
-        Ts[i] = ts[i]**2
+
+        incident = math.radians(a[i])
+        if n1 > n2 and incident > total_internal_reflection_angle(n1, n2):
+            transmitted = 0.0
+        else:
+            transmitted = transmission_angle(n1, n2, incident)
+
+        rp[i] = fresnel_rp(n1, n2, incident)
+        rs[i] = fresnel_rs(n1, n2, incident)
+        tp[i] = fresnel_tp(n1, n2, incident)
+        ts[i] = fresnel_ts(n1, n2, incident)
+        Rp[i] = rp[i]**2    # beam area for reflected and incident identical, i.e. area normalisation = 1.0
+        Rs[i] = rs[i]**2    # beam area for reflected and incident identical, i.e. area normalisation = 1.0
+        Tp[i] = (tp[i]**2) * n2*math.cos(transmitted) / (n1*math.cos(incident))     # normalise with projected beam area to give flux
+        Ts[i] = (ts[i]**2) * n2*math.cos(transmitted) / (n1*math.cos(incident))     # normalise with projected beam area to give flux
 
     plt.figure()
     plt.title(f'Coefficients n1={n1}, n2={n2}')
@@ -128,7 +122,8 @@ def plot_fresnel(n1, n2):
     plt.plot(a, Tp)
     plt.plot(a, Ts)
     plt.plot(a, 0.5*(Tp + Ts))
-    plt.legend(['Rp', 'Rs', 'R', 'Tp', 'Ts', 'T'])
+    plt.plot(a, 0.5*(Rp + Rs) + 0.5*(Tp + Ts))
+    plt.legend(['Rp', 'Rs', 'R', 'Tp', 'Ts', 'T', 'TOTAL'])
 
 
 plot_fresnel(1.0, 1.5)
