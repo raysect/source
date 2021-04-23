@@ -25,7 +25,6 @@ def fresnel_rp(n1, n2, angle):
     """
 
     if n1 > n2 and angle > total_internal_reflection_angle(n1, n2):
-        #todo: implement
         return 1.0
 
     ci = math.cos(angle)
@@ -39,7 +38,6 @@ def fresnel_rs(n1, n2, angle):
     """
 
     if n1 > n2 and angle > total_internal_reflection_angle(n1, n2):
-        #todo: implement
         return 1.0
 
     ci = math.cos(angle)
@@ -75,6 +73,26 @@ def fresnel_ts(n1, n2, angle):
     return 2*n1*ci / (n1*ci + n2*ct)
 
 
+def tir_phase_p(n1, n2, angle):
+
+    if n1 < n2 or angle < total_internal_reflection_angle(n1, n2):
+        return 0.0
+
+    n = n2 / n1
+    return 2 * math.atan2(math.sqrt(math.sin(angle)**2 - n**2), n**2 * math.cos(angle)) - math.pi
+
+
+def tir_phase_s(n1, n2, angle):
+
+    if n1 < n2 or angle < total_internal_reflection_angle(n1, n2):
+        return 0.0
+
+    n = n2 / n1
+    return 2 * math.atan2(math.sqrt(math.sin(angle)**2 - n**2), math.cos(angle))
+
+
+
+
 def plot_fresnel(n1, n2):
 
     n = 1000
@@ -87,6 +105,8 @@ def plot_fresnel(n1, n2):
     Rs = np.zeros(n)
     Tp = np.zeros(n)
     Ts = np.zeros(n)
+    pp = np.zeros(n)
+    ps = np.zeros((n))
     for i in range(n):
 
         incident = math.radians(a[i])
@@ -103,6 +123,8 @@ def plot_fresnel(n1, n2):
         Rs[i] = rs[i]**2    # beam area for reflected and incident identical, i.e. area normalisation = 1.0
         Tp[i] = (tp[i]**2) * n2*math.cos(transmitted) / (n1*math.cos(incident))     # normalise with projected beam area to give flux
         Ts[i] = (ts[i]**2) * n2*math.cos(transmitted) / (n1*math.cos(incident))     # normalise with projected beam area to give flux
+        pp[i] = math.degrees(tir_phase_p(n1, n2, incident))
+        ps[i] = math.degrees(tir_phase_s(n1, n2, incident))
 
     plt.figure()
     plt.title(f'Coefficients n1={n1}, n2={n2}')
@@ -125,7 +147,15 @@ def plot_fresnel(n1, n2):
     plt.plot(a, 0.5*(Rp + Rs) + 0.5*(Tp + Ts))
     plt.legend(['Rp', 'Rs', 'R', 'Tp', 'Ts', 'T', 'TOTAL'])
 
+    plt.figure()
+    plt.title(f'TIR Reflection Phase')
+    plt.grid()
+    plt.plot(a, pp)
+    plt.plot(a, ps)
+    plt.plot(a, ps - pp)
+    plt.legend(['pp', 'ps', 'ps - pp'])
 
-plot_fresnel(1.0, 1.5)
-plot_fresnel(1.5, 1.0)
+# plot_fresnel(1.0, 1.5)
+# plot_fresnel(1.5, 1.0)
+plot_fresnel(3, 2)
 plt.show()
