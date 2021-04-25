@@ -332,7 +332,7 @@ cdef class Normal3D(_Vec3):
 
         return new_vector3d(self.x, self.y, self.z)
 
-    cpdef Vector3D orthogonal(self, Vector3D v=None):
+    cpdef Vector3D orthogonal(self, _Vec3 v=None):
         """
         Returns a unit vector that is guaranteed to be orthogonal to the normal.
 
@@ -348,7 +348,7 @@ cdef class Normal3D(_Vec3):
 
         .. code-block:: pycon
 
-            >>> a = Vector3D(1, 0, 0)
+            >>> a = Normal3D(1, 0, 0)
             >>> a.orthogonal()
             Vector3D(0.0, 1.0, 0.0)
         """
