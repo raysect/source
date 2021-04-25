@@ -239,9 +239,29 @@ def plot_fresnel(n1, n2):
     plt.legend(['cos', 'sin'])
 
 
+from raysect.core import Vector3D
+
+i = Vector3D(-0.1, -1, 0).normalise()
+n = Vector3D(0, 1, 0).normalise()
+
+g = 1.5 / 1.0
+ci = abs(n.dot(i))
+ct = math.sqrt(1 - (g * g) * (1 - ci * ci))
+print(f'ci={math.degrees(math.acos(ci))}, ct={math.degrees(math.acos(ct))}')
+
+temp = g * ci - ct
+t = Vector3D(
+    g * i.x + temp * n.x,
+    g * i.y + temp * n.y,
+    g * i.z + temp * n.z
+)
+
+print(f'n={n}, i={i}, t={t}')
+print(f'cos(t.n)={math.degrees(math.acos(t.dot(-n)))}')
+
 # plot_fresnel(1.0, 1.5)
 # plot_fresnel(1.5, 1.0)
 # plot_fresnel(1.5151, 1.0)
 # plot_fresnel(4, 1)
-plot_fresnel(3, 2)
-plt.show()
+# plot_fresnel(3, 2)
+# plt.show()
