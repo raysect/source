@@ -699,6 +699,8 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
       in order to keep this ratio below a given value.
     :param int min_samples: Minimum number of pixel samples across the image
       (or its masked fragment) before turning on adaptive sampling (default=1000).
+    :param int max_samples: Maximum number of pixel samples at which extra sampling
+      will be aborted and rendering will complete, disabled is set to 0 (default=0).
     :param double cutoff: Noise threshold at which extra sampling will be aborted and
       rendering will complete (default=0.0).
     :param np.ndarray mask: The image mask array (default=None). A 2D boolean array with
@@ -710,16 +712,17 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
     cdef:
         RGBPipeline2D _pipeline
         double _fraction, _ratio, _cutoff
-        int _min_samples
+        int _min_samples, _max_samples
         np.ndarray _mask
         uint8[:, ::1] _mask_mv
 
-    def __init__(self, RGBPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, double cutoff=0.0, np.ndarray mask=None):
+    def __init__(self, RGBPipeline2D pipeline, double fraction=0.2, double ratio=10.0, int min_samples=1000, int max_samples=0, double cutoff=0.0, np.ndarray mask=None):
 
         self.pipeline = pipeline
         self.fraction = fraction
         self.ratio = ratio
         self.min_samples = min_samples
+        self.max_samples = max_samples
         self.cutoff = cutoff
         self.mask = mask
 
@@ -762,6 +765,16 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
         if value < 1:
             raise ValueError("Attribute 'min_samples' must be >= 1.")
         self._min_samples = value
+
+    @property
+    def max_samples(self):
+        return self._max_samples
+
+    @max_samples.setter
+    def max_samples(self, value):
+        if value < 0:
+            raise ValueError("Attribute 'max_samples' must be >= 0.")
+        self._max_samples = value
 
     @property
     def cutoff(self):
@@ -843,6 +856,8 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
             for y in range(frame.ny):
                 if self._mask_mv[x, y]:
                     min_pixel_samples = min(frame.samples_mv[x, y, 0], frame.samples_mv[x, y, 1], frame.samples_mv[x, y, 2])
+                    if self._max_samples and min_pixel_samples >= self._max_samples:
+                        continue
                     if min_pixel_samples < min_samples or normalised_mv[x, y] > cutoff:
                         tasks.append((x, y))
 
