@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport SpectralFunction, NumericallyIntegratedSF
+from raysect.optical cimport SpectralFunction, NumericallyIntegratedSF, Spectrum, Vector3D, Normal3D
 from raysect.optical.material cimport Material
 
 cdef class Sellmeier(NumericallyIntegratedSF):
@@ -45,10 +45,15 @@ cdef class Dielectric(Material):
         public SpectralFunction index
         public SpectralFunction external_index
         public SpectralFunction transmission
-        public bint transmission_only
 
-    cdef double _polarisation_frame_angle(self, ci, direction, ray_orientation, interface_orientation, normal)
+    cdef (double, double, double, double, double) _fresnel(self, double ci, double ct, double ni, double nt) nogil
 
-    cdef double _fresnel_tir(self, double ci, double gamma) nogil
+    cdef void _apply_mueller_reflection_tir(self, Spectrum spectrum, double ci, double gamma)
 
-    cdef (double, double, double, double, double) _fresnel_non_tir(self, double ci, double ct, double ni, double nt) nogil
+    cdef void _apply_mueller_reflection_non_tir(self, Spectrum spectrum, double p, double s)
+
+    cdef void _apply_mueller_transmission(self, Spectrum spectrum, double p, double s)
+
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta)
+
+    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation, Normal3D normal)

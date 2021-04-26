@@ -32,8 +32,8 @@
 # TODO: POLARISATION
 
 from raysect.core.math.random cimport probability
-from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
-from libc.math cimport fabs, sqrt, pow as cpow, atan2
+from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Ray
+from libc.math cimport fabs, sqrt, pow as cpow, atan2, cos, sin
 cimport cython
 
 DEF EPSILON = 1e-12
@@ -140,11 +140,10 @@ cdef class Dielectric(Material):
                                           ConstantSF(1))
     """
 
-    def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None, bint transmission_only=False):
+    def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None):
         super().__init__()
         self.index = index
         self.transmission = transmission
-        self.transmission_only = transmission_only
 
         if external_index is None:
             self.external_index = ConstantSF(1.0)
@@ -234,10 +233,6 @@ cdef class Dielectric(Material):
         # check for total internal reflection
         if ct_sqr <= 0:
 
-            # skip calculation if transmission only enabled
-            if self.transmission_only:
-                return ray.new_spectrum()
-
             # calculate direction and orientation
             temp = 2 * ci
             r_direction = new_vector3d(
@@ -253,20 +248,19 @@ cdef class Dielectric(Material):
                 r_direction.transform(primitive_to_world),
                 r_orientation.transform(primitive_to_world)
             )
-
-            # todo: trace and apply mueller matrix for TIR
-            # print(f'tir, reflected: n={normal}, i={i_direction, i_orientation}, t={r_direction, r_orientation}')
             spectrum = reflected_ray.trace(world)
+
+            # apply mueller matrix
+            self._apply_mueller_reflection_tir(spectrum, ci, gamma)
 
         else:
 
             # calculate fresnel reflection and transmission coefficients
-            rp, rs, tp, ts, ta = self._fresnel_non_tir(ci, ct, ni, nt)
+            rp, rs, tp, ts, ta = self._fresnel(ci, ct, ni, nt)
+            transmission = 0.5*ta*(ts*ts + tp*tp)
 
             # select path by roulette using the strength of the coefficients as probabilities
-            # todo: use total transmission as probability, this will require renormalisation (sigh firefly time...YEAH FUCKING BAD AS IT TURNS OUT)
-            if probability(0.5):
-            # if self.transmission_only or probability(transmission):
+            if probability(transmission):
 
                 # transmitted ray path selected
                 temp = gamma * ci - ct
@@ -283,11 +277,10 @@ cdef class Dielectric(Material):
                     t_direction.transform(primitive_to_world),
                     t_orientation.transform(primitive_to_world)
                 )
-
-                # todo: polarise
-                # print(f'non-tir, transmission: n={normal}, i={i_direction, i_orientation}, t={t_direction, t_orientation}')
                 spectrum = transmitted_ray.trace(world)
-                spectrum.mul_scalar(0.5*ta*(ts*ts + tp*tp))
+
+                # apply normalised mueller matrix
+                self._apply_mueller_transmission(spectrum, tp, ts)
 
             else:
 
@@ -308,43 +301,41 @@ cdef class Dielectric(Material):
                     r_direction.transform(primitive_to_world),
                     r_orientation.transform(primitive_to_world)
                 )
-
-                # todo: polarise
-                # print(f'non-tir, reflected: n={normal}, i={i_direction, i_orientation}, t={r_direction, r_orientation}')
                 spectrum = reflected_ray.trace(world)
-                spectrum.mul_scalar(0.5 * (rs * rs + rp * rp))
 
-            # todo: NORMALISE BY PROB
-            spectrum.mul_scalar(2.0)
+                # apply normalised mueller matrix
+                self._apply_mueller_reflection_non_tir(spectrum, rp, rs)
 
-        # # ray stokes orientation
-        # s_orientation = ray.orientation.transform(world_to_primitive)
-        # s_orientation = s_orientation.normalise()
-        #
-        # # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
-        # theta = self._polarisation_frame_angle(s_orientation, i_orientation)
+        # ray stokes orientation
+        s_orientation = ray.orientation.transform(world_to_primitive)
+        s_orientation = s_orientation.normalise()
 
+        # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
+        theta = self._polarisation_frame_angle(i_direction, s_orientation, i_orientation, normal)
+        self._apply_stokes_rotation(spectrum, theta)
         return spectrum
 
-    cdef double _polarisation_frame_angle(self, ci, direction, ray_orientation, interface_orientation, normal):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_mueller_reflection_tir(self, Spectrum spectrum, double ci, double gamma):
 
-        # light propagation direction is opposite to ray direction
-        propagation = direction.neg()
-
-        # calculate rotation about light propagation direction
-        angle = ray_orientation.angle(interface_orientation) * DEG2RAD
-        if propagation.dot(ray_orientation.cross(interface_orientation)) < 0:
-            angle = -angle
-        return angle
-
-    @cython.cdivision(True)
-    cdef double _fresnel_tir(self, double ci, double gamma) nogil:
+        cdef double theta, c, s
 
         # phase shift between perpendicular and parallel reflected beam components
-        return -2.0 * atan2(ci * sqrt(gamma*gamma * (1.0 - ci*ci) - 1.0), gamma * (1.0 - ci*ci))
+        theta = -2.0 * atan2(ci * sqrt(gamma*gamma * (1.0 - ci*ci) - 1.0), gamma * (1.0 - ci*ci))
+
+        # apply retarder mueller matrix with phase shift
+        c = cos(theta)
+        s = sin(theta)
+        for bin in range(spectrum.bins):
+            spectrum.samples_mv[bin, 0] = spectrum.samples_mv[bin, 0]
+            spectrum.samples_mv[bin, 1] = spectrum.samples_mv[bin, 1]
+            spectrum.samples_mv[bin, 2] = c * spectrum.samples_mv[bin, 2] - s * spectrum.samples_mv[bin, 3]
+            spectrum.samples_mv[bin, 3] = s * spectrum.samples_mv[bin, 2] + c * spectrum.samples_mv[bin, 3]
 
     @cython.cdivision(True)
-    cdef (double, double, double, double, double) _fresnel_non_tir(self, double ci, double ct, double ni, double nt) nogil:
+    cdef (double, double, double, double, double) _fresnel(self, double ci, double ct, double ni, double nt) nogil:
 
         cdef double k0, k1, k2, k3, a, b, rp, rs, tp, ts, ta
 
@@ -371,6 +362,91 @@ cdef class Dielectric(Material):
         ta = k3 / k2
 
         return rp, rs, tp, ts, ta
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_mueller_reflection_non_tir(self, Spectrum spectrum, double p, double s):
+        """
+        Applies a normalised mueller matrix for reflection.
+        
+        A reflected or transmitted ray is selected by roulette with the
+        probability determined by the transmission strength. To obtain an
+        unbiased sample, the spectrum must be normalised by the probability of
+        the selected path. This normalisation results in a simpler calculation
+        of the mueller matrices due to term cancellation.
+        """
+
+        cdef:
+            int bin
+            double k0, k1, k2
+
+        k0 = 1.0 / (p*p + s*s)
+        k1 = k0 * (p*p - s*s)
+        k2 = -2 * k0 * p * s
+
+        for bin in range(spectrum.bins):
+            spectrum.samples_mv[bin, 0] = spectrum.samples_mv[bin, 0] + k1 * spectrum.samples_mv[bin, 1]
+            spectrum.samples_mv[bin, 1] = k1 * spectrum.samples_mv[bin, 0] + spectrum.samples_mv[bin, 1]
+            spectrum.samples_mv[bin, 2] = k2 * spectrum.samples_mv[bin, 2]
+            spectrum.samples_mv[bin, 3] = k2 * spectrum.samples_mv[bin, 3]
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_mueller_transmission(self, Spectrum spectrum, double p, double s):
+        """
+        Applies a normalised mueller matrix for reflection.
+        
+        A reflected or transmitted ray is selected by roulette with the
+        probability determined by the transmission strength. To obtain an
+        unbiased sample, the spectrum must be normalised by the probability of
+        the selected path. This normalisation results in a simpler calculation
+        of the mueller matrices due to term cancellation.
+        """
+
+        cdef:
+            int bin
+            double k0, k1, k2
+
+        k0 = 1.0 / (p*p + s*s)
+        k1 = k0 * (p*p - s*s)
+        k2 = 2 * k0 * p * s
+
+        for bin in range(spectrum.bins):
+            spectrum.samples_mv[bin, 0] = spectrum.samples_mv[bin, 0] + k1 * spectrum.samples_mv[bin, 1]
+            spectrum.samples_mv[bin, 1] = k1 * spectrum.samples_mv[bin, 0] + spectrum.samples_mv[bin, 1]
+            spectrum.samples_mv[bin, 2] = k2 * spectrum.samples_mv[bin, 2]
+            spectrum.samples_mv[bin, 3] = k2 * spectrum.samples_mv[bin, 3]
+
+    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation, Normal3D normal):
+
+        # light propagation direction is opposite to ray direction
+        propagation = direction.neg()
+
+        # calculate rotation about light propagation direction
+        angle = ray_orientation.angle(interface_orientation) * DEG2RAD
+        if propagation.dot(ray_orientation.cross(interface_orientation)) < 0:
+            angle = -angle
+        return angle
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta):
+
+        cdef double c, s
+
+        c = cos(2*theta)
+        s = sin(2*theta)
+        for bin in range(spectrum.bins):
+            spectrum.samples_mv[bin, 0] = spectrum.samples_mv[bin, 0]
+            spectrum.samples_mv[bin, 1] = c * spectrum.samples_mv[bin, 1] - s * spectrum.samples_mv[bin, 2]
+            spectrum.samples_mv[bin, 2] = s * spectrum.samples_mv[bin, 1] + c * spectrum.samples_mv[bin, 2]
+            spectrum.samples_mv[bin, 3] = spectrum.samples_mv[bin, 3]
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

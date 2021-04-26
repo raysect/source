@@ -259,6 +259,7 @@ t = Vector3D(
 print(f'n={n}, i={i}, t={t}')
 print(f'cos(t.n)={math.degrees(math.acos(t.dot(-n)))}')
 
+
 # plot_fresnel(1.0, 1.5)
 # plot_fresnel(1.5, 1.0)
 # plot_fresnel(1.5151, 1.0)
