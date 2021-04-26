@@ -62,7 +62,7 @@ cdef class Sellmeier(NumericallyIntegratedSF):
                                           ConstantSF(1))
     """
 
-    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, double sample_resolution=10):
+    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, double sample_resolution=1):
         super().__init__(sample_resolution)
 
         self.b1 = b1
