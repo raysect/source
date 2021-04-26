@@ -168,14 +168,10 @@ cdef class Dielectric(Material):
         # light paths that would result in the propagation down the incident
         # ray path.
         #
-        # The polarisation frame for the interface is as follows:
-        #   x-axis: parallel polarisation, parallel to the incident plane
-        #   y-axis: perpendicular polarisation, perpendicular to incident plane
-        #
         # Rays launched by this material are aligned with the interface frame,
         # the ray orientation vector lies in the plane of incidence.
 
-        # convert ray direction and normal to local coordinates
+        # convert ray direction to local coordinates
         i_direction = ray.direction.transform(world_to_primitive)
 
         # ensure vectors are normalised for reflection calculation
@@ -264,22 +260,22 @@ cdef class Dielectric(Material):
 
         else:
 
-            temp = gamma * ci - ct
-            t_direction = new_vector3d(
-                gamma * i_direction.x + temp * normal.x,
-                gamma * i_direction.y + temp * normal.y,
-                gamma * i_direction.z + temp * normal.z
-            )
-            t_orientation = t_direction.orthogonal(normal.neg()).neg() if (1.0 - ci) > EPSILON else i_orientation
-
             # calculate fresnel reflection and transmission coefficients
-            # self._fresnel(c1, -normal.dot(transmitted), n1, n2, &reflectivity, &transmission)
+            rp, rs, tp, ts, ta = self._fresnel_non_tir(ci, ct, ni, nt)
 
             # select path by roulette using the strength of the coefficients as probabilities
+            # todo: use total transmission as probability, this will require renormalisation (sigh firefly time...YEAH FUCKING BAD AS IT TURNS OUT)
             if probability(0.5):
             # if self.transmission_only or probability(transmission):
 
                 # transmitted ray path selected
+                temp = gamma * ci - ct
+                t_direction = new_vector3d(
+                    gamma * i_direction.x + temp * normal.x,
+                    gamma * i_direction.y + temp * normal.y,
+                    gamma * i_direction.z + temp * normal.z
+                )
+                t_orientation = t_direction.orthogonal(normal.neg()).neg() if (1.0 - ci) > EPSILON else i_orientation
 
                 # spawn ray on correct side of surface
                 transmitted_ray = ray.spawn_daughter(
@@ -291,6 +287,7 @@ cdef class Dielectric(Material):
                 # todo: polarise
                 # print(f'non-tir, transmission: n={normal}, i={i_direction, i_orientation}, t={t_direction, t_orientation}')
                 spectrum = transmitted_ray.trace(world)
+                spectrum.mul_scalar(0.5*ta*(ts*ts + tp*tp))
 
             else:
 
@@ -315,9 +312,10 @@ cdef class Dielectric(Material):
                 # todo: polarise
                 # print(f'non-tir, reflected: n={normal}, i={i_direction, i_orientation}, t={r_direction, r_orientation}')
                 spectrum = reflected_ray.trace(world)
+                spectrum.mul_scalar(0.5 * (rs * rs + rp * rp))
 
             # todo: NORMALISE BY PROB
-            # spectrum.mul_scalar(2.0)
+            spectrum.mul_scalar(2.0)
 
         # # ray stokes orientation
         # s_orientation = ray.orientation.transform(world_to_primitive)
@@ -327,62 +325,52 @@ cdef class Dielectric(Material):
         # theta = self._polarisation_frame_angle(s_orientation, i_orientation)
 
         return spectrum
-    #
-    # cdef double _polarisation_frame_angle(self, ci, i_direction, i_orientation, normal):
-    #
-    #     # light propagation direction is opposite to ray direction
-    #     i_propagation = i_direction.neg()
-    #
-    #     # calculate orientation of interface
-    #     f_orientation = i_propagation.orthogonal(normal)
-    #
-    #     # calculate rotation about light propagation direction
-    #     angle = i_orientation.angle(f_orientation) * DEG2RAD
-    #     if i_propagation.dot(i_orientation.cross(f_orientation)) < 0:
-    #         angle = -angle
-    #     return angle
-    #
-    # @cython.cdivision(True)
-    # cdef double _fresnel_tir(self, double ci, double gamma) nogil:
-    #
-    #     # calculation expects magnitude of cosine
-    #     # todo: move this outside the function, also ct if using ct_sqr is always +ve
-    #     ci = fabs(ci)
-    #
-    #     # phase shift between perpendicular and parallel reflected beam components
-    #     return -2.0 * atan2(ci * sqrt(gamma*gamma * (1.0 - ci*ci) - 1.0), gamma * (1.0 - ci*ci))
-    #
-    # @cython.cdivision(True)
-    # cdef (double, double, double, double, double) _fresnel_non_tir(self, double ci, double ct, double ni, double nt) nogil:
-    #
-    #     cdef double k0, k1, k2, k3, a, b, rp, rs, tp, ts, ta
-    #
-    #     # calculation expects magnitude of cosines
-    #     # todo: move this outside the function, also ct if using ct_sqr is always +ve
-    #     ci = fabs(ci)
-    #     ct = fabs(ct)
-    #
-    #     # common coefficients
-    #     k0 = ni * ct
-    #     k1 = nt * ci
-    #     k2 = ni * ci
-    #     k3 = nt * ct
-    #
-    #     a = 1.0 / (k1 + k0)
-    #     b = 1.0 / (k2 + k3)
-    #
-    #     # reflection coefficients
-    #     rp = a * (k0 - k1)
-    #     rs = b * (k2 - k3)
-    #
-    #     # transmission coefficients
-    #     tp = 2.0 * a * k2
-    #     ts = 2.0 * b * k2
-    #
-    #     # projected area for transmitted beam
-    #     ta = k3 / k2
-    #
-    #     return rp, rs, tp, ts, ta
+
+    cdef double _polarisation_frame_angle(self, ci, direction, ray_orientation, interface_orientation, normal):
+
+        # light propagation direction is opposite to ray direction
+        propagation = direction.neg()
+
+        # calculate rotation about light propagation direction
+        angle = ray_orientation.angle(interface_orientation) * DEG2RAD
+        if propagation.dot(ray_orientation.cross(interface_orientation)) < 0:
+            angle = -angle
+        return angle
+
+    @cython.cdivision(True)
+    cdef double _fresnel_tir(self, double ci, double gamma) nogil:
+
+        # phase shift between perpendicular and parallel reflected beam components
+        return -2.0 * atan2(ci * sqrt(gamma*gamma * (1.0 - ci*ci) - 1.0), gamma * (1.0 - ci*ci))
+
+    @cython.cdivision(True)
+    cdef (double, double, double, double, double) _fresnel_non_tir(self, double ci, double ct, double ni, double nt) nogil:
+
+        cdef double k0, k1, k2, k3, a, b, rp, rs, tp, ts, ta
+
+        # calculation expects magnitude of cosines
+
+        # common coefficients
+        k0 = ni * ct
+        k1 = nt * ci
+        k2 = ni * ci
+        k3 = nt * ct
+
+        a = 1.0 / (k1 + k0)
+        b = 1.0 / (k2 + k3)
+
+        # reflection coefficients
+        rp = a * (k0 - k1)
+        rs = b * (k2 - k3)
+
+        # transmission coefficients
+        tp = 2.0 * a * k2
+        ts = 2.0 * b * k2
+
+        # projected area for transmitted beam
+        ta = k3 / k2
+
+        return rp, rs, tp, ts, ta
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

@@ -47,4 +47,8 @@ cdef class Dielectric(Material):
         public SpectralFunction transmission
         public bint transmission_only
 
-    # cdef void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil
+    cdef double _polarisation_frame_angle(self, ci, direction, ray_orientation, interface_orientation, normal)
+
+    cdef double _fresnel_tir(self, double ci, double gamma) nogil
+
+    cdef (double, double, double, double, double) _fresnel_non_tir(self, double ci, double ct, double ni, double nt) nogil
