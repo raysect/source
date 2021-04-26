@@ -33,5 +33,5 @@ from .uniform import UniformSurfaceEmitter, UniformVolumeEmitter
 from .unity import UnitySurfaceEmitter, UnityVolumeEmitter
 from .homogeneous import HomogeneousVolumeEmitter
 # from .inhomogeneous import InhomogeneousVolumeEmitter, VolumeIntegrator, NumericalIntegrator
-# from .checkerboard import Checkerboard
+from .checkerboard import Checkerboard
 # from .anisotropic import AnisotropicSurfaceEmitter
