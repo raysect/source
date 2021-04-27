@@ -1,3 +1,4 @@
+import sys
 from numpy import array
 from matplotlib.pyplot import *
 
@@ -9,6 +10,9 @@ from raysect.optical.observer import PinholeCamera
 from raysect.optical.observer import RGBPipeline2D
 from raysect.optical.observer import RGBAdaptiveSampler2D
 
+start = int(sys.argv[1])
+end = int(sys.argv[2])
+step = int(sys.argv[3])
 
 """
 Cornell Box Demo
@@ -152,16 +156,16 @@ p1 = polariser(parent=world, transform=translate(0, 0, -2.96)*rotate(0, 0, 0))
 # start ray tracing
 ion()
 
-for i in range(0, 360, 15):
+for i in range(start, end, step):
 
     p1.transform = translate(0, 0, -2.96)*rotate(0, 0, i)
 
     rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
     rgb.display_progress = False
 
-    sampler = RGBAdaptiveSampler2D(rgb, ratio=100, fraction=1.0, min_samples=1000, max_samples=10000, cutoff=0.5)
+    sampler = RGBAdaptiveSampler2D(rgb, ratio=100, fraction=1.0, min_samples=1000, max_samples=10000, cutoff=0.1)
 
-    camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 00), pipelines=[rgb])
+    camera = PinholeCamera((512, 512), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 00), pipelines=[rgb])
     camera.frame_sampler = sampler
     camera.spectral_rays = 1
     camera.spectral_bins = 15
