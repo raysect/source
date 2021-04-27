@@ -35,7 +35,7 @@ def polariser(parent=None, transform=None):
 
     polariser = Cylinder(
         radius=0.101, height=0.002, parent=assembly, transform=translate(0, 0, -0.001),
-        material=UniformDiattenuator(Vector3D(1, 0, 0), ConstantSF(1), ConstantSF(0))
+        material=UniformDiattenuator(Vector3D(0, 1, 0), ConstantSF(1), ConstantSF(0))
     )
 
     body = Subtract(
