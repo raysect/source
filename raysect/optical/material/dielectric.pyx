@@ -387,10 +387,16 @@ cdef class Dielectric(Material):
         k2 = -2 * k0 * p * s
 
         for bin in range(spectrum.bins):
-            spectrum.samples_mv[bin, 0] = spectrum.samples_mv[bin, 0] + k1 * spectrum.samples_mv[bin, 1]
-            spectrum.samples_mv[bin, 1] = k1 * spectrum.samples_mv[bin, 0] + spectrum.samples_mv[bin, 1]
-            spectrum.samples_mv[bin, 2] = k2 * spectrum.samples_mv[bin, 2]
-            spectrum.samples_mv[bin, 3] = k2 * spectrum.samples_mv[bin, 3]
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0 + k1 * s1
+            spectrum.samples_mv[bin, 1] = k1 * s0 + s1
+            spectrum.samples_mv[bin, 2] = k2 * s2
+            spectrum.samples_mv[bin, 3] = k2 * s3
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
@@ -416,10 +422,16 @@ cdef class Dielectric(Material):
         k2 = 2 * k0 * p * s
 
         for bin in range(spectrum.bins):
-            spectrum.samples_mv[bin, 0] = spectrum.samples_mv[bin, 0] + k1 * spectrum.samples_mv[bin, 1]
-            spectrum.samples_mv[bin, 1] = k1 * spectrum.samples_mv[bin, 0] + spectrum.samples_mv[bin, 1]
-            spectrum.samples_mv[bin, 2] = k2 * spectrum.samples_mv[bin, 2]
-            spectrum.samples_mv[bin, 3] = k2 * spectrum.samples_mv[bin, 3]
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0 + k1 * s1
+            spectrum.samples_mv[bin, 1] = k1 * s0 + s1
+            spectrum.samples_mv[bin, 2] = k2 * s2
+            spectrum.samples_mv[bin, 3] = k2 * s3
 
     cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation, Normal3D normal):
 
@@ -443,10 +455,16 @@ cdef class Dielectric(Material):
         c = cos(2*theta)
         s = sin(2*theta)
         for bin in range(spectrum.bins):
-            spectrum.samples_mv[bin, 0] = spectrum.samples_mv[bin, 0]
-            spectrum.samples_mv[bin, 1] = c * spectrum.samples_mv[bin, 1] - s * spectrum.samples_mv[bin, 2]
-            spectrum.samples_mv[bin, 2] = s * spectrum.samples_mv[bin, 1] + c * spectrum.samples_mv[bin, 2]
-            spectrum.samples_mv[bin, 3] = spectrum.samples_mv[bin, 3]
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0
+            spectrum.samples_mv[bin, 1] = c * s1 - s * s2
+            spectrum.samples_mv[bin, 2] = s * s1 + c * s2
+            spectrum.samples_mv[bin, 3] = s3
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
