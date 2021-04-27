@@ -140,41 +140,56 @@ sphere = Sphere(
 )
 
 # polarisers
-p1 = polariser(parent=world, transform=translate(0, 0, -2.96)*rotate(0, 0, 75))
+p1 = polariser(parent=world, transform=translate(0, 0, -2.96)*rotate(0, 0, 0))
 # p2 = polariser(parent=world, transform=translate(0, 0, -2.98)*rotate(0, 0, 45))
 # p3 = polariser(parent=world, transform=translate(0, 0, -3)*rotate(0, 0, 90))
 
-rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
-sampler = RGBAdaptiveSampler2D(rgb, ratio=100, fraction=1.0, min_samples=1000, max_samples=10000, cutoff=0.1)
 
-camera = PinholeCamera((256, 256), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=[rgb])
-camera.frame_sampler = sampler
-camera.spectral_rays = 1
-camera.spectral_bins = 15
-camera.pixel_samples = 1000
-camera.ray_importance_sampling = True
-camera.ray_important_path_weight = 0.25
-camera.ray_max_depth = 500
-camera.ray_extinction_min_depth = 3
-camera.ray_extinction_prob = 0.01
 
 # from raysect.core.workflow import SerialEngine
 # camera.render_engine = SerialEngine()
 
-# # start ray tracing
+# start ray tracing
 ion()
-name = 'cornell_box_polariser'
-timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
-render_pass = 1
-while not camera.render_complete:
 
-    print("Rendering pass {}...".format(render_pass))
-    camera.observe()
-    rgb.save("{}_{}_pass_{}.png".format(name, timestamp, render_pass))
-    print()
+for i in range(0, 360, 15):
 
-    render_pass += 1
+    p1.transform = translate(0, 0, -2.96)*rotate(0, 0, i)
+
+    rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
+    rgb.display_progress = False
+
+    sampler = RGBAdaptiveSampler2D(rgb, ratio=100, fraction=1.0, min_samples=1000, max_samples=10000, cutoff=0.5)
+
+    camera = PinholeCamera((128, 128), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 00), pipelines=[rgb])
+    camera.frame_sampler = sampler
+    camera.spectral_rays = 1
+    camera.spectral_bins = 15
+    camera.pixel_samples = 1000
+    camera.ray_importance_sampling = True
+    camera.ray_important_path_weight = 0.25
+    camera.ray_max_depth = 500
+    camera.ray_extinction_min_depth = 3
+    camera.ray_extinction_prob = 0.01
+
+    name = 'cornell_box_polariser_anim_test'
+    # timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
+    render_pass = 1
+    while not camera.render_complete:
+
+        print("Rendering angle {}, pass {}...".format(i, render_pass))
+        camera.observe()
+        print()
+        render_pass += 1
+
+    rgb.save("{}_angle_{}.png".format(name, i))
+
+    camera.parent = None
+    del camera
+    del rgb
+    del sampler
+
 
 ioff()
-rgb.display()
+# rgb.display()
 
