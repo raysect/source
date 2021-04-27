@@ -402,6 +402,7 @@ cdef class _ObserverBase(Observer):
             # convert ray from local space to world space
             ray.origin = ray.origin.transform(self.to_root())
             ray.direction = ray.direction.transform(self.to_root())
+            ray.orientation = ray.orientation.transform(self.to_root())
 
             # sample, apply projection weight
             spectrum = ray.trace(world)
