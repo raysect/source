@@ -56,4 +56,4 @@ cdef class Dielectric(Material):
 
     cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta)
 
-    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation, Normal3D normal)
+    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation)

@@ -311,7 +311,7 @@ cdef class Dielectric(Material):
         s_orientation = s_orientation.normalise()
 
         # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
-        theta = self._polarisation_frame_angle(i_direction, s_orientation, i_orientation, normal)
+        theta = self._polarisation_frame_angle(i_direction, s_orientation, i_orientation)
         self._apply_stokes_rotation(spectrum, theta)
         return spectrum
 
@@ -320,7 +320,9 @@ cdef class Dielectric(Material):
     @cython.initializedcheck(False)
     cdef void _apply_mueller_reflection_tir(self, Spectrum spectrum, double ci, double gamma):
 
-        cdef double theta, c, s
+        cdef:
+            double theta, c, s
+            double s0, s1, s2, s3
 
         # phase shift between perpendicular and parallel reflected beam components
         theta = -2.0 * atan2(ci * sqrt(gamma*gamma * (1.0 - ci*ci) - 1.0), gamma * (1.0 - ci*ci))
@@ -329,10 +331,16 @@ cdef class Dielectric(Material):
         c = cos(theta)
         s = sin(theta)
         for bin in range(spectrum.bins):
-            spectrum.samples_mv[bin, 0] = spectrum.samples_mv[bin, 0]
-            spectrum.samples_mv[bin, 1] = spectrum.samples_mv[bin, 1]
-            spectrum.samples_mv[bin, 2] = c * spectrum.samples_mv[bin, 2] - s * spectrum.samples_mv[bin, 3]
-            spectrum.samples_mv[bin, 3] = s * spectrum.samples_mv[bin, 2] + c * spectrum.samples_mv[bin, 3]
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0
+            spectrum.samples_mv[bin, 1] = s1
+            spectrum.samples_mv[bin, 2] = c * s2 - s * s3
+            spectrum.samples_mv[bin, 3] = s * s2 + c * s3
 
     @cython.cdivision(True)
     cdef (double, double, double, double, double) _fresnel(self, double ci, double ct, double ni, double nt) nogil:
@@ -381,6 +389,7 @@ cdef class Dielectric(Material):
         cdef:
             int bin
             double k0, k1, k2
+            double s0, s1, s2, s3
 
         k0 = 1.0 / (p*p + s*s)
         k1 = k0 * (p*p - s*s)
@@ -416,6 +425,7 @@ cdef class Dielectric(Material):
         cdef:
             int bin
             double k0, k1, k2
+            double s0, s1, s2, s3
 
         k0 = 1.0 / (p*p + s*s)
         k1 = k0 * (p*p - s*s)
@@ -433,7 +443,7 @@ cdef class Dielectric(Material):
             spectrum.samples_mv[bin, 2] = k2 * s2
             spectrum.samples_mv[bin, 3] = k2 * s3
 
-    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation, Normal3D normal):
+    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation):
 
         # light propagation direction is opposite to ray direction
         propagation = direction.neg()
@@ -450,7 +460,9 @@ cdef class Dielectric(Material):
     @cython.initializedcheck(False)
     cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta):
 
-        cdef double c, s
+        cdef:
+            double c, s
+            double s0, s1, s2, s3
 
         c = cos(2*theta)
         s = sin(2*theta)
