@@ -1,162 +1,212 @@
-# # cython: language_level=3
+# cython: language_level=3
+
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# All rights reserved.
 #
-# # Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
-# # All rights reserved.
-# #
-# # Redistribution and use in source and binary forms, with or without
-# # modification, are permitted provided that the following conditions are met:
-# #
-# #     1. Redistributions of source code must retain the above copyright notice,
-# #        this list of conditions and the following disclaimer.
-# #
-# #     2. Redistributions in binary form must reproduce the above copyright
-# #        notice, this list of conditions and the following disclaimer in the
-# #        documentation and/or other materials provided with the distribution.
-# #
-# #     3. Neither the name of the Raysect Project nor the names of its
-# #        contributors may be used to endorse or promote products derived from
-# #        this software without specific prior written permission.
-# #
-# # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# # ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-# # LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-# # CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-# # SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-# # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-# # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# # POSSIBILITY OF SUCH DAMAGE.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-# # TODO: POLARISATION
+#     1. Redistributions of source code must retain the above copyright notice,
+#        this list of conditions and the following disclaimer.
 #
-# from numpy cimport ndarray
-# from raysect.core.math.random cimport uniform
-# from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, new_vector3d
-# from raysect.optical.unpolarised cimport Ray as URay
-# from libc.math cimport M_PI, sqrt, fabs, atan, cos, sin
-# cimport cython
+#     2. Redistributions in binary form must reproduce the above copyright
+#        notice, this list of conditions and the following disclaimer in the
+#        documentation and/or other materials provided with the distribution.
 #
+#     3. Neither the name of the Raysect Project nor the names of its
+#        contributors may be used to endorse or promote products derived from
+#        this software without specific prior written permission.
 #
-# cdef class Conductor(Material):
-#     """
-#     Conductor material.
-#
-#     The conductor material simulates the interaction of light with a
-#     homogeneous conducting material, such as, gold, silver or aluminium.
-#
-#     This material implements the Fresnel equations for a conducting surface. To
-#     use the material, the complex refractive index of the conductor must be
-#     supplied.
-#
-#     :param SpectralFunction index: Real component of the refractive
-#       index - :math:`n(\lambda)`.
-#     :param SpectralFunction extinction: Imaginary component of the
-#       refractive index (extinction) - :math:`k(\lambda)`.
-#
-#     .. code-block:: pycon
-#
-#         >>> import numpy as np
-#         >>> from raysect.optical import InterpolatedSF
-#         >>> from raysect.optical.material import Conductor
-#         >>>
-#         >>> wavelength = np.array(...)
-#         >>> index = InterpolatedSF(wavelength, np.array(...))
-#         >>> extinction = InterpolatedSF(wavelength, np.array(...))
-#         >>>
-#         >>> metal = Conductor(index, extinction)
-#     """
-#
-#     def __init__(self, SpectralFunction index, SpectralFunction extinction):
-#
-#         super().__init__()
-#         self.index = index
-#         self.extinction = extinction
-#
-#     @cython.boundscheck(False)
-#     @cython.wraparound(False)
-#     @cython.initializedcheck(False)
-#     cpdef USpectrum evaluate_surface_unpolarised(
-#         self, World world, URay ray, Primitive primitive, Point3D hit_point,
-#         bint exiting, Point3D inside_point, Point3D outside_point,
-#         Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-#
-#         cdef:
-#             Vector3D incident, reflected
-#             double temp, ci
-#             ndarray reflection_coefficient
-#             URay reflected_ray
-#             USpectrum spectrum
-#             double[::1] n, k
-#             int i
-#
-#         # convert ray direction normal to local coordinates
-#         incident = ray.direction.transform(world_to_primitive)
-#
-#         # ensure vectors are normalised for reflection calculation
-#         incident = incident.normalise()
-#         normal = normal.normalise()
-#
-#         # calculate cosine of angle between incident and normal
-#         ci = normal.dot(incident)
-#
-#         # sample refractive index and absorption
-#         n = self.index.sample_mv(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
-#         k = self.extinction.sample_mv(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
-#
-#         # reflection
-#         temp = 2 * ci
-#         reflected = new_vector3d(incident.x - temp * normal.x,
-#                                  incident.y - temp * normal.y,
-#                                  incident.z - temp * normal.z)
-#
-#         # convert reflected ray direction to world space
-#         reflected = reflected.transform(primitive_to_world)
-#
-#         # spawn reflected ray and trace
-#         # note, we do not use the supplied exiting parameter as the normal is
-#         # not guaranteed to be perpendicular to the surface for meshes
-#         if ci > 0.0:
-#
-#             # incident ray is pointing out of surface, reflection is therefore inside
-#             reflected_ray = ray.spawn_daughter(inside_point.transform(primitive_to_world), reflected)
-#
-#         else:
-#
-#             # incident ray is pointing in to surface, reflection is therefore outside
-#             reflected_ray = ray.spawn_daughter(outside_point.transform(primitive_to_world), reflected)
-#
-#         spectrum = reflected_ray.trace(world)
-#
-#         # calculate reflection coefficients at each wavelength and apply
-#         ci = fabs(ci)
-#         for i in range(spectrum.bins):
-#             spectrum.samples_mv[i] *= self._fresnel(ci, n[i], k[i])
-#
-#         return spectrum
-#
-#     @cython.cdivision(True)
-#     cdef double _fresnel(self, double ci, double n, double k) nogil:
-#
-#         cdef double c12, k0, k1, k2, k3
-#
-#         ci2 = ci * ci
-#         k0 = n * n + k * k
-#         k1 = k0 * ci2 + 1
-#         k2 = 2 * n * ci
-#         k3 = k0 + ci2
-#
-#         return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
-#
-#     cpdef USpectrum evaluate_volume_unpolarised(
-#         self, USpectrum spectrum, World world, URay ray, Primitive primitive, Point3D start_point,
-#         Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-#
-#         # do nothing!
-#         return spectrum
-#
-#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+from numpy cimport ndarray
+from raysect.core.math.random cimport uniform
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, new_vector3d, Ray
+from libc.math cimport M_PI, sqrt, fabs, atan, cos, sin
+cimport cython
+
+DEF EPSILON = 1e-12
+DEF RAD2DEG = 57.29577951308232000  # 180 / pi
+DEF DEG2RAD = 0.017453292519943295  # pi / 180
+
+
+cdef class Conductor(Material):
+    """
+    Conductor material.
+
+    The conductor material simulates the interaction of light with a
+    homogeneous conducting material, such as, gold, silver or aluminium.
+
+    This material implements the Fresnel equations for a conducting surface. To
+    use the material, the complex refractive index of the conductor must be
+    supplied.
+
+    :param SpectralFunction index: Real component of the refractive
+      index - :math:`n(\lambda)`.
+    :param SpectralFunction extinction: Imaginary component of the
+      refractive index (extinction) - :math:`k(\lambda)`.
+
+    .. code-block:: pycon
+
+        >>> import numpy as np
+        >>> from raysect.optical import InterpolatedSF
+        >>> from raysect.optical.material import Conductor
+        >>>
+        >>> wavelength = np.array(...)
+        >>> index = InterpolatedSF(wavelength, np.array(...))
+        >>> extinction = InterpolatedSF(wavelength, np.array(...))
+        >>>
+        >>> metal = Conductor(index, extinction)
+    """
+
+    def __init__(self, SpectralFunction index, SpectralFunction extinction):
+
+        super().__init__()
+        self.index = index
+        self.extinction = extinction
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Spectrum evaluate_surface_unpolarised(
+        self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # convert ray direction normal to local coordinates
+        i_direction = ray.direction.transform(world_to_primitive)
+
+        # ensure vectors are normalised for reflection calculation
+        incident = i_direction.normalise()
+        normal = normal.normalise()
+
+        # calculate cosine of angle between incident and normal
+        k = -normal.dot(incident)
+
+        # map normal and select launch point to the same side as the incident ray
+        if k < 0.0:
+
+            # flip normal to point into the primitive
+            normal = normal.neg()
+
+            # ray launch point
+            r_origin = inside_point
+
+        else:
+
+            # ray launch point
+            r_origin = outside_point
+
+        # sample refractive index and absorption
+        n = self.index.sample_mv(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
+        k = self.extinction.sample_mv(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
+
+        # incident cosine magnitude
+        ci = fabs(k)
+
+        # establish polarisation frame for fresnel calculation
+        # If the incident ray and normal are collinear, an arbitrary orthogonal
+        # vector is generated. In the collinear case this orientation must be
+        # replicated for the reflected ray or the fresnel calculation will be invalid.
+        i_orientation = i_direction.orthogonal(normal)
+
+        # reflected ray configuration
+        temp = 2 * ci
+        r_direction = new_vector3d(
+            i_direction.x + temp * normal.x,
+            i_direction.y + temp * normal.y,
+            i_direction.z + temp * normal.z
+        )
+        r_orientation = r_direction.orthogonal(normal) if (1.0 - ci) > EPSILON else i_orientation
+
+        # launch reflected ray
+        reflected_ray = ray.spawn_daughter(
+            r_origin.transform(primitive_to_world),
+            r_direction.transform(primitive_to_world),
+            r_orientation.transform(primitive_to_world)
+        )
+        spectrum = reflected_ray.trace(world)
+
+        # apply fresnel mueller matrix
+        # for i in range(spectrum.bins):
+        #     rp, rs = self._fresnel(ci, n[i], k[i])
+        #     self._apply_mueller_reflection(spectrum, rp, rs)
+
+        # ray stokes orientation
+        s_orientation = ray.orientation.transform(world_to_primitive)
+        s_orientation = s_orientation.normalise()
+
+        # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
+        theta = self._polarisation_frame_angle(i_direction, s_orientation, i_orientation)
+        self._apply_stokes_rotation(spectrum, theta)
+        return spectrum
+
+    # @cython.cdivision(True)
+    # cdef double _fresnel(self, double ci, double n, double k) nogil:
+    #
+    #     cdef double c12, k0, k1, k2, k3
+    #
+    #     ci2 = ci * ci
+    #     k0 = n * n + k * k
+    #     k1 = k0 * ci2 + 1
+    #     k2 = 2 * n * ci
+    #     k3 = k0 + ci2
+    #
+    #     return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
+
+    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation):
+
+        # light propagation direction is opposite to ray direction
+        propagation = direction.neg()
+
+        # calculate rotation about light propagation direction
+        angle = ray_orientation.angle(interface_orientation) * DEG2RAD
+        if propagation.dot(ray_orientation.cross(interface_orientation)) < 0:
+            angle = -angle
+        return angle
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta):
+
+        cdef:
+            double c, s
+            double s0, s1, s2, s3
+
+        c = cos(2*theta)
+        s = sin(2*theta)
+        for bin in range(spectrum.bins):
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0
+            spectrum.samples_mv[bin, 1] = c * s1 - s * s2
+            spectrum.samples_mv[bin, 2] = s * s1 + c * s2
+            spectrum.samples_mv[bin, 3] = s3
+
+    cpdef Spectrum evaluate_volume(
+        self, Spectrum spectrum, World world, Ray ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        # do nothing!
+        return spectrum
+
+
 # # TODO: generalise microfacet models
 # cdef class RoughConductor(ContinuousBSDF):
 #     """

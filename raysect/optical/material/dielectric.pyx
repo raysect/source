@@ -285,8 +285,6 @@ cdef class Dielectric(Material):
             else:
 
                 # reflected ray path selected
-
-                # calculate ray normal
                 temp = 2 * ci
                 r_direction = new_vector3d(
                     i_direction.x + temp * normal.x,
