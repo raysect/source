@@ -41,9 +41,9 @@ cdef class Conductor(Material):
         public SpectralFunction index
         public SpectralFunction extinction
 
-    cdef double _fresnel(self, double ci, double n, double k) nogil
+    cdef double _apply_fresnel(self, Spectrum spectrum, double ci, double n, double k)
 
-#
+
 # cdef class RoughConductor(ContinuousBSDF):
 #
 #     cdef:

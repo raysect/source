@@ -121,6 +121,7 @@ cdef class Sellmeier(NumericallyIntegratedSF):
                       + (self.b3 * w2) / (w2 - self.c3))
 
 
+# todo: apply mueller matrix per bin for better spectral accuracy when not using dispersion, like conductor
 cdef class Dielectric(Material):
     """
     An ideal dielectric material.

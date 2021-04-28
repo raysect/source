@@ -129,7 +129,7 @@ cdef class Conductor(Material):
         )
         r_orientation = r_direction.orthogonal(normal) if (1.0 - ci) > EPSILON else i_orientation
 
-        # launch reflected ray
+        # launch reflected ray and apply fresnel
         reflected_ray = ray.spawn_daughter(
             r_origin.transform(primitive_to_world),
             r_direction.transform(primitive_to_world),
@@ -138,9 +138,7 @@ cdef class Conductor(Material):
         spectrum = reflected_ray.trace(world)
 
         # apply fresnel mueller matrix
-        # for i in range(spectrum.bins):
-        #     rp, rs = self._fresnel(ci, n[i], k[i])
-        #     self._apply_mueller_reflection(spectrum, rp, rs)
+        self._apply_fresnel(spectrum, ci, n, k)
 
         # ray stokes orientation
         s_orientation = ray.orientation.transform(world_to_primitive)
@@ -151,18 +149,41 @@ cdef class Conductor(Material):
         self._apply_stokes_rotation(spectrum, theta)
         return spectrum
 
-    # @cython.cdivision(True)
-    # cdef double _fresnel(self, double ci, double n, double k) nogil:
-    #
-    #     cdef double c12, k0, k1, k2, k3
-    #
-    #     ci2 = ci * ci
-    #     k0 = n * n + k * k
-    #     k1 = k0 * ci2 + 1
-    #     k2 = 2 * n * ci
-    #     k3 = k0 + ci2
-    #
-    #     return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _fresnel(self, Spectrum spectrum, double ci, double n, double k):
+
+        cdef:
+            double c1, k0, k1, k2, k3
+            double s0, s1, s2, s3
+
+        for bin in range(spectrum.bins):
+
+            # stokes components
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            # calculate fresnel coefficients and phase
+
+            # apply matrix
+
+
+
+
+
+
+        # old code
+        #     ci2 = ci * ci
+        #     k0 = n * n + k * k
+        #     k1 = k0 * ci2 + 1
+        #     k2 = 2 * n * ci
+        #     k3 = k0 + ci2
+        #
+        #     return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
 
     cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation):
 
