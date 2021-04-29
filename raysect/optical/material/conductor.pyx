@@ -209,11 +209,11 @@ cdef class Conductor(Material):
             sp = sin(phase)
             m0 = 0.5*(r2s + r2p)
             m1 = 0.5*(r2s - r2p)
-            m2 = 2.0*sqrt(r2s*r2p)
+            m2 = sqrt(r2s*r2p)
             spectrum.samples_mv[bin, 0] = m0*s0 + m1*s1
             spectrum.samples_mv[bin, 1] = m1*s0 + m0*s1
             spectrum.samples_mv[bin, 2] = -m2*cp*s2 - m2*sp*s3
-            spectrum.samples_mv[bin, 3] = m2*sp*s2 - m2*sp*s3
+            spectrum.samples_mv[bin, 3] = m2*sp*s2 - m2*cp*s3
 
     cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation):
 
