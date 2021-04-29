@@ -41,8 +41,9 @@ cdef class Conductor(Material):
         public SpectralFunction index
         public SpectralFunction extinction
 
-    cdef double _apply_fresnel(self, Spectrum spectrum, double ci, double n, double k)
-
+    cdef void _apply_fresnel(self, Spectrum spectrum, double ci, double[::1] ns, double[::1] ks)
+    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation)
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta)
 
 # cdef class RoughConductor(ContinuousBSDF):
 #

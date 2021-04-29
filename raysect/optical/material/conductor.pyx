@@ -32,7 +32,7 @@
 from numpy cimport ndarray
 from raysect.core.math.random cimport uniform
 from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, new_vector3d, Ray
-from libc.math cimport M_PI, sqrt, fabs, atan, cos, sin
+from libc.math cimport M_PI, sqrt, fabs, atan2, cos, sin
 cimport cython
 
 DEF EPSILON = 1e-12
@@ -78,23 +78,27 @@ cdef class Conductor(Material):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_surface_unpolarised(
+    cpdef Spectrum evaluate_surface(
         self, World world, Ray ray, Primitive primitive, Point3D hit_point,
         bint exiting, Point3D inside_point, Point3D outside_point,
         Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+
+        cdef:
+            double ci
+            double[::1] n, k
 
         # convert ray direction normal to local coordinates
         i_direction = ray.direction.transform(world_to_primitive)
 
         # ensure vectors are normalised for reflection calculation
-        incident = i_direction.normalise()
+        i_direction = i_direction.normalise()
         normal = normal.normalise()
 
         # calculate cosine of angle between incident and normal
-        k = -normal.dot(incident)
+        ci = -normal.dot(i_direction)
 
         # map normal and select launch point to the same side as the incident ray
-        if k < 0.0:
+        if ci < 0.0:
 
             # flip normal to point into the primitive
             normal = normal.neg()
@@ -112,7 +116,7 @@ cdef class Conductor(Material):
         k = self.extinction.sample_mv(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
 
         # incident cosine magnitude
-        ci = fabs(k)
+        ci = fabs(ci)
 
         # establish polarisation frame for fresnel calculation
         # If the incident ray and normal are collinear, an arbitrary orthogonal
@@ -153,13 +157,32 @@ cdef class Conductor(Material):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _fresnel(self, Spectrum spectrum, double ci, double n, double k):
+    cdef void _apply_fresnel(self, Spectrum spectrum, double ci, double[::1] ns, double[::1] ks):
 
         cdef:
-            double c1, k0, k1, k2, k3
+            double si, ti, c2i, s2i, t2i
+            double n, k, n2, k2
             double s0, s1, s2, s3
+            double a, b, c, r2p, r2s
+            double v, w, f, g, phase
+            double cp, sp, m0, m1, m2
+
+        # trigonometry
+        si = sqrt(1 - ci*ci)
+        ti = si / ci
+
+        # common constants
+        c2i = ci*ci
+        s2i = si*si
+        t2i = ti*ti
 
         for bin in range(spectrum.bins):
+
+            # obtain refractive index and extinction
+            n = ns[bin]
+            k = ks[bin]
+            n2 = n*n
+            k2 = k*k
 
             # stokes components
             s0 = spectrum.samples_mv[bin, 0]
@@ -167,23 +190,30 @@ cdef class Conductor(Material):
             s2 = spectrum.samples_mv[bin, 2]
             s3 = spectrum.samples_mv[bin, 3]
 
-            # calculate fresnel coefficients and phase
+            # calculate fresnel reflection coefficients
+            a = (n2 + k2) + c2i
+            b = (n2 + k2)*c2i + 1
+            c = 2*n*ci
+            r2p = (a - c) / (a + c)
+            r2s = (b - c) / (b + c)
+
+            # calculate phase
+            v = n2 - k2 - s2i
+            w = sqrt(v*v + 4*n2*k2)
+            f = 0.5*(n2 + k2 - s2i + w)
+            g = 0.5*(k2 - n2 + s2i + w)
+            phase = M_PI - atan2(2*sqrt(g)*si*ti, s2i*t2i - (f + g))
 
             # apply matrix
-
-
-
-
-
-
-        # old code
-        #     ci2 = ci * ci
-        #     k0 = n * n + k * k
-        #     k1 = k0 * ci2 + 1
-        #     k2 = 2 * n * ci
-        #     k3 = k0 + ci2
-        #
-        #     return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
+            cp = cos(phase)
+            sp = sin(phase)
+            m0 = 0.5*(r2s + r2p)
+            m1 = 0.5*(r2s - r2p)
+            m2 = 2.0*sqrt(r2s*r2p)
+            spectrum.samples_mv[bin, 0] = m0*s0 + m1*s1
+            spectrum.samples_mv[bin, 1] = m1*s0 + m0*s1
+            spectrum.samples_mv[bin, 2] = -m2*cp*s2 - m2*sp*s3
+            spectrum.samples_mv[bin, 3] = m2*sp*s2 - m2*sp*s3
 
     cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation):
 
