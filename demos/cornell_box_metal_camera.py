@@ -33,7 +33,7 @@ def polariser(parent=None, transform=None):
 
     polariser = Cylinder(
         radius=0.101, height=0.002, parent=assembly, transform=translate(0, 0, -0.001),
-        material=LinearPolariser(Vector3D(1, 0, 0))
+        material=LinearPolariser(Vector3D(0, 1, 0))
     )
 
     body = Subtract(
@@ -173,98 +173,95 @@ filter_green = InterpolatedSF([100, 530, 540, 550, 560, 800], [0, 0, 1, 1, 0, 0]
 filter_blue = InterpolatedSF([100, 480, 490, 500, 510, 800], [0, 0, 1, 1, 0, 0])
 
 rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
-rgb.display_sensitivity = 10
 
 pipelines = [rgb]
 sampler = RGBAdaptiveSampler2D(rgb, ratio=100, fraction=1.0, min_samples=1000, max_samples=100000, cutoff=0.1)
 
 # --------------------------------------------------------------------
+camera = Node(parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0))
+ccd = PinholeCamera((512, 512), parent=camera, pipelines=pipelines)
 
-# camera = PinholeCamera((256, 256), parent=world, transform=translate(0, 0, -3.3) * rotate(0, 0, 0), pipelines=pipelines)
+# --------------------------------------------------------------------
+#
+# # The camera assembly uses a Cooke triplet lens system. The lens system based on design in:
+# # https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/L20_OPTI517_Cooke_triplet.pdf
+#
+# camera = Node(parent=world, transform=translate(0, 0, -3.8)*rotate(0, 0, 0))
+#
+# # uncomment to show a 0.5m checkerboard ruler
+# #ruler = Box(Point3D(-0.1, -0.005, 0.0), Point3D(0.1, 0.005, 5.0), parent=camera, transform=translate(0, -0.1, 0.0), material=Checkerboard(width=0.5, scale1=0, scale2=1.0))
+#
+# # Cooke triplet system
+# lenses = Node(parent=camera)
+# l1 = Meniscus(mm(21), mm(4.831), mm(23.713), mm(7331.288), parent=lenses, transform=translate(0, 0, mm(-4.831)), material=schott("N-LAK9"))
+# l2 = BiConcave(mm(13), mm(0.975), mm(24.456), mm(21.896), parent=l1, transform=translate(0, 0, mm(-6.835)), material=schott("SF5"))
+# l3 = BiConvex(mm(18), mm(3.127), mm(86.759), mm(20.4942), parent=l2, transform=translate(0, 0, mm(-7.949)), material=schott("N-LAK9"))
+# image_plane = Node(parent=l3, transform=translate(0, 0, mm(-41.5)))  # tweaked position gives a sharper image (original: 41.10346 mm)
+#
+# # disable importance sampling of the lenses (enabled by default for dielectrics and emitters)
+# l1.material.importance = 0.0
+# l2.material.importance = 0.0
+# l3.material.importance = 0.0
+#
+# # cylinder body holding the lenses and CCD
+# body = Subtract(
+#     Cylinder(mm(26), mm(80.0), transform=translate(0, 0, mm(-63))),
+#     Cylinder(mm(25), mm(79.1), transform=translate(0, 0, mm(-62))),
+#     parent=camera, transform=translate(0, 0, 0), material=AbsorbingSurface()
+# )
+#
+# # L1 lens mount
+# l1_mount = Subtract(
+#     Cylinder(mm(25.5), mm(5.0), transform=translate(0, 0, mm(0))),
+#     Cylinder(mm(21 / 2 + 0.01), mm(5.1), transform=translate(0, 0, mm(-0.05))),
+#     parent=l1, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
+# )
+#
+# # L2 lens mount
+# l2_mount = Subtract(
+#     Cylinder(mm(25.5), mm(4.0), transform=translate(0, 0, mm(0))),
+#     Cylinder(mm(13 / 2 + 0.01), mm(4.1), transform=translate(0, 0, mm(-0.05))),
+#     parent=l2, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
+# )
+#
+# # L2-L3 stop
+# stop = Subtract(
+#     Cylinder(mm(25.5), mm(1.0), transform=translate(0, 0, mm(0))),
+#     Cylinder(mm(12 / 2 + 0.01), mm(1.1), transform=translate(0, 0, mm(-0.05))),
+#     parent=l2, transform=translate(0, 0, mm(-2)), material=AbsorbingSurface()
+# )
+#
+# # L3 lens mount
+# l3_mount = Subtract(
+#     Cylinder(mm(25.5), mm(4.0), transform=translate(0, 0, mm(0))),
+#     Cylinder(mm(18 / 2 + 0.01), mm(4.1), transform=translate(0, 0, mm(-0.05))),
+#     parent=l3, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
+# )
+#
+# # CCD targetting all rays at last lens element for speed
+# ccd = TargettedCCDArray(
+#     targetted_path_prob=1.0, targets=[l3],
+#     width=mm(35), pixels=(512, 512),
+#     parent=image_plane, transform=translate(0, 0, 0)*rotate(0, 0, 180),
+#     pipelines=[rgb]
+# )
 
 # --------------------------------------------------------------------
 
-# The camera assembly uses a Cooke triplet lens system. The lens system based on design in:
-# https://wp.optics.arizona.edu/jsasian/wp-content/uploads/sites/33/2016/03/L20_OPTI517_Cooke_triplet.pdf
+ccd.frame_sampler = sampler
+ccd.spectral_rays = 1
+ccd.spectral_bins = 15
+ccd.pixel_samples = 250
+ccd.ray_importance_sampling = True
+ccd.ray_important_path_weight = 0.25
+ccd.ray_max_depth = 500
+ccd.ray_extinction_min_depth = 3
+ccd.ray_extinction_prob = 0.01
 
-mount = Node(parent=world, transform=translate(0, 0, -3.8)*rotate(0, 0, 0))
-
-# uncomment to show a 0.5m checkerboard ruler
-#ruler = Box(Point3D(-0.1, -0.005, 0.0), Point3D(0.1, 0.005, 5.0), parent=camera, transform=translate(0, -0.1, 0.0), material=Checkerboard(width=0.5, scale1=0, scale2=1.0))
-
-# Cooke triplet system
-lenses = Node(parent=mount)
-l1 = Meniscus(mm(21), mm(4.831), mm(23.713), mm(7331.288), parent=lenses, transform=translate(0, 0, mm(-4.831)), material=schott("N-LAK9"))
-l2 = BiConcave(mm(13), mm(0.975), mm(24.456), mm(21.896), parent=l1, transform=translate(0, 0, mm(-6.835)), material=schott("SF5"))
-l3 = BiConvex(mm(18), mm(3.127), mm(86.759), mm(20.4942), parent=l2, transform=translate(0, 0, mm(-7.949)), material=schott("N-LAK9"))
-image_plane = Node(parent=l3, transform=translate(0, 0, mm(-41.5)))  # tweaked position gives a sharper image (original: 41.10346 mm)
-
-# disable importance sampling of the lenses (enabled by default for dielectrics and emitters)
-l1.material.importance = 0.0
-l2.material.importance = 0.0
-l3.material.importance = 0.0
-
-# cylinder body holding the lenses and CCD
-body = Subtract(
-    Cylinder(mm(26), mm(80.0), transform=translate(0, 0, mm(-63))),
-    Cylinder(mm(25), mm(79.1), transform=translate(0, 0, mm(-62))),
-    parent=mount, transform=translate(0, 0, 0), material=AbsorbingSurface()
-)
-
-# L1 lens mount
-l1_mount = Subtract(
-    Cylinder(mm(25.5), mm(5.0), transform=translate(0, 0, mm(0))),
-    Cylinder(mm(21 / 2 + 0.01), mm(5.1), transform=translate(0, 0, mm(-0.05))),
-    parent=l1, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
-)
-
-# L2 lens mount
-l2_mount = Subtract(
-    Cylinder(mm(25.5), mm(4.0), transform=translate(0, 0, mm(0))),
-    Cylinder(mm(13 / 2 + 0.01), mm(4.1), transform=translate(0, 0, mm(-0.05))),
-    parent=l2, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
-)
-
-# L2-L3 stop
-stop = Subtract(
-    Cylinder(mm(25.5), mm(1.0), transform=translate(0, 0, mm(0))),
-    Cylinder(mm(12 / 2 + 0.01), mm(1.1), transform=translate(0, 0, mm(-0.05))),
-    parent=l2, transform=translate(0, 0, mm(-2)), material=AbsorbingSurface()
-)
-
-# L3 lens mount
-l3_mount = Subtract(
-    Cylinder(mm(25.5), mm(4.0), transform=translate(0, 0, mm(0))),
-    Cylinder(mm(18 / 2 + 0.01), mm(4.1), transform=translate(0, 0, mm(-0.05))),
-    parent=l3, transform=translate(0, 0, mm(0)), material=AbsorbingSurface()
-)
-
-# CCD pipeline and sampler
-rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
-sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=1000, cutoff=0.01)
-
-# CCD targetting all rays at last lens element for speed
-camera = TargettedCCDArray(
-    targetted_path_prob=1.0, targets=[l3],
-    width=mm(35), pixels=(512, 512),
-    parent=image_plane, transform=translate(0, 0, 0)*rotate(0, 0, 180),
-    pipelines=[rgb]
-)
 # --------------------------------------------------------------------
-
-camera.frame_sampler = sampler
-camera.spectral_rays = 1
-camera.spectral_bins = 15
-camera.pixel_samples = 250
-camera.ray_importance_sampling = True
-camera.ray_important_path_weight = 0.25
-camera.ray_max_depth = 500
-camera.ray_extinction_min_depth = 3
-camera.ray_extinction_prob = 0.01
-
 
 # polariser
-n = Node(parent=camera, transform=translate(0, 0, 0.35)*rotate(0, 0, 90))
+n = Node(parent=camera, transform=translate(0, 0, 0.3)*rotate(0, 0, 90))
 p1 = polariser(parent=n, transform=translate(0, 0, 0.04)*rotate(0, 0, 0))
 # p2 = polariser(parent=n, transform=translate(0, 0, 0.02)*rotate(0, 0, 45))
 # p3 = polariser(parent=n, transform=translate(0, 0, 0.0)*rotate(0, 0, 0))
@@ -278,10 +275,10 @@ ion()
 name = 'cornell_box'
 timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
 render_pass = 1
-while not camera.render_complete:
+while not ccd.render_complete:
 
     print("Rendering pass {}...".format(render_pass))
-    camera.observe()
+    ccd.observe()
     rgb.save("{}_{}_pass_{}.png".format(name, timestamp, render_pass))
     # power_unfiltered.save('cornell_box_unfiltered_pass_{:04d}.png'.format(p))
     # power_red.save('cornell_box_red_filter_pass_{:04d}.png'.format(p))
