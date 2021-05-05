@@ -45,19 +45,17 @@ cdef class Conductor(Material):
     cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation)
     cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta)
 
-# cdef class RoughConductor(ContinuousBSDF):
-#
-#     cdef:
-#         public SpectralFunction index
-#         public SpectralFunction extinction
-#         double _roughness
-#
-#     cdef double _d(self, Vector3D s_half)
-#
-#     cdef double _g(self, Vector3D s_incoming, Vector3D s_outgoing)
-#
-#     cdef double _g1(self, Vector3D v)
-#
-#     cdef USpectrum _f(self, USpectrum spectrum, Vector3D s_outgoing, Vector3D s_normal)
-#
-#     cdef double _fresnel_conductor(self, double ci, double n, double k) nogil
+
+cdef class RoughConductor(ContinuousBSDF):
+
+    cdef:
+        public SpectralFunction index
+        public SpectralFunction extinction
+        double _roughness
+
+    cdef double _d(self, Vector3D s_half)
+    cdef double _g(self, Vector3D s_incoming, Vector3D s_outgoing)
+    cdef double _g1(self, Vector3D v)
+    cdef void _apply_fresnel(self, Spectrum spectrum, double ci, double[::1] ns, double[::1] ks)
+    cdef double _polarisation_frame_angle(self, Vector3D propagation, Vector3D ray_orientation, Vector3D interface_orientation)
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta)
