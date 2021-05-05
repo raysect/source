@@ -123,8 +123,7 @@ cdef class Checkerboard(NullVolume):
             scale = self.scale2
 
         for bin in range(spectrum.bins):
-            for component in range(4):
-                spectrum.samples_mv[bin, component] = emission[bin] * scale
+            spectrum.samples_mv[bin, 0] = emission[bin] * scale
 
         return spectrum
 
