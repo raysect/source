@@ -125,6 +125,7 @@ cdef class _Vec3:
 
         return self.x * v.x + self.y * v.y + self.z * v.z
 
+    @cython.cdivision
     cpdef double angle(self, _Vec3 v):
         """
         Calculates the angle between this vector and the supplied vector.

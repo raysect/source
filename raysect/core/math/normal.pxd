@@ -57,7 +57,7 @@ cdef class Normal3D(_Vec3):
 
     cpdef Vector3D as_vector(self)
 
-    cpdef Vector3D orthogonal(self, _Vec3 v=*)
+    cpdef Vector3D orthogonal(self, Vector3D v=*)
 
 
 cdef inline Normal3D new_normal3d(double x, double y, double z):

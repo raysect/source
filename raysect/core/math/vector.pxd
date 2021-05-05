@@ -52,7 +52,7 @@ cdef class Vector3D(_Vec3):
 
     cpdef Vector3D copy(self)
 
-    cpdef Vector3D orthogonal(self, _Vec3 v=*)
+    cpdef Vector3D orthogonal(self, Vector3D v=*)
 
     cpdef Vector3D lerp(self, Vector3D b, double t)
 

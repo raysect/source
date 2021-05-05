@@ -395,7 +395,7 @@ cdef class Vector3D(_Vec3):
 
         return new_vector3d(self.x, self.y, self.z)
 
-    cpdef Vector3D orthogonal(self, _Vec3 v=None):
+    cpdef Vector3D orthogonal(self, Vector3D v=None):
         """
         Returns a unit vector that is guaranteed to be orthogonal to the vector.
 

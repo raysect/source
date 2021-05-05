@@ -82,20 +82,14 @@ cdef class LinearPolariser(NullSurface):
         )
         matrix_orientation = matrix_orientation.normalise()
 
-        # print([p_direction.angle(matrix_orientation), p_direction.angle(p_orientation), p_orientation.angle(matrix_orientation), k])
-
         # calculate rotation about direction vector
         angle = p_orientation.angle(matrix_orientation) * DEG2RAD
         if p_direction.dot(p_orientation.cross(matrix_orientation)) < 0:
             angle = -angle
 
-        # print('b:', spectrum.samples_mv[0,0],spectrum.samples_mv[0,1],spectrum.samples_mv[0,2],spectrum.samples_mv[0,3] )
-
         # apply polarisation
         for bin in range(spectrum.bins):
             self._apply_rotated_polariser(spectrum, bin, angle)
-
-        # print('a:', spectrum.samples_mv[0,0],spectrum.samples_mv[0,1],spectrum.samples_mv[0,2],spectrum.samples_mv[0,3] )
 
         return spectrum
 
@@ -104,7 +98,7 @@ cdef class LinearPolariser(NullSurface):
     @cython.initializedcheck(False)
     cdef void _apply_rotated_polariser(self, Spectrum spectrum, int bin, double angle) nogil:
 
-        cdef double s0, s1, s2
+        cdef double s0, s1, s2, c, s, k0, k1, k2
 
         # precalculate common terms
         c = cos(2 * angle)
