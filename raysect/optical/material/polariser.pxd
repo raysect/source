@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 # Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
@@ -27,14 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .material import *
-from .emitter import *
-from .attenuator import *
-from .polariser import *
-from .absorber import *
-from .lambert import *
-from .dielectric import *
-from .conductor import *
-from .modifiers import *
+from raysect.optical.material cimport NullSurface
+from raysect.optical cimport Vector3D, Spectrum
 
 
+cdef class LinearPolariser(NullSurface):
+
+    cdef public Vector3D axis
+
+    cdef void _apply_rotated_polariser(self, Spectrum spectrum, int bin, double angle) nogil
