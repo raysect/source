@@ -156,7 +156,7 @@ cdef class Dielectric(Material):
     @cython.cdivision(True)
     cpdef Spectrum evaluate_surface(
         self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-        bint exiting, Point3D inside_point, Point3D outside_point, Normal3D normal,
+        bint exiting, Point3D inside_point, Point3D outside_point, Normal3D surface_normal,
         AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # Raysect is a reverse raytracer, so the inbound ray is the outbound ray
@@ -176,7 +176,7 @@ cdef class Dielectric(Material):
 
         # ensure vectors are normalised for reflection calculation
         i_direction = i_direction.normalise()
-        normal = normal.normalise()
+        normal = surface_normal.as_vector().normalise()
 
         # calculate signed cosine of angle between incident and normal
         k = -normal.dot(i_direction)

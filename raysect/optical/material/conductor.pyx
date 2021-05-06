@@ -81,7 +81,7 @@ cdef class Conductor(Material):
     cpdef Spectrum evaluate_surface(
         self, World world, Ray ray, Primitive primitive, Point3D hit_point,
         bint exiting, Point3D inside_point, Point3D outside_point,
-        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        Normal3D surface_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             double ci
@@ -92,7 +92,7 @@ cdef class Conductor(Material):
 
         # ensure vectors are normalised for reflection calculation
         i_direction = i_direction.normalise()
-        normal = normal.normalise()
+        normal = surface_normal.as_vector().normalise()
 
         # calculate cosine of angle between incident and normal
         ci = -normal.dot(i_direction)
