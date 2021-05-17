@@ -85,6 +85,16 @@ cdef class KDTree3DCore:
     cdef int32_t _new_branch(self, tuple split_solution, int32_t depth)
 
     cdef int32_t _new_node(self)
+    
+    cpdef bint is_contained(self, Point3D point)
+
+    cdef bint _is_contained(self, Point3D point)
+
+    cdef bint _is_contained_node(self, int32_t id, Point3D point)
+
+    cdef bint _is_contained_branch(self, int32_t id, Point3D point)
+
+    cdef bint _is_contained_leaf(self, int32_t id, Point3D point)
 
     cpdef bint trace(self, Ray ray)
 
