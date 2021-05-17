@@ -84,6 +84,8 @@ cdef class PinholeCamera(Observer2D):
             pipelines = pipelines or [RGBPipeline2D()]
             frame_sampler = frame_sampler or FullFrameSampler2D()
 
+        self._fov = 45  # initial value to prevent undefined behaviour when setting pixels for the first time before fov is set
+
         super().__init__(pixels, frame_sampler, pipelines, parent=parent, transform=transform, name=name)
 
         # note that the fov property triggers a call to _update_image_geometry()
@@ -104,6 +106,28 @@ cdef class PinholeCamera(Observer2D):
         if value <= 0 or value >= 180:
             raise ValueError("The field-of-view angle must lie in the range (0, 180).")
         self._fov = value
+        self._update_image_geometry()
+
+    @property
+    def pixels(self):
+        """
+        Tuple describing the pixel dimensions for this observer (nx, ny), i.e. (512, 512).
+
+        :rtype: tuple
+        """
+        return self._pixels
+
+    @pixels.setter
+    def pixels(self, value):
+        pixels = tuple(value)
+        if len(pixels) != 2:
+            raise ValueError("Pixels must be a 2 element tuple defining the x and y resolution.")
+        x, y = pixels
+        if x <= 0:
+            raise ValueError("Number of x pixels must be greater than 0.")
+        if y <= 0:
+            raise ValueError("Number of y pixels must be greater than 0.")
+        self._pixels = pixels
         self._update_image_geometry()
 
     @property

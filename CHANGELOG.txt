@@ -1,18 +1,25 @@
 Raysect Changelog
 =================
 
-Release 0.7.0 (TBC)
--------------------
+Release 0.7.0 (7 Nov 2020)
+--------------------------
+
+Bug fixes:
+* Fixed the last integration segment not contributing to the integral in NumericalIntegrator.
+* Incorrect construction of lens primitives when lens long barrels are requested.
 
 API Changes:
 * The core.math.function package has been redesigned to introduce functions with different return types. The existing FunctionXD classes now live under core.math.function.float.
 
 New:
 * Added core.math.function.vector3d.FunctionXD objects which return Vector3D objects.
+* Added Quaternions and associated transform utility functions.
+* Added utility functions for extracting the rotation and translation from an AffineMatrix3D.
+* A new Cornell Box demo with a virtual camera with a Cooke triplet lens assembly and a simulated CCD.
 
 
 Release 0.6.1 (2 Feb 2019)
----------------------------
+--------------------------
 
 New:
 * Added relational operators to the FunctionXD objects.
