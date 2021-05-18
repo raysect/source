@@ -1,6 +1,6 @@
 import numpy as np
 from numpy cimport ndarray
-
+cimport cython
 from raysect.core.math.cython.interpolation.linear cimport linear1d
 from raysect.core.math.cython.utility cimport find_index, lerp
 
@@ -121,10 +121,110 @@ cdef class Interpolator1DCubic(_Interpolator1D):
     def __init__(self, object x, object f):
         self._x = np.array(x, dtype=np.float64)
         self._f = np.array(f, dtype=np.float64)
-        raise NotImplementedError(f"{self.__class__} not implemented")
 
+        self._x_mv = self._x
+        self._f_mv = self._f
+
+        cdef int n
+        n = len(x)
+        self._n = n
+        self._mask_a = np.zeros((n - 1,), dtype=np.float64)  # Where 'a' has been calculated already
+        self._mask_dfdx = np.zeros((n,), dtype=np.float64)  # Where 'dfdx' has been calculated already
+        self._dfdx = np.zeros((n,), dtype=np.float64)
+        self._a = np.zeros((n - 1, 4), dtype=np.float64)
+        self._a_mv = self._a
+
+    @cython.initializedcheck(False)
+    @cython.boundscheck(False)
+    @cython.cdivision(True)
+    cdef double get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index):
+        """
+        Calculate the normalised gradient at x_spline[index] based on the central difference approximation unless at
+        the edges of the array x_spline.
+
+        At x[i], the gradient is normally estimated using the central difference approximation [y[i-1], y[i+1]]/2
+        For a normalised range x[i], x[i+1] between 0 and 1, this is the same except for unevenly spaced data.
+        Unevenly spaced data has a normalisation x[i-1] - x[i+1] != 2, it is defined as x_eff in this function by
+        re-scaling the distance x[i-1] - x[i+1] using normalisation (x[i+1] - x[i]) = 1.
+
+        At the start and end of the array, the forward or backward difference approximation is calculated over
+        a  (x[i+1] - x[i]) = 1 or  (x[i] - x[i-1]) = 1 respectively. The end spline gradient is not used for
+        extrapolation
+
+        .. WARNING:: For speed, this function does not perform any zero division, type or bounds
+          checking. Supplying malformed data may result in data corruption or a
+          segmentation fault.
+
+        :param double[::1] x_spline: A memory view to a double array containing monotonically increasing values.
+        :param double[::1] y_spline: The desired spline points corresponding function returned values
+        :param int index: The index of the lower spline point that the gradient is to be calculated for
+        """
+        # Calculate central difference method, but at the start of end of the array use the forward/back difference
+        cdef double dfdx
+        cdef double x_eff
+        if index == 0:
+            dfdx = (y_spline[index + 1] - y_spline[index])
+        elif index == self._n - 1:
+            dfdx = y_spline[index] - y_spline[index - 1]
+        else:
+            # if equally spaced this would be divided by 2. Not guaranteed so work out the total normalised distance
+            x_eff = (x_spline[index + 1] - x_spline[index - 1])/(x_spline[index + 1] - x_spline[index])
+            dfdx = (y_spline[index + 1]-y_spline[index - 1])/x_eff
+        return dfdx
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, int idx) except? -1e999:
-        raise NotImplementedError(f"{self.__class__} not implemented")
+        cdef int index_use = find_index(self._x, px)
+        if index_use == self._n:
+            raise ValueError("Cant extrapolate yet")
+        # rescale x between 0 and 1
+        cdef double x_scal
+        cdef double x_bound = (self._x_mv[index_use + 1] - self._x_mv[index_use])
+        if x_bound != 0:
+            x_scal = (px - self._x_mv[index_use]) / x_bound
+        else:
+            raise ZeroDivisionError("Two adjacent spline points have the same x value!")
+
+        # Calculate the coefficients (and gradients at each spline point) if they dont exist
+        if not self._mask_a[index_use]:
+            if not self._mask_dfdx[index_use]:
+                self._dfdx[index_use] = self.get_gradient(self._x_mv, self._f_mv, index_use)
+                self._mask_dfdx[index_use] = 1
+            if not self._mask_dfdx[index_use + 1]:
+                self._dfdx[index_use + 1] = self.get_gradient(self._x_mv, self._f_mv, index_use + 1)
+                self._mask_dfdx[index_use + 1] = 1
+            self._a_mv[index_use, :] = self.calc_coefficients_1d(self._f_mv[index_use], self._f_mv[index_use + 1], self._dfdx[index_use], self._dfdx[index_use + 1])
+            self._mask_a[index_use] = 1
+        return self._a_mv[index_use, 0] * x_scal ** 3 + self._a_mv[index_use, 1] * x_scal ** 2 + self._a_mv[index_use, 2] * x_scal + self._a_mv[index_use, 3]
+
+
+    @cython.initializedcheck(False)
+    cdef double[:] calc_coefficients_1d(self, double f1, double f2, double dfdx1, double dfdx2):
+        """
+        Calculate the cubic spline coefficients between 2 spline points.
+
+        The gradient is pre-calculated before filling out the matrix which corresponds to the inverse of a matrix
+        which constrains the cubic at x=0 and x=1 in row 1 and 2 respectively, followed by constraining the
+        gradient of the cubic at x=0 and x=1 to the supplied gradient in rows 3-4.
+
+        .. WARNING:: For speed, this function does not perform any initialization
+          checking. Supplying malformed data may result in data corruption or a
+          segmentation fault.
+
+        :param double f1: The functional value at the first spline point (x=0)
+        :param double f2: The functional value at the second spline point (x=1)
+        :param double dfdx1: The gradient value at the first spline point (x=0 at respective index)
+        :param double dfdx2: The gradient value at the second spline point (x=1 at respective index)
+        """
+        cdef ndarray a = np.zeros((4, ), dtype=np.float64)
+        cdef double[:] a_mv = a
+        a_mv[0] = 0.5 * f1 - 0.5 * f2 + 0.5 * dfdx2
+        a_mv[1] = -1.5 * f1 + 1.5 * f2 - 1. * dfdx1 - 0.5 * dfdx2
+        a_mv[2] = 1. * dfdx1
+        a_mv[3] = 1. * f1
+        return a_mv
 
     @property
     def domain(self):
