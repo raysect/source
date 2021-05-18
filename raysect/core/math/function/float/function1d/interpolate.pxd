@@ -69,33 +69,42 @@ cpdef enum ExtrapType:
 
 cdef class Interpolate1D(Function1D):
     cdef:
+        ndarray x, f
         double[::1] _x, _f
-        Interpolate1D _impl
-        Extrapolator1D _extrapolator
+        _Interpolator1D _interpolator
+        _Extrapolator1D _extrapolator
+        int _last_index
+        double _extrapolation_range
+
+cdef class _Interpolator1D:
+    cdef:
+        double[::1] _x, _f
+
+    cdef double evaluate(self, double px, int idx) except? -1e999
 
 
-cdef class Interpolate1DLinear(Interpolate1D):
+cdef class Interpolator1DLinear(_Interpolator1D):
     pass
 
-
-cdef class Interpolate1DCubic(Interpolate1D):
+cdef class Interpolator1DCubic(_Interpolator1D):
     pass
 
-
-cdef class Extrapolator1D:
-    cdef double extrapolate(self, double px, int order, int index, double rx) except? -1e999
+cdef class _Extrapolator1D:
     cdef:
         double _range
-        double[::1] _x, _f
+        double [::1] _x, _f
+        int _last_index
 
+    cdef double extrapolate(self, double px, int order, int index, double rx) except? -1e999
+    cdef double evaluate(self, double px, int idx) except? -1e999
 
-cdef class Extrapolator1DNone(Extrapolator1D):
+cdef class Extrapolator1DNone(_Extrapolator1D):
     pass
 
 
-cdef class Extrapolator1DNearest(Extrapolator1D):
+cdef class Extrapolator1DNearest(_Extrapolator1D):
     pass
 
 
-cdef class Extrapolator1DLinear(Extrapolator1D):
+cdef class Extrapolator1DLinear(_Extrapolator1D):
     pass
