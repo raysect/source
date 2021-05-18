@@ -29,10 +29,65 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+cimport cython
 from raysect.core.math.function.float.function1d.base cimport Function1D
-from raysect.core.math.function.float.function1d.constant cimport Constant1D
-from raysect.core.math.function.float.function1d.blend cimport Blend1D
-from raysect.core.math.function.float.function1d.autowrap cimport autowrap_function1d
-from raysect.core.math.function.float.function1d.arg cimport Arg1D
-from raysect.core.math.function.float.function1d.cmath cimport *
-from raysect.core.math.function.float.function1d.interpolate cimport *
+
+from numpy cimport ndarray
+
+DEF INT_LINEAR = 0
+DEF INT_CUBIC = 1
+
+_INTERPOLATION_TYPES = {
+    'linear': INT_LINEAR,
+    'cubic': INT_CUBIC
+}
+
+DEF EXT_NONE = 0
+DEF EXT_NEAREST = 1
+DEF EXT_LINEAR = 2
+DEF EXT_QUADRATIC = 3
+
+_EXTRAPOLATION_TYPES = {
+    'none': EXT_NONE,
+    'nearest': EXT_NEAREST,
+    'linear': EXT_LINEAR,
+    'quadratic': EXT_QUADRATIC
+}
+
+cpdef enum InterpType:
+    LinearInt = 1
+    CubicInt = 2
+
+cpdef enum ExtrapType:
+    NoExt = 1
+    NearestExt = 2
+    LinearExt = 3
+    QuadraticExt = 4
+
+cdef class Interpolate1D(Function1D):
+    cdef:
+        double[::1] _x, _f
+        Interpolate1D _impl
+        Extrapolator1D _extrapolator
+
+cdef class Interpolate1DLinear(Interpolate1D):
+    pass
+
+cdef class Interpolate1DCubic(Interpolate1D):
+    pass
+
+
+cdef class Extrapolator1D:
+    cdef double extrapolate(self, double px, int order, int index, double rx) except? -1e999
+    cdef:
+        double _range
+        ndarray _x, _f
+
+cdef class Extrapolator1DNone(Extrapolator1D):
+    pass
+
+cdef class Extrapolator1DNearest(Extrapolator1D):
+    pass
+
+cdef class Extrapolator1DLinear(Extrapolator1D):
+    pass
