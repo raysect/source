@@ -177,8 +177,6 @@ cdef class Interpolator1DCubic(_Interpolator1D):
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, int idx) except? -1e999:
         cdef int index_use = find_index(self._x, px)
-        if index_use == self._n:
-            raise ValueError("Cant extrapolate yet")
         # rescale x between 0 and 1
         cdef double x_scal
         cdef double x_bound = (self._x_mv[index_use + 1] - self._x_mv[index_use])
@@ -292,7 +290,7 @@ cdef class Extrapolator1DNearest(_Extrapolator1D):
     cdef double evaluate(self, double px, int idx) except? -1e999:
         if px < self._x[0]:
             return self._f[0]
-        elif px > self._x[self._last_index]:
+        elif px >= self._x[self._last_index]:
             return self._f[self._last_index]
 
 

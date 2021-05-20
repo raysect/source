@@ -43,39 +43,41 @@ class TestConstant1D(unittest.TestCase):  # TODO: expand tests to cover the cyth
         x_in = np.arange(-1.73, -1.4, 0.1)
         y_in = np.sin(x_in)
 
-        interp_cubic_extrap_nearest = Interpolate1D(x_in, y_in, InterpType.CubicInt, ExtrapType.NearestExt,
-                                                    extrapolation_range=2.0)
+        interp_linear_extrap_nearest = Interpolate1D(
+            x_in, y_in, InterpType.LinearInt, ExtrapType.NearestExt, extrapolation_range=2.0
+        )
 
-        # Test between spline points (minimum at pi/2)
-        for i in range(len(x_in)):
-            self.assertGreaterEqual(y_in[i], interp_cubic_extrap_nearest(-np.pi/2.))
+        # Test between spline points (midpoint gradient comparison)
+        for i in range(len(x_in) - 1):
+            expected_grad = ((y_in[i+1] - y_in[i]) / (x_in[i+1] - x_in[i]))
+            midpoint = (x_in[i+1] - x_in[i])/2. + x_in[i]
+            self.assertAlmostEqual(expected_grad, (interp_linear_extrap_nearest(midpoint) - y_in[i]) / (midpoint - x_in[i]))
         # Interpolating at the spline points should return the exact value (the end spline point is an extrapolation)
         for i in range(len(x_in)):
-            self.assertEqual(y_in[i], interp_cubic_extrap_nearest(x_in[i]),
+            self.assertEqual(y_in[i], interp_linear_extrap_nearest(x_in[i]),
                              msg="Constant1D call did not match reference value.")
         # Nearest neighbour extrapolation test
-        self.assertEqual(y_in[0], interp_cubic_extrap_nearest(-1.8))
-        self.assertEqual(y_in[-1], interp_cubic_extrap_nearest(-1.0))
+        self.assertEqual(y_in[0], interp_linear_extrap_nearest(-1.8))
+        self.assertEqual(y_in[-1], interp_linear_extrap_nearest(-1.0))
         # Outside extrapolation range, there should be an error raised
-        self.assertRaises(ValueError, interp_cubic_extrap_nearest, -3.74)
-        self.assertRaises(ValueError, interp_cubic_extrap_nearest, 1.0)
+        self.assertRaises(ValueError, interp_linear_extrap_nearest, -3.74)
+        self.assertRaises(ValueError, interp_linear_extrap_nearest, 1.0)
 
-        interp_cubic_extrap_linear = Interpolate1D(
-            x_in, y_in, InterpType.CubicInt, ExtrapType.LinearExt, extrapolation_range=2.0
+        interp_linear_extrap_linear = Interpolate1D(
+            x_in, y_in, InterpType.LinearInt, ExtrapType.LinearExt, extrapolation_range=2.0
         )
 
         # Interpolating at the spline points should return the exact value (the end spline point is an extrapolation)
         for i in range(len(x_in)):
-            self.assertEqual(y_in[i], interp_cubic_extrap_linear(x_in[i]),
+            self.assertEqual(y_in[i], interp_linear_extrap_linear(x_in[i]),
                              msg="Constant1D call did not match reference value.")
 
         # Linear extrapolation test
         expected_start_grad = ((y_in[1]-y_in[0])/(x_in[1]-x_in[0]))
         expected_end_grad = ((y_in[-2]-y_in[-1])/(x_in[-2]-x_in[-1]))
-        self.assertAlmostEqual(expected_start_grad, (y_in[0] - interp_cubic_extrap_linear(-1.8))/(x_in[0]--1.8))
-        self.assertAlmostEqual(expected_end_grad, (interp_cubic_extrap_linear(-1.0)-y_in[-1])/(-1.0-x_in[-1]))
+        self.assertAlmostEqual(expected_start_grad, (y_in[0] - interp_linear_extrap_linear(-1.8))/(x_in[0]--1.8))
+        self.assertAlmostEqual(expected_end_grad, (interp_linear_extrap_linear(-1.0)-y_in[-1])/(-1.0-x_in[-1]))
 
         # Outside extrapolation range, there should be an error raised
-        self.assertRaises(ValueError, interp_cubic_extrap_linear, -3.74)
-        self.assertRaises(ValueError, interp_cubic_extrap_linear, 1.0)
-
+        self.assertRaises(ValueError, interp_linear_extrap_linear, -3.74)
+        self.assertRaises(ValueError, interp_linear_extrap_linear, 1.0)
