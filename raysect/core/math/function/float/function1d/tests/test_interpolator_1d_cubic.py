@@ -62,7 +62,9 @@ class TestInterpolator1DCubic(unittest.TestCase):  # TODO: expand tests to cover
                                                     extrapolation_range=2.0)
         # Nearest neighbour extrapolation test
         self.assertEqual(y_in[0], interp_cubic_extrap_nearest(-1.8))
+        self.assertEqual(interp_cubic_extrap_nearest(-1.75), interp_cubic_extrap_nearest(-1.8))
         self.assertEqual(y_in[-1], interp_cubic_extrap_nearest(-1.0))
+        self.assertEqual(interp_cubic_extrap_nearest(0.0), interp_cubic_extrap_nearest(-1.0))
 
     def test_cubic_1d_at_spline_points(self):
         """Tests that the cubic interpolator returns the value of the function at the spline points
@@ -113,3 +115,104 @@ class TestInterpolator1DCubic(unittest.TestCase):  # TODO: expand tests to cover
         # Outside extrapolation range, there should be an error raised
         self.assertRaises(ValueError, interp_cubic_extrap_nearest, -3.74)
         self.assertRaises(ValueError, interp_cubic_extrap_nearest, 1.0)
+
+    def test_infinity_handling(self):
+        """Test extrapolating at infinite values are outside the extrapolation range"""
+        x_in = np.arange(-1.73, -1.4, 0.1)
+        y_in = np.sin(x_in)
+        interp_cubic_extrap_linear = Interpolate1D(
+            x_in, y_in, InterpType.CubicInt, ExtrapType.LinearExt, extrapolation_range=2.0
+        )
+        interp_cubic_extrap_nearest = Interpolate1D(
+            x_in, y_in, InterpType.CubicInt, ExtrapType.NearestExt, extrapolation_range=2.0
+        )
+        self.assertRaises(ValueError, interp_cubic_extrap_linear, np.inf)
+        self.assertRaises(ValueError, interp_cubic_extrap_linear, np.inf)
+        self.assertRaises(ValueError, interp_cubic_extrap_nearest, -np.inf)
+        self.assertRaises(ValueError, interp_cubic_extrap_nearest, -np.inf)
+
+    def test_infinity_as_a_spline_point(self):
+        """If one of the spline points is infinite, returns nan"""
+        x_in = np.arange(-1.73, -1.4, 0.1)
+        y_in = np.sin(x_in)
+        y_in[0] = np.inf
+        interp_cubic_extrap_linear = Interpolate1D(
+            x_in, y_in, InterpType.CubicInt, ExtrapType.LinearExt, extrapolation_range=2.0
+        )
+        interp_cubic_extrap_nearest = Interpolate1D(
+            x_in, y_in, InterpType.CubicInt, ExtrapType.NearestExt, extrapolation_range=2.0
+        )
+        # Extrapolations return infinity, interpolations return nan for now
+        self.assertTrue(np.isnan(interp_cubic_extrap_linear(-1.73)))
+        self.assertTrue(np.isinf(interp_cubic_extrap_linear(-1.8)))
+        self.assertTrue(np.isnan(interp_cubic_extrap_nearest(-1.73)))
+        self.assertTrue(np.isinf(interp_cubic_extrap_nearest(-1.8)))
+
+    def test_nan_as_a_spline_point(self):
+        """If one of the spline points is nan, returns nan"""
+        x_in = np.arange(-1.73, -1.4, 0.1)
+        y_in = np.sin(x_in)
+        y_in[0] = np.nan
+        interp_cubic_extrap_linear = Interpolate1D(
+            x_in, y_in, InterpType.CubicInt, ExtrapType.LinearExt, extrapolation_range=2.0
+        )
+        interp_cubic_extrap_nearest = Interpolate1D(
+            x_in, y_in, InterpType.CubicInt, ExtrapType.NearestExt, extrapolation_range=2.0
+        )
+        # Extrapolations and interpolations return nan
+        self.assertTrue(np.isnan(interp_cubic_extrap_linear(-1.73)))
+        self.assertTrue(np.isnan(interp_cubic_extrap_linear(-1.8)))
+        self.assertTrue(np.isnan(interp_cubic_extrap_nearest(-1.73)))
+        self.assertTrue(np.isnan(interp_cubic_extrap_nearest(-1.8)))
+
+    def test_enforce_monotonicity(self):
+        """The range of x values must be ordered from lowest to highest"""
+        x_in = np.arange(-1.4, -1.73, -0.1)
+        y_in = np.sin(x_in)
+        dict_kwargs_cubic_interp_nearest_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
+                 'extrapolation_type': ExtrapType.NearestExt, 'extrapolation_range': 2.0}
+
+        dict_kwargs_cubic_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
+                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0}
+
+        self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_nearest_extrap)
+        self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_linear_extrap)
+
+    def test_equal_spline_array_length(self):
+        """The input spline arrays must be the same length"""
+        x_in = np.arange(-1.4, -1.73, -0.1)
+        y_in = np.sin(x_in)
+        y_in = y_in[:-1]
+        dict_kwargs_cubic_interp_nearest_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
+                 'extrapolation_type': ExtrapType.NearestExt, 'extrapolation_range': 2.0}
+
+        dict_kwargs_cubic_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
+                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0}
+        self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_nearest_extrap)
+        self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_linear_extrap)
+
+    def test_not_length_1_array_linear_extrapolation(self):
+        """At least 2 spline points are needed (for extrapolation type linear)"""
+        x_in = np.array([0.1])
+        y_in = np.sin(x_in)
+
+        dict_kwargs_cubic_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
+                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0}
+        self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_linear_extrap)
+
+    def test_array_dimension_checks(self):
+        """The interpolator should check the dimensions of the spline points are correct"""
+        x = np.arange(-1.4, -1.73, -0.1)
+        x_in = np.meshgrid(x, x)
+        x_in = np.array(x_in)
+        y_in = np.sin(x_in)
+
+        dict_kwargs_cubic_interp_nearest_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
+                                                   'extrapolation_type': ExtrapType.NearestExt,
+                                                   'extrapolation_range': 2.0}
+
+        dict_kwargs_cubic_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
+                                                  'extrapolation_type': ExtrapType.LinearExt,
+                                                  'extrapolation_range': 2.0}
+        self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_nearest_extrap)
+        self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_linear_extrap)

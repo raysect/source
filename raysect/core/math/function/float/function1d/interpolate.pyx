@@ -310,6 +310,9 @@ cdef class Extrapolator1DLinear(_Extrapolator1D):
         self._range = extrapolation_range
         self._last_index = self._x.shape[0] -1
 
+        if x.shape[0] <= 1:
+            raise ValueError(f"x array {np.shape(x)} must contain at least 2 spline points to linearly extrapolate")
+
     cdef double evaluate(self, double px, int idx) except? -1e999:
         if idx == -1:
             idx += 1
