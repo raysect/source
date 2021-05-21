@@ -68,12 +68,12 @@ class TestInterpolator1DLinear(unittest.TestCase):  # TODO: expand tests to cove
         interp_linear_extrap_nearest = Interpolate1D(
             x_in, y_in, InterpType.LinearInt, ExtrapType.NearestExt, extrapolation_range=2.0
         )
+
         # Nearest neighbour extrapolation test
         self.assertEqual(y_in[0], interp_linear_extrap_nearest(-1.8))
         self.assertEqual(interp_linear_extrap_nearest(-1.75), interp_linear_extrap_nearest(-1.8))
         self.assertEqual(y_in[-1], interp_linear_extrap_nearest(-1.0))
         self.assertEqual(interp_linear_extrap_nearest(0.0), interp_linear_extrap_nearest(-1.0))
-
 
     def test_linear_1d_at_spline_points(self):
         """

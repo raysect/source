@@ -56,7 +56,6 @@ cdef class Interpolate1D(Function1D):
         else:
             raise ValueError(f"Interpolation type {interpolation_type} not supported")
 
-
     cdef double evaluate(self, double x) except? -1e999:
         """
         Evaluates the interpolating function.
@@ -79,7 +78,6 @@ cdef class Interpolate1D(Function1D):
         else:
             return self._interpolator.evaluate(x, index)
 
-
     @property
     def domain(self):
         """
@@ -90,6 +88,7 @@ cdef class Interpolate1D(Function1D):
         @property
         def domain(self):
             return np.min(self._x), np.max(self._x), np.min(self._f), np.max(self._f)
+
 
 cdef class _Interpolator1D:
     cdef double evaluate(self, double px, int idx) except? -1e999:
@@ -116,14 +115,13 @@ cdef class Interpolator1DCubic(_Interpolator1D):
     Cubic interpolation of 1D function
     :param object x: 1D array-like object of real values.
     :param object f: 1D array-like object of real values.
-    :param Extrapolator1D extrapolator: extrapolator object
     """
-    def __init__(self, object x, object f):
-        self._x = np.array(x, dtype=np.float64)
-        self._f = np.array(f, dtype=np.float64)
+    def __init__(self, double[::1] x, double[::1] f):
+        # self._x = np.array(x, dtype=np.float64)
+        # self._f = np.array(f, dtype=np.float64)
 
-        self._x_mv = self._x
-        self._f_mv = self._f
+        self._x = x#self._x
+        self._f = f#self._f
 
         cdef int n
         n = len(x)
@@ -169,7 +167,10 @@ cdef class Interpolator1DCubic(_Interpolator1D):
         else:
             # if equally spaced this would be divided by 2. Not guaranteed so work out the total normalised distance
             x_eff = (x_spline[index + 1] - x_spline[index - 1])/(x_spline[index + 1] - x_spline[index])
-            dfdx = (y_spline[index + 1]-y_spline[index - 1])/x_eff
+            if x_eff != 0:
+                dfdx = (y_spline[index + 1]-y_spline[index - 1])/x_eff
+            else:
+                raise ZeroDivisionError("Two adjacent spline points have the same x value!")
         return dfdx
 
     @cython.cdivision(True)
@@ -179,21 +180,21 @@ cdef class Interpolator1DCubic(_Interpolator1D):
         cdef int index_use = find_index(self._x, px)
         # rescale x between 0 and 1
         cdef double x_scal
-        cdef double x_bound = (self._x_mv[index_use + 1] - self._x_mv[index_use])
+        cdef double x_bound = (self._x[index_use + 1] - self._x[index_use])
         if x_bound != 0:
-            x_scal = (px - self._x_mv[index_use]) / x_bound
+            x_scal = (px - self._x[index_use]) / x_bound
         else:
             raise ZeroDivisionError("Two adjacent spline points have the same x value!")
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
         if not self._mask_a[index_use]:
             if not self._mask_dfdx[index_use]:
-                self._dfdx[index_use] = self.get_gradient(self._x_mv, self._f_mv, index_use)
+                self._dfdx[index_use] = self.get_gradient(self._x, self._f, index_use)
                 self._mask_dfdx[index_use] = 1
             if not self._mask_dfdx[index_use + 1]:
-                self._dfdx[index_use + 1] = self.get_gradient(self._x_mv, self._f_mv, index_use + 1)
+                self._dfdx[index_use + 1] = self.get_gradient(self._x, self._f, index_use + 1)
                 self._mask_dfdx[index_use + 1] = 1
-            self._a_mv[index_use, :] = self.calc_coefficients_1d(self._f_mv[index_use], self._f_mv[index_use + 1], self._dfdx[index_use], self._dfdx[index_use + 1])
+            self._a_mv[index_use, :] = self.calc_coefficients_1d(self._f[index_use], self._f[index_use + 1], self._dfdx[index_use], self._dfdx[index_use + 1])
             self._mask_a[index_use] = 1
         return self._a_mv[index_use, 0] * x_scal ** 3 + self._a_mv[index_use, 1] * x_scal ** 2 + self._a_mv[index_use, 2] * x_scal + self._a_mv[index_use, 3]
 
@@ -204,8 +205,8 @@ cdef class Interpolator1DCubic(_Interpolator1D):
         Calculate the cubic spline coefficients between 2 spline points.
 
         The gradient is pre-calculated before filling out the matrix which corresponds to the inverse of a matrix
-        which constrains the cubic at x=0 and x=1 in row 1 and 2 respectively, followed by constraining the
-        gradient of the cubic at x=0 and x=1 to the supplied gradient in rows 3-4.
+        which constrains the cubic at f1 and f2, at x=0 and x=1 in row 1 and 2 respectively, followed by constraining 
+        the gradient of the cubic at x=0 and x=1 to the supplied gradient dfdx1 and dfdx2 in rows 3-4.
 
         .. WARNING:: For speed, this function does not perform any initialization
           checking. Supplying malformed data may result in data corruption or a
@@ -223,10 +224,6 @@ cdef class Interpolator1DCubic(_Interpolator1D):
         a_mv[2] = 1. * dfdx1
         a_mv[3] = 1. * f1
         return a_mv
-
-    @property
-    def domain(self):
-        raise NotImplementedError(f"{self.__class__} not implemented")
 
 
 cdef class _Extrapolator1D:
@@ -270,6 +267,7 @@ cdef class ExtrapolatorNone(_Extrapolator1D):
 
     cdef double evaluate(self, double px, int idx)  except? -1e999:
         raise ValueError("Extrapolation not available.")
+
 
 cdef class Extrapolator1DNearest(_Extrapolator1D):
     """
