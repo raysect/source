@@ -148,10 +148,14 @@ cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) nogil:
     :param a: 
     :return: 
     """
-    a[0] = 0.5 * f[0] - 0.5 * f[1] + 0.5 * dfdx[1]
-    a[1] = -1.5 * f[0] + 1.5 * f[1] - dfdx[0] - 0.5 * dfdx[1]
+    a[0] = 2 * f[0] - 2 * f[1] + dfdx[0] + dfdx[1]
+    a[1] = -3 * f[0] + 3 * f[1] - 2. * dfdx[0] - dfdx[1]
     a[2] = dfdx[0]
     a[3] = f[0]
+    # a[0] = 0.5 * f[0] - 0.5 * f[1] + 0.5 * dfdx[1]
+    # a[1] = -1.5 * f[0] + 1.5 * f[1] - dfdx[0] - 0.5 * dfdx[1]
+    # a[2] = dfdx[0]
+    # a[3] = f[0]
 
 
 @cython.boundscheck(False)

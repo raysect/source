@@ -40,6 +40,30 @@ import numpy as np
 
 class TestInterpolator1DCubic(unittest.TestCase):  # TODO: expand tests to cover the cython interface
 
+    # def test_interpolator_1d_cubic_constrained(self):
+    #     """Tests that the 1D cubic spline around a minimum point. The interpolation at the known minimum should
+    #     be lower than the spline points surrounding it """
+    #     x_in = np.arange(-1.73, -1.4, 0.1)
+    #     y_in = np.sin(x_in)
+    #
+    #     interp_cubic_constrained_extrap_nearest = Interpolate1D(x_in, y_in, InterpType.CubicConstrainedInt, ExtrapType.NearestExt,
+    #                                                 extrapolation_range=2.0)
+    #     min_y = np.min(y_in)
+    #     max_y = np.max(y_in)
+    #
+    #     # Test between spline points (minimum at -pi/2)
+    #     x_in_new = np.arange(-1.73+0.111, -1.4+0.111, 0.01)
+    #
+    #     for i in range(len(x_in)):
+    #         interp_cubic_constrained_extrap_nearest(-np.pi / 2.)
+    #         # self.assertGreaterEqual(y_in[i], interp_cubic_extrap_nearest(-np.pi/2.))
+    #     import matplotlib.pyplot as plt
+    #     fig, ax = plt.subplots()
+    #     ax.plot(x_in, y_in, "ro")
+    #     for i in range(len(x_in_new)):
+    #         ax.plot(x_in_new[i], interp_cubic_constrained_extrap_nearest(x_in_new[i]), "bx")
+    #
+    #     plt.show()
     def test_interpolator_1d_cubic_at_a_minimum(self):
         """Tests that the 1D cubic spline around a minimum point. The interpolation at the known minimum should
         be lower than the spline points surrounding it """
@@ -49,7 +73,7 @@ class TestInterpolator1DCubic(unittest.TestCase):  # TODO: expand tests to cover
         interp_cubic_extrap_nearest = Interpolate1D(x_in, y_in, InterpType.CubicInt, ExtrapType.NearestExt,
                                                     extrapolation_range=2.0)
 
-        # Test between spline points (minimum at pi/2)
+        # Test between spline points (minimum at -pi/2)
         for i in range(len(x_in)):
             self.assertGreaterEqual(y_in[i], interp_cubic_extrap_nearest(-np.pi/2.))
 

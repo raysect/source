@@ -36,10 +36,12 @@ from numpy cimport ndarray
 
 DEF INT_LINEAR = 0
 DEF INT_CUBIC = 1
+DEF INT_CUBIC_CONSTRAINED = 2
 
 _INTERPOLATION_TYPES = {
     'linear': INT_LINEAR,
-    'cubic': INT_CUBIC
+    'cubic': INT_CUBIC,
+    'cubic_constrained': INT_CUBIC_CONSTRAINED
 }
 
 DEF EXT_NONE = 0
@@ -58,7 +60,7 @@ _EXTRAPOLATION_TYPES = {
 cpdef enum InterpType:
     LinearInt = 1
     CubicInt = 2
-
+    CubicConstrainedInt = 3
 
 cpdef enum ExtrapType:
     NoExt = 1
@@ -95,6 +97,10 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         int _n
         double evaluate(self, double px, int idx) except? -1e999
         double get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
+
+
+cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
+    cdef double get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
 
 
 cdef class _Extrapolator1D:

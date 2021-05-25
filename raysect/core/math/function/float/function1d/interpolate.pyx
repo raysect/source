@@ -54,6 +54,8 @@ cdef class Interpolate1D(Function1D):
             self._interpolator = _Interpolator1DLinear(self._x, self._f)
         elif interpolation_type == InterpType.CubicInt:
             self._interpolator = _Interpolator1DCubic(self._x, self._f)
+        elif interpolation_type == InterpType.CubicConstrainedInt:
+            self._interpolator = _Interpolator1DCubicConstrained(self._x, self._f)
         else:
             raise ValueError(f"Interpolation type {interpolation_type} not supported")
 
@@ -203,6 +205,59 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
             a = self._a[index_use, :4]
 
         return evaluate_cubic_1d(a, x_scal)
+
+
+cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
+
+    def __init__(self, double[::1] x, double[::1] f):
+        _Interpolator1DCubic.__init__(self, x, f)
+
+    @cython.initializedcheck(False)
+    @cython.boundscheck(False)
+    @cython.cdivision(True)
+    cdef double get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index):
+        """
+        Calculate the normalised gradient at x_spline[index] based on the central difference approximation unless at
+        the edges of the array x_spline.
+
+        At x[i], the gradient is normally estimated using the central difference approximation [y[i-1], y[i+1]]/2
+        For a normalised range x[i], x[i+1] between 0 and 1, this is the same except for unevenly spaced data.
+        Unevenly spaced data has a normalisation x[i-1] - x[i+1] != 2, it is defined as x_eff in this function by
+        re-scaling the distance x[i-1] - x[i+1] using normalisation (x[i+1] - x[i]) = 1.
+
+        At the start and end of the array, the forward or backward difference approximation is calculated over
+        a  (x[i+1] - x[i]) = 1 or  (x[i] - x[i-1]) = 1 respectively. The end spline gradient is not used for
+        extrapolation
+
+        .. WARNING:: For speed, this function does not perform any zero division, type or bounds
+          checking. Supplying malformed data may result in data corruption or a
+          segmentation fault.
+
+        :param double[::1] x_spline: A memory view to a double array containing monotonically increasing values.
+        :param double[::1] y_spline: The desired spline points corresponding function returned values
+        :param int index: The index of the lower spline point that the gradient is to be calculated for
+        """
+        # Calculate central difference method, but at the start of end of the array use the forward/back difference
+        cdef double dfdx
+        cdef double x_eff
+        if index == 0:
+            dfdx = (y_spline[index + 1] - y_spline[index])
+        elif index == self._n - 1:
+            dfdx = y_spline[index] - y_spline[index - 1]
+        else:
+            if y_spline[index + 1] < y_spline[index] and y_spline[index - 1] < y_spline[index]:
+                dfdx = 0.
+            elif y_spline[index + 1] > y_spline[index] and y_spline[index - 1] > y_spline[index]:
+                dfdx = 0.
+            else:
+                # if equally spaced this would be divided by 2. Not guaranteed so work out the total normalised distance
+                x_eff = (x_spline[index + 1] - x_spline[index - 1])/(x_spline[index + 1] - x_spline[index])
+                if x_eff != 0:
+                    dfdx = (y_spline[index + 1] - y_spline[index - 1])/x_eff
+                else:
+                    raise ZeroDivisionError("Two adjacent spline points have the same x value!")
+            print('dfdx', dfdx, y_spline[index - 1], y_spline[index], y_spline[index + 1])
+        return dfdx
 
 
 cdef class _Extrapolator1D:
