@@ -2,6 +2,7 @@ import numpy as np
 from numpy cimport ndarray
 cimport cython
 from raysect.core.math.cython.interpolation.linear cimport linear1d
+from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_1d, evaluate_cubic_1d
 from raysect.core.math.cython.utility cimport find_index, lerp
 
 
@@ -40,19 +41,19 @@ cdef class Interpolate1D(Function1D):
 
         # create appropriate extrapolator to be passed to the actual interpolator
         if extrapolation_type == ExtrapType.NoExt:
-            self._extrapolator = ExtrapolatorNone(x, f, extrapolation_range)
+            self._extrapolator = _ExtrapolatorNone(x, f, extrapolation_range)
         elif extrapolation_type == ExtrapType.NearestExt:
-            self._extrapolator = Extrapolator1DNearest(x, f, extrapolation_range)
+            self._extrapolator = _Extrapolator1DNearest(x, f, extrapolation_range)
         elif extrapolation_type == ExtrapType.LinearExt:
-            self._extrapolator = Extrapolator1DLinear(x, f, extrapolation_range)
+            self._extrapolator = _Extrapolator1DLinear(x, f, extrapolation_range)
         else:
             raise ValueError(f"Unsupported extrapolator type {extrapolation_type}")
 
         # create interpolator
         if interpolation_type == InterpType.LinearInt:
-            self._interpolator = Interpolator1DLinear(self._x, self._f)
+            self._interpolator = _Interpolator1DLinear(self._x, self._f)
         elif interpolation_type == InterpType.CubicInt:
-            self._interpolator = Interpolator1DCubic(self._x, self._f)
+            self._interpolator = _Interpolator1DCubic(self._x, self._f)
         else:
             raise ValueError(f"Interpolation type {interpolation_type} not supported")
 
@@ -92,12 +93,13 @@ cdef class Interpolate1D(Function1D):
 
 cdef class _Interpolator1D:
     cdef double evaluate(self, double px, int idx) except? -1e999:
-        raise NotImplementedError("_Interpolator is an abstract base class")
+        raise NotImplementedError("_Interpolator is an abstract base class.")
 
 
-cdef class Interpolator1DLinear(_Interpolator1D):
+cdef class _Interpolator1DLinear(_Interpolator1D):
     """
-    Linear interpolation of 1D function
+    Linear interpolation of 1D function.
+
     :param object x: 1D array-like object of real values.
     :param object f: 1D array-like object of real values.
     :param Extrapolator1D extrapolator: extrapolator object
@@ -110,7 +112,7 @@ cdef class Interpolator1DLinear(_Interpolator1D):
         return linear1d(self._x[idx], self._x[idx + 1], self._f[idx], self._f[idx + 1], px)
 
 
-cdef class Interpolator1DCubic(_Interpolator1D):
+cdef class _Interpolator1DCubic(_Interpolator1D):
     """
     Cubic interpolation of 1D function
     :param object x: 1D array-like object of real values.
@@ -120,15 +122,13 @@ cdef class Interpolator1DCubic(_Interpolator1D):
         # self._x = np.array(x, dtype=np.float64)
         # self._f = np.array(f, dtype=np.float64)
 
-        self._x = x#self._x
-        self._f = f#self._f
+        self._x = x
+        self._f = f
 
         cdef int n
         n = len(x)
         self._n = n
         self._mask_a = np.zeros((n - 1,), dtype=np.float64)  # Where 'a' has been calculated already
-        self._mask_dfdx = np.zeros((n,), dtype=np.float64)  # Where 'dfdx' has been calculated already
-        self._dfdx = np.zeros((n,), dtype=np.float64)
         self._a = np.zeros((n - 1, 4), dtype=np.float64)
         self._a_mv = self._a
 
@@ -180,6 +180,8 @@ cdef class Interpolator1DCubic(_Interpolator1D):
         cdef int index_use = find_index(self._x, px)
         # rescale x between 0 and 1
         cdef double x_scal
+        cdef double[2] f, dfdx
+
         cdef double x_bound = (self._x[index_use + 1] - self._x[index_use])
         if x_bound != 0:
             x_scal = (px - self._x[index_use]) / x_bound
@@ -187,43 +189,20 @@ cdef class Interpolator1DCubic(_Interpolator1D):
             raise ZeroDivisionError("Two adjacent spline points have the same x value!")
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
+        cdef double[4] a
         if not self._mask_a[index_use]:
-            if not self._mask_dfdx[index_use]:
-                self._dfdx[index_use] = self.get_gradient(self._x, self._f, index_use)
-                self._mask_dfdx[index_use] = 1
-            if not self._mask_dfdx[index_use + 1]:
-                self._dfdx[index_use + 1] = self.get_gradient(self._x, self._f, index_use + 1)
-                self._mask_dfdx[index_use + 1] = 1
-            self._a_mv[index_use, :] = self.calc_coefficients_1d(self._f[index_use], self._f[index_use + 1], self._dfdx[index_use], self._dfdx[index_use + 1])
+            f[0] = self._f[index_use]
+            f[1] = self._f[index_use + 1]
+            dfdx[0] = self.get_gradient(self._x, self._f, index_use)
+            dfdx[1] = self.get_gradient(self._x, self._f, index_use + 1)
+
+            calc_coefficients_1d(f, dfdx, a)
+            self._a_mv[index_use, :] = a
             self._mask_a[index_use] = 1
-        return self._a_mv[index_use, 0] * x_scal ** 3 + self._a_mv[index_use, 1] * x_scal ** 2 + self._a_mv[index_use, 2] * x_scal + self._a_mv[index_use, 3]
+        else:
+            a = self._a[index_use, :4]
 
-
-    @cython.initializedcheck(False)
-    cdef double[:] calc_coefficients_1d(self, double f1, double f2, double dfdx1, double dfdx2):
-        """
-        Calculate the cubic spline coefficients between 2 spline points.
-
-        The gradient is pre-calculated before filling out the matrix which corresponds to the inverse of a matrix
-        which constrains the cubic at f1 and f2, at x=0 and x=1 in row 1 and 2 respectively, followed by constraining 
-        the gradient of the cubic at x=0 and x=1 to the supplied gradient dfdx1 and dfdx2 in rows 3-4.
-
-        .. WARNING:: For speed, this function does not perform any initialization
-          checking. Supplying malformed data may result in data corruption or a
-          segmentation fault.
-
-        :param double f1: The functional value at the first spline point (x=0)
-        :param double f2: The functional value at the second spline point (x=1)
-        :param double dfdx1: The gradient value at the first spline point (x=0 at respective index)
-        :param double dfdx2: The gradient value at the second spline point (x=1 at respective index)
-        """
-        cdef ndarray a = np.zeros((4, ), dtype=np.float64)
-        cdef double[:] a_mv = a
-        a_mv[0] = 0.5 * f1 - 0.5 * f2 + 0.5 * dfdx2
-        a_mv[1] = -1.5 * f1 + 1.5 * f2 - 1. * dfdx1 - 0.5 * dfdx2
-        a_mv[2] = 1. * dfdx1
-        a_mv[3] = 1. * f1
-        return a_mv
+        return evaluate_cubic_1d(a, x_scal)
 
 
 cdef class _Extrapolator1D:
@@ -258,7 +237,7 @@ cdef class _Extrapolator1D:
         raise NotImplementedError(f"{self.__class__} not implemented")
 
 
-cdef class ExtrapolatorNone(_Extrapolator1D):
+cdef class _ExtrapolatorNone(_Extrapolator1D):
     """
     Extrapolator that does nothing.
     """
@@ -269,7 +248,7 @@ cdef class ExtrapolatorNone(_Extrapolator1D):
         raise ValueError("Extrapolation not available.")
 
 
-cdef class Extrapolator1DNearest(_Extrapolator1D):
+cdef class _Extrapolator1DNearest(_Extrapolator1D):
     """
     Extrapolator that returns nearest input value
     :param object x: 1D array-like object of real values.
@@ -292,7 +271,7 @@ cdef class Extrapolator1DNearest(_Extrapolator1D):
             return self._f[self._last_index]
 
 
-cdef class Extrapolator1DLinear(_Extrapolator1D):
+cdef class _Extrapolator1DLinear(_Extrapolator1D):
     """
     Extrapolator that extrapolates linearly
     :param object x: 1D array-like object of real values.

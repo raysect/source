@@ -34,19 +34,18 @@ cimport cython
 # @cython.cdivision(True)
 # cdef inline double cubic1d(double x0, double x1, double f0, double f1, double dfdx0, double dfdx1, double x) nogil:
 #     pass
+cdef double evaluate_cubic_1d(double a[4], double x) nogil
+
+cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) nogil
+
+cdef double evaluate_cubic_2d(double a[4][4], double x, double y) nogil
 
 
-cdef double cubic2d(double x0, double x1, double y0, double y1, double[:,::1] f,
-                    double[:,::1] dfdx, double[:,::1] dfdy, double[:,::1] d2fdxdy,
-                    double x, double y) nogil
+cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2][2], double d2fdxdy[2][2], double a[4][4]) nogil
 
-cdef void _calculate_coeff_2d(double[:,::1] f, double[:,::1] dfdx, double[:,::1] dfdy, double[:,::1] d2fdxdy, double a[4][4]) nogil
+cdef double evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) nogil
 
-cdef double cubic3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f,
-                    double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
-                    double[:,:,::1] dfdxdy, double[:,:,::1] dfdxdz, double[:,:,::1] dfdydz,
-                    double[:,:,::1] dfdxdydz, double x, double y, double z) nogil
 
-cdef void _calculate_coeff_3d(double[:,:,::1] f, double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
-                              double[:,:,::1] dfdxdy, double[:,:,::1] dfdxdz, double[:,:,::1] dfdydz,
-                              double[:,:,::1] dfdxdydz, double a[4][4][4]) nogil
+cdef void calc_coefficients_3d(double f[2][2][2], double dfdx[2][2][2], double dfdy[2][2][2], double dfdz[2][2][2],
+                              double d2fdxdy[2][2][2], double d2fdxdz[2][2][2], double d2fdydz[2][2][2],
+                              double d3fdxdydz[2][2][2], double a[4][4][4]) nogil

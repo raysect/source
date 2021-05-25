@@ -131,6 +131,29 @@ cimport numpy as np
 
 # todo: maybe switch unit (normalised) calculations to (u,v,w) from (x,y,z) for clarity
 
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.initializedcheck(False)
+cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) nogil:
+    """
+    Calculates the cubic coefficients for a unit square.
+
+    This function calculates the polynomial coefficients for a 1D cubic. It
+    requires the values and differentials at each vertex of the square. The
+    domain over which the polynomial is valid is [0, 1] in each dimension.
+
+    :param f: 
+    :param dfdx: 
+    :param a: 
+    :return: 
+    """
+    a[0] = 0.5 * f[0] - 0.5 * f[1] + 0.5 * dfdx[1]
+    a[1] = -1.5 * f[0] + 1.5 * f[1] - dfdx[0] - 0.5 * dfdx[1]
+    a[2] = dfdx[0]
+    a[3] = f[0]
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.initializedcheck(False)
@@ -461,6 +484,14 @@ cdef void calc_coefficients_3d(double f[2][2][2], double dfdx[2][2][2], double d
                  - 2*d2fdydz[1][0][0] - 2*d2fdydz[1][0][1] - 2*d2fdydz[1][1][0] - 2*d2fdydz[1][1][1] \
                  + d3fdxdydz[0][0][0] + d3fdxdydz[0][0][1] + d3fdxdydz[0][1][0] + d3fdxdydz[0][1][1] \
                  + d3fdxdydz[1][0][0] + d3fdxdydz[1][0][1] + d3fdxdydz[1][1][0] + d3fdxdydz[1][1][1]
+
+cdef double evaluate_cubic_1d(double a[4], double x) nogil:
+
+    cdef double x2 = x*x
+    cdef double x3 = x2*x
+
+    # calculate cubic polynomial
+    return a[0]*x3 + a[1]*x2 + a[2]*x + a[3]
 
 
 cdef double evaluate_cubic_2d(double a[4][4], double x, double y) nogil:
