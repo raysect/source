@@ -83,7 +83,7 @@ cdef class _Interpolator1D:
     cdef:
         double[::1] _x, _f
 
-    cdef double evaluate(self, double px, int idx) except? -1e999
+    cdef double evaluate(self, double px, int index) except? -1e999
 
 
 cdef class _Interpolator1DLinear(_Interpolator1D):
@@ -95,7 +95,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         ndarray _a, _mask_a
         double[:, ::1] _a_mv
         int _n
-        double evaluate(self, double px, int idx) except? -1e999
+        double evaluate(self, double px, int index) except? -1e999
         double get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
 
 
@@ -110,7 +110,7 @@ cdef class _Extrapolator1D:
         int _last_index
 
     cdef double extrapolate(self, double px, int order, int index, double rx) except? -1e999
-    cdef double evaluate(self, double px, int idx) except? -1e999
+    cdef double evaluate(self, double px, int index) except? -1e999
 
 
 cdef class _Extrapolator1DNone(_Extrapolator1D):

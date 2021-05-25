@@ -27,17 +27,17 @@ cdef class Interpolate1D(Function1D):
 
         # dimensions checks
         if x.ndim != 1:
-            raise ValueError(f"The x array must be 1D. Got {x.shape}")
+            raise ValueError(f'The x array must be 1D. Got {x.shape}.')
 
         if f.ndim != 1:
-            raise ValueError(f"The x array must be 1D. Got {f.shape}")
+            raise ValueError(f'The x array must be 1D. Got {f.shape}.')
 
         if x.shape != f.shape:
-            raise ValueError(f"Shape mismatch between x array ({x.shape}) and f array ({f.shape})")
+            raise ValueError(f'Shape mismatch between x array ({x.shape}) and f array ({f.shape}).')
 
         # test monotonicity
         if (np.diff(x) <= 0).any():
-            raise ValueError("The x array must be monotonically increasing.")
+            raise ValueError('The x array must be monotonically increasing.')
 
         # create appropriate extrapolator to be passed to the actual interpolator
         if extrapolation_type == ExtrapType.NoExt:
@@ -47,7 +47,7 @@ cdef class Interpolate1D(Function1D):
         elif extrapolation_type == ExtrapType.LinearExt:
             self._extrapolator = _Extrapolator1DLinear(x, f, extrapolation_range)
         else:
-            raise ValueError(f"Unsupported extrapolator type {extrapolation_type}")
+            raise ValueError(f'Unsupported extrapolator type {extrapolation_type}.')
 
         # create interpolator
         if interpolation_type == InterpType.LinearInt:
@@ -57,7 +57,7 @@ cdef class Interpolate1D(Function1D):
         elif interpolation_type == InterpType.CubicConstrainedInt:
             self._interpolator = _Interpolator1DCubicConstrained(self._x, self._f)
         else:
-            raise ValueError(f"Interpolation type {interpolation_type} not supported")
+            raise ValueError(f'Interpolation type {interpolation_type} not supported.')
 
     cdef double evaluate(self, double x) except? -1e999:
         """
@@ -71,12 +71,12 @@ cdef class Interpolate1D(Function1D):
         if index == -1:
             if x < self._x[0] - self._extrapolation_range:
                 raise ValueError(
-                    f"The specified value (x={x}) is outside of extrapolation range")
+                    f'The specified value (x={x}) is outside of extrapolation range.')
             return self._extrapolator.evaluate(x, index)
         elif index == self._last_index:
             if x > self._x[self._last_index] + self._extrapolation_range:
                 raise ValueError(
-                    f"The specified value (x={x}) is outside of extrapolation range")
+                    f'The specified value (x={x}) is outside of extrapolation range.')
             return self._extrapolator.evaluate(x, index)
         else:
             return self._interpolator.evaluate(x, index)
@@ -94,8 +94,8 @@ cdef class Interpolate1D(Function1D):
 
 
 cdef class _Interpolator1D:
-    cdef double evaluate(self, double px, int idx) except? -1e999:
-        raise NotImplementedError("_Interpolator is an abstract base class.")
+    cdef double evaluate(self, double px, int index) except? -1e999:
+        raise NotImplementedError('_Interpolator is an abstract base class.')
 
 
 cdef class _Interpolator1DLinear(_Interpolator1D):
@@ -110,27 +110,29 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
         self._x = x
         self._f = f
 
-    cdef double evaluate(self, double px, int idx) except? -1e999:
-        return linear1d(self._x[idx], self._x[idx + 1], self._f[idx], self._f[idx + 1], px)
+    cdef double evaluate(self, double px, int index) except? -1e999:
+        return linear1d(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
 
 
 cdef class _Interpolator1DCubic(_Interpolator1D):
     """
     Cubic interpolation of 1D function
-    :param object x: 1D array-like object of real values.
-    :param object f: 1D array-like object of real values.
+
+    When called, stores cubic polynomial coefficients from the value of the function at the neighboring spline points
+    and the gradient at the neighbouring spline points based on central difference gradients. The
+
+    :param x: 1D memory view of the spline point x positions.
+    :param f: 1D memory view of the function value at spline point x positions.
     """
     def __init__(self, double[::1] x, double[::1] f):
-        # self._x = np.array(x, dtype=np.float64)
-        # self._f = np.array(f, dtype=np.float64)
-
         self._x = x
         self._f = f
 
         cdef int n
         n = len(x)
         self._n = n
-        self._mask_a = np.zeros((n - 1,), dtype=np.float64)  # Where 'a' has been calculated already
+        # Where 'a' has been calculated already the mask value = 1
+        self._mask_a = np.zeros((n - 1,), dtype=np.float64)
         self._a = np.zeros((n - 1, 4), dtype=np.float64)
         self._a_mv = self._a
 
@@ -155,11 +157,10 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
           checking. Supplying malformed data may result in data corruption or a
           segmentation fault.
 
-        :param double[::1] x_spline: A memory view to a double array containing monotonically increasing values.
-        :param double[::1] y_spline: The desired spline points corresponding function returned values
+        :param x_spline: A memory view to a double array containing monotonically increasing values.
+        :param y_spline: The desired spline points corresponding function returned values
         :param int index: The index of the lower spline point that the gradient is to be calculated for
         """
-        # Calculate central difference method, but at the start of end of the array use the forward/back difference
         cdef double dfdx
         cdef double x_eff
         if index == 0:
@@ -167,18 +168,18 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         elif index == self._n - 1:
             dfdx = y_spline[index] - y_spline[index - 1]
         else:
-            # if equally spaced this would be divided by 2. Not guaranteed so work out the total normalised distance
+            # Finding the normalised distance x_eff
             x_eff = (x_spline[index + 1] - x_spline[index - 1])/(x_spline[index + 1] - x_spline[index])
             if x_eff != 0:
                 dfdx = (y_spline[index + 1]-y_spline[index - 1])/x_eff
             else:
-                raise ZeroDivisionError("Two adjacent spline points have the same x value!")
+                raise ZeroDivisionError('Two adjacent spline points have the same x value!')
         return dfdx
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.initializedcheck(False)
-    cdef double evaluate(self, double px, int idx) except? -1e999:
+    cdef double evaluate(self, double px, int index) except? -1e999:
         cdef int index_use = find_index(self._x, px)
         # rescale x between 0 and 1
         cdef double x_scal
@@ -188,7 +189,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         if x_bound != 0:
             x_scal = (px - self._x[index_use]) / x_bound
         else:
-            raise ZeroDivisionError("Two adjacent spline points have the same x value!")
+            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
         cdef double[4] a
@@ -206,11 +207,15 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
 
         return evaluate_cubic_1d(a, x_scal)
 
+    def test_get_gradient(self, x, f, index_use):
+        """ Expose cython function for testing. """
+        return self.get_gradient(x, f, index_use)
+
 
 cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
 
     def __init__(self, double[::1] x, double[::1] f):
-        _Interpolator1DCubic.__init__(self, x, f)
+        super().__init__(x, f)
 
     @cython.initializedcheck(False)
     @cython.boundscheck(False)
@@ -233,8 +238,8 @@ cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
           checking. Supplying malformed data may result in data corruption or a
           segmentation fault.
 
-        :param double[::1] x_spline: A memory view to a double array containing monotonically increasing values.
-        :param double[::1] y_spline: The desired spline points corresponding function returned values
+        :param x_spline: A memory view to a double array containing monotonically increasing values.
+        :param y_spline: The desired spline points corresponding function returned values
         :param int index: The index of the lower spline point that the gradient is to be calculated for
         """
         # Calculate central difference method, but at the start of end of the array use the forward/back difference
@@ -250,12 +255,12 @@ cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
             elif y_spline[index + 1] > y_spline[index] and y_spline[index - 1] > y_spline[index]:
                 dfdx = 0.
             else:
-                # if equally spaced this would be divided by 2. Not guaranteed so work out the total normalised distance
+                # Finding the normalised distance x_eff
                 x_eff = (x_spline[index + 1] - x_spline[index - 1])/(x_spline[index + 1] - x_spline[index])
                 if x_eff != 0:
                     dfdx = (y_spline[index + 1] - y_spline[index - 1])/x_eff
                 else:
-                    raise ZeroDivisionError("Two adjacent spline points have the same x value!")
+                    raise ZeroDivisionError('Two adjacent spline points have the same x value!')
             print('dfdx', dfdx, y_spline[index - 1], y_spline[index], y_spline[index + 1])
         return dfdx
 
@@ -271,8 +276,8 @@ cdef class _Extrapolator1D:
     """
     typename = NotImplemented
 
-    def __init__(self, double[::1] x, double[::1] f, double range):
-        self._range = range
+    def __init__(self, double[::1] x, double[::1] f, double extrapolation_range):
+        self._range = extrapolation_range
         self._x = x
         self._f = f
 
@@ -286,10 +291,10 @@ cdef class _Extrapolator1D:
     #     return min_range, max_range
 
     cdef double extrapolate(self, double px, int order, int index, double rx) except? -1e999:
-        raise NotImplementedError(f"{self.__class__} not implemented")
+        raise NotImplementedError(f'{self.__class__} not implemented.')
 
-    cdef double evaluate(self, double px, int idx) except? -1e999:
-        raise NotImplementedError(f"{self.__class__} not implemented")
+    cdef double evaluate(self, double px, int index) except? -1e999:
+        raise NotImplementedError(f'{self.__class__} not implemented.')
 
 
 cdef class _ExtrapolatorNone(_Extrapolator1D):
@@ -297,10 +302,10 @@ cdef class _ExtrapolatorNone(_Extrapolator1D):
     Extrapolator that does nothing.
     """
     cdef double extrapolate(self, double px, int order, int index, double rx) except? -1e999:
-        raise ValueError(f"Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}")
+        raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
 
-    cdef double evaluate(self, double px, int idx)  except? -1e999:
-        raise ValueError("Extrapolation not available.")
+    cdef double evaluate(self, double px, int index)  except? -1e999:
+        raise ValueError('Extrapolation not available.')
 
 
 cdef class _Extrapolator1DNearest(_Extrapolator1D):
@@ -314,12 +319,10 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
     typename = 'nearest'
 
     def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
-        self._x = x
-        self._f = f
-        self._range = extrapolation_range
+        super().__init__(x, f, extrapolation_range)
         self._last_index = self._x.shape[0] -1
 
-    cdef double evaluate(self, double px, int idx) except? -1e999:
+    cdef double evaluate(self, double px, int index) except? -1e999:
         if px < self._x[0]:
             return self._f[0]
         elif px >= self._x[self._last_index]:
@@ -337,17 +340,17 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
     typename = 'linear'
 
     def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
-        self._x = x
-        self._f = f
-        self._range = extrapolation_range
+        super().__init__(x, f, extrapolation_range)
         self._last_index = self._x.shape[0] -1
 
         if x.shape[0] <= 1:
-            raise ValueError(f"x array {np.shape(x)} must contain at least 2 spline points to linearly extrapolate")
+            raise ValueError(f'x array {np.shape(x)} must contain at least 2 spline points to linearly extrapolate.')
 
-    cdef double evaluate(self, double px, int idx) except? -1e999:
-        if idx == -1:
-            idx += 1
+    cdef double evaluate(self, double px, int index) except? -1e999:
+        # The index returned from find_index is -1 at the array start or the length of the array at the end of array
+        if index == -1:
+            index += 1
         else:
-            idx -= 1
-        return lerp(self._x[idx], self._x[idx + 1], self._f[idx], self._f[idx + 1], px)
+            index -= 1
+        # Use a linear interpolator function to extrapolate instead
+        return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
