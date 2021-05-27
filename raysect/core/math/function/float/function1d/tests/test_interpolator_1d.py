@@ -37,7 +37,7 @@ import unittest
 
 import matplotlib.pyplot as plt
 
-from raysect.core.math.function.float.function1d.interpolate import Interpolate1D, InterpType, ExtrapType, _Interpolator1DCubic
+from raysect.core.math.function.float.function1d.interpolate import Interpolate1D, InterpType, ExtrapType, _Interpolator1DCubic, _Extrapolator1DQuadratic
 import numpy as np
 
 
@@ -119,25 +119,29 @@ class TestInterpolator1D(unittest.TestCase):
         cls._interp_linear_extrap_nearest = None
         cls._interp_cubic_constrained_extrap_nearest = None
 
-    # def test_extrapolator_1d_quadratic(self):
-    #     """
-    #     Tests the quadratic extrapolator
-    #     """
-    #     x_in_sin_range = np.arange(-2., -0.5, 0.01)
-    #
-    #     self._interp_cubic_extrap_nearest = Interpolate1D(
-    #         self._x_in_sin, self._y_in_sin, InterpType.CubicInt, ExtrapType.QuadraticExt, extrapolation_range=2.0
-    #     )
-    #     import matplotlib.pyplot as plt
-    #     fig, ax = plt.subplots()
-    #     ax.plot(self._x_in_sin, self._y_in_sin, 'ro')
-    #     ax.plot(x_in_sin_range, np.sin(x_in_sin_range), 'r')
-    #     y_plot = np.zeros((len(x_in_sin_range)))
-    #     for i in range(len(x_in_sin_range)):
-    #         y_plot[i] = self._interp_cubic_extrap_nearest(x_in_sin_range[i])
-    #     ax.plot(x_in_sin_range, y_plot, 'b')
-    #
-    #     plt.show()
+    def test_extrapolator_1d_quadratic(self):
+        """
+        Tests the quadratic extrapolator to check that the quadratic exponents can make the quadratic curve
+        """
+
+        interp_cubic_extrap_quad = Interpolate1D(
+            self._x_in_sin, self._y_in_sin, InterpType.CubicInt, ExtrapType.QuadraticExt, extrapolation_range=2.0
+        )
+        _extrapolate_1d_quadratic = _Extrapolator1DQuadratic(self._x_in_sin, self._y_in_sin, extrapolation_range=2.0)
+
+        a_last = _extrapolate_1d_quadratic.test_last_coefficients()
+        for i in range(len(self._x_in_sin)-2, len(self._x_in_sin)):
+            x_scal = (self._x_in_sin[i] - self._x_in_sin[-3])/(self._x_in_sin[-2] - self._x_in_sin[-3])
+            self.assertAlmostEqual(
+                a_last[0]*x_scal**2 + a_last[1]*x_scal + a_last[2], interp_cubic_extrap_quad(self._x_in_sin[i])
+            )
+
+        a_first = _extrapolate_1d_quadratic.test_first_coefficients()
+        for i in range(0, 2):
+            x_scal = (self._x_in_sin[i] - self._x_in_sin[0])/(self._x_in_sin[1] - self._x_in_sin[0])
+            self.assertAlmostEqual(
+                a_first[0]*x_scal**2 + a_first[1]*x_scal + a_first[2], interp_cubic_extrap_quad(self._x_in_sin[i])
+            )
 
     def test_interpolator_1d_linear(self):
         """

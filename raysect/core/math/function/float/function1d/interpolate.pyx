@@ -463,3 +463,11 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
             f_return = self._a_last[0]*x_scal**2 + self._a_last[1]*x_scal + self._a_last[2]
 
         return f_return
+
+    def test_first_coefficients(self):
+        """ Expose cython function for testing."""
+        return self._a_first
+
+    def test_last_coefficients(self):
+        """ Expose cython function for testing."""
+        return self._a_last
