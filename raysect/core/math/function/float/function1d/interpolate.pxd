@@ -123,3 +123,12 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
 
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
     pass
+
+
+cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
+    cdef double[3] _a_first, _a_last
+    cdef int[2] _mask_a
+    cdef calculate_quadratic_coefficients(self, double f1, double f2, double f3, double x_scal_3, double[3] a)
+
+
+

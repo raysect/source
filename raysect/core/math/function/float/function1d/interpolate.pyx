@@ -46,6 +46,8 @@ cdef class Interpolate1D(Function1D):
             self._extrapolator = _Extrapolator1DNearest(x, f, extrapolation_range)
         elif extrapolation_type == ExtrapType.LinearExt:
             self._extrapolator = _Extrapolator1DLinear(x, f, extrapolation_range)
+        elif extrapolation_type == ExtrapType.QuadraticExt:
+            self._extrapolator = _Extrapolator1DQuadratic(x, f, extrapolation_range)
         else:
             raise ValueError(f'Unsupported extrapolator type {extrapolation_type}.')
 
@@ -404,3 +406,60 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
             index -= 1
         # Use a linear interpolator function to extrapolate instead
         return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
+
+
+cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
+    """
+    Extrapolator that extrapolates quadratically
+
+
+    :param object x: 1D array-like object of real values.
+    :param object f: 1D array-like object of real values.
+    :param double extrapolation_range: Range covered by the extrapolator.
+    """
+
+    typename = 'quadratic'
+
+    def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
+        super().__init__(x, f, extrapolation_range)
+        self._last_index = self._x.shape[0] - 1
+
+        self.calculate_quadratic_coefficients(f[0], f[1], f[2], (x[2]-x[0])/(x[1]-x[0]), self._a_first)
+        self.calculate_quadratic_coefficients(
+            f[self._last_index-2], f[self._last_index-1], f[self._last_index],
+            (x[self._last_index]-x[self._last_index-2])/(x[self._last_index-1]-x[self._last_index-2]), self._a_last
+        )
+
+        if x.shape[0] <= 1:
+            raise ValueError(
+                f'x array {np.shape(x)} must contain at least 2 spline points to quadratically extrapolate.'
+            )
+
+    cdef calculate_quadratic_coefficients(self, double f1, double f2, double f3, double x_scal_3, double[3] a):
+        """
+        Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1, 
+        
+        The first 2 spline knots are normalised between 0 and 1 and the 3rd (higher x) point has a normlised value 
+        x_scal_3. The inverse of the matrix [[xn**2, xn, 1]...] is calculated then multiplied by [f1, f2, f3] here 
+        """
+        a[0] = f1*(1.-x_scal_3) + x_scal_3*f2 - f3
+        a[1] = -(1. - x_scal_3**2)*f1 - f2*x_scal_3**2 + f3
+        a[2] = (x_scal_3-x_scal_3**2)*f1
+        a[0] = a[0]/(x_scal_3-x_scal_3**2)
+        a[1] = a[1]/(x_scal_3-x_scal_3**2)
+        a[2] = a[2]/(x_scal_3-x_scal_3**2)
+
+    cdef double evaluate(self, double px, int index) except? -1e999:
+        # The index returned from find_index is -1 at the array start or the length of the array at the end of array
+        cdef double f_return
+        cdef double x_scal
+        if index == -1:
+            index += 1
+            x_scal =  (px - self._x[index])/(self._x[index + 1] - self._x[index])
+            f_return = self._a_first[0]*x_scal**2 + self._a_first[1]*x_scal + self._a_first[2]
+        else:
+            index -= 1
+            x_scal = (px - self._x[index-1])/(self._x[index] - self._x[index-1])
+            f_return = self._a_last[0]*x_scal**2 + self._a_last[1]*x_scal + self._a_last[2]
+
+        return f_return

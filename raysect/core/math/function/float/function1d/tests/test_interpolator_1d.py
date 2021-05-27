@@ -34,6 +34,9 @@ including interaction with Extrapolator1DLinear and Extrapolator1DNearest.
 """
 
 import unittest
+
+import matplotlib.pyplot as plt
+
 from raysect.core.math.function.float.function1d.interpolate import Interpolate1D, InterpType, ExtrapType, _Interpolator1DCubic
 import numpy as np
 
@@ -115,6 +118,26 @@ class TestInterpolator1D(unittest.TestCase):
         cls._interpolator_sin = None
         cls._interp_linear_extrap_nearest = None
         cls._interp_cubic_constrained_extrap_nearest = None
+
+    # def test_extrapolator_1d_quadratic(self):
+    #     """
+    #     Tests the quadratic extrapolator
+    #     """
+    #     x_in_sin_range = np.arange(-2., -0.5, 0.01)
+    #
+    #     self._interp_cubic_extrap_nearest = Interpolate1D(
+    #         self._x_in_sin, self._y_in_sin, InterpType.CubicInt, ExtrapType.QuadraticExt, extrapolation_range=2.0
+    #     )
+    #     import matplotlib.pyplot as plt
+    #     fig, ax = plt.subplots()
+    #     ax.plot(self._x_in_sin, self._y_in_sin, 'ro')
+    #     ax.plot(x_in_sin_range, np.sin(x_in_sin_range), 'r')
+    #     y_plot = np.zeros((len(x_in_sin_range)))
+    #     for i in range(len(x_in_sin_range)):
+    #         y_plot[i] = self._interp_cubic_extrap_nearest(x_in_sin_range[i])
+    #     ax.plot(x_in_sin_range, y_plot, 'b')
+    #
+    #     plt.show()
 
     def test_interpolator_1d_linear(self):
         """
