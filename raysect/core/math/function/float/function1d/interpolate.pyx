@@ -119,7 +119,8 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
     Cubic interpolation of 1D function
 
     When called, stores cubic polynomial coefficients from the value of the function at the neighboring spline points
-    and the gradient at the neighbouring spline points based on central difference gradients. The
+    and the gradient at the neighbouring spline points based on central difference gradients. The polynomial
+    coefficients and gradients are calculated between each spline knots normalised to between 0 and 1.
 
     :param x: 1D memory view of the spline point x positions.
     :param f: 1D memory view of the function value at spline point x positions.
@@ -204,16 +205,44 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
             self._mask_a[index_use] = 1
         else:
             a = self._a[index_use, :4]
-
         return evaluate_cubic_1d(a, x_scal)
 
-    def test_get_gradient(self, x, f, index_use):
-        """ Expose cython function for testing. """
-        return self.get_gradient(x, f, index_use)
+    def test_return_polynormial_coefficients(self, index_use):
+        """ Expose cython function for testing. Input the index of the lower x spline point in the region of the spline"""
+        a_return = np.zeros((4, ))
+        cdef double[4] a
+        cdef double[2] f, dfdx
+        f[0] = self._f[index_use]
+        f[1] = self._f[index_use + 1]
+        dfdx[0] = self.get_gradient(self._x, self._f, index_use)
+        dfdx[1] = self.get_gradient(self._x, self._f, index_use + 1)
+        calc_coefficients_1d(f, dfdx, a)
+        a_return = a
+        return a_return
+
+    def test_get_gradient(self, index_use):
+        """ Expose cython function for testing. Input the spline points x, f"""
+        return self.get_gradient(self._x, self._f,  index_use)
+
+    def test_evaluate_directly(self, x):
+        cdef int index = find_index(self._x, x)
+
+        """ Expose cython function for testing. Input the spline points x, f"""
+        return self.evaluate(x, index)
 
 
 cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
+    """
+    Cubic interpolation of 1D function, with constrained gradients at spline points near a maximum
 
+    When called, stores cubic polynomial coefficients from the value of the function at the neighboring spline points
+    and the gradient at the neighbouring spline points based on central difference gradients. The polynomial
+    coefficients and gradients are calculated between each spline knots normalised to between 0 and 1.
+    The gradients around the spline knots are constrained to 0
+
+    :param x: 1D memory view of the spline point x positions.
+    :param f: 1D memory view of the function value at spline point x positions.
+    """
     def __init__(self, double[::1] x, double[::1] f):
         super().__init__(x, f)
 
@@ -232,7 +261,7 @@ cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
 
         At the start and end of the array, the forward or backward difference approximation is calculated over
         a  (x[i+1] - x[i]) = 1 or  (x[i] - x[i-1]) = 1 respectively. The end spline gradient is not used for
-        extrapolation
+        extrapolation. Additionally if the spline knot value is a minimum to the points surrounding it then
 
         .. WARNING:: For speed, this function does not perform any zero division, type or bounds
           checking. Supplying malformed data may result in data corruption or a
@@ -250,18 +279,39 @@ cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
         elif index == self._n - 1:
             dfdx = y_spline[index] - y_spline[index - 1]
         else:
+            gradient_set_0 = False
+            # Set to 0 around the central point
             if y_spline[index + 1] < y_spline[index] and y_spline[index - 1] < y_spline[index]:
                 dfdx = 0.
+                gradient_set_0 = True
             elif y_spline[index + 1] > y_spline[index] and y_spline[index - 1] > y_spline[index]:
                 dfdx = 0.
-            else:
+                gradient_set_0 = True
+
+            # Set to 0 around the next point
+            if index != self._n - 2:
+                if y_spline[index + 2] < y_spline[index + 1] and y_spline[index] < y_spline[index + 1]:
+                    dfdx = 0.
+                    gradient_set_0 = True
+                elif y_spline[index + 2] > y_spline[index + 1] and y_spline[index] > y_spline[index + 1]:
+                    dfdx = 0.
+                    gradient_set_0 = True
+
+            # Set to 0 around the previous point
+            if index != 1:
+                if y_spline[index] < y_spline[index - 1] and y_spline[index-2] < y_spline[index - 1]:
+                    dfdx = 0.
+                    gradient_set_0 = True
+                elif y_spline[index] > y_spline[index - 1] and y_spline[index-2] > y_spline[index - 1]:
+                    dfdx = 0.
+                    gradient_set_0 = True
+            if not gradient_set_0:
                 # Finding the normalised distance x_eff
                 x_eff = (x_spline[index + 1] - x_spline[index - 1])/(x_spline[index + 1] - x_spline[index])
                 if x_eff != 0:
                     dfdx = (y_spline[index + 1] - y_spline[index - 1])/x_eff
                 else:
                     raise ZeroDivisionError('Two adjacent spline points have the same x value!')
-            print('dfdx', dfdx, y_spline[index - 1], y_spline[index], y_spline[index + 1])
         return dfdx
 
 
