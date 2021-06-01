@@ -37,7 +37,7 @@ import unittest
 
 import matplotlib.pyplot as plt
 
-from raysect.core.math.function.float.function1d.interpolate import Interpolate1D, _Interpolator1DCubic, _Extrapolator1DQuadratic
+from raysect.core.math.function.float.function1d.interpolate import Interpolate1D, _Interpolator1DCubic
 import numpy as np
 
 
@@ -65,10 +65,10 @@ class TestInterpolator1D(unittest.TestCase):
         cls._y_in_sin = np.sin(cls._x_in_sin)
         cls._dy_dx_in_sin = np.cos(cls._x_in_sin)
         cls._interp_cubic_extrap_linear = Interpolate1D(
-            cls._x_in_sin, cls._y_in_sin, 'cubic', 'linear', extrapolation_range=2.0
+            cls._x_in_sin, cls._y_in_sin, 'cubic_interp', 'linear_extrap', extrapolation_range=2.0
         )
         cls._interp_cubic_extrap_nearest = Interpolate1D(
-            cls._x_in_sin, cls._y_in_sin, 'cubic', 'nearest', extrapolation_range=2.0
+            cls._x_in_sin, cls._y_in_sin, 'cubic_interp', 'nearest_extrap', extrapolation_range=2.0
         )
         cls._interpolator_sin = _Interpolator1DCubic(cls._x_in_sin, cls._y_in_sin)
         r_approx = np.zeros((len(cls._x_in_sin)-1))
@@ -86,11 +86,11 @@ class TestInterpolator1D(unittest.TestCase):
 
         # Linear, nearest extrpolation
         cls._interp_linear_extrap_nearest = Interpolate1D(
-            cls._x_in_sin, cls._y_in_sin, 'linear', 'nearest', extrapolation_range=2.0
+            cls._x_in_sin, cls._y_in_sin, 'linear_interp', 'nearest_extrap', extrapolation_range=2.0
         )
         # Linear, linear extrapolation
         cls._interp_linear_extrap_linear = Interpolate1D(
-            cls._x_in_sin, cls._y_in_sin, 'linear', 'linear', extrapolation_range=2.0
+            cls._x_in_sin, cls._y_in_sin, 'linear_interp', 'linear_extrap', extrapolation_range=2.0
         )
 
 

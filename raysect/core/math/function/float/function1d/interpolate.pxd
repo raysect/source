@@ -32,10 +32,11 @@
 from raysect.core.math.function.float.function1d.base cimport Function1D
 from numpy cimport ndarray
 
+
 cdef class Interpolate1D(Function1D):
     cdef:
-        ndarray x, f
-        double[::1] _x, _f
+        ndarray _x, _f
+        double[::1] _x_mv, _f_mv
         _Interpolator1D _interpolator
         _Extrapolator1D _extrapolator
         int _last_index
@@ -59,20 +60,21 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         double[:, ::1] _a_mv
         int _n
         double evaluate(self, double px, int index) except? -1e999
-        double get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
+        double _get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
 
 
 cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
-    cdef double get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
+    cdef double _get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
 
 
 cdef class _Extrapolator1D:
+    # cdef readonly str ID
+
     cdef:
         double _range
         double [::1] _x, _f
         int _last_index
 
-    cdef double extrapolate(self, double px, int order, int index, double rx) except? -1e999
     cdef double evaluate(self, double px, int index) except? -1e999
 
 
@@ -87,11 +89,6 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
     pass
 
-
-cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
-    cdef double[3] _a_first, _a_last
-    cdef int[2] _mask_a
-    cdef calculate_quadratic_coefficients(self, double f1, double f2, double f3, double x_scal_3, double[3] a)
 
 
 
