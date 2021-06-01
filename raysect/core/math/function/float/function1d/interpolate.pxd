@@ -35,7 +35,7 @@ from numpy cimport ndarray
 
 cdef class Interpolate1D(Function1D):
     cdef:
-        ndarray _x, _f
+        ndarray x, f
         double[::1] _x_mv, _f_mv
         _Interpolator1D _interpolator
         _Extrapolator1D _extrapolator

@@ -71,11 +71,14 @@ cdef class Interpolate1D(Function1D):
                  str extrapolation_type, double extrapolation_range):
 
 
-        self._x = np.array(x, dtype=np.float64)
-        self._f = np.array(f, dtype=np.float64)
+        self.x = np.array(x, dtype=np.float64)
+        self.x.flags.writeable = False
+        self.f = np.array(f, dtype=np.float64)
+        self.f.flags.writeable = False
+
         self._x_mv = x
         self._f_mv = f
-        self._last_index = self._x.shape[0] -1
+        self._last_index = self.x.shape[0] -1
         self._extrapolation_range = extrapolation_range
 
         # dimensions checks
@@ -133,17 +136,19 @@ cdef class Interpolate1D(Function1D):
     @property
     def domain(self):
         """
-        Returns bounding box of the provided inputs.
-        Order: min(x), max(x), min(f), max(f)
-        :warning: doesn't take extrapolator into account at the moment
+        Returns min/max interval of 'x' array.
+        Order: min(x), max(x)
         """
-        return np.min(self._x_mv), np.max(self._x_mv), np.min(self._f_mv), np.max(self._f_mv)
+        return np.min(self._x_mv), np.max(self._x_mv)
 
 
 cdef class _Interpolator1D:
     """Base class for 1D interpolators. """
 
     typename = NotImplemented
+    def __init__(self, double[::1] x, double[::1] f):
+        self._x = x
+        self._f = f
 
     cdef double evaluate(self, double px, int index) except? -1e999:
         """
@@ -167,8 +172,7 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
     typename = 'linear_interp'
 
     def __init__(self, double[::1] x, double[::1] f):
-        self._x = x
-        self._f = f
+        super().__init__(x, f)
 
     cdef double evaluate(self, double px, int index) except? -1e999:
         return linear1d(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
@@ -189,12 +193,12 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
     typename = 'cubic_interp'
 
     def __init__(self, double[::1] x, double[::1] f):
-        self._x = x
-        self._f = f
+        super().__init__(x, f)
 
         cdef int n
         n = len(x)
         self._n = n
+
         # Where 'a' has been calculated already the mask value = 1
         self._mask_a = np.zeros((n - 1,), dtype=np.float64)
         self._a = np.zeros((n - 1, 4), dtype=np.float64)
