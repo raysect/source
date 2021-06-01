@@ -29,45 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport cython
 from raysect.core.math.function.float.function1d.base cimport Function1D
-
 from numpy cimport ndarray
-
-DEF INT_LINEAR = 0
-DEF INT_CUBIC = 1
-DEF INT_CUBIC_CONSTRAINED = 2
-
-_INTERPOLATION_TYPES = {
-    'linear': INT_LINEAR,
-    'cubic': INT_CUBIC,
-    'cubic_constrained': INT_CUBIC_CONSTRAINED
-}
-
-DEF EXT_NONE = 0
-DEF EXT_NEAREST = 1
-DEF EXT_LINEAR = 2
-DEF EXT_QUADRATIC = 3
-
-_EXTRAPOLATION_TYPES = {
-    'none': EXT_NONE,
-    'nearest': EXT_NEAREST,
-    'linear': EXT_LINEAR,
-    'quadratic': EXT_QUADRATIC
-}
-
-
-cpdef enum InterpType:
-    LinearInt = 1
-    CubicInt = 2
-    CubicConstrainedInt = 3
-
-cpdef enum ExtrapType:
-    NoExt = 1
-    NearestExt = 2
-    LinearExt = 3
-    QuadraticExt = 4
-
 
 cdef class Interpolate1D(Function1D):
     cdef:

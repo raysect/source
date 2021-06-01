@@ -37,7 +37,7 @@ import unittest
 
 import matplotlib.pyplot as plt
 
-from raysect.core.math.function.float.function1d.interpolate import Interpolate1D, InterpType, ExtrapType, _Interpolator1DCubic, _Extrapolator1DQuadratic
+from raysect.core.math.function.float.function1d.interpolate import Interpolate1D, _Interpolator1DCubic, _Extrapolator1DQuadratic
 import numpy as np
 
 
@@ -55,9 +55,7 @@ class TestInterpolator1D(unittest.TestCase):
 
         def dy_dx_cubic(x): return 3.*x**2 - 2.*10.*x + 3.
         cls._dy_dx = dy_dx_cubic(x_in_cubic)
-        cls._cubic_1d_cubic_function = Interpolate1D(
-            x_in_cubic, y_in_cubic, InterpType.CubicConstrainedInt, ExtrapType.NearestExt, extrapolation_range=2.0
-        )
+
         cls._interpolator_cubic = _Interpolator1DCubic(cls._x, cls._y)
 
         cls._cubic_interp_range_x = np.arange(-2, 5., .07)
@@ -67,10 +65,10 @@ class TestInterpolator1D(unittest.TestCase):
         cls._y_in_sin = np.sin(cls._x_in_sin)
         cls._dy_dx_in_sin = np.cos(cls._x_in_sin)
         cls._interp_cubic_extrap_linear = Interpolate1D(
-            cls._x_in_sin, cls._y_in_sin, InterpType.CubicInt, ExtrapType.LinearExt, extrapolation_range=2.0
+            cls._x_in_sin, cls._y_in_sin, 'cubic', 'linear', extrapolation_range=2.0
         )
         cls._interp_cubic_extrap_nearest = Interpolate1D(
-            cls._x_in_sin, cls._y_in_sin, InterpType.CubicInt, ExtrapType.NearestExt, extrapolation_range=2.0
+            cls._x_in_sin, cls._y_in_sin, 'cubic', 'nearest', extrapolation_range=2.0
         )
         cls._interpolator_sin = _Interpolator1DCubic(cls._x_in_sin, cls._y_in_sin)
         r_approx = np.zeros((len(cls._x_in_sin)-1))
@@ -88,22 +86,19 @@ class TestInterpolator1D(unittest.TestCase):
 
         # Linear, nearest extrpolation
         cls._interp_linear_extrap_nearest = Interpolate1D(
-            cls._x_in_sin, cls._y_in_sin, InterpType.LinearInt, ExtrapType.NearestExt, extrapolation_range=2.0
+            cls._x_in_sin, cls._y_in_sin, 'linear', 'nearest', extrapolation_range=2.0
         )
         # Linear, linear extrapolation
         cls._interp_linear_extrap_linear = Interpolate1D(
-            cls._x_in_sin, cls._y_in_sin, InterpType.LinearInt, ExtrapType.LinearExt, extrapolation_range=2.0
+            cls._x_in_sin, cls._y_in_sin, 'linear', 'linear', extrapolation_range=2.0
         )
-        # Cubic Constrained, nearest extrpolation
-        cls._interp_cubic_constrained_extrap_nearest = Interpolate1D(
-            cls._x_in_sin, cls._y_in_sin, InterpType.CubicConstrainedInt, ExtrapType.NearestExt, extrapolation_range=2.0
-        )
+
 
     @classmethod
     def tearDownClass(cls):
         cls._cubic_1d = None
         cls._interpolator_cubic = None
-        cls._cubic_1d_cubic_function = None
+        # cls._cubic_1d_cubic_function = None
         cls._x = None
         cls._y = None
         cls._dy_dx = None
@@ -118,30 +113,6 @@ class TestInterpolator1D(unittest.TestCase):
         cls._interpolator_sin = None
         cls._interp_linear_extrap_nearest = None
         cls._interp_cubic_constrained_extrap_nearest = None
-
-    def test_extrapolator_1d_quadratic(self):
-        """
-        Tests the quadratic extrapolator to check that the quadratic exponents can make the quadratic curve
-        """
-
-        interp_cubic_extrap_quad = Interpolate1D(
-            self._x_in_sin, self._y_in_sin, InterpType.CubicInt, ExtrapType.QuadraticExt, extrapolation_range=2.0
-        )
-        _extrapolate_1d_quadratic = _Extrapolator1DQuadratic(self._x_in_sin, self._y_in_sin, extrapolation_range=2.0)
-
-        a_last = _extrapolate_1d_quadratic.test_last_coefficients()
-        for i in range(len(self._x_in_sin)-2, len(self._x_in_sin)):
-            x_scal = (self._x_in_sin[i] - self._x_in_sin[-3])/(self._x_in_sin[-2] - self._x_in_sin[-3])
-            self.assertAlmostEqual(
-                a_last[0]*x_scal**2 + a_last[1]*x_scal + a_last[2], interp_cubic_extrap_quad(self._x_in_sin[i])
-            )
-
-        a_first = _extrapolate_1d_quadratic.test_first_coefficients()
-        for i in range(0, 2):
-            x_scal = (self._x_in_sin[i] - self._x_in_sin[0])/(self._x_in_sin[1] - self._x_in_sin[0])
-            self.assertAlmostEqual(
-                a_first[0]*x_scal**2 + a_first[1]*x_scal + a_first[2], interp_cubic_extrap_quad(self._x_in_sin[i])
-            )
 
     def test_interpolator_1d_linear(self):
         """
@@ -158,25 +129,13 @@ class TestInterpolator1D(unittest.TestCase):
                 (self._interp_linear_extrap_nearest(midpoint) - self._y_in_sin[i]) / (midpoint - self._x_in_sin[i])
             )
 
-    def test_polynomial_cubic_constrained_spline(self):
-        """
-        The constrained spline interpolated values must not be out of bounds of the spline knot point values
-        """
-
-        x_range = np.linspace(self._x_in_sin[0], self._x_in_sin[-1], 100)
-        max_y = np.max(self._y_in_sin)
-        min_y = np.min(self._y_in_sin)
-        for i in range(len(x_range)):
-            self.assertGreaterEqual(max_y, self._interp_cubic_constrained_extrap_nearest(x_range[i]))
-            self.assertGreaterEqual(self._interp_cubic_constrained_extrap_nearest(x_range[i]), min_y)
-
     def test_polynomial(self):
         """
         Pick two spline points and test over the scaled range 0,1 that interpolated points match
         between the calculated cubic coefficients and the evaluated interpolator value
         """
         index_1 = 0
-        a = self._interpolator_sin.test_return_polynormial_coefficients(index_1)
+        a = self._interpolator_sin._test_return_polynormial_coefficients(index_1)
         x_range = np.linspace(self._x_in_sin[index_1], self._x_in_sin[index_1+1], 20)
         x_range_scal = (x_range-self._x_in_sin[index_1])/(self._x_in_sin[index_1+1]-self._x_in_sin[index_1])
 
@@ -200,7 +159,7 @@ class TestInterpolator1D(unittest.TestCase):
 
         for i in range(1, len(self._x_in_sin)-1):
             index = i
-            m = self._interpolator_sin.test_get_gradient(index)
+            m = self._interpolator_sin._test_get_gradient(index)
 
             self.assertAlmostEqual(
                 m, self._dy_dx_in_sin[index]*(self._x_in_sin[index+1]-self._x_in_sin[index]), delta=2.*self.r_approx[i]
@@ -299,23 +258,23 @@ class TestInterpolator1D(unittest.TestCase):
         y_in = np.sin(x_in)
 
         dict_kwargs_cubic_interp_nearest_extrap = {
-            'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
-            'extrapolation_type': ExtrapType.NearestExt, 'extrapolation_range': 2.0
+            'x': x_in, 'f': y_in, 'interpolation_type': 'cubic',
+            'extrapolation_type': 'nearest', 'extrapolation_range': 2.0
         }
 
         dict_kwargs_cubic_interp_linear_extrap = {
-            'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
-                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0
+            'x': x_in, 'f': y_in, 'interpolation_type': 'cubic',
+                 'extrapolation_type': 'linear', 'extrapolation_range': 2.0
         }
 
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_nearest_extrap)
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_linear_extrap)
 
-        dict_kwargs_linear_interp_nearest_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.LinearInt,
-                 'extrapolation_type': ExtrapType.NearestExt, 'extrapolation_range': 2.0}
+        dict_kwargs_linear_interp_nearest_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': 'linear',
+                 'extrapolation_type': 'nearest', 'extrapolation_range': 2.0}
 
-        dict_kwargs_linear_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.LinearInt,
-                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0}
+        dict_kwargs_linear_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': 'linear',
+                 'extrapolation_type': 'linear', 'extrapolation_range': 2.0}
 
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_linear_interp_nearest_extrap)
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_linear_interp_linear_extrap)
@@ -327,24 +286,24 @@ class TestInterpolator1D(unittest.TestCase):
 
         y_in = self._y_in_sin[:-1]
         dict_kwargs_cubic_interp_nearest_extrap = {
-            'x': self._x_in_sin, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
-            'extrapolation_type': ExtrapType.NearestExt, 'extrapolation_range': 2.0
+            'x': self._x_in_sin, 'f': y_in, 'interpolation_type': 'cubic',
+            'extrapolation_type': 'nearest', 'extrapolation_range': 2.0
         }
 
         dict_kwargs_cubic_interp_linear_extrap = {
-            'x': self._x_in_sin, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
-                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0
+            'x': self._x_in_sin, 'f': y_in, 'interpolation_type': 'cubic',
+                 'extrapolation_type': 'linear', 'extrapolation_range': 2.0
         }
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_nearest_extrap)
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_linear_extrap)
 
         dict_kwargs_linear_interp_nearest_extrap = {
-            'x': self._x_in_sin, 'f': y_in, 'interpolation_type': InterpType.LinearInt,
-                 'extrapolation_type': ExtrapType.NearestExt, 'extrapolation_range': 2.0
+            'x': self._x_in_sin, 'f': y_in, 'interpolation_type': 'linear',
+                 'extrapolation_type': 'nearest', 'extrapolation_range': 2.0
         }
         dict_kwargs_linear_interp_linear_extrap = {
-            'x': self._x_in_sin, 'f': y_in, 'interpolation_type': InterpType.LinearInt,
-                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0
+            'x': self._x_in_sin, 'f': y_in, 'interpolation_type': 'linear',
+                 'extrapolation_type': 'linear', 'extrapolation_range': 2.0
         }
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_linear_interp_nearest_extrap)
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_linear_interp_linear_extrap)
@@ -356,11 +315,11 @@ class TestInterpolator1D(unittest.TestCase):
         x_in = np.array([0.1])
         y_in = np.sin(x_in)
 
-        dict_kwargs_cubic_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
-                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0}
+        dict_kwargs_cubic_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': 'cubic',
+                 'extrapolation_type': 'linear', 'extrapolation_range': 2.0}
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_linear_extrap)
-        dict_kwargs_linear_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.LinearInt,
-                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0}
+        dict_kwargs_linear_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': 'linear',
+                 'extrapolation_type': 'linear', 'extrapolation_range': 2.0}
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_linear_interp_linear_extrap)
 
     def test_array_dimension_checks(self):
@@ -371,20 +330,20 @@ class TestInterpolator1D(unittest.TestCase):
         x_in = np.array(x_in)
         y_in = np.sin(x_in)
 
-        dict_kwargs_cubic_interp_nearest_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
-                                                   'extrapolation_type': ExtrapType.NearestExt,
+        dict_kwargs_cubic_interp_nearest_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': 'cubic',
+                                                   'extrapolation_type': 'nearest',
                                                    'extrapolation_range': 2.0}
 
-        dict_kwargs_cubic_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.CubicInt,
-                                                  'extrapolation_type': ExtrapType.LinearExt,
+        dict_kwargs_cubic_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': 'cubic',
+                                                  'extrapolation_type': 'linear',
                                                   'extrapolation_range': 2.0}
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_nearest_extrap)
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_cubic_interp_linear_extrap)
 
-        dict_kwargs_linear_interp_nearest_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.LinearInt,
-                 'extrapolation_type': ExtrapType.NearestExt, 'extrapolation_range': 2.0}
+        dict_kwargs_linear_interp_nearest_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': 'linear',
+                 'extrapolation_type': 'nearest', 'extrapolation_range': 2.0}
 
-        dict_kwargs_linear_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': InterpType.LinearInt,
-                 'extrapolation_type': ExtrapType.LinearExt, 'extrapolation_range': 2.0}
+        dict_kwargs_linear_interp_linear_extrap = {'x': x_in, 'f': y_in, 'interpolation_type': 'linear',
+                 'extrapolation_type': 'linear', 'extrapolation_range': 2.0}
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_linear_interp_nearest_extrap)
         self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_linear_interp_linear_extrap)

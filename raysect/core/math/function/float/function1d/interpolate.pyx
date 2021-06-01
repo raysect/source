@@ -1,22 +1,91 @@
+# cython: language_level=3
+
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     1. Redistributions of source code must retain the above copyright notice,
+#        this list of conditions and the following disclaimer.
+#
+#     2. Redistributions in binary form must reproduce the above copyright
+#        notice, this list of conditions and the following disclaimer in the
+#        documentation and/or other materials provided with the distribution.
+#
+#     3. Neither the name of the Raysect Project nor the names of its
+#        contributors may be used to endorse or promote products derived from
+#        this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+"""
+Interpolation functions for float.Function1D
+
+Interpolators are accessed through interface class Interpolate1D, which
+"""
+
 import numpy as np
-from numpy cimport ndarray
 cimport cython
 from raysect.core.math.cython.interpolation.linear cimport linear1d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_1d, evaluate_cubic_1d
 from raysect.core.math.cython.utility cimport find_index, lerp
 
+DEF INT_LINEAR = 0
+DEF INT_CUBIC = 1
+DEF INT_CUBIC_CONSTRAINED = 2
+
+_INTERPOLATION_TYPES = {
+    'linear': INT_LINEAR,
+    'cubic': INT_CUBIC,
+    'cubic_constrained': INT_CUBIC_CONSTRAINED
+}
+
+DEF EXT_NONE = 0
+DEF EXT_NEAREST = 1
+DEF EXT_LINEAR = 2
+DEF EXT_QUADRATIC = 3
+
+_EXTRAPOLATION_TYPES = {
+    'none': EXT_NONE,
+    'nearest': EXT_NEAREST,
+    'linear': EXT_LINEAR,
+    'quadratic': EXT_QUADRATIC
+}
 
 cdef class Interpolate1D(Function1D):
     """
-    Base class for Function1D interpolators.
+    Interface class for Function1D interpolators
 
     :param object x: 1D array-like object of real values.
     :param object f: 1D array-like object of real values.
-    :param InterpType interpolation_type: Type of interpolation to use (linear, cubical)
-    :param ExtrapType extrapolation_type: Type of extrapolation to use (no, nearest, linear, quadratic)
+    :param str interpolation_type: Type of interpolation to use ('linear', 'cubic', 'cubic_constrained')
+    :param str extrapolation_type: Type of extrapolation to use ('none', 'nearest', 'linear', 'quadratic')
     """
-    def __init__(self, object x, object f, InterpType interpolation_type,
-                 ExtrapType extrapolation_type, double extrapolation_range):
+    def __init__(self, object x, object f, str interpolation_type,
+                 str extrapolation_type, double extrapolation_range):
+
+        interpolation_type = interpolation_type.lower()
+        if  interpolation_type not in _INTERPOLATION_TYPES:
+            raise ValueError(f'Interpolation type {interpolation_type} not found.')
+
+        cdef int interpolator_idx = _INTERPOLATION_TYPES.get(interpolation_type)
+
+        extrapolation_type = extrapolation_type.lower()
+        if extrapolation_type not in _EXTRAPOLATION_TYPES:
+            raise ValueError(f'Extrapolation type {extrapolation_type} not found.')
+
+        cdef int extrapolator_idx = _EXTRAPOLATION_TYPES.get(extrapolation_type)
 
         self.x = np.array(x, dtype=np.float64)
         self.f = np.array(f, dtype=np.float64)
@@ -39,25 +108,25 @@ cdef class Interpolate1D(Function1D):
         if (np.diff(x) <= 0).any():
             raise ValueError('The x array must be monotonically increasing.')
 
-        # create appropriate extrapolator to be passed to the actual interpolator
-        if extrapolation_type == ExtrapType.NoExt:
+        # create extrapolator per extrapolation_type argument
+        if extrapolator_idx == EXT_NONE:
             self._extrapolator = _ExtrapolatorNone(x, f, extrapolation_range)
-        elif extrapolation_type == ExtrapType.NearestExt:
+        elif extrapolator_idx == EXT_NEAREST:
             self._extrapolator = _Extrapolator1DNearest(x, f, extrapolation_range)
-        elif extrapolation_type == ExtrapType.LinearExt:
+        elif extrapolator_idx == EXT_LINEAR:
             self._extrapolator = _Extrapolator1DLinear(x, f, extrapolation_range)
-        elif extrapolation_type == ExtrapType.QuadraticExt:
-            self._extrapolator = _Extrapolator1DQuadratic(x, f, extrapolation_range)
+        elif extrapolator_idx == EXT_QUADRATIC:
+            raise NotImplementedError("Quadratic extrapolator not implemented.")
         else:
             raise ValueError(f'Unsupported extrapolator type {extrapolation_type}.')
 
-        # create interpolator
-        if interpolation_type == InterpType.LinearInt:
+        # create extrapolator per interpolation_type argument
+        if interpolator_idx == INT_LINEAR:
             self._interpolator = _Interpolator1DLinear(self._x, self._f)
-        elif interpolation_type == InterpType.CubicInt:
+        elif interpolator_idx == INT_CUBIC:
             self._interpolator = _Interpolator1DCubic(self._x, self._f)
-        elif interpolation_type == InterpType.CubicConstrainedInt:
-            self._interpolator = _Interpolator1DCubicConstrained(self._x, self._f)
+        # elif interpolator_idx == INT_CUBIC_CONSTRAINED:
+        #     raise NotImplementedError("Constrained cubic interpolator not implemented.")
         else:
             raise ValueError(f'Interpolation type {interpolation_type} not supported.')
 
@@ -65,8 +134,8 @@ cdef class Interpolate1D(Function1D):
         """
         Evaluates the interpolating function.
 
-        :param double x: x coordinate.
-        :return: the interpolated value.
+        :param double x: the point for which an interpolated value is required
+        :return: the interpolated value at point x.
         """
         cdef int index = find_index(self._x, x)
 
@@ -90,13 +159,19 @@ cdef class Interpolate1D(Function1D):
         Order: min(x), max(x), min(f), max(f)
         :warning: doesn't take extrapolator into account at the moment
         """
-        @property
-        def domain(self):
-            return np.min(self._x), np.max(self._x), np.min(self._f), np.max(self._f)
+        return np.min(self._x), np.max(self._x), np.min(self._f), np.max(self._f)
 
 
 cdef class _Interpolator1D:
+    """Base class for 1D interpolators. """
+
     cdef double evaluate(self, double px, int index) except? -1e999:
+        """
+        Calculates interpolated value at given point. 
+    
+        :param double px: the point for which an interpolated value is required
+        :param int index: the lower index of the bin containing point px. (Result of bisection search).   
+        """
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
 
@@ -209,7 +284,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
             a = self._a[index_use, :4]
         return evaluate_cubic_1d(a, x_scal)
 
-    def test_return_polynormial_coefficients(self, index_use):
+    def _test_return_polynormial_coefficients(self, index_use):
         """ Expose cython function for testing. Input the index of the lower x spline point in the region of the spline"""
         a_return = np.zeros((4, ))
         cdef double[4] a
@@ -222,11 +297,11 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         a_return = a
         return a_return
 
-    def test_get_gradient(self, index_use):
+    def _test_get_gradient(self, index_use):
         """ Expose cython function for testing. Input the spline points x, f"""
         return self.get_gradient(self._x, self._f,  index_use)
 
-    def test_evaluate_directly(self, x):
+    def _test_evaluate_directly(self, x):
         cdef int index = find_index(self._x, x)
 
         """ Expose cython function for testing. Input the spline points x, f"""
@@ -323,8 +398,7 @@ cdef class _Extrapolator1D:
 
     :param object x: 1D array-like object of real values.
     :param object f: 1D array-like object of real values.
-    :param double extrapolation_range: Range covered by the extrapolator.
-    Padded symmetrically to both ends of the input.
+    :param double extrapolation_range: Range covered by the extrapolator. Padded symmetrically to both ends of the input.
     """
     typename = NotImplemented
 
@@ -332,15 +406,6 @@ cdef class _Extrapolator1D:
         self._range = extrapolation_range
         self._x = x
         self._f = f
-
-    # @property
-    # def range(self):
-    #     """
-    #     Range covered either by the original x input or by the extrapolator
-    #     """
-    #     min_range = self._x[0] - self._range
-    #     max_range = self._x[self._x.shape[0] - 1] + self._range
-    #     return min_range, max_range
 
     cdef double extrapolate(self, double px, int order, int index, double rx) except? -1e999:
         raise NotImplementedError(f'{self.__class__} not implemented.')
@@ -464,10 +529,10 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
 
         return f_return
 
-    def test_first_coefficients(self):
+    def _test_first_coefficients(self):
         """ Expose cython function for testing."""
         return self._a_first
 
-    def test_last_coefficients(self):
+    def _test_last_coefficients(self):
         """ Expose cython function for testing."""
         return self._a_last
