@@ -248,37 +248,40 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
     @cython.boundscheck(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, int index) except? -1e999:
-        cdef int index_use = find_index(self._x, px)
+
         # rescale x between 0 and 1
         cdef double x_scal
         cdef double[2] f, dfdx
+        cdef double x_bound
+        cdef double[4] a
 
-        cdef double x_bound = (self._x[index_use + 1] - self._x[index_use])
+        x_bound = self._x[index + 1] - self._x[index]
         if x_bound != 0:
-            x_scal = (px - self._x[index_use]) / x_bound
+            x_scal = (px - self._x[index]) / x_bound
         else:
             raise ZeroDivisionError('Two adjacent spline points have the same x value!')
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
-        cdef double[4] a
-        if not self._mask_a[index_use]:
-            f[0] = self._f[index_use]
-            f[1] = self._f[index_use + 1]
-            dfdx[0] = self._calc_gradient(self._x, self._f, index_use)
-            dfdx[1] = self._calc_gradient(self._x, self._f, index_use + 1)
+        if not self._mask_a[index]:
+            f[0] = self._f[index]
+            f[1] = self._f[index + 1]
+            dfdx[0] = self._calc_gradient(self._x, self._f, index)
+            dfdx[1] = self._calc_gradient(self._x, self._f, index + 1)
 
             calc_coefficients_1d(f, dfdx, a)
-            self._a_mv[index_use, :] = a
-            self._mask_a[index_use] = 1
+            self._a_mv[index, :] = a
+            self._mask_a[index] = 1
         else:
-            a = self._a[index_use, :4]
+            a = self._a[index, :4]
         return evaluate_cubic_1d(a, x_scal)
 
     def _test_return_polynormial_coefficients(self, index_use):
         """ Expose cython function for testing. Input the index of the lower x spline point in the region of the spline"""
-        a_return = np.zeros((4, ))
         cdef double[4] a
         cdef double[2] f, dfdx
+
+        a_return = np.zeros((4, ))
+
         f[0] = self._f[index_use]
         f[1] = self._f[index_use + 1]
         dfdx[0] = self._calc_gradient(self._x, self._f, index_use)
@@ -325,6 +328,9 @@ cdef class _ExtrapolatorNone(_Extrapolator1D):
 
     typename = 'no_extrap'
 
+    def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
+           super().__init__(x, f, extrapolation_range)
+
     cdef double evaluate(self, double px, int index)  except? -1e999:
         raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
 
@@ -341,13 +347,14 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
 
     def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
         super().__init__(x, f, extrapolation_range)
-        self._last_index = self._x.shape[0] -1
 
     cdef double evaluate(self, double px, int index) except? -1e999:
         if px < self._x[0]:
             return self._f[0]
         elif px >= self._x[self._last_index]:
             return self._f[self._last_index]
+        else:
+            raise ValueError(f"Cannot evaluate value of function at point {px}. Bad data?")
 
 
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
@@ -362,7 +369,6 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
 
     def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
         super().__init__(x, f, extrapolation_range)
-        self._last_index = self._x.shape[0] -1
 
         if x.shape[0] <= 1:
             raise ValueError(f'x array {np.shape(x)} must contain at least 2 spline points to linearly extrapolate.')
