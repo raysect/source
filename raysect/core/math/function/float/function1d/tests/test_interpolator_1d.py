@@ -159,7 +159,7 @@ class TestInterpolator1D(unittest.TestCase):
 
         for i in range(1, len(self._x_in_sin)-1):
             index = i
-            m = self._interpolator_sin._test_get_gradient(index)
+            m = self._interpolator_sin._test_calc_gradient(index)
 
             self.assertAlmostEqual(
                 m, self._dy_dx_in_sin[index]*(self._x_in_sin[index+1]-self._x_in_sin[index]), delta=2.*self.r_approx[i]

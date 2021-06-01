@@ -60,11 +60,11 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         double[:, ::1] _a_mv
         int _n
         double evaluate(self, double px, int index) except? -1e999
-        double _get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
+        double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
 
 
 cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
-    cdef double _get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
+    cdef double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
 
 
 cdef class _Extrapolator1D:

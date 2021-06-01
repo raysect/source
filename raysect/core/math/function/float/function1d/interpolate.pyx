@@ -207,7 +207,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
     @cython.initializedcheck(False)
     @cython.boundscheck(False)
     @cython.cdivision(True)
-    cdef double _get_gradient(self, double[::1] x_spline, double[::1] y_spline, int index):
+    cdef double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index):
         """
         Calculate the normalised gradient at x_spline[index] based on the central difference approximation unless at
         the edges of the array x_spline.
@@ -264,8 +264,8 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         if not self._mask_a[index_use]:
             f[0] = self._f[index_use]
             f[1] = self._f[index_use + 1]
-            dfdx[0] = self._get_gradient(self._x, self._f, index_use)
-            dfdx[1] = self._get_gradient(self._x, self._f, index_use + 1)
+            dfdx[0] = self._calc_gradient(self._x, self._f, index_use)
+            dfdx[1] = self._calc_gradient(self._x, self._f, index_use + 1)
 
             calc_coefficients_1d(f, dfdx, a)
             self._a_mv[index_use, :] = a
@@ -281,15 +281,15 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         cdef double[2] f, dfdx
         f[0] = self._f[index_use]
         f[1] = self._f[index_use + 1]
-        dfdx[0] = self._get_gradient(self._x, self._f, index_use)
-        dfdx[1] = self._get_gradient(self._x, self._f, index_use + 1)
+        dfdx[0] = self._calc_gradient(self._x, self._f, index_use)
+        dfdx[1] = self._calc_gradient(self._x, self._f, index_use + 1)
         calc_coefficients_1d(f, dfdx, a)
         a_return = a
         return a_return
 
-    def _test_get_gradient(self, index_use):
+    def _test_calc_gradient(self, index_use):
         """ Expose cython function for testing. Input the spline points x, f"""
-        return self._get_gradient(self._x, self._f,  index_use)
+        return self._calc_gradient(self._x, self._f,  index_use)
 
     def _test_evaluate_directly(self, x):
         cdef int index = find_index(self._x, x)
