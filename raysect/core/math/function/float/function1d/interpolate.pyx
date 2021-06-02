@@ -78,7 +78,7 @@ cdef class Interpolate1D(Function1D):
 
         self._x_mv = x
         self._f_mv = f
-        self._last_index = self.x.shape[0] -1
+        self._last_index = self.x.shape[0] - 1
         self._extrapolation_range = extrapolation_range
 
         # dimensions checks
@@ -115,7 +115,7 @@ cdef class Interpolate1D(Function1D):
         """
         Evaluates the interpolating function.
 
-        :param double x: the point for which an interpolated value is required
+        :param double px: the point for which an interpolated value is required
         :return: the interpolated value at point x.
         """
         cdef int index = find_index(self._x_mv, px)
@@ -316,6 +316,7 @@ cdef class _Extrapolator1D:
         self._range = extrapolation_range
         self._x = x
         self._f = f
+        self._last_index = self._x.shape[0] - 1
 
     cdef double evaluate(self, double px, int index) except? -1e999:
         raise NotImplementedError(f'{self.__class__} not implemented.')
@@ -354,7 +355,7 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
         elif px >= self._x[self._last_index]:
             return self._f[self._last_index]
         else:
-            raise ValueError(f"Cannot evaluate value of function at point {px}. Bad data?")
+            raise ValueError(f'Cannot evaluate value of function at point {px}. Bad data?')
 
 
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
@@ -377,8 +378,10 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
         # The index returned from find_index is -1 at the array start or the length of the array at the end of array
         if index == -1:
             index += 1
-        else:
+        elif index == self._x.shape[0] - 1:
             index -= 1
+        else:
+            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
         # Use a linear interpolator function to extrapolate instead
         return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
 
