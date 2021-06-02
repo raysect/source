@@ -43,8 +43,8 @@ cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) nogil:
     Calculates the cubic coefficients for a unit interval.
 
     This function calculates the polynomial coefficients for a 1D cubic. It
-    requires the values and differentials at each vertex of the square. The
-    domain over which the polynomial is valid is [0, 1] in each dimension.
+    requires the values and differentials at each vertex. The domain over 
+    which the polynomial is valid is [0, 1].
 
     :param f: 
     :param dfdx: 
