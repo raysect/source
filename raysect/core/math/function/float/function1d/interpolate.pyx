@@ -32,7 +32,7 @@
 """
 Interpolation functions for float.Function1D
 
-Interpolators are accessed through interface class Interpolate1D, which
+Interpolators are accessed through interface class Interpolate1D.
 """
 
 import numpy as np
@@ -47,6 +47,9 @@ cdef class Interpolate1D(Function1D):
     Interface class for Function1D interpolators.
 
     Coordinate array (x) and data array (f) are sorted and transformed into Numpy arrays.
+    The resulting Numpy arrays are stored as read only. I.e. `writeable` flag of self.x and self.f
+    is set to False. Alteration of the flag may result in wanted behaviour.
+
     :note: x and f arrays must be of equal length.
 
     :param object x: 1D array-like object of real values.
@@ -97,18 +100,18 @@ cdef class Interpolate1D(Function1D):
 
         # create interpolator per interapolation_type argument
         interpolation_type = interpolation_type.lower()
-        if interpolation_type not in typename_to_interpolator:
-            raise ValueError(f'Interpolation type {interpolation_type} not found. options are {typename_to_interpolator.keys()}')
+        if interpolation_type not in id_to_interpolator:
+            raise ValueError(f'Interpolation type {interpolation_type} not found. options are {id_to_interpolator.keys()}')
 
 
-        self._interpolator = typename_to_interpolator[interpolation_type](self._x_mv, self._f_mv)
+        self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._f_mv)
 
         # create extrapolator per extrapolation_type argument
         extrapolation_type = extrapolation_type.lower()
-        if extrapolation_type not in typename_to_extrapolator:
+        if extrapolation_type not in id_to_extrapolator:
             raise ValueError(f'Extrapolation type {extrapolation_type} not found.')
 
-        self._extrapolator = typename_to_extrapolator[extrapolation_type](self._x_mv, self._f_mv, extrapolation_range)
+        self._extrapolator = id_to_extrapolator[extrapolation_type](self._x_mv, self._f_mv, extrapolation_range)
 
 
     cdef double evaluate(self, double px) except? -1e999:
@@ -145,10 +148,11 @@ cdef class Interpolate1D(Function1D):
 cdef class _Interpolator1D:
     """Base class for 1D interpolators. """
 
-    typename = NotImplemented
+    ID = NotImplemented
     def __init__(self, double[::1] x, double[::1] f):
         self._x = x
         self._f = f
+        self._last_index = self._x.shape[0] - 1
 
     cdef double evaluate(self, double px, int index) except? -1e999:
         """
@@ -169,7 +173,7 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
     :param Extrapolator1D extrapolator: extrapolator object
     """
 
-    typename = 'linear_interp'
+    ID = 'linear'
 
     def __init__(self, double[::1] x, double[::1] f):
         super().__init__(x, f)
@@ -190,18 +194,14 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
     :param f: 1D memory view of the function value at spline point x positions.
     """
 
-    typename = 'cubic_interp'
+    ID = 'cubic'
 
     def __init__(self, double[::1] x, double[::1] f):
         super().__init__(x, f)
 
-        cdef int n
-        n = len(x)
-        self._n = n
-
         # Where 'a' has been calculated already the mask value = 1
-        self._mask_a = np.zeros((n - 1,), dtype=np.float64)
-        self._a = np.zeros((n - 1, 4), dtype=np.float64)
+        self._mask_a = np.zeros((self._last_index,), dtype=np.float64)
+        self._a = np.zeros((self._last_index, 4), dtype=np.float64)
         self._a_mv = self._a
 
     @cython.initializedcheck(False)
@@ -233,7 +233,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         cdef double x_eff
         if index == 0:
             dfdx = (y_spline[index + 1] - y_spline[index])
-        elif index == self._n - 1:
+        elif index == self._last_index:
             dfdx = y_spline[index] - y_spline[index - 1]
         else:
             # Finding the normalised distance x_eff
@@ -310,7 +310,7 @@ cdef class _Extrapolator1D:
     :param double extrapolation_range: Range covered by the extrapolator. Padded symmetrically to both ends of the input.
     """
 
-    typename = NotImplemented
+    ID = NotImplemented
 
     def __init__(self, double[::1] x, double[::1] f, double extrapolation_range):
         self._range = extrapolation_range
@@ -327,7 +327,7 @@ cdef class _ExtrapolatorNone(_Extrapolator1D):
     Extrapolator that does nothing.
     """
 
-    typename = 'no_extrap'
+    ID = 'none'
 
     def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
            super().__init__(x, f, extrapolation_range)
@@ -344,7 +344,7 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
     :param double extrapolation_range: Range covered by the extrapolator.
     """
 
-    typename = 'nearest_extrap'
+    ID = 'nearest'
 
     def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
         super().__init__(x, f, extrapolation_range)
@@ -366,7 +366,7 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
     :param double extrapolation_range: Range covered by the extrapolator.
     """
 
-    typename = 'linear_extrap'
+    ID = 'linear'
 
     def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
         super().__init__(x, f, extrapolation_range)
@@ -378,20 +378,21 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
         # The index returned from find_index is -1 at the array start or the length of the array at the end of array
         if index == -1:
             index += 1
-        elif index == self._x.shape[0] - 1:
+        elif index == self._last_index:
             index -= 1
         else:
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
         # Use a linear interpolator function to extrapolate instead
         return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
 
-typename_to_interpolator = {
-    _Interpolator1DLinear.typename: _Interpolator1DLinear,
-    _Interpolator1DCubic.typename: _Interpolator1DCubic
+
+id_to_interpolator = {
+    _Interpolator1DLinear.ID: _Interpolator1DLinear,
+    _Interpolator1DCubic.ID: _Interpolator1DCubic
 }
 
-typename_to_extrapolator = {
-    _ExtrapolatorNone.typename: _ExtrapolatorNone,
-    _Extrapolator1DNearest.typename: _Extrapolator1DNearest,
-    _Extrapolator1DLinear.typename: _Extrapolator1DLinear
+id_to_extrapolator = {
+    _ExtrapolatorNone.ID: _ExtrapolatorNone,
+    _Extrapolator1DNearest.ID: _Extrapolator1DNearest,
+    _Extrapolator1DLinear.ID: _Extrapolator1DLinear
 }

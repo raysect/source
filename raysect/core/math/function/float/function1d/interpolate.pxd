@@ -46,6 +46,7 @@ cdef class Interpolate1D(Function1D):
 cdef class _Interpolator1D:
     cdef:
         double[::1] _x, _f
+        int _last_index
 
     cdef double evaluate(self, double px, int index) except? -1e999
 
