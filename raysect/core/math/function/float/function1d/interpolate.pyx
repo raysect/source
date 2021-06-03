@@ -109,7 +109,7 @@ cdef class Interpolate1D(Function1D):
         # create extrapolator per extrapolation_type argument
         extrapolation_type = extrapolation_type.lower()
         if extrapolation_type not in id_to_extrapolator:
-            raise ValueError(f'Extrapolation type {extrapolation_type} not found.')
+            raise ValueError(f'Extrapolation type {interpolation_type} not found. options are {id_to_extrapolator.keys()}')
 
         self._extrapolator = id_to_extrapolator[extrapolation_type](self._x_mv, self._f_mv, extrapolation_range)
 
