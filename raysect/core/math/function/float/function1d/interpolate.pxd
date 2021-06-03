@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2018, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,24 +29,67 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport cython
-
-# @cython.cdivision(True)
-# cdef inline double cubic1d(double x0, double x1, double f0, double f1, double dfdx0, double dfdx1, double x) nogil:
-#     pass
+from raysect.core.math.function.float.function1d.base cimport Function1D
+from numpy cimport ndarray
 
 
-cdef double cubic2d(double x0, double x1, double y0, double y1, double[:,::1] f,
-                    double[:,::1] dfdx, double[:,::1] dfdy, double[:,::1] d2fdxdy,
-                    double x, double y) nogil
+cdef class Interpolate1D(Function1D):
+    cdef:
+        ndarray x, f
+        double[::1] _x_mv, _f_mv
+        _Interpolator1D _interpolator
+        _Extrapolator1D _extrapolator
+        int _last_index
+        double _extrapolation_range
 
-cdef void _calculate_coeff_2d(double[:,::1] f, double[:,::1] dfdx, double[:,::1] dfdy, double[:,::1] d2fdxdy, double a[4][4]) nogil
 
-cdef double cubic3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f,
-                    double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
-                    double[:,:,::1] dfdxdy, double[:,:,::1] dfdxdz, double[:,:,::1] dfdydz,
-                    double[:,:,::1] dfdxdydz, double x, double y, double z) nogil
+cdef class _Interpolator1D:
+    cdef:
+        double[::1] _x, _f
+        int _last_index
 
-cdef void _calculate_coeff_3d(double[:,:,::1] f, double[:,:,::1] dfdx, double[:,:,::1] dfdy, double[:,:,::1] dfdz,
-                              double[:,:,::1] dfdxdy, double[:,:,::1] dfdxdz, double[:,:,::1] dfdydz,
-                              double[:,:,::1] dfdxdydz, double a[4][4][4]) nogil
+    cdef double evaluate(self, double px, int index) except? -1e999
+
+
+cdef class _Interpolator1DLinear(_Interpolator1D):
+    pass
+
+
+cdef class _Interpolator1DCubic(_Interpolator1D):
+    cdef:
+        ndarray _a, _mask_a
+        double[:, ::1] _a_mv
+        int _n
+        double evaluate(self, double px, int index) except? -1e999
+        double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
+
+
+cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
+    cdef double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
+
+
+cdef class _Extrapolator1D:
+    # cdef readonly str ID
+
+    cdef:
+        double _range
+        double [::1] _x, _f
+        int _last_index
+
+    cdef double evaluate(self, double px, int index) except? -1e999
+
+
+cdef class _Extrapolator1DNone(_Extrapolator1D):
+    pass
+
+
+cdef class _Extrapolator1DNearest(_Extrapolator1D):
+    pass
+
+
+cdef class _Extrapolator1DLinear(_Extrapolator1D):
+    pass
+
+
+
+

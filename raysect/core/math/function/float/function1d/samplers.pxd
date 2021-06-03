@@ -29,9 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .base import Function1D
-from .constant import Constant1D
-from .blend import Blend1D
-from .arg import Arg1D
-from .cmath import *
-from .samplers import *
+cimport numpy as np
+
+cpdef tuple sample1d(object function1d, double x_min, double x_max, int x_samples)
+cpdef np.ndarray sample1d_points(object function1d, object x_points)
