@@ -39,6 +39,16 @@ DEF DEG2RAD = 0.017453292519943295  # pi / 180
 
 
 cdef class LinearPolariser(NullSurface):
+    """
+    An ideal linear polariser.
+
+    All polarisation components not aligned with the polariser axis are filtered.
+    The only exception is where light is propagating down the polariser axis. Any
+    light propagating within a small cone (<1e-12 radians) about the optical axis
+    remains unfiltered. This is due to the orientation of the Stoke's vector being
+    numerically perpendicular to the optical axis. Along the optical axis the
+    polarisation orientation is undefined.
+    """
 
     def __init__(self, axis=None):
         super().__init__()
