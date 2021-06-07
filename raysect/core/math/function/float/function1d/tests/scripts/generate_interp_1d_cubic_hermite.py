@@ -33,31 +33,67 @@ This script has been used to calculate the reference data for the 1D cubic inter
 """
 
 from raysect.core.math.function.float.function1d.tests.test_interpolator import X_LOWER, X_UPPER, NB_XSAMPLES, NB_X, \
-    X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION
+    X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR
 
 from raysect.core.math.function.float.function1d.interpolate import Interpolate1D
 import numpy as np
-from scipy.interpolate import CubicHermiteSpline
+from scipy.interpolate import CubicHermiteSpline, interp1d
 import scipy
 
+np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x: format(x, '.'+str(PRECISION)+'E')})
 
-def function_to_spline(x_func):
-    return np.sin(x_func)
+
+def function_to_spline(x_func, factor):
+    return factor*np.sin(x_func)
 
 
 def linear_extrapolation(m, x2, x1, f1):
     return f1 + m*(x2-x1)
 
+
+def linear_interpolation(x_interp, x1, f1, x2, f2):
+    return f1 + (f2 - f1) * (x_interp - x1)/(x2 - x1)
+
+
+def calc_gradient(x_spline, y_spline, index):
+    if index == 0:
+        dfdx = (y_spline[index + 1] - y_spline[index])
+    elif index == len(x_spline) - 1:
+        dfdx = y_spline[index] - y_spline[index - 1]
+    else:
+        # Finding the normalised distance x_eff
+        x_eff = (x_spline[index + 1] - x_spline[index - 1]) / (x_spline[index + 1] - x_spline[index])
+        if x_eff != 0:
+            dfdx = (y_spline[index + 1] - y_spline[index - 1]) / x_eff
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+    return dfdx
+
+
+# Calculate for big values, small values, or normal values
+big_values = False
+small_values = False
+
 print('Using scipy version', scipy.__version__)
 
 # Create array to generate spline knots on, and find their functional value
 x = np.linspace(X_LOWER, X_UPPER, NB_X)
-data_f = function_to_spline(x)
-print('Save this to self.data in test_interpolator:\n', repr(data_f))
 
 # Make the sampled points between spline knots and find the precalc_interpolation used in test_interpolator.setup_cubic
 xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
-precalc_interpolation_function_vals = function_to_spline(xsamples)
+
+# Find the function values to be used
+if big_values:
+    factor = np.power(10., BIG_VALUE_FACTOR)
+elif small_values:
+    factor = np.power(10., SMALL_VALUE_FACTOR)
+else:
+    factor = 1.
+
+data_f = function_to_spline(x, factor)
+precalc_interpolation_function_vals = function_to_spline(xsamples, factor)
+
+print('Save this to self.data in test_interpolator:\n', repr(data_f))
 print('Save this to self.precalc_function in test_interpolator:\n', repr(precalc_interpolation_function_vals))
 
 # Find the unnormalised gradient at each spline knot
@@ -73,7 +109,7 @@ cubic_hermite = CubicHermiteSpline(x, data_f, df_dx)
 f_out = cubic_hermite(xsamples)
 
 print('Output of 3rd party cubic spline at xsamples. ',
-      'Save this to self.precalc_interpolation in test_interpolator:\n', repr(f_out))
+      'Save this to self.precalc_interpolation in test_interpolator in setup_cubic:\n', repr(f_out))
 
 # Extrapolation x values
 xsamples_extrap = np.array([
@@ -94,7 +130,24 @@ f_extrap_linear = linear_extrapolation(
 print('Output of linearly extrapolating from the start and end spline knots ',
       'Save this to self.precalc_extrapolation_linear in test_interpolator:\n', repr(f_extrap_linear))
 
-check_plot = False
+
+# Alternative linear test (use scipy instead)
+x_lower_array = x[:-1]
+x_upper_array = x[1:]
+f_linear_out = np.zeros(len(xsamples))
+for i in range(len(xsamples)):
+    index = np.where(np.logical_and(x_lower_array <= xsamples[i], x_upper_array >= xsamples[i]))
+    index_found = index[0][0]
+    f_linear_out[i] = linear_interpolation(
+        xsamples[i], x[index_found], data_f[index_found], x[index_found + 1], data_f[index_found + 1]
+    )
+
+linear_1d_interp = interp1d(x, data_f, kind='linear')
+f_linear_out = linear_1d_interp(xsamples)
+print('Linear spline at xsamples created using. interp1d(kind=linear)',
+      'Save this to self.precalc_interpolation in test_interpolator in setup_linear:\n', repr(f_linear_out))
+
+check_plot = True
 if check_plot:
     import matplotlib.pyplot as plt
 
@@ -105,10 +158,10 @@ if check_plot:
     f_check = np.zeros(len(xsamples))
     for i in range(len(xsamples)):
         f_check[i] = interp_cubic_extrap_nearest(xsamples[i])
-        print(xsamples[i], f_check[i], f_out[i])
     ax.plot(xsamples, f_out, '-r')
     ax.plot(xsamples, f_check, 'bx')
     ax.plot(xsamples_extrap, cubic_hermite(xsamples_extrap), 'bx')
+    ax.plot(xsamples, f_linear_out, 'go')
     ax.plot(x, data_f, 'bo')
     plt.show()
 
