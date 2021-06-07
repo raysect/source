@@ -40,7 +40,8 @@ import numpy as np
 from scipy.interpolate import CubicHermiteSpline, interp1d
 import scipy
 
-np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x: format(x, '.'+str(PRECISION)+'E')})
+# Force scientific format to get the right number of significant figures
+np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
 
 
 def function_to_spline(x_func, factor):
@@ -55,16 +56,17 @@ def linear_interpolation(x_interp, x1, f1, x2, f2):
     return f1 + (f2 - f1) * (x_interp - x1)/(x2 - x1)
 
 
-def calc_gradient(x_spline, y_spline, index):
-    if index == 0:
-        dfdx = (y_spline[index + 1] - y_spline[index])
-    elif index == len(x_spline) - 1:
-        dfdx = y_spline[index] - y_spline[index - 1]
+def calc_gradient(x_spline, y_spline, index_left):
+    if index_left == 0:
+        dfdx = (y_spline[index_left + 1] - y_spline[index_left])
+    elif index_left == len(x_spline) - 1:
+        dfdx = y_spline[index_left] - y_spline[index_left - 1]
     else:
         # Finding the normalised distance x_eff
-        x_eff = (x_spline[index + 1] - x_spline[index - 1]) / (x_spline[index + 1] - x_spline[index])
+        x_eff = (x_spline[index_left + 1] - x_spline[index_left - 1]) \
+                / (x_spline[index_left + 1] - x_spline[index_left])
         if x_eff != 0:
-            dfdx = (y_spline[index + 1] - y_spline[index - 1]) / x_eff
+            dfdx = (y_spline[index_left + 1] - y_spline[index_left - 1]) / x_eff
         else:
             raise ZeroDivisionError('Two adjacent spline points have the same x value!')
     return dfdx
