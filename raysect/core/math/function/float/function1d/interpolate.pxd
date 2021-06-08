@@ -49,11 +49,11 @@ cdef class _Interpolator1D:
         int _last_index
 
     cdef double evaluate(self, double px, int index) except? -1e999
+    cdef double _analytic_gradient(self, double px, int index, int order)
 
 
 cdef class _Interpolator1DLinear(_Interpolator1D):
     pass
-
 
 cdef class _Interpolator1DCubic(_Interpolator1D):
     cdef:
@@ -62,7 +62,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         int _n
         double evaluate(self, double px, int index) except? -1e999
         double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
-
+    # cdef double _analytic_gradient(self, double px, int index, int order)
 
 cdef class _Interpolator1DCubicConstrained(_Interpolator1DCubic):
     cdef double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
@@ -75,6 +75,7 @@ cdef class _Extrapolator1D:
         double _range
         double [::1] _x, _f
         int _last_index
+    cdef double _analytic_gradient(self, double px, int index, int order)
 
     cdef double evaluate(self, double px, int index) except? -1e999
 
@@ -85,7 +86,7 @@ cdef class _Extrapolator1DNone(_Extrapolator1D):
 
 cdef class _Extrapolator1DNearest(_Extrapolator1D):
     pass
-
+    # cdef double _analytic_gradient(self, double px, int index, int order)
 
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
     pass

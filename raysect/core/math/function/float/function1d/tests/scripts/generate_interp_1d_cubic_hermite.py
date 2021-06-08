@@ -159,6 +159,7 @@ if check_plot:
     interp_cubic_extrap_nearest = Interpolate1D(
         x, data_f, 'cubic', 'quadratic', extrapolation_range=2.0
     )
+    interp_cubic_extrap_nearest._test_edge_gradients()
     fig, ax = plt.subplots()
     f_check = np.zeros(len(xsamples))
     for i in range(len(xsamples)):

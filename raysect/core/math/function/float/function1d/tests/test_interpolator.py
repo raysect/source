@@ -409,6 +409,9 @@ class TestInterpolators1D(unittest.TestCase):
             self.interpolator(self.xsamples_extrap[2]), self.precalc_extrapolation[2], delta=delta_max
         )
 
+        # Test gradient continuity between interpolation and extrapolation
+
+
     def run_general_interpolation_tests(self):
 
         # Test continuity of smoothness

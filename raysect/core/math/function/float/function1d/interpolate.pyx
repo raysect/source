@@ -144,6 +144,19 @@ cdef class Interpolate1D(Function1D):
         """
         return np.min(self._x_mv), np.max(self._x_mv)
 
+    def _test_edge_gradients(self):
+        """
+        Return the derivative at the edge spline knots for the extrapolator and interpolator objects
+        """
+        # self._extrapolator._analytic_gradient(self._x_mv[0], 0)
+        x_01 = np.copy(self._extrapolator._x[0])
+        x_02 = np.copy(self._interpolator._x[0])
+        print(self._interpolator._x[1], self._extrapolator._x[1])
+        print('first deriv extrapolator', self._extrapolator._analytic_gradient(x_01, -1, 1))
+        print('second deriv extrapolator', self._extrapolator._analytic_gradient(x_01, -1, 2))
+        print('first deriv interpolator', self._interpolator._analytic_gradient(x_02, -1, 1))
+        print('second deriv interpolator', self._interpolator._analytic_gradient(x_02, -1, 2))
+
 
 cdef class _Interpolator1D:
     """Base class for 1D interpolators. """
@@ -158,6 +171,15 @@ cdef class _Interpolator1D:
         """
         Calculates interpolated value at given point. 
     
+        :param double px: the point for which an interpolated value is required
+        :param int index: the lower index of the bin containing point px. (Result of bisection search).   
+        """
+        raise NotImplementedError('_Interpolator is an abstract base class.')
+
+    cdef double _analytic_gradient(self, double px, int index, int order):
+        """
+        Calculates interpolated value at given point. 
+
         :param double px: the point for which an interpolated value is required
         :param int index: the lower index of the bin containing point px. (Result of bisection search).   
         """
@@ -180,6 +202,16 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
 
     cdef double evaluate(self, double px, int index) except? -1e999:
         return linear1d(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
+
+    cdef double _analytic_gradient(self, double px, int index, int order):
+        cdef double grad
+        if order == 1:
+            grad = (self._f[index + 1], self._f[index])/(self._x[index + 1] - self._x[index])
+        elif order > 1:
+            grad = 0
+        else:
+            raise ValueError('order must be an integer greater than or equal to 1')
+        return grad
 
 
 cdef class _Interpolator1DCubic(_Interpolator1D):
@@ -254,6 +286,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         cdef double[2] f, dfdx
         cdef double x_bound
         cdef double[4] a
+        print('grad3', self._x[index + 1], self._x[index])
 
         x_bound = self._x[index + 1] - self._x[index]
         if x_bound != 0:
@@ -300,6 +333,46 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         """ Expose cython function for testing. Input the spline points x, f"""
         return self.evaluate(x, index)
 
+    cdef double _analytic_gradient(self, double px, int index, int order):
+        cdef double grad
+        cdef double x_scal
+        cdef double[2] f, dfdx
+        cdef double x_bound
+        cdef double[4] a
+
+        print('grad2', self._x[index + 1], self._x[index])
+
+        x_bound = self._x[index + 1] - self._x[index]
+        if x_bound != 0:
+            x_scal = (px - self._x[index]) / x_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+
+        f[0] = self._f[index]
+        f[1] = self._f[index + 1]
+        dfdx[0] = self._calc_gradient(self._x, self._f, index)
+        dfdx[1] = self._calc_gradient(self._x, self._f, index + 1)
+
+        calc_coefficients_1d(f, dfdx, a)
+
+        if order == 1:
+            grad = 3.* a[0] * x_scal **2 + 2.* a[1] * x_scal + a[2]
+            print('grad', grad, self._x[index + 1], self._x[index])
+            grad = grad/(self._x[index + 1] - self._x[index])
+            print('grad', grad)
+
+        elif order == 2:
+            grad = 6.* a[0] * x_scal + 2.* a[1]
+            grad = grad/(self._x[index + 1] - self._x[index])**2
+        elif order == 3:
+            grad = 6.* a[0]
+            grad = grad/(self._x[index + 1] - self._x[index])**3
+        elif order > 3:
+            grad = 0
+        else:
+            raise ValueError('order must be an integer greater than or equal to 1')
+        return grad
+
 
 cdef class _Extrapolator1D:
     """
@@ -319,6 +392,9 @@ cdef class _Extrapolator1D:
         self._last_index = self._x.shape[0] - 1
 
     cdef double evaluate(self, double px, int index) except? -1e999:
+        raise NotImplementedError(f'{self.__class__} not implemented.')
+
+    cdef double _analytic_gradient(self, double px, int index, int order):
         raise NotImplementedError(f'{self.__class__} not implemented.')
 
 
@@ -357,6 +433,9 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
         else:
             raise ValueError(f'Cannot evaluate value of function at point {px}. Bad data?')
 
+    cdef double _analytic_gradient(self, double px, int index, int order):
+        cdef double grad = 0.
+        return grad
 
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
     """
@@ -384,6 +463,16 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
         # Use a linear interpolator function to extrapolate instead
         return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
+
+    cdef double _analytic_gradient(self, double px, int index, int order):
+        cdef double grad
+        if order == 1:
+            grad = (self._f[index + 1], self._f[index]) / (self._x[index + 1] - self._x[index])
+        elif order > 1:
+            grad = 0
+        else:
+            raise ValueError('order must be an integer greater than or equal to 1')
+        return grad
 
 
 cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
@@ -451,6 +540,39 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
 
         return f_return
+
+    cdef double _analytic_gradient(self, double px, int index, int order):
+        # The index returned from find_index is -1 at the array start or the length of the array at the end of array
+        cdef double grad
+        cdef double x_scal
+        if index == -1:
+            index += 1
+            x_scal =  (px - self._x[index])/(self._x[index + 1] - self._x[index])
+            if order == 1:
+                grad = 2.*self._a_first[0]*x_scal + self._a_first[1]
+                grad = grad/(self._x[index + 1] - self._x[index])
+            elif order == 2:
+                grad = 2.*self._a_first[0]
+                grad = grad/(self._x[index + 1] - self._x[index])**2
+            elif order > 2:
+                grad = 0
+            else:
+                raise ValueError('order must be an integer greater than or equal to 1')
+        elif index == self._last_index:
+            index -= 1
+            x_scal = (px - self._x[index])/(self._x[index + 1] - self._x[index])
+            if order == 1:
+                grad = 2.*self._a_last[0]*x_scal + self._a_last[1]
+                grad = grad/(self._x[index + 1] - self._x[index])
+            elif order == 2:
+                grad = 2.*self._a_last[0]
+                grad = grad/(self._x[index + 1] - self._x[index])**2
+            elif order > 2:
+                grad = 0
+            else:
+                raise ValueError('order must be an integer greater than or equal to 1')
+        else:
+            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
 
     def _test_evaluate_directly(self, x):
         cdef int index = find_index(self._x, x)
