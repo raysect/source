@@ -29,8 +29,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.optical.material cimport NullSurface
 from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, new_vector3d
-from libc.math cimport sin, cos, fabs
+from libc.math cimport sin, cos, fabs, sqrt
 cimport cython
 
 DEF EPSILON = 1e-12
@@ -58,10 +59,13 @@ cdef class Retarder(NullSurface):
     optical axis.
     """
 
-    def __init__(self, Vector3D axis=None, double phase_shift):
+    cdef Vector3D axis
+    cdef double _phase_shift
+
+    def __init__(self, double phase_shift, Vector3D axis=None):
         """
-        :param axis: Optical axis vector.
         :param phase_shift: Phase shift per meter in degrees.
+        :param axis: Optical axis vector (default: Vector3D(0, 1, 0)).
         """
 
         super().__init__()
@@ -88,71 +92,79 @@ cdef class Retarder(NullSurface):
 
         cdef:
             double k
-            int bin, component
+            int bin
 
-        # # transmission path length
-        # w_light_path = start_point.vector_to(end_point)
-        # todo: calculate path length
+        # transmission path length
+        w_light_path = start_point.vector_to(end_point)
 
-        # # obtain light propagation direction and electric field orientation in primitive space
-        # p_direction = w_light_path.transform(world_to_primitive)
-        # p_orientation = ray.orientation.transform(world_to_primitive)
-        #
-        # # normalise to reduce risk of numerical issues
-        # p_direction = p_direction.normalise()
-        # p_orientation = p_orientation.normalise()
-        # axis = self.axis.normalise()
-        #
-        # # calculate projection of material axis perpendicular to the light direction
-        # k = p_direction.dot(axis)
+        # obtain light propagation direction and electric field orientation in primitive space
+        p_direction = w_light_path.transform(world_to_primitive)
+        p_orientation = ray.orientation.transform(world_to_primitive)
 
-        # if light direction is parallel to the axis, transmission is entirely perpendicular to fast-axis and non retarding
+        # normalise to reduce risk of numerical issues
+        p_direction = p_direction.normalise()
+        p_orientation = p_orientation.normalise()
+        axis = self.axis.normalise()
+
+        # calculate projection of material axis perpendicular to the light direction
+        k = p_direction.dot(axis)
+
+        # if light direction is parallel to the axis, transmission is entirely perpendicular to fast-axis and non-retarding
         if 1 - fabs(k) < EPSILON:
             return spectrum
 
-        # # calculate projection of axis orthogonal to the propagation direction
-        # matrix_orientation = new_vector3d(
-        #     axis.x - k * p_direction.x,
-        #     axis.y - k * p_direction.y,
-        #     axis.z - k * p_direction.z
-        # )
-        # matrix_orientation = matrix_orientation.normalise()
+        # calculate projection of axis orthogonal to the propagation direction
+        matrix_orientation = new_vector3d(
+            axis.x - k * p_direction.x,
+            axis.y - k * p_direction.y,
+            axis.z - k * p_direction.z
+        )
+        matrix_orientation = matrix_orientation.normalise()
 
-        # todo: calculate phase shift (path length * sin theta = sqrt(1 - k**2)
+        # calculate phase shift
+        # todo: re-derive this falloff to confirm it is correct... or fix!
+        phase = w_light_path.get_length() * sqrt(1 - k*k) * self._phase_shift * DEG2RAD
 
+        # calculate rotation about direction vector
+        angle = p_orientation.angle(matrix_orientation) * DEG2RAD
+        if p_direction.dot(p_orientation.cross(matrix_orientation)) < 0:
+            angle = -angle
 
-        # # calculate rotation about direction vector
-        # angle = p_orientation.angle(matrix_orientation) * DEG2RAD
-        # if p_direction.dot(p_orientation.cross(matrix_orientation)) < 0:
-        #     angle = -angle
-        #
-        # # apply retarder
-        # for bin in range(spectrum.bins):
-        #     self._apply_rotated_polariser(spectrum, bin, angle)
+        # apply retarder
+        for bin in range(spectrum.bins):
+            self._apply_rotated_retarder(spectrum, bin, angle, phase)
 
         return spectrum
-    #
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
-    # @cython.initializedcheck(False)
-    # cdef void _apply_rotated_polariser(self, Spectrum spectrum, int bin, double angle) nogil:
-    #
-    #     cdef double s0, s1, s2, c, s, k0, k1, k2
-    #
-    #     # precalculate common terms
-    #     c = cos(2 * angle)
-    #     s = sin(2 * angle)
-    #     k0 = c * c
-    #     k1 = s * c
-    #     k2 = s * s
-    #
-    #     # obtain stokes parameters
-    #     s0 = spectrum.samples_mv[bin, 0]
-    #     s1 = spectrum.samples_mv[bin, 1]
-    #     s2 = spectrum.samples_mv[bin, 2]
-    #
-    #     # optimised mueller matrix multiplication
-    #     spectrum.samples_mv[bin, 0] = 0.5 * (s0 + c*s1 + s*s2)
-    #     spectrum.samples_mv[bin, 1] = 0.5 * (c*s0 + k0*s1 + k1*s2)
-    #     spectrum.samples_mv[bin, 2] = 0.5 * (s*s0 + k1*s1 + k2*s2)
-    #     spectrum.samples_mv[bin, 3] = 0.0
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_rotated_retarder(self, Spectrum spectrum, int bin, double angle, double phase) nogil:
+
+        cdef double s0, s1, s2, s3, c, s, cc, ss, a, b, k, sb, cb
+
+        # precalculate common terms
+        c = cos(2 * angle)
+        s = sin(2 * angle)
+
+        ss = s*s
+        cc = c*c
+
+        a = cos(phase)
+        b = sin(phase)
+
+        k = c * s * (1 - a)
+        sb = s * b
+        cb = c * b
+
+        # obtain stokes parameters
+        s0 = spectrum.samples_mv[bin, 0]
+        s1 = spectrum.samples_mv[bin, 1]
+        s2 = spectrum.samples_mv[bin, 2]
+        s3 = spectrum.samples_mv[bin, 3]
+
+        # optimised mueller matrix multiplication
+        spectrum.samples_mv[bin, 0] = s0
+        spectrum.samples_mv[bin, 1] = (cc + ss*a)*s1 + k*s2 - sb*s3
+        spectrum.samples_mv[bin, 2] = k*s1 + (ss + cc*a)*s2 + cb*s3
+        spectrum.samples_mv[bin, 3] = sb*s1 - cb*s2 + a*s3

@@ -31,6 +31,7 @@ from .material import *
 from .emitter import *
 from .attenuator import *
 from .polariser import *
+from .retarder import *
 from .absorber import *
 from .lambert import *
 from .dielectric import *
