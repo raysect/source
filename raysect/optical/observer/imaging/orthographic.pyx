@@ -144,12 +144,12 @@ cdef class OrthographicCamera(Observer2D):
             list points, rays
             Point3D origin
             Ray ray
-            AffineMatrix3D to_local
+            AffineMatrix3D pixel_to_local
 
         # generate pixel transform
-        pixel_x = self.image_start_x - self.image_delta * ix
-        pixel_y = self.image_start_y - self.image_delta * iy
-        to_local = translate(pixel_x, pixel_y, 0)
+        pixel_x = self.image_start_x - self.image_delta * (ix + 0.5)
+        pixel_y = self.image_start_y - self.image_delta * (iy + 0.5)
+        pixel_to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
         points = self._point_sampler.samples(self._pixel_samples)
@@ -159,7 +159,7 @@ cdef class OrthographicCamera(Observer2D):
         for origin in points:
 
             # transform to local space from pixel space
-            origin = origin.transform(to_local)
+            origin = origin.transform(pixel_to_local)
             ray = template.copy(origin, new_vector3d(0, 0, 1))
 
             # non-physical camera samples radiance directly, rays fired along normal so no projection
