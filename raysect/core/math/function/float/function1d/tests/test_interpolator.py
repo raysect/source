@@ -61,6 +61,11 @@ class TestInterpolatorLoadValues:
 
 
 class TestInterpolatorLoadNormalValues(TestInterpolatorLoadValues):
+    """
+    Loading values for the original np.sin(x) tests.
+
+    These data are saved to 12 significant figures.
+    """
     def __init__(self):
         super().__init__()
         #: data array from a function sampled on self.x. dtype should be np.float64
@@ -118,13 +123,19 @@ class TestInterpolatorLoadNormalValues(TestInterpolatorLoadValues):
 
 
 class TestInterpolatorLoadBigValues(TestInterpolatorLoadValues):
+    """
+    Loading big values (10^20 times the original) instead of the original np.sin(x).
+
+    These data are saved to 12 significant figures.
+    """
     def __init__(self):
         super().__init__()
         #: data array from a function sampled on self.x. dtype should be np.float64
         # self.data: np.array = np.sin(self.x)
         self.data: np.array = np.array(
-            [0., 0.11088262851, 0.220397743456, 0.327194696796, 0.429956363528, 0.527415385772, 0.61836980307,
-             0.701697876147, 0.776371921301, 0.841470984808], dtype=np.float64
+            [0.000000000000E+00, 1.108826285100E+19, 2.203977434561E+19, 3.271946967962E+19,
+             4.299563635284E+19, 5.274153857719E+19, 6.183698030697E+19, 7.016978761467E+19,
+             7.763719213007E+19, 8.414709848079E+19], dtype=np.float64
         )
         #: precalculated result of the function used to calculate self.data on self.xsamples
         #: array holding precalculated nearest neighbour extrapolation data
@@ -146,7 +157,7 @@ class TestInterpolatorLoadBigValues(TestInterpolatorLoadValues):
              5.241623210482e+19, 5.531868543036e+19, 5.816021511759e+19, 6.093090034050e+19,
              6.362532436612e+19, 6.624890560875e+19, 6.879357356812e+19, 7.125198048495e+19,
              7.362936780787e+19, 7.592034615909e+19, 7.811477131101e+19, 8.017642725164e+19,
-             8.215858285263e+19, 8.414709848079e+19])
+             8.215858285263e+19, 8.414709848079e+19], dtype=np.float64)
 
     def setup_linear(self):
         self.precalc_interpolation = np.array(
@@ -157,17 +168,23 @@ class TestInterpolatorLoadBigValues(TestInterpolatorLoadValues):
              5.240547298324e+19, 5.525062595092e+19, 5.807334924637e+19, 6.089607254182e+19,
              6.356100940512e+19, 6.614705305234e+19, 6.873309669955e+19, 7.119977444438e+19,
              7.351724481123e+19, 7.583471517807e+19, 7.808615118874e+19, 8.010646695275e+19,
-             8.212678271677e+19, 8.414709848079e+19])
+             8.212678271677e+19, 8.414709848079e+19], dtype=np.float64)
 
 
 class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
+    """
+    Loading small values (10^-20 times the original) instead of the original np.sin(x)
+
+    These data are saved to 12 significant figures.
+    """
     def __init__(self):
         super().__init__()
         #: data array from a function sampled on self.x. dtype should be np.float64
         # self.data: np.array = np.sin(self.x)
         self.data: np.array = np.array(
-            [0., 0.11088262851, 0.220397743456, 0.327194696796, 0.429956363528, 0.527415385772, 0.61836980307,
-             0.701697876147, 0.776371921301, 0.841470984808], dtype=np.float64
+            [0.000000000000E+00, 1.108826285100E-21, 2.203977434561E-21, 3.271946967962E-21,
+             4.299563635284E-21, 5.274153857719E-21, 6.183698030697E-21, 7.016978761467E-21,
+             7.763719213007E-21, 8.414709848079E-21], dtype=np.float64
         )
 
         #: precalculated result of the function used to calculate self.data on self.xsamples
@@ -191,7 +208,7 @@ class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
              5.241623210482e-21, 5.531868543036e-21, 5.816021511759e-21, 6.093090034050e-21,
              6.362532436612e-21, 6.624890560875e-21, 6.879357356812e-21, 7.125198048495e-21,
              7.362936780787e-21, 7.592034615909e-21, 7.811477131101e-21, 8.017642725164e-21,
-             8.215858285263e-21, 8.414709848079e-21]
+             8.215858285263e-21, 8.414709848079e-21], dtype=np.float64
         )
 
     def setup_linear(self):
@@ -203,7 +220,7 @@ class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
              5.240547298324e-21, 5.525062595092e-21, 5.807334924637e-21, 6.089607254182e-21,
              6.356100940512e-21, 6.614705305234e-21, 6.873309669955e-21, 7.119977444438e-21,
              7.351724481123e-21, 7.583471517807e-21, 7.808615118874e-21, 8.010646695275e-21,
-             8.212678271677e-21, 8.414709848079e-21]
+             8.212678271677e-21, 8.414709848079e-21], dtype=np.float64
         )
 
 
@@ -263,12 +280,6 @@ class TestInterpolators1D(unittest.TestCase):
 
         # set precalculated expected interpolation results  using scipy.interpolate.interp1d(kind=linear)
         # this is the result of sampling self.data on self.xsamples
-        if big_values:
-            factor = np.power(10., BIG_VALUE_FACTOR)
-        elif small_values:
-            factor = np.power(10., SMALL_VALUE_FACTOR)
-        else:
-            factor = 1.
 
         if big_values:
             self.value_storage_obj = self.test_loaded_big_values
@@ -285,7 +296,7 @@ class TestInterpolators1D(unittest.TestCase):
         self.setup_extrpolation_type(extrapolator_type)
 
         # set interpolator
-        self.interpolator = Interpolate1D(self.x, factor*self.data, 'linear', extrapolator_type, extrapolation_range)
+        self.interpolator = Interpolate1D(self.x, self.data, 'linear', extrapolator_type, extrapolation_range)
 
     def setup_cubic(self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool):
         """
@@ -350,9 +361,14 @@ class TestInterpolators1D(unittest.TestCase):
         self.run_general_interpolation_tests()
 
         # Tests for big values
-        factor = np.power(10., BIG_VALUE_FACTOR)
         self.setup_linear('nearest', EXTRAPOLATION_RANGE, big_values=True, small_values=False)
         self.run_general_extrapolation_tests()
+        self.run_general_interpolation_tests()
+
+        # Tests for small values
+        self.setup_linear('nearest', EXTRAPOLATION_RANGE, big_values=False, small_values=True)
+        self.run_general_extrapolation_tests()
+        self.run_general_interpolation_tests()
 
     def test_cubic_interpolation_extrapolators(self):
         """
@@ -365,6 +381,16 @@ class TestInterpolators1D(unittest.TestCase):
 
         self.setup_cubic('linear', EXTRAPOLATION_RANGE, big_values=False, small_values=False)
         # test cubic interpolation with 'linear' extrapolator here
+        self.run_general_extrapolation_tests()
+        self.run_general_interpolation_tests()
+
+        # Tests for big values
+        self.setup_cubic('nearest', EXTRAPOLATION_RANGE, big_values=True, small_values=False)
+        self.run_general_extrapolation_tests()
+        self.run_general_interpolation_tests()
+
+        # Tests for small values
+        self.setup_cubic('nearest', EXTRAPOLATION_RANGE, big_values=False, small_values=True)
         self.run_general_extrapolation_tests()
         self.run_general_interpolation_tests()
 

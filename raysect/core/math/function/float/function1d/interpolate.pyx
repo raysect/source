@@ -386,6 +386,125 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
         return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
 
 
+cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
+    """
+    Extrapolator that extrapolates quadratically
+    :param object x: 1D array-like object of real values.
+    :param object f: 1D array-like object of real values.
+    :param double extrapolation_range: Range covered by the extrapolator.
+    """
+
+    ID = 'quadratic'
+
+    def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
+        cdef double[2] dfdx_start, dfdx_end
+
+        super().__init__(x, f, extrapolation_range)
+        self._last_index = self._x.shape[0] - 1
+
+        dfdx_start[0] = self._calc_gradient(self._x, self._f, 0)
+        dfdx_start[1] = self._calc_gradient(self._x, self._f, 1)
+
+        dfdx_end[0] = self._calc_gradient(self._x, self._f, self._last_index - 1)
+        dfdx_end[1] = self._calc_gradient(self._x, self._f, self._last_index)
+
+        self._calculate_quadratic_coefficients_start(f[0], dfdx_start[0], dfdx_start[1], self._a_first)
+        self._calculate_quadratic_coefficients_end(f[self._last_index],  dfdx_end[0], dfdx_end[1], self._a_last)
+        if x.shape[0] <= 1:
+            raise ValueError(
+                f'x array {np.shape(x)} must contain at least 2 spline points to quadratically extrapolate.'
+            )
+
+    cdef void _calculate_quadratic_coefficients_start(self, double f1, double df1_dx, double df2_dx, double[3] a):
+        """
+        Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1, 
+
+
+        """
+        a[0] = -0.5*df1_dx + 0.5*df2_dx
+        a[1] = df1_dx
+        a[2] = f1
+
+    cdef void _calculate_quadratic_coefficients_end(self, double f2, double df1_dx, double df2_dx, double[3] a):
+        """
+        Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1, 
+
+
+        """
+        a[0] = - 0.5*df1_dx + 0.5*df2_dx
+        a[1] = df1_dx
+        a[2] = f2 - 0.5*df1_dx - 0.5*df2_dx
+
+    cdef double evaluate(self, double px, int index) except? -1e999:
+        # The index returned from find_index is -1 at the array start or the length of the array at the end of array
+        cdef double f_return
+        cdef double x_scal
+        if index == -1:
+            index += 1
+            x_scal =  (px - self._x[index])/(self._x[index + 1] - self._x[index])
+            f_return = self._a_first[0]*x_scal**2 + self._a_first[1]*x_scal + self._a_first[2]
+        elif index == self._last_index:
+            index -= 1
+            x_scal = (px - self._x[index])/(self._x[index + 1] - self._x[index])
+            f_return = self._a_last[0]*x_scal**2 + self._a_last[1]*x_scal + self._a_last[2]
+        else:
+            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
+
+        return f_return
+
+    def _test_evaluate_directly(self, x):
+        cdef int index = find_index(self._x, x)
+
+        """ Expose cython function for testing. Input the spline points x, f"""
+        return self.evaluate(x, index)
+    def _test_first_coefficients(self):
+        """ Expose cython function for testing."""
+        return self._a_first
+
+    def _test_last_coefficients(self):
+        """ Expose cython function for testing."""
+        return self._a_last
+
+    @cython.initializedcheck(False)
+    @cython.boundscheck(False)
+    @cython.cdivision(True)
+    cdef double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index):
+        """
+        Calculate the normalised gradient at x_spline[index] based on the central difference approximation unless at
+        the edges of the array x_spline.
+
+        At x[i], the gradient is normally estimated using the central difference approximation [y[i-1], y[i+1]]/2
+        For a normalised range x[i], x[i+1] between 0 and 1, this is the same except for unevenly spaced data.
+        Unevenly spaced data has a normalisation x[i-1] - x[i+1] != 2, it is defined as x_eff in this function by
+        re-scaling the distance x[i-1] - x[i+1] using normalisation (x[i+1] - x[i]) = 1.
+
+        At the start and end of the array, the forward or backward difference approximation is calculated over
+        a  (x[i+1] - x[i]) = 1 or  (x[i] - x[i-1]) = 1 respectively. The end spline gradient is not used for
+        extrapolation
+
+        .. WARNING:: For speed, this function does not perform any zero division, type or bounds
+          checking. Supplying malformed data may result in data corruption or a
+          segmentation fault.
+
+        :param x_spline: A memory view to a double array containing monotonically increasing values.
+        :param y_spline: The desired spline points corresponding function returned values
+        :param int index: The index of the lower spline point that the gradient is to be calculated for
+        """
+        cdef double dfdx
+        cdef double x_eff
+        if index == 0:
+            dfdx = (y_spline[index + 1] - y_spline[index])
+        elif index == self._last_index:
+            dfdx = y_spline[index] - y_spline[index - 1]
+        else:
+            # Finding the normalised distance x_eff
+            x_eff = (x_spline[index + 1] - x_spline[index - 1])/(x_spline[index + 1] - x_spline[index])
+            if x_eff != 0:
+                dfdx = (y_spline[index + 1]-y_spline[index - 1])/x_eff
+            else:
+                raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+        return dfdx
+
 id_to_interpolator = {
     _Interpolator1DLinear.ID: _Interpolator1DLinear,
     _Interpolator1DCubic.ID: _Interpolator1DCubic
@@ -394,5 +513,6 @@ id_to_interpolator = {
 id_to_extrapolator = {
     _ExtrapolatorNone.ID: _ExtrapolatorNone,
     _Extrapolator1DNearest.ID: _Extrapolator1DNearest,
-    _Extrapolator1DLinear.ID: _Extrapolator1DLinear
+    _Extrapolator1DLinear.ID: _Extrapolator1DLinear,
+    _Extrapolator1DQuadratic.ID: _Extrapolator1DQuadratic
 }

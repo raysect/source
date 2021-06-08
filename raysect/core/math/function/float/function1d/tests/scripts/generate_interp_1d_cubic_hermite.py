@@ -153,8 +153,11 @@ check_plot = True
 if check_plot:
     import matplotlib.pyplot as plt
 
+    # interp_cubic_extrap_nearest = Interpolate1D(
+    #     x, data_f, 'cubic', 'linear', extrapolation_range=2.0
+    # )
     interp_cubic_extrap_nearest = Interpolate1D(
-        x, data_f, 'cubic', 'linear', extrapolation_range=2.0
+        x, data_f, 'cubic', 'quadratic', extrapolation_range=2.0
     )
     fig, ax = plt.subplots()
     f_check = np.zeros(len(xsamples))
@@ -162,7 +165,10 @@ if check_plot:
         f_check[i] = interp_cubic_extrap_nearest(xsamples[i])
     ax.plot(xsamples, f_out, '-r')
     ax.plot(xsamples, f_check, 'bx')
-    ax.plot(xsamples_extrap, cubic_hermite(xsamples_extrap), 'bx')
+    f_check_extrap = np.zeros(len(xsamples_extrap))
+    for i in range(len(xsamples_extrap)):
+        f_check_extrap[i] = interp_cubic_extrap_nearest(xsamples_extrap[i])
+    ax.plot(xsamples_extrap, f_check_extrap, 'mo')
     ax.plot(xsamples, f_linear_out, 'go')
     ax.plot(x, data_f, 'bo')
     plt.show()

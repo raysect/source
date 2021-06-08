@@ -90,6 +90,13 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
     pass
 
+cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
+    cdef double[3] _a_first, _a_last
+    cdef int[2] _mask_a
+    cdef void _calculate_quadratic_coefficients_start(self, double f1, double df1_dx, double df2_dx, double[3] a)
+    cdef void _calculate_quadratic_coefficients_end(self, double f2, double df1_dx, double df2_dx, double[3] a)
+    cdef double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index)
+
 
 
 
