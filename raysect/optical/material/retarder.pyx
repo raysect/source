@@ -59,9 +59,6 @@ cdef class Retarder(NullSurface):
     optical axis.
     """
 
-    cdef Vector3D axis
-    cdef double _phase_shift
-
     def __init__(self, double phase_shift, Vector3D axis=None):
         """
         :param phase_shift: Phase shift per meter in degrees.

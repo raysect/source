@@ -29,11 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical.material.material cimport *
-from raysect.optical.material.emitter cimport *
-from raysect.optical.material.attenuator cimport *
-from raysect.optical.material.polariser cimport *
-from raysect.optical.material.retarder cimport *
-from raysect.optical.material.absorber cimport *
-from raysect.optical.material.dielectric cimport *
-from raysect.optical.material.conductor cimport *
+from raysect.optical.material cimport NullSurface
+from raysect.optical cimport Vector3D, Spectrum
+
+
+cdef class Retarder(NullSurface):
+
+    cdef:
+        Vector3D axis
+        double _phase_shift
+
+    cdef void _apply_rotated_retarder(self, Spectrum spectrum, int bin, double angle, double phase) nogil
