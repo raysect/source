@@ -96,6 +96,10 @@ class TestInterpolatorLoadNormalValues(TestInterpolatorLoadValues):
         self.precalc_extrapolation_linear: np.array = np.array(
             [-7.983549252717E-02, -3.991774626358E-02, 8.649066476705E-01, 8.883423105331E-01], dtype=np.float64
         )
+        #: array holding precalculated quadratic extrapolation data
+        self.precalc_extrapolation_quadratic: np.array = np.array(
+            [-8.001272228503E-02, -3.996205370305E-02, 8.645964182651E-01, 8.871013929117E-01], dtype=np.float64
+        )
 
     def setup_cubic(self):
         self.precalc_interpolation = np.array(
@@ -148,6 +152,11 @@ class TestInterpolatorLoadBigValues(TestInterpolatorLoadValues):
             [-7.983549252717e+18, -3.991774626358e+18,  8.649066476705e+19,  8.883423105331e+19], dtype=np.float64
         )
 
+        #: array holding precalculated quadratic extrapolation data
+        self.precalc_extrapolation_quadratic: np.array = np.array(
+            [-8.001272228503E+18, -3.996205370305E+18, 8.645964182651E+19, 8.871013929117E+19], dtype=np.float64
+        )
+
     def setup_cubic(self):
         self.precalc_interpolation = np.array(
             [0.000000000000e+00, 3.445726766897e+18, 6.892361882629e+18, 1.032764263792e+19,
@@ -197,6 +206,11 @@ class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
         #: array holding precalculated linear extrapolation data
         self.precalc_extrapolation_linear: np.array = np.array(
             [-7.983549252717e-22, -3.991774626358e-22,  8.649066476705e-21,  8.883423105331e-21], dtype=np.float64
+        )
+
+        #: array holding precalculated quadratic extrapolation data
+        self.precalc_extrapolation_quadratic: np.array = np.array(
+            [-8.001272228503E-22, -3.996205370305E-22, 8.645964182651E-21, 8.871013929117E-21], dtype=np.float64
         )
 
     def setup_cubic(self):
@@ -338,6 +352,8 @@ class TestInterpolators1D(unittest.TestCase):
             self.precalc_extrapolation = np.copy(self.value_storage_obj.precalc_extrapolation_nearest)
         elif extrapolator_type == 'none':
             self.precalc_extrapolation = None
+        elif extrapolator_type == 'quadratic':
+            self.precalc_extrapolation = np.copy(self.value_storage_obj.precalc_extrapolation_quadratic)
         else:
             raise ValueError(
                 f'Extrapolation type {extrapolator_type} not found or no test. options are {id_to_extrapolator.keys()}'
@@ -349,52 +365,77 @@ class TestInterpolators1D(unittest.TestCase):
         self.assertRaises(ValueError, self.interpolator, self.xsamples_extrap[2])
 
     def test_linear_interpolation_extrapolators(self):
-        self.setup_linear('nearest', EXTRAPOLATION_RANGE, big_values=False, small_values=False)
-
-        # test linear interpolation with 'nearest' extrapolator here
-        self.run_general_extrapolation_tests()
-        self.run_general_interpolation_tests()
-
-        self.setup_linear('linear', EXTRAPOLATION_RANGE, big_values=False, small_values=False)
-        # test linear interpolation with 'linear' extrapolator here
-        self.run_general_extrapolation_tests()
-        self.run_general_interpolation_tests()
+        for extrapolator_type in id_to_extrapolator.keys():
+            self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False)
+            if extrapolator_type != 'none':
+                if extrapolator_type == 'nearest':
+                    gradient_continuity = False
+                else:
+                    gradient_continuity = True
+                self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity)
+            self.run_general_interpolation_tests()
 
         # Tests for big values
-        self.setup_linear('nearest', EXTRAPOLATION_RANGE, big_values=True, small_values=False)
-        self.run_general_extrapolation_tests()
-        self.run_general_interpolation_tests()
+        for extrapolator_type in id_to_extrapolator.keys():
+            self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False)
+            if extrapolator_type != 'none':
+                if extrapolator_type == 'nearest':
+                    gradient_continuity = False
+                else:
+                    gradient_continuity = True
+                self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity)
+            self.run_general_interpolation_tests()
 
         # Tests for small values
-        self.setup_linear('nearest', EXTRAPOLATION_RANGE, big_values=False, small_values=True)
-        self.run_general_extrapolation_tests()
-        self.run_general_interpolation_tests()
+        for extrapolator_type in id_to_extrapolator.keys():
+            self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True)
+            if extrapolator_type != 'none':
+                if extrapolator_type == 'nearest':
+                    gradient_continuity = False
+                else:
+                    gradient_continuity = True
+                self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity)
+
+            self.run_general_interpolation_tests()
 
     def test_cubic_interpolation_extrapolators(self):
         """
         Testing against scipy.interpolate.CubicHermiteSpline with the same gradient calculations
         """
-        self.setup_cubic('nearest', EXTRAPOLATION_RANGE, big_values=False, small_values=False)
-        # test cubic interpolation with 'nearest' extrapolator here
-        self.run_general_extrapolation_tests()
-        self.run_general_interpolation_tests()
-
-        self.setup_cubic('linear', EXTRAPOLATION_RANGE, big_values=False, small_values=False)
-        # test cubic interpolation with 'linear' extrapolator here
-        self.run_general_extrapolation_tests()
-        self.run_general_interpolation_tests()
+        for extrapolator_type in id_to_extrapolator.keys():
+            self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False)
+            if extrapolator_type != 'none':
+                if extrapolator_type == 'nearest':
+                    gradient_continuity = False
+                else:
+                    gradient_continuity = True
+                self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity)
+            self.run_general_interpolation_tests()
 
         # Tests for big values
-        self.setup_cubic('nearest', EXTRAPOLATION_RANGE, big_values=True, small_values=False)
-        self.run_general_extrapolation_tests()
-        self.run_general_interpolation_tests()
+        for extrapolator_type in id_to_extrapolator.keys():
+            self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False)
+            if extrapolator_type != 'none':
+                if extrapolator_type == 'nearest':
+                    gradient_continuity = False
+                else:
+                    gradient_continuity = True
+                self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity)
+            self.run_general_interpolation_tests()
 
         # Tests for small values
-        self.setup_cubic('nearest', EXTRAPOLATION_RANGE, big_values=False, small_values=True)
-        self.run_general_extrapolation_tests()
-        self.run_general_interpolation_tests()
+        for extrapolator_type in id_to_extrapolator.keys():
+            self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True)
+            if extrapolator_type != 'none':
+                if extrapolator_type == 'nearest':
+                    gradient_continuity = False
+                else:
+                    gradient_continuity = True
+                self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity)
 
-    def run_general_extrapolation_tests(self):
+            self.run_general_interpolation_tests()
+
+    def run_general_extrapolation_tests(self, gradient_continuity=True):
         # Test extrapolator out of range, there should be an error raised
         self.assertRaises(ValueError, self.interpolator, self.xsamples_extrap[0])
         self.assertRaises(ValueError, self.interpolator, self.xsamples_extrap[-1])
@@ -410,12 +451,14 @@ class TestInterpolators1D(unittest.TestCase):
         )
 
         # Test gradient continuity between interpolation and extrapolation
-
+        delta_max_lower = np.abs(self.precalc_interpolation[0] / np.power(10., PRECISION - 1))
+        delta_max_upper = np.abs(self.precalc_interpolation[-1] / np.power(10., PRECISION - 1))
+        if gradient_continuity:
+            gradients_lower, gradients_upper = self.interpolator.test_edge_gradients()
+            self.assertAlmostEqual(gradients_lower[0], gradients_lower[1], delta=delta_max_lower)
+            self.assertAlmostEqual(gradients_upper[0], gradients_upper[1], delta=delta_max_upper)
 
     def run_general_interpolation_tests(self):
-
-        # Test continuity of smoothness
-
         # Test interpolation against xsample
         for i in range(len(self.xsamples)):
             delta_max = np.abs(self.precalc_interpolation[i] / np.power(10., PRECISION - 1))

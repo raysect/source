@@ -72,6 +72,57 @@ def calc_gradient(x_spline, y_spline, index_left):
     return dfdx
 
 
+def different_quadratic_extrpolation_lower(x_interp, x_spline, y_spline):
+    """
+    This quadratic is determined by fixing the quadratic gradient at the 2 points near the lower border of the data
+    set, then fixing the quadratic to pass through the lower data point.
+    """
+    index_lower_1 = 0
+    index_lower_2 = 1
+    x1_lower = x_spline[index_lower_1]
+    x2_lower = x_spline[index_lower_2]
+    f1_lower = y_spline[index_lower_1]
+
+    df1_dx_lower = calc_gradient(x_spline, y_spline, index_lower_1)/(x2_lower - x1_lower)
+    df2_dx_lower = calc_gradient(x_spline, y_spline, index_lower_2)/(x2_lower - x1_lower)
+
+    # Solve 2ax-b = df_dx for the gradient at point 1 and 2
+    # Rearrange both equations to find 'a' and 'b' quadratic coefficients
+    a_lower = (df2_dx_lower - df1_dx_lower)/(2.*(x2_lower - x1_lower))
+    b_lower = df1_dx_lower - 2.*a_lower*x1_lower
+
+    # Find c by solving at the fixed points (f = a x**2 + bx + c) at point 1 for the lower, and point 2 for the upper
+    c_lower = f1_lower - a_lower*x1_lower**2 - b_lower*x1_lower
+    print(a_lower, b_lower, c_lower)
+    return a_lower*x_interp**2 + b_lower*x_interp + c_lower
+
+
+def different_quadratic_extrpolation_upper(x_interp, x_spline, y_spline):
+    """
+    This quadratic is determined by fixing the quadratic gradient at the 2 points near the upper border of the data
+    set, then fixing the quadratic to pass through the upper data point.
+    """
+
+    index_upper_1 = len(x_spline) - 2
+    index_upper_2 = len(x_spline) - 1
+    x1_upper = x_spline[index_upper_1]
+    x2_upper = x_spline[index_upper_2]
+    f2_upper = y_spline[index_upper_2]
+
+    df1_dx_upper = calc_gradient(x_spline, y_spline, index_upper_1)/(x2_upper - x1_upper)
+    df2_dx_upper = calc_gradient(x_spline, y_spline, index_upper_2)/(x2_upper - x1_upper)
+
+    # Solve 2ax-b = df_dx for the gradient at point 1 and 2
+    # Rearrange both equations to find 'a' and 'b' quadratic coefficients
+    a_upper = (df2_dx_upper - df1_dx_upper)/(2.*(x2_upper - x1_upper))
+    b_upper = df1_dx_upper - 2.*a_upper*x1_upper
+
+    # Find c by solving at the fixed points (f = a x**2 + bx + c) at point 1 for the lower, and point 2 for the upper
+    c_upper = f2_upper - a_upper*x2_upper**2 - b_upper*x2_upper
+    print(a_upper, b_upper, c_upper)
+    return a_upper*x_interp**2 + b_upper*x_interp + c_upper
+
+
 # Calculate for big values, small values, or normal values
 big_values = False
 small_values = False
@@ -132,6 +183,15 @@ f_extrap_linear = linear_extrapolation(
 print('Output of linearly extrapolating from the start and end spline knots ',
       'Save this to self.precalc_extrapolation_linear in test_interpolator:\n', repr(f_extrap_linear))
 
+f_extrap_quadratic = np.array([
+    different_quadratic_extrpolation_lower(xsamples_extrap[0], x, data_f),
+    different_quadratic_extrpolation_lower(xsamples_extrap[1], x, data_f),
+    different_quadratic_extrpolation_upper(xsamples_extrap[-2], x, data_f),
+    different_quadratic_extrpolation_upper(xsamples_extrap[-1], x, data_f),
+])
+
+print('Output of quadratically extrapolating from the start and end spline knots ',
+      'Save this to self.precalc_extrapolation_quadratic in test_interpolator:\n', repr(f_extrap_quadratic))
 
 # Alternative linear test (use scipy instead)
 x_lower_array = x[:-1]
@@ -153,13 +213,10 @@ check_plot = True
 if check_plot:
     import matplotlib.pyplot as plt
 
-    # interp_cubic_extrap_nearest = Interpolate1D(
-    #     x, data_f, 'cubic', 'linear', extrapolation_range=2.0
-    # )
     interp_cubic_extrap_nearest = Interpolate1D(
-        x, data_f, 'cubic', 'quadratic', extrapolation_range=2.0
+        x, data_f, 'linear', 'quadratic', extrapolation_range=2.0
     )
-    interp_cubic_extrap_nearest._test_edge_gradients()
+    print(interp_cubic_extrap_nearest.test_edge_gradients())
     fig, ax = plt.subplots()
     f_check = np.zeros(len(xsamples))
     for i in range(len(xsamples)):
@@ -171,6 +228,8 @@ if check_plot:
         f_check_extrap[i] = interp_cubic_extrap_nearest(xsamples_extrap[i])
     ax.plot(xsamples_extrap, f_check_extrap, 'mo')
     ax.plot(xsamples, f_linear_out, 'go')
+    ax.plot(xsamples_extrap[0], different_quadratic_extrpolation_lower(xsamples_extrap[0], x, data_f), 'ko')
+    ax.plot(xsamples_extrap[-1], different_quadratic_extrpolation_upper(xsamples_extrap[-1], x, data_f), 'ko')
     ax.plot(x, data_f, 'bo')
     plt.show()
 

@@ -144,18 +144,23 @@ cdef class Interpolate1D(Function1D):
         """
         return np.min(self._x_mv), np.max(self._x_mv)
 
-    def _test_edge_gradients(self):
+    def test_edge_gradients(self):
         """
         Return the derivative at the edge spline knots for the extrapolator and interpolator objects
+        to check the first derivative continuity
         """
-        # self._extrapolator._analytic_gradient(self._x_mv[0], 0)
         x_01 = np.copy(self._extrapolator._x[0])
         x_02 = np.copy(self._interpolator._x[0])
-        print(self._interpolator._x[1], self._extrapolator._x[1])
-        print('first deriv extrapolator', self._extrapolator._analytic_gradient(x_01, -1, 1))
-        print('second deriv extrapolator', self._extrapolator._analytic_gradient(x_01, -1, 2))
-        print('first deriv interpolator', self._interpolator._analytic_gradient(x_02, -1, 1))
-        print('second deriv interpolator', self._interpolator._analytic_gradient(x_02, -1, 2))
+        x_n1 = np.copy(self._extrapolator._x[self._last_index])
+        x_n2 = np.copy(self._interpolator._x[self._last_index])
+
+        extrapolator_lower_gradient = self._extrapolator._analytic_gradient(x_01, -1, 1)
+        interpolator_lower_gradient = self._interpolator._analytic_gradient(x_02, 0, 1)
+        extrapolator_upper_gradient = self._extrapolator._analytic_gradient(x_n1, self._last_index, 1)
+        interpolator_upper_gradient = self._interpolator._analytic_gradient(x_n2, self._last_index - 1, 1)
+
+        return np.array([extrapolator_lower_gradient, interpolator_lower_gradient]), \
+               np.array([extrapolator_upper_gradient, interpolator_upper_gradient])
 
 
 cdef class _Interpolator1D:
@@ -206,7 +211,7 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
     cdef double _analytic_gradient(self, double px, int index, int order):
         cdef double grad
         if order == 1:
-            grad = (self._f[index + 1], self._f[index])/(self._x[index + 1] - self._x[index])
+            grad = (self._f[index + 1] - self._f[index])/(self._x[index + 1] - self._x[index])
         elif order > 1:
             grad = 0
         else:
@@ -286,7 +291,6 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         cdef double[2] f, dfdx
         cdef double x_bound
         cdef double[4] a
-        print('grad3', self._x[index + 1], self._x[index])
 
         x_bound = self._x[index + 1] - self._x[index]
         if x_bound != 0:
@@ -340,8 +344,6 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         cdef double x_bound
         cdef double[4] a
 
-        print('grad2', self._x[index + 1], self._x[index])
-
         x_bound = self._x[index + 1] - self._x[index]
         if x_bound != 0:
             x_scal = (px - self._x[index]) / x_bound
@@ -357,10 +359,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
 
         if order == 1:
             grad = 3.* a[0] * x_scal **2 + 2.* a[1] * x_scal + a[2]
-            print('grad', grad, self._x[index + 1], self._x[index])
             grad = grad/(self._x[index + 1] - self._x[index])
-            print('grad', grad)
-
         elif order == 2:
             grad = 6.* a[0] * x_scal + 2.* a[1]
             grad = grad/(self._x[index + 1] - self._x[index])**2
@@ -409,8 +408,10 @@ cdef class _ExtrapolatorNone(_Extrapolator1D):
            super().__init__(x, f, extrapolation_range)
 
     cdef double evaluate(self, double px, int index)  except? -1e999:
-        raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
-
+        if px != self._x[-1]:
+            raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
+        else:
+            return self._f[-1]
 
 cdef class _Extrapolator1DNearest(_Extrapolator1D):
     """
@@ -436,6 +437,7 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
     cdef double _analytic_gradient(self, double px, int index, int order):
         cdef double grad = 0.
         return grad
+
 
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
     """
@@ -466,8 +468,15 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
 
     cdef double _analytic_gradient(self, double px, int index, int order):
         cdef double grad
+        if index == -1:
+            index += 1
+        elif index == self._last_index:
+            index -= 1
+        else:
+            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
+
         if order == 1:
-            grad = (self._f[index + 1], self._f[index]) / (self._x[index + 1] - self._x[index])
+            grad = (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
         elif order > 1:
             grad = 0
         else:
@@ -573,6 +582,7 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
                 raise ValueError('order must be an integer greater than or equal to 1')
         else:
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
+        return grad
 
     def _test_evaluate_directly(self, x):
         cdef int index = find_index(self._x, x)
