@@ -48,7 +48,7 @@ cdef class Interpolate1D(Function1D):
 
     Coordinate array (x) and data array (f) are sorted and transformed into Numpy arrays.
     The resulting Numpy arrays are stored as read only. I.e. `writeable` flag of self.x and self.f
-    is set to False. Alteration of the flag may result in wanted behaviour.
+    is set to False. Alteration of the flag may result in unwanted behaviour.
 
     :note: x and f arrays must be of equal length.
 
@@ -89,7 +89,7 @@ cdef class Interpolate1D(Function1D):
             raise ValueError(f'The x array must be 1D. Got {x.shape}.')
 
         if f.ndim != 1:
-            raise ValueError(f'The x array must be 1D. Got {f.shape}.')
+            raise ValueError(f'The f array must be 1D. Got {f.shape}.')
 
         if x.shape != f.shape:
             raise ValueError(f'Shape mismatch between x array ({x.shape}) and f array ({f.shape}).')
@@ -112,7 +112,6 @@ cdef class Interpolate1D(Function1D):
             raise ValueError(f'Extrapolation type {interpolation_type} not found. options are {id_to_extrapolator.keys()}')
 
         self._extrapolator = id_to_extrapolator[extrapolation_type](self._x_mv, self._f_mv, extrapolation_range)
-
 
     cdef double evaluate(self, double px) except? -1e999:
         """
@@ -164,7 +163,12 @@ cdef class Interpolate1D(Function1D):
 
 
 cdef class _Interpolator1D:
-    """Base class for 1D interpolators. """
+    """
+    Base class for 1D interpolators.
+
+    :param x: 1D memory view of the spline point x positions.
+    :param f: 1D memory view of the function value at spline point x positions.
+    """
 
     ID = NotImplemented
     def __init__(self, double[::1] x, double[::1] f):
@@ -195,9 +199,8 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
     """
     Linear interpolation of 1D function.
 
-    :param object x: 1D array-like object of real values.
-    :param object f: 1D array-like object of real values.
-    :param Extrapolator1D extrapolator: extrapolator object
+    :param x: 1D memory view of the spline point x positions.
+    :param f: 1D memory view of the function value at spline point x positions.
     """
 
     ID = 'linear'
@@ -397,7 +400,7 @@ cdef class _Extrapolator1D:
         raise NotImplementedError(f'{self.__class__} not implemented.')
 
 
-cdef class _ExtrapolatorNone(_Extrapolator1D):
+cdef class _Extrapolator1DNone(_Extrapolator1D):
     """
     Extrapolator that does nothing.
     """
@@ -643,7 +646,7 @@ id_to_interpolator = {
 }
 
 id_to_extrapolator = {
-    _ExtrapolatorNone.ID: _ExtrapolatorNone,
+    _Extrapolator1DNone.ID: _Extrapolator1DNone,
     _Extrapolator1DNearest.ID: _Extrapolator1DNearest,
     _Extrapolator1DLinear.ID: _Extrapolator1DLinear,
     _Extrapolator1DQuadratic.ID: _Extrapolator1DQuadratic
