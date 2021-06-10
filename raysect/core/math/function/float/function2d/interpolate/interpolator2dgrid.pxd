@@ -29,6 +29,45 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .interpolator2dmesh import Interpolator2DMesh
-from .interpolator2dgrid import Interpolator2DGrid
-from .discrete2dmesh import Discrete2DMesh
+cimport numpy as np
+from raysect.core.math.function.float.function2d cimport Function2D
+from numpy cimport ndarray
+
+cdef class Interpolator2DGrid(Function2D):
+
+    cdef:
+        ndarray x, y, f
+        double[::1] _x_mv, _y_mv
+        double[:, ::1] _f_mv
+        _Interpolator2D _interpolator
+        _Extrapolator2D _extrapolator
+        int _last_index_x, _last_index_y
+        double _extrapolation_range
+
+    cdef double evaluate(self, double px, double py) except? -1e999
+
+
+cdef class _Interpolator2D:
+    cdef:
+        double [::1] _x, _y
+        double [:, ::1] _f
+        int _last_index_x, _last_index_y
+
+    cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999
+
+
+cdef class _Interpolator2DLinear(_Interpolator2D):
+    pass
+
+
+cdef class _Extrapolator2D:
+    cdef:
+        double _range
+        double [::1] _x, _y
+        double [:, ::1] _f
+        int _last_index_x, _last_index_y
+    cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999
+
+
+cdef class _Extrapolator2DNone(_Extrapolator2D):
+    pass

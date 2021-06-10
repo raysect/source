@@ -29,3 +29,4 @@
 
 from raysect.core.math.function.float.function2d.interpolate.interpolator2dmesh cimport Interpolator2DMesh
 from raysect.core.math.function.float.function2d.interpolate.discrete2dmesh cimport Discrete2DMesh
+from raysect.core.math.function.float.function2d.interpolate.interpolator2dgrid cimport Interpolator2DGrid
