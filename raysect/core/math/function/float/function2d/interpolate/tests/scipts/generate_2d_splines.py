@@ -30,7 +30,8 @@
 
 import numpy as np
 from raysect.core.math.function.float.function2d.interpolate.interpolator2dgrid import Interpolator2DGrid
-
+from scipy.interpolate import griddata, interp2d
+import scipy
 
 X_LOWER = -1.0
 X_UPPER = 1.0
@@ -38,11 +39,13 @@ Y_LOWER = -1.0
 Y_UPPER = 1.0
 Y_EXTRAP_DELTA_MAX = 0.08
 Y_EXTRAP_DELTA_MIN = 0.04
+X_EXTRAP_DELTA_MAX = 0.08
+X_EXTRAP_DELTA_MIN = 0.04
 
 NB_X = 10
 NB_Y = 10
-NB_XSAMPLES = 30
-NB_YSAMPLES = 30
+NB_XSAMPLES = 13
+NB_YSAMPLES = 13
 
 EXTRAPOLATION_RANGE = 0.06
 
@@ -52,41 +55,111 @@ BIG_VALUE_FACTOR = 20.
 SMALL_VALUE_FACTOR = -20.
 
 
+# Force scientific format to get the right number of significant figures
+np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
+
+
 def function_to_spline(x_input, y_input, factor):
     t = np.pi * np.sqrt((x_input ** 2 + y_input ** 2))
     return factor*np.sinc(t)
 
 
-x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
-y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
-x_in_full, y_in_full = np.meshgrid(x_in, y_in)
-xy_in = np.concatenate((x_in_full[:, :, np.newaxis], y_in_full[:, :, np.newaxis]), axis=2)
-f_in = function_to_spline(xy_in[:, :, 0], xy_in[:, :, 1], 1.)
+def get_extrapolation_input_values(
+        x_lower, x_upper, y_lower, y_upper, x_extrap_delta_max, y_extrap_delta_max, x_extrap_delta_min,
+        y_extrap_delta_min):
+    xsamples_extrap_out_of_bounds_options = np.array(
+        [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
+    ysamples_extrap_out_of_bounds_options = np.array(
+        [y_lower - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_max])
+    xsamples_extrap_in_bounds_options = np.array(
+        [x_lower - x_extrap_delta_min, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_min])
+    ysamples_extrap_in_bounds_options = np.array(
+        [y_lower - y_extrap_delta_min, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_min])
+    xsamples_extrap_out_of_bounds = []
+    ysamples_extrap_out_of_bounds = []
+    xsamples_extrap_in_bounds = []
+    ysamples_extrap_in_bounds = []
+    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
+        for j_y in range(len(xsamples_extrap_out_of_bounds_options)):
+            if not (i_x not in edge_indicies and j_y not in edge_indicies):
+                xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
+                ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
+                xsamples_extrap_in_bounds.append(xsamples_extrap_in_bounds_options[i_x])
+                ysamples_extrap_in_bounds.append(ysamples_extrap_in_bounds_options[j_y])
+    return \
+        np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), \
+        np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds)
 
-# Make the sampled points between spline knots and find the precalc_interpolation used in test_interpolator.setup_cubic
-xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
-ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
 
+if __name__ == '__main__':
+    # Calculate for big values, small values, or normal values
+    big_values = False
+    small_values = False
 
-# Tempory measure for not extrapolating
-xsamples = xsamples[:-1]
-ysamples = ysamples[:-1]
+    print('Using scipy version', scipy.__version__)
 
-# Make grid
-xsamples_in_full, ysamples_in_full = np.meshgrid(xsamples, ysamples)
+    # Find the function values to be used
+    if big_values:
+        factor = np.power(10., BIG_VALUE_FACTOR)
+    elif small_values:
+        factor = np.power(10., SMALL_VALUE_FACTOR)
+    else:
+        factor = 1.
 
-check_plot = True
-if check_plot:
-    interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'linear', 'none', extrapolation_range=2.0)
-    import matplotlib.pyplot as plt
-    from matplotlib import cm
-    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-    surf = ax.plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm,
-                           linewidth=0, antialiased=False)
-    f_out = np.zeros((len(xsamples), len(ysamples)))
-    for i in range(len(xsamples)):
-        for j in range(len(ysamples)):
-            f_out[i, j] = interpolator2D(xsamples[i], ysamples[j])
-    print(np.shape(xsamples_in_full), np.shape(ysamples_in_full), np.shape(f_out))
-    ax.scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
-    plt.show()
+    x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
+    y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
+    x_in_full, y_in_full = np.meshgrid(x_in, y_in)
+    f_in = function_to_spline(x_in_full, y_in_full, factor)
+
+    print('Save this to self.data in test_interpolator:\n', repr(f_in))
+
+    # Make the sampled points between spline knots and find the precalc_interpolation used in test_interpolator.setup_cubic
+    xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
+    ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
+
+    # Temporary measure for not extrapolating
+    xsamples = xsamples[:-1]
+    ysamples = ysamples[:-1]
+
+    # Make grid
+    xsamples_in_full, ysamples_in_full = np.meshgrid(xsamples, ysamples)
+
+    precalc_interpolation_function_vals = function_to_spline(xsamples_in_full, ysamples_in_full, factor)
+
+    # print('Save this to self.precalc_function in test_interpolator:\n', repr(precalc_interpolation_function_vals))
+
+    # Extrapolation x and y values
+    xsamples_out_of_bounds, ysamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds = \
+        get_extrapolation_input_values(
+            X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
+            Y_EXTRAP_DELTA_MIN
+        )
+
+    xsamples_extrap = np.array([
+        X_LOWER - X_EXTRAP_DELTA_MAX, X_LOWER - X_EXTRAP_DELTA_MIN, X_UPPER + X_EXTRAP_DELTA_MIN,
+        X_UPPER + X_EXTRAP_DELTA_MAX], dtype=np.float64,
+    )
+
+    linear_2d = interp2d(x_in, y_in, f_in, kind='linear')
+    f_linear = linear_2d(xsamples, ysamples)
+    print('Linear spline at xsamples, ysamples created using. interp2d(kind=linear)',
+          'Save this to self.precalc_interpolation in test_interpolator in setup_linear:\n', repr(f_linear))
+
+    check_plot = True
+    if check_plot:
+        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'linear', 'none', extrapolation_range=2.0)
+        import matplotlib.pyplot as plt
+        from matplotlib import cm
+        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+        surf = ax.plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm,
+                               linewidth=0, antialiased=False)
+        f_out = np.zeros((len(xsamples), len(ysamples)))
+        for i in range(len(xsamples)):
+            for j in range(len(ysamples)):
+                f_out[i, j] = interpolator2D(xsamples[i], ysamples[j])
+        print(np.shape(xsamples_in_full), np.shape(ysamples_in_full), np.shape(f_out))
+        ax.scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
+        ax.scatter(xsamples_in_full, ysamples_in_full, f_linear, color='b')
+        print(np.max(f_linear- f_out))
+        plt.show()
