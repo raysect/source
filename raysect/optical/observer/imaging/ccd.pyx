@@ -127,8 +127,8 @@ cdef class CCDArray(Observer2D):
             AffineMatrix3D pixel_to_local
 
         # generate pixel transform
-        pixel_x = self.image_start_x - self.image_delta * ix
-        pixel_y = self.image_start_y - self.image_delta * iy
+        pixel_x = self.image_start_x - self.image_delta * (ix + 0.5)
+        pixel_y = self.image_start_y - self.image_delta * (iy + 0.5)
         pixel_to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors

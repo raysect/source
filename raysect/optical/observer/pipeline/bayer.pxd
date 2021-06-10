@@ -35,7 +35,7 @@ from raysect.core.math cimport StatsArray2D
 cdef class BayerPipeline2D(Pipeline2D):
 
     cdef:
-        str name
+        public str name
         public SpectralFunction red_filter, green_filter, blue_filter
         tuple _bayer_mosaic
         public bint display_progress
