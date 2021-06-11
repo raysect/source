@@ -119,10 +119,15 @@ cdef class Conductor(Material):
         ci = fabs(ci)
 
         # establish polarisation frame for fresnel calculation
+        #
+        # The Ex component of the Stoke's vector corresponds to the
+        # perpendicular (Es) component in the original derivation.
+        #
         # If the incident ray and normal are collinear, an arbitrary orthogonal
         # vector is generated. In the collinear case this orientation must be
-        # replicated for the reflected ray or the fresnel calculation will be invalid.
-        i_orientation = i_direction.orthogonal(normal)
+        # replicated for the transmitted and reflected rays or the fresnel
+        # calculation will be invalid.
+        f_orientation = i_direction.cross(normal) if (1.0 - ci) > EPSILON else normal.orthogonal()
 
         # reflected ray configuration
         temp = 2 * ci
@@ -131,13 +136,13 @@ cdef class Conductor(Material):
             i_direction.y + temp * normal.y,
             i_direction.z + temp * normal.z
         )
-        r_orientation = r_direction.orthogonal(normal) if (1.0 - ci) > EPSILON else i_orientation
+        # r_orientation = i_direction.cross(normal) if (1.0 - ci) > EPSILON else i_orientation
 
         # launch reflected ray and apply fresnel
         reflected_ray = ray.spawn_daughter(
             r_origin.transform(primitive_to_world),
             r_direction.transform(primitive_to_world),
-            r_orientation.transform(primitive_to_world)
+            f_orientation.transform(primitive_to_world)
         )
         spectrum = reflected_ray.trace(world)
 
@@ -149,7 +154,7 @@ cdef class Conductor(Material):
         s_orientation = s_orientation.normalise()
 
         # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
-        theta = self._polarisation_frame_angle(i_direction, s_orientation, i_orientation)
+        theta = self._polarisation_frame_angle(i_direction, s_orientation, f_orientation)
         self._apply_stokes_rotation(spectrum, theta)
         return spectrum
 
@@ -194,8 +199,8 @@ cdef class Conductor(Material):
             a = (n2 + k2) + c2i
             b = (n2 + k2)*c2i + 1
             c = 2*n*ci
-            r2p = (a - c) / (a + c)
-            r2s = (b - c) / (b + c)
+            r2s = (a - c) / (a + c)
+            r2p = (b - c) / (b + c)
 
             # calculate phase
             v = n2 - k2 - s2i
@@ -382,17 +387,20 @@ cdef class RoughConductor(ContinuousBSDF):
         ci = s_in_direction.dot(s_half)
 
         # establish polarisation frame for fresnel calculation
+        # The Ex component of the Stoke's vector corresponds to the
+        # perpendicular (Es) component in the original derivation.
+        #
         # If the incident ray and normal are collinear, an arbitrary orthogonal
         # vector is generated. In the collinear case this orientation must be
-        # replicated for the reflected ray or the fresnel calculation will be invalid.
-        s_in_orientation = s_in_direction.orthogonal(s_half)
-        s_out_orientation = s_out_direction.orthogonal(s_half) if (1.0 - ci) > EPSILON else s_in_orientation
+        # replicated for the transmitted and reflected rays or the fresnel
+        # calculation will be invalid.
+        s_frame_orientation = s_in_direction.cross(s_half)  if (1.0 - ci) > EPSILON else s_half.orthogonal()
 
         # generate and trace ray
         reflected = ray.spawn_daughter(
             w_reflection_origin,
             s_out_direction.transform(surface_to_world),
-            s_out_orientation.transform(surface_to_world)
+            s_frame_orientation.transform(surface_to_world)
         )
         spectrum = reflected.trace(world)
 
@@ -411,7 +419,7 @@ cdef class RoughConductor(ContinuousBSDF):
         s_ray_orientation = s_ray_orientation.normalise()
 
         # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
-        theta = self._polarisation_frame_angle(s_in_direction, s_ray_orientation, s_in_orientation)
+        theta = self._polarisation_frame_angle(s_in_direction, s_ray_orientation, s_frame_orientation)
         self._apply_stokes_rotation(spectrum, theta)
 
         return spectrum
@@ -478,8 +486,8 @@ cdef class RoughConductor(ContinuousBSDF):
             a = (n2 + k2) + c2i
             b = (n2 + k2)*c2i + 1
             c = 2*n*ci
-            r2p = (a - c) / (a + c)
-            r2s = (b - c) / (b + c)
+            r2s = (a - c) / (a + c)
+            r2p = (b - c) / (b + c)
 
             # calculate phase
             v = n2 - k2 - s2i

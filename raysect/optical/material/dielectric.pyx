@@ -225,11 +225,15 @@ cdef class Dielectric(Material):
         ct = sqrt(ct_sqr)
 
         # establish polarisation frame for fresnel calculation
+        #
+        # The Ex component of the Stoke's vector corresponds to the
+        # perpendicular (Es) component in the original derivation.
+        #
         # If the incident ray and normal are collinear, an arbitrary orthogonal
         # vector is generated. In the collinear case this orientation must be
         # replicated for the transmitted and reflected rays or the fresnel
         # calculation will be invalid.
-        i_orientation = i_direction.orthogonal(normal)
+        f_orientation = i_direction.cross(normal) if (1.0 - ci) > EPSILON else normal.orthogonal()
 
         # check for total internal reflection
         if ct_sqr <= 0:
@@ -241,13 +245,12 @@ cdef class Dielectric(Material):
                 i_direction.y + temp * normal.y,
                 i_direction.z + temp * normal.z
             )
-            r_orientation = r_direction.orthogonal(normal) if (1.0 - ci) > EPSILON else i_orientation
 
             # launch reflected ray
             reflected_ray = ray.spawn_daughter(
                 r_origin.transform(primitive_to_world),
                 r_direction.transform(primitive_to_world),
-                r_orientation.transform(primitive_to_world)
+                f_orientation.transform(primitive_to_world)
             )
             spectrum = reflected_ray.trace(world)
 
@@ -270,13 +273,12 @@ cdef class Dielectric(Material):
                     gamma * i_direction.y + temp * normal.y,
                     gamma * i_direction.z + temp * normal.z
                 )
-                t_orientation = t_direction.orthogonal(normal.neg()).neg() if (1.0 - ci) > EPSILON else i_orientation
 
                 # spawn ray on correct side of surface
                 transmitted_ray = ray.spawn_daughter(
                     t_origin.transform(primitive_to_world),
                     t_direction.transform(primitive_to_world),
-                    t_orientation.transform(primitive_to_world)
+                    f_orientation.transform(primitive_to_world)
                 )
                 spectrum = transmitted_ray.trace(world)
 
@@ -292,13 +294,12 @@ cdef class Dielectric(Material):
                     i_direction.y + temp * normal.y,
                     i_direction.z + temp * normal.z
                 )
-                r_orientation = r_direction.orthogonal(normal) if (1.0 - ci) > EPSILON else i_orientation
 
                 # spawn reflected ray
                 reflected_ray = ray.spawn_daughter(
                     r_origin.transform(primitive_to_world),
                     r_direction.transform(primitive_to_world),
-                    r_orientation.transform(primitive_to_world)
+                    f_orientation.transform(primitive_to_world)
                 )
                 spectrum = reflected_ray.trace(world)
 
@@ -310,7 +311,7 @@ cdef class Dielectric(Material):
         s_orientation = s_orientation.normalise()
 
         # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
-        theta = self._polarisation_frame_angle(i_direction, s_orientation, i_orientation)
+        theta = self._polarisation_frame_angle(i_direction, s_orientation, f_orientation)
         self._apply_stokes_rotation(spectrum, theta)
         return spectrum
 
@@ -390,9 +391,9 @@ cdef class Dielectric(Material):
             double k0, k1, k2
             double s0, s1, s2, s3
 
-        k0 = 1.0 / (p*p + s*s)
-        k1 = k0 * (p*p - s*s)
-        k2 = -2 * k0 * p * s
+        k0 = 1.0 / (s*s + p*p)
+        k1 = k0 * (s*s - p*p)
+        k2 = -2 * k0 * s * p
 
         for bin in range(spectrum.bins):
 
@@ -426,9 +427,9 @@ cdef class Dielectric(Material):
             double k0, k1, k2
             double s0, s1, s2, s3
 
-        k0 = 1.0 / (p*p + s*s)
-        k1 = k0 * (p*p - s*s)
-        k2 = 2 * k0 * p * s
+        k0 = 1.0 / (s*s + p*p)
+        k1 = k0 * (s*s - p*p)
+        k2 = 2 * k0 * s * p
 
         for bin in range(spectrum.bins):
 
