@@ -65,8 +65,11 @@ cdef class _Extrapolator2D:
         double _range
         double [::1] _x, _y
         double [:, ::1] _f
+        _Interpolator2D _external_interpolator
         int _last_index_x, _last_index_y
-    cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999
+    cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y) except? -1e999
+    cdef double evaluate_edge_y(self, double px, double py, int index_x, int index_y) except? -1e999
+    cdef double evaluate_edge_xy(self, double px, double py, int index_x, int index_y) except? -1e999
 
 
 cdef class _Extrapolator2DNone(_Extrapolator2D):

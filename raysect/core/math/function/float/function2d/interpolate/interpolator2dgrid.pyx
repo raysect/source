@@ -117,7 +117,9 @@ cdef class Interpolator2DGrid(Function2D):
         if extrapolation_type not in id_to_extrapolator:
             raise ValueError(f'Extrapolation type {interpolation_type} not found. options are {id_to_extrapolator.keys()}')
 
-        self._extrapolator = id_to_extrapolator[extrapolation_type](self._x_mv, self._y_mv, self._f_mv, extrapolation_range)
+        self._extrapolator = id_to_extrapolator[extrapolation_type](
+            self._x_mv, self._y_mv, self._f_mv, extrapolation_range, self._interpolator
+        )
 
     cdef double evaluate(self, double px, double py) except? -1e999:
         """
@@ -131,42 +133,33 @@ cdef class Interpolator2DGrid(Function2D):
         cdef int index_x = find_index(self._x_mv, px)
         cdef int index_y = find_index(self._y_mv, py)
 
-        if index_x == -1 and index_y == -1:
+        if (index_x == -1 and index_y == -1) or (index_x == self._last_index_x and index_y == self._last_index_y):
             if px < self._x_mv[0] - self._extrapolation_range:
                 raise ValueError(
                     f'The specified value (x={px}) is outside of extrapolation range.')
             if py < self._y_mv[0] - self._extrapolation_range:
                 raise ValueError(
                     f'The specified value (y={py}) is outside of extrapolation range.')
-            return self._extrapolator.evaluate(px, py, index_x, index_y)
-        elif index_x == self._last_index_x and index_y == self._last_index_y:
-            if px > self._x_mv[-1] + self._extrapolation_range:
-                raise ValueError(
-                    f'The specified value (x={px}) is outside of extrapolation range.')
-            if py > self._y_mv[-1] + self._extrapolation_range:
-                raise ValueError(
-                    f'The specified value (y={py}) is outside of extrapolation range.')
-            return self._extrapolator.evaluate(px, py, index_x, index_y)
-        if index_x == -1 or index_y == -1:
+            return self._extrapolator.evaluate_edge_xy(px, py, index_x, index_y)
+
+        if index_x == -1 or index_x == self._last_index_x:
             if px < self._x_mv[0] - self._extrapolation_range:
                 raise ValueError(
                     f'The specified value (x={px}) is outside of extrapolation range.')
             if py < self._y_mv[0] - self._extrapolation_range:
                 raise ValueError(
                     f'The specified value (y={py}) is outside of extrapolation range.')
-            raise NotImplementedError(
-                'The border of must align in y/x to be continuous, but also extrapolate in x/y. '
-                'Could do 1D in both if they are mismatched types eg cubic interp, linear extrap')
-        elif index_x == self._last_index_x or index_y == self._last_index_y:
+            return self._extrapolator.evaluate_edge_x(px, py, index_x, index_y)
+
+        elif index_y == -1 or index_y == self._last_index_y:
             if px < self._x_mv[-1] - self._extrapolation_range:
                 raise ValueError(
                     f'The specified value (x={px}) is outside of extrapolation range.')
             if py < self._y_mv[-1] - self._extrapolation_range:
                 raise ValueError(
                     f'The specified value (y={py}) is outside of extrapolation range.')
-            raise NotImplementedError(
-                'The border of must align in y/x to be continuous, but also extrapolate in x/y. '
-                'Could do 1D in both if they are mismatched types eg cubic interp, linear extrap')
+            return self._extrapolator.evaluate_edge_y(px, py, index_x, index_y)
+
         else:
             return self._interpolator.evaluate(px, py, index_x, index_y)
 
@@ -241,15 +234,22 @@ cdef class _Extrapolator2D:
 
     ID = NotImplemented
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range):
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range, _Interpolator2D external_interpolator):
         self._range = extrapolation_range
         self._x = x
         self._y = y
         self._f = f
         self._last_index_x = self._x.shape[0] - 1
         self._last_index_y = self._y.shape[0] - 1
+        self._external_interpolator = external_interpolator
 
-    cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
+    cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y) except? -1e999:
+        raise NotImplementedError(f'{self.__class__} not implemented.')
+
+    cdef double evaluate_edge_y(self, double px, double py, int index_x, int index_y) except? -1e999:
+        raise NotImplementedError(f'{self.__class__} not implemented.')
+
+    cdef double evaluate_edge_xy(self, double px, double py, int index_x, int index_y) except? -1e999:
         raise NotImplementedError(f'{self.__class__} not implemented.')
 
 
@@ -260,28 +260,34 @@ cdef class _Extrapolator2DNone(_Extrapolator2D):
 
     ID = 'none'
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range):
-           super().__init__(x, y, f, extrapolation_range)
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range, _Interpolator2D external_interpolator):
+           super().__init__(x, y, f, extrapolation_range, external_interpolator)
 
-    cdef double evaluate(self, double px, double py, int index_x, int index_y)  except? -1e999:
+    cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y) except? -1e999:
+        if px != self._x[-1]:
+            raise ValueError(
+                f'Extrapolation not available. Interpolate within function range x '
+                f'{np.min(self._x)}-{np.max(self._x)}.'
+            )
+        return self._external_interpolator(self._x[-1], py)
+
+    cdef double evaluate_edge_y(self, double px, double py, int index_x, int index_y) except? -1e999:
+        if py != self._y[-1]:
+            raise ValueError(
+                f'Extrapolation not available. Interpolate within function range y '
+                f'{np.min(self._y)}-{np.max(self._y)}.'
+            )
+        return self._external_interpolator(px, self._y[-1])
+
+    cdef double evaluate_edge_xy(self, double px, double py, int index_x, int index_y) except? -1e999:
         if px != self._x[-1] and py != self._y[-1]:
             raise ValueError(
                 f'Extrapolation not available. Interpolate within function range x '
                 f'{np.min(self._x)}-{np.max(self._x)} '
                 f'and y {np.min(self._y)}-{np.max(self._y)}.'
             )
-        elif px != self._x[-1]:
-            raise ValueError(
-                f'Extrapolation not available. Interpolate within function range x '
-                f'{np.min(self._x)}-{np.max(self._x)}.'
-            )
-        elif py != self._y[-1]:
-            raise ValueError(
-                f'Extrapolation not available. Interpolate within function range y '
-                f'{np.min(self._y)}-{np.max(self._y)}.'
-            )
-        else:
-            return self._f[-1, -1]
+        return self._external_interpolator(self._x[-1], self._y[-1])
+
 
 id_to_interpolator = {
     _Interpolator2DLinear.ID: _Interpolator2DLinear,
@@ -293,4 +299,8 @@ id_to_extrapolator = {
     # _Extrapolator2DNearest.ID: _Extrapolator2DNearest,
     # _Extrapolator2DLinear.ID: _Extrapolator2DLinear,
     # _Extrapolator2DQuadratic.ID: _Extrapolator2DQuadratic
+}
+
+forbidden_interpolation_combinations = {
+    # _Interpolator2DLinear.ID: [_Extrapolator2DQuadratic]
 }
