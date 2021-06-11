@@ -91,11 +91,24 @@ def get_extrapolation_input_values(
         np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), \
         np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds)
 
+#
+# def get_nearest_neighbour_output_values(factor_in, x_input, y_input):
+#     f_nearest_extrap_in_bounds = []
+#     x_in_use = [x_input[0], (x_input[-1] + x_input[0])/2., x_in[-1]]
+#     y_in_use = [y_input[0], (y_input[-1] + y_input[0])/2., y_in[-1]]
+#     edge_indicies = [0, len(x_in_use) - 1]
+#
+#     for i_x in range(len(x_in_use)):
+#         for j_y in range(len(y_in_use)):
+#             if not (i_x not in edge_indicies and j_y not in edge_indicies):
+#                 f_nearest_extrap_in_bounds.append(list(function_to_spline(x_input, y_input, factor_in)))
+#     return np.array(f_nearest_extrap_in_bounds)
+
 
 if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
     big_values = False
-    small_values = False
+    small_values = True
 
     print('Using scipy version', scipy.__version__)
 
@@ -118,10 +131,6 @@ if __name__ == '__main__':
     xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
     ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
 
-    # Temporary measure for not extrapolating
-    xsamples = xsamples[:-1]
-    ysamples = ysamples[:-1]
-
     # Make grid
     xsamples_in_full, ysamples_in_full = np.meshgrid(xsamples, ysamples)
 
@@ -135,20 +144,34 @@ if __name__ == '__main__':
             X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
             Y_EXTRAP_DELTA_MIN
         )
+    print(xsamples_out_of_bounds, 'xsamples_out_of_bounds')
+    print(ysamples_out_of_bounds, 'ysamples_out_of_bounds')
+    print(xsamples_in_bounds, 'xsamples_in_bounds')
+    print(ysamples_in_bounds, 'ysamples_in_bounds')
 
-    xsamples_extrap = np.array([
-        X_LOWER - X_EXTRAP_DELTA_MAX, X_LOWER - X_EXTRAP_DELTA_MIN, X_UPPER + X_EXTRAP_DELTA_MIN,
-        X_UPPER + X_EXTRAP_DELTA_MAX], dtype=np.float64,
-    )
+    # xsamples_extrap = np.array([
+    #     X_LOWER - X_EXTRAP_DELTA_MAX, X_LOWER - X_EXTRAP_DELTA_MIN, X_UPPER + X_EXTRAP_DELTA_MIN,
+    #     X_UPPER + X_EXTRAP_DELTA_MAX], dtype=np.float64,
+    # )
 
     linear_2d = interp2d(x_in, y_in, f_in, kind='linear')
     f_linear = linear_2d(xsamples, ysamples)
     print('Linear spline at xsamples, ysamples created using. interp2d(kind=linear)',
           'Save this to self.precalc_interpolation in test_interpolator in setup_linear:\n', repr(f_linear))
 
+    linear_2d_nearest_neighbour = interp2d(x_in, y_in, f_in, kind='linear', fill_value=None)
+    f_extrap_nearest = np.zeros((len(xsamples_in_bounds),))
+    for i in range(len(xsamples_in_bounds)):
+        f_extrap_nearest[i] = linear_2d_nearest_neighbour(xsamples_in_bounds[i], ysamples_in_bounds[i])
+    # f_extrap_nearest = linear_2d_nearest_neighbour(xsamples_in_bounds,  ysamples_in_bounds)
+    # f_extrap_nearest = get_nearest_neighbour_output_values(factor_in=factor, x_input=x_in, y_input=y_in)
+
+    print('Output of nearest neighbour extrapolation from the start and end spline knots ',
+          'Save this to self.precalc_extrapolation_nearest in test_interpolator:\n', repr(f_extrap_nearest))
+
     check_plot = True
     if check_plot:
-        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'linear', 'none', extrapolation_range=2.0)
+        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'linear', 'nearest', extrapolation_range=2.0)
         import matplotlib.pyplot as plt
         from matplotlib import cm
         fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
@@ -158,8 +181,13 @@ if __name__ == '__main__':
         for i in range(len(xsamples)):
             for j in range(len(ysamples)):
                 f_out[i, j] = interpolator2D(xsamples[i], ysamples[j])
+        f_out_extrap = np.zeros((len(xsamples_in_bounds), ))
+        for i in range(len(xsamples_in_bounds)):
+            f_out_extrap[i] = interpolator2D(xsamples_in_bounds[i], ysamples_in_bounds[i])
         print(np.shape(xsamples_in_full), np.shape(ysamples_in_full), np.shape(f_out))
         ax.scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
+        print(np.shape(f_out_extrap), np.shape(xsamples_in_bounds), np.shape(ysamples_in_bounds), np.shape(f_extrap_nearest))
+        ax.scatter(xsamples_in_bounds, ysamples_in_bounds, f_out_extrap, color='g')
+        ax.scatter(xsamples_in_bounds, ysamples_in_bounds, f_extrap_nearest, color='m')
         ax.scatter(xsamples_in_full, ysamples_in_full, f_linear, color='b')
-        print(np.max(f_linear- f_out))
         plt.show()
