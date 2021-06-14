@@ -127,11 +127,13 @@ cdef class Interpolate1D(Function1D):
                 raise ValueError(
                     f'The specified value (x={px}) is outside of extrapolation range.')
             return self._extrapolator.evaluate(px, index)
-        elif index == self._last_index:
+        elif index == self._last_index and px > self.x[self._last_index]:
             if px > self._x_mv[self._last_index] + self._extrapolation_range:
                 raise ValueError(
                     f'The specified value (x={px}) is outside of extrapolation range.')
             return self._extrapolator.evaluate(px, index)
+        elif px == self.x[self._last_index]:
+            return self._interpolator.evaluate(px, index - 1)
         else:
             return self._interpolator.evaluate(px, index)
 
@@ -411,10 +413,8 @@ cdef class _Extrapolator1DNone(_Extrapolator1D):
            super().__init__(x, f, extrapolation_range)
 
     cdef double evaluate(self, double px, int index)  except? -1e999:
-        if px != self._x[-1]:
-            raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
-        else:
-            return self._f[-1]
+        raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
+
 
 cdef class _Extrapolator1DNearest(_Extrapolator1D):
     """
