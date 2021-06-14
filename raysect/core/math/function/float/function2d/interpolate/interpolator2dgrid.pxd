@@ -61,6 +61,12 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
     pass
 
 
+cdef class _Interpolator2DCubic(_Interpolator2D):
+    cdef:
+        ndarray _a, _mask_a
+        double[:, :, :, ::1] _a_mv
+
+
 cdef class _Extrapolator2D:
     cdef:
         double _range
@@ -76,5 +82,23 @@ cdef class _Extrapolator2D:
 cdef class _Extrapolator2DNone(_Extrapolator2D):
     pass
 
+
 cdef class _Extrapolator2DNearest(_Extrapolator2D):
     pass
+
+
+cdef class _GridGradients2D:
+    cdef:
+        double [::1] _x, _y
+        double [:, ::1] _f
+        int _last_index_x, _last_index_y
+    cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y) except? -1e999
+    cdef void derivitive_dfdx(self, double x[3], double f[3])
+    cdef double derivitive_dfdx_edge(self, double f1, f2)
+
+    cdef double eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y)
+    cdef double eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y)
+    cdef double eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y) except? -1e999
+    cdef double eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y)
+
+

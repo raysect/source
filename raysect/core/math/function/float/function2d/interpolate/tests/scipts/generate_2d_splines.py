@@ -171,7 +171,7 @@ if __name__ == '__main__':
 
     check_plot = True
     if check_plot:
-        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'linear', 'nearest', extrapolation_range=2.0)
+        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'cubic', 'nearest', extrapolation_range=2.0)
         import matplotlib.pyplot as plt
         from matplotlib import cm
         fig, ax = plt.subplots(subplot_kw={"projection": "3d"})

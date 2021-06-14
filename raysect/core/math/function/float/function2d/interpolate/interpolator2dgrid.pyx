@@ -33,6 +33,7 @@ import numpy as np
 cimport cython
 from raysect.core.math.cython.utility cimport find_index
 from raysect.core.math.cython.interpolation.linear cimport linear2d
+from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_2d, evaluate_cubic_2d
 
 
 cdef class Interpolator2DGrid(Function2D):
@@ -245,6 +246,75 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
         )
 
 
+
+cdef class _Interpolator2DCubic(_Interpolator2D):
+    """
+    Linear interpolation of 2D function.
+
+    :param x: 2D memory view of the spline point x positions.
+    :param y: 2D memory view of the spline point y positions.
+    :param f: 2D memory view of the function value at spline point x, y positions.
+    """
+
+    ID = 'cubic'
+
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f):
+        super().__init__(x, y, f)
+
+
+        # Where 'a' has been calculated already the mask value = 1
+        self._mask_a = np.zeros((self._last_index_x, self._last_index_y), dtype=np.float64)
+        self._a = np.zeros((self._last_index_x, self._last_index_y, 4, 4), dtype=np.float64)
+        self._a_mv = self._a
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
+    cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
+        # rescale x between 0 and 1
+        cdef double x_scal
+        cdef double y_scal
+        cdef double[2][2] f, dfdx, dfdy, d2fdxdy
+        cdef double x_bound
+        cdef double[4][4] a
+
+        x_bound = self._x[index_x + 1] - self._x[index_x]
+        if x_bound != 0:
+            x_scal = (px - self._x[index_x]) / x_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+        y_bound = self._y[index_y + 1] - self._y[index_y]
+        if y_bound != 0:
+            y_scal = (py - self._y[index_y]) / y_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same y value!')
+
+        # Calculate the coefficients (and gradients at each spline point) if they dont exist
+        if not self._mask_a[index_x, index_y]:
+            # TODO check the f index order required (is it f[0, 1] or f[1, 0]), then correct indices below
+            f[0][0] = self._f[index_x, index_y]
+            f[1][0] = self._f[index_x, index_y]
+            f[0][1] = self._f[index_x, index_y]
+            f[1][1] = self._f[index_x, index_y]
+            grid_grad = _GridGradients2D(self._x, self._y, self._f)
+            test_type = np.zeros((2, ), dtype=np.int32)
+            # test_type[0] = 1
+            print(type(test_type))
+            grid_grad(index_x, index_y, 1, 0)
+            print('result', grid_grad(index_x, index_y, 1, 0))
+            # dfdx[0][0] = self._calc_gradient(self._x, self._y, self._f, index_x, index_y)
+            # dfdx[1][0] = self._calc_gradient(self._x, self._y, self._f, index_x, index_y)
+            # dfdx[0][1] = self._calc_gradient(self._x, self._y, self._f, index_x, index_y)
+            # dfdx[1][1] = self._calc_gradient(self._x, self._y, self._f, index_x, index_y)
+
+            # calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
+            # self._a_mv[index_x][index_y] = a
+            # self._mask_a[index_x][index_y] = 1
+        else:
+            a = self._a[index_x, index_y, :4]
+        return evaluate_cubic_2d(a, x_scal, y_scal)
+
+
 cdef class _Extrapolator2D:
     """
     Base class for Function1D extrapolators.
@@ -345,9 +415,140 @@ cdef class _Extrapolator2DNearest(_Extrapolator2D):
         return self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y)
 
 
+cdef class _GridGradients2D:
+    """
+    Gradient method that returns the approximate derivative of a desired order at a specified grid point.
+
+    These methods of finding derivatives are only valid on a 2D grid of points, at the values at the points. Other
+    derivative method would be dependent on the interpolator types.
+
+    :param x: 2D memory view of the spline point x positions.
+    :param y: 2D memory view of the spline point y positions.
+    :param f: 2D memory view of the function value at spline point x, y positions.
+    """
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f):
+
+        self._x = x
+        self._y = y
+        self._f = f
+        self._last_index_x = self._x.shape[0] - 1
+        self._last_index_y = self._y.shape[0] - 1
+
+    cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y) except? -1e999:
+        """
+        Evaluate the derivative of specific order at a grid point.
+
+        :param index_x: The lower index of the x grid cell to evaluate.
+        :param index_y: The lower index of the y grid cell to evaluate.
+        :param edge_x_index: The lower index of the x grid cell to evaluate, but upper index if at the upper grid edge.
+        :param edge_y_index: The lower index of the y grid cell to evaluate, but upper index if at the upper grid edge.
+        :param derivative_order: An integer array of the derivative order  (e.g. [2, 0] is d2fdx2 and [1, 1] is d2fdxdy)
+        """
+        # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
+        cdef double dfdn
+
+        if index_x == 0:
+            if index_y == 0:
+                print('edge1')
+                dfdn = self.eval_edge_xy(index_x, index_y, derivative_order_x, derivative_order_y)
+            elif index_y == self._last_index_y:
+                dfdn = self.eval_edge_xy(index_x, index_y - 1, derivative_order_x, derivative_order_y)
+            else:
+                dfdn = self.eval_edge_x(index_x, index_y, derivative_order_x, derivative_order_y)
+        elif index_x == self._last_index_x:
+            if index_y == 0:
+                dfdn = self.eval_edge_xy(index_x - 1, index_y, derivative_order_x, derivative_order_y)
+            elif index_y == self._last_index_y:
+                dfdn = self.eval_edge_xy(index_x - 1, index_y - 1, derivative_order_x, derivative_order_y)
+            else:
+                dfdn = self.eval_edge_x(index_x - 1, index_y, derivative_order_x, derivative_order_y)
+        else:
+            if index_y == 0:
+                dfdn = self.eval_edge_y(index_x, index_y, derivative_order_x, derivative_order_y)
+            elif index_y == self._last_index_y:
+                dfdn = self.eval_edge_y(index_x, index_y - 1, derivative_order_x, derivative_order_y)
+            else:
+                dfdn = self.eval_xy(index_x, index_y, derivative_order_x, derivative_order_y)
+
+        return dfdn
+
+    cdef double eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
+        cdef double[2][3] f
+        cdef double dfdn
+        cdef int middle_x = 0, middle_y = 1
+        f[0][0] = self._f[index_x, index_y - 1]
+        f[0][1] = self._f[index_x, index_y]
+        f[0][2] = self._f[index_x, index_y + 1]
+        f[1][0] = self._f[index_x + 1, index_y - 1]
+        f[1][1] = self._f[index_x + 1, index_y]
+        f[1][2] = self._f[index_x + 1, index_y + 1]
+        if derivative_order_x == 1 and derivative_order_y == 0:
+            dfdn = self.derivitive_dfdx_edge(f[:, middle_y])
+        return dfdn
+
+    cdef double eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
+        cdef double[3][2] f
+        cdef double dfdn
+        cdef int middle_x = 1, middle_y = 0
+        f[0][0] = self._f[index_x - 1, index_y]
+        f[0][1] = self._f[index_x - 1, index_y + 1]
+        f[1][0] = self._f[index_x, index_y]
+        f[1][1] = self._f[index_x, index_y + 1]
+        f[2][0] = self._f[index_x + 1, index_y]
+        f[2][1] = self._f[index_x + 1, index_y + 1]
+        if derivative_order_x == 1 and derivative_order_y == 0:
+            self.derivitive_dfdx(f[:, middle_y], f[:, middle_y])
+        return dfdn
+
+    cdef double eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y) except? -1e999:
+        cdef double[2][2] f
+        cdef double dfdn
+        cdef int middle_x = 1, middle_y = 1
+        cdef double[2] input
+        print('dasdas', )
+        f[0][0] = self._f[index_x][index_y]
+        f[0][1] = self._f[index_x][index_y + 1]
+        f[1][0] = self._f[index_x + 1][index_y]
+        f[1][1] = self._f[index_x + 1][index_y + 1]
+        print(f)
+        if derivative_order_x == 1 and derivative_order_y == 0:
+            input = f[:, middle_y]
+            dfdn = self.derivitive_dfdx_edge(input)
+        return dfdn
+
+    cdef double eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
+        cdef double[3][3] f
+        cdef double dfdn
+        cdef int middle_x = 1, middle_y = 1
+        f[0][0] = self._f[index_x - 1, index_y - 1]
+        f[0][1] = self._f[index_x - 1, index_y]
+        f[0][2] = self._f[index_x - 1, index_y + 1]
+        f[1][1] = self._f[index_x, index_y - 1]
+        f[1][1] = self._f[index_x, index_y]
+        f[1][1] = self._f[index_x, index_y + 1]
+        f[2][1] = self._f[index_x + 1, index_y - 1]
+        f[2][1] = self._f[index_x + 1, index_y]
+        f[2][1] = self._f[index_x + 1, index_y + 1]
+        if derivative_order_x == 1 and derivative_order_y == 0:
+            dfdn = self.derivitive_dfdx_edge(f[:, middle_y])
+        return dfdn
+
+    cdef double derivitive_dfdx_edge(self, double f1, f2):
+        return f2 - f1
+
+    cdef void derivitive_dfdx(self, double x[3], double f[3]):
+        # if
+        # cdef double x_eff
+        # x_eff = (x_spline[index + 1] - x_spline[index - 1]) / (x_spline[index + 1] - x_spline[index])
+        pass
+
+    def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y):
+        return self.evaluate(index_x, index_y, derivative_order_x, derivative_order_y)
+
+
 id_to_interpolator = {
     _Interpolator2DLinear.ID: _Interpolator2DLinear,
-    # _Interpolator2DCubic.ID: _Interpolator2DCubic
+    _Interpolator2DCubic.ID: _Interpolator2DCubic
 }
 
 id_to_extrapolator = {
