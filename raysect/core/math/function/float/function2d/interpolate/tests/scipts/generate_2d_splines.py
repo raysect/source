@@ -108,7 +108,7 @@ def get_extrapolation_input_values(
 if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
     big_values = False
-    small_values = True
+    small_values = False
 
     print('Using scipy version', scipy.__version__)
 
@@ -174,8 +174,8 @@ if __name__ == '__main__':
         interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'cubic', 'nearest', extrapolation_range=2.0)
         import matplotlib.pyplot as plt
         from matplotlib import cm
-        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
-        surf = ax.plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm,
+        fig, ax = plt.subplots(1, 2, subplot_kw={"projection": "3d"})
+        surf = ax[0].plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm,
                                linewidth=0, antialiased=False)
         f_out = np.zeros((len(xsamples), len(ysamples)))
         for i in range(len(xsamples)):
@@ -185,9 +185,13 @@ if __name__ == '__main__':
         for i in range(len(xsamples_in_bounds)):
             f_out_extrap[i] = interpolator2D(xsamples_in_bounds[i], ysamples_in_bounds[i])
         print(np.shape(xsamples_in_full), np.shape(ysamples_in_full), np.shape(f_out))
-        ax.scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
+        ax[0].scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
         print(np.shape(f_out_extrap), np.shape(xsamples_in_bounds), np.shape(ysamples_in_bounds), np.shape(f_extrap_nearest))
-        ax.scatter(xsamples_in_bounds, ysamples_in_bounds, f_out_extrap, color='g')
-        ax.scatter(xsamples_in_bounds, ysamples_in_bounds, f_extrap_nearest, color='m')
-        ax.scatter(xsamples_in_full, ysamples_in_full, f_linear, color='b')
+        ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_out_extrap, color='g')
+        ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_extrap_nearest, color='m')
+        # ax.scatter(xsamples_in_full, ysamples_in_full, f_linear, color='b')
+
+        surf = ax[1].plot_surface(xsamples_in_full, ysamples_in_full, f_out, cmap=cm.coolwarm,
+                               linewidth=0, antialiased=False)
+
         plt.show()

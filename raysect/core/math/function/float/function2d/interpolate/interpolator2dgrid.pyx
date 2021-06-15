@@ -299,17 +299,26 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
             grid_grad = _GridGradients2D(self._x, self._y, self._f)
             test_type = np.zeros((2, ), dtype=np.int32)
             # test_type[0] = 1
-            print(type(test_type))
             grid_grad(index_x, index_y, 1, 0)
             print('result', grid_grad(index_x, index_y, 1, 0))
-            # dfdx[0][0] = self._calc_gradient(self._x, self._y, self._f, index_x, index_y)
-            # dfdx[1][0] = self._calc_gradient(self._x, self._y, self._f, index_x, index_y)
-            # dfdx[0][1] = self._calc_gradient(self._x, self._y, self._f, index_x, index_y)
-            # dfdx[1][1] = self._calc_gradient(self._x, self._y, self._f, index_x, index_y)
+            dfdx[0][0] = grid_grad(index_x, index_y, 1, 0)
+            dfdx[1][0] = grid_grad(index_x + 1, index_y, 1, 0)#grid_grad(index_x + 1, index_y, 1, 0)
+            dfdx[0][1] = grid_grad(index_x, index_y + 1, 1, 0)#grid_grad(index_x, index_y + 1, 1, 0)
+            dfdx[1][1] = grid_grad(index_x + 1, index_y + 1, 1, 0)
 
-            # calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
-            # self._a_mv[index_x][index_y] = a
-            # self._mask_a[index_x][index_y] = 1
+            dfdy[0][0] = grid_grad(index_x, index_y, 0, 1)
+            dfdy[1][0] = grid_grad(index_x, index_y + 1, 0, 1)#grid_grad(index_x + 1, index_y, 0, 1)
+            dfdy[0][1] = grid_grad(index_x + 1, index_y, 0, 1)#grid_grad(index_x, index_y + 1, 0, 1)
+            dfdy[1][1] = grid_grad(index_x + 1, index_y + 1, 0, 1)
+
+            d2fdxdy[0][0] = grid_grad(index_x, index_y, 1, 1)
+            d2fdxdy[1][0] = grid_grad(index_x, index_y + 1, 1, 1)#grid_grad(index_x + 1, index_y, 1, 1)
+            d2fdxdy[0][1] = grid_grad(index_x + 1, index_y, 1, 1)#grid_grad(index_x, index_y + 1, 1, 1)
+            d2fdxdy[1][1] = grid_grad(index_x + 1, index_y + 1, 1, 1)
+
+            calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
+            self._a_mv[index_x, index_y] = a
+            self._mask_a[index_x, index_y] = 1
         else:
             a = self._a[index_x, index_y, :4]
         return evaluate_cubic_2d(a, x_scal, y_scal)
@@ -449,7 +458,6 @@ cdef class _GridGradients2D:
 
         if index_x == 0:
             if index_y == 0:
-                print('edge1')
                 dfdn = self.eval_edge_xy(index_x, index_y, derivative_order_x, derivative_order_y)
             elif index_y == self._last_index_y:
                 dfdn = self.eval_edge_xy(index_x, index_y - 1, derivative_order_x, derivative_order_y)
@@ -473,74 +481,93 @@ cdef class _GridGradients2D:
         return dfdn
 
     cdef double eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
-        cdef double[2][3] f
         cdef double dfdn
-        cdef int middle_x = 0, middle_y = 1
-        f[0][0] = self._f[index_x, index_y - 1]
-        f[0][1] = self._f[index_x, index_y]
-        f[0][2] = self._f[index_x, index_y + 1]
-        f[1][0] = self._f[index_x + 1, index_y - 1]
-        f[1][1] = self._f[index_x + 1, index_y]
-        f[1][2] = self._f[index_x + 1, index_y + 1]
+        cdef double[::1] x_range, y_range
+        cdef double[:, ::1] f_range
+        cdef int x_centre = 0, y_centre = 1
+        x_range = self._x[index_x:index_x + 2]
+        y_range = self._y[index_y - 1:index_y + 2]
+        f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2]
         if derivative_order_x == 1 and derivative_order_y == 0:
-            dfdn = self.derivitive_dfdx_edge(f[:, middle_y])
+            dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre])
+        elif derivative_order_x == 0 and derivative_order_y == 1:
+            dfdn = self.derivitive_dfdx(y_range, f_range[x_centre, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1:
+            dfdn = self.derivitive_d2fdxdy_edge_1(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
         return dfdn
 
     cdef double eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
-        cdef double[3][2] f
         cdef double dfdn
-        cdef int middle_x = 1, middle_y = 0
-        f[0][0] = self._f[index_x - 1, index_y]
-        f[0][1] = self._f[index_x - 1, index_y + 1]
-        f[1][0] = self._f[index_x, index_y]
-        f[1][1] = self._f[index_x, index_y + 1]
-        f[2][0] = self._f[index_x + 1, index_y]
-        f[2][1] = self._f[index_x + 1, index_y + 1]
+        cdef double[::1] x_range, y_range
+        cdef double[:, ::1] f_range
+        cdef int x_centre = 1, y_centre = 0
+        x_range = self._x[index_x - 1:index_x + 2]
+        y_range = self._y[index_y:index_y + 2]
+        f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2]
         if derivative_order_x == 1 and derivative_order_y == 0:
-            self.derivitive_dfdx(f[:, middle_y], f[:, middle_y])
+            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre])
+        elif derivative_order_x == 0 and derivative_order_y == 1:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1:
+            dfdn = self.derivitive_d2fdxdy_edge_1(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
         return dfdn
 
     cdef double eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y) except? -1e999:
-        cdef double[2][2] f
         cdef double dfdn
-        cdef int middle_x = 1, middle_y = 1
-        cdef double[2] input
-        print('dasdas', )
-        f[0][0] = self._f[index_x][index_y]
-        f[0][1] = self._f[index_x][index_y + 1]
-        f[1][0] = self._f[index_x + 1][index_y]
-        f[1][1] = self._f[index_x + 1][index_y + 1]
-        print(f)
+        cdef double[::1] x_range, y_range
+        cdef double[:, ::1] f_range
+        cdef int x_centre = 0, y_centre = 0
+        x_range = self._x[index_x:index_x + 2]
+        y_range = self._y[index_y:index_y + 2]
+        f_range = self._f[index_x:index_x + 2, index_y:index_y + 2]
+
         if derivative_order_x == 1 and derivative_order_y == 0:
-            input = f[:, middle_y]
-            dfdn = self.derivitive_dfdx_edge(input)
+            dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre])
+        elif derivative_order_x == 0 and derivative_order_y == 1:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1:
+            dfdn = self.derivitive_d2fdxdy_edge_1(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
         return dfdn
 
     cdef double eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
-        cdef double[3][3] f
         cdef double dfdn
-        cdef int middle_x = 1, middle_y = 1
-        f[0][0] = self._f[index_x - 1, index_y - 1]
-        f[0][1] = self._f[index_x - 1, index_y]
-        f[0][2] = self._f[index_x - 1, index_y + 1]
-        f[1][1] = self._f[index_x, index_y - 1]
-        f[1][1] = self._f[index_x, index_y]
-        f[1][1] = self._f[index_x, index_y + 1]
-        f[2][1] = self._f[index_x + 1, index_y - 1]
-        f[2][1] = self._f[index_x + 1, index_y]
-        f[2][1] = self._f[index_x + 1, index_y + 1]
+        cdef double[::1] x_range, y_range
+        cdef double[:, ::1] f_range
+        cdef int x_centre = 1, y_centre = 1
+        x_range = self._x[index_x - 1:index_x + 2]
+        y_range = self._y[index_y - 1:index_y + 2]
+        f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2]
+        print('shape', np.shape(x_range), np.shape(y_range), np.shape(f_range), np.shape(self._f.base), np.shape(self._f), index_x, index_y)
+
         if derivative_order_x == 1 and derivative_order_y == 0:
-            dfdn = self.derivitive_dfdx_edge(f[:, middle_y])
+            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre])
+        elif derivative_order_x == 0 and derivative_order_y == 1:
+            dfdn = self.derivitive_dfdx(y_range, f_range[x_centre, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1:
+            dfdn = self.derivitive_d2fdxdy(f_range[x_centre - 1:x_centre + 2, y_centre - 1:y_centre + 2])
+        if (index_x == 4 and index_y ==4) or (index_x == 5 and index_y ==4) or (index_x == 4 and index_y == 5) or (index_x == 5 and index_y == 5):
+            print('indexcheck', index_x, index_y, derivative_order_x, derivative_order_y, self._f[index_x, index_y], dfdn)
+        if (index_x == 3 and index_y ==4) or (index_x == 3 and index_y ==5) or (index_x == 6 and index_y == 4) or (index_x == 6 and index_y == 5):
+            print('indexcheck', index_x, index_y, derivative_order_x, derivative_order_y, self._f[index_x, index_y], dfdn)
         return dfdn
 
-    cdef double derivitive_dfdx_edge(self, double f1, f2):
-        return f2 - f1
+    cdef double derivitive_dfdx_edge(self, double[:] f):
+        return f[1] - f[0]
 
-    cdef void derivitive_dfdx(self, double x[3], double f[3]):
-        # if
-        # cdef double x_eff
-        # x_eff = (x_spline[index + 1] - x_spline[index - 1]) / (x_spline[index + 1] - x_spline[index])
-        pass
+    cdef double derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999:
+        cdef double x1_n, x1_n2
+        x1_n = (x[1] - x[0])/(x[2] - x[1])
+        x1_n2 = x1_n**2
+        print('x1_n2', x1_n2)
+        return (f[2]*x1_n2 - f[0] - f[1]*(x1_n2 - 1.))/(x1_n + x1_n2)
+
+    cdef double derivitive_d2fdxdy_edge_1(self, double[:, ::1] f) except? -1e999:
+        print(f.base, np.shape(f))
+        return (f[1, 1] - f[0, 1] - f[1, 0] + f[0, 0])/4.
+
+    cdef double derivitive_d2fdxdy(self, double[:, ::1] f) except? -1e999:
+        print(f.base, np.shape(f))
+        return (f[2, 2] - f[0, 2] - f[2, 0] + f[0, 0])/4.
 
     def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y):
         return self.evaluate(index_x, index_y, derivative_order_x, derivative_order_y)
