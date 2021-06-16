@@ -246,7 +246,6 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
         )
 
 
-
 cdef class _Interpolator2DCubic(_Interpolator2D):
     """
     Linear interpolation of 2D function.
@@ -260,7 +259,6 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
 
     def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f):
         super().__init__(x, y, f)
-
 
         # Where 'a' has been calculated already the mask value = 1
         self._mask_a = np.zeros((self._last_index_x, self._last_index_y), dtype=np.float64)
@@ -291,36 +289,32 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
         if not self._mask_a[index_x, index_y]:
-            # TODO check the f index order required (is it f[0, 1] or f[1, 0]), then correct indices below
             f[0][0] = self._f[index_x, index_y]
-            f[1][0] = self._f[index_x, index_y]
-            f[0][1] = self._f[index_x, index_y]
-            f[1][1] = self._f[index_x, index_y]
+            f[1][0] = self._f[index_x + 1, index_y]
+            f[0][1] = self._f[index_x, index_y + 1]
+            f[1][1] = self._f[index_x + 1, index_y + 1]
             grid_grad = _GridGradients2D(self._x, self._y, self._f)
-            test_type = np.zeros((2, ), dtype=np.int32)
-            # test_type[0] = 1
-            grid_grad(index_x, index_y, 1, 0)
-            print('result', grid_grad(index_x, index_y, 1, 0))
             dfdx[0][0] = grid_grad(index_x, index_y, 1, 0)
-            dfdx[1][0] = grid_grad(index_x + 1, index_y, 1, 0)#grid_grad(index_x + 1, index_y, 1, 0)
-            dfdx[0][1] = grid_grad(index_x, index_y + 1, 1, 0)#grid_grad(index_x, index_y + 1, 1, 0)
+            dfdx[0][1] = grid_grad(index_x, index_y + 1, 1, 0)
+            dfdx[1][0] = grid_grad(index_x + 1, index_y, 1, 0)
             dfdx[1][1] = grid_grad(index_x + 1, index_y + 1, 1, 0)
 
             dfdy[0][0] = grid_grad(index_x, index_y, 0, 1)
-            dfdy[1][0] = grid_grad(index_x, index_y + 1, 0, 1)#grid_grad(index_x + 1, index_y, 0, 1)
-            dfdy[0][1] = grid_grad(index_x + 1, index_y, 0, 1)#grid_grad(index_x, index_y + 1, 0, 1)
+            dfdy[0][1] = grid_grad(index_x, index_y + 1, 0, 1)
+            dfdy[1][0] = grid_grad(index_x + 1, index_y, 0, 1)
             dfdy[1][1] = grid_grad(index_x + 1, index_y + 1, 0, 1)
 
             d2fdxdy[0][0] = grid_grad(index_x, index_y, 1, 1)
-            d2fdxdy[1][0] = grid_grad(index_x, index_y + 1, 1, 1)#grid_grad(index_x + 1, index_y, 1, 1)
-            d2fdxdy[0][1] = grid_grad(index_x + 1, index_y, 1, 1)#grid_grad(index_x, index_y + 1, 1, 1)
+            d2fdxdy[0][1] = grid_grad(index_x, index_y + 1, 1, 1)
+            d2fdxdy[1][0] = grid_grad(index_x + 1, index_y, 1, 1)
             d2fdxdy[1][1] = grid_grad(index_x + 1, index_y + 1, 1, 1)
 
             calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
             self._a_mv[index_x, index_y] = a
             self._mask_a[index_x, index_y] = 1
         else:
-            a = self._a[index_x, index_y, :4]
+            a = self._a[index_x, index_y, :4, :4]
+
         return evaluate_cubic_2d(a, x_scal, y_scal)
 
 
@@ -449,9 +443,8 @@ cdef class _GridGradients2D:
 
         :param index_x: The lower index of the x grid cell to evaluate.
         :param index_y: The lower index of the y grid cell to evaluate.
-        :param edge_x_index: The lower index of the x grid cell to evaluate, but upper index if at the upper grid edge.
-        :param edge_y_index: The lower index of the y grid cell to evaluate, but upper index if at the upper grid edge.
-        :param derivative_order: An integer array of the derivative order  (e.g. [2, 0] is d2fdx2 and [1, 1] is d2fdxdy)
+        :param derivative_order_x: An integer of the derivative order x. Only zero if derivative_order_y is nonzero
+        :param derivative_order_y: An integer of the derivative order y. Only zero if derivative_order_x is nonzero
         """
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
         cdef double dfdn
@@ -537,7 +530,6 @@ cdef class _GridGradients2D:
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2]
-        print('shape', np.shape(x_range), np.shape(y_range), np.shape(f_range), np.shape(self._f.base), np.shape(self._f), index_x, index_y)
 
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre])
@@ -545,10 +537,6 @@ cdef class _GridGradients2D:
             dfdn = self.derivitive_dfdx(y_range, f_range[x_centre, :])
         elif derivative_order_x == 1 and derivative_order_y == 1:
             dfdn = self.derivitive_d2fdxdy(f_range[x_centre - 1:x_centre + 2, y_centre - 1:y_centre + 2])
-        if (index_x == 4 and index_y ==4) or (index_x == 5 and index_y ==4) or (index_x == 4 and index_y == 5) or (index_x == 5 and index_y == 5):
-            print('indexcheck', index_x, index_y, derivative_order_x, derivative_order_y, self._f[index_x, index_y], dfdn)
-        if (index_x == 3 and index_y ==4) or (index_x == 3 and index_y ==5) or (index_x == 6 and index_y == 4) or (index_x == 6 and index_y == 5):
-            print('indexcheck', index_x, index_y, derivative_order_x, derivative_order_y, self._f[index_x, index_y], dfdn)
         return dfdn
 
     cdef double derivitive_dfdx_edge(self, double[:] f):
@@ -558,15 +546,12 @@ cdef class _GridGradients2D:
         cdef double x1_n, x1_n2
         x1_n = (x[1] - x[0])/(x[2] - x[1])
         x1_n2 = x1_n**2
-        print('x1_n2', x1_n2)
         return (f[2]*x1_n2 - f[0] - f[1]*(x1_n2 - 1.))/(x1_n + x1_n2)
 
     cdef double derivitive_d2fdxdy_edge_1(self, double[:, ::1] f) except? -1e999:
-        print(f.base, np.shape(f))
         return (f[1, 1] - f[0, 1] - f[1, 0] + f[0, 0])/4.
 
     cdef double derivitive_d2fdxdy(self, double[:, ::1] f) except? -1e999:
-        print(f.base, np.shape(f))
         return (f[2, 2] - f[0, 2] - f[2, 0] + f[0, 0])/4.
 
     def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y):
