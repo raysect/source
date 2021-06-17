@@ -65,6 +65,8 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
     cdef:
         ndarray _a, _mask_a
         double[:, :, :, ::1] _a_mv
+    cdef cache_coefficients(self, int index_x, int index_y, double[4][4] a)
+    cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y)
 
 
 cdef class _Extrapolator2D:
@@ -84,6 +86,10 @@ cdef class _Extrapolator2DNone(_Extrapolator2D):
 
 
 cdef class _Extrapolator2DNearest(_Extrapolator2D):
+    pass
+
+
+cdef class _Extrapolator2DLinear(_Extrapolator2D):
     pass
 
 

@@ -272,8 +272,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         # rescale x between 0 and 1
         cdef double x_scal
         cdef double y_scal
-        cdef double[2][2] f, dfdx, dfdy, d2fdxdy
-        cdef double x_bound
+        cdef double x_bound, y_bound
         cdef double[4][4] a
 
         x_bound = self._x[index_x + 1] - self._x[index_x]
@@ -286,6 +285,15 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
             y_scal = (py - self._y[index_y]) / y_bound
         else:
             raise ZeroDivisionError('Two adjacent spline points have the same y value!')
+
+        # Calculate the coefficients (and gradients at each spline point) if they dont exist
+        self.cache_coefficients(index_x, index_y, a)
+
+        return evaluate_cubic_2d(a, x_scal, y_scal)
+
+    cdef cache_coefficients(self, int index_x, int index_y, double[4][4] a):
+        cdef double[2][2] f, dfdx, dfdy, d2fdxdy
+        cdef int i, j
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
         if not self._mask_a[index_x, index_y]:
@@ -310,12 +318,56 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
             d2fdxdy[1][1] = grid_grad(index_x + 1, index_y + 1, 1, 1)
 
             calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
-            self._a_mv[index_x, index_y] = a
+            for i in range(4):
+                for j in range(4):
+                    self._a[index_x, index_y, i, j] = a[i][j]
             self._mask_a[index_x, index_y] = 1
         else:
-            a = self._a[index_x, index_y, :4, :4]
+            for i in range(4):
+                for j in range(4):
+                    a[i][j] = self._a[index_x, index_y, i, j]
 
-        return evaluate_cubic_2d(a, x_scal, y_scal)
+
+    cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
+        # rescale x between 0 and 1
+        cdef double x_scal
+        cdef double y_scal
+        cdef double[2][2] f, dfdx, dfdy, d2fdxdy
+        cdef double x_bound, y_bound
+        cdef double[4][4] a
+        cdef double df_dn
+
+
+        x_bound = self._x[index_x + 1] - self._x[index_x]
+        if x_bound != 0:
+            x_scal = (px - self._x[index_x]) / x_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+        y_bound = self._y[index_y + 1] - self._y[index_y]
+        if y_bound != 0:
+            y_scal = (py - self._y[index_y]) / y_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same y value!')
+
+        # Calculate the coefficients (and gradients at each spline point) if they dont exist
+        cdef double x_scal2 = x_scal * x_scal
+        cdef double x_scal3 = x_scal2 * x_scal
+
+        cdef double y_scal2 = y_scal * y_scal
+        cdef double y_scal3 = y_scal2 * y_scal
+
+        self.cache_coefficients(index_x, index_y, a)
+        # TODO implement as a matrix of factorials, reduce in size by direction of order
+
+        for i in range(4-order_x):
+            for j in range(4-order_y):
+                df_dn += a[i][j] # TODO write factorial from raysect.core.math.cython.utility cimport factorial
+        if order_x == 1 and order_y == 0:
+            return a[0][2] * y_scal2 + a[0][3] * y_scal3 \
+                   + a[1][0] * x_scal + a[1][1] * x_scal * y_scal + a[1][2] * x_scal * y_scal2 + a[1][3] * x_scal * y_scal3 \
+                   + a[2][0] * x_scal2 + a[2][1] * x_scal2 * y_scal + a[2][2] * x_scal2 * y_scal2 + a[2][3] * x_scal2 * y_scal3 \
+                   + a[3][0] * x_scal3 + a[3][1] * x_scal3 * y_scal + a[3][2] * x_scal3 * y_scal2 + a[3][3] * x_scal3 * y_scal3
+
 
 
 cdef class _Extrapolator2D:
@@ -395,6 +447,32 @@ cdef class _Extrapolator2DNone(_Extrapolator2D):
 cdef class _Extrapolator2DNearest(_Extrapolator2D):
     """
     Extrapolator that returns nearest input value.
+
+    :param x: 2D memory view of the spline point x positions.
+    :param y: 2D memory view of the spline point y positions.
+    :param f: 2D memory view of the function value at spline point x, y positions.
+    :param extrapolation_range: Range covered by the extrapolator. Padded symmetrically to both ends of the input.
+    :param external_interpolator: stored _Interpolator2D object that is being used.
+    """
+
+    ID = 'nearest'
+
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range, _Interpolator2D external_interpolator):
+           super().__init__(x, y, f, extrapolation_range, external_interpolator)
+
+    cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
+        return self._external_interpolator.evaluate(self._x[edge_x_index], py, index_x, index_y)
+
+    cdef double evaluate_edge_y(self, double px, double py, int index_x, int index_y, int edge_y_index) except? -1e999:
+        return self._external_interpolator.evaluate(px, self._y[edge_y_index], index_x, index_y)
+
+    cdef double evaluate_edge_xy(self, double px, double py, int index_x, int index_y, int edge_x_index, int edge_y_index) except? -1e999:
+        return self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y)
+
+
+cdef class _Extrapolator2DLinear(_Extrapolator2D):
+    """
+    Extrapolator that returns linearly extrapolated input value.
 
     :param x: 2D memory view of the spline point x positions.
     :param y: 2D memory view of the spline point y positions.
