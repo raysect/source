@@ -30,7 +30,7 @@
 
 import numpy as np
 from raysect.core.math.function.float.function2d.interpolate.interpolator2dgrid import Interpolator2DGrid
-from scipy.interpolate import griddata, interp2d
+from scipy.interpolate import griddata, interp2d, RectBivariateSpline
 import scipy
 
 X_LOWER = -1.0
@@ -134,6 +134,9 @@ if __name__ == '__main__':
     # Make grid
     xsamples_in_full, ysamples_in_full = np.meshgrid(xsamples, ysamples)
 
+    collapsed_xsamples_in_full = np.reshape(xsamples_in_full, -1)
+    collapsed_ysamples_in_full = np.reshape(ysamples_in_full, -1)
+
     precalc_interpolation_function_vals = function_to_spline(xsamples_in_full, ysamples_in_full, factor)
 
     # print('Save this to self.precalc_function in test_interpolator:\n', repr(precalc_interpolation_function_vals))
@@ -163,18 +166,32 @@ if __name__ == '__main__':
     f_extrap_nearest = np.zeros((len(xsamples_in_bounds),))
     for i in range(len(xsamples_in_bounds)):
         f_extrap_nearest[i] = linear_2d_nearest_neighbour(xsamples_in_bounds[i], ysamples_in_bounds[i])
-    # f_extrap_nearest = linear_2d_nearest_neighbour(xsamples_in_bounds,  ysamples_in_bounds)
-    # f_extrap_nearest = get_nearest_neighbour_output_values(factor_in=factor, x_input=x_in, y_input=y_in)
 
     print('Output of nearest neighbour extrapolation from the start and end spline knots ',
           'Save this to self.precalc_extrapolation_nearest in test_interpolator:\n', repr(f_extrap_nearest))
+    print(np.shape(x_in_full), np.shape(f_in))
+    points = np.concatenate((np.reshape(x_in_full, -1)[:, np.newaxis], np.reshape(x_in_full, -1)[:, np.newaxis]), axis=1)
+    cubic_2d = interp2d(x_in, y_in, f_in, kind='cubic')
+    cubic_2da = RectBivariateSpline(x_in, y_in, f_in, kx=3, ky=3)
+    f_cubic = cubic_2d(xsamples, ysamples)
+    f_cubica = cubic_2da(xsamples, ysamples)
+    print('Cubic spline at xsamples, ysamples created using. interp2d(kind=cubic)',
+          'Save this to self.precalc_interpolation in test_interpolator in setup_cubic:\n', repr(f_cubic))
+    from scipy.interpolate import CloughTocher2DInterpolator
+
+    x_flat = np.reshape(x_in_full, -1)
+    y_flat = np.reshape(y_in_full, -1)
+    f_inflat = np.reshape(f_in, -1)
+    xy_flat = np.concatenate((x_flat[:, np.newaxis], y_flat[:, np.newaxis]), axis=1)
+    interp_clough_tocher = CloughTocher2DInterpolator(xy_flat, f_inflat)
+    grid_z = griddata(xy_flat, f_inflat, (xsamples_in_full, ysamples_in_full), method='cubic')
 
     check_plot = True
     if check_plot:
         interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'cubic', 'nearest', extrapolation_range=2.0)
         import matplotlib.pyplot as plt
         from matplotlib import cm
-        fig, ax = plt.subplots(1, 2, subplot_kw={"projection": "3d"})
+        fig, ax = plt.subplots(1, 3, subplot_kw={"projection": "3d"})
         surf = ax[0].plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm,
                                linewidth=0, antialiased=False)
         f_out = np.zeros((len(xsamples), len(ysamples)))
@@ -189,9 +206,19 @@ if __name__ == '__main__':
         print(np.shape(f_out_extrap), np.shape(xsamples_in_bounds), np.shape(ysamples_in_bounds), np.shape(f_extrap_nearest))
         ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_out_extrap, color='g')
         ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_extrap_nearest, color='m')
+        print(np.shape(collapsed_xsamples_in_full), np.shape(cubic_2d(collapsed_xsamples_in_full, collapsed_ysamples_in_full)))
+        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, cubic_2d(xsamples, ysamples), color='m')
+        f_in_2 = function_to_spline(xsamples_in_full, ysamples_in_full, factor)
+
+        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, f_in_2, color='g')
+        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, interp_clough_tocher(xsamples_in_full, ysamples_in_full), color='b')
+        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, grid_z, color='k')
+        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, f_cubica, color='r')
         # ax.scatter(xsamples_in_full, ysamples_in_full, f_linear, color='b')
 
         surf = ax[1].plot_surface(xsamples_in_full, ysamples_in_full, f_out, cmap=cm.coolwarm,
+                               linewidth=0, antialiased=False)
+        surf = ax[2].plot_surface(xsamples_in_full, ysamples_in_full, f_in_2, cmap=cm.coolwarm,
                                linewidth=0, antialiased=False)
 
         plt.show()
