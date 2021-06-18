@@ -509,6 +509,13 @@ cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty):
         return True
 
 
+cdef int factorial(int n):
+    if n <= 0:
+        return 1
+    else:
+        return n * factorial(n - 1)
+
+
 def _maximum(data):
     """Expose cython function for testing."""
     return maximum(data)

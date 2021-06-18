@@ -55,6 +55,7 @@ cdef class _Interpolator2D:
         int _last_index_x, _last_index_y
 
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999
+    cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y)
 
 
 cdef class _Interpolator2DLinear(_Interpolator2D):
@@ -66,7 +67,6 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         ndarray _a, _mask_a
         double[:, :, :, ::1] _a_mv
     cdef cache_coefficients(self, int index_x, int index_y, double[4][4] a)
-    cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y)
 
 
 cdef class _Extrapolator2D:

@@ -31,7 +31,7 @@
 
 import numpy as np
 cimport cython
-from raysect.core.math.cython.utility cimport find_index
+from raysect.core.math.cython.utility cimport find_index, factorial
 from raysect.core.math.cython.interpolation.linear cimport linear2d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_2d, evaluate_cubic_2d
 
@@ -224,6 +224,9 @@ cdef class _Interpolator2D:
         """
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
+    cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
+        raise NotImplementedError('_Interpolator is an abstract base class.')
+
 
 cdef class _Interpolator2DLinear(_Interpolator2D):
     """
@@ -244,6 +247,19 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
             self._x[index_x], self._x[index_x + 1], self._y[index_y], self._y[index_y + 1],
             self._f[index_x:index_x + 1, index_y:index_y + 1], px, py
         )
+
+    cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
+        cdef double df_dn
+
+        if order_x + order_y > 1:
+            raise ValueError('Can\'t return the gradient, order is too high')
+        if order_x == 1:
+            df_dn = (self._f[index_x + 1, index_y] - self._f[index_x, index_y])/(self._x[index_x + 1] - self._x[index_x])
+        elif order_y == 1:
+            df_dn = (self._f[index_x, index_y + 1] - self._f[index_x, index_y])/(self._y[index_y + 1] - self._y[index_y])
+        else:
+            raise ValueError('order_x and order_y must be 1 and 0 for the linear interpolator')
+        return df_dn
 
 
 cdef class _Interpolator2DCubic(_Interpolator2D):
@@ -327,17 +343,17 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
                 for j in range(4):
                     a[i][j] = self._a[index_x, index_y, i, j]
 
-
     cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
         # rescale x between 0 and 1
         cdef double x_scal
         cdef double y_scal
-        cdef double[2][2] f, dfdx, dfdy, d2fdxdy
         cdef double x_bound, y_bound
         cdef double[4][4] a
+        cdef double[4] x_powers, y_powers
         cdef double df_dn
 
-
+        if order_x > 3:
+            raise ValueError('')
         x_bound = self._x[index_x + 1] - self._x[index_x]
         if x_bound != 0:
             x_scal = (px - self._x[index_x]) / x_bound
@@ -350,24 +366,25 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
             raise ZeroDivisionError('Two adjacent spline points have the same y value!')
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
-        cdef double x_scal2 = x_scal * x_scal
-        cdef double x_scal3 = x_scal2 * x_scal
-
-        cdef double y_scal2 = y_scal * y_scal
-        cdef double y_scal3 = y_scal2 * y_scal
-
         self.cache_coefficients(index_x, index_y, a)
-        # TODO implement as a matrix of factorials, reduce in size by direction of order
+        x_powers[0] = 1
+        x_powers[1] = x_scal
+        x_powers[2] = x_scal * x_scal
+        x_powers[3] = x_scal * x_scal * x_scal
+        y_powers[0] = 1
+        y_powers[1] = y_scal
+        y_powers[2] = y_scal * y_scal
+        y_powers[3] = y_scal * y_scal * y_scal
 
-        for i in range(4-order_x):
-            for j in range(4-order_y):
-                df_dn += a[i][j] # TODO write factorial from raysect.core.math.cython.utility cimport factorial
-        if order_x == 1 and order_y == 0:
-            return a[0][2] * y_scal2 + a[0][3] * y_scal3 \
-                   + a[1][0] * x_scal + a[1][1] * x_scal * y_scal + a[1][2] * x_scal * y_scal2 + a[1][3] * x_scal * y_scal3 \
-                   + a[2][0] * x_scal2 + a[2][1] * x_scal2 * y_scal + a[2][2] * x_scal2 * y_scal2 + a[2][3] * x_scal2 * y_scal3 \
-                   + a[3][0] * x_scal3 + a[3][1] * x_scal3 * y_scal + a[3][2] * x_scal3 * y_scal2 + a[3][3] * x_scal3 * y_scal3
+        for i in range(order_x, 4):
+            for j in range(order_y, 4):
+                df_dn += (a[i][j] * (factorial(i)/factorial(i-order_x)) * (factorial(j)/factorial(j-order_y)) * x_powers[i-order_x] * y_powers[j-order_y]) #* (x_bound ** (i - order_x)) * (y_bound ** (j - order_y))
+                print(order_x, order_y, (factorial(i)/factorial(i-order_x)), (factorial(j)/factorial(j-order_y)), i-order_x, j-order_y, (x_bound ** (i - order_x)),  (y_bound ** (j - order_y)))
 
+        # df_dn = df_dn* (x_bound**order_x)*(y_bound**order_y)
+        print('df_dn', df_dn, px, py, x_scal, y_scal)
+
+        return  df_dn
 
 
 cdef class _Extrapolator2D:
@@ -481,19 +498,27 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
     :param external_interpolator: stored _Interpolator2D object that is being used.
     """
 
-    ID = 'nearest'
+    ID = 'linear'
 
     def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range, _Interpolator2D external_interpolator):
            super().__init__(x, y, f, extrapolation_range, external_interpolator)
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
-        return self._external_interpolator.evaluate(self._x[edge_x_index], py, index_x, index_y)
+        cdef double const_c
+        const_c = self._external_interpolator.evaluate(self._x[edge_x_index], py, index_x, index_y) - self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0) * self._x[edge_x_index] - self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 0, 1) * py
+        print('dfadfds', self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0), self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 0, 1))
+        return self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0) * self._x[edge_x_index] + self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 0, 1) * py + const_c
 
     cdef double evaluate_edge_y(self, double px, double py, int index_x, int index_y, int edge_y_index) except? -1e999:
-        return self._external_interpolator.evaluate(px, self._y[edge_y_index], index_x, index_y)
+        cdef double const_c
+        const_c = self._external_interpolator.evaluate(px, self._y[edge_y_index], index_x, index_y) - self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 1, 0) * px - self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 0, 1) * self._y[edge_y_index]
+        return self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 1, 0) * px + self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 0, 1) * self._y[edge_y_index] + const_c
 
     cdef double evaluate_edge_xy(self, double px, double py, int index_x, int index_y, int edge_x_index, int edge_y_index) except? -1e999:
-        return self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y)
+        cdef double const_c
+        const_c = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y) - self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0)*self._x[edge_x_index] - self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 0, 1) * self._y[edge_y_index]
+        return self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0) * px + self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 0, 1) * py + const_c
+
 
 
 cdef class _GridGradients2D:
@@ -644,7 +669,7 @@ id_to_interpolator = {
 id_to_extrapolator = {
     _Extrapolator2DNone.ID: _Extrapolator2DNone,
     _Extrapolator2DNearest.ID: _Extrapolator2DNearest,
-    # _Extrapolator2DLinear.ID: _Extrapolator2DLinear,
+    _Extrapolator2DLinear.ID: _Extrapolator2DLinear,
     # _Extrapolator2DQuadratic.ID: _Extrapolator2DQuadratic
 }
 
