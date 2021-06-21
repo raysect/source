@@ -188,37 +188,79 @@ if __name__ == '__main__':
 
     check_plot = True
     if check_plot:
-        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'cubic', 'linear', extrapolation_range=2.0)
+        xsamples_lower_and_upper = np.linspace(X_LOWER-0.1*(X_UPPER-X_LOWER), X_UPPER+0.1*(X_UPPER-X_LOWER), 50)
+        ysamples_lower_and_upper = np.linspace(Y_LOWER-0.1*(Y_UPPER-Y_LOWER), Y_UPPER+0.1*(Y_UPPER-Y_LOWER), 50)
+        print('sample_bounds ', xsamples_lower_and_upper[0], xsamples_lower_and_upper[-1], xsamples_lower_and_upper)
+        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'linear', 'linear', extrapolation_range=2.0)
         import matplotlib.pyplot as plt
         from matplotlib import cm
-        fig, ax = plt.subplots(1, 3, subplot_kw={"projection": "3d"})
+        fig, ax = plt.subplots(1, 4, subplot_kw={"projection": "3d"})
         surf = ax[0].plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm,
                                linewidth=0, antialiased=False)
-        f_out = np.zeros((len(xsamples), len(ysamples)))
-        for i in range(len(xsamples)):
-            for j in range(len(ysamples)):
-                f_out[i, j] = interpolator2D(xsamples[i], ysamples[j])
-        f_out_extrap = np.zeros((len(xsamples_in_bounds), ))
-        for i in range(len(xsamples_in_bounds)):
-            f_out_extrap[i] = interpolator2D(xsamples_in_bounds[i], ysamples_in_bounds[i])
-        print(np.shape(xsamples_in_full), np.shape(ysamples_in_full), np.shape(f_out))
-        ax[0].scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
-        print(np.shape(f_out_extrap), np.shape(xsamples_in_bounds), np.shape(ysamples_in_bounds), np.shape(f_extrap_nearest))
-        ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_out_extrap, color='g')
-        ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_extrap_nearest, color='m')
-        print(np.shape(collapsed_xsamples_in_full), np.shape(cubic_2d(collapsed_xsamples_in_full, collapsed_ysamples_in_full)))
-        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, cubic_2d(xsamples, ysamples), color='m')
-        f_in_2 = function_to_spline(xsamples_in_full, ysamples_in_full, factor)
+        main_plots_on = False
+        if main_plots_on:
+            f_out = np.zeros((len(xsamples), len(ysamples)))
+            for i in range(len(xsamples)):
+                for j in range(len(ysamples)):
+                    f_out[i, j] = interpolator2D(xsamples[i], ysamples[j])
+            f_out_extrap = np.zeros((len(xsamples_in_bounds), ))
+            for i in range(len(xsamples_in_bounds)):
+                f_out_extrap[i] = interpolator2D(xsamples_in_bounds[i], ysamples_in_bounds[i])
 
-        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, f_in_2, color='g')
-        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, interp_clough_tocher(xsamples_in_full, ysamples_in_full), color='b')
-        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, grid_z, color='k')
-        ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, f_cubica, color='r')
-        # ax.scatter(xsamples_in_full, ysamples_in_full, f_linear, color='b')
+            f_out_lower_and_upper = np.zeros((len(xsamples_lower_and_upper), len(ysamples_lower_and_upper)))
+            for i in range(len(xsamples_lower_and_upper)):
+                for j in range(len(ysamples_lower_and_upper)):
+                    f_out_lower_and_upper[i, j] = interpolator2D(xsamples_lower_and_upper[i], ysamples_lower_and_upper[j])
+            print(np.shape(xsamples_in_full), np.shape(ysamples_in_full), np.shape(f_out))
+            # ax[0].scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
+            print(np.shape(f_out_extrap), np.shape(xsamples_in_bounds), np.shape(ysamples_in_bounds), np.shape(f_extrap_nearest))
+            ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_out_extrap, color='g')
+            # ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_extrap_nearest, color='m')
+            print(np.shape(collapsed_xsamples_in_full), np.shape(cubic_2d(collapsed_xsamples_in_full, collapsed_ysamples_in_full)))
+            # ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, cubic_2d(xsamples, ysamples), color='m')
+            f_in_2 = function_to_spline(xsamples_in_full, ysamples_in_full, factor)
+            print('x_in', x_in, f_in)
+            # ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, f_in_2, color='g')
+            # ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, interp_clough_tocher(xsamples_in_full, ysamples_in_full), color='b')
+            # ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, grid_z, color='k')
+            # ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, f_cubica, color='r')
+            # ax.scatter(xsamples_in_full, ysamples_in_full, f_linear, color='b')
 
-        surf = ax[1].plot_surface(xsamples_in_full, ysamples_in_full, f_out, cmap=cm.coolwarm,
+            surf = ax[1].plot_surface(xsamples_in_full, ysamples_in_full, f_out, cmap=cm.coolwarm,
+                                   linewidth=0, antialiased=False)
+            xsamples_lower_and_upper_full, ysamples_lower_and_upper_full = np.meshgrid(xsamples_lower_and_upper, ysamples_lower_and_upper)
+
+            surf = ax[2].plot_surface(xsamples_lower_and_upper_full, ysamples_lower_and_upper_full, f_out_lower_and_upper, cmap=cm.coolwarm,
+                                   linewidth=0, antialiased=False)
+        f_pyramid = np.zeros((5, 5))
+        f_pyramid[2, 2] = 2.
+        f_pyramid[1, 1] = 1.
+        f_pyramid[1, 2] = 1.
+        f_pyramid[1, 3] = 1.
+        f_pyramid[2, 1] = 1.
+        f_pyramid[2, 3] = 1.
+        f_pyramid[3, 1] = 1.
+        f_pyramid[3, 2] = 1.
+        f_pyramid[3, 3] = 1.
+
+        f_pyramid_interp = np.zeros((30, 30))
+        x_p_in = np.linspace(-1, 1, 5)
+        y_p_in = np.linspace(-1, 1, 5)
+        p_finish = 2.
+        x_p_in_inter = np.linspace(-1.*p_finish, p_finish, 30)
+        y_p_in_inter = np.linspace(-1.*p_finish, p_finish, 30)
+        print(x_p_in)
+        x_p_in_full, y_p_in_full = np.meshgrid(x_p_in, y_p_in)
+        x_p_in_inter_full, y_p_in_inter_full = np.meshgrid(x_p_in_inter, y_p_in_inter)
+
+        interpolator2Dpyramid = Interpolator2DGrid(x_p_in, y_p_in, f_pyramid, 'linear', 'linear', extrapolation_range=20.0)
+        for i in range(len(x_p_in_inter)):
+            for j in range(len(y_p_in_inter)):
+                f_pyramid_interp[i, j] = interpolator2Dpyramid(x_p_in_inter[i], y_p_in_inter[j])
+        # surf = ax[3].plot_surface(x_p_in_full, y_p_in_full, f_pyramid, cmap=cm.coolwarm,
+        #                        linewidth=0, antialiased=False)
+        surf = ax[3].plot_surface(x_p_in_inter_full, y_p_in_inter_full, f_pyramid_interp, cmap=cm.coolwarm,
                                linewidth=0, antialiased=False)
-        surf = ax[2].plot_surface(xsamples_in_full, ysamples_in_full, f_in_2, cmap=cm.coolwarm,
-                               linewidth=0, antialiased=False)
+        ax[3].set_xlabel('x')
 
         plt.show()

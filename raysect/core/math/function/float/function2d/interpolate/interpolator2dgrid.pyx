@@ -250,16 +250,39 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
 
     cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
         cdef double df_dn
-
+        cdef double[4] a
+        self.calculate_coefficients(index_x,index_y, a)
+        print('aval', order_x, order_y, a, self._f[index_x, index_y], self._f[index_x+1, index_y], self._f[index_x, index_y+1], self._f[index_x+1, index_y+1])
         if order_x + order_y > 1:
-            raise ValueError('Can\'t return the gradient, order is too high')
-        if order_x == 1:
-            df_dn = (self._f[index_x + 1, index_y] - self._f[index_x, index_y])/(self._x[index_x + 1] - self._x[index_x])
+            print('a[3]', a[3])
+            df_dn = a[3]
+        elif order_x == 1:
+            df_dn = a[1] #+ a[3]*(py - self._y[index_y])/(self._y[index_y + 1] - self._y[index_y]) #df_dn = (self._f[index_x + 1, index_y] - self._f[index_x, index_y])#/(self._x[index_x + 1] - self._x[index_x])
         elif order_y == 1:
-            df_dn = (self._f[index_x, index_y + 1] - self._f[index_x, index_y])/(self._y[index_y + 1] - self._y[index_y])
+            df_dn = a[2] #+ a[3]*(px - self._x[index_x])/(self._x[index_x + 1] - self._x[index_x]) #df_dn = (self._f[index_x, index_y + 1] - self._f[index_x, index_y])#/(self._y[index_y + 1] - self._y[index_y])
         else:
             raise ValueError('order_x and order_y must be 1 and 0 for the linear interpolator')
         return df_dn
+
+    cdef calculate_coefficients(self, int index_x, int index_y, double[4] a):
+        cdef double[2][2] f
+        cdef double[2] x, y
+        cdef int i, j
+
+        # Calculate the coefficients (and gradients at each spline point) if they dont exist
+        f[0][0] = self._f[index_x, index_y]
+        f[1][0] = self._f[index_x + 1, index_y]
+        f[0][1] = self._f[index_x, index_y + 1]
+        f[1][1] = self._f[index_x + 1, index_y + 1]
+        x[0] = self._x[index_x]
+        x[1] = self._x[index_x + 1]
+        y[0] = self._y[index_y]
+        y[1] = self._y[index_y + 1]
+
+        a[0] = f[0][0]#f[0][0]*x[1]*y[1] + f[0][1]*x[1]*y[0] + f[1][0]*x[0]*y[1] + f[1][1]*x[0]*y[0]
+        a[1] = f[1][0] - f[0][0]#f[0][0]*y[1] + f[0][1]*y[0] + f[1][0]*y[1] + f[1][1]*y[0]
+        a[2] = f[0][1] - f[0][0]#f[0][0]*x[1] + f[0][1]*x[1] + f[1][0]*x[0] + f[1][1]*x[0]
+        a[3] = f[1][1] + f[0][0] - (f[1][0] + f[0][1])#f[0][0] + f[0][1] + f[1][0] + f[1][1]
 
 
 cdef class _Interpolator2DCubic(_Interpolator2D):
@@ -353,7 +376,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         cdef double df_dn
 
         if order_x > 3:
-            raise ValueError('')
+            raise ValueError('Can\'t get a gradient of order 4 or more in cubic')
         x_bound = self._x[index_x + 1] - self._x[index_x]
         if x_bound != 0:
             x_scal = (px - self._x[index_x]) / x_bound
@@ -381,8 +404,8 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
                 df_dn += (a[i][j] * (factorial(i)/factorial(i-order_x)) * (factorial(j)/factorial(j-order_y)) * x_powers[i-order_x] * y_powers[j-order_y]) #* (x_bound ** (i - order_x)) * (y_bound ** (j - order_y))
                 print(order_x, order_y, (factorial(i)/factorial(i-order_x)), (factorial(j)/factorial(j-order_y)), i-order_x, j-order_y, (x_bound ** (i - order_x)),  (y_bound ** (j - order_y)))
 
-        # df_dn = df_dn* (x_bound**order_x)*(y_bound**order_y)
-        print('df_dn', df_dn, px, py, x_scal, y_scal)
+        df_dn = df_dn* (x_bound**order_x)*(y_bound**order_y)
+        print('df_dn', df_dn, px, py, x_scal, y_scal, order_x , order_y)
 
         return  df_dn
 
@@ -504,21 +527,17 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
            super().__init__(x, y, f, extrapolation_range, external_interpolator)
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
-        cdef double const_c
-        const_c = self._external_interpolator.evaluate(self._x[edge_x_index], py, index_x, index_y) - self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0) * self._x[edge_x_index] - self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 0, 1) * py
-        print('dfadfds', self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0), self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 0, 1))
-        return self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0) * self._x[edge_x_index] + self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 0, 1) * py + const_c
+        return self._external_interpolator.evaluate(self._x[edge_x_index], py, index_x, index_y) + self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0) * (px - self._x[edge_x_index])/(self._x[index_x + 1] - self._x[index_x])
 
     cdef double evaluate_edge_y(self, double px, double py, int index_x, int index_y, int edge_y_index) except? -1e999:
-        cdef double const_c
-        const_c = self._external_interpolator.evaluate(px, self._y[edge_y_index], index_x, index_y) - self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 1, 0) * px - self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 0, 1) * self._y[edge_y_index]
-        return self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 1, 0) * px + self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 0, 1) * self._y[edge_y_index] + const_c
+        return self._external_interpolator.evaluate(px, self._y[edge_y_index], index_x, index_y) + self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 0, 1) * (py - self._y[edge_y_index])/(self._y[index_y + 1] - self._y[index_y])
 
     cdef double evaluate_edge_xy(self, double px, double py, int index_x, int index_y, int edge_x_index, int edge_y_index) except? -1e999:
-        cdef double const_c
-        const_c = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y) - self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0)*self._x[edge_x_index] - self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 0, 1) * self._y[edge_y_index]
-        return self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0) * px + self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 0, 1) * py + const_c
-
+        if self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0) == 0:
+            print('eval0')
+        print('eval', self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0), self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 1) , self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0),(px - self._x[edge_x_index])/(self._x[index_x + 1] - self._x[index_x]))
+        return self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y) + self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0) * (px - self._x[edge_x_index])/(self._x[index_x + 1] - self._x[index_x]) + self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 0, 1) * (py - self._y[edge_y_index])/(self._y[index_y + 1] - self._y[index_y]) + 0.5*self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 1)* (py - self._y[edge_y_index])/(self._y[index_y + 1] - self._y[index_y])* (px - self._x[edge_x_index])/(self._x[index_x + 1] - self._x[index_x])
+        # return self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0) * (px - self._x[edge_x_index])/(self._x[index_x + 1] - self._x[index_x]) + self._external_interpolator._analytic_gradient(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 0, 1) * (py - self._y[edge_y_index])/(self._y[index_y + 1] - self._y[index_y]) + self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y)
 
 
 cdef class _GridGradients2D:
