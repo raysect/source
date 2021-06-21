@@ -440,7 +440,7 @@ cdef class Quaternion:
         :return: A new Quaternion object representing the specified rotation.        
         """
 
-        return q.normalise().mul_quaternion(self.normalise().conjugate())
+        return q.normalise().mul_quaternion(self.normalise().conjugate()).normalise()
 
     @classmethod
     def from_matrix(cls, AffineMatrix3D matrix):
