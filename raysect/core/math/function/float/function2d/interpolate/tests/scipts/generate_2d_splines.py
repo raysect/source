@@ -191,13 +191,14 @@ if __name__ == '__main__':
         xsamples_lower_and_upper = np.linspace(X_LOWER-0.1*(X_UPPER-X_LOWER), X_UPPER+0.1*(X_UPPER-X_LOWER), 50)
         ysamples_lower_and_upper = np.linspace(Y_LOWER-0.1*(Y_UPPER-Y_LOWER), Y_UPPER+0.1*(Y_UPPER-Y_LOWER), 50)
         print('sample_bounds ', xsamples_lower_and_upper[0], xsamples_lower_and_upper[-1], xsamples_lower_and_upper)
-        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'linear', 'linear', extrapolation_range=2.0)
         import matplotlib.pyplot as plt
         from matplotlib import cm
         fig, ax = plt.subplots(1, 4, subplot_kw={"projection": "3d"})
         surf = ax[0].plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm,
                                linewidth=0, antialiased=False)
         main_plots_on = False
+        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'cubic', 'linear', extrapolation_range=2.0)
+
         if main_plots_on:
             f_out = np.zeros((len(xsamples), len(ysamples)))
             for i in range(len(xsamples)):
@@ -243,9 +244,25 @@ if __name__ == '__main__':
         f_pyramid[3, 2] = 1.
         f_pyramid[3, 3] = 1.
 
+
+
         f_pyramid_interp = np.zeros((30, 30))
         x_p_in = np.linspace(-1, 1, 5)
         y_p_in = np.linspace(-1, 1, 5)
+        x_p_in_full, y_p_in_full = np.meshgrid(x_p_in, y_p_in)
+        f_pyramid = np.exp(-(x_p_in_full**2 +y_p_in_full**2))
+        x_edge_p = []
+        y_edge_p = []
+        for i in range(len(x_p_in)):
+            for j in range(len(y_p_in)):
+                print('f_pyramid', f_pyramid)
+                if j == 0 or i == 0:
+                    x_edge_p.append(x_p_in[i])
+                    y_edge_p.append(y_p_in[j])
+        x_edge_p = np.array(x_edge_p)
+        y_edge_p = np.array(y_edge_p)
+
+        f_edge_p = np.ones((len(y_edge_p), ))
         p_finish = 2.
         x_p_in_inter = np.linspace(-1.*p_finish, p_finish, 30)
         y_p_in_inter = np.linspace(-1.*p_finish, p_finish, 30)
@@ -253,7 +270,7 @@ if __name__ == '__main__':
         x_p_in_full, y_p_in_full = np.meshgrid(x_p_in, y_p_in)
         x_p_in_inter_full, y_p_in_inter_full = np.meshgrid(x_p_in_inter, y_p_in_inter)
 
-        interpolator2Dpyramid = Interpolator2DGrid(x_p_in, y_p_in, f_pyramid, 'linear', 'linear', extrapolation_range=20.0)
+        interpolator2Dpyramid = Interpolator2DGrid(x_p_in, y_p_in, f_pyramid, 'cubic', 'linear', extrapolation_range=20.0)
         for i in range(len(x_p_in_inter)):
             for j in range(len(y_p_in_inter)):
                 f_pyramid_interp[i, j] = interpolator2Dpyramid(x_p_in_inter[i], y_p_in_inter[j])
@@ -261,6 +278,9 @@ if __name__ == '__main__':
         #                        linewidth=0, antialiased=False)
         surf = ax[3].plot_surface(x_p_in_inter_full, y_p_in_inter_full, f_pyramid_interp, cmap=cm.coolwarm,
                                linewidth=0, antialiased=False)
-        ax[3].set_xlabel('x')
+        ax[3].scatter(x_edge_p, y_edge_p, f_edge_p, color='g', s=20)
+        print(x_edge_p, f_edge_p)
 
+        ax[3].set_xlabel('x')
+        interpolator2Dpyramid.test_coefficients()
         plt.show()
