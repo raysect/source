@@ -100,7 +100,7 @@ cdef class _GridGradients2D:
     cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y) except? -1e999
     cdef double derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999
     cdef double derivitive_dfdx_edge(self, double[:] f)
-    cdef double derivitive_d2fdxdy(self, double[:, ::1] f) except? -1e999
+    cdef double derivitive_d2fdxdy(self,  double[:] x, double[:] y, double[:, ::1] f) except? -1e999
     cdef double derivitive_d2fdxdy_edge_1(self, double[:, ::1] f) except? -1e999
 
     cdef double eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add)
