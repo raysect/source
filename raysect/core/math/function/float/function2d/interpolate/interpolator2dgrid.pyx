@@ -64,8 +64,8 @@ cdef class Interpolator2DGrid(Function2D):
     ends of the interpolation range (x).
     """
 
-    def __init__(self, object x, object y, object f, str interpolation_type,
-                 str extrapolation_type, double extrapolation_range):
+    def __init__(self, object x, object y, object f, str interpolation_type, str extrapolation_type,
+                 double extrapolation_range_x, double extrapolation_range_y):
 
         # Todo test extrapolation range is positive
         self.x = np.array(x, dtype=np.float64)
@@ -80,7 +80,8 @@ cdef class Interpolator2DGrid(Function2D):
         self._f_mv = f
         self._last_index_x = self.x.shape[0] - 1
         self._last_index_y = self.y.shape[0] - 1
-        self._extrapolation_range = extrapolation_range
+        self._extrapolation_range_x = extrapolation_range_x
+        self._extrapolation_range_y = extrapolation_range_y
 
         # dimensions checks
         if x.ndim != 1:
@@ -118,7 +119,7 @@ cdef class Interpolator2DGrid(Function2D):
             raise ValueError(f'Extrapolation type {extrapolation_type} not found. options are {id_to_extrapolator.keys()}')
 
         self._extrapolator = id_to_extrapolator[extrapolation_type](
-            self._x_mv, self._y_mv, self._f_mv, extrapolation_range, self._interpolator
+            self._x_mv, self._y_mv, self._f_mv, extrapolation_range_x, extrapolation_range_y, self._interpolator
         )
 
     cdef int extrapolator_index_change(self, int index, int last_index):
@@ -187,10 +188,10 @@ cdef class Interpolator2DGrid(Function2D):
             index_x = self.extrapolator_index_change(index_x, self._last_index_x)
             index_y = self.extrapolator_index_change(index_y, self._last_index_y)
 
-            if np.abs(px - self._x_mv[edge_x_index]) > self._extrapolation_range:
+            if np.abs(px - self._x_mv[edge_x_index]) > self._extrapolation_range_x:
                 raise ValueError(
                     f'The specified value (x={px}) is outside of extrapolation range.')
-            if np.abs(py - self._y_mv[edge_y_index]) > self._extrapolation_range:
+            if np.abs(py - self._y_mv[edge_y_index]) > self._extrapolation_range_y:
                 raise ValueError(
                     f'The specified value (y={py}) is outside of extrapolation range.')
             return self._extrapolator.evaluate_edge_xy(px, py, index_x, index_y, edge_x_index, edge_y_index)
@@ -198,7 +199,7 @@ cdef class Interpolator2DGrid(Function2D):
         elif index_x == -1 or index_x == self._last_index_x:
             edge_x_index = self.extrapolator_get_edge_index(index_x, self._last_index_x)
             index_x = self.extrapolator_index_change(index_x, self._last_index_x)
-            if np.abs(px - self._x_mv[edge_x_index]) > self._extrapolation_range:
+            if np.abs(px - self._x_mv[edge_x_index]) > self._extrapolation_range_x:
                 raise ValueError(
                     f'The specified value (x={px}) is outside of extrapolation range.')
             return self._extrapolator.evaluate_edge_x(px, py, index_x, index_y, edge_x_index)
@@ -206,7 +207,7 @@ cdef class Interpolator2DGrid(Function2D):
         elif index_y == -1 or index_y == self._last_index_y:
             edge_y_index = self.extrapolator_get_edge_index(index_y, self._last_index_y)
             index_y = self.extrapolator_index_change(index_y, self._last_index_y)
-            if np.abs(py - self._y_mv[edge_y_index]) > self._extrapolation_range:
+            if np.abs(py - self._y_mv[edge_y_index]) > self._extrapolation_range_y:
                 raise ValueError(
                     f'The specified value (y={py}) is outside of extrapolation range.')
             return self._extrapolator.evaluate_edge_y(px, py, index_x, index_y, edge_y_index)
@@ -504,14 +505,12 @@ cdef class _Extrapolator2D:
     :param x: 1D memory view of the spline point x positions.
     :param y: 1D memory view of the spline point y positions.
     :param f: 2D memory view of the function value at spline point x, y positions.
-    :param extrapolation_range: Range covered by the extrapolator. Padded symmetrically to both ends of the input.
     :param external_interpolator: stored _Interpolator2D object that is being used.
     """
 
     ID = NotImplemented
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range, _Interpolator2D external_interpolator):
-        self._range = extrapolation_range
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator):
         self._x = x
         self._y = y
         self._f = f
@@ -536,14 +535,13 @@ cdef class _Extrapolator2DNone(_Extrapolator2D):
     :param x: 1D memory view of the spline point x positions.
     :param y: 1D memory view of the spline point y positions.
     :param f: 2D memory view of the function value at spline point x, y positions.
-    :param extrapolation_range: Range covered by the extrapolator. Padded symmetrically to both ends of the input.
     :param external_interpolator: stored _Interpolator2D object that is being used.
     """
 
     ID = 'none'
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range, _Interpolator2D external_interpolator):
-           super().__init__(x, y, f, extrapolation_range, external_interpolator)
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator):
+           super().__init__(x, y, f, external_interpolator)
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         if px != self._x[-1]:
@@ -578,14 +576,13 @@ cdef class _Extrapolator2DNearest(_Extrapolator2D):
     :param x: 1D memory view of the spline point x positions.
     :param y: 1D memory view of the spline point y positions.
     :param f: 2D memory view of the function value at spline point x, y positions.
-    :param extrapolation_range: Range covered by the extrapolator. Padded symmetrically to both ends of the input.
     :param external_interpolator: stored _Interpolator2D object that is being used.
     """
 
     ID = 'nearest'
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range, _Interpolator2D external_interpolator):
-           super().__init__(x, y, f, extrapolation_range, external_interpolator)
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator):
+           super().__init__(x, y, f, external_interpolator)
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         """
@@ -634,14 +631,13 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
     :param x: 1D memory view of the spline point x positions.
     :param y: 1D memory view of the spline point y positions.
     :param f: 2D memory view of the function value at spline point x, y positions.
-    :param extrapolation_range: Range covered by the extrapolator. Padded symmetrically to both ends of the input.
     :param external_interpolator: stored _Interpolator2D object that is being used.
     """
 
     ID = 'linear'
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, double extrapolation_range, _Interpolator2D external_interpolator):
-           super().__init__(x, y, f, extrapolation_range, external_interpolator)
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator):
+           super().__init__(x, y, f, external_interpolator)
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         """

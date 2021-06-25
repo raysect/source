@@ -42,7 +42,7 @@ cdef class Interpolator2DGrid(Function2D):
         _Interpolator2D _interpolator
         _Extrapolator2D _extrapolator
         int _last_index_x, _last_index_y
-        double _extrapolation_range
+        double _extrapolation_range_x ,_extrapolation_range_y
     cdef int extrapolator_index_change(self, int index, int last_index)
     cdef int extrapolator_get_edge_index(self, int index, int last_index)
     cdef double evaluate(self, double px, double py) except? -1e999
@@ -70,7 +70,6 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
 
 cdef class _Extrapolator2D:
     cdef:
-        double _range
         double [::1] _x, _y
         double [:, ::1] _f
         _Interpolator2D _external_interpolator

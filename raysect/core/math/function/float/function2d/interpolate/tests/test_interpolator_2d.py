@@ -490,7 +490,7 @@ class TestInterpolators2D(unittest.TestCase):
         self.setup_extrpolation_type(extrapolator_type)
 
         # set interpolator
-        self.interpolator = Interpolator2DGrid(self.x, self.y, self.data, 'linear', extrapolator_type, extrapolation_range)
+        self.interpolator = Interpolator2DGrid(self.x, self.y, self.data, 'linear', extrapolator_type, extrapolation_range, extrapolation_range)
 
     def setup_cubic(self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool):
         """
@@ -523,7 +523,7 @@ class TestInterpolators2D(unittest.TestCase):
 
         self.setup_extrpolation_type(extrapolator_type)
         # set interpolator
-        self.interpolator = Interpolator2DGrid(self.x, self.y, self.data, 'cubic', extrapolator_type, extrapolation_range)
+        self.interpolator = Interpolator2DGrid(self.x, self.y, self.data, 'cubic', extrapolator_type, extrapolation_range, extrapolation_range)
 
     def setup_extrpolation_type(self, extrapolator_type: str):
         if extrapolator_type == 'linear':
@@ -663,7 +663,7 @@ class TestInterpolators2D(unittest.TestCase):
             for interpolator_type in id_to_interpolator.keys():
                 dict_kwargs_interpolators = {
                     'x': x_values, 'y': y_values, 'f': f_values, 'interpolation_type': interpolator_type,
-                    'extrapolation_type': extrapolator_type, 'extrapolation_range': 2.0
+                    'extrapolation_type': extrapolator_type, 'extrapolation_range_x': 2.0, 'extrapolation_range_y': 2.0
                 }
                 self.assertRaises(ValueError, Interpolator2DGrid, **dict_kwargs_interpolators)
 

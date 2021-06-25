@@ -111,7 +111,7 @@ cdef class Interpolate1D(Function1D):
         if extrapolation_type not in id_to_extrapolator:
             raise ValueError(f'Extrapolation type {interpolation_type} not found. options are {id_to_extrapolator.keys()}')
 
-        self._extrapolator = id_to_extrapolator[extrapolation_type](self._x_mv, self._f_mv, extrapolation_range)
+        self._extrapolator = id_to_extrapolator[extrapolation_type](self._x_mv, self._f_mv)
 
     cdef double evaluate(self, double px) except? -1e999:
         """
@@ -384,13 +384,11 @@ cdef class _Extrapolator1D:
 
     :param object x: 1D array-like object of real values.
     :param object f: 1D array-like object of real values.
-    :param double extrapolation_range: Range covered by the extrapolator. Padded symmetrically to both ends of the input.
     """
 
     ID = NotImplemented
 
-    def __init__(self, double[::1] x, double[::1] f, double extrapolation_range):
-        self._range = extrapolation_range
+    def __init__(self, double[::1] x, double[::1] f):
         self._x = x
         self._f = f
         self._last_index = self._x.shape[0] - 1
@@ -409,8 +407,8 @@ cdef class _Extrapolator1DNone(_Extrapolator1D):
 
     ID = 'none'
 
-    def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
-           super().__init__(x, f, extrapolation_range)
+    def __init__(self, double [::1] x, double[::1] f):
+           super().__init__(x, f)
 
     cdef double evaluate(self, double px, int index)  except? -1e999:
         raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
@@ -418,16 +416,16 @@ cdef class _Extrapolator1DNone(_Extrapolator1D):
 
 cdef class _Extrapolator1DNearest(_Extrapolator1D):
     """
-    Extrapolator that returns nearest input value
+    Extrapolator that returns nearest input value.
+
     :param object x: 1D array-like object of real values.
     :param object f: 1D array-like object of real values.
-    :param double extrapolation_range: Range covered by the extrapolator.
     """
 
     ID = 'nearest'
 
-    def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
-        super().__init__(x, f, extrapolation_range)
+    def __init__(self, double [::1] x, double[::1] f):
+        super().__init__(x, f)
 
     cdef double evaluate(self, double px, int index) except? -1e999:
         if px < self._x[0]:
@@ -444,16 +442,16 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
 
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
     """
-    Extrapolator that extrapolates linearly
+    Extrapolator that extrapolates linearly.
+
     :param object x: 1D array-like object of real values.
     :param object f: 1D array-like object of real values.
-    :param double extrapolation_range: Range covered by the extrapolator.
     """
 
     ID = 'linear'
 
-    def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
-        super().__init__(x, f, extrapolation_range)
+    def __init__(self, double [::1] x, double[::1] f):
+        super().__init__(x, f)
 
         if x.shape[0] <= 1:
             raise ValueError(f'x array {np.shape(x)} must contain at least 2 spline points to linearly extrapolate.')
@@ -489,18 +487,18 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
 
 cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
     """
-    Extrapolator that extrapolates quadratically
+    Extrapolator that extrapolates quadratically.
+
     :param object x: 1D array-like object of real values.
     :param object f: 1D array-like object of real values.
-    :param double extrapolation_range: Range covered by the extrapolator.
     """
 
     ID = 'quadratic'
 
-    def __init__(self, double [::1] x, double[::1] f, double extrapolation_range):
+    def __init__(self, double [::1] x, double[::1] f):
         cdef double[2] dfdx_start, dfdx_end
 
-        super().__init__(x, f, extrapolation_range)
+        super().__init__(x, f)
         self._last_index = self._x.shape[0] - 1
 
         dfdx_start[0] = self._calc_gradient(self._x, self._f, 0)
