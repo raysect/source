@@ -83,7 +83,12 @@ cdef class Interpolator2DGrid(Function2D):
         self._extrapolation_range_x = extrapolation_range_x
         self._extrapolation_range_y = extrapolation_range_y
 
-        # dimensions checks
+        # extrapolation_ranges must be greater than or equal to 0.
+        if extrapolation_range_x < 0:
+            raise ValueError('extrapolation_range_x must be greater than or equal to 0.')
+        if extrapolation_range_y < 0:
+            raise ValueError('extrapolation_range_y must be greater than or equal to 0.')
+        # dimensions checks.
         if x.ndim != 1:
             raise ValueError(f'The x array must be 1D. Got {x.shape}.')
 

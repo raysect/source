@@ -60,10 +60,10 @@ cdef class Interpolate1D(Function1D):
     `cubic_interp`: Interpolates the data using cubic interpolation.
 
     :param str extrapolation_type: Type of extrapolation to use. Options are:
-    `no_extrap`: Attempt to access data outside of x's range will yield ValueError
+    `no_extrap`: Attempt to access data outside of x's range will yield ValueError.
     `nearest_extrap`: Extrapolation results is the nearest position x value in the interpolation domain.
-    `linear_extrap`: Extrapolate linearly the interpolation function
-    `cubic_extrap`: Extrapolate cubically the interpolation function
+    `linear_extrap`: Extrapolate linearly the interpolation function.
+    `cubic_extrap`: Extrapolate cubically the interpolation function.
 
     :param double extrapolation_range: Limits the range where extrapolation is permitted. Requesting data beyond the
     extrapolation range results in ValueError. Extrapolation range will be applied as padding symmetrically to both
@@ -83,6 +83,10 @@ cdef class Interpolate1D(Function1D):
         self._f_mv = f
         self._last_index = self.x.shape[0] - 1
         self._extrapolation_range = extrapolation_range
+
+        # extrapolation_range must be greater than or equal to 0.
+        if extrapolation_range < 0:
+            raise ValueError('extrapolation_range must be greater than or equal to 0.')
 
         # dimensions checks
         if x.ndim != 1:
@@ -148,7 +152,7 @@ cdef class Interpolate1D(Function1D):
     def test_edge_gradients(self):
         """
         Return the derivative at the edge spline knots for the extrapolator and interpolator objects
-        to check the first derivative continuity
+        to check the first derivative continuity.
         """
         x_01 = np.copy(self._extrapolator._x[0])
         x_02 = np.copy(self._interpolator._x[0])
@@ -182,7 +186,7 @@ cdef class _Interpolator1D:
         """
         Calculates interpolated value at given point. 
     
-        :param double px: the point for which an interpolated value is required
+        :param double px: the point for which an interpolated value is required.
         :param int index: the lower index of the bin containing point px. (Result of bisection search).   
         """
         raise NotImplementedError('_Interpolator is an abstract base class.')
@@ -191,7 +195,7 @@ cdef class _Interpolator1D:
         """
         Calculates interpolated value at given point. 
 
-        :param double px: the point for which an interpolated value is required
+        :param double px: the point for which an interpolated value is required.
         :param int index: the lower index of the bin containing point px. (Result of bisection search).   
         """
         raise NotImplementedError('_Interpolator is an abstract base class.')
@@ -261,15 +265,15 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
 
         At the start and end of the array, the forward or backward difference approximation is calculated over
         a  (x[i+1] - x[i]) = 1 or  (x[i] - x[i-1]) = 1 respectively. The end spline gradient is not used for
-        extrapolation
+        extrapolation.
 
         .. WARNING:: For speed, this function does not perform any zero division, type or bounds
           checking. Supplying malformed data may result in data corruption or a
           segmentation fault.
 
         :param x_spline: A memory view to a double array containing monotonically increasing values.
-        :param y_spline: The desired spline points corresponding function returned values
-        :param int index: The index of the lower spline point that the gradient is to be calculated for
+        :param y_spline: The desired spline points corresponding function returned values.
+        :param int index: The index of the lower spline point that the gradient is to be calculated for.
         """
         cdef double dfdx
         cdef double x_eff
@@ -318,7 +322,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         return evaluate_cubic_1d(a, x_scal)
 
     def _test_return_polynormial_coefficients(self, index_use):
-        """ Expose cython function for testing. Input the index of the lower x spline point in the region of the spline"""
+        """ Expose cython function for testing. Input the index of the lower x spline point in the region of the spline."""
         cdef double[4] a
         cdef double[2] f, dfdx
 
@@ -333,13 +337,13 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         return a_return
 
     def _test_calc_gradient(self, index_use):
-        """ Expose cython function for testing. Input the spline points x, f"""
+        """ Expose cython function for testing. Input the spline points x, f."""
         return self._calc_gradient(self._x, self._f,  index_use)
 
     def _test_evaluate_directly(self, x):
         cdef int index = find_index(self._x, x)
 
-        """ Expose cython function for testing. Input the spline points x, f"""
+        """ Expose cython function for testing. Input the spline points x, f."""
         return self.evaluate(x, index)
 
     cdef double _analytic_gradient(self, double px, int index, int order):
@@ -463,7 +467,7 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
         elif index == self._last_index:
             index -= 1
         else:
-            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
+            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
         # Use a linear interpolator function to extrapolate instead
         return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
 
@@ -474,14 +478,14 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
         elif index == self._last_index:
             index -= 1
         else:
-            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
+            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
 
         if order == 1:
             grad = (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
         elif order > 1:
             grad = 0
         else:
-            raise ValueError('order must be an integer greater than or equal to 1')
+            raise ValueError('order must be an integer greater than or equal to 1.')
         return grad
 
 
@@ -526,7 +530,7 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
 
     cdef void _calculate_quadratic_coefficients_end(self, double f2, double df1_dx, double df2_dx, double[3] a):
         """
-        Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1, 
+        Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1. 
 
 
         """
@@ -588,7 +592,7 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
     def _test_evaluate_directly(self, x):
         cdef int index = find_index(self._x, x)
 
-        """ Expose cython function for testing. Input the spline points x, f"""
+        """ Expose cython function for testing. Input the spline points x, f."""
         return self.evaluate(x, index)
     def _test_first_coefficients(self):
         """ Expose cython function for testing."""
@@ -613,15 +617,15 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
 
         At the start and end of the array, the forward or backward difference approximation is calculated over
         a  (x[i+1] - x[i]) = 1 or  (x[i] - x[i-1]) = 1 respectively. The end spline gradient is not used for
-        extrapolation
+        extrapolation.
 
         .. WARNING:: For speed, this function does not perform any zero division, type or bounds
           checking. Supplying malformed data may result in data corruption or a
           segmentation fault.
 
         :param x_spline: A memory view to a double array containing monotonically increasing values.
-        :param y_spline: The desired spline points corresponding function returned values
-        :param int index: The index of the lower spline point that the gradient is to be calculated for
+        :param y_spline: The desired spline points corresponding function returned values.
+        :param int index: The index of the lower spline point that the gradient is to be calculated for.
         """
         cdef double dfdx
         cdef double x_eff
