@@ -205,7 +205,7 @@ cdef class Conductor(Material):
             # calculate phase
             v = n2 - k2 - s2i
             w = sqrt(v*v + 4*n2*k2)
-            f = 0.5*(n2 + k2 - s2i + w)
+            f = 0.5*(n2 - k2 - s2i + w)
             g = 0.5*(k2 - n2 + s2i + w)
             phase = M_PI - atan2(2*sqrt(g)*si*ti, s2i*t2i - (f + g))
 
