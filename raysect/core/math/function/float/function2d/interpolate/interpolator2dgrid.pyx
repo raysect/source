@@ -59,15 +59,17 @@ cdef class Interpolator2DGrid(Function2D):
     `nearest`: Extrapolation results is the nearest position x and y value in the interpolation domain.
     `linear`: Extrapolate bilinearly the interpolation function.
 
-    :param double extrapolation_range: Limits the range where extrapolation is permitted. Requesting data beyond the
+    :param double extrapolation_range_x: Limits the range where extrapolation is permitted. Requesting data beyond the
     extrapolation range results in ValueError. Extrapolation range will be applied as padding symmetrically to both
     ends of the interpolation range (x).
+    :param double extrapolation_range_y: Limits the range where extrapolation is permitted. Requesting data beyond the
+    extrapolation range results in ValueError. Extrapolation range will be applied as padding symmetrically to both
+    ends of the interpolation range (y).
     """
 
     def __init__(self, object x, object y, object f, str interpolation_type, str extrapolation_type,
                  double extrapolation_range_x, double extrapolation_range_y):
 
-        # Todo test extrapolation range is positive
         self.x = np.array(x, dtype=np.float64)
         self.x.flags.writeable = False
         self.y = np.array(y, dtype=np.float64)
@@ -124,7 +126,7 @@ cdef class Interpolator2DGrid(Function2D):
             raise ValueError(f'Extrapolation type {extrapolation_type} not found. options are {id_to_extrapolator.keys()}')
 
         self._extrapolator = id_to_extrapolator[extrapolation_type](
-            self._x_mv, self._y_mv, self._f_mv, extrapolation_range_x, extrapolation_range_y, self._interpolator
+            self._x_mv, self._y_mv, self._f_mv, self._interpolator
         )
 
     cdef int extrapolator_index_change(self, int index, int last_index):
@@ -157,7 +159,7 @@ cdef class Interpolator2DGrid(Function2D):
         
         :param int index: the index of the lower side of a unit cell.
         :param int last_index: the index of the final point.
-        :return: the index of the border of the interpolator spline knots
+        :return: the index of the border of the interpolator spline knots.
         """
         cdef int edge_index
         if index == -1:
@@ -165,7 +167,7 @@ cdef class Interpolator2DGrid(Function2D):
         elif index == last_index:
             edge_index = index
         else:
-            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
+            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
         return edge_index
 
     cdef double evaluate(self, double px, double py) except? -1e999:
@@ -178,8 +180,8 @@ cdef class Interpolator2DGrid(Function2D):
         direction. Because the return value of find_index returns the lower index of the first or last unit cell, 
         extrapolation at the upper or lower index requires the bordering index to evaluate.
 
-        :param double px: the point for which an interpolated value is required
-        :param double py: the point for which an interpolated value is required
+        :param double px: the point for which an interpolated value is required.
+        :param double py: the point for which an interpolated value is required.
         :return: the interpolated value at point x, y.
         """
         # Find index assuming the grid is the same in x and y
@@ -308,7 +310,7 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
         elif order_y == 1:
             df_dn = a[2] + a[3]*(px - self._x[index_x])/(self._x[index_x + 1] - self._x[index_x])
         else:
-            raise ValueError('order_x and order_y must be 1 and 0 for the linear interpolator')
+            raise ValueError('order_x and order_y must be 1 and 0 for the linear interpolator.')
         return df_dn
 
     cdef calculate_coefficients(self, int index_x, int index_y, double[4] a):
@@ -317,14 +319,14 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
 
         The bilinear function (which is the product of 2 linear functions) f(x, y) = a0 + a1x + a2y + a3xy. Coefficients 
         a0, a1, a2, a3 are calculated for one unit square. The coefficients are calculated from inverting the equation
-        Xa = fv
+        Xa = fv.
         Where:
         X = [[1, x1, y1, x1y1],         a = [a0,         fv = [f(0, 0),
             [1, x1, y2, x1y2],               a1,               f(0, 1),
             [1, x2, y1, x2y1],               a2,               f(1, 0),
             [1, x2, y2, x2y2]]               a3]               f(1, 1)]
         This simplifies where x1, y1 = 0, x2, y2 = 1 for the unit square to find a = X^{-1} fv
-        where         
+        where:
         a[0] = f[0][0]
         a[1] = f[1][0] - f[0][0]
         a[2] = f[0][1] - f[0][0]
@@ -332,21 +334,15 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
 
         :param int index_x: the lower index of the bin containing point px. (Result of bisection search).   
         :param int index_y: the lower index of the bin containing point py. (Result of bisection search). 
-        :param double[4] a: The coefficients of the bilinear equation a0, a1, a2, a3
+        :param double[4] a: The coefficients of the bilinear equation a0, a1, a2, a3.
         """
         cdef double[2][2] f
-        cdef double[2] x, y
-        cdef int i, j
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
         f[0][0] = self._f[index_x, index_y]
         f[1][0] = self._f[index_x + 1, index_y]
         f[0][1] = self._f[index_x, index_y + 1]
         f[1][1] = self._f[index_x + 1, index_y + 1]
-        x[0] = self._x[index_x]
-        x[1] = self._x[index_x + 1]
-        y[0] = self._y[index_y]
-        y[1] = self._y[index_y + 1]
 
         a[0] = f[0][0]
         a[1] = f[1][0] - f[0][0]
@@ -473,7 +469,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         cdef double df_dn
 
         if order_x > 3:
-            raise ValueError('Can\'t get a gradient of order 4 or more in cubic')
+            raise ValueError('Can\'t get a gradient of order 4 or more in cubic.')
         x_bound = self._x[index_x + 1] - self._x[index_x]
         if x_bound != 0:
             x_scal = (px - self._x[index_x]) / x_bound
@@ -751,8 +747,8 @@ cdef class _GridGradients2D:
 
         :param index_x: The lower index of the x grid cell to evaluate.
         :param index_y: The lower index of the y grid cell to evaluate.
-        :param derivative_order_x: An integer of the derivative order x. Only zero if derivative_order_y is nonzero
-        :param derivative_order_y: An integer of the derivative order y. Only zero if derivative_order_x is nonzero
+        :param derivative_order_x: An integer of the derivative order x. Only zero if derivative_order_y is nonzero.
+        :param derivative_order_y: An integer of the derivative order y. Only zero if derivative_order_x is nonzero.
         """
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
         cdef double dfdn
@@ -789,12 +785,15 @@ cdef class _GridGradients2D:
         x_range = self._x[index_x:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
         f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2]
+        dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add])
         elif derivative_order_x == 0 and derivative_order_y == 1:
             dfdn = self.derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :])
         elif derivative_order_x == 1 and derivative_order_y == 1:
             dfdn = self.derivitive_d2fdxdy_edge_1(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
+        else:
+            raise ValueError('No higher order derivatives implemented')
         return dfdn
 
     cdef double eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
@@ -805,12 +804,15 @@ cdef class _GridGradients2D:
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2]
+        dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add])
         elif derivative_order_x == 0 and derivative_order_y == 1:
             dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
         elif derivative_order_x == 1 and derivative_order_y == 1:
             dfdn = self.derivitive_d2fdxdy_edge_1(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
+        else:
+            raise ValueError('No higher order derivatives implemented')
         return dfdn
 
     cdef double eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999:
@@ -821,6 +823,7 @@ cdef class _GridGradients2D:
         x_range = self._x[index_x:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         f_range = self._f[index_x:index_x + 2, index_y:index_y + 2]
+        dfdn = 0
 
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add])
@@ -828,6 +831,8 @@ cdef class _GridGradients2D:
             dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
         elif derivative_order_x == 1 and derivative_order_y == 1:
             dfdn = self.derivitive_d2fdxdy_edge_1(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
+        else:
+            raise ValueError('No higher order derivatives implemented')
         return dfdn
 
     cdef double eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
@@ -838,6 +843,7 @@ cdef class _GridGradients2D:
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2]
+        dfdn = 0
 
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre])
@@ -848,6 +854,8 @@ cdef class _GridGradients2D:
                 x_range[x_centre - 1:x_centre + 2], y_range[y_centre - 1:y_centre + 2],
                 f_range[x_centre - 1:x_centre + 2, y_centre - 1:y_centre + 2]
             )
+        else:
+            raise ValueError('No higher order derivatives implemented')
         return dfdn
 
     cdef double derivitive_dfdx_edge(self, double[:] f):
