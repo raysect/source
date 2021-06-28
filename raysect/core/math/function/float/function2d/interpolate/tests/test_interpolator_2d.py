@@ -34,7 +34,7 @@ including interaction with Extrapolator1DLinear and Extrapolator1DNearest.
 """
 import unittest
 import numpy as np
-from raysect.core.math.function.float.function2d.interpolate.interpolator2dgrid import Interpolator2DGrid, \
+from raysect.core.math.function.float.function2d.interpolate.interpolator2darray import Interpolator2DArray, \
     id_to_extrapolator, id_to_interpolator
 from raysect.core.math.function.float.function2d.interpolate.tests.scipts.generate_2d_splines import X_LOWER, X_UPPER, \
     NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR,\
@@ -453,7 +453,7 @@ class TestInterpolators2D(unittest.TestCase):
         self.precalc_extrapolation = None
 
         #: the interpolator object that is being tested. Set in setup_ method
-        self.interpolator: Interpolator2DGrid = None
+        self.interpolator: Interpolator2DArray = None
 
     def setup_linear(
             self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool) -> None:
@@ -490,7 +490,7 @@ class TestInterpolators2D(unittest.TestCase):
         self.setup_extrpolation_type(extrapolator_type)
 
         # set interpolator
-        self.interpolator = Interpolator2DGrid(self.x, self.y, self.data, 'linear', extrapolator_type, extrapolation_range, extrapolation_range)
+        self.interpolator = Interpolator2DArray(self.x, self.y, self.data, 'linear', extrapolator_type, extrapolation_range, extrapolation_range)
 
     def setup_cubic(self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool):
         """
@@ -523,7 +523,7 @@ class TestInterpolators2D(unittest.TestCase):
 
         self.setup_extrpolation_type(extrapolator_type)
         # set interpolator
-        self.interpolator = Interpolator2DGrid(self.x, self.y, self.data, 'cubic', extrapolator_type, extrapolation_range, extrapolation_range)
+        self.interpolator = Interpolator2DArray(self.x, self.y, self.data, 'cubic', extrapolator_type, extrapolation_range, extrapolation_range)
 
     def setup_extrpolation_type(self, extrapolator_type: str):
         if extrapolator_type == 'linear':
@@ -669,7 +669,7 @@ class TestInterpolators2D(unittest.TestCase):
                     'x': x_values, 'y': y_values, 'f': f_values, 'interpolation_type': interpolator_type,
                     'extrapolation_type': extrapolator_type, 'extrapolation_range_x': 2.0, 'extrapolation_range_y': 2.0
                 }
-                self.assertRaises(ValueError, Interpolator2DGrid, **dict_kwargs_interpolators)
+                self.assertRaises(ValueError, Interpolator2DArray, **dict_kwargs_interpolators)
 
     def test_initialisation_errors(self):
         # monotonicity x
@@ -704,18 +704,14 @@ class TestInterpolators2D(unittest.TestCase):
         y_wrong = y_wrong[:-1]
         self.initialise_tests_on_interpolators(self.x, y_wrong, self.test_loaded_values.data)
 
-        # Todo self._x_mv = x and self._f_mv = f need to be initialised after array checks
-        # Test array length 1
-        test_on = True
-        if test_on:
-            # Arrays are too short
-            x_wrong = np.copy(self.x)
-            y_wrong = np.copy(self.y)
-            f_wrong = np.copy(self.test_loaded_values.data)
-            x_wrong = x_wrong[0]
-            y_wrong = y_wrong[0]
-            f_wrong = f_wrong[0, 0]
-            self.initialise_tests_on_interpolators(x_wrong, y_wrong, f_wrong)
+        # Test array length 1, Arrays are too short
+        x_wrong = np.copy(self.x)
+        y_wrong = np.copy(self.y)
+        f_wrong = np.copy(self.test_loaded_values.data)
+        x_wrong = x_wrong[0]
+        y_wrong = y_wrong[0]
+        f_wrong = f_wrong[0, 0]
+        self.initialise_tests_on_interpolators(x_wrong, y_wrong, f_wrong)
 
         # Incorrect dimension (1D data)
         x_wrong = np.array(np.concatenate((np.copy(self.x)[:, np.newaxis], np.copy(self.x)[:, np.newaxis]), axis=1))

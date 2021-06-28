@@ -35,7 +35,7 @@ This script has been used to calculate the reference data for the 1D cubic inter
 from raysect.core.math.function.float.function1d.tests.test_interpolator import X_LOWER, X_UPPER, NB_XSAMPLES, NB_X, \
     X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR
 
-from raysect.core.math.function.float.function1d.interpolate import Interpolate1D
+from raysect.core.math.function.float.function1d.interpolate import Interpolate1DArray
 import numpy as np
 from scipy.interpolate import CubicHermiteSpline, interp1d
 import scipy
@@ -213,7 +213,7 @@ check_plot = True
 if check_plot:
     import matplotlib.pyplot as plt
 
-    interp_cubic_extrap_nearest = Interpolate1D(
+    interp_cubic_extrap_nearest = Interpolate1DArray(
         x, data_f, 'linear', 'quadratic', extrapolation_range=2.0
     )
     print(interp_cubic_extrap_nearest.test_edge_gradients())

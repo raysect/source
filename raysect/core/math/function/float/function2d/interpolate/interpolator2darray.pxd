@@ -33,7 +33,7 @@ cimport numpy as np
 from raysect.core.math.function.float.function2d cimport Function2D
 from numpy cimport ndarray
 
-cdef class Interpolator2DGrid(Function2D):
+cdef class Interpolator2DArray(Function2D):
 
     cdef:
         ndarray x, y, f

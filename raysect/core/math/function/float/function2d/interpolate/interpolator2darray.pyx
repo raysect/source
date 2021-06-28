@@ -36,7 +36,7 @@ from raysect.core.math.cython.interpolation.linear cimport linear2d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_2d, evaluate_cubic_2d
 
 
-cdef class Interpolator2DGrid(Function2D):
+cdef class Interpolator2DArray(Function2D):
     """
     Interface class for Function2D interpolators.
 

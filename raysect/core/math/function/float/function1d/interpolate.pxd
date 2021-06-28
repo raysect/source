@@ -33,7 +33,7 @@ from raysect.core.math.function.float.function1d.base cimport Function1D
 from numpy cimport ndarray
 
 
-cdef class Interpolate1D(Function1D):
+cdef class Interpolate1DArray(Function1D):
     cdef:
         ndarray x, f
         double[::1] _x_mv, _f_mv

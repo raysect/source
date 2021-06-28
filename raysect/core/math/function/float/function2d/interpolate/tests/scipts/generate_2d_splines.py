@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
-from raysect.core.math.function.float.function2d.interpolate.interpolator2dgrid import Interpolator2DGrid
+from raysect.core.math.function.float.function2d.interpolate.interpolator2darray import Interpolator2DArray
 from scipy.interpolate import griddata, interp2d, RectBivariateSpline, CloughTocher2DInterpolator
 import scipy
 
@@ -190,7 +190,7 @@ if __name__ == '__main__':
         fig, ax = plt.subplots(1, 3, subplot_kw={"projection": "3d"})
         surf = ax[0].plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm, linewidth=0, antialiased=False)
         main_plots_on = True
-        interpolator2D = Interpolator2DGrid(x_in, y_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0)
+        interpolator2D = Interpolator2DArray(x_in, y_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0)
 
         if main_plots_on:
             f_out = np.zeros((len(xsamples), len(ysamples)))

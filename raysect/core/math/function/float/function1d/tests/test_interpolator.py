@@ -29,12 +29,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Unit tests for the Interpolator1DCubic class from within Interpolate1D,
+Unit tests for the Interpolator1DCubic class from within Interpolate1DArray,
 including interaction with Extrapolator1DLinear and Extrapolator1DNearest.
 """
 import unittest
 import numpy as np
-from raysect.core.math.function.float.function1d.interpolate import Interpolate1D, id_to_extrapolator, \
+from raysect.core.math.function.float.function1d.interpolate import Interpolate1DArray, id_to_extrapolator, \
     id_to_interpolator
 
 
@@ -273,7 +273,7 @@ class TestInterpolators1D(unittest.TestCase):
         self.precalc_extrapolation = None
 
         #: the interpolator object that is being tested. Set in setup_ method
-        self.interpolator: Interpolate1D = None
+        self.interpolator: Interpolate1DArray = None
 
     def setup_linear(
             self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool) -> None:
@@ -283,7 +283,7 @@ class TestInterpolators1D(unittest.TestCase):
 
         Once executed, self.precalc_NNN members variables will contain
         precalculated extrapolated / interpolated data. self.interpolator
-        will hold Interpolate1D object that is being tested. Precalculated interpolation using
+        will hold Interpolate1DArray object that is being tested. Precalculated interpolation using
         scipy.interpolate.interp1d(kind=linear), generated using scipy version 1.6.3
 
         :param extrapolator_type: type of extrapolator 'none', 'linear' or 'cubic'
@@ -310,7 +310,7 @@ class TestInterpolators1D(unittest.TestCase):
         self.setup_extrpolation_type(extrapolator_type)
 
         # set interpolator
-        self.interpolator = Interpolate1D(self.x, self.data, 'linear', extrapolator_type, extrapolation_range)
+        self.interpolator = Interpolate1DArray(self.x, self.data, 'linear', extrapolator_type, extrapolation_range)
 
     def setup_cubic(self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool):
         """
@@ -319,7 +319,7 @@ class TestInterpolators1D(unittest.TestCase):
 
         Once executed, self.precalc_NNN members variables will contain
         precalculated extrapolated / interpolated data. self.interpolator
-        will hold Interpolate1D object that is being tested. Generated using scipy
+        will hold Interpolate1DArray object that is being tested. Generated using scipy
         version 1.6.3 scipy.interpolate.CubicHermiteSpline, with input gradients.
 
         :param extrapolator_type: type of extrapolator 'none', 'linear' or 'cubic'
@@ -343,7 +343,7 @@ class TestInterpolators1D(unittest.TestCase):
 
         self.setup_extrpolation_type(extrapolator_type)
         # set interpolator
-        self.interpolator = Interpolate1D(self.x, self.data, 'cubic', extrapolator_type, extrapolation_range)
+        self.interpolator = Interpolate1DArray(self.x, self.data, 'cubic', extrapolator_type, extrapolation_range)
 
     def setup_extrpolation_type(self, extrapolator_type: str):
         if extrapolator_type == 'linear':
@@ -474,7 +474,7 @@ class TestInterpolators1D(unittest.TestCase):
                     'x': x_values, 'f': f_values, 'interpolation_type': interpolator_type,
                     'extrapolation_type': extrapolator_type, 'extrapolation_range': 2.0
                 }
-                self.assertRaises(ValueError, Interpolate1D, **dict_kwargs_interpolators)
+                self.assertRaises(ValueError, Interpolate1DArray, **dict_kwargs_interpolators)
 
     def test_initialisation_errors(self):
         # monotonicity

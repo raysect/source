@@ -42,7 +42,7 @@ from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_1d, 
 from raysect.core.math.cython.utility cimport find_index, lerp
 
 
-cdef class Interpolate1D(Function1D):
+cdef class Interpolate1DArray(Function1D):
     """
     Interface class for Function1D interpolators.
 

@@ -30,5 +30,5 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .interpolator2dmesh import Interpolator2DMesh
-from .interpolator2dgrid import Interpolator2DGrid
+from .interpolator2darray import Interpolator2DArray
 from .discrete2dmesh import Discrete2DMesh
