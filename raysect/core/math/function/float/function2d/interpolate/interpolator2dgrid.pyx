@@ -70,21 +70,6 @@ cdef class Interpolator2DGrid(Function2D):
     def __init__(self, object x, object y, object f, str interpolation_type, str extrapolation_type,
                  double extrapolation_range_x, double extrapolation_range_y):
 
-        self.x = np.array(x, dtype=np.float64)
-        self.x.flags.writeable = False
-        self.y = np.array(y, dtype=np.float64)
-        self.y.flags.writeable = False
-        self.f = np.array(f, dtype=np.float64)
-        self.f.flags.writeable = False
-
-        self._x_mv = x
-        self._y_mv = y
-        self._f_mv = f
-        self._last_index_x = self.x.shape[0] - 1
-        self._last_index_y = self.y.shape[0] - 1
-        self._extrapolation_range_x = extrapolation_range_x
-        self._extrapolation_range_y = extrapolation_range_y
-
         # extrapolation_ranges must be greater than or equal to 0.
         if extrapolation_range_x < 0:
             raise ValueError('extrapolation_range_x must be greater than or equal to 0.')
@@ -111,6 +96,21 @@ cdef class Interpolator2DGrid(Function2D):
             raise ValueError('The x array must be monotonically increasing.')
         if (np.diff(y) <= 0).any():
             raise ValueError('The y array must be monotonically increasing.')
+
+        self.x = np.array(x, dtype=np.float64)
+        self.x.flags.writeable = False
+        self.y = np.array(y, dtype=np.float64)
+        self.y.flags.writeable = False
+        self.f = np.array(f, dtype=np.float64)
+        self.f.flags.writeable = False
+
+        self._x_mv = x
+        self._y_mv = y
+        self._f_mv = f
+        self._last_index_x = self.x.shape[0] - 1
+        self._last_index_y = self.y.shape[0] - 1
+        self._extrapolation_range_x = extrapolation_range_x
+        self._extrapolation_range_y = extrapolation_range_y
 
         # create interpolator per interapolation_type argument
         interpolation_type = interpolation_type.lower()
