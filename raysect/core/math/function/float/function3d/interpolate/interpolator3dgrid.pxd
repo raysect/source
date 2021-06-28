@@ -29,6 +29,20 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# from .interpolator3dmesh import Interpolator3DMesh
-from .discrete3dmesh import Discrete3DMesh
-from .interpolator3dgrid import Interpolator3DGrid
+cimport numpy as np
+from raysect.core.math.function.float.function3d cimport Function3D
+from numpy cimport ndarray
+
+cdef class Interpolator3DGrid(Function3D):
+
+    cdef:
+        ndarray x, y, f
+        double[::1] _x_mv, _y_mv
+        double[:, ::1] _f_mv
+        # _Interpolator3D _interpolator
+        # _Extrapolator3D _extrapolator
+        int _last_index_x, _last_index_y
+        double _extrapolation_range_x ,_extrapolation_range_y
+    cdef int extrapolator_index_change(self, int index, int last_index)
+    cdef int extrapolator_get_edge_index(self, int index, int last_index)
+    cdef double evaluate(self, double px, double py, double pz) except? -1e999
