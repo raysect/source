@@ -137,10 +137,6 @@ if __name__ == '__main__':
     collapsed_xsamples_in_full = np.reshape(xsamples_in_full, -1)
     collapsed_ysamples_in_full = np.reshape(ysamples_in_full, -1)
 
-    precalc_interpolation_function_vals = function_to_spline(xsamples_in_full, ysamples_in_full, factor)
-
-    # print('Save this to self.precalc_function in test_interpolator:\n', repr(precalc_interpolation_function_vals))
-
     # Extrapolation x and y values
     xsamples_out_of_bounds, ysamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds = \
         get_extrapolation_input_values(

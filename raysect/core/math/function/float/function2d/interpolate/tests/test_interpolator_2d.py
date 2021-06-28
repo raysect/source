@@ -547,34 +547,38 @@ class TestInterpolators2D(unittest.TestCase):
     def test_linear_interpolation_extrapolators(self):
         for extrapolator_type in id_to_extrapolator.keys():
             self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False)
+            no_test_for_extrapolator = ['linear']
             if extrapolator_type != 'none':
-                if extrapolator_type == 'nearest':
-                    gradient_continuity = False
-                else:
-                    gradient_continuity = True
-                self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
+                if extrapolator_type not in no_test_for_extrapolator:
+                    if extrapolator_type == 'nearest':
+                        gradient_continuity = False
+                    else:
+                        gradient_continuity = True
+                    self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
             self.run_general_interpolation_tests()
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
             self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False)
             if extrapolator_type != 'none':
-                if extrapolator_type == 'nearest':
-                    gradient_continuity = False
-                else:
-                    gradient_continuity = True
-                self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
+                if extrapolator_type not in no_test_for_extrapolator:
+                    if extrapolator_type == 'nearest':
+                        gradient_continuity = False
+                    else:
+                        gradient_continuity = True
+                    self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
             self.run_general_interpolation_tests()
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
             self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True)
             if extrapolator_type != 'none':
-                if extrapolator_type == 'nearest':
-                    gradient_continuity = False
-                else:
-                    gradient_continuity = True
-                self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
+                if extrapolator_type not in no_test_for_extrapolator:
+                    if extrapolator_type == 'nearest':
+                        gradient_continuity = False
+                    else:
+                        gradient_continuity = True
+                    self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
 
             self.run_general_interpolation_tests()
 
@@ -702,12 +706,12 @@ class TestInterpolators2D(unittest.TestCase):
 
         # Todo self._x_mv = x and self._f_mv = f need to be initialised after array checks
         # Test array length 1
-        test_on = False
+        test_on = True
         if test_on:
             # Arrays are too short
             x_wrong = np.copy(self.x)
             y_wrong = np.copy(self.y)
-            f_wrong = np.copy(self.data)
+            f_wrong = np.copy(self.test_loaded_values.data)
             x_wrong = x_wrong[0]
             y_wrong = y_wrong[0]
             f_wrong = f_wrong[0, 0]
