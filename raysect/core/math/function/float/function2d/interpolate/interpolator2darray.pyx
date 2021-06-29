@@ -159,7 +159,6 @@ cdef class Interpolator2DArray(Function2D):
         if interpolation_type not in id_to_interpolator:
             raise ValueError(f'Interpolation type {interpolation_type} not found. options are {id_to_interpolator.keys()}')
 
-
         self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._y_mv, self._f_mv)
 
         # create extrapolator per extrapolation_type argument
@@ -170,6 +169,11 @@ cdef class Interpolator2DArray(Function2D):
         self._extrapolator = id_to_extrapolator[extrapolation_type](
             self._x_mv, self._y_mv, self._f_mv, self._interpolator, extrapolation_range_x, extrapolation_range_y
         )
+
+        # Permit combinations of interpolator and extrapolator that the order of extrapolator is higher than interpolator
+        if extrapolation_type not in permitted_interpolation_combinations[interpolation_type]:
+            raise ValueError(
+                f'Extrapolation type {extrapolation_type} not compatible with interpolation type {interpolation_type}')
 
     cdef double evaluate(self, double px, double py) except? -1e999:
         """
@@ -949,6 +953,7 @@ id_to_extrapolator = {
     # _Extrapolator2DQuadratic.ID: _Extrapolator2DQuadratic
 }
 
-forbidden_interpolation_combinations = {
-    # _Interpolator2DLinear.ID: [_Extrapolator2DQuadratic]
+permitted_interpolation_combinations = {
+    _Interpolator2DLinear.ID: [_Extrapolator2DNone.ID, _Extrapolator2DNearest.ID, _Extrapolator2DLinear.ID],
+    _Interpolator2DCubic.ID: [_Extrapolator2DNone.ID, _Extrapolator2DNearest.ID, _Extrapolator2DLinear.ID]
 }
