@@ -33,6 +33,8 @@ cimport numpy as np
 from raysect.core.math.function.float.function2d cimport Function2D
 from numpy cimport ndarray
 
+cdef double lookup_factorial(int n)
+
 cdef int find_index_change(int index, int last_index)
 
 cdef int find_edge_index(int index, int last_index)

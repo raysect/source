@@ -31,9 +31,23 @@
 
 import numpy as np
 cimport cython
-from raysect.core.math.cython.utility cimport find_index, factorial
+from raysect.core.math.cython.utility cimport find_index
 from raysect.core.math.cython.interpolation.linear cimport linear2d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_2d, evaluate_cubic_2d
+
+
+cdef double lookup_factorial(int n):
+    """
+    A small lookup table for a factorial calculation.
+    
+    So far this is only required for cubic functions, so going up to 3!.
+    """
+    cdef double[4] factorial
+    factorial[0] = 1.
+    factorial[1] = 1.
+    factorial[2] = 2.
+    factorial[3] = 6.
+    return factorial[n]
 
 cdef int find_index_change(int index, int last_index):
     """
@@ -473,7 +487,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         df_dn = 0
         for i in range(order_x, 4):
             for j in range(order_y, 4):
-                df_dn += (a[i][j] * (factorial(i)/factorial(i-order_x)) * (factorial(j)/factorial(j-order_y)) *
+                df_dn += (a[i][j] * (lookup_factorial(i)/lookup_factorial(i-order_x)) * (lookup_factorial(j)/lookup_factorial(j-order_y)) *
                           x_powers[i-order_x] * y_powers[j-order_y])
         return  df_dn
 
