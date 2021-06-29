@@ -33,6 +33,10 @@ cimport numpy as np
 from raysect.core.math.function.float.function2d cimport Function2D
 from numpy cimport ndarray
 
+cdef int find_index_change(int index, int last_index)
+
+cdef int find_edge_index(int index, int last_index)
+
 cdef class Interpolator2DArray(Function2D):
 
     cdef:
@@ -43,8 +47,6 @@ cdef class Interpolator2DArray(Function2D):
         _Extrapolator2D _extrapolator
         int _last_index_x, _last_index_y
         double _extrapolation_range_x ,_extrapolation_range_y
-    cdef int extrapolator_index_change(self, int index, int last_index)
-    cdef int extrapolator_get_edge_index(self, int index, int last_index)
     cdef double evaluate(self, double px, double py) except? -1e999
 
 
@@ -74,6 +76,9 @@ cdef class _Extrapolator2D:
         double [:, ::1] _f
         _Interpolator2D _external_interpolator
         int _last_index_x, _last_index_y
+        double _extrapolation_range_x, _extrapolation_range_y
+
+    cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999
     cdef double evaluate_edge_y(self, double px, double py, int index_x, int index_y, int edge_y_index) except? -1e999
     cdef double evaluate_edge_xy(self, double px, double py, int index_x, int index_y, int edge_x_index, int edge_y_index) except? -1e999

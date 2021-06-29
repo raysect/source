@@ -35,6 +35,48 @@ from raysect.core.math.cython.utility cimport find_index, factorial
 from raysect.core.math.cython.interpolation.linear cimport linear2d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_2d, evaluate_cubic_2d
 
+cdef int find_index_change(int index, int last_index):
+    """
+    Transforming the output of find_index to find the index lower index of a cell required for an extrapolator.
+
+    Finding the left most index of a grid cell from the output of find_index. The output of find_index is -1 at the 
+    lower index, which has a lower border at index 0, and index = last_index at the upper border which is changed to 
+    index = last_index - 1.
+
+    :param int index: the index of the lower side of a unit cell.
+    :param int last_index: the index of the final point.
+    :return: the index of the lower cell at the border of the interpolator spline knots
+    """
+    cdef int lower_index
+    if index == -1:
+        lower_index = index + 1
+    elif index == last_index:
+        lower_index = index - 1
+    else:
+        lower_index = index
+    return lower_index
+
+cdef int find_edge_index(int index, int last_index):
+    """
+    Transforming the output of find_index to find the index of the array border required for an extrapolator.
+
+    Instead of finding the left most index of a grid cell, the index of the border is found from the output of 
+    find_index. The output of find_index is -1 at the lower index, which has a border at index 0, and index = 
+    last_index at the upper border. The difference from extrapolator_index_change is at the upper border.
+
+    :param int index: the index of the lower side of a unit cell.
+    :param int last_index: the index of the final point.
+    :return: the index of the border of the interpolator spline knots.
+    """
+    cdef int edge_index
+    if index == -1:
+        edge_index = index + 1
+    elif index == last_index:
+        edge_index = index
+    else:
+        edge_index = index
+    return edge_index
+
 
 cdef class Interpolator2DArray(Function2D):
     """
@@ -126,49 +168,8 @@ cdef class Interpolator2DArray(Function2D):
             raise ValueError(f'Extrapolation type {extrapolation_type} not found. options are {id_to_extrapolator.keys()}')
 
         self._extrapolator = id_to_extrapolator[extrapolation_type](
-            self._x_mv, self._y_mv, self._f_mv, self._interpolator
+            self._x_mv, self._y_mv, self._f_mv, self._interpolator, extrapolation_range_x, extrapolation_range_y
         )
-
-    cdef int extrapolator_index_change(self, int index, int last_index):
-        """
-        Transforming the output of find_index to find the index lower index of a cell required for an extrapolator.
-
-        Finding the left most index of a grid cell from the output of find_index. The output of find_index is -1 at the 
-        lower index, which has a lower border at index 0, and index = last_index at the upper border which is changed to 
-        index = last_index - 1.
-
-        :param int index: the index of the lower side of a unit cell.
-        :param int last_index: the index of the final point.
-        :return: the index of the lower cell at the border of the interpolator spline knots
-        """
-        if index == -1:
-            index += 1
-        elif index == last_index:
-            index -= 1
-        else:
-            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
-        return index
-
-    cdef int extrapolator_get_edge_index(self, int index, int last_index):
-        """
-        Transforming the output of find_index to find the index of the array border required for an extrapolator.
-        
-        Instead of finding the left most index of a grid cell, the index of the border is found from the output of 
-        find_index. The output of find_index is -1 at the lower index, which has a border at index 0, and index = 
-        last_index at the upper border. The difference from extrapolator_index_change is at the upper border.
-        
-        :param int index: the index of the lower side of a unit cell.
-        :param int last_index: the index of the final point.
-        :return: the index of the border of the interpolator spline knots.
-        """
-        cdef int edge_index
-        if index == -1:
-            edge_index = index + 1
-        elif index == last_index:
-            edge_index = index
-        else:
-            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
-        return edge_index
 
     cdef double evaluate(self, double px, double py) except? -1e999:
         """
@@ -184,43 +185,17 @@ cdef class Interpolator2DArray(Function2D):
         :param double py: the point for which an interpolated value is required.
         :return: the interpolated value at point x, y.
         """
-        # Find index assuming the grid is the same in x and y
-        cdef int edge_x_index, edge_y_index
 
+        # Find index assuming the grid is the same in x and y
         cdef int index_x = find_index(self._x_mv, px)
         cdef int index_y = find_index(self._y_mv, py)
-        if (index_x == -1 or index_x == self._last_index_x) and (index_y == -1 or index_y == self._last_index_y):
-            edge_x_index = self.extrapolator_get_edge_index(index_x, self._last_index_x)
-            edge_y_index = self.extrapolator_get_edge_index(index_y, self._last_index_y)
-            index_x = self.extrapolator_index_change(index_x, self._last_index_x)
-            index_y = self.extrapolator_index_change(index_y, self._last_index_y)
+        cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
+        cdef int index_lower_y = find_index_change(index_y, self._last_index_y)
 
-            if np.abs(px - self._x_mv[edge_x_index]) > self._extrapolation_range_x:
-                raise ValueError(
-                    f'The specified value (x={px}) is outside of extrapolation range.')
-            if np.abs(py - self._y_mv[edge_y_index]) > self._extrapolation_range_y:
-                raise ValueError(
-                    f'The specified value (y={py}) is outside of extrapolation range.')
-            return self._extrapolator.evaluate_edge_xy(px, py, index_x, index_y, edge_x_index, edge_y_index)
-
-        elif index_x == -1 or index_x == self._last_index_x:
-            edge_x_index = self.extrapolator_get_edge_index(index_x, self._last_index_x)
-            index_x = self.extrapolator_index_change(index_x, self._last_index_x)
-            if np.abs(px - self._x_mv[edge_x_index]) > self._extrapolation_range_x:
-                raise ValueError(
-                    f'The specified value (x={px}) is outside of extrapolation range.')
-            return self._extrapolator.evaluate_edge_x(px, py, index_x, index_y, edge_x_index)
-
-        elif index_y == -1 or index_y == self._last_index_y:
-            edge_y_index = self.extrapolator_get_edge_index(index_y, self._last_index_y)
-            index_y = self.extrapolator_index_change(index_y, self._last_index_y)
-            if np.abs(py - self._y_mv[edge_y_index]) > self._extrapolation_range_y:
-                raise ValueError(
-                    f'The specified value (y={py}) is outside of extrapolation range.')
-            return self._extrapolator.evaluate_edge_y(px, py, index_x, index_y, edge_y_index)
-
+        if (index_x == -1 or (index_x == self._last_index_x and px != self._x_mv[-1])) or (index_y == -1 or (index_y == self._last_index_y and py != self._y_mv[-1])):
+            return self._extrapolator.evaluate(px, py, index_x, index_y)
         else:
-            return self._interpolator.evaluate(px, py, index_x, index_y)
+            return self._interpolator.evaluate(px, py, index_lower_x, index_lower_y)
 
     @property
     def domain(self):
@@ -352,7 +327,7 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
 
 cdef class _Interpolator2DCubic(_Interpolator2D):
     """
-    Cubic interpolation of 2D function.
+    Cubic interpolation of a 2D function.
 
     When called, stores cubic polynomial coefficients from the value of the function, df/dx, df/dy  and d2f/dxdy at the
     neighbouring spline knots using _GridGradients2D object. The polynomial coefficients and gradients are calculated
@@ -511,13 +486,41 @@ cdef class _Extrapolator2D:
 
     ID = NotImplemented
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator):
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator, double extrapolation_range_x, double extrapolation_range_y):
         self._x = x
         self._y = y
         self._f = f
         self._last_index_x = self._x.shape[0] - 1
         self._last_index_y = self._y.shape[0] - 1
         self._external_interpolator = external_interpolator
+        self._extrapolation_range_x = extrapolation_range_x
+        self._extrapolation_range_y = extrapolation_range_y
+
+    cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
+        cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
+        cdef int index_lower_y = find_index_change(index_y, self._last_index_y)
+        cdef int edge_x_index = find_edge_index(index_x, self._last_index_x)
+        cdef int edge_y_index = find_edge_index(index_y, self._last_index_y)
+        if (index_x == -1 or index_x == self._last_index_x) and (index_y == -1 or index_y == self._last_index_y):
+            if np.abs(px - self._x[edge_x_index]) > self._extrapolation_range_x:
+                raise ValueError(
+                    f'The specified value (x={px}) is outside of extrapolation range.')
+            if np.abs(py - self._y[edge_y_index]) > self._extrapolation_range_y:
+                raise ValueError(
+                    f'The specified value (y={py}) is outside of extrapolation range.')
+            return self.evaluate_edge_xy(px, py, index_lower_x, index_lower_y, edge_x_index, edge_y_index)
+        elif index_x == -1 or index_x == self._last_index_x:
+            if np.abs(px - self._x[edge_x_index]) > self._extrapolation_range_x:
+                raise ValueError(
+                    f'The specified value (x={px}) is outside of extrapolation range.')
+            return self.evaluate_edge_x(px, py, index_lower_x, index_lower_y, edge_x_index)
+        elif index_y == -1 or index_y == self._last_index_y:
+            if np.abs(py - self._y[edge_y_index]) > self._extrapolation_range_y:
+                raise ValueError(
+                    f'The specified value (y={py}) is outside of extrapolation range.')
+            return self.evaluate_edge_y(px, py, index_lower_x, index_lower_y, edge_y_index)
+        else:
+            raise ValueError('Interpolated index parsed to extrapolator')
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         raise NotImplementedError(f'{self.__class__} not implemented.')
@@ -541,8 +544,8 @@ cdef class _Extrapolator2DNone(_Extrapolator2D):
 
     ID = 'none'
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator):
-           super().__init__(x, y, f, external_interpolator)
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator, double extrapolation_range_x, double extrapolation_range_y):
+           super().__init__(x, y, f, external_interpolator, extrapolation_range_x, extrapolation_range_y)
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         if px != self._x[-1]:
@@ -582,8 +585,8 @@ cdef class _Extrapolator2DNearest(_Extrapolator2D):
 
     ID = 'nearest'
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator):
-           super().__init__(x, y, f, external_interpolator)
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator, double extrapolation_range_x, double extrapolation_range_y):
+           super().__init__(x, y, f, external_interpolator, extrapolation_range_x, extrapolation_range_y)
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         """
@@ -637,8 +640,8 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
 
     ID = 'linear'
 
-    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator):
-           super().__init__(x, y, f, external_interpolator)
+    def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D external_interpolator, double extrapolation_range_x, double extrapolation_range_y):
+           super().__init__(x, y, f, external_interpolator, extrapolation_range_x, extrapolation_range_y)
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         """
