@@ -812,7 +812,7 @@ cdef class _GridGradients2D:
         elif derivative_order_x == 0 and derivative_order_y == 1:
             dfdn = self.derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :])
         elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self.derivitive_d2fdxdy_edge_1(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
+            dfdn = self.derivitive_d2fdxdy_edge_x(y_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
         return dfdn
@@ -831,7 +831,7 @@ cdef class _GridGradients2D:
         elif derivative_order_x == 0 and derivative_order_y == 1:
             dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
         elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self.derivitive_d2fdxdy_edge_1(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
+            dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
         return dfdn
@@ -851,7 +851,7 @@ cdef class _GridGradients2D:
         elif derivative_order_x == 0 and derivative_order_y == 1:
             dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
         elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self.derivitive_d2fdxdy_edge_1(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
+            dfdn = self.derivitive_d2fdxdy_edge_xy(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
         else:
             raise ValueError('No higher order derivatives implemented')
         return dfdn
@@ -918,8 +918,77 @@ cdef class _GridGradients2D:
         x1_n2 = x1_n**2
         return (f[2]*x1_n2 - f[0] - f[1]*(x1_n2 - 1.))/(x1_n + x1_n2)
 
-    cdef double derivitive_d2fdxdy_edge_1(self, double[:, ::1] f) except? -1e999:
-        return (f[1, 1] - f[0, 1] - f[1, 0] + f[0, 0])/4.
+    cdef double derivitive_d2fdxdy_edge_xy(self, double[:, ::1] f) except? -1e999:
+        """
+        Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation. Valid at the edges of the grid 
+        where higher/lower spline knots don't exist in both x and y.
+
+        For the case where there are no lower spline points than x and y in a 2D array:
+        A taylor expansion of f(x, y) with changes in x and y:
+        1) f(x+dx0, y+dy0) = f(x, y) + dx0*fx(x, y) + dy0*fy(x, y) + dx0^2*fxx(x, y)/2 + dx0*dy0*fxy(x, y) + dy0^2*fyy(x, y)/2 + O^3(dx0, dy0)
+        2) f(x+dx0, y) = f(x, y) + dx0*fx(x, y) + dx0^2*fxx(x, y)/2 + O^3(dx0, dy0)
+        3) f(x, y+dy0) = f(x, y) + dy0*fy(x, y) + dy0^2*fyy(x, y)/2 + O^3(dx0, dy0)
+
+        1) - 2) - 3)=>
+        4) f(x+dx0, y+dy0) - f(x+dx0, y) - f(x, y+dy0) = -f(x, y) + dx0*dy0*fxy(x, y)
+        =>
+        fxy(x, y) = [f(x+dx0, y+dy0) - f(x+dx0, y) - f(x, y+dy0) + f(x, y)]/(dx0*dy0)
+
+        For unit square normalisation, dy0 = 1 and dx0 = 1.
+        fxy(x, y) = f(x+dx0, y+dy0) - f(x+dx0, y) - f(x, y+dy0) + f(x, y)
+        """
+        return f[1, 1] - f[0, 1] - f[1, 0] + f[0, 0]
+
+    cdef double derivitive_d2fdxdy_edge_x(self, double[:] y, double[:, ::1] f) except? -1e999:
+        """
+        Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation. Valid at the edges of the grid 
+        where higher/lower spline knots don't exist in x.
+
+        For the case where there are no lower spline points than x in a 2D array (x, y):
+        A taylor expansion of f(x, y) with changes in x and y:
+        1) f(x+dx0, y+dy0) = f(x, y) + dx0*fx(x, y) + dy0*fy(x, y) + dx0^2*fxx(x, y)/2 + dx0*dy0*fxy(x, y) + dy0^2*fyy(x, y)/2 + O^3(dx0, dy0)
+        2) f(x+dx0, y-dy1) = f(x, y) + dx0*fx(x, y) - dy1*fy(x, y) + dx0^2*fxx(x, y)/2 - dx0*dy1*fxy(x, y) + dy1^2*fyy(x, y)/2 + O^3(dx0, dy1)
+        3) f(x, y+dy0) = f(x, y) + dy0*fy(x, y) + dy0^2*fyy(x, y)/2 + O^3(dx0, dy0)
+        4) f(x, y-dy1) = f(x, y) - dy1*fy(x, y) + dy1^2*fyy(x, y)/2 + O^3(dx0, dy1)
+        
+        1) - 2) =>
+        5) f(x+dx0, y+dy0) - f(x+dx0, y-dy1) = (dy0 + dy1)*fy(x, y) + dx0*(dy0 + dy1)*fxy(x, y) + (dy0^2 - dy1^2)*fyy(x, y)/2
+
+        3) - 4) =>
+        6) f(x, y+dy0) - f(x, y-dy1) = (dy0 + dy1)*fy(x, y) + (dy0^2 - dy1^2)*fyy(x, y)/2 + O^3(dx0, dy0)
+        5) - 6)
+        f(x+dx0, y+dy0) - f(x+dx0, y-dy1) - f(x, y+dy0) + f(x, y-dy1) = dx0*(dy0 + dy1)*fxy(x, y)
+        =>
+        fxy(x, y) = [f(x+dx0, y+dy0) - f(x+dx0, y-dy1) - f(x, y+dy0) + f(x, y-dy1)]/(dx0*(dy0 + dy1))
+
+        For unit square normalisation, dy0 = 1 and dx0 = 1.
+        fxy(x, y) = [f(x+dx0, y+dy0) - f(x+dx0, y-dy1) - f(x, y+dy0) + f(x, y-dy1)]/(1 + dy1)
+
+        Simplifies to (f[1, 2] - f[0, 2] - f[1, 0] + f[0, 0])/2 if dx0=dx1 and dy0=dy1.
+        """
+        cdef double dy1
+        dy1 = (y[1] - y[0])/(y[2] - y[1])
+        return (f[1, 2] - f[0, 2] - f[1, 0] + f[0, 0])/(1. + dy1)
+
+    cdef double derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, ::1] f) except? -1e999:
+        """
+        Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation. Valid at the edges of the grid 
+        where higher/lower spline knots don't exist in y.
+        
+        The same derivation can be made at if at the edge of the grid in x or y only. x and y are not specifically
+        defined in a unique way so between these derivations f(x=x, y=y) => f(x=y, y=x) without any problems.
+        The equation for d2f/dxdy becomes:
+        =>
+        fxy(x, y) = [f(x+dx0, y+dy0) - f(x-dx1, y+dy0) - f(x+dx0, y) + f(x-dx1, y)]/(dy0*(dx0 + dx1))
+
+        For unit square normalisation, dy0 = 1 and dx0 = 1.
+        fxy(x, y) = [f(x+dx0, y+dy0) - f(x-dx1, y+dy0) - f(x+dx0, y) + f(x-dx1, y)]/(1 + dx1)
+
+        Simplifies to (f[2, 1] - f[2, 0] - f[0, 1] + f[0, 0])/2 if dx0=dx1 and dy0=dy1.
+        """
+        cdef double dx1
+        dx1 = (x[1] - x[0])/(x[2] - x[1])
+        return (f[2, 1] - f[0, 1] - f[2, 0] + f[0, 0])/(1. + dx1)
 
     cdef double derivitive_d2fdxdy(self, double[:] x, double[:] y, double[:, ::1] f) except? -1e999:
         """
