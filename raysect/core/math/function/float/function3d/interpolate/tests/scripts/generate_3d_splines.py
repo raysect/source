@@ -29,7 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
-from raysect.core.math.function.float.function3d.interpolate.interpolator3dgrid import Interpolator3DGrid
+from raysect.core.math.function.float.function3d.interpolate.interpolator3darray import Interpolator3DArray
 from matplotlib.colors import ListedColormap, LogNorm, SymLogNorm
 import scipy
 
@@ -71,20 +71,21 @@ def function_to_spline(x_input, y_input, z_input, factor):
     return factor*np.sinc(t)
 
 
-def make_open_sphere(r, top_half=True):
+def make_open_sphere(r):
     dr, dtheta, dphi = 0.1, np.pi / 250.0, np.pi / 250.0
-    if top_half:
-        [theta, phi] = np.mgrid[0.:np.pi + dtheta:dtheta, -np.pi:np.pi / 2. + dphi:dphi]
-    else:
-        [theta, phi] = np.mgrid[-np.pi:0. + dtheta:dtheta, -np.pi:0. / 2. + dphi:dphi]
+    [theta, phi] = np.mgrid[0.:np.pi + dtheta:dtheta, -np.pi:np.pi / 2. + dphi:dphi]
     x, y, z = spherical_r_theta_phi_to_xyz(r, theta, phi)
 
-    [r_range, theta_range, phi_range] = np.mgrid[0.:r:r/50., -np.pi:0. + dtheta:dtheta, np.pi / 2.:np.pi / 2. + dphi:dphi*2.]
-    x_edge_low, y_edge_low, z_edge_low = spherical_r_theta_phi_to_xyz(r_range, theta_range, phi_range)
-    x_edge_high, y_edge_high, z_edge_high = spherical_r_theta_phi_to_xyz(r, theta, np.pi / 2. + dphi)
+    [r_range_low, theta_range_low, phi_range_low] = np.mgrid[0.:r:r/50., -np.pi:0. + dtheta:dtheta, -np.pi / 2.:-np.pi / 2. + dphi:dphi*2.]
+    [r_range_high, theta_range_high, phi_range_high] = np.mgrid[0.:r:r/50., -np.pi:0. + dtheta:dtheta, np.pi:np.pi + dphi:dphi*2.]
+    x_edge_low, y_edge_low, z_edge_low = spherical_r_theta_phi_to_xyz(r_range_low, theta_range_low, phi_range_low)
+    x_edge_high, y_edge_high, z_edge_high = spherical_r_theta_phi_to_xyz(r_range_high, theta_range_high, phi_range_high)
     x_edge_low = np.reshape(x_edge_low, (np.shape(x_edge_low)[0], np.shape(x_edge_low)[1]))
     y_edge_low = np.reshape(y_edge_low, (np.shape(y_edge_low)[0], np.shape(y_edge_low)[1]))
     z_edge_low = np.reshape(z_edge_low, (np.shape(z_edge_low)[0], np.shape(z_edge_low)[1]))
+    x_edge_high = np.reshape(x_edge_high, (np.shape(x_edge_high)[0], np.shape(x_edge_high)[1]))
+    y_edge_high = np.reshape(y_edge_high, (np.shape(y_edge_high)[0], np.shape(y_edge_high)[1]))
+    z_edge_high = np.reshape(z_edge_high, (np.shape(z_edge_high)[0], np.shape(z_edge_high)[1]))
     return x, y, z, x_edge_low, y_edge_low, z_edge_low, x_edge_high, y_edge_high, z_edge_high
 
 
@@ -134,39 +135,47 @@ if __name__ == '__main__':
     if check_plot:
         import matplotlib.pyplot as plt
         from matplotlib import cm
+        # Install mayavi and pyQt5
+        from mayavi import mlab
+        interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'none', extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0)
 
-        # make a surface at constant r, spherical coords
-        r = 5
-        X, Y, Z, X_edge_1, Y_edge_1, Z_edge_1 , X_edge_2, Y_edge_2, Z_edge_2 = make_open_sphere(r)
-        F = function_to_spline(X, Y, Z, factor=factor)
-        F_edge_1 = function_to_spline(X_edge_1, Y_edge_1, Z_edge_1, factor=factor)
-        lower_sphere = X_UPPER
-        print(np.shape(X), np.shape(Y), np.shape(Z), np.shape(X_edge_1), np.shape(Y_edge_1), np.shape(Z_edge_1))
+        # https://docs.enthought.com/mayavi/mayavi/mlab_case_studies.html
+        x, y, z = np.mgrid[-1:1:20j, -1:1:20j, -1:1:20j]
+        n = 20
 
-        cmap_in = plt.get_cmap('viridis')
-        fig, ax = plt.subplots(1, 3, subplot_kw={"projection": "3d"})
-        min_colourmap = np.min(f_in)
-        max_colourmap = np.max(f_in)
-        # pcm = ax[0].pcolor(X, Y, Z, norm=[np.min(F), np.max(F)],  cmap='viridis', shading='auto')
-        c_norm = SymLogNorm(vmin=min_colourmap, vmax=max_colourmap, linthresh=0.03)
+        s = function_to_spline(x, y, z, 1.)
+        # mlab.pipeline.volume(mlab.pipeline.scalar_field(s))        # mlab.volume_slice(s, plane_orientation='x_axes', slice_index=10)
+        src = mlab.pipeline.scalar_field(x, y, z, s)
+        mlab.pipeline.iso_surface(src, contours=[s.min() + 0.1 * s.ptp(), ], opacity=0.1, colormap='viridis')
+        mlab.pipeline.iso_surface(src, contours=[s.max() - 0.1 * s.ptp(), ], colormap='viridis')
+        mlab.pipeline.image_plane_widget(src,
+                                         plane_orientation='z_axes',
+                                         slice_index=10, colormap='viridis'
+                                         )
+        mlab.axes()
+        mlab.orientation_axes()
+        dxyz = 0.1
+        x_point, y_point, z_point = np.mgrid[-0.5:-0.5+dxyz:4j, -0.5:-0.5+dxyz:4j, -0.5:-0.5+dxyz:4j]
 
-        colourmap = cm.get_cmap('viridis', 512)
-
-        face_f_edge_1_rescaled_log = c_norm(F_edge_1)
-        face_f_rescaled_log = c_norm(F)
-        # surf = ax[0].plot_surface(X, Y, Z, facecolors=cmap_in(face_f_rescaled_log), norm=c_norm, cmap='viridis', linewidth=0, antialiased=False, vmin=min_colourmap, vmax=max_colourmap, zorder=0)
-        surf = ax[0].plot_surface(X_edge_1, Y_edge_1, Z_edge_1, facecolors=cmap_in(face_f_edge_1_rescaled_log), cmap='viridis', norm=c_norm, linewidth=0, antialiased=False, zorder=1)
-        fig.colorbar(surf, ax=ax[0])
-        ax[0].set_xlabel('x')
-        ax[0].set_ylabel('y')
-        ax[0].set_zlabel('z')
-        ax[1].set_xlabel('x')
-        ax[1].set_ylabel('y')
-        ax[1].set_zlabel('z')
-
-        ax[0].set_title('Spline knots')
-        ax[1].set_title('Interpolated points for testing')
-        ax[2].set_title('Interpolated points for detailed view')
-
-
+        x_point = np.array([-0.5, 0.0])
+        y_point = np.array([-0.5, 0.0])
+        z_point = np.array([0.0, 0.0])
+        s_point = np.array([2000., 0.001])
+        mlab.points3d(x_point, y_point, z_point, s_point, colormap="viridis", scale_mode='none')
+        x_point = 0.5
+        y_point = 0.5
+        z_point = 0.0
+        s_point = 1
+        x_point = np.array([-0.5])
+        y_point = np.array([-0.5])
+        z_point = np.array([0.0])
+        s_point = np.array([10])
+        ones = np.ones(1)
+        scalars = np.arange(1)  # Key point: set an integer for each point
+        # mlab.pipeline.scalar_scatter(x_point, y_point, z_point, scalar=function_to_spline(x_point, y_point, z_point, factor=1.), colormap='viridis')
+        # pts = mlab.quiver3d(x_point, y_point, z_point, ones, ones, ones, scalars=s_point, mode='sphere', scale_factor=1)  # Create points
+        # pts.glyph.color_mode = 'color_by_scalar'  # Color by scalar
+        # mlab.points3d(x_point, y_point, z_point, s_point, colormap="viridis")
+        print(x)
+        mlab.show()
         plt.show()
