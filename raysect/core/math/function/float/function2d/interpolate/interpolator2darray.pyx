@@ -494,7 +494,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
 
 cdef class _Extrapolator2D:
     """
-    Base class for Function1D extrapolators.
+    Base class for Function2D extrapolators.
 
     :param x: 1D memory view of the spline point x positions.
     :param y: 1D memory view of the spline point y positions.
