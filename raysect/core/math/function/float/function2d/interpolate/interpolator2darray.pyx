@@ -273,12 +273,12 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
         return linear2d(
             self._x[index_x], self._x[index_x + 1], self._y[index_y], self._y[index_y + 1],
-            self._f[index_x:index_x + 1, index_y:index_y + 1], px, py
+            self._f[index_x:index_x + 2, index_y:index_y + 2], px, py
         )
 
     cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
         """
-        Calculate the normalised gradient of specified order in a unit square.
+        Calculate the normalised derivative of specified order in a unit square.
         
         The order of the derivative corresponds to order_x and order_y as the number of times differentiated. For 
         example order_x = 1 and order_y = 1 is d2f/dxdy. The normalised gradient is calculated of the bilinear 
