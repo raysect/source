@@ -50,9 +50,9 @@ Z_EXTRAP_DELTA_MIN = 0.04
 NB_X = 10
 NB_Y = 10
 NB_Z = 10
-NB_XSAMPLES = 13
-NB_YSAMPLES = 13
-NB_ZSAMPLES = 13
+NB_XSAMPLES = 19
+NB_YSAMPLES = 19
+NB_ZSAMPLES = 19
 
 EXTRAPOLATION_RANGE = 0.06
 
@@ -64,6 +64,9 @@ SMALL_VALUE_FACTOR = -20.
 
 # Force scientific format to get the right number of significant figures
 np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
+
+def pcolourmesh_corners(input_array):
+    return np.linspace(input_array[0] - (input_array[1] - input_array[0]) / 2., input_array[-1] + (input_array[-1] - input_array[-2]) / 2., len(input_array) + 1)
 
 
 def function_to_spline(x_input, y_input, z_input, factor):
@@ -127,7 +130,9 @@ if __name__ == '__main__':
 
     print('Save this to self.data in test_interpolator:\n', repr(f_in))
 
-
+    xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
+    ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
+    zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
 
 
 
@@ -136,46 +141,94 @@ if __name__ == '__main__':
         import matplotlib.pyplot as plt
         from matplotlib import cm
         # Install mayavi and pyQt5
-        from mayavi import mlab
+
         interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'none', extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0)
+        main_plots_on = True
+        mayavi_plots_on = False
+        if main_plots_on:
+            fig, ax = plt.subplots(1, 2)
+            index_x_in = 5
+            index_xsamples = np.where(x_in[index_x_in] == xsamples)[0].item()
+            f_plot_x = f_in[index_x_in, :, :]
 
-        # https://docs.enthought.com/mayavi/mayavi/mlab_case_studies.html
-        x, y, z = np.mgrid[-1:1:20j, -1:1:20j, -1:1:20j]
-        n = 20
+            y_corners_x = pcolourmesh_corners(y_in)
+            z_corners_x = pcolourmesh_corners(z_in)
 
-        s = function_to_spline(x, y, z, 1.)
-        # mlab.pipeline.volume(mlab.pipeline.scalar_field(s))        # mlab.volume_slice(s, plane_orientation='x_axes', slice_index=10)
-        src = mlab.pipeline.scalar_field(x, y, z, s)
-        mlab.pipeline.iso_surface(src, contours=[s.min() + 0.1 * s.ptp(), ], opacity=0.1, colormap='viridis')
-        mlab.pipeline.iso_surface(src, contours=[s.max() - 0.1 * s.ptp(), ], colormap='viridis')
-        mlab.pipeline.image_plane_widget(src,
-                                         plane_orientation='z_axes',
-                                         slice_index=10, colormap='viridis'
-                                         )
-        mlab.axes()
-        mlab.orientation_axes()
-        dxyz = 0.1
-        x_point, y_point, z_point = np.mgrid[-0.5:-0.5+dxyz:4j, -0.5:-0.5+dxyz:4j, -0.5:-0.5+dxyz:4j]
+            min_colourmap = np.min(f_in)
+            max_colourmap = np.max(f_in)
+            c_norm = SymLogNorm(vmin=min_colourmap, vmax=max_colourmap, linthresh=0.03)
+            colourmap = cm.get_cmap('viridis', 512)
 
-        x_point = np.array([-0.5, 0.0])
-        y_point = np.array([-0.5, 0.0])
-        z_point = np.array([0.0, 0.0])
-        s_point = np.array([2000., 0.001])
-        mlab.points3d(x_point, y_point, z_point, s_point, colormap="viridis", scale_mode='none')
-        x_point = 0.5
-        y_point = 0.5
-        z_point = 0.0
-        s_point = 1
-        x_point = np.array([-0.5])
-        y_point = np.array([-0.5])
-        z_point = np.array([0.0])
-        s_point = np.array([10])
-        ones = np.ones(1)
-        scalars = np.arange(1)  # Key point: set an integer for each point
-        # mlab.pipeline.scalar_scatter(x_point, y_point, z_point, scalar=function_to_spline(x_point, y_point, z_point, factor=1.), colormap='viridis')
-        # pts = mlab.quiver3d(x_point, y_point, z_point, ones, ones, ones, scalars=s_point, mode='sphere', scale_factor=1)  # Create points
-        # pts.glyph.color_mode = 'color_by_scalar'  # Color by scalar
-        # mlab.points3d(x_point, y_point, z_point, s_point, colormap="viridis")
-        print(x)
-        mlab.show()
-        plt.show()
+            ax[0].pcolormesh(y_corners_x, z_corners_x, f_plot_x, norm=c_norm, cmap='viridis')
+            # ax[0].pcolormesh(y_in, z_in, f_plot_x)
+            ax[0].set_aspect('equal')
+
+            f_out = np.zeros((len(xsamples), len(ysamples), len(zsamples)))
+            for i in range(len(xsamples)):
+                for j in range(len(ysamples)):
+                    for k in range(len(zsamples)):
+                        f_out[i, j, k] = interpolator3D(xsamples[i], ysamples[j], zsamples[k])
+
+            f_out_x = f_out[index_xsamples, :, :]
+            ysamples_mesh, zsamples_mesh = np.meshgrid(ysamples, zsamples)
+            im = ax[0].scatter(ysamples_mesh.ravel(), zsamples_mesh.ravel(), c=f_out_x.ravel(), norm=c_norm, cmap='viridis', s=10)
+            index_y_print = -1
+            index_z_print = 0
+
+            index_ysamples_print = np.where(y_in[index_y_print] == ysamples)[0].item()
+            index_zsamples_print = np.where(z_in[index_z_print] == zsamples)[0].item()
+            ax[0].set_title('Slice of x', size=20)
+            ax[1].set_title('Interpolated points in slice of x', size=20)
+
+            y_corners_xsamples = pcolourmesh_corners(ysamples)
+            z_corners_xsamples = pcolourmesh_corners(zsamples)
+
+            im2 = ax[1].pcolormesh(y_corners_xsamples, z_corners_xsamples, f_out_x, norm=c_norm, cmap='viridis')
+
+            ax[1].set_aspect('equal')
+            fig.colorbar(im, ax=ax[0])
+            fig.colorbar(im2, ax=ax[1])
+
+            plt.show()
+        if mayavi_plots_on:
+            from mayavi import mlab
+            # https://docs.enthought.com/mayavi/mayavi/mlab_case_studies.html
+            x, y, z = np.mgrid[-1:1:20j, -1:1:20j, -1:1:20j]
+            n = 20
+
+            s = function_to_spline(x, y, z, 1.)
+            # mlab.pipeline.volume(mlab.pipeline.scalar_field(s))        # mlab.volume_slice(s, plane_orientation='x_axes', slice_index=10)
+            src = mlab.pipeline.scalar_field(x, y, z, s)
+            mlab.pipeline.iso_surface(src, contours=[s.min() + 0.1 * s.ptp(), ], opacity=0.1, colormap='viridis')
+            mlab.pipeline.iso_surface(src, contours=[s.max() - 0.1 * s.ptp(), ], colormap='viridis')
+            mlab.pipeline.image_plane_widget(src,
+                                             plane_orientation='z_axes',
+                                             slice_index=10, colormap='viridis'
+                                             )
+            mlab.axes()
+            mlab.orientation_axes()
+            dxyz = 0.1
+            x_point, y_point, z_point = np.mgrid[-0.5:-0.5+dxyz:4j, -0.5:-0.5+dxyz:4j, -0.5:-0.5+dxyz:4j]
+
+            x_point = np.array([-0.5, 0.0])
+            y_point = np.array([-0.5, 0.0])
+            z_point = np.array([0.0, 0.0])
+            s_point = np.array([2000., 0.001])
+            mlab.points3d(x_point, y_point, z_point, s_point, colormap="viridis", scale_mode='none')
+            x_point = 0.5
+            y_point = 0.5
+            z_point = 0.0
+            s_point = 1
+            x_point = np.array([-0.5])
+            y_point = np.array([-0.5])
+            z_point = np.array([0.0])
+            s_point = np.array([10])
+            ones = np.ones(1)
+            scalars = np.arange(1)  # Key point: set an integer for each point
+            # mlab.pipeline.scalar_scatter(x_point, y_point, z_point, scalar=function_to_spline(x_point, y_point, z_point, factor=1.), colormap='viridis')
+            # pts = mlab.quiver3d(x_point, y_point, z_point, ones, ones, ones, scalars=s_point, mode='sphere', scale_factor=1)  # Create points
+            # pts.glyph.color_mode = 'color_by_scalar'  # Color by scalar
+            # mlab.points3d(x_point, y_point, z_point, s_point, colormap="viridis")
+
+            mlab.show()
+

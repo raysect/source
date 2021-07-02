@@ -61,8 +61,10 @@ cdef class _Interpolator3D:
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999
     cdef double _analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z)
 
+
 cdef class _Interpolator3DLinear(_Interpolator3D):
-    pass
+    cdef calculate_coefficients(self, int index_x, int index_y, int index_z, double[8] a)
+
 
 cdef class _Extrapolator3D:
     cdef:
@@ -80,6 +82,7 @@ cdef class _Extrapolator3D:
     cdef double evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
     cdef double evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
     cdef double evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
+
 
 cdef class _Extrapolator3DNone(_Extrapolator3D):
     pass

@@ -32,7 +32,7 @@
 import numpy as np
 cimport cython
 from raysect.core.math.cython.utility cimport find_index, factorial
-from raysect.core.math.cython.interpolation.linear cimport linear3d
+from raysect.core.math.cython.interpolation.linear cimport linear3d, linear1d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_3d, evaluate_cubic_3d
 
 # TODO These functions are in 2D too. Move them somewhere common
@@ -293,12 +293,111 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
 
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999:
         return linear3d(
-            self._x[index_x], self._x[index_x + 1], self._y[index_y], self._y[index_y + 1], self._z[index_y], self._z[index_y + 1],
-            self._f[index_x:index_x + 1, index_y:index_y + 1, index_z:index_z + 1], px, py, pz
+            self._x[index_x], self._x[index_x + 1], self._y[index_y], self._y[index_y + 1], self._z[index_z], self._z[index_z + 1],
+            self._f[index_x:index_x + 2, index_y:index_y + 2, index_z:index_z + 2], px, py, pz
         )
 
     cdef double _analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
-        raise NotImplementedError('TODO.')
+        """
+        Calculate the normalised derivative of specified order in a unit cube.
+
+        The order of the derivative corresponds to order_x and order_y as the number of times differentiated. For 
+        example order_x = 1 and order_y = 1 is d2f/dxdy. The normalised gradient is calculated of the trilinear 
+        function f(x, y, z) = a0 + a1x + a2y + a3z + a4xy + a5xz +a6yz + a7xyz, which is the product of 3 linear 
+        functions. The derivatives are therefore df/dx = a1 + a4y +a5z +a7yz ; df/dy = a2 + a4x +a6z +a7xz ; 
+        df/dz = a3 + a5x +a6y +a7xy ; d2f/dxdy = a4 +a7z; d2f/dxdz = a5 +a7y; d2f/dydz = a6 +a7x; d3f/dxdydz = a7. 
+        The derivatives are calculated on the normalised unit cube.
+
+        :param double px: the point for which an interpolated value is required.
+        :param double py: the point for which an interpolated value is required.
+        :param double pz: the point for which an interpolated value is required.
+        :param int index_x: the lower index of the bin containing point px. (Result of bisection search).   
+        :param int index_y: the lower index of the bin containing point py. (Result of bisection search).   
+        :param int index_z: the lower index of the bin containing point pz. (Result of bisection search).   
+        :param int order_x: the derivative order in the x direction.
+        :param int order_y: the derivative order in the y direction.
+        :param int order_z: the derivative order in the y direction.
+        """
+        cdef double df_dn
+        cdef double[8] a
+        self.calculate_coefficients(index_x, index_y, index_z, a)
+        if order_x == 1 and order_y == 1 and order_z == 1:
+            df_dn = a[7]
+        elif order_x == 1 and order_y == 1 and order_z == 0:
+            df_dn = a[4] + a[7] * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
+        elif order_x == 1 and order_y == 0 and order_z == 1:
+            df_dn = a[5] + a[7] * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
+        elif order_x == 0 and order_y == 1 and order_z == 1:
+            df_dn = a[6] + a[7] * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
+        elif order_x == 1 and order_y == 0 and order_z == 0:
+            df_dn = a[1] + a[4] * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) + \
+                    a[5] * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z]) + \
+                    a[7]* (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
+        elif order_x == 0 and order_y == 1 and order_z == 0:
+            df_dn = a[2] + a[4] * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) + \
+                    a[6] * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z]) + \
+                    a[7]* (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
+        elif order_x == 0 and order_y == 0 and order_z == 1:
+            df_dn = a[3] + a[5] * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) + \
+                    a[6] * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) + \
+                    a[7] * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
+        else:
+            raise ValueError('order_x and order_y must be 1 and 0 for the linear interpolator.')
+        return df_dn
+
+
+    cdef calculate_coefficients(self, int index_x, int index_y, int index_z, double[8] a):
+        """
+        Calculate the trilinear coefficients in a unit cube.
+
+        The trilinear function (which is the product of 3 linear functions) 
+        f(x, y, z) = a0 + a1x + a2y + a3z + a4xy + a5xz +a6yz + a7xyz. Coefficients a0 - a7 are calculated for one unit 
+        cube. The coefficients are calculated from inverting the equation Xa = fv.
+        Where:
+        X = [[1, x1, y1, z1, x1y1, x1z1, y1z1, x1y1z1],         a = [a0,         fv = [f(0, 0, 0),
+            [1, x2, y1, z1, x2y1, x2z1, y1z1, x2y1z1],               a1,               f(1, 0, 0),
+            [1, x1, y2, z1, x1y2, x1z1, y2z1, x1y2z1],               a2,               f(0, 1, 0),
+            [1, x2, y2, z1, x2y2, x2z1, y2z1, x2y2z1],               a3,               f(1, 1, 0),
+            [1, x1, y1, z2, x1y1, x1z2, y1z2, x1y1z2],               a4,               f(0, 0, 1),
+            [1, x2, y1, z2, x2y1, x2z2, y1z2, x2y1z2],               a5,               f(1, 0, 1),
+            [1, x1, y2, z2, x1y2, x1z2, y2z2, x1y2z2],               a6,               f(0, 1, 1),
+            [1, x2, y2, z2, x2y2, x2z2, y2z2, x2y2z2]]               a7]               f(1, 1, 1)]
+        This simplifies where x1, y1, z1 = 0, x2, y2, z2 = 1 for the unit cube to find a = X^{-1} fv
+        where:
+        a[0] = f[0][0][0]
+        a[1] = - f[0][0][0] + f[1][0][0]
+        a[2] = - f[0][0][0] + f[0][1][0]
+        a[3] = - f[0][0][0] + f[0][0][1]
+        a[4] = f[0][0][0] - f[0][1][0] - f[1][0][0] + f[1][1][0]
+        a[5] = f[0][0][0] - f[0][0][1] - f[1][0][0] + f[1][0][1]
+        a[6] = f[0][0][0] - f[0][0][1] - f[0][1][0] + f[0][1][1]
+        a[7] = - f[0][0][0] + f[0][0][1] + f[0][1][0] - f[0][1][1] + f[1][0][0] - f[1][0][1] - f[1][1][0] + f[1][1][1]
+
+        :param int index_x: the lower index of the bin containing point px. (Result of bisection search).   
+        :param int index_y: the lower index of the bin containing point py. (Result of bisection search). 
+        :param int index_z: the lower index of the bin containing point pz. (Result of bisection search). 
+        :param double[8] a: The coefficients of the trilinear equation a0, - a7.
+        """
+        cdef double[2][2][2] f
+
+        # Calculate the coefficients (and gradients at each spline point) if they dont exist
+        f[0][0][0] = self._f[index_x, index_y, index_z]
+        f[0][1][0] = self._f[index_x, index_y + 1, index_z]
+        f[0][0][1] = self._f[index_x, index_y, index_z + 1]
+        f[0][1][1] = self._f[index_x, index_y + 1, index_z + 1]
+        f[1][0][0] = self._f[index_x + 1, index_y, index_z]
+        f[1][1][0] = self._f[index_x + 1, index_y + 1, index_z]
+        f[1][0][1] = self._f[index_x + 1, index_y, index_z + 1]
+        f[1][1][1] = self._f[index_x + 1, index_y + 1, index_z + 1]
+
+        a[0] = f[0][0][0]
+        a[1] = - f[0][0][0] + f[1][0][0]
+        a[2] = - f[0][0][0] + f[0][1][0]
+        a[3] = - f[0][0][0] + f[0][0][1]
+        a[4] = f[0][0][0] - f[0][1][0] - f[1][0][0] + f[1][1][0]
+        a[5] = f[0][0][0] - f[0][0][1] - f[1][0][0] + f[1][0][1]
+        a[6] = f[0][0][0] - f[0][0][1] - f[0][1][0] + f[0][1][1]
+        a[7] = - f[0][0][0] + f[0][0][1] + f[0][1][0] - f[0][1][1] + f[1][0][0] - f[1][0][1] - f[1][1][0] + f[1][1][1]
 
 
 cdef class _Extrapolator3D:
@@ -307,7 +406,7 @@ cdef class _Extrapolator3D:
 
     :param x: 1D memory view of the spline point x positions.
     :param y: 1D memory view of the spline point y positions.
-    :param z: 1D memory view of the spline point y positions.
+    :param z: 1D memory view of the spline point z positions.
     :param f: 3D memory view of the function value at spline point x, y, z positions.
     :param external_interpolator: stored _Interpolator2D object that is being used.
     """
