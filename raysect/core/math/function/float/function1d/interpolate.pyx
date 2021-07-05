@@ -250,46 +250,6 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         self._a = np.zeros((self._last_index, 4), dtype=np.float64)
         self._a_mv = self._a
 
-    @cython.initializedcheck(False)
-    @cython.boundscheck(False)
-    @cython.cdivision(True)
-    cdef double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index):
-        """
-        Calculate the normalised gradient at x_spline[index] based on the central difference approximation unless at
-        the edges of the array x_spline.
-
-        At x[i], the gradient is normally estimated using the central difference approximation [y[i-1], y[i+1]]/2
-        For a normalised range x[i], x[i+1] between 0 and 1, this is the same except for unevenly spaced data.
-        Unevenly spaced data has a normalisation x[i-1] - x[i+1] != 2, it is defined as x_eff in this function by
-        re-scaling the distance x[i-1] - x[i+1] using normalisation (x[i+1] - x[i]) = 1.
-
-        At the start and end of the array, the forward or backward difference approximation is calculated over
-        a  (x[i+1] - x[i]) = 1 or  (x[i] - x[i-1]) = 1 respectively. The end spline gradient is not used for
-        extrapolation.
-
-        .. WARNING:: For speed, this function does not perform any zero division, type or bounds
-          checking. Supplying malformed data may result in data corruption or a
-          segmentation fault.
-
-        :param x_spline: A memory view to a double array containing monotonically increasing values.
-        :param y_spline: The desired spline points corresponding function returned values.
-        :param int index: The index of the lower spline point that the gradient is to be calculated for.
-        """
-        cdef double dfdx
-        cdef double x_eff
-        if index == 0:
-            dfdx = (y_spline[index + 1] - y_spline[index])
-        elif index == self._last_index:
-            dfdx = y_spline[index] - y_spline[index - 1]
-        else:
-            # Finding the normalised distance x_eff
-            x_eff = (x_spline[index + 1] - x_spline[index - 1])/(x_spline[index + 1] - x_spline[index])
-            if x_eff != 0:
-                dfdx = (y_spline[index + 1]-y_spline[index - 1])/x_eff
-            else:
-                raise ZeroDivisionError('Two adjacent spline points have the same x value!')
-        return dfdx
-
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.initializedcheck(False)
@@ -311,8 +271,9 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         if not self._mask_a[index]:
             f[0] = self._f[index]
             f[1] = self._f[index + 1]
-            dfdx[0] = self._calc_gradient(self._x, self._f, index)
-            dfdx[1] = self._calc_gradient(self._x, self._f, index + 1)
+            array_derivative = _ArrayDerivative1D(self._x, self._f)
+            dfdx[0] = array_derivative.evaluate(index, derivative_order_x=1)
+            dfdx[1] = array_derivative.evaluate(index + 1, derivative_order_x=1)
 
             calc_coefficients_1d(f, dfdx, a)
             self._a_mv[index, :] = a
@@ -320,31 +281,6 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         else:
             a = self._a[index, :4]
         return evaluate_cubic_1d(a, x_scal)
-
-    def _test_return_polynormial_coefficients(self, index_use):
-        """ Expose cython function for testing. Input the index of the lower x spline point in the region of the spline."""
-        cdef double[4] a
-        cdef double[2] f, dfdx
-
-        a_return = np.zeros((4, ))
-
-        f[0] = self._f[index_use]
-        f[1] = self._f[index_use + 1]
-        dfdx[0] = self._calc_gradient(self._x, self._f, index_use)
-        dfdx[1] = self._calc_gradient(self._x, self._f, index_use + 1)
-        calc_coefficients_1d(f, dfdx, a)
-        a_return = a
-        return a_return
-
-    def _test_calc_gradient(self, index_use):
-        """ Expose cython function for testing. Input the spline points x, f."""
-        return self._calc_gradient(self._x, self._f,  index_use)
-
-    def _test_evaluate_directly(self, x):
-        cdef int index = find_index(self._x, x)
-
-        """ Expose cython function for testing. Input the spline points x, f."""
-        return self.evaluate(x, index)
 
     cdef double _analytic_gradient(self, double px, int index, int order):
         cdef double grad
@@ -361,8 +297,9 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
 
         f[0] = self._f[index]
         f[1] = self._f[index + 1]
-        dfdx[0] = self._calc_gradient(self._x, self._f, index)
-        dfdx[1] = self._calc_gradient(self._x, self._f, index + 1)
+        array_derivative = _ArrayDerivative1D(self._x, self._f)
+        dfdx[0] = array_derivative.evaluate(index, derivative_order_x=1)
+        dfdx[1] = array_derivative.evaluate(index + 1, derivative_order_x=1)
 
         calc_coefficients_1d(f, dfdx, a)
 
@@ -415,6 +352,9 @@ cdef class _Extrapolator1DNone(_Extrapolator1D):
            super().__init__(x, f)
 
     cdef double evaluate(self, double px, int index)  except? -1e999:
+        raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
+
+    cdef double _analytic_gradient(self, double px, int index, int order):
         raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
 
 
@@ -504,12 +444,12 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
 
         super().__init__(x, f)
         self._last_index = self._x.shape[0] - 1
+        array_derivative = _ArrayDerivative1D(self._x, self._f)
+        dfdx_start[0] = array_derivative.evaluate(0, derivative_order_x=1)
+        dfdx_start[1] = array_derivative.evaluate(1, derivative_order_x=1)
 
-        dfdx_start[0] = self._calc_gradient(self._x, self._f, 0)
-        dfdx_start[1] = self._calc_gradient(self._x, self._f, 1)
-
-        dfdx_end[0] = self._calc_gradient(self._x, self._f, self._last_index - 1)
-        dfdx_end[1] = self._calc_gradient(self._x, self._f, self._last_index)
+        dfdx_end[0] = array_derivative.evaluate(self._last_index - 1, derivative_order_x=1)
+        dfdx_end[1] = array_derivative.evaluate(self._last_index, derivative_order_x=1)
 
         self._calculate_quadratic_coefficients_start(f[0], dfdx_start[0], dfdx_start[1], self._a_first)
         self._calculate_quadratic_coefficients_end(f[self._last_index],  dfdx_end[0], dfdx_end[1], self._a_last)
@@ -589,58 +529,87 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation')
         return grad
 
-    def _test_evaluate_directly(self, x):
-        cdef int index = find_index(self._x, x)
 
-        """ Expose cython function for testing. Input the spline points x, f."""
-        return self.evaluate(x, index)
-    def _test_first_coefficients(self):
-        """ Expose cython function for testing."""
-        return self._a_first
+cdef class _ArrayDerivative1D:
+    """
+    Gradient method that returns the approximate derivative of a desired order at a specified grid point.
 
-    def _test_last_coefficients(self):
-        """ Expose cython function for testing."""
-        return self._a_last
+    These methods of finding derivatives are only valid on a 1D grid of points, at the values at the points. Other
+    derivative method would be dependent on the interpolator types.
+
+    :param x: 1D memory view of the spline point x positions.
+    :param f: 1D memory view of the function value at spline point x positions.
+    """
+    def __init__(self, double[::1] x, double[::1] f):
+
+        self._x = x
+        self._f = f
+        self._last_index_x = self._x.shape[0] - 1
+
+    cdef double evaluate(self, int index_x, int derivative_order_x) except? -1e999:
+        """
+        Evaluate the derivative of specific order at a grid point.
+
+        The array of spline knots is reduced to a 2 to 3 points for gradient evaluation depending on if the requested
+        derivative is near the edge or not (respectively).
+
+        :param index_x: The lower index of the x array cell to evaluate.
+        :param derivative_order_x: An integer of the derivative order x. Only zero if derivative_order_y is nonzero.
+        """
+        # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
+        cdef double dfdn
+
+        if index_x == 0:
+            dfdn = self._evaluate_edge_x(index_x, derivative_order_x)
+        elif index_x == self._last_index_x:
+            dfdn = self._evaluate_edge_x(index_x - 1, derivative_order_x)
+        else:
+            dfdn = self._evaluate_x(index_x, derivative_order_x)
+
+        return dfdn
+
+    cdef double _evaluate_edge_x(self, int index_x, int derivative_order_x):
+        """
+        Calculate the 1st derivative on an unevenly spaced array as a 1st order approximation.
+        
+        A taylor expansion of f(x) with changes in x:
+        f(x+dx0) = f(x) + dx0*fx(x) + O^2(dx0)
+        Can be rearranged to find fx(x)
+        fx(x) = (f(x+dx0) - f(x))/dx0
+        On unit normalisation dx0 = 1, so this is te final equation. At either edge of the grid, the gradient is 
+        normalised to the first or last array width to make sure this is always the case.
+        """
+        return self._f[index_x + 1] - self._f[index_x]
 
     @cython.initializedcheck(False)
     @cython.boundscheck(False)
     @cython.cdivision(True)
-    cdef double _calc_gradient(self, double[::1] x_spline, double[::1] y_spline, int index):
+    cdef double _evaluate_x(self, int index_x, int derivative_order_x):
         """
-        Calculate the normalised gradient at x_spline[index] based on the central difference approximation unless at
-        the edges of the array x_spline.
+        Calculate the 1st derivative on an unevenly spaced array as a 2nd order approximation.
 
-        At x[i], the gradient is normally estimated using the central difference approximation [y[i-1], y[i+1]]/2
-        For a normalised range x[i], x[i+1] between 0 and 1, this is the same except for unevenly spaced data.
-        Unevenly spaced data has a normalisation x[i-1] - x[i+1] != 2, it is defined as x_eff in this function by
-        re-scaling the distance x[i-1] - x[i+1] using normalisation (x[i+1] - x[i]) = 1.
+        A taylor expansion of f(x) with changes in x:
+        f(x+dx0) = f(x) + dx0*fx(x) + dx0^2*fxx(x)/2 + O^3(dx0)
+        f(x-dx1) = f(x) - dx1*fx(x) + dx1^2*fxx(x)/2 + O^3(dx1)
+        Can be multiplied by dx1^2 or dx0^2 respectively then taken away to rearrange for the derivative fx(x) as
+        second order terms cancel, this is a second order approximation.
+        f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 = f(x)*(dx1^2 - dx0^2) +dx0*fx(x)*dx1^2 +dx1*fx(x)*dx0^2
+        fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 - f(x)*(dx1^2 - dx0^2)]/(dx0*dx1^2 +dx1*dx0^2)
+        Which simplifies in the unit normalisation (dx0 = 1) to :
+        fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1) - f(x)*(dx1^2 - 1)]/(dx1^2 +dx1)
 
-        At the start and end of the array, the forward or backward difference approximation is calculated over
-        a  (x[i+1] - x[i]) = 1 or  (x[i] - x[i-1]) = 1 respectively. The end spline gradient is not used for
-        extrapolation.
-
+        If dx0 = dx1 the central difference approximation is recovered.
+        
         .. WARNING:: For speed, this function does not perform any zero division, type or bounds
           checking. Supplying malformed data may result in data corruption or a
           segmentation fault.
-
-        :param x_spline: A memory view to a double array containing monotonically increasing values.
-        :param y_spline: The desired spline points corresponding function returned values.
-        :param int index: The index of the lower spline point that the gradient is to be calculated for.
+        
         """
-        cdef double dfdx
-        cdef double x_eff
-        if index == 0:
-            dfdx = (y_spline[index + 1] - y_spline[index])
-        elif index == self._last_index:
-            dfdx = y_spline[index] - y_spline[index - 1]
-        else:
-            # Finding the normalised distance x_eff
-            x_eff = (x_spline[index + 1] - x_spline[index - 1])/(x_spline[index + 1] - x_spline[index])
-            if x_eff != 0:
-                dfdx = (y_spline[index + 1]-y_spline[index - 1])/x_eff
-            else:
-                raise ZeroDivisionError('Two adjacent spline points have the same x value!')
-        return dfdx
+        cdef double x1_n, x1_n2
+        x1_n = (self._x[index_x] - self._x[index_x - 1])/(self._x[index_x + 1] - self._x[index_x])
+        x1_n2 = x1_n**2
+        return (self._f[index_x + 1]*x1_n2 - self._f[index_x - 1] - self._f[index_x]*(x1_n2 - 1.))/(x1_n + x1_n2)
+
 
 id_to_interpolator = {
     _Interpolator1DLinear.ID: _Interpolator1DLinear,

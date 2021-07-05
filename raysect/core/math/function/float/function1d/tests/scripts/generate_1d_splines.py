@@ -44,8 +44,8 @@ import scipy
 np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
 
 
-def function_to_spline(x_func, factor):
-    return factor*np.sin(x_func)
+def function_to_spline(x_func, factor_in):
+    return factor_in*np.sin(x_func)
 
 
 def linear_extrapolation(m, x2, x1, f1):
@@ -232,4 +232,3 @@ if check_plot:
     ax.plot(xsamples_extrap[-1], different_quadratic_extrpolation_upper(xsamples_extrap[-1], x, data_f), 'ko')
     ax.plot(x, data_f, 'bo')
     plt.show()
-
