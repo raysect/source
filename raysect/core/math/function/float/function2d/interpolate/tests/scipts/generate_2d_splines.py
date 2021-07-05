@@ -59,9 +59,9 @@ SMALL_VALUE_FACTOR = -20.
 np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
 
 
-def function_to_spline(x_input, y_input, factor):
+def function_to_spline(x_input, y_input, factor_in):
     t = np.pi * np.sqrt((x_input ** 2 + y_input ** 2))
-    return factor*np.sinc(t)
+    return factor_in*np.sinc(t)
 
 
 def get_extrapolation_input_values(
@@ -108,7 +108,7 @@ def get_extrapolation_input_values(
 if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
     big_values = False
-    small_values = False
+    small_values = True
 
     print('Using scipy version', scipy.__version__)
 
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
     print('Save this to self.data in test_interpolator:\n', repr(f_in))
 
-    # Make the sampled points between spline knots and find the precalc_interpolation used in test_interpolator.setup_cubic
+    # Make the sampled points between spline knots and find the precalc_interpolation for test_interpolator.setup_cubic
     xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
     ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
 
@@ -155,7 +155,13 @@ if __name__ == '__main__':
         f_extrap_nearest[i] = linear_2d_nearest_neighbour(xsamples_in_bounds[i], ysamples_in_bounds[i])
 
     print('Output of nearest neighbour extrapolation from the start and end spline knots ',
-          'Save this to self.precalc_extrapolation_nearest in test_interpolator:\n', repr(f_extrap_nearest))
+          'Save this to self.precalc_extrapolation_nearest in test_interpolator in setup_linear:\n',
+          repr(f_extrap_nearest))
+    interpolator2D = Interpolator2DArray(x_in, y_in, f_in, 'linear', 'nearest', extrapolation_range_x=2.0,
+                                         extrapolation_range_y=2.0)
+    f_extrap_nearest_2 = np.zeros((len(xsamples_in_bounds),))
+    for i in range(len(xsamples_in_bounds)):
+        f_extrap_nearest_2[i] = interpolator2D(xsamples_in_bounds[i], ysamples_in_bounds[i])
 
     # interp2d - Runs dfitpack.regrid_smth (a fortran code in scipy), if on a rectangular grid.
     cubic_2d = interp2d(x_in, y_in, f_in, kind='cubic')
@@ -174,8 +180,45 @@ if __name__ == '__main__':
 
     # griddata - a wrapper for CloughTocher2DInterpolator
     grid_z = griddata(xy_flat, f_inflat, (xsamples_in_full, ysamples_in_full), method='cubic')
-    print('Cubic spline at xsamples, ysamples created using. interp2d(kind=cubic)',
-          'Save this to self.precalc_interpolation in test_interpolator in setup_cubic:\n', repr(f_cubic))
+
+    # It is not possible to get exactly the same as other methods for cubic interpolation.
+    # The method of getting the coefficients is slightly different. Using a version to check for changes instead.
+    interpolator2D_cubic_nearest = Interpolator2DArray(
+        x_in, y_in, f_in, 'cubic', 'nearest', extrapolation_range_x=2.0, extrapolation_range_y=2.0
+    )
+    interpolator2D_cubic_linear = Interpolator2DArray(
+        x_in, y_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0
+    )
+    interpolator2D_linear_linear = Interpolator2DArray(
+        x_in, y_in, f_in, 'linear', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0
+    )
+
+    f_out = np.zeros((len(xsamples), len(ysamples)))
+    for i in range(len(xsamples)):
+        for j in range(len(ysamples)):
+            f_out[i, j] = interpolator2D_cubic_nearest(xsamples[i], ysamples[j])
+
+    f_extrap_cubic_nearest = np.zeros((len(xsamples_in_bounds),))
+    f_extrap_cubic_linear = np.zeros((len(xsamples_in_bounds),))
+    f_extrap_linear_linear = np.zeros((len(xsamples_in_bounds),))
+    for i in range(len(xsamples_in_bounds)):
+        f_extrap_cubic_nearest[i] = interpolator2D_cubic_nearest(xsamples_in_bounds[i], ysamples_in_bounds[i])
+        f_extrap_cubic_linear[i] = interpolator2D_cubic_linear(xsamples_in_bounds[i], ysamples_in_bounds[i])
+        f_extrap_linear_linear[i] = interpolator2D_linear_linear(xsamples_in_bounds[i], ysamples_in_bounds[i])
+    print('Output of nearest neighbour extrapolation from a Cubic spline at xsamples_in_bounds, ysamples_in_bounds '
+          'created using the Interpolator2DArray on 05/07/2021. Save this to self.precalc_extrapolation_nearest in '
+          'test_interpolator in setup_cubic:\n', repr(f_extrap_cubic_nearest))
+
+    print('Output of linear extrapolation from a Cubic spline at xsamples_in_bounds, ysamples_in_bounds created using '
+          'the Interpolator2DArray on 05/07/2021. Save this to self.precalc_extrapolation_linear in test_interpolator '
+          'in setup_cubic:\n', repr(f_extrap_cubic_linear))
+
+    print('Output of linear extrapolation from a bilinear spline at xsamples_in_bounds, ysamples_in_bounds created '
+          'using the Interpolator2DArray on 05/07/2021. Save this to self.precalc_extrapolation_linear in '
+          'test_interpolator in setup_cubic:\n', repr(f_extrap_linear_linear))
+
+    print('Cubic spline at xsamples, ysamples created using the Interpolator2DArray on 05/07/2021',
+          'Save this to self.precalc_interpolation in test_interpolator in setup_cubic:\n', repr(f_out))
 
     check_plot = True
     if check_plot:
@@ -190,7 +233,9 @@ if __name__ == '__main__':
         fig, ax = plt.subplots(1, 3, subplot_kw={"projection": "3d"})
         surf = ax[0].plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm, linewidth=0, antialiased=False)
         main_plots_on = True
-        interpolator2D = Interpolator2DArray(x_in, y_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0)
+        interpolator2D = Interpolator2DArray(
+            x_in, y_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0
+        )
 
         if main_plots_on:
             f_out = np.zeros((len(xsamples), len(ysamples)))
@@ -204,21 +249,30 @@ if __name__ == '__main__':
             f_out_lower_and_upper = np.zeros((len(xsamples_lower_and_upper), len(ysamples_lower_and_upper)))
             for i in range(len(xsamples_lower_and_upper)):
                 for j in range(len(ysamples_lower_and_upper)):
-                    f_out_lower_and_upper[i, j] = interpolator2D(xsamples_lower_and_upper[i], ysamples_lower_and_upper[j])
+                    f_out_lower_and_upper[i, j] = interpolator2D(
+                        xsamples_lower_and_upper[i], ysamples_lower_and_upper[j]
+                    )
             # ax[0].scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
             ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_out_extrap, color='g')
             # ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_extrap_nearest, color='m')
-            # ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, cubic_2d(xsamples, ysamples), color='m')
+            # ax[1].scatter(
+            # collapsed_xsamples_in_full, collapsed_ysamples_in_full, cubic_2d(xsamples, ysamples), color='m'
+            # )
             f_true_points = function_to_spline(xsamples_in_full, ysamples_in_full, factor)
             ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, f_true_points, color='g')
-            # ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, interp_clough_tocher(xsamples_in_full, ysamples_in_full), color='b')
+            # ax[1].scatter(
+            # collapsed_xsamples_in_full, collapsed_ysamples_in_full, interp_clough_tocher(xsamples_in_full,
+            # ysamples_in_full), color='b')
             # ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, grid_z, color='k')
             # ax[1].scatter(collapsed_xsamples_in_full, collapsed_ysamples_in_full, f_cubica, color='r')
-            surf = ax[1].plot_surface(xsamples_in_full, ysamples_in_full, f_out, cmap=cm.coolwarm,
-                                   linewidth=0, antialiased=False)
+            surf = ax[1].plot_surface(
+                xsamples_in_full, ysamples_in_full, f_out, cmap=cm.coolwarm, linewidth=0, antialiased=False
+            )
 
-            surf = ax[2].plot_surface(xsamples_lower_and_upper_full, ysamples_lower_and_upper_full, f_out_lower_and_upper, cmap=cm.coolwarm,
-                                   linewidth=0, antialiased=False)
+            surf = ax[2].plot_surface(
+                xsamples_lower_and_upper_full, ysamples_lower_and_upper_full, f_out_lower_and_upper, cmap=cm.coolwarm,
+                linewidth=0, antialiased=False
+            )
             ax[0].set_title('Spline knots')
             ax[1].set_title('Interpolated points for testing')
             ax[2].set_title('Interpolated points for detailed view')

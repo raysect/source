@@ -37,15 +37,23 @@ import numpy as np
 from raysect.core.math.function.float.function2d.interpolate.interpolator2darray import Interpolator2DArray, \
     id_to_extrapolator, id_to_interpolator
 from raysect.core.math.function.float.function2d.interpolate.tests.scipts.generate_2d_splines import X_LOWER, X_UPPER, \
-    NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR,\
-    Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, \
-    get_extrapolation_input_values
+    NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
+    Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, get_extrapolation_input_values
 
 
 class TestInterpolatorLoadValues:
     def __init__(self):
         # Define in setup_cubic or setup_linear
         self.precalc_interpolation = None
+
+        #: array holding precalculated nearest neighbour extrapolation data
+        self.precalc_extrapolation_nearest: np.array = None
+
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = None
+
+        #: array holding precalculated quadratic extrapolation data
+        self.precalc_extrapolation_quadratic: np.array = None
 
 
 class TestInterpolatorLoadNormalValues(TestInterpolatorLoadValues):
@@ -57,7 +65,6 @@ class TestInterpolatorLoadNormalValues(TestInterpolatorLoadValues):
     def __init__(self):
         super().__init__()
         #: data array from a function sampled on self.x. dtype should be np.float64
-        # self.data: np.array = np.sin(self.x)
         self.data: np.array = np.array(
             [[7.049456954407E-02, -5.031133752816E-03, -8.474851229653E-02, -7.975908114097E-02,
               -4.876973734940E-02, -4.876973734940E-02, -7.975908114097E-02, -8.474851229653E-02,
@@ -92,24 +99,72 @@ class TestInterpolatorLoadNormalValues(TestInterpolatorLoadValues):
             dtype=np.float64
         )
 
+    def setup_cubic(self):
+        self.precalc_interpolation = np.array(
+            [[7.049456954407E-02, 1.414501923720E-02, -4.992201892795E-02, -9.006647501703E-02,
+              -7.975908114097E-02, -5.494750801435E-02, -4.489606937545E-02, -5.494750801435E-02,
+              -7.975908114097E-02, -9.006647501703E-02, -4.992201892795E-02, 1.414501923720E-02,
+              7.049456954407E-02],
+             [1.414501923720E-02, -6.879873015242E-02, -6.604387574169E-02, -9.273861048634E-04,
+              7.815453486867E-02, 1.087722976395E-01, 1.179639375774E-01, 1.087722976395E-01,
+              7.815453486867E-02, -9.273861048635E-04, -6.604387574169E-02, -6.879873015242E-02,
+              1.414501923720E-02],
+             [-4.992201892795E-02, -6.604387574169E-02, 7.662704616536E-03, 8.927226959205E-02,
+              8.733637329412E-02, 3.144134389941E-02, 8.046419412818E-03, 3.144134389941E-02,
+              8.733637329412E-02, 8.927226959205E-02, 7.662704616536E-03, -6.604387574169E-02,
+              -4.992201892795E-02],
+             [-9.006647501703E-02, -9.273861048634E-04, 8.927226959205E-02, 9.500724468550E-02,
+              -3.879550824798E-02, -1.262756473836E-01, -1.571105597160E-01, -1.262756473836E-01,
+              -3.879550824798E-02, 9.500724468550E-02, 8.927226959205E-02, -9.273861048634E-04,
+              -9.006647501703E-02],
+             [-7.975908114097E-02, 7.815453486867E-02, 8.733637329412E-02, -3.879550824798E-02,
+              -2.145503300375E-01, -1.226583807439E-01, -7.714735650694E-02, -1.226583807439E-01,
+              -2.145503300375E-01, -3.879550824798E-02, 8.733637329412E-02, 7.815453486867E-02,
+              -7.975908114097E-02],
+             [-5.494750801435E-02, 1.087722976395E-01, 3.144134389941E-02, -1.262756473836E-01,
+              -1.226583807439E-01, 3.691392206491E-01, 5.727262813613E-01, 3.691392206491E-01,
+              -1.226583807439E-01, -1.262756473836E-01, 3.144134389941E-02, 1.087722976395E-01,
+              -5.494750801435E-02],
+             [-4.489606937545E-02, 1.179639375774E-01, 8.046419412818E-03, -1.571105597160E-01,
+              -7.714735650694E-02, 5.727262813613E-01, 8.385571378575E-01, 5.727262813613E-01,
+              -7.714735650694E-02, -1.571105597160E-01, 8.046419412818E-03, 1.179639375774E-01,
+              -4.489606937545E-02],
+             [-5.494750801435E-02, 1.087722976395E-01, 3.144134389941E-02, -1.262756473836E-01,
+              -1.226583807439E-01, 3.691392206491E-01, 5.727262813613E-01, 3.691392206491E-01,
+              -1.226583807439E-01, -1.262756473836E-01, 3.144134389941E-02, 1.087722976395E-01,
+              -5.494750801435E-02],
+             [-7.975908114097E-02, 7.815453486867E-02, 8.733637329412E-02, -3.879550824798E-02,
+              -2.145503300375E-01, -1.226583807439E-01, -7.714735650694E-02, -1.226583807439E-01,
+              -2.145503300375E-01, -3.879550824798E-02, 8.733637329412E-02, 7.815453486867E-02,
+              -7.975908114097E-02],
+             [-9.006647501703E-02, -9.273861048634E-04, 8.927226959205E-02, 9.500724468550E-02,
+              -3.879550824798E-02, -1.262756473836E-01, -1.571105597160E-01, -1.262756473836E-01,
+              -3.879550824798E-02, 9.500724468550E-02, 8.927226959205E-02, -9.273861048634E-04,
+              -9.006647501703E-02],
+             [-4.992201892795E-02, -6.604387574169E-02, 7.662704616536E-03, 8.927226959205E-02,
+              8.733637329412E-02, 3.144134389941E-02, 8.046419412818E-03, 3.144134389941E-02,
+              8.733637329412E-02, 8.927226959205E-02, 7.662704616536E-03, -6.604387574169E-02,
+              -4.992201892795E-02],
+             [1.414501923720E-02, -6.879873015242E-02, -6.604387574169E-02, -9.273861048634E-04,
+              7.815453486867E-02, 1.087722976395E-01, 1.179639375774E-01, 1.087722976395E-01,
+              7.815453486867E-02, -9.273861048634E-04, -6.604387574169E-02, -6.879873015242E-02,
+              1.414501923720E-02],
+             [7.049456954407E-02, 1.414501923720E-02, -4.992201892795E-02, -9.006647501703E-02,
+              -7.975908114097E-02, -5.494750801435E-02, -4.489606937545E-02, -5.494750801435E-02,
+              -7.975908114097E-02, -9.006647501703E-02, -4.992201892795E-02, 1.414501923720E-02,
+              7.049456954407E-02]], dtype=np.float64
+        )
+
         #: array holding precalculated nearest neighbour extrapolation data
         self.precalc_extrapolation_nearest: np.array = np.array(
-            [7.049456954407E-02, -4.876973734940E-02, 7.049456954407E-02, -4.876973734940E-02,
-             -4.876973734940E-02, 7.049456954407E-02, -4.876973734940E-02, 7.049456954407E-02], dtype=np.float64
+            [7.049456954407E-02, -4.489606937545E-02, 7.049456954407E-02, -4.489606937545E-02,
+             -4.489606937545E-02, 7.049456954407E-02, -4.489606937545E-02, 7.049456954407E-02], dtype=np.float64
         )
 
         #: array holding precalculated linear extrapolation data
         self.precalc_extrapolation_linear: np.array = np.array(
-            [], dtype=np.float64
-        )
-        #: array holding precalculated quadratic extrapolation data
-        self.precalc_extrapolation_quadratic: np.array = np.array(
-            [], dtype=np.float64
-        )
-
-    def setup_cubic(self):
-        self.precalc_interpolation = np.array(
-            [], dtype=np.float64
+            [9.802928389430E-02, -7.659496121465E-02, 9.802928389430E-02, -7.659496121465E-02,
+             -7.659496121465E-02, 9.802928389430E-02, -7.659496121465E-02, 9.802928389430E-02], dtype=np.float64
         )
 
     def setup_linear(self):
@@ -165,8 +220,17 @@ class TestInterpolatorLoadNormalValues(TestInterpolatorLoadValues):
              [7.049456954407E-02, 1.385029207141E-02, -4.488982302467E-02, -8.350115450764E-02,
               -7.975908114097E-02, -5.651707329729E-02, -4.876973734940E-02, -5.651707329729E-02,
               -7.975908114097E-02, -8.350115450764E-02, -4.488982302467E-02, 1.385029207141E-02,
-              7.049456954407E-02]]
-            , dtype=np.float64
+              7.049456954407E-02]], dtype=np.float64
+        )
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [7.049456954407E-02, -4.876973734940E-02, 7.049456954407E-02, -4.876973734940E-02,
+             -4.876973734940E-02, 7.049456954407E-02, -4.876973734940E-02, 7.049456954407E-02], dtype=np.float64
+        )
+
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [9.802928389430E-02, -8.064599007443E-02, 9.802928389430E-02, -8.064599007443E-02,
+             -8.064599007443E-02, 9.802928389430E-02, -8.064599007443E-02, 9.802928389430E-02], dtype=np.float64
         )
 
 
@@ -210,19 +274,7 @@ class TestInterpolatorLoadBigValues(TestInterpolatorLoadValues):
               -9.121921863446E+18, -5.031133752816E+17],
              [7.049456954407E+18, -5.031133752816E+17, -8.474851229653E+18, -7.975908114097E+18,
               -4.876973734940E+18, -4.876973734940E+18, -7.975908114097E+18, -8.474851229653E+18,
-              -5.031133752816E+17, 7.049456954407E+18]]
-            , dtype=np.float64
-        )
-        #: precalculated result of the function used to calculate self.data on self.xsamples
-        #: array holding precalculated nearest neighbour extrapolation data
-        self.precalc_extrapolation_nearest: np.array = np.array(
-            [7.049456954407E+18, -4.876973734940E+18, 7.049456954407E+18, -4.876973734940E+18,
-             -4.876973734940E+18, 7.049456954407E+18, -4.876973734940E+18, 7.049456954407E+18], dtype=np.float64
-        )
-
-        #: array holding precalculated linear extrapolation data
-        self.precalc_extrapolation_linear: np.array = np.array(
-            [], dtype=np.float64
+              -5.031133752816E+17, 7.049456954407E+18]], dtype=np.float64
         )
 
         #: array holding precalculated quadratic extrapolation data
@@ -232,7 +284,69 @@ class TestInterpolatorLoadBigValues(TestInterpolatorLoadValues):
 
     def setup_cubic(self):
         self.precalc_interpolation = np.array(
-            [], dtype=np.float64)
+            [[7.049456954407E+18, 1.414501923720E+18, -4.992201892795E+18, -9.006647501703E+18,
+              -7.975908114097E+18, -5.494750801435E+18, -4.489606937545E+18, -5.494750801435E+18,
+              -7.975908114097E+18, -9.006647501703E+18, -4.992201892795E+18, 1.414501923720E+18,
+              7.049456954407E+18],
+             [1.414501923720E+18, -6.879873015242E+18, -6.604387574169E+18, -9.273861048635E+16,
+              7.815453486867E+18, 1.087722976395E+19, 1.179639375774E+19, 1.087722976395E+19,
+              7.815453486867E+18, -9.273861048635E+16, -6.604387574169E+18, -6.879873015242E+18,
+              1.414501923720E+18],
+             [-4.992201892795E+18, -6.604387574169E+18, 7.662704616536E+17, 8.927226959205E+18,
+              8.733637329412E+18, 3.144134389941E+18, 8.046419412818E+17, 3.144134389941E+18,
+              8.733637329412E+18, 8.927226959205E+18, 7.662704616536E+17, -6.604387574169E+18,
+              -4.992201892795E+18],
+             [-9.006647501703E+18, -9.273861048635E+16, 8.927226959205E+18, 9.500724468550E+18,
+              -3.879550824798E+18, -1.262756473836E+19, -1.571105597160E+19, -1.262756473836E+19,
+              -3.879550824798E+18, 9.500724468550E+18, 8.927226959205E+18, -9.273861048634E+16,
+              -9.006647501703E+18],
+             [-7.975908114097E+18, 7.815453486867E+18, 8.733637329412E+18, -3.879550824798E+18,
+              -2.145503300375E+19, -1.226583807439E+19, -7.714735650694E+18, -1.226583807439E+19,
+              -2.145503300375E+19, -3.879550824798E+18, 8.733637329412E+18, 7.815453486867E+18,
+              -7.975908114097E+18],
+             [-5.494750801435E+18, 1.087722976395E+19, 3.144134389941E+18, -1.262756473836E+19,
+              -1.226583807439E+19, 3.691392206491E+19, 5.727262813613E+19, 3.691392206491E+19,
+              -1.226583807439E+19, -1.262756473836E+19, 3.144134389941E+18, 1.087722976395E+19,
+              -5.494750801435E+18],
+             [-4.489606937545E+18, 1.179639375774E+19, 8.046419412818E+17, -1.571105597160E+19,
+              -7.714735650694E+18, 5.727262813613E+19, 8.385571378575E+19, 5.727262813613E+19,
+              -7.714735650694E+18, -1.571105597160E+19, 8.046419412818E+17, 1.179639375774E+19,
+              -4.489606937545E+18],
+             [-5.494750801435E+18, 1.087722976395E+19, 3.144134389941E+18, -1.262756473836E+19,
+              -1.226583807439E+19, 3.691392206491E+19, 5.727262813613E+19, 3.691392206491E+19,
+              -1.226583807439E+19, -1.262756473836E+19, 3.144134389941E+18, 1.087722976395E+19,
+              -5.494750801435E+18],
+             [-7.975908114097E+18, 7.815453486867E+18, 8.733637329412E+18, -3.879550824798E+18,
+              -2.145503300375E+19, -1.226583807439E+19, -7.714735650694E+18, -1.226583807439E+19,
+              -2.145503300375E+19, -3.879550824798E+18, 8.733637329412E+18, 7.815453486867E+18,
+              -7.975908114097E+18],
+             [-9.006647501703E+18, -9.273861048635E+16, 8.927226959205E+18, 9.500724468550E+18,
+              -3.879550824798E+18, -1.262756473836E+19, -1.571105597160E+19, -1.262756473836E+19,
+              -3.879550824798E+18, 9.500724468550E+18, 8.927226959205E+18, -9.273861048633E+16,
+              -9.006647501703E+18],
+             [-4.992201892795E+18, -6.604387574169E+18, 7.662704616536E+17, 8.927226959205E+18,
+              8.733637329412E+18, 3.144134389941E+18, 8.046419412818E+17, 3.144134389941E+18,
+              8.733637329412E+18, 8.927226959205E+18, 7.662704616536E+17, -6.604387574169E+18,
+              -4.992201892795E+18],
+             [1.414501923720E+18, -6.879873015242E+18, -6.604387574169E+18, -9.273861048634E+16,
+              7.815453486867E+18, 1.087722976395E+19, 1.179639375774E+19, 1.087722976395E+19,
+              7.815453486867E+18, -9.273861048634E+16, -6.604387574169E+18, -6.879873015242E+18,
+              1.414501923720E+18],
+             [7.049456954407E+18, 1.414501923720E+18, -4.992201892795E+18, -9.006647501703E+18,
+              -7.975908114097E+18, -5.494750801435E+18, -4.489606937545E+18, -5.494750801435E+18,
+              -7.975908114097E+18, -9.006647501703E+18, -4.992201892795E+18, 1.414501923720E+18,
+              7.049456954407E+18]], dtype=np.float64
+        )
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [7.049456954407E+18, -4.489606937545E+18, 7.049456954407E+18, -4.489606937545E+18,
+             -4.489606937545E+18, 7.049456954407E+18, -4.489606937545E+18, 7.049456954407E+18], dtype=np.float64
+        )
+
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [9.802928389430E+18, -7.659496121465E+18, 9.802928389430E+18, -7.659496121465E+18,
+             -7.659496121465E+18, 9.802928389430E+18, -7.659496121465E+18, 9.802928389430E+18], dtype=np.float64
+        )
 
     def setup_linear(self):
         self.precalc_interpolation = np.array(
@@ -287,7 +401,18 @@ class TestInterpolatorLoadBigValues(TestInterpolatorLoadValues):
              [7.049456954407E+18, 1.385029207141E+18, -4.488982302467E+18, -8.350115450764E+18,
               -7.975908114097E+18, -5.651707329729E+18, -4.876973734940E+18, -5.651707329729E+18,
               -7.975908114097E+18, -8.350115450764E+18, -4.488982302467E+18, 1.385029207141E+18,
-              7.049456954407E+18]], dtype=np.float64)
+              7.049456954407E+18]], dtype=np.float64
+        )
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [7.049456954407E+18, -4.876973734940E+18, 7.049456954407E+18, -4.876973734940E+18,
+             -4.876973734940E+18, 7.049456954407E+18, -4.876973734940E+18, 7.049456954407E+18], dtype=np.float64
+        )
+
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [9.802928389430E+18, -8.064599007443E+18, 9.802928389430E+18, -8.064599007443E+18,
+             -8.064599007443E+18, 9.802928389430E+18, -8.064599007443E+18, 9.802928389430E+18], dtype=np.float64
+        )
 
 
 class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
@@ -333,19 +458,6 @@ class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
               -5.031133752816E-23, 7.049456954407E-22]], dtype=np.float64
         )
 
-        #: precalculated result of the function used to calculate self.data on self.xsamples
-        # self.precalc_function = np.array()
-        #: array holding precalculated nearest neighbour extrapolation data
-        self.precalc_extrapolation_nearest: np.array = np.array(
-            [7.049456954407E-22, -4.876973734940E-22, 7.049456954407E-22, -4.876973734940E-22,
-             -4.876973734940E-22, 7.049456954407E-22, -4.876973734940E-22, 7.049456954407E-22], dtype=np.float64
-        )
-
-        #: array holding precalculated linear extrapolation data
-        self.precalc_extrapolation_linear: np.array = np.array(
-            [], dtype=np.float64
-        )
-
         #: array holding precalculated quadratic extrapolation data
         self.precalc_extrapolation_quadratic: np.array = np.array(
             [], dtype=np.float64
@@ -353,7 +465,68 @@ class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
 
     def setup_cubic(self):
         self.precalc_interpolation = np.array(
-            [], dtype=np.float64
+            [[7.049456954407E-22, 1.414501923720E-22, -4.992201892795E-22, -9.006647501703E-22,
+              -7.975908114097E-22, -5.494750801435E-22, -4.489606937545E-22, -5.494750801435E-22,
+              -7.975908114097E-22, -9.006647501703E-22, -4.992201892795E-22, 1.414501923720E-22,
+              7.049456954407E-22],
+             [1.414501923720E-22, -6.879873015242E-22, -6.604387574169E-22, -9.273861048634E-24,
+              7.815453486867E-22, 1.087722976395E-21, 1.179639375774E-21, 1.087722976395E-21,
+              7.815453486867E-22, -9.273861048636E-24, -6.604387574169E-22, -6.879873015242E-22,
+              1.414501923720E-22],
+             [-4.992201892795E-22, -6.604387574169E-22, 7.662704616536E-23, 8.927226959205E-22,
+              8.733637329412E-22, 3.144134389941E-22, 8.046419412818E-23, 3.144134389941E-22,
+              8.733637329412E-22, 8.927226959205E-22, 7.662704616536E-23, -6.604387574169E-22,
+              -4.992201892795E-22],
+             [-9.006647501703E-22, -9.273861048634E-24, 8.927226959205E-22, 9.500724468550E-22,
+              -3.879550824798E-22, -1.262756473836E-21, -1.571105597160E-21, -1.262756473836E-21,
+              -3.879550824798E-22, 9.500724468550E-22, 8.927226959205E-22, -9.273861048634E-24,
+              -9.006647501703E-22],
+             [-7.975908114097E-22, 7.815453486867E-22, 8.733637329412E-22, -3.879550824798E-22,
+              -2.145503300375E-21, -1.226583807439E-21, -7.714735650694E-22, -1.226583807439E-21,
+              -2.145503300375E-21, -3.879550824798E-22, 8.733637329412E-22, 7.815453486867E-22,
+              -7.975908114097E-22],
+             [-5.494750801435E-22, 1.087722976395E-21, 3.144134389941E-22, -1.262756473836E-21,
+              -1.226583807439E-21, 3.691392206491E-21, 5.727262813613E-21, 3.691392206491E-21,
+              -1.226583807439E-21, -1.262756473836E-21, 3.144134389941E-22, 1.087722976395E-21,
+              -5.494750801435E-22],
+             [-4.489606937545E-22, 1.179639375774E-21, 8.046419412818E-23, -1.571105597160E-21,
+              -7.714735650694E-22, 5.727262813613E-21, 8.385571378575E-21, 5.727262813613E-21,
+              -7.714735650694E-22, -1.571105597160E-21, 8.046419412818E-23, 1.179639375774E-21,
+              -4.489606937545E-22],
+             [-5.494750801435E-22, 1.087722976395E-21, 3.144134389941E-22, -1.262756473836E-21,
+              -1.226583807439E-21, 3.691392206491E-21, 5.727262813613E-21, 3.691392206491E-21,
+              -1.226583807439E-21, -1.262756473836E-21, 3.144134389941E-22, 1.087722976395E-21,
+              -5.494750801435E-22],
+             [-7.975908114097E-22, 7.815453486867E-22, 8.733637329412E-22, -3.879550824798E-22,
+              -2.145503300375E-21, -1.226583807439E-21, -7.714735650694E-22, -1.226583807439E-21,
+              -2.145503300375E-21, -3.879550824798E-22, 8.733637329412E-22, 7.815453486867E-22,
+              -7.975908114097E-22],
+             [-9.006647501703E-22, -9.273861048636E-24, 8.927226959205E-22, 9.500724468550E-22,
+              -3.879550824798E-22, -1.262756473836E-21, -1.571105597160E-21, -1.262756473836E-21,
+              -3.879550824798E-22, 9.500724468550E-22, 8.927226959205E-22, -9.273861048634E-24,
+              -9.006647501703E-22],
+             [-4.992201892795E-22, -6.604387574169E-22, 7.662704616536E-23, 8.927226959205E-22,
+              8.733637329412E-22, 3.144134389941E-22, 8.046419412818E-23, 3.144134389941E-22,
+              8.733637329412E-22, 8.927226959205E-22, 7.662704616536E-23, -6.604387574169E-22,
+              -4.992201892795E-22],
+             [1.414501923720E-22, -6.879873015242E-22, -6.604387574169E-22, -9.273861048634E-24,
+              7.815453486867E-22, 1.087722976395E-21, 1.179639375774E-21, 1.087722976395E-21,
+              7.815453486867E-22, -9.273861048634E-24, -6.604387574169E-22, -6.879873015242E-22,
+              1.414501923720E-22],
+             [7.049456954407E-22, 1.414501923720E-22, -4.992201892795E-22, -9.006647501703E-22,
+              -7.975908114097E-22, -5.494750801435E-22, -4.489606937545E-22, -5.494750801435E-22,
+              -7.975908114097E-22, -9.006647501703E-22, -4.992201892795E-22, 1.414501923720E-22,
+              7.049456954407E-22]], dtype=np.float64
+        )
+        #: array holding precalculated nearest neighbour extrapolation data
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [7.049456954407E-22, -4.489606937545E-22, 7.049456954407E-22, -4.489606937545E-22,
+             -4.489606937545E-22, 7.049456954407E-22, -4.489606937545E-22, 7.049456954407E-22], dtype=np.float64
+        )
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [9.802928389430E-22, -7.659496121465E-22, 9.802928389430E-22, -7.659496121465E-22,
+             -7.659496121465E-22, 9.802928389430E-22, -7.659496121465E-22, 9.802928389430E-22], dtype=np.float64
         )
 
     def setup_linear(self):
@@ -411,6 +584,16 @@ class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
               -7.975908114097E-22, -8.350115450764E-22, -4.488982302467E-22, 1.385029207141E-22,
               7.049456954407E-22]], dtype=np.float64
         )
+        #: array holding precalculated nearest neighbour extrapolation data
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [7.049456954407E-22, -4.876973734940E-22, 7.049456954407E-22, -4.876973734940E-22,
+             -4.876973734940E-22, 7.049456954407E-22, -4.876973734940E-22, 7.049456954407E-22], dtype=np.float64
+        )
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [9.802928389430E-22, -8.064599007443E-22, 9.802928389430E-22, -8.064599007443E-22,
+             -8.064599007443E-22, 9.802928389430E-22, -8.064599007443E-22, 9.802928389430E-22], dtype=np.float64
+        )
 
 
 class TestInterpolators2D(unittest.TestCase):
@@ -422,7 +605,6 @@ class TestInterpolators2D(unittest.TestCase):
         #: x and y values used to obtain self.data
         x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
         y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
-        x_in_full, y_in_full = np.meshgrid(x_in, y_in)
         self.x = x_in
         self.y = y_in
 
@@ -490,7 +672,9 @@ class TestInterpolators2D(unittest.TestCase):
         self.setup_extrpolation_type(extrapolator_type)
 
         # set interpolator
-        self.interpolator = Interpolator2DArray(self.x, self.y, self.data, 'linear', extrapolator_type, extrapolation_range, extrapolation_range)
+        self.interpolator = Interpolator2DArray(
+            self.x, self.y, self.data, 'linear', extrapolator_type, extrapolation_range, extrapolation_range
+        )
 
     def setup_cubic(self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool):
         """
@@ -523,7 +707,9 @@ class TestInterpolators2D(unittest.TestCase):
 
         self.setup_extrpolation_type(extrapolator_type)
         # set interpolator
-        self.interpolator = Interpolator2DArray(self.x, self.y, self.data, 'cubic', extrapolator_type, extrapolation_range, extrapolation_range)
+        self.interpolator = Interpolator2DArray(
+            self.x, self.y, self.data, 'cubic', extrapolator_type, extrapolation_range, extrapolation_range
+        )
 
     def setup_extrpolation_type(self, extrapolator_type: str):
         if extrapolator_type == 'linear':
@@ -542,19 +728,23 @@ class TestInterpolators2D(unittest.TestCase):
     def test_extrapolation_none(self):
         self.setup_linear('none', EXTRAPOLATION_RANGE, big_values=False, small_values=False)
         for i in range(len(self.xsamples_in_bounds)):
-            self.assertRaises(ValueError, self.interpolator, **{'x':self.xsamples_in_bounds[i], 'y':self.ysamples_in_bounds[i]})
+            self.assertRaises(
+                ValueError, self.interpolator, **{'x': self.xsamples_in_bounds[i], 'y': self.ysamples_in_bounds[i]}
+            )
 
     def test_linear_interpolation_extrapolators(self):
+        no_test_for_extrapolator = ['linear']
         for extrapolator_type in id_to_extrapolator.keys():
             self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False)
-            no_test_for_extrapolator = ['linear']
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
                     if extrapolator_type == 'nearest':
                         gradient_continuity = False
                     else:
                         gradient_continuity = True
-                    self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
+                    self.run_general_extrapolation_tests(
+                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
+                    )
             self.run_general_interpolation_tests()
 
         # Tests for big values
@@ -566,7 +756,9 @@ class TestInterpolators2D(unittest.TestCase):
                         gradient_continuity = False
                     else:
                         gradient_continuity = True
-                    self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
+                    self.run_general_extrapolation_tests(
+                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
+                    )
             self.run_general_interpolation_tests()
 
         # Tests for small values
@@ -578,15 +770,17 @@ class TestInterpolators2D(unittest.TestCase):
                         gradient_continuity = False
                     else:
                         gradient_continuity = True
-                    self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
+                    self.run_general_extrapolation_tests(
+                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
+                    )
 
             self.run_general_interpolation_tests()
 
     def test_cubic_interpolation_extrapolators(self):
         """
-        Testing against scipy.interpolate.CubicHermiteSpline with the same gradient calculations
+        Testing against a previous version of cubic interpolators to highlight changes.
         """
-        test_on = False
+        test_on = True
         # Temporarily turn off cubic 2D tests
         if test_on:
             for extrapolator_type in id_to_extrapolator.keys():
@@ -596,7 +790,9 @@ class TestInterpolators2D(unittest.TestCase):
                         gradient_continuity = False
                     else:
                         gradient_continuity = True
-                    self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
+                    self.run_general_extrapolation_tests(
+                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
+                    )
                 self.run_general_interpolation_tests()
 
             # Tests for big values
@@ -607,7 +803,9 @@ class TestInterpolators2D(unittest.TestCase):
                         gradient_continuity = False
                     else:
                         gradient_continuity = True
-                    self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
+                    self.run_general_extrapolation_tests(
+                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
+                    )
                 self.run_general_interpolation_tests()
 
             # Tests for small values
@@ -618,7 +816,9 @@ class TestInterpolators2D(unittest.TestCase):
                         gradient_continuity = False
                     else:
                         gradient_continuity = True
-                    self.run_general_extrapolation_tests(gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type)
+                    self.run_general_extrapolation_tests(
+                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
+                    )
 
                 self.run_general_interpolation_tests()
 
@@ -636,8 +836,10 @@ class TestInterpolators2D(unittest.TestCase):
         for i in range(len(self.xsamples_in_bounds)):
             delta_max = np.abs(self.precalc_extrapolation[i]/np.power(10., PRECISION - 1))
             self.assertAlmostEqual(
-                self.interpolator(self.xsamples_in_bounds[i], self.ysamples_in_bounds[i]), self.precalc_extrapolation[i]
-                , delta=delta_max, msg='Failed for ' + extrapolator_type
+                self.interpolator(
+                    self.xsamples_in_bounds[i], self.ysamples_in_bounds[i]), self.precalc_extrapolation[i],
+                delta=delta_max, msg='Failed for ' + extrapolator_type + f'{self.xsamples_in_bounds[i]} and '
+                                                                         f'{self.ysamples_in_bounds[i]}'
             )
 
         # Turned off gradient testing for now
