@@ -348,7 +348,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
     Cubic interpolation of a 2D function.
 
     When called, stores cubic polynomial coefficients from the value of the function, df/dx, df/dy  and d2f/dxdy at the
-    neighbouring spline knots using _GridGradients2D object. The polynomial coefficients and gradients are calculated
+    neighbouring spline knots using _ArrayDerivative2D object. The polynomial coefficients and gradients are calculated
     between each spline knots in a unit square.
 
     :param x: 1D memory view of the spline point x positions.
@@ -409,21 +409,21 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
             f[1][0] = self._f[index_x + 1, index_y]
             f[0][1] = self._f[index_x, index_y + 1]
             f[1][1] = self._f[index_x + 1, index_y + 1]
-            grid_grad = _GridGradients2D(self._x, self._y, self._f)
-            dfdx[0][0] = grid_grad(index_x, index_y, 1, 0)
-            dfdx[0][1] = grid_grad(index_x, index_y + 1, 1, 0)
-            dfdx[1][0] = grid_grad(index_x + 1, index_y, 1, 0)
-            dfdx[1][1] = grid_grad(index_x + 1, index_y + 1, 1, 0)
+            array_derivative = _ArrayDerivative2D(self._x, self._y, self._f)
+            dfdx[0][0] = array_derivative(index_x, index_y, 1, 0)
+            dfdx[0][1] = array_derivative(index_x, index_y + 1, 1, 0)
+            dfdx[1][0] = array_derivative(index_x + 1, index_y, 1, 0)
+            dfdx[1][1] = array_derivative(index_x + 1, index_y + 1, 1, 0)
 
-            dfdy[0][0] = grid_grad(index_x, index_y, 0, 1)
-            dfdy[0][1] = grid_grad(index_x, index_y + 1, 0, 1)
-            dfdy[1][0] = grid_grad(index_x + 1, index_y, 0, 1)
-            dfdy[1][1] = grid_grad(index_x + 1, index_y + 1, 0, 1)
+            dfdy[0][0] = array_derivative(index_x, index_y, 0, 1)
+            dfdy[0][1] = array_derivative(index_x, index_y + 1, 0, 1)
+            dfdy[1][0] = array_derivative(index_x + 1, index_y, 0, 1)
+            dfdy[1][1] = array_derivative(index_x + 1, index_y + 1, 0, 1)
 
-            d2fdxdy[0][0] = grid_grad(index_x, index_y, 1, 1)
-            d2fdxdy[0][1] = grid_grad(index_x, index_y + 1, 1, 1)
-            d2fdxdy[1][0] = grid_grad(index_x + 1, index_y, 1, 1)
-            d2fdxdy[1][1] = grid_grad(index_x + 1, index_y + 1, 1, 1)
+            d2fdxdy[0][0] = array_derivative(index_x, index_y, 1, 1)
+            d2fdxdy[0][1] = array_derivative(index_x, index_y + 1, 1, 1)
+            d2fdxdy[1][0] = array_derivative(index_x + 1, index_y, 1, 1)
+            d2fdxdy[1][1] = array_derivative(index_x + 1, index_y + 1, 1, 1)
 
             calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
             for i in range(4):
@@ -740,12 +740,12 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
                fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
 
 
-cdef class _GridGradients2D:
+cdef class _ArrayDerivative2D:
     """
     Gradient method that returns the approximate derivative of a desired order at a specified grid point.
 
     These methods of finding derivatives are only valid on a 2D grid of points, at the values at the points. Other
-    derivative method would be dependent on the interpolator types.
+    derivative methods would be dependent on the interpolator types.
 
     :param x: 1D memory view of the spline point x positions.
     :param y: 1D memory view of the spline point y positions.

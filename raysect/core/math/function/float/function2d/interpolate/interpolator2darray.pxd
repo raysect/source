@@ -98,7 +98,7 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
     pass
 
 
-cdef class _GridGradients2D:
+cdef class _ArrayDerivative2D:
     cdef:
         double [::1] _x, _y
         double [:, ::1] _f
