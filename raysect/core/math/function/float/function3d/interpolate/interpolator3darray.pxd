@@ -39,6 +39,9 @@ cdef int find_index_change(int index, int last_index)
 cdef int find_edge_index(int index, int last_index)
 
 
+cdef double lookup_factorial(int n)
+
+
 cdef class Interpolator3DArray(Function3D):
 
     cdef:
@@ -66,6 +69,13 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     cdef calculate_coefficients(self, int index_x, int index_y, int index_z, double[8] a)
 
 
+cdef class _Interpolator3DCubic(_Interpolator3D):
+    cdef:
+        ndarray _a, _mask_a
+        double[:, :, :, :, :, ::1] _a_mv
+    cdef cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a)
+
+
 cdef class _Extrapolator3D:
     cdef:
         double [::1] _x, _y, _z
@@ -86,3 +96,24 @@ cdef class _Extrapolator3D:
 
 cdef class _Extrapolator3DNone(_Extrapolator3D):
     pass
+
+
+cdef class _ArrayDerivative3D:
+    cdef:
+        double [::1] _x, _y, _z
+        double [:, :, ::1] _f
+        int _last_index_x, _last_index_y, _last_index_z
+    cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z) except? -1e999
+
+    cdef double derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999
+    cdef double derivitive_dfdx_edge(self, double[:] f)
+    cdef double derivitive_d2fdxdy(self,  double[:] x, double[:] y, double[:, ::1] f) except? -1e999
+    cdef double derivitive_d2fdxdy_edge_xy(self, double[:, ::1] f) except? -1e999
+    cdef double derivitive_d2fdxdy_edge_x(self, double[:] y, double[:, ::1] f) except? -1e999
+    cdef double derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, ::1] f) except? -1e999
+
+    cdef double eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add)
+    cdef double eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add)
+    cdef double eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999
+    cdef double eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y)
+

@@ -36,6 +36,22 @@ from raysect.core.math.cython.interpolation.linear cimport linear3d, linear1d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_3d, evaluate_cubic_3d
 
 # TODO These functions are in 2D too. Move them somewhere common
+
+
+cdef double lookup_factorial(int n):
+    """
+    A small lookup table for a factorial calculation.
+
+    So far this is only required for cubic functions, so going up to 3!.
+    """
+    cdef double[4] factorial
+    factorial[0] = 1.
+    factorial[1] = 1.
+    factorial[2] = 2.
+    factorial[3] = 6.
+    return factorial[n]
+
+
 cdef int find_index_change(int index, int last_index):
     """
     Transforming the output of find_index to find the index lower index of a cell required for an extrapolator.
@@ -275,7 +291,6 @@ cdef class _Interpolator3D:
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
 
-
 cdef class _Interpolator3DLinear(_Interpolator3D):
     """
     Linear interpolation of 3D function.
@@ -316,7 +331,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         :param int index_z: the lower index of the bin containing point pz. (Result of bisection search).   
         :param int order_x: the derivative order in the x direction.
         :param int order_y: the derivative order in the y direction.
-        :param int order_z: the derivative order in the y direction.
+        :param int order_z: the derivative order in the z direction.
         """
         cdef double df_dn
         cdef double[8] a
@@ -398,6 +413,245 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         a[5] = f[0][0][0] - f[0][0][1] - f[1][0][0] + f[1][0][1]
         a[6] = f[0][0][0] - f[0][0][1] - f[0][1][0] + f[0][1][1]
         a[7] = - f[0][0][0] + f[0][0][1] + f[0][1][0] - f[0][1][1] + f[1][0][0] - f[1][0][1] - f[1][1][0] + f[1][1][1]
+
+
+
+cdef class _Interpolator3DCubic(_Interpolator3D):
+    """
+    Cubic interpolation of a 3D function.
+
+    When called, stores cubic polynomial coefficients from the value of the function, df/dx, df/dy, df/dz , d2f/dxdy,
+    d2f/dxdz , d2f/dydz and d3f/dxdydz at the neighbouring spline knots using _ArrayDerivative3D object.
+    The polynomial coefficients and gradients are calculated between each spline knots in a unit square.
+
+    :param x: 1D memory view of the spline point x positions.
+    :param y: 1D memory view of the spline point y positions.
+    :param z: 1D memory view of the spline point z positions.
+    :param f: 3D memory view of the function value at spline point x, y, z positions.
+    """
+
+    ID = 'cubic'
+
+    def __init__(self, double[::1] x, double[::1] y, double[::1] z, double[:, :, ::1] f):
+        super().__init__(x, y, z, f)
+
+        # Where 'a' has been calculated already the mask value = 1
+        self._mask_a = np.zeros((self._last_index_x, self._last_index_y, self._last_index_z), dtype=np.float64)
+        self._a = np.zeros((self._last_index_x, self._last_index_y, self._last_index_z, 4, 4, 4), dtype=np.float64)
+        self._a_mv = self._a
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
+    cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999:
+        # rescale x between 0 and 1
+        cdef double x_scal
+        cdef double y_scal
+        cdef double z_scal
+        cdef double x_bound, y_bound, z_bound
+        cdef double[4][4][4] a
+
+        x_bound = self._x[index_x + 1] - self._x[index_x]
+        if x_bound != 0:
+            x_scal = (px - self._x[index_x]) / x_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+        y_bound = self._y[index_y + 1] - self._y[index_y]
+        if y_bound != 0:
+            y_scal = (py - self._y[index_y]) / y_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same y value!')
+        z_bound = self._z[index_z + 1] - self._z[index_z]
+        if z_bound != 0:
+            z_scal = (pz - self._z[index_z]) / z_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same z value!')
+
+        # Calculate the coefficients (and gradients at each spline point) if they dont exist.
+        self.cache_coefficients(index_x, index_y, index_z, a)
+
+        return evaluate_cubic_3d(a, x_scal, y_scal, z_scal)
+
+    cdef cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a):
+        """
+        Calculates and stores, or loads previously stored cubic coefficients.
+
+        :param int index_x: the lower index of the bin containing point px. (Result of bisection search).   
+        :param int index_y: the lower index of the bin containing point py. (Result of bisection search). 
+        :param int index_z: the lower index of the bin containing point pz. (Result of bisection search). 
+        :param double[4][4][4] a: The coefficients of the tricubic equation.
+        """
+        cdef double[2][2][2] f, dfdx, dfdy, dfdz, d2fdxdy, d2fdxdz, d2fdydz, d3fdxdydz
+        cdef int i, j, k
+
+        # Calculate the coefficients (and gradients at each spline point) if they dont exist
+        if not self._mask_a[index_x, index_y, index_z]:
+            f[0][0][0] = self._f[index_x, index_y, index_z]
+            f[0][1][0] = self._f[index_x, index_y + 1, index_z]
+            f[0][1][1] = self._f[index_x, index_y + 1, index_z + 1]
+            f[0][0][1] = self._f[index_x, index_y, index_z + 1]
+            f[1][0][0] = self._f[index_x + 1, index_y, index_z]
+            f[1][1][0] = self._f[index_x + 1, index_y + 1, index_z]
+            f[1][0][1] = self._f[index_x + 1, index_y, index_z + 1]
+            f[1][1][1] = self._f[index_x + 1, index_y + 1, index_z + 1]
+
+            array_derivative = _ArrayDerivative3D(self._x, self._y, self._z, self._f)
+            dfdx[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 0, 0)
+            dfdx[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 0, 0)
+            dfdx[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 0, 0)
+            dfdx[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 0, 0)
+            dfdx[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 0, 0)
+            dfdx[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 0, 0)
+            dfdx[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 0, 0)
+            dfdx[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 0, 0)
+
+            dfdy[0][0][0] = array_derivative(index_x, index_y, index_z, 0, 1, 0)
+            dfdy[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 0, 1, 0)
+            dfdy[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 0, 1, 0)
+            dfdy[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 0, 1, 0)
+            dfdy[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 0, 1, 0)
+            dfdy[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 0, 1, 0)
+            dfdy[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 0, 1, 0)
+            dfdy[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 0, 1, 0)
+
+            dfdz[0][0][0] = array_derivative(index_x, index_y, index_z, 0, 0, 1)
+            dfdz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 0, 0, 1)
+            dfdz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 0, 0, 1)
+            dfdz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 0, 0, 1)
+            dfdz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 0, 0, 1)
+            dfdz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 0, 0, 1)
+            dfdz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 0, 0, 1)
+            dfdz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 0, 0, 1)
+
+            d2fdxdy[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 1, 0)
+            d2fdxdy[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 1, 0)
+            d2fdxdy[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 1, 0)
+            d2fdxdy[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 1, 0)
+            d2fdxdy[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 1, 0)
+            d2fdxdy[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 1, 0)
+            d2fdxdy[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 1, 0)
+            d2fdxdy[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 1, 0)
+
+            d2fdxdz[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 0, 1)
+            d2fdxdz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 0, 1)
+            d2fdxdz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 0, 1)
+            d2fdxdz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 0, 1)
+            d2fdxdz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 0, 1)
+            d2fdxdz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 0, 1)
+            d2fdxdz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 0, 1)
+            d2fdxdz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 0, 1)
+
+            d2fdydz[0][0][0] = array_derivative(index_x, index_y, index_z, 0, 1, 1)
+            d2fdydz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 0, 1, 1)
+            d2fdydz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 0, 1, 1)
+            d2fdydz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 0, 1, 1)
+            d2fdydz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 0, 1, 1)
+            d2fdydz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 0, 1, 1)
+            d2fdydz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 0, 1, 1)
+            d2fdydz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 0, 1, 1)
+
+
+            d3fdxdydz[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 1, 1)
+            d3fdxdydz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 1, 1)
+            d3fdxdydz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 1, 1)
+            d3fdxdydz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 1, 1)
+            d3fdxdydz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 1, 1)
+            d3fdxdydz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 1, 1)
+            d3fdxdydz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 1, 1)
+            d3fdxdydz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 1, 1)
+
+            dfdy[0][0] = array_derivative(index_x, index_y, 0, 1)
+            dfdy[0][1] = array_derivative(index_x, index_y + 1, 0, 1)
+            dfdy[1][0] = array_derivative(index_x + 1, index_y, 0, 1)
+            dfdy[1][1] = array_derivative(index_x + 1, index_y + 1, 0, 1)
+
+            d2fdxdy[0][0] = array_derivative(index_x, index_y, 1, 1)
+            d2fdxdy[0][1] = array_derivative(index_x, index_y + 1, 1, 1)
+            d2fdxdy[1][0] = array_derivative(index_x + 1, index_y, 1, 1)
+            d2fdxdy[1][1] = array_derivative(index_x + 1, index_y + 1, 1, 1)
+
+            calc_coefficients_3d(f, dfdx, dfdy, dfdz, d2fdxdy, d2fdxdz, d2fdydz, d3fdxdydz, a)
+            for i in range(4):
+                for j in range(4):
+                    for k in range(4):
+                        self._a[index_x, index_y, index_z, i, j, k] = a[i][j][k]
+            self._mask_a[index_x, index_y, index_z] = 1
+        else:
+            for i in range(4):
+                for j in range(4):
+                    for k in range(4):
+                        a[i][j][k] = self._a[index_x, index_y, index_z, i, j, k]
+
+    cdef double _analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
+        #TODO edit docstring
+        """
+        Calculate the normalised gradient of specified order in a unit cube.
+
+        The order of the derivative corresponds to order_x, order_y and order_z as the number of times differentiated. For 
+        example order_x = 1 and order_y = 1 is d2f/dxdy. The normalised gradient is calculated for the tricubic by 
+        generalising each orders derivative coefficient to n!/(n-order)! . e.g. for n = [1, 2, 3], for order 1
+        these are [1, 2, 3] for the derivative dfdx = a1 + 2*a2*x + 3*a3*x^2, order 2 has [2, 6] for 
+        d2fdx2 = 2*a2 + 6*a3*x. These combine in x and y by selecting elements of the matrix 'a' and the x^n and y^n 
+        that remains after differentiation.
+
+        :param double px: the point for which an interpolated value is required.
+        :param double py: the point for which an interpolated value is required.
+        :param double pz: the point for which an interpolated value is required.
+        :param int index_x: the lower index of the bin containing point px. (Result of bisection search).   
+        :param int index_y: the lower index of the bin containing point py. (Result of bisection search).   
+        :param int index_z: the lower index of the bin containing point pz. (Result of bisection search).   
+        :param int order_x: the derivative order in the x direction.
+        :param int order_y: the derivative order in the y direction.
+        :param int order_z: the derivative order in the z direction.
+        """
+        # rescale x between 0 and 1
+        cdef double x_scal
+        cdef double y_scal
+        cdef double z_scal
+        cdef double x_bound, y_bound, z_bound
+        cdef double[4][4][4] a
+        cdef double[4] x_powers, y_powers, z_powers
+        cdef double df_dn
+
+        if order_x > 3:
+            raise ValueError('Can\'t get a gradient of order 4 or more in cubic.')
+        x_bound = self._x[index_x + 1] - self._x[index_x]
+        if x_bound != 0:
+            x_scal = (px - self._x[index_x]) / x_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+        y_bound = self._y[index_y + 1] - self._y[index_y]
+        if y_bound != 0:
+            y_scal = (py - self._y[index_y]) / y_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same y value!')
+        z_bound = self._z[index_z + 1] - self._z[index_z]
+        if z_bound != 0:
+            z_scal = (pz - self._z[index_z]) / z_bound
+        else:
+            raise ZeroDivisionError('Two adjacent spline points have the same z value!')
+
+        # Calculate the coefficients (and gradients at each spline point) if they dont exist
+        self.cache_coefficients(index_x, index_y, index_z, a)
+        x_powers[0] = 1
+        x_powers[1] = x_scal
+        x_powers[2] = x_scal * x_scal
+        x_powers[3] = x_scal * x_scal * x_scal
+        y_powers[0] = 1
+        y_powers[1] = y_scal
+        y_powers[2] = y_scal * y_scal
+        y_powers[3] = y_scal * y_scal * y_scal
+        z_powers[0] = 1
+        z_powers[1] = z_scal
+        z_powers[2] = z_scal * z_scal
+        z_powers[3] = z_scal * z_scal * z_scal
+        df_dn = 0
+        for i in range(order_x, 4):
+            for j in range(order_y, 4):
+                for k in range(order_z, 4):
+                    df_dn += (a[i][j][k] * (lookup_factorial(i)/lookup_factorial(i-order_x)) * (lookup_factorial(j)/lookup_factorial(j-order_y))* (lookup_factorial(k)/lookup_factorial(k-order_z)) *
+                              x_powers[i-order_x] * y_powers[j-order_y] * z_powers[k-order_z])
+        return  df_dn
 
 
 cdef class _Extrapolator3D:
@@ -569,6 +823,189 @@ cdef class _Extrapolator3DNone(_Extrapolator3D):
             f'{np.min(self._x)}-{np.max(self._x)}, y  {np.min(self._y)}-{np.max(self._y)} '
             f'and z {np.min(self._z)}-{np.max(self._z)}.'
         )
+
+
+
+cdef class _ArrayDerivative2D:
+    """
+    Gradient method that returns the approximate derivative of a desired order at a specified grid point.
+
+    These methods of finding derivatives are only valid on a 3D grid of points, at the values at the points. Other
+    derivative methods would be dependent on the interpolator types.
+
+    :param x: 1D memory view of the spline point x positions.
+    :param y: 1D memory view of the spline point y positions.
+    :param z: 1D memory view of the spline point z positions.
+    :param f: 3D memory view of the function value at spline point x, y positions.
+    """
+    def __init__(self, double[::1] x, double[::1] y, double[::1] z, double[:, :, ::1] f):
+
+        self._x = x
+        self._y = y
+        self._z = z
+        self._f = f
+        self._last_index_x = self._x.shape[0] - 1
+        self._last_index_y = self._y.shape[0] - 1
+        self._last_index_z = self._z.shape[0] - 1
+
+    cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z) except? -1e999:
+        """
+        Evaluate the derivative of specific order at a grid point.
+
+        The grid of spline knots is reduced to a 2X2X2 to 3X3X3 grid for gradient evaluation depending on if the requested
+        derivative is near the edge or not. If near the edge in 1 dimension, grid size is 2X3X3 or a combination for
+        example.
+
+        :param index_x: The lower index of the x grid cell to evaluate.
+        :param index_y: The lower index of the y grid cell to evaluate.
+        :param index_z: The lower index of the z grid cell to evaluate.
+        :param derivative_order_x: An integer of the derivative order x. Only zero if derivative_order_y/z is nonzero.
+        :param derivative_order_y: An integer of the derivative order y. Only zero if derivative_order_x/z is nonzero.
+        :param derivative_order_z: An integer of the derivative order z. Only zero if derivative_order_x/y is nonzero.
+        """
+        # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
+        cdef double dfdn
+
+        if index_x == 0:
+            if index_y == 0:
+                dfdn = self.eval_edge_xy(index_x, index_y, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=0)
+            elif index_y == self._last_index_y:
+                dfdn = self.eval_edge_xy(index_x, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=1)
+            else:
+                dfdn = self.eval_edge_x(index_x, index_y, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=0)
+        elif index_x == self._last_index_x:
+            if index_y == 0:
+                dfdn = self.eval_edge_xy(index_x - 1, index_y, derivative_order_x, derivative_order_y, x_centre_add=1, y_centre_add=0)
+            elif index_y == self._last_index_y:
+                dfdn = self.eval_edge_xy(index_x - 1, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=1, y_centre_add=1)
+            else:
+                dfdn = self.eval_edge_x(index_x - 1, index_y, derivative_order_x, derivative_order_y, x_centre_add=1, y_centre_add=0)
+        else:
+            if index_y == 0:
+                dfdn = self.eval_edge_y(index_x, index_y, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=0)
+            elif index_y == self._last_index_y:
+                dfdn = self.eval_edge_y(index_x, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=1)
+            else:
+                dfdn = self.eval_xy(index_x, index_y, derivative_order_x, derivative_order_y)
+
+        return dfdn
+
+    cdef double eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
+        cdef double dfdn
+        cdef double[::1] x_range, y_range, z_range
+        cdef double[:, :, ::1] f_range
+        cdef int x_centre = 0, y_centre = 1, z_centre = 1
+        x_range = self._x[index_x:index_x + 2]
+        y_range = self._y[index_y - 1:index_y + 2]
+        z_range = self._z[index_z - 1:index_z + 2]
+        f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2, index_z - 1:index_z + 2]
+        dfdn = 0
+        #TOdo select correct bounds
+        if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, :, y_centre + y_centre_add])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_d2fdxdy_edge_x(y_range, f_range)
+        elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_x(z_range, f_range)
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdydz(y_range, z_range, f_range)
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d3fdxdydz(x_range, y_range, z_range, f_range)
+        else:
+            raise ValueError('No higher order derivatives implemented')
+        return dfdn
+
+    cdef double eval_edge_y(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
+        cdef double dfdn
+        cdef double[::1] x_range, y_range, z_range
+        cdef double[:, :, ::1] f_range
+        cdef int x_centre = 1, y_centre = 0, z_centre = 0
+        x_range = self._x[index_x - 1:index_x + 2]
+        y_range = self._y[index_y:index_y + 2]
+        z_range = self._z[index_z - 1:index_z + 2]
+        f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2, index_z - 1:index_z + 2]
+        dfdn = 0
+        #TOdo select correct bounds
+        if derivative_order_x == 1 and derivative_order_y == 0:
+            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 1:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1:
+            dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range)
+        else:
+            raise ValueError('No higher order derivatives implemented')
+        return dfdn
+
+    cdef double eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999:
+        cdef double dfdn
+        cdef double[::1] x_range, y_range
+        cdef double[:, ::1] f_range
+        cdef int x_centre = 0, y_centre = 0
+        x_range = self._x[index_x:index_x + 2]
+        y_range = self._y[index_y:index_y + 2]
+        f_range = self._f[index_x:index_x + 2, index_y:index_y + 2]
+        dfdn = 0
+
+        if derivative_order_x == 1 and derivative_order_y == 0:
+            dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 1:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1:
+            dfdn = self.derivitive_d2fdxdy_edge_xy(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
+        else:
+            raise ValueError('No higher order derivatives implemented')
+        return dfdn
+
+    cdef double eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
+        cdef double dfdn
+        cdef double[::1] x_range, y_range
+        cdef double[:, ::1] f_range
+        cdef int x_centre = 1, y_centre = 1
+        x_range = self._x[index_x - 1:index_x + 2]
+        y_range = self._y[index_y - 1:index_y + 2]
+        f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2]
+        dfdn = 0
+
+        if derivative_order_x == 1 and derivative_order_y == 0:
+            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre])
+        elif derivative_order_x == 0 and derivative_order_y == 1:
+            dfdn = self.derivitive_dfdx(y_range, f_range[x_centre, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1:
+            dfdn = self.derivitive_d2fdxdy(
+                x_range[x_centre - 1:x_centre + 2], y_range[y_centre - 1:y_centre + 2],
+                f_range[x_centre - 1:x_centre + 2, y_centre - 1:y_centre + 2]
+            )
+        else:
+            raise ValueError('No higher order derivatives implemented')
+        return dfdn
+
+    cdef double derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999:
+        pass
+
+    cdef double derivitive_dfdy(self, double[:] y, double[:] f) except? -1e999:
+        pass
+
+    cdef double derivitive_dfdz(self, double[:] z, double[:] f) except? -1e999:
+        pass
+
+    cdef double derivitive_d2fdxdy(self, double[:] x, double[:] y, double[:, ::1] f) except? -1e999:
+        pass
+
+    cdef double derivitive_d2fdxdz(self, double[:] x, double[:] z, double[:, ::1] f) except? -1e999:
+        pass
+
+    cdef double derivitive_d2fdydz(self, double[:] y, double[:] z, double[:, ::1] f) except? -1e999:
+        pass
+
+    cdef double derivitive_d3fdxdydz(self, double[:] x, double[:] y, double[:] z, double[:, :, ::1] f) except? -1e999:
+        pass
+
+    def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y):
+        return self.evaluate(index_x, index_y, derivative_order_x, derivative_order_y)
 
 id_to_interpolator = {
     _Interpolator3DLinear.ID: _Interpolator3DLinear,
