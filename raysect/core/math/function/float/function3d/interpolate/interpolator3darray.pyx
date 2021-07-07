@@ -865,29 +865,68 @@ cdef class _ArrayDerivative2D:
         """
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
         cdef double dfdn
+        cdef int x_centre_add, y_centre_add, z_centre_add
 
-        if index_x == 0:
-            if index_y == 0:
-                dfdn = self.eval_edge_xy(index_x, index_y, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=0)
-            elif index_y == self._last_index_y:
-                dfdn = self.eval_edge_xy(index_x, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=1)
-            else:
-                dfdn = self.eval_edge_x(index_x, index_y, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=0)
-        elif index_x == self._last_index_x:
-            if index_y == 0:
-                dfdn = self.eval_edge_xy(index_x - 1, index_y, derivative_order_x, derivative_order_y, x_centre_add=1, y_centre_add=0)
-            elif index_y == self._last_index_y:
-                dfdn = self.eval_edge_xy(index_x - 1, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=1, y_centre_add=1)
-            else:
-                dfdn = self.eval_edge_x(index_x - 1, index_y, derivative_order_x, derivative_order_y, x_centre_add=1, y_centre_add=0)
+        # If at the upper edge of the array, the index of the point to find needs to be at the upper edge.
+        if index_x == self._last_index_x:
+            x_centre_add = 1
         else:
-            if index_y == 0:
-                dfdn = self.eval_edge_y(index_x, index_y, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=0)
-            elif index_y == self._last_index_y:
-                dfdn = self.eval_edge_y(index_x, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=1)
-            else:
-                dfdn = self.eval_xy(index_x, index_y, derivative_order_x, derivative_order_y)
+            x_centre_add = 0
+        if index_y == self._last_index_y:
+            y_centre_add = 1
+        else:
+            y_centre_add = 0
+        if index_z == self._last_index_z:
+            z_centre_add = 1
+        else:
+            z_centre_add = 0
 
+        if index_x == 0 or index_x == self._last_index_x:
+            if index_y == 0 or index_y == self._last_index_y:
+                if index_z == 0 or index_z == self._last_index_z:
+                    dfdn = self.eval_edge_xyz(
+                        index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z,
+                        x_centre_add=x_centre_add, y_centre_add=y_centre_add, z_centre_add=z_centre_add
+                    )
+                else:
+                    dfdn = self.eval_edge_xy(
+                        index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z,
+                        x_centre_add=x_centre_add, y_centre_add=y_centre_add, z_centre_add=z_centre_add
+                    )
+            else:
+                if index_z == 0 or index_z == self._last_index_z:
+                    dfdn = self.eval_edge_xz(
+                        index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z,
+                        x_centre_add=x_centre_add, y_centre_add=y_centre_add, z_centre_add=z_centre_add
+                    )
+                else:
+                    dfdn = self.eval_edge_x(
+                        index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z,
+                        x_centre_add=x_centre_add, y_centre_add=y_centre_add, z_centre_add=z_centre_add
+                    )
+        else:
+            if index_y == 0 or index_y == self._last_index_y:
+                if index_z == 0 or index_z == self._last_index_z:
+                    dfdn = self.eval_edge_yz(
+                        index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z,
+                        x_centre_add=x_centre_add, y_centre_add=y_centre_add, z_centre_add=z_centre_add
+                    )
+                else:
+                    dfdn = self.eval_edge_y(
+                        index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z,
+                        x_centre_add=x_centre_add, y_centre_add=y_centre_add, z_centre_add=z_centre_add
+                    )
+            else:
+                if index_z == 0 or index_z == self._last_index_z:
+                    dfdn = self.eval_edge_z(
+                        index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z,
+                        x_centre_add=x_centre_add, y_centre_add=y_centre_add, z_centre_add=z_centre_add
+                    )
+                else:
+                    dfdn = self.eval_xyz(
+                        index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z,
+                        x_centre_add=x_centre_add, y_centre_add=y_centre_add, z_centre_add=z_centre_add
+                    )
         return dfdn
 
     cdef double eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
@@ -906,13 +945,13 @@ cdef class _ArrayDerivative2D:
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self.derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, :, y_centre + y_centre_add])
+            dfdn = self.derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self.derivitive_d2fdxdy_edge_x(y_range, f_range)
+            dfdn = self.derivitive_d2fdxdy_edge_x(y_range, f_range[:, :, z_centre + z_centre_add])
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self.derivitive_d2fdxdz_edge_x(z_range, f_range)
+            dfdn = self.derivitive_d2fdxdz_edge_x(z_range, f_range[:, y_centre + y_centre_add, :])
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self.derivitive_d2fdydz(y_range, z_range, f_range)
+            dfdn = self.derivitive_d2fdydz(y_range, z_range, f_range[x_centre + x_centre_add, :, :])
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self.derivitive_d3fdxdydz(x_range, y_range, z_range, f_range)
         else:
@@ -923,65 +962,175 @@ cdef class _ArrayDerivative2D:
         cdef double dfdn
         cdef double[::1] x_range, y_range, z_range
         cdef double[:, :, ::1] f_range
-        cdef int x_centre = 1, y_centre = 0, z_centre = 0
+        cdef int x_centre = 1, y_centre = 0, z_centre = 1
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         z_range = self._z[index_z - 1:index_z + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2, index_z - 1:index_z + 2]
         dfdn = 0
         #TOdo select correct bounds
-        if derivative_order_x == 1 and derivative_order_y == 0:
-            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add])
-        elif derivative_order_x == 0 and derivative_order_y == 1:
-            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
-        elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range)
+        if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range[:, :, z_centre + z_centre_add])
+        elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdydz(x_range, z_range, f_range[:, y_centre + y_centre_add, :])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_x(z_range, f_range[x_centre + x_centre_add, :, :])# This should work still, edge is in second variable
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d3fdxdydz(x_range, y_range, z_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
         return dfdn
 
-    cdef double eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999:
+    cdef double eval_edge_z(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
         cdef double dfdn
-        cdef double[::1] x_range, y_range
-        cdef double[:, ::1] f_range
-        cdef int x_centre = 0, y_centre = 0
-        x_range = self._x[index_x:index_x + 2]
-        y_range = self._y[index_y:index_y + 2]
-        f_range = self._f[index_x:index_x + 2, index_y:index_y + 2]
-        dfdn = 0
-
-        if derivative_order_x == 1 and derivative_order_y == 0:
-            dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add])
-        elif derivative_order_x == 0 and derivative_order_y == 1:
-            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
-        elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self.derivitive_d2fdxdy_edge_xy(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
-        else:
-            raise ValueError('No higher order derivatives implemented')
-        return dfdn
-
-    cdef double eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
-        cdef double dfdn
-        cdef double[::1] x_range, y_range
-        cdef double[:, ::1] f_range
-        cdef int x_centre = 1, y_centre = 1
+        cdef double[::1] x_range, y_range, z_range
+        cdef double[:, :, ::1] f_range
+        cdef int x_centre = 1, y_centre = 0, z_centre = 1
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
-        f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2]
+        z_range = self._z[index_z:index_z + 2]
+        f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2, index_z:index_z + 2]
         dfdn = 0
-
-        if derivative_order_x == 1 and derivative_order_y == 0:
-            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre])
-        elif derivative_order_x == 0 and derivative_order_y == 1:
-            dfdn = self.derivitive_dfdx(y_range, f_range[x_centre, :])
-        elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self.derivitive_d2fdxdy(
-                x_range[x_centre - 1:x_centre + 2], y_range[y_centre - 1:y_centre + 2],
-                f_range[x_centre - 1:x_centre + 2, y_centre - 1:y_centre + 2]
-            )
+        #TOdo select correct bounds
+        if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_d2fdydz(x_range, y_range, f_range[:, :, z_centre + z_centre_add])
+        elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_y(x_range, f_range[:, y_centre + y_centre_add, :]) # This should work still, edge is in second variable
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_y(y_range, f_range[x_centre + x_centre_add, :, :]) # This should work still, edge is in second variable
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d3fdxdydz(x_range, y_range, z_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
         return dfdn
+
+    cdef double eval_edge_xy(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
+        cdef double dfdn
+        cdef double[::1] x_range, y_range, z_range
+        cdef double[:, :, ::1] f_range
+        cdef int x_centre = 0, y_centre = 0, z_centre = 1
+        x_range = self._x[index_x:index_x + 2]
+        y_range = self._y[index_y:index_y + 2]
+        z_range = self._z[index_z - 1:index_z + 2]
+        f_range = self._f[index_x:index_x + 2, index_y:index_y + 2, index_z - 1:index_z + 2]
+        dfdn = 0
+        #TOdo select correct bounds
+        if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_d2fdxdz_edge_xy(f_range[:, :, z_centre + z_centre_add])
+        elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_x(z_range, f_range[:, y_centre + y_centre_add, :])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_x(z_range, f_range[x_centre + x_centre_add, :, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d3fdxdydz(x_range, y_range, z_range, f_range) # TOdo edge_xy
+        else:
+            raise ValueError('No higher order derivatives implemented')
+        return dfdn
+
+    cdef double eval_edge_xz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
+        cdef double dfdn
+        cdef double[::1] x_range, y_range, z_range
+        cdef double[:, :, ::1] f_range
+        cdef int x_centre = 0, y_centre = 1, z_centre = 0
+        x_range = self._x[index_x:index_x + 2]
+        y_range = self._y[index_y - 1:index_y + 2]
+        z_range = self._z[index_z:index_z + 2]
+        f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2, index_z:index_z + 2]
+        dfdn = 0
+        #TOdo select correct bounds
+        if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_d2fdxdz_edge_x(y_range, f_range[:, :, z_centre + z_centre_add])
+        elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_xy(f_range[:, y_centre + y_centre_add, :])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_y(y_range, f_range[x_centre + x_centre_add, :, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d3fdxdydz(x_range, y_range, z_range, f_range) # TOdo edge_xy
+        else:
+            raise ValueError('No higher order derivatives implemented')
+        return dfdn
+    cdef double eval_edge_yz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
+        cdef double dfdn
+        cdef double[::1] x_range, y_range, z_range
+        cdef double[:, :, ::1] f_range
+        cdef int x_centre = 1, y_centre = 0, z_centre = 0
+        x_range = self._x[index_x - 1:index_x + 2]
+        y_range = self._y[index_y:index_y + 2]
+        z_range = self._z[index_z:index_z + 2]
+        f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2, index_z:index_z + 2]
+        dfdn = 0
+        #TOdo select correct bounds
+        if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+        elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_dfdx_edge(f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_d2fdxdz_edge_y(x_range, f_range[:, :, z_centre + z_centre_add])
+        elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_y(x_range, f_range[:, y_centre + y_centre_add, :])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz_edge_xy(y_range, z_range, f_range[x_centre + x_centre_add, :, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d3fdxdydz(x_range, y_range, z_range, f_range) # TOdo edge_xy
+        else:
+            raise ValueError('No higher order derivatives implemented')
+        return dfdn
+
+    cdef double eval_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z):
+        cdef double dfdn
+        cdef double[::1] x_range, y_range, z_range
+        cdef double[:, :, ::1] f_range
+        cdef int x_centre = 1, y_centre = 1, z_centre = 1
+        x_range = self._x[index_x - 1:index_x + 2]
+        y_range = self._y[index_y - 1:index_y + 2]
+        z_range = self._z[index_z - 1:index_z + 2]
+        f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2, index_z - 1:index_z + 2]
+        dfdn = 0
+        #TOdo select correct bounds
+        if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre, z_centre])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_dfdx(y_range, f_range[x_centre, :, z_centre])
+        elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_dfdx(z_range, f_range[x_centre, y_centre, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
+            dfdn = self.derivitive_d2fdxdz(x_range, y_range, f_range[:, :, z_centre])
+        elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz(x_range, z_range, f_range[:, y_centre, :])
+        elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d2fdxdz(y_range, z_range, f_range[x_centre, :, :])
+        elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
+            dfdn = self.derivitive_d3fdxdydz(x_range, y_range, z_range, f_range) # TOdo edge_xy
+        else:
+            raise ValueError('No higher order derivatives implemented')
+        return dfdn
+
 
     cdef double derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999:
         pass
@@ -1004,8 +1153,8 @@ cdef class _ArrayDerivative2D:
     cdef double derivitive_d3fdxdydz(self, double[:] x, double[:] y, double[:] z, double[:, :, ::1] f) except? -1e999:
         pass
 
-    def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y):
-        return self.evaluate(index_x, index_y, derivative_order_x, derivative_order_y)
+    def __call__(self, index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z):
+        return self.evaluate(index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z)
 
 id_to_interpolator = {
     _Interpolator3DLinear.ID: _Interpolator3DLinear,
