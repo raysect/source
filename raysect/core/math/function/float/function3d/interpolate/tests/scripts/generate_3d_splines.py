@@ -142,12 +142,17 @@ if __name__ == '__main__':
         from matplotlib import cm
         # Install mayavi and pyQt5
 
-        interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'none', extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0)
+        interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'none', extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0)
         main_plots_on = True
         mayavi_plots_on = False
         if main_plots_on:
             fig, ax = plt.subplots(1, 2)
             index_x_in = 5
+            if not (x_in[index_x_in] == xsamples).any:
+                raise ValueError(
+                    f'To compare a slice, NB_XSAMPLES={NB_XSAMPLES}-1, NB_YSAMPLES={NB_YSAMPLES}-1, NB_ZSAMPLES='
+                    f'{NB_ZSAMPLES}-1 must be divisible by NB_X={NB_X}-1, NB_Y={NB_Y}-1, NB_Z={NB_Z}-1'
+                )
             index_xsamples = np.where(x_in[index_x_in] == xsamples)[0].item()
             f_plot_x = f_in[index_x_in, :, :]
 
