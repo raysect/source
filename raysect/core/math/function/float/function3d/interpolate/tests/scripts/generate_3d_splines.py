@@ -65,6 +65,44 @@ SMALL_VALUE_FACTOR = -20.
 # Force scientific format to get the right number of significant figures
 np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
 
+
+# def get_extrapolation_input_values(
+#         x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max, z_extrap_delta_max, x_extrap_delta_min, y_extrap_delta_min, z_extrap_delta_min):
+#     xsamples_extrap_out_of_bounds_options = np.array(
+#         [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
+#
+#     ysamples_extrap_out_of_bounds_options = np.array(
+#         [y_lower - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_max])
+#
+#     zsamples_extrap_out_of_bounds_options = np.array(
+#         [z_lower - z_extrap_delta_max, (z_lower + z_upper) / 2., z_upper + z_extrap_delta_max])
+#
+#     xsamples_extrap_in_bounds_options = np.array(
+#         [x_lower - x_extrap_delta_min, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_min])
+#
+#     ysamples_extrap_in_bounds_options = np.array(
+#         [y_lower - y_extrap_delta_min, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_min])
+#
+#     zsamples_extrap_in_bounds_options = np.array(
+#         [z_lower - z_extrap_delta_min, (z_lower + z_upper) / 2., z_upper + z_extrap_delta_min])
+#
+#     xsamples_extrap_out_of_bounds = []
+#     ysamples_extrap_out_of_bounds = []
+#     xsamples_extrap_in_bounds = []
+#     ysamples_extrap_in_bounds = []
+#     edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+#     for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
+#         for j_y in range(len(xsamples_extrap_out_of_bounds_options)):
+#             if not (i_x not in edge_indicies and j_y not in edge_indicies):
+#                 xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
+#                 ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
+#                 xsamples_extrap_in_bounds.append(xsamples_extrap_in_bounds_options[i_x])
+#                 ysamples_extrap_in_bounds.append(ysamples_extrap_in_bounds_options[j_y])
+#     return \
+#         np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), \
+#         np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds)
+
+
 def pcolourmesh_corners(input_array):
     return np.linspace(input_array[0] - (input_array[1] - input_array[0]) / 2., input_array[-1] + (input_array[-1] - input_array[-2]) / 2., len(input_array) + 1)
 
@@ -72,38 +110,6 @@ def pcolourmesh_corners(input_array):
 def function_to_spline(x_input, y_input, z_input, factor):
     t = np.pi * np.sqrt((x_input ** 2 + y_input ** 2 + z_input ** 2))
     return factor*np.sinc(t)
-
-
-def make_open_sphere(r):
-    dr, dtheta, dphi = 0.1, np.pi / 250.0, np.pi / 250.0
-    [theta, phi] = np.mgrid[0.:np.pi + dtheta:dtheta, -np.pi:np.pi / 2. + dphi:dphi]
-    x, y, z = spherical_r_theta_phi_to_xyz(r, theta, phi)
-
-    [r_range_low, theta_range_low, phi_range_low] = np.mgrid[0.:r:r/50., -np.pi:0. + dtheta:dtheta, -np.pi / 2.:-np.pi / 2. + dphi:dphi*2.]
-    [r_range_high, theta_range_high, phi_range_high] = np.mgrid[0.:r:r/50., -np.pi:0. + dtheta:dtheta, np.pi:np.pi + dphi:dphi*2.]
-    x_edge_low, y_edge_low, z_edge_low = spherical_r_theta_phi_to_xyz(r_range_low, theta_range_low, phi_range_low)
-    x_edge_high, y_edge_high, z_edge_high = spherical_r_theta_phi_to_xyz(r_range_high, theta_range_high, phi_range_high)
-    x_edge_low = np.reshape(x_edge_low, (np.shape(x_edge_low)[0], np.shape(x_edge_low)[1]))
-    y_edge_low = np.reshape(y_edge_low, (np.shape(y_edge_low)[0], np.shape(y_edge_low)[1]))
-    z_edge_low = np.reshape(z_edge_low, (np.shape(z_edge_low)[0], np.shape(z_edge_low)[1]))
-    x_edge_high = np.reshape(x_edge_high, (np.shape(x_edge_high)[0], np.shape(x_edge_high)[1]))
-    y_edge_high = np.reshape(y_edge_high, (np.shape(y_edge_high)[0], np.shape(y_edge_high)[1]))
-    z_edge_high = np.reshape(z_edge_high, (np.shape(z_edge_high)[0], np.shape(z_edge_high)[1]))
-    return x, y, z, x_edge_low, y_edge_low, z_edge_low, x_edge_high, y_edge_high, z_edge_high
-
-
-def spherical_r_theta_phi_to_xyz(r, theta, phi):
-    x = r*np.cos(phi)*np.sin(theta)
-    y = r*np.sin(phi)*np.sin(theta)
-    z = r*np.cos(theta)
-    return x, y, z
-
-
-def spherical_xyz_to_r_theta_phi(x, y, z):
-    r = np.sqrt(x**2 + y**2 + z**2)
-    phi = np.arctan2(y, x)
-    theta = np.arccos(z/r)
-    return r, theta, phi
 
 
 if __name__ == '__main__':
@@ -134,6 +140,12 @@ if __name__ == '__main__':
     ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
     zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
 
+    # # Extrapolation x and y values
+    # xsamples_out_of_bounds, ysamples_out_of_bounds, zsamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds,  zsamples_in_bounds = \
+    #     get_extrapolation_input_values(
+    #         X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
+    #         Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
+    #     )
 
 
     check_plot = True
@@ -141,14 +153,23 @@ if __name__ == '__main__':
         import matplotlib.pyplot as plt
         from matplotlib import cm
         # Install mayavi and pyQt5
+        n_lower_upper_interp = 19
+        n_lower = 5
+        lower_p = 0.9
+        xsamples_lower_and_upper = np.linspace(X_LOWER, X_UPPER, n_lower_upper_interp)
+        ysamples_lower_and_upper = np.linspace(Y_LOWER, Y_UPPER, n_lower_upper_interp)
+        zsamples_lower_and_upper = np.linspace(Z_LOWER, Z_UPPER, n_lower_upper_interp)
+        xsamples_lower_and_upper = np.concatenate((np.linspace(X_LOWER - (X_UPPER - X_LOWER)*lower_p, X_LOWER, n_lower)[:-1], xsamples_lower_and_upper, np.linspace(X_UPPER, X_UPPER + (X_UPPER - X_LOWER)*lower_p, n_lower)[1:]))
+        ysamples_lower_and_upper = np.concatenate((np.linspace(Y_LOWER - (Y_UPPER - Y_LOWER)*lower_p, Y_LOWER, n_lower)[:-1], ysamples_lower_and_upper, np.linspace(Y_UPPER, Y_UPPER + (Y_UPPER - Y_LOWER)*lower_p, n_lower)[1:]))
+        zsamples_lower_and_upper = np.concatenate((np.linspace(Z_LOWER - (Z_UPPER - Z_LOWER)*lower_p, Z_LOWER, n_lower)[:-1], zsamples_lower_and_upper, np.linspace(Z_UPPER, Z_UPPER + (Z_UPPER - Z_LOWER)*lower_p, n_lower)[1:]))
 
-        interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'none', extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0)
+        interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0)
         main_plots_on = True
         mayavi_plots_on = False
         if main_plots_on:
-            fig, ax = plt.subplots(1, 2)
+            fig, ax = plt.subplots(1, 3)
             index_x_in = 5
-            if not (x_in[index_x_in] == xsamples).any:
+            if not (x_in[index_x_in] == xsamples).any():
                 raise ValueError(
                     f'To compare a slice, NB_XSAMPLES={NB_XSAMPLES}-1, NB_YSAMPLES={NB_YSAMPLES}-1, NB_ZSAMPLES='
                     f'{NB_ZSAMPLES}-1 must be divisible by NB_X={NB_X}-1, NB_Y={NB_Y}-1, NB_Z={NB_Z}-1'
@@ -173,7 +194,11 @@ if __name__ == '__main__':
                 for j in range(len(ysamples)):
                     for k in range(len(zsamples)):
                         f_out[i, j, k] = interpolator3D(xsamples[i], ysamples[j], zsamples[k])
-
+            f_out_lower_and_upper = np.zeros((len(xsamples_lower_and_upper), len(ysamples_lower_and_upper), len(zsamples_lower_and_upper)))
+            for i in range(len(xsamples_lower_and_upper)):
+                for j in range(len(ysamples_lower_and_upper)):
+                    for k in range(len(zsamples_lower_and_upper)):
+                        f_out_lower_and_upper[i, j, k] = interpolator3D(xsamples_lower_and_upper[i], ysamples_lower_and_upper[j], zsamples_lower_and_upper[k])
             f_out_x = f_out[index_xsamples, :, :]
             ysamples_mesh, zsamples_mesh = np.meshgrid(ysamples, zsamples)
             im = ax[0].scatter(ysamples_mesh.ravel(), zsamples_mesh.ravel(), c=f_out_x.ravel(), norm=c_norm, cmap='viridis', s=10)
@@ -191,8 +216,23 @@ if __name__ == '__main__':
             im2 = ax[1].pcolormesh(y_corners_xsamples, z_corners_xsamples, f_out_x, norm=c_norm, cmap='viridis')
 
             ax[1].set_aspect('equal')
+            print(x_in[index_x_in] == xsamples_lower_and_upper)
+            if not (x_in[index_x_in] == xsamples_lower_and_upper).any():
+                raise ValueError(
+                    f'To compare a slice, n_lower_upper={n_lower}-1, must be divisible by NB_X={NB_X}-1, NB_Y={NB_Y}-1, NB_Z={NB_Z}-1'
+                )
+            index_xsamples_lower_and_upper = np.where(x_in[index_x_in] == xsamples_lower_and_upper)[0].item()
+
+            y_corners_xsamples_lower_and_upper = pcolourmesh_corners(ysamples_lower_and_upper)
+            z_corners_xsamples_lower_and_upper = pcolourmesh_corners(zsamples_lower_and_upper)
+            f_out_lower_and_upper_x = f_out_lower_and_upper[index_xsamples_lower_and_upper, :, :]
+            im3 = ax[2].pcolormesh(y_corners_xsamples_lower_and_upper, z_corners_xsamples_lower_and_upper, f_out_lower_and_upper_x, norm=c_norm, cmap='viridis')
+
+
             fig.colorbar(im, ax=ax[0])
             fig.colorbar(im2, ax=ax[1])
+            fig.colorbar(im3, ax=ax[2])
+            ax[2].set_aspect('equal')
 
             plt.show()
         if mayavi_plots_on:

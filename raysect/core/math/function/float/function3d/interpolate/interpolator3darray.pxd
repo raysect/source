@@ -98,6 +98,10 @@ cdef class _Extrapolator3DNone(_Extrapolator3D):
     pass
 
 
+cdef class _Extrapolator3DLinear(_Extrapolator3D):
+    pass
+
+
 cdef class _ArrayDerivative3D:
     cdef:
         double [::1] _x, _y, _z

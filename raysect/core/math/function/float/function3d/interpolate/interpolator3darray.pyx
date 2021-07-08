@@ -815,6 +815,121 @@ cdef class _Extrapolator3DNone(_Extrapolator3D):
         )
 
 
+cdef class _Extrapolator3DLinear(_Extrapolator3D):
+    """
+    Extrapolator that returns linearly extrapolated input value.
+
+    :param x: 1D memory view of the spline point x positions.
+    :param y: 1D memory view of the spline point y positions.
+    :param z: 1D memory view of the spline point z positions.
+    :param f: 3D memory view of the function value at spline point x, y, z positions.
+    :param external_interpolator: stored _Interpolator3D object that is being used.
+    """
+
+    ID = 'linear'
+
+    def __init__(self, double[::1] x, double[::1] y, double[::1] z, double[:, :, ::1] f, _Interpolator3D external_interpolator, double extrapolation_range_x, double extrapolation_range_y, double extrapolation_range_z):
+           super().__init__(x, y, z, f, external_interpolator, extrapolation_range_x, extrapolation_range_y, extrapolation_range_z)
+
+    cdef double evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        cdef double f_value, fx_value
+        f_value = self._external_interpolator.evaluate(self._x[edge_x_index], py, pz, index_x, index_y, index_z)
+        fx_value = self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, pz, index_x, index_y, index_z, 1, 0, 0) / \
+                   (self._x[index_x + 1] - self._x[index_x])
+        return f_value + fx_value * (px - self._x[edge_x_index])
+
+    cdef double evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        cdef double f_value, fy_value
+        f_value = self._external_interpolator.evaluate(px, self._y[edge_y_index], pz, index_x, index_y, index_z)
+        fy_value = self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], pz, index_x, index_y, index_z, 0, 1, 0)/\
+                   (self._y[index_y + 1] - self._y[index_y])
+        return f_value + fy_value * (py - self._y[edge_y_index])
+
+    cdef double evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        cdef double f_value, fz_value
+        f_value = self._external_interpolator.evaluate(px, py, self._z[edge_z_index], index_x, index_y, index_z)
+        fz_value = self._external_interpolator._analytic_gradient(px, py, self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1)/\
+                   (self._z[index_z + 1] - self._z[index_z])
+        return f_value + fz_value * (pz - self._z[edge_z_index])
+
+    cdef double evaluate_edge_xy(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        cdef double f_value, fx_value, fy_value, fxy_value
+        f_value = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z)
+        fx_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 1, 0, 0
+        )/(self._x[index_x + 1] - self._x[index_x])
+        fy_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 0, 1, 0
+        )/(self._y[index_y + 1] - self._y[index_y])
+        fxy_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 1, 1, 0
+        )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y]))
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) - \
+               fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
+
+    cdef double evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        cdef double f_value, fx_value, fz_value, fxz_value
+        f_value = self._external_interpolator.evaluate(self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z)
+        fx_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 0
+        )/(self._x[index_x + 1] - self._x[index_x])
+        fz_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1
+        )/(self._z[index_z + 1] - self._z[index_z])
+        fxz_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 1
+        )/((self._x[index_x + 1] - self._x[index_x])*(self._z[index_z + 1] - self._z[index_z]))
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fz_value * (pz - self._z[edge_z_index]) - \
+               fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index])
+
+    cdef double evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        cdef double f_value, fy_value, fz_value, fyz_value
+        f_value = self._external_interpolator.evaluate(px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
+        fy_value = self._external_interpolator._analytic_gradient(
+            px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 0
+        )/(self._y[index_y + 1] - self._y[index_y])
+        fz_value = self._external_interpolator._analytic_gradient(
+            px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1
+        )/(self._z[index_z + 1] - self._z[index_z])
+        fyz_value = self._external_interpolator._analytic_gradient(
+            px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 1
+        )/((self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
+        return f_value + fy_value * (py - self._y[edge_y_index]) + fz_value * (pz - self._z[edge_z_index]) - \
+               fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index])
+
+    cdef double evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        cdef double f_value, fx_value, fy_value, fz_value, fxy_value, fxz_value, fyz_value, fxyz_value
+        f_value = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
+        fx_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 0
+        )/(self._x[index_x + 1] - self._x[index_x])
+        fy_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 0
+        )/(self._y[index_y + 1] - self._y[index_y])
+        fz_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1
+        )/(self._z[index_z + 1] - self._z[index_z])
+        fxy_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 1, 0
+        )/((self._y[index_y + 1] - self._y[index_y])*(self._x[index_x + 1] - self._x[index_x]))
+        fxz_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 1
+        )/((self._x[index_x + 1] - self._x[index_x])*(self._z[index_z + 1] - self._z[index_z]))
+        fyz_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 1
+        )/((self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
+        fxyz_value = self._external_interpolator._analytic_gradient(
+            self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 1, 1
+        )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + \
+               fz_value * (pz - self._z[edge_z_index]) \
+               - fxy_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index]) \
+               - fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index]) \
+               - fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index]) \
+               + fxyz_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index])* (pz - self._z[edge_z_index])
+
+
+
 
 cdef class _ArrayDerivative3D:
     """
@@ -1235,12 +1350,12 @@ id_to_interpolator = {
 id_to_extrapolator = {
     _Extrapolator3DNone.ID: _Extrapolator3DNone,
     # _Extrapolator3DNearest.ID: _Extrapolator3DNearest,
-    # _Extrapolator3DLinear.ID: _Extrapolator3DLinear,
+    _Extrapolator3DLinear.ID: _Extrapolator3DLinear,
     # _Extrapolator3DQuadratic.ID: _Extrapolator3DQuadratic
 }
 
 permitted_interpolation_combinations = {
-    _Interpolator3DLinear.ID: [_Extrapolator3DNone.ID],
-    _Interpolator3DCubic.ID: [_Extrapolator3DNone.ID]
+    _Interpolator3DLinear.ID: [_Extrapolator3DNone.ID, _Extrapolator3DLinear.ID],
+    _Interpolator3DCubic.ID: [_Extrapolator3DNone.ID, _Extrapolator3DLinear.ID]
     # _Interpolator3DCubic.ID: [_Extrapolator3DNone.ID, _Extrapolator3DNearest.ID, _Extrapolator3DLinear.ID]
 }
