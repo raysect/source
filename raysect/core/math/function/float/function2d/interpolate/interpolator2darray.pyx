@@ -153,11 +153,11 @@ cdef class Interpolator2DArray(Function2D):
         if (np.diff(y) <= 0).any():
             raise ValueError('The y array must be monotonically increasing.')
 
-        self.x = np.array(x, dtype=np.float64)
+        self.x = np.array(x, dtype=np.float64, order='c')
         self.x.flags.writeable = False
-        self.y = np.array(y, dtype=np.float64)
+        self.y = np.array(y, dtype=np.float64, order='c')
         self.y.flags.writeable = False
-        self.f = np.array(f, dtype=np.float64)
+        self.f = np.array(f, dtype=np.float64, order='c')
         self.f.flags.writeable = False
 
         self._x_mv = x

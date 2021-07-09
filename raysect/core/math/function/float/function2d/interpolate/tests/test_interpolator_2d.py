@@ -29,14 +29,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Unit tests for the Interpolator1DCubic class from within Interpolate1D,
-including interaction with Extrapolator1DLinear and Extrapolator1DNearest.
+Unit tests for array interpolation (not mesh) from within Interpolate2DArray,
+including interaction with internal extrapolators.
 """
 import unittest
 import numpy as np
 from raysect.core.math.function.float.function2d.interpolate.interpolator2darray import Interpolator2DArray, \
     id_to_extrapolator, id_to_interpolator
-from raysect.core.math.function.float.function2d.interpolate.tests.scipts.generate_2d_splines import X_LOWER, X_UPPER, \
+from raysect.core.math.function.float.function2d.interpolate.tests.scripts.generate_2d_splines import X_LOWER, X_UPPER, \
     NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
     Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, get_extrapolation_input_values
 
@@ -617,11 +617,8 @@ class TestInterpolators2D(unittest.TestCase):
         self.precalc_interpolation = None
 
         #: x values on which self.precalc_interpolation was samples on
-        xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
-        ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
-        # Temporary measure for not extrapolating
-        self.xsamples = xsamples[:-1]
-        self.ysamples = ysamples[:-1]
+        self.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
+        self.ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
 
         #: x values on which self.precalc_extrapolation_ arrays were sampled on
         # Extrapolation x and y values
@@ -645,7 +642,7 @@ class TestInterpolators2D(unittest.TestCase):
 
         Once executed, self.precalc_NNN members variables will contain
         precalculated extrapolated / interpolated data. self.interpolator
-        will hold Interpolate1D object that is being tested. Precalculated interpolation using
+        will hold Interpolate2DArray object that is being tested. Precalculated interpolation using
         scipy.interpolate.interp1d(kind=linear), generated using scipy version 1.6.3
 
         :param extrapolator_type: type of extrapolator 'none', 'linear' or 'cubic'
@@ -683,13 +680,14 @@ class TestInterpolators2D(unittest.TestCase):
 
         Once executed, self.precalc_NNN members variables will contain
         precalculated extrapolated / interpolated data. self.interpolator
-        will hold Interpolate1D object that is being tested. Generated using scipy
-        version 1.6.3 scipy.interpolate.CubicHermiteSpline, with input gradients.
+        will hold Interpolate2DArray object that is being tested.
 
-        :param extrapolator_type: type of extrapolator 'none', 'linear' or 'cubic'
-        :param extrapolation_range: padding around interpolation range where extrapolation is possible
-        :param big_values: For loading and testing big value saved data
-        :param small_values: For loading and testing small value saved data
+        WARNING: Generated using a working version to check for differences between versions. Not a mathematical test
+
+        :param extrapolator_type: type of extrapolator 'none', 'linear' or 'cubic'.
+        :param extrapolation_range: padding around interpolation range where extrapolation is possible.
+        :param big_values: For loading and testing big value saved data.
+        :param small_values: For loading and testing small value saved data.
         """
 
         # set precalculated expected interpolation results
