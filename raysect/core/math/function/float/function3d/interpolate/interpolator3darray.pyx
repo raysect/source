@@ -171,13 +171,13 @@ cdef class Interpolator3DArray(Function3D):
         if (np.diff(z) <= 0).any():
             raise ValueError('The z array must be monotonically increasing.')
 
-        self.x = np.array(x, dtype=np.float64)
+        self.x = np.array(x, dtype=np.float64, order='c')
         self.x.flags.writeable = False
-        self.y = np.array(y, dtype=np.float64)
+        self.y = np.array(y, dtype=np.float64, order='c')
         self.y.flags.writeable = False
-        self.z = np.array(z, dtype=np.float64)
+        self.z = np.array(z, dtype=np.float64, order='c')
         self.z.flags.writeable = False
-        self.f = np.array(f, dtype=np.float64)
+        self.f = np.array(f, dtype=np.float64, order='c')
         self.f.flags.writeable = False
 
         self._x_mv = x
@@ -1128,6 +1128,7 @@ cdef class _ArrayDerivative3D:
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
             dfdn = self.derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
+            # fixme ALl these functions don't specify 'f' as c contiguous. Can't input this if f_range is cdef double[:, :, ::1] f_range
             dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range[:, :, z_centre + z_centre_add])
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
             dfdn = self.derivitive_d2fdxdy(x_range, z_range, f_range[:, y_centre + y_centre_add, :])
@@ -1332,6 +1333,7 @@ cdef class _ArrayDerivative3D:
         return (f[1, 2] - f[0, 2] - f[1, 0] + f[0, 0]) / (1. + dy1)
 
     cdef double derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, :] f) except? -1e999:
+        # fixme ALl these functions don't specify 'f' as c contiguous. Can't input this if f_range is cdef double[:, :, ::1] f_range slice as f_range[:, :, n]
         cdef double dx1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
         return (f[2, 1] - f[0, 1] - f[2, 0] + f[0, 0]) / (1. + dx1)

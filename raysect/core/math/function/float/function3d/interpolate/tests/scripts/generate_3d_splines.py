@@ -66,41 +66,46 @@ SMALL_VALUE_FACTOR = -20.
 np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
 
 
-# def get_extrapolation_input_values(
-#         x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max, z_extrap_delta_max, x_extrap_delta_min, y_extrap_delta_min, z_extrap_delta_min):
-#     xsamples_extrap_out_of_bounds_options = np.array(
-#         [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
-#
-#     ysamples_extrap_out_of_bounds_options = np.array(
-#         [y_lower - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_max])
-#
-#     zsamples_extrap_out_of_bounds_options = np.array(
-#         [z_lower - z_extrap_delta_max, (z_lower + z_upper) / 2., z_upper + z_extrap_delta_max])
-#
-#     xsamples_extrap_in_bounds_options = np.array(
-#         [x_lower - x_extrap_delta_min, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_min])
-#
-#     ysamples_extrap_in_bounds_options = np.array(
-#         [y_lower - y_extrap_delta_min, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_min])
-#
-#     zsamples_extrap_in_bounds_options = np.array(
-#         [z_lower - z_extrap_delta_min, (z_lower + z_upper) / 2., z_upper + z_extrap_delta_min])
-#
-#     xsamples_extrap_out_of_bounds = []
-#     ysamples_extrap_out_of_bounds = []
-#     xsamples_extrap_in_bounds = []
-#     ysamples_extrap_in_bounds = []
-#     edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
-#     for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
-#         for j_y in range(len(xsamples_extrap_out_of_bounds_options)):
-#             if not (i_x not in edge_indicies and j_y not in edge_indicies):
-#                 xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
-#                 ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
-#                 xsamples_extrap_in_bounds.append(xsamples_extrap_in_bounds_options[i_x])
-#                 ysamples_extrap_in_bounds.append(ysamples_extrap_in_bounds_options[j_y])
-#     return \
-#         np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), \
-#         np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds)
+def get_extrapolation_input_values(
+        x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max, z_extrap_delta_max, x_extrap_delta_min, y_extrap_delta_min, z_extrap_delta_min):
+    xsamples_extrap_out_of_bounds_options = np.array(
+        [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
+
+    ysamples_extrap_out_of_bounds_options = np.array(
+        [y_lower - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_max])
+
+    zsamples_extrap_out_of_bounds_options = np.array(
+        [z_lower - z_extrap_delta_max, (z_lower + z_upper) / 2., z_upper + z_extrap_delta_max])
+
+    xsamples_extrap_in_bounds_options = np.array(
+        [x_lower - x_extrap_delta_min, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_min])
+
+    ysamples_extrap_in_bounds_options = np.array(
+        [y_lower - y_extrap_delta_min, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_min])
+
+    zsamples_extrap_in_bounds_options = np.array(
+        [z_lower - z_extrap_delta_min, (z_lower + z_upper) / 2., z_upper + z_extrap_delta_min])
+
+    xsamples_extrap_out_of_bounds = []
+    ysamples_extrap_out_of_bounds = []
+    zsamples_extrap_out_of_bounds = []
+    xsamples_extrap_in_bounds = []
+    ysamples_extrap_in_bounds = []
+    zsamples_extrap_in_bounds = []
+    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
+        for j_y in range(len(xsamples_extrap_out_of_bounds_options)):
+            for k_z in range(len(zsamples_extrap_out_of_bounds_options)):
+                if not (i_x not in edge_indicies and j_y not in edge_indicies and k_z not in edge_indicies):
+                    xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
+                    ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
+                    zsamples_extrap_out_of_bounds.append(zsamples_extrap_out_of_bounds_options[k_z])
+                    xsamples_extrap_in_bounds.append(xsamples_extrap_in_bounds_options[i_x])
+                    ysamples_extrap_in_bounds.append(ysamples_extrap_in_bounds_options[j_y])
+                    zsamples_extrap_in_bounds.append(zsamples_extrap_in_bounds_options[k_z])
+    return \
+        np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), np.array(zsamples_extrap_out_of_bounds), \
+        np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds), np.array(zsamples_extrap_in_bounds)
 
 
 def pcolourmesh_corners(input_array):
@@ -141,12 +146,11 @@ if __name__ == '__main__':
     zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
 
     # # Extrapolation x and y values
-    # xsamples_out_of_bounds, ysamples_out_of_bounds, zsamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds,  zsamples_in_bounds = \
-    #     get_extrapolation_input_values(
-    #         X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
-    #         Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
-    #     )
-
+    xsamples_out_of_bounds, ysamples_out_of_bounds, zsamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds,  zsamples_in_bounds = \
+        get_extrapolation_input_values(
+            X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
+            Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
+        )
 
     check_plot = True
     if check_plot:
@@ -200,6 +204,9 @@ if __name__ == '__main__':
                     for k in range(len(zsamples_lower_and_upper)):
                         f_out_lower_and_upper[i, j, k] = interpolator3D(xsamples_lower_and_upper[i], ysamples_lower_and_upper[j], zsamples_lower_and_upper[k])
             f_out_x = f_out[index_xsamples, :, :]
+            print('Test compare raysect cherab:\n', repr(f_plot_x))
+            print('Test compare raysect cherab:\n', repr(f_out_x))
+
             ysamples_mesh, zsamples_mesh = np.meshgrid(ysamples, zsamples)
             im = ax[0].scatter(ysamples_mesh.ravel(), zsamples_mesh.ravel(), c=f_out_x.ravel(), norm=c_norm, cmap='viridis', s=10)
             index_y_print = -1
