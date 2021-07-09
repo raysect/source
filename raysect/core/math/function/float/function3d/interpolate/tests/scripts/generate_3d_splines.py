@@ -163,7 +163,7 @@ if __name__ == '__main__':
         ysamples_lower_and_upper = np.concatenate((np.linspace(Y_LOWER - (Y_UPPER - Y_LOWER)*lower_p, Y_LOWER, n_lower)[:-1], ysamples_lower_and_upper, np.linspace(Y_UPPER, Y_UPPER + (Y_UPPER - Y_LOWER)*lower_p, n_lower)[1:]))
         zsamples_lower_and_upper = np.concatenate((np.linspace(Z_LOWER - (Z_UPPER - Z_LOWER)*lower_p, Z_LOWER, n_lower)[:-1], zsamples_lower_and_upper, np.linspace(Z_UPPER, Z_UPPER + (Z_UPPER - Z_LOWER)*lower_p, n_lower)[1:]))
 
-        interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0)
+        interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'nearest', extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0)
         main_plots_on = True
         mayavi_plots_on = False
         if main_plots_on:

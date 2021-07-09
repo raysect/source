@@ -815,6 +815,49 @@ cdef class _Extrapolator3DNone(_Extrapolator3D):
         )
 
 
+
+cdef class _Extrapolator3DNearest(_Extrapolator3D):
+    """
+    Extrapolator that returns nearest input value.
+
+    :param x: 1D memory view of the spline point x positions.
+    :param y: 1D memory view of the spline point y positions.
+    :param z: 1D memory view of the spline point y positions.
+    :param f: 3D memory view of the function value at spline point x, y, z positions.
+    :param external_interpolator: stored _Interpolator2D object that is being used.
+    """
+
+    ID = 'nearest'
+
+    def __init__(self, double[::1] x, double[::1] y, double[::1] z, double[:, :, ::1] f, _Interpolator3D external_interpolator, double extrapolation_range_x, double extrapolation_range_y, double extrapolation_range_z):
+           super().__init__(x, y, z, f, external_interpolator, extrapolation_range_x, extrapolation_range_y, extrapolation_range_z)
+
+
+    cdef double evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        return self._external_interpolator.evaluate(self._x[edge_x_index], py, pz, index_x, index_y, index_z)
+
+    cdef double evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        return self._external_interpolator.evaluate(px, self._y[edge_y_index], pz, index_x, index_y, index_z)
+
+
+    cdef double evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        return self._external_interpolator.evaluate(px, py, self._z[edge_z_index], index_x, index_y, index_z)
+
+    cdef double evaluate_edge_xy(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        return self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z)
+
+    cdef double evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        return self._external_interpolator.evaluate(self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z)
+
+
+    cdef double evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        return self._external_interpolator.evaluate(px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
+
+
+    cdef double evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        return self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
+
+
 cdef class _Extrapolator3DLinear(_Extrapolator3D):
     """
     Extrapolator that returns linearly extrapolated input value.
@@ -1218,7 +1261,6 @@ cdef class _ArrayDerivative3D:
         z_range = self._z[index_z:index_z + 2]
         f_range = self._f[index_x:index_x + 2, index_y:index_y + 2, index_z:index_z + 2]
         dfdn = 0
-        #TOdo select correct bounds
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
@@ -1349,13 +1391,12 @@ id_to_interpolator = {
 
 id_to_extrapolator = {
     _Extrapolator3DNone.ID: _Extrapolator3DNone,
-    # _Extrapolator3DNearest.ID: _Extrapolator3DNearest,
+    _Extrapolator3DNearest.ID: _Extrapolator3DNearest,
     _Extrapolator3DLinear.ID: _Extrapolator3DLinear,
     # _Extrapolator3DQuadratic.ID: _Extrapolator3DQuadratic
 }
 
 permitted_interpolation_combinations = {
-    _Interpolator3DLinear.ID: [_Extrapolator3DNone.ID, _Extrapolator3DLinear.ID],
-    _Interpolator3DCubic.ID: [_Extrapolator3DNone.ID, _Extrapolator3DLinear.ID]
-    # _Interpolator3DCubic.ID: [_Extrapolator3DNone.ID, _Extrapolator3DNearest.ID, _Extrapolator3DLinear.ID]
+    _Interpolator3DLinear.ID: [_Extrapolator3DNone.ID, _Extrapolator3DNearest.ID, _Extrapolator3DLinear.ID],
+    _Interpolator3DCubic.ID: [_Extrapolator3DNone.ID, _Extrapolator3DNearest.ID, _Extrapolator3DLinear.ID]
 }
