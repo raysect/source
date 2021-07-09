@@ -73,17 +73,6 @@ cdef class Interpolate1DArray(Function1D):
     def __init__(self, object x, object f, str interpolation_type,
                  str extrapolation_type, double extrapolation_range):
 
-
-        self.x = np.array(x, dtype=np.float64)
-        self.x.flags.writeable = False
-        self.f = np.array(f, dtype=np.float64)
-        self.f.flags.writeable = False
-
-        self._x_mv = x
-        self._f_mv = f
-        self._last_index = self.x.shape[0] - 1
-        self._extrapolation_range = extrapolation_range
-
         # extrapolation_range must be greater than or equal to 0.
         if extrapolation_range < 0:
             raise ValueError('extrapolation_range must be greater than or equal to 0.')
@@ -101,6 +90,17 @@ cdef class Interpolate1DArray(Function1D):
         # test monotonicity
         if (np.diff(x) <= 0).any():
             raise ValueError('The x array must be monotonically increasing.')
+
+        self.x = np.array(x, dtype=np.float64, order='c')
+        self.x.flags.writeable = False
+        self.f = np.array(f, dtype=np.float64, order='c')
+        self.f.flags.writeable = False
+
+        self._x_mv = x
+        self._f_mv = f
+        self._last_index = self.x.shape[0] - 1
+        self._extrapolation_range = extrapolation_range
+
 
         # create interpolator per interapolation_type argument
         interpolation_type = interpolation_type.lower()
