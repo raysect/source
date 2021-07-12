@@ -227,7 +227,7 @@ class TestInterpolators3D(unittest.TestCase):
 
         Testing against Cherab cubic interpolators and extrapolators, a numerical inverse in Cherab compared with an
         analytic inverse in the tested interpolators means there is not an agreement to 12 significant figures that the
-        data are saved to, but taken to 6 significant figures. An exception for the linear extrapolator is taken because
+        data are saved to, but taken to 4 significant figures. An exception for the linear extrapolator is taken because
         linear extrapolation would be different to Cherab, because Cherab duplicates the boundary of the spline knot
         array to get derivatives at the array edge, whereas the tested interpolator object calculates the derivative at
         the edge of the spline knot array as special cases for each edge. The linear extrapolation is taken from the
@@ -235,8 +235,8 @@ class TestInterpolators3D(unittest.TestCase):
         test consistency in the maths.
         """
 
-        # All cubic extrapolators and interpolators are accurate at least to 6 significant figures
-        significant_tolerance = 6
+        # All cubic extrapolators and interpolators are accurate at least to 4 significant figures.
+        significant_tolerance = 4
 
         for extrapolator_type in id_to_extrapolator.keys():
             self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False)
@@ -323,8 +323,7 @@ class TestInterpolators3D(unittest.TestCase):
                     if significant_tolerance is None:
                         delta_max = np.abs(self.precalc_interpolation[i, j, k] / np.power(10., PRECISION - 1))
                     else:
-                        order_of_magnitude = np.floor(np.log10(np.abs(self.precalc_interpolation[i, j, k])))
-                        delta_max = np.abs(self.precalc_interpolation[i, j, k] * (- significant_tolerance))
+                        delta_max = np.abs(self.precalc_interpolation[i, j, k] * 10**(-significant_tolerance))
                     self.assertAlmostEqual(
                         self.interpolator(self.xsamples[i], self.ysamples[j], self.zsamples[k]), self.precalc_interpolation[i, j, k],
                         delta=delta_max
