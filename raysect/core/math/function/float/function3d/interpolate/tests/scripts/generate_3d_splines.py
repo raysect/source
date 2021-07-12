@@ -120,7 +120,7 @@ def function_to_spline(x_input, y_input, z_input, factor):
 if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
     big_values = False
-    small_values = False
+    small_values = True
 
     print('Using scipy version', scipy.__version__)
 
@@ -152,6 +152,14 @@ if __name__ == '__main__':
             Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
         )
 
+    interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'linear', extrapolation_range_x=2.0,
+                                         extrapolation_range_y=2.0, extrapolation_range_z=2.0)
+
+    # extrapolation to save
+    f_extrapolation_output = np.zeros((len(xsamples_in_bounds),))
+    for i in range(len(xsamples_in_bounds)):
+        f_extrapolation_output[i] = interpolator3D(xsamples_in_bounds[i], ysamples_in_bounds[i], zsamples_in_bounds[i])
+    print('Output of extrapolation to be saved:\n', repr(f_extrapolation_output))
     check_plot = True
     if check_plot:
         import matplotlib.pyplot as plt
@@ -167,7 +175,6 @@ if __name__ == '__main__':
         ysamples_lower_and_upper = np.concatenate((np.linspace(Y_LOWER - (Y_UPPER - Y_LOWER)*lower_p, Y_LOWER, n_lower)[:-1], ysamples_lower_and_upper, np.linspace(Y_UPPER, Y_UPPER + (Y_UPPER - Y_LOWER)*lower_p, n_lower)[1:]))
         zsamples_lower_and_upper = np.concatenate((np.linspace(Z_LOWER - (Z_UPPER - Z_LOWER)*lower_p, Z_LOWER, n_lower)[:-1], zsamples_lower_and_upper, np.linspace(Z_UPPER, Z_UPPER + (Z_UPPER - Z_LOWER)*lower_p, n_lower)[1:]))
 
-        interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'nearest', extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0)
         main_plots_on = True
         mayavi_plots_on = False
         if main_plots_on:
@@ -198,14 +205,14 @@ if __name__ == '__main__':
                 for j in range(len(ysamples)):
                     for k in range(len(zsamples)):
                         f_out[i, j, k] = interpolator3D(xsamples[i], ysamples[j], zsamples[k])
+            print('Test interpolation:\n', repr(f_out))
+
             f_out_lower_and_upper = np.zeros((len(xsamples_lower_and_upper), len(ysamples_lower_and_upper), len(zsamples_lower_and_upper)))
             for i in range(len(xsamples_lower_and_upper)):
                 for j in range(len(ysamples_lower_and_upper)):
                     for k in range(len(zsamples_lower_and_upper)):
                         f_out_lower_and_upper[i, j, k] = interpolator3D(xsamples_lower_and_upper[i], ysamples_lower_and_upper[j], zsamples_lower_and_upper[k])
             f_out_x = f_out[index_xsamples, :, :]
-            print('Test compare raysect cherab:\n', repr(f_plot_x))
-            print('Test compare raysect cherab:\n', repr(f_out_x))
 
             ysamples_mesh, zsamples_mesh = np.meshgrid(ysamples, zsamples)
             im = ax[0].scatter(ysamples_mesh.ravel(), zsamples_mesh.ravel(), c=f_out_x.ravel(), norm=c_norm, cmap='viridis', s=10)
@@ -223,7 +230,6 @@ if __name__ == '__main__':
             im2 = ax[1].pcolormesh(y_corners_xsamples, z_corners_xsamples, f_out_x, norm=c_norm, cmap='viridis')
 
             ax[1].set_aspect('equal')
-            print(x_in[index_x_in] == xsamples_lower_and_upper)
             if not (x_in[index_x_in] == xsamples_lower_and_upper).any():
                 raise ValueError(
                     f'To compare a slice, n_lower_upper={n_lower}-1, must be divisible by NB_X={NB_X}-1, NB_Y={NB_Y}-1, NB_Z={NB_Z}-1'
