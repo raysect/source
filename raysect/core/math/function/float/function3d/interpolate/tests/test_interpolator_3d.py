@@ -40,7 +40,7 @@ from raysect.core.math.function.float.function3d.interpolate.tests.scripts.gener
     NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
     Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, get_extrapolation_input_values, Z_LOWER, Z_UPPER, \
     NB_ZSAMPLES, NB_Z, Z_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MIN
-from raysect.core.math.function.float.function3d.interpolate.tests.data_store.interpololator3d_test_data import \
+from raysect.core.math.function.float.function3d.interpolate.tests.data_store.interpolator3d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 
 
@@ -54,7 +54,7 @@ class TestInterpolators3D(unittest.TestCase):
         # self.y, self.z to create self.data = f(self.x,self.y,self.z), where self.x, self.y ,self.z are linearly
         # spaced between X_LOWER and X_UPPER ...
 
-        #: x, y and z values used to obtain self.data
+        #: x, y and z values used to obtain self.data.
         x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
         y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
         z_in = np.linspace(Z_LOWER, Z_UPPER, NB_Z)
@@ -66,8 +66,8 @@ class TestInterpolators3D(unittest.TestCase):
         self.test_loaded_big_values = TestInterpolatorLoadBigValues()
         self.test_loaded_small_values = TestInterpolatorLoadSmallValues()
 
-        #: precalculated result of sampling self.data on self.xsamples, self.ysamples, self.zsamples
-        #   should be set in interpolator specific setup function.
+        #: precalculated result of sampling self.data on self.xsamples, self.ysamples, self.zsamples.
+        #   should be set in interpolator specific setup function..
         self.precalc_interpolation = None
 
         #: x, y, z values on which self.precalc_interpolation was samples on.
@@ -75,7 +75,7 @@ class TestInterpolators3D(unittest.TestCase):
         self.ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
         self.zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
 
-        # Extrapolation x, y and z values
+        # Extrapolation x, y and z values.
         self.xsamples_out_of_bounds, self.ysamples_out_of_bounds, self.zsamples_out_of_bounds, self.xsamples_in_bounds,\
             self.ysamples_in_bounds, self.zsamples_in_bounds = get_extrapolation_input_values(
                 X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX,
@@ -83,10 +83,10 @@ class TestInterpolators3D(unittest.TestCase):
                 Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
             )
 
-        #: set precalculated expected extrapolation results  Set in setup_ method
+        #: set precalculated expected extrapolation results  Set in setup_ method.
         self.precalc_extrapolation = None
 
-        #: the interpolator object that is being tested. Set in setup_ method
+        #: the interpolator object that is being tested. Set in setup_ method.
         self.interpolator: Interpolator3DArray = None
 
     def setup_linear(
@@ -140,8 +140,8 @@ class TestInterpolators3D(unittest.TestCase):
         :param small_values: For loading and testing small value saved data.
         """
 
-        # set precalculated expected interpolation results
-        # this is the result of sampling self.data on self.xsamples
+        # Set precalculated expected interpolation results.
+        # This is the result of sampling self.data on self.xsamples, self.ysamples, self.zsamples.
         if big_values:
             self.value_storage_obj = self.test_loaded_big_values
         elif small_values:
@@ -154,7 +154,7 @@ class TestInterpolators3D(unittest.TestCase):
         self.precalc_interpolation = self.value_storage_obj.precalc_interpolation
 
         self.setup_extrpolation_type(extrapolator_type)
-        # set interpolator
+        # Set the interpolator.
         self.interpolator = Interpolator3DArray(
             self.x, self.y, self.z, self.data, 'cubic', extrapolator_type, extrapolation_range, extrapolation_range,
             extrapolation_range
@@ -193,9 +193,11 @@ class TestInterpolators3D(unittest.TestCase):
         """
         Testing against linear interpolator objects for interpolation and extrapolation agreement.
 
-        Testing against Cherab linear interpolators and extrapolators matches.
+        Testing against Cherab linear interpolators with nearest neighbour extrapolators for agreement. For linear
+        extrapolation, the derivatives at the edges of the spline knots are calculated differently to Cherab, so
+        the linear extrapolation is saved (on 12/07/2021) to be compared to future versions for changes.
         """
-        no_test_for_extrapolator = ['linear']
+        no_test_for_extrapolator = []
         for extrapolator_type in id_to_extrapolator.keys():
             self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False)
             if extrapolator_type != 'none':
@@ -227,12 +229,12 @@ class TestInterpolators3D(unittest.TestCase):
 
         Testing against Cherab cubic interpolators and extrapolators, a numerical inverse in Cherab compared with an
         analytic inverse in the tested interpolators means there is not an agreement to 12 significant figures that the
-        data are saved to, but taken to 4 significant figures. An exception for the linear extrapolator is taken because
-        linear extrapolation would be different to Cherab, because Cherab duplicates the boundary of the spline knot
-        array to get derivatives at the array edge, whereas the tested interpolator object calculates the derivative at
-        the edge of the spline knot array as special cases for each edge. The linear extrapolation is taken from the
-        current version of interpolators (12/07/2021) and used to test against unepected changes rather than to
-        test consistency in the maths.
+        data are saved to, but taken to 4 significant figures. An exception for the linear extrapolator is made because
+        linear extrapolation is calculated differently to Cherab, because Cherab duplicates the boundary of the spline
+        knot array to get derivatives at the array edge, whereas the tested interpolator object calculates the
+        derivative at the edge of the spline knot array as special cases for each edge. The linear extrapolation is
+        taken from the current version of interpolators (12/07/2021) and used to test against unexpected changes rather
+        than to test consistency in the maths.
         """
 
         # All cubic extrapolators and interpolators are accurate at least to 4 significant figures.
@@ -325,8 +327,8 @@ class TestInterpolators3D(unittest.TestCase):
                     else:
                         delta_max = np.abs(self.precalc_interpolation[i, j, k] * 10**(-significant_tolerance))
                     self.assertAlmostEqual(
-                        self.interpolator(self.xsamples[i], self.ysamples[j], self.zsamples[k]), self.precalc_interpolation[i, j, k],
-                        delta=delta_max
+                        self.interpolator(self.xsamples[i], self.ysamples[j], self.zsamples[k]),
+                        self.precalc_interpolation[i, j, k], delta=delta_max
                     )
 
     def initialise_tests_on_interpolators(self, x_values, y_values, z_values, f_values):
@@ -401,7 +403,7 @@ class TestInterpolators3D(unittest.TestCase):
         # Test array length 1, Arrays are too short.
         self.run_incorrect_array_length_combination()
 
-        # Incorrect dimension (1D data)
+        # Incorrect dimensional data supplied.
         self.run_incorrect_array_dimension_combination()
 
     def run_incorrect_array_length_combination(self):
@@ -421,27 +423,33 @@ class TestInterpolators3D(unittest.TestCase):
         for i in range(len(x)):
             for j in range(len(y)):
                 for k in range(len(z)):
-                    for l in range(len(f)):
-                        if not (i == 0 and j == 0 and k == 0 and l == 0):
-                            self.initialise_tests_on_interpolators(x[i], y[j], z[k], f[l])
+                    for i2 in range(len(f)):
+                        if not (i == 0 and j == 0 and k == 0 and i2 == 0):
+                            self.initialise_tests_on_interpolators(x[i], y[j], z[k], f[i2])
 
     def run_incorrect_array_dimension_combination(self):
         """
         Make array inputs have higher dimensions or lower dimensions. Then check for a ValueError.
         """
 
-        x = [np.copy(self.x), np.array(np.concatenate((np.copy(self.x)[:, np.newaxis], np.copy(self.x)[:, np.newaxis]), axis=1)), np.array(np.copy(self.x)[0])]
-        y = [np.copy(self.y), np.array(np.concatenate((np.copy(self.y)[:, np.newaxis], np.copy(self.y)[:, np.newaxis]), axis=1)), np.array(np.copy(self.y)[0])]
-        z = [np.copy(self.z), np.array(np.concatenate((np.copy(self.z)[:, np.newaxis], np.copy(self.z)[:, np.newaxis]), axis=1)), np.array(np.copy(self.z)[0])]
+        x = [np.copy(self.x),
+             np.array(np.concatenate((np.copy(self.x)[:, np.newaxis], np.copy(self.x)[:, np.newaxis]), axis=1)),
+             np.array(np.copy(self.x)[0])]
+        y = [np.copy(self.y),
+             np.array(np.concatenate((np.copy(self.y)[:, np.newaxis], np.copy(self.y)[:, np.newaxis]), axis=1)),
+             np.array(np.copy(self.y)[0])]
+        z = [np.copy(self.z),
+             np.array(np.concatenate((np.copy(self.z)[:, np.newaxis], np.copy(self.z)[:, np.newaxis]), axis=1)),
+             np.array(np.copy(self.z)[0])]
         f = [
             np.copy(self.test_loaded_values.data), np.array(np.copy(self.test_loaded_values.data)[0, 0, 0]),
-            np.array(np.concatenate((np.copy(self.test_loaded_values.data)[:, np.newaxis],
-                                     np.copy(self.test_loaded_values.data)[:, np.newaxis]), axis=1))
+            np.array(np.concatenate((np.copy(self.test_loaded_values.data)[:, :, :, np.newaxis],
+                                     np.copy(self.test_loaded_values.data)[:, :, :, np.newaxis]), axis=3))
         ]
 
         for i in range(len(x)):
             for j in range(len(y)):
                 for k in range(len(z)):
-                    for l in range(len(f)):
-                        if not (i == 0 and j == 0 and k == 0 and l == 0):
-                            self.initialise_tests_on_interpolators(x[i], y[j], z[k], f[l])
+                    for i2 in range(len(f)):
+                        if not (i == 0 and j == 0 and k == 0 and i2 == 0):
+                            self.initialise_tests_on_interpolators(x[i], y[j], z[k], f[i2])

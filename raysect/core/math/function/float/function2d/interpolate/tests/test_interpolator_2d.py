@@ -36,18 +36,21 @@ import unittest
 import numpy as np
 from raysect.core.math.function.float.function2d.interpolate.interpolator2darray import Interpolator2DArray, \
     id_to_extrapolator, id_to_interpolator
-from raysect.core.math.function.float.function2d.interpolate.tests.scripts.generate_2d_splines import X_LOWER, X_UPPER, \
+from raysect.core.math.function.float.function2d.interpolate.tests.scripts.generate_2d_splines import X_LOWER, X_UPPER,\
     NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
     Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, get_extrapolation_input_values
-from raysect.core.math.function.float.function2d.interpolate.tests.data_store.interpololator2d_test_data import \
+from raysect.core.math.function.float.function2d.interpolate.tests.data_store.interpolator2d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 
 
 class TestInterpolators2D(unittest.TestCase):
+    """
+    Testing class for 2D interpolators and extrapolators.
+    """
     def setUp(self) -> None:
 
         # self.data is a precalculated input values for testing. It's the result of applying function f on self.x
-        # as in self.data = f(self.x), where self.x is linearly spaced between X_LOWER and X_UPPER
+        # as in self.data = f(self.x, self.y), where self.x, self.y are linearly spaced between X_LOWER and X_UPPER ...
 
         #: x and y values used to obtain self.data
         x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
@@ -59,26 +62,26 @@ class TestInterpolators2D(unittest.TestCase):
         self.test_loaded_big_values = TestInterpolatorLoadBigValues()
         self.test_loaded_small_values = TestInterpolatorLoadSmallValues()
 
-        #: precalculated result of sampling self.data on self.xsamples
+        #: precalculated result of sampling self.data on self.xsamples, self.ysamples.
         #   should be set in interpolator specific setup function.
         self.precalc_interpolation = None
 
-        #: x values on which self.precalc_interpolation was samples on
+        #: x values on which self.precalc_interpolation was samples on.
         self.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
         self.ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
 
-        #: x values on which self.precalc_extrapolation_ arrays were sampled on
-        # Extrapolation x and y values
+        #: x, y values on which self.precalc_extrapolation_ arrays were sampled on.
+        # Extrapolation x and y values.
         self.xsamples_out_of_bounds, self.ysamples_out_of_bounds, self.xsamples_in_bounds, self.ysamples_in_bounds = \
             get_extrapolation_input_values(
                 X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
                 Y_EXTRAP_DELTA_MIN
             )
 
-        #: set precalculated expected extrapolation results  Set in setup_ method
+        #: set precalculated expected extrapolation results  Set in setup_ method.
         self.precalc_extrapolation = None
 
-        #: the interpolator object that is being tested. Set in setup_ method
+        #: The interpolator object that is being tested. Set in setup_ method.
         self.interpolator: Interpolator2DArray = None
 
     def setup_linear(
@@ -89,17 +92,16 @@ class TestInterpolators2D(unittest.TestCase):
 
         Once executed, self.precalc_NNN members variables will contain
         precalculated extrapolated / interpolated data. self.interpolator
-        will hold Interpolate2DArray object that is being tested. Precalculated interpolation using
-        scipy.interpolate.interp1d(kind=linear), generated using scipy version 1.6.3
+        will hold Interpolate2DArray object that is being tested.
 
-        :param extrapolator_type: type of extrapolator 'none', 'linear' or 'cubic'
-        :param extrapolation_range: padding around interpolation range where extrapolation is possible
-        :param big_values: For loading and testing big value saved data
-        :param small_values: For loading and testing small value saved data
+        :param extrapolator_type: type of extrapolator 'none' or 'linear'.
+        :param extrapolation_range: padding around interpolation range where extrapolation is possible.
+        :param big_values: For loading and testing big value saved data.
+        :param small_values: For loading and testing small value saved data.
         """
 
-        # set precalculated expected interpolation results  using scipy.interpolate.interp1d(kind=linear)
-        # this is the result of sampling self.data on self.xsamples
+        # Set precalculated expected interpolation results  using scipy.interpolate.interp1d(kind=linear).
+        # This is the result of sampling self.data on self.xsamples, self.ysamples.
 
         if big_values:
             self.value_storage_obj = self.test_loaded_big_values
@@ -111,11 +113,11 @@ class TestInterpolators2D(unittest.TestCase):
         self.value_storage_obj.setup_linear()
         self.data = self.value_storage_obj.data
         self.precalc_interpolation = self.value_storage_obj.precalc_interpolation
-        # set precalculated expected extrapolation results
-        # this is the result of the type of extrapolation on self.xsamples_extrap
+        # Set precalculated expected extrapolation results.
+        # This is the result of the type of extrapolation on self.xsamples_in_bounds, self.ysamples_in_bounds.
         self.setup_extrpolation_type(extrapolator_type)
 
-        # set interpolator
+        # Set the interpolator.
         self.interpolator = Interpolator2DArray(
             self.x, self.y, self.data, 'linear', extrapolator_type, extrapolation_range, extrapolation_range
         )
@@ -129,9 +131,7 @@ class TestInterpolators2D(unittest.TestCase):
         precalculated extrapolated / interpolated data. self.interpolator
         will hold Interpolate2DArray object that is being tested.
 
-        WARNING: Generated using a working version to check for differences between versions. Not a mathematical test
-
-        :param extrapolator_type: type of extrapolator 'none', 'linear' or 'cubic'.
+        :param extrapolator_type: type of extrapolator 'none' or 'linear'.
         :param extrapolation_range: padding around interpolation range where extrapolation is possible.
         :param big_values: For loading and testing big value saved data.
         :param small_values: For loading and testing small value saved data.
@@ -157,6 +157,9 @@ class TestInterpolators2D(unittest.TestCase):
         )
 
     def setup_extrpolation_type(self, extrapolator_type: str):
+        """
+        Moving data from the selected data class to the extrapolation variable to be tested.
+        """
         if extrapolator_type == 'linear':
             self.precalc_extrapolation = np.copy(self.value_storage_obj.precalc_extrapolation_linear)
         elif extrapolator_type == 'nearest':
@@ -171,6 +174,10 @@ class TestInterpolators2D(unittest.TestCase):
             )
 
     def test_extrapolation_none(self):
+        """
+        Testing that extrapolator_type 'none' returns a ValueError rather than data when attempting to extrapolate
+        within its extrapolation range.
+        """
         self.setup_linear('none', EXTRAPOLATION_RANGE, big_values=False, small_values=False)
         for i in range(len(self.xsamples_in_bounds)):
             self.assertRaises(
@@ -178,18 +185,19 @@ class TestInterpolators2D(unittest.TestCase):
             )
 
     def test_linear_interpolation_extrapolators(self):
-        no_test_for_extrapolator = ['linear']
+        """
+        Testing against linear interpolator objects for interpolation and extrapolation agreement.
+
+        Testing against interp2d linear interpolation with kind=none argument for nearest extrapolation from
+        linear interpolation. For linear extrapolation, no equivalent function was found, so the linear extrapolation
+        was saved (on 12/07/2021) to be compared to future versions for changes.
+        """
+        no_test_for_extrapolator = []
         for extrapolator_type in id_to_extrapolator.keys():
             self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False)
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    if extrapolator_type == 'nearest':
-                        gradient_continuity = False
-                    else:
-                        gradient_continuity = True
-                    self.run_general_extrapolation_tests(
-                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
-                    )
+                    self.run_general_extrapolation_tests(extrapolator_type=extrapolator_type)
             self.run_general_interpolation_tests()
 
         # Tests for big values
@@ -197,13 +205,7 @@ class TestInterpolators2D(unittest.TestCase):
             self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False)
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    if extrapolator_type == 'nearest':
-                        gradient_continuity = False
-                    else:
-                        gradient_continuity = True
-                    self.run_general_extrapolation_tests(
-                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
-                    )
+                    self.run_general_extrapolation_tests(extrapolator_type=extrapolator_type)
             self.run_general_interpolation_tests()
 
         # Tests for small values
@@ -211,64 +213,73 @@ class TestInterpolators2D(unittest.TestCase):
             self.setup_linear(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True)
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    if extrapolator_type == 'nearest':
-                        gradient_continuity = False
-                    else:
-                        gradient_continuity = True
-                    self.run_general_extrapolation_tests(
-                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
-                    )
+                    self.run_general_extrapolation_tests(extrapolator_type=extrapolator_type)
 
             self.run_general_interpolation_tests()
 
     def test_cubic_interpolation_extrapolators(self):
         """
-        Testing against a previous version of cubic interpolators to highlight changes.
+        Testing against cubic interpolator objects for interpolation and extrapolation agreement.
+
+        Testing against Cherab cubic interpolators and extrapolators, a numerical inverse in Cherab compared with an
+        analytic inverse in the tested interpolators means there is not an agreement to 12 significant figures that the
+        data are saved to, but taken to 7 significant figures. An exception for the linear extrapolator is taken because
+        linear extrapolation is calculated differently to Cherab, because Cherab duplicates the boundary of the spline
+        knot array to get derivatives at the array edge, whereas the tested interpolator object calculates the
+        derivative at the edge of the spline knot array as special cases for each edge. The linear extrapolation is
+        taken from the current version of interpolators (12/07/2021) and used to test against unexpected changes rather
+        than to test consistency in the maths.
         """
-        test_on = True
-        # Temporarily turn off cubic 2D tests
-        if test_on:
-            for extrapolator_type in id_to_extrapolator.keys():
-                self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False)
-                if extrapolator_type != 'none':
-                    if extrapolator_type == 'nearest':
-                        gradient_continuity = False
-                    else:
-                        gradient_continuity = True
-                    self.run_general_extrapolation_tests(
-                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
-                    )
-                self.run_general_interpolation_tests()
+        # All cubic extrapolators and interpolators are accurate at least to 7 significant figures.
+        significant_tolerance = 7
 
-            # Tests for big values
-            for extrapolator_type in id_to_extrapolator.keys():
-                self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False)
-                if extrapolator_type != 'none':
-                    if extrapolator_type == 'nearest':
-                        gradient_continuity = False
-                    else:
-                        gradient_continuity = True
-                    self.run_general_extrapolation_tests(
-                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
-                    )
-                self.run_general_interpolation_tests()
+        for extrapolator_type in id_to_extrapolator.keys():
+            self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False)
+            if extrapolator_type != 'none':
+                if extrapolator_type == 'linear':
+                    significant_tolerance_extrapolation = None
+                else:
+                    significant_tolerance_extrapolation = significant_tolerance
+                self.run_general_extrapolation_tests(
+                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation
+                )
+            self.run_general_interpolation_tests(significant_tolerance=significant_tolerance)
 
-            # Tests for small values
-            for extrapolator_type in id_to_extrapolator.keys():
-                self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True)
-                if extrapolator_type != 'none':
-                    if extrapolator_type == 'nearest':
-                        gradient_continuity = False
-                    else:
-                        gradient_continuity = True
-                    self.run_general_extrapolation_tests(
-                        gradient_continuity=gradient_continuity, extrapolator_type=extrapolator_type
-                    )
+        # Tests for big values
+        for extrapolator_type in id_to_extrapolator.keys():
+            self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False)
+            if extrapolator_type != 'none':
+                if extrapolator_type == 'linear':
+                    significant_tolerance_extrapolation = None
+                else:
+                    significant_tolerance_extrapolation = significant_tolerance
+                self.run_general_extrapolation_tests(
+                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation
+                )
+            self.run_general_interpolation_tests(significant_tolerance=significant_tolerance)
 
-                self.run_general_interpolation_tests()
+        # Tests for small values
+        for extrapolator_type in id_to_extrapolator.keys():
+            self.setup_cubic(extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True)
+            if extrapolator_type != 'none':
+                if extrapolator_type == 'linear':
+                    significant_tolerance_extrapolation = None
+                else:
+                    significant_tolerance_extrapolation = significant_tolerance
+                self.run_general_extrapolation_tests(
+                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation
+                )
 
-    def run_general_extrapolation_tests(self, gradient_continuity=True, extrapolator_type='', significant_tolerance=None):
-        # Test extrapolator out of range, there should be an error raised
+            self.run_general_interpolation_tests(significant_tolerance=significant_tolerance)
+
+    def run_general_extrapolation_tests(self, extrapolator_type='', significant_tolerance=None):
+        """
+        Run general tests for extrapolators.
+
+        Only excluding extrapolator_type 'none', test matching extrapolation inside extrapolation ranges, and raises a
+        ValueError outside of the extrapolation ranges.
+        """
+        # Test extrapolator out of range, there should be an error raised.
         for i in range(len(self.xsamples_out_of_bounds)):
             dict_kwargs_extrapolator_call = {
                 'x': self.xsamples_out_of_bounds[i], 'y': self.ysamples_out_of_bounds[i]
@@ -279,7 +290,10 @@ class TestInterpolators2D(unittest.TestCase):
 
         # Test extrapolation inside extrapolation range matches the predefined values
         for i in range(len(self.xsamples_in_bounds)):
-            delta_max = np.abs(self.precalc_extrapolation[i]/np.power(10., PRECISION - 1))
+            if significant_tolerance is None:
+                delta_max = np.abs(self.precalc_extrapolation[i]/np.power(10., PRECISION - 1))
+            else:
+                delta_max = np.abs(self.precalc_extrapolation[i] * 10**(-significant_tolerance))
             self.assertAlmostEqual(
                 self.interpolator(
                     self.xsamples_in_bounds[i], self.ysamples_in_bounds[i]), self.precalc_extrapolation[i],
@@ -287,28 +301,26 @@ class TestInterpolators2D(unittest.TestCase):
                                                                          f'{self.ysamples_in_bounds[i]}'
             )
 
-        # Turned off gradient testing for now
-        test_on = False
-        if test_on:
-            # Test gradient continuity between interpolation and extrapolation
-            delta_max_lower = np.abs(self.precalc_interpolation[0] / np.power(10., PRECISION - 1))
-            delta_max_upper = np.abs(self.precalc_interpolation[-1] / np.power(10., PRECISION - 1))
-            if gradient_continuity:
-                gradients_lower, gradients_upper = self.interpolator.test_edge_gradients()
-                self.assertAlmostEqual(gradients_lower[0], gradients_lower[1], delta=delta_max_lower)
-                self.assertAlmostEqual(gradients_upper[0], gradients_upper[1], delta=delta_max_upper)
-
     def run_general_interpolation_tests(self, significant_tolerance=None):
+        """
+        Run general tests for interpolators to match the test data.
+        """
         # Test interpolation against xsample
         for i in range(len(self.xsamples)):
             for j in range(len(self.ysamples)):
-                delta_max = np.abs(self.precalc_interpolation[i, j] / np.power(10., PRECISION - 1))
+                if significant_tolerance is None:
+                    delta_max = np.abs(self.precalc_interpolation[i, j] / np.power(10., PRECISION - 1))
+                else:
+                    delta_max = np.abs(self.precalc_interpolation[i, j] * 10 ** (-significant_tolerance))
                 self.assertAlmostEqual(
                     self.interpolator(self.xsamples[i], self.ysamples[j]), self.precalc_interpolation[i, j],
                     delta=delta_max
                 )
 
     def initialise_tests_on_interpolators(self, x_values, y_values, f_values):
+        """
+        Method to create a new interpolator with different x, y, z, f values to test input failures.
+        """
         # Test for all combinations
         for extrapolator_type in id_to_extrapolator.keys():
             for interpolator_type in id_to_interpolator.keys():
@@ -319,6 +331,12 @@ class TestInterpolators2D(unittest.TestCase):
                 self.assertRaises(ValueError, Interpolator2DArray, **dict_kwargs_interpolators)
 
     def test_initialisation_errors(self):
+        """
+        Test for bad data being supplied to the interpolators
+
+        Test x, y, z monotonically increases, test if an x, y, z is repeated, test if arrays are different lengths and
+
+        """
         # monotonicity x
         x_wrong = np.copy(self.x)
         x_wrong[0] = self.x[1]
@@ -351,19 +369,48 @@ class TestInterpolators2D(unittest.TestCase):
         y_wrong = y_wrong[:-1]
         self.initialise_tests_on_interpolators(self.x, y_wrong, self.test_loaded_values.data)
 
-        # Test array length 1, Arrays are too short
-        x_wrong = np.copy(self.x)
-        y_wrong = np.copy(self.y)
-        f_wrong = np.copy(self.test_loaded_values.data)
-        x_wrong = x_wrong[0]
-        y_wrong = y_wrong[0]
-        f_wrong = f_wrong[0, 0]
-        self.initialise_tests_on_interpolators(x_wrong, y_wrong, f_wrong)
+        # Test array length 1, Arrays are too short.
+        self.run_incorrect_array_length_combination()
 
-        # Incorrect dimension (1D data)
-        x_wrong = np.array(np.concatenate((np.copy(self.x)[:, np.newaxis], np.copy(self.x)[:, np.newaxis]), axis=1))
-        f_wrong = np.array(np.concatenate((
-            np.copy(self.test_loaded_values.data)[:, np.newaxis], np.copy(self.test_loaded_values.data)[:, np.newaxis]
-        ), axis=1)
-        )
-        self.initialise_tests_on_interpolators(x_wrong, y_wrong, f_wrong)
+        # Incorrect dimensional data supplied.
+        self.run_incorrect_array_dimension_combination()
+
+    def run_incorrect_array_length_combination(self):
+        """
+        Make array inputs have length 1 (too short) in 1 or more dimensions. Then check for a ValueError.
+        """
+
+        x = [np.copy(self.x), np.copy(self.x)[0]]
+        y = [np.copy(self.y), np.copy(self.y)[0]]
+        f = [
+            np.copy(self.test_loaded_values.data), np.copy(self.test_loaded_values.data)[0, 0],
+            np.copy(self.test_loaded_values.data)[0, :], np.copy(self.test_loaded_values.data)[:, 0]
+        ]
+        for i in range(len(x)):
+            for j in range(len(y)):
+                for k in range(len(f)):
+                    if not (i == 0 and j == 0 and k == 0):
+                        self.initialise_tests_on_interpolators(x[i], y[j], f[k])
+
+    def run_incorrect_array_dimension_combination(self):
+        """
+        Make array inputs have higher dimensions or lower dimensions. Then check for a ValueError.
+        """
+
+        x = [np.copy(self.x),
+             np.array(np.concatenate((np.copy(self.x)[:, np.newaxis], np.copy(self.x)[:, np.newaxis]), axis=1)),
+             np.array(np.copy(self.x)[0])]
+        y = [np.copy(self.y),
+             np.array(np.concatenate((np.copy(self.y)[:, np.newaxis], np.copy(self.y)[:, np.newaxis]), axis=1)),
+             np.array(np.copy(self.y)[0])]
+        f = [
+            np.copy(self.test_loaded_values.data), np.array(np.copy(self.test_loaded_values.data)[0, 0]),
+            np.array(np.concatenate((np.copy(self.test_loaded_values.data)[:, :, np.newaxis],
+                                     np.copy(self.test_loaded_values.data)[:, :, np.newaxis]), axis=2))
+        ]
+
+        for i in range(len(x)):
+            for j in range(len(y)):
+                for k in range(len(f)):
+                    if not (i == 0 and j == 0 and k == 0):
+                        self.initialise_tests_on_interpolators(x[i], y[j], f[k])
