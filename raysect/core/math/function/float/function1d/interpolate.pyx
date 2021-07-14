@@ -149,24 +149,6 @@ cdef class Interpolate1DArray(Function1D):
         """
         return np.min(self._x_mv), np.max(self._x_mv)
 
-    def test_edge_gradients(self):
-        """
-        Return the derivative at the edge spline knots for the extrapolator and interpolator objects
-        to check the first derivative continuity.
-        """
-        x_01 = np.copy(self._extrapolator._x[0])
-        x_02 = np.copy(self._interpolator._x[0])
-        x_n1 = np.copy(self._extrapolator._x[self._last_index])
-        x_n2 = np.copy(self._interpolator._x[self._last_index])
-
-        extrapolator_lower_gradient = self._extrapolator._analytic_gradient(x_01, -1, 1)
-        interpolator_lower_gradient = self._interpolator._analytic_gradient(x_02, 0, 1)
-        extrapolator_upper_gradient = self._extrapolator._analytic_gradient(x_n1, self._last_index, 1)
-        interpolator_upper_gradient = self._interpolator._analytic_gradient(x_n2, self._last_index - 1, 1)
-
-        return np.array([extrapolator_lower_gradient, interpolator_lower_gradient]), \
-               np.array([extrapolator_upper_gradient, interpolator_upper_gradient])
-
 
 cdef class _Interpolator1D:
     """
@@ -567,7 +549,7 @@ cdef class _ArrayDerivative1D:
             dfdn = self._evaluate_x(index_x, derivative_order_x)
 
         return dfdn
-
+    #todo should these have an _?
     cdef double _evaluate_edge_x(self, int index_x, int derivative_order_x):
         """
         Calculate the 1st derivative on an unevenly spaced array as a 1st order approximation.
