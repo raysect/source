@@ -274,11 +274,10 @@ class TestInterpolators1D(unittest.TestCase):
         # Test for all combinations
         for extrapolator_type in id_to_extrapolator.keys():
             for interpolator_type in id_to_interpolator.keys():
-                dict_kwargs_interpolators = {
-                    'x': x_values, 'f': f_values, 'interpolation_type': interpolator_type,
-                    'extrapolation_type': extrapolator_type, 'extrapolation_range': 2.0
-                }
-                self.assertRaises(ValueError, Interpolate1DArray, **dict_kwargs_interpolators)
+                self.assertRaises(
+                    ValueError, Interpolate1DArray, x=x_values, f=f_values,
+                    interpolation_type=interpolator_type, extrapolation_type=extrapolator_type, extrapolation_range=2.0
+                )
 
     def test_initialisation_errors(self):
         # monotonicity

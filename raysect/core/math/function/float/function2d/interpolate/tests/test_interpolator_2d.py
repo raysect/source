@@ -172,7 +172,7 @@ class TestInterpolators2D(unittest.TestCase):
         )
         for i in range(len(self.xsamples_in_bounds)):
             self.assertRaises(
-                ValueError, interpolator, **{'x': self.xsamples_in_bounds[i], 'y': self.ysamples_in_bounds[i]}
+                ValueError, interpolator, x=self.xsamples_in_bounds[i], y=self.ysamples_in_bounds[i]
             )
 
     def test_linear_interpolation_extrapolators(self):
@@ -287,11 +287,8 @@ class TestInterpolators2D(unittest.TestCase):
         """
         # Test extrapolator out of range, there should be an error raised.
         for i in range(len(self.xsamples_out_of_bounds)):
-            dict_kwargs_extrapolator_call = {
-                'x': self.xsamples_out_of_bounds[i], 'y': self.ysamples_out_of_bounds[i]
-            }
             self.assertRaises(
-                ValueError, interpolator, **dict_kwargs_extrapolator_call
+                ValueError, interpolator, x=self.xsamples_out_of_bounds[i], y=self.ysamples_out_of_bounds[i]
             )
 
         # Test extrapolation inside extrapolation range matches the predefined values
@@ -330,11 +327,11 @@ class TestInterpolators2D(unittest.TestCase):
         # Test for all combinations
         for extrapolator_type in id_to_extrapolator.keys():
             for interpolator_type in id_to_interpolator.keys():
-                dict_kwargs_interpolators = {
-                    'x': x_values, 'y': y_values, 'f': f_values, 'interpolation_type': interpolator_type,
-                    'extrapolation_type': extrapolator_type, 'extrapolation_range_x': 2.0, 'extrapolation_range_y': 2.0
-                }
-                self.assertRaises(ValueError, Interpolator2DArray, **dict_kwargs_interpolators)
+                self.assertRaises(
+                    ValueError, Interpolator2DArray, x=x_values, y=y_values, f=f_values,
+                    interpolation_type=interpolator_type, extrapolation_type=extrapolator_type,
+                    extrapolation_range_x=2.0, extrapolation_range_y=2.0
+                )
 
     def test_initialisation_errors(self):
         """
