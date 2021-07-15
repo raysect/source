@@ -38,7 +38,8 @@ from raysect.core.math.function.float.function2d.interpolate.interpolator2darray
     id_to_extrapolator, id_to_interpolator
 from raysect.core.math.function.float.function2d.interpolate.tests.scripts.generate_2d_splines import X_LOWER, X_UPPER,\
     NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
-    Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, get_extrapolation_input_values
+    Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, extrapolation_out_of_bound_points, \
+    large_extrapolation_range, N_EXTRAPOLATION
 from raysect.core.math.function.float.function2d.interpolate.tests.data_store.interpolator2d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 
@@ -68,11 +69,13 @@ class TestInterpolators2D(unittest.TestCase):
 
         #: x, y values on which extrapolation_data arrays were sampled on.
         # Extrapolation x and y values.
-        cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds, cls.xsamples_in_bounds, cls.ysamples_in_bounds = \
-            get_extrapolation_input_values(
+        cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds = extrapolation_out_of_bound_points(
                 X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
                 Y_EXTRAP_DELTA_MIN
-            )
+        )
+        cls.xsamples_in_bounds, cls.ysamples_in_bounds = large_extrapolation_range(
+            cls.xsamples, cls.ysamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -355,7 +358,7 @@ class TestInterpolators2D(unittest.TestCase):
         """
         Test for bad data being supplied to the interpolators
 
-        Test x, y monotonically increases, test if an x, y is repeated, test if arrays are different lengths and
+        Test x, y monotonically increases, test if an x, y is repeated, test if arrays are different lengths.
 
         """
         # monotonicity x

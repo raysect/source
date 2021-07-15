@@ -47,7 +47,9 @@ NB_Y = 10
 NB_XSAMPLES = 13
 NB_YSAMPLES = 13
 
-EXTRAPOLATION_RANGE = 0.06
+N_EXTRAPOLATION = 3
+
+EXTRAPOLATION_RANGE = 2.0
 
 PRECISION = 12
 
@@ -64,45 +66,49 @@ def function_to_spline(x_input, y_input, factor_in):
     return factor_in*np.sinc(t)
 
 
-def get_extrapolation_input_values(
-        x_lower, x_upper, y_lower, y_upper, x_extrap_delta_max, y_extrap_delta_max, x_extrap_delta_min,
-        y_extrap_delta_min):
-    xsamples_extrap_out_of_bounds_options = np.array(
-        [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
-    ysamples_extrap_out_of_bounds_options = np.array(
-        [y_lower - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_max])
-    xsamples_extrap_in_bounds_options = np.array(
-        [x_lower - x_extrap_delta_min, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_min])
-    ysamples_extrap_in_bounds_options = np.array(
-        [y_lower - y_extrap_delta_min, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_min])
-    xsamples_extrap_out_of_bounds = []
-    ysamples_extrap_out_of_bounds = []
+def large_extrapolation_range(xsamples_in, ysamples_in, extrapolation_range, n_extrap):
+    x_lower = np.linspace(xsamples_in[0] - extrapolation_range, xsamples_in[0], n_extrap + 1)[:-1]
+    x_upper = np.linspace(xsamples_in[-1], xsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+    y_lower = np.linspace(ysamples_in[0] - extrapolation_range, ysamples_in[0], n_extrap + 1)[:-1]
+    y_upper = np.linspace(ysamples_in[-1], ysamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+
+
+    xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
+    ysamples_in_expanded = np.concatenate((y_lower, ysamples_in, y_upper), axis=0)
+    edge_start_x = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_x = np.arange(len(xsamples_in_expanded) - 1, len(xsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_start_y = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_y = np.arange(len(ysamples_in_expanded) - 1, len(ysamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_indicies_x = np.concatenate((edge_start_x, edge_end_x), axis=0)
+    edge_indicies_y = np.concatenate((edge_start_y, edge_end_y), axis=0)
+
     xsamples_extrap_in_bounds = []
     ysamples_extrap_in_bounds = []
-    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    for i_x in range(len(xsamples_in_expanded)):
+        for j_y in range(len(ysamples_in_expanded)):
+                if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y):
+                    xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
+                    ysamples_extrap_in_bounds.append(ysamples_in_expanded[j_y])
+    return np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds)
+
+
+def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, z_upper, x_extrap_delta_max, y_extrap_delta_max):
+    xsamples_extrap_out_of_bounds_options = np.array(
+        [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
+
+    ysamples_extrap_out_of_bounds_options = np.array(
+        [y_lower - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_max])
+
+    xsamples_extrap_out_of_bounds = []
+    ysamples_extrap_out_of_bounds = []
+    edge_indicies_x = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    edge_indicies_y = [0, len(ysamples_extrap_out_of_bounds_options) - 1]
     for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
-        for j_y in range(len(xsamples_extrap_out_of_bounds_options)):
-            if not (i_x not in edge_indicies and j_y not in edge_indicies):
+        for j_y in range(len(ysamples_extrap_out_of_bounds_options)):
+            if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y):
                 xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
                 ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
-                xsamples_extrap_in_bounds.append(xsamples_extrap_in_bounds_options[i_x])
-                ysamples_extrap_in_bounds.append(ysamples_extrap_in_bounds_options[j_y])
-    return \
-        np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), \
-        np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds)
-
-#
-# def get_nearest_neighbour_output_values(factor_in, x_input, y_input):
-#     f_nearest_extrap_in_bounds = []
-#     x_in_use = [x_input[0], (x_input[-1] + x_input[0])/2., x_in[-1]]
-#     y_in_use = [y_input[0], (y_input[-1] + y_input[0])/2., y_in[-1]]
-#     edge_indicies = [0, len(x_in_use) - 1]
-#
-#     for i_x in range(len(x_in_use)):
-#         for j_y in range(len(y_in_use)):
-#             if not (i_x not in edge_indicies and j_y not in edge_indicies):
-#                 f_nearest_extrap_in_bounds.append(list(function_to_spline(x_input, y_input, factor_in)))
-#     return np.array(f_nearest_extrap_in_bounds)
+    return np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds)
 
 
 if __name__ == '__main__':
@@ -137,31 +143,23 @@ if __name__ == '__main__':
     collapsed_xsamples_in_full = np.reshape(xsamples_in_full, -1)
     collapsed_ysamples_in_full = np.reshape(ysamples_in_full, -1)
 
-    # Extrapolation x and y values
-    xsamples_out_of_bounds, ysamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds = \
-        get_extrapolation_input_values(
-            X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
-            Y_EXTRAP_DELTA_MIN
-        )
+    # # Extrapolation x and y values
+    # xsamples_out_of_bounds, ysamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds = \
+    #     get_extrapolation_input_values(
+    #         X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
+    #         Y_EXTRAP_DELTA_MIN
+    #     )
 
     linear_2d = interp2d(x_in, y_in, f_in, kind='linear')
     f_linear = linear_2d(xsamples, ysamples)
     print('Linear spline at xsamples, ysamples created using. interp2d(kind=linear)',
           'Save this to self.precalc_interpolation in test_interpolator in setup_linear:\n', repr(f_linear))
 
-    linear_2d_nearest_neighbour = interp2d(x_in, y_in, f_in, kind='linear', fill_value=None)
-    f_extrap_nearest = np.zeros((len(xsamples_in_bounds),))
-    for i in range(len(xsamples_in_bounds)):
-        f_extrap_nearest[i] = linear_2d_nearest_neighbour(xsamples_in_bounds[i], ysamples_in_bounds[i])
-
-    print('Output of nearest neighbour extrapolation from the start and end spline knots ',
-          'Save this to self.precalc_extrapolation_nearest in test_interpolator in setup_linear:\n',
-          repr(f_extrap_nearest))
     interpolator2D = Interpolator2DArray(x_in, y_in, f_in, 'linear', 'nearest', extrapolation_range_x=2.0,
                                          extrapolation_range_y=2.0)
-    f_extrap_nearest_2 = np.zeros((len(xsamples_in_bounds),))
-    for i in range(len(xsamples_in_bounds)):
-        f_extrap_nearest_2[i] = interpolator2D(xsamples_in_bounds[i], ysamples_in_bounds[i])
+    # f_extrap_nearest_2 = np.zeros((len(xsamples_in_bounds),))
+    # for i in range(len(xsamples_in_bounds)):
+    #     f_extrap_nearest_2[i] = interpolator2D(xsamples_in_bounds[i], ysamples_in_bounds[i])
 
     # interp2d - Runs dfitpack.regrid_smth (a fortran code in scipy), if on a rectangular grid.
     cubic_2d = interp2d(x_in, y_in, f_in, kind='cubic')
@@ -198,16 +196,18 @@ if __name__ == '__main__':
         for j in range(len(ysamples)):
             f_out[i, j] = interpolator2D_cubic_nearest(xsamples[i], ysamples[j])
 
-    f_extrap_cubic_nearest = np.zeros((len(xsamples_in_bounds),))
-    f_extrap_cubic_linear = np.zeros((len(xsamples_in_bounds),))
-    f_extrap_linear_linear = np.zeros((len(xsamples_in_bounds),))
-    for i in range(len(xsamples_in_bounds)):
-        f_extrap_cubic_nearest[i] = interpolator2D_cubic_nearest(xsamples_in_bounds[i], ysamples_in_bounds[i])
-        f_extrap_cubic_linear[i] = interpolator2D_cubic_linear(xsamples_in_bounds[i], ysamples_in_bounds[i])
-        f_extrap_linear_linear[i] = interpolator2D_linear_linear(xsamples_in_bounds[i], ysamples_in_bounds[i])
-    print('Output of nearest neighbour extrapolation from a Cubic spline at xsamples_in_bounds, ysamples_in_bounds '
-          'created using the Interpolator2DArray on 05/07/2021. Save this to self.precalc_extrapolation_nearest in '
-          'test_interpolator in setup_cubic:\n', repr(f_extrap_cubic_nearest))
+    xsamples_extrapolation, ysamples_extrapolation = large_extrapolation_range(xsamples, ysamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
+
+    f_extrap_cubic_nearest = np.zeros((len(xsamples_extrapolation),))
+    f_extrap_cubic_linear = np.zeros((len(xsamples_extrapolation),))
+    f_extrap_linear_linear = np.zeros((len(xsamples_extrapolation),))
+    for i in range(len(xsamples_extrapolation)):
+        f_extrap_cubic_nearest[i] = interpolator2D_cubic_nearest(xsamples_extrapolation[i], ysamples_extrapolation[i])
+        f_extrap_cubic_linear[i] = interpolator2D_cubic_linear(xsamples_extrapolation[i], ysamples_extrapolation[i])
+        f_extrap_linear_linear[i] = interpolator2D_linear_linear(xsamples_extrapolation[i], ysamples_extrapolation[i])
+    print('PUT THIS IN CHERAB - Output of nearest neighbour extrapolation from a Cubic spline at xsamples_in_bounds, '
+          'ysamples_in_bounds created using the Interpolator2DArray on 05/07/2021. Save this to '
+          'self.precalc_extrapolation_nearest in test_interpolator in setup_cubic:\n', repr(f_extrap_cubic_nearest))
 
     print('Output of linear extrapolation from a Cubic spline at xsamples_in_bounds, ysamples_in_bounds created using '
           'the Interpolator2DArray on 05/07/2021. Save this to self.precalc_extrapolation_linear in test_interpolator '
@@ -219,6 +219,16 @@ if __name__ == '__main__':
 
     print('Cubic spline at xsamples, ysamples created using the Interpolator2DArray on 05/07/2021',
           'Save this to self.precalc_interpolation in test_interpolator in setup_cubic:\n', repr(f_out))
+
+    linear_2d_nearest_neighbour = interp2d(x_in, y_in, f_in, kind='linear', fill_value=None)
+    f_extrap_nearest = np.zeros((len(xsamples_extrapolation),))
+    for i in range(len(xsamples_extrapolation)):
+        f_extrap_nearest[i] = linear_2d_nearest_neighbour(xsamples_extrapolation[i], ysamples_extrapolation[i])
+
+    print('Output of nearest neighbour extrapolation from linear interpolator at the start and end spline knots ',
+          'Save this to self.precalc_extrapolation_nearest in test_interpolator in setup_linear:\n',
+          repr(f_extrap_nearest))
+
 
     check_plot = True
     if check_plot:
@@ -242,9 +252,9 @@ if __name__ == '__main__':
             for i in range(len(xsamples)):
                 for j in range(len(ysamples)):
                     f_out[i, j] = interpolator2D(xsamples[i], ysamples[j])
-            f_out_extrap = np.zeros((len(xsamples_in_bounds), ))
-            for i in range(len(xsamples_in_bounds)):
-                f_out_extrap[i] = interpolator2D(xsamples_in_bounds[i], ysamples_in_bounds[i])
+            f_out_extrap = np.zeros((len(xsamples_extrapolation), ))
+            for i in range(len(xsamples_extrapolation)):
+                f_out_extrap[i] = interpolator2D(xsamples_extrapolation[i], ysamples_extrapolation[i])
 
             f_out_lower_and_upper = np.zeros((len(xsamples_lower_and_upper), len(ysamples_lower_and_upper)))
             for i in range(len(xsamples_lower_and_upper)):
@@ -253,7 +263,7 @@ if __name__ == '__main__':
                         xsamples_lower_and_upper[i], ysamples_lower_and_upper[j]
                     )
             # ax[0].scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
-            ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_out_extrap, color='g')
+            ax[0].scatter(xsamples_extrapolation, ysamples_extrapolation, f_out_extrap, color='g')
             # ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_extrap_nearest, color='m')
             # ax[1].scatter(
             # collapsed_xsamples_in_full, collapsed_ysamples_in_full, cubic_2d(xsamples, ysamples), color='m'

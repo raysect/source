@@ -42,16 +42,19 @@ class TestInterpolatorLoadNormalValues(TestInterpolatorLoadValues):
 
         #: array holding precalculated nearest neighbour extrapolation data.
         self.precalc_extrapolation_nearest: np.array = np.array(
-            [0.000000000000E+00, 0.000000000000E+00, 8.414709848079E-01, 8.414709848079E-01], dtype=np.float64
+            [0.000000000000E+00, 0.000000000000E+00, 0.000000000000E+00, 8.414709848079E-01,
+             8.414709848079E-01, 8.414709848079E-01], dtype=np.float64
         )
 
         #: array holding precalculated linear extrapolation data.
         self.precalc_extrapolation_linear: np.array = np.array(
-            [-7.983549252717E-02, -3.991774626358E-02, 8.649066476705E-01, 8.883423105331E-01], dtype=np.float64
+            [-1.995887313179E+00, -1.330591542119E+00, -6.652957710597E-01, 1.232065365851E+00,
+             1.622659746895E+00, 2.013254127938E+00], dtype=np.float64
         )
         #: array holding precalculated quadratic extrapolation data.
         self.precalc_extrapolation_quadratic: np.array = np.array(
-            [-8.001272228503E-02, -3.996205370305E-02, 8.645964182651E-01, 8.871013929117E-01], dtype=np.float64
+            [-2.106655911846E+00, -1.379822030416E+00, -6.776033931338E-01, 1.145890531031E+00,
+             1.277960407614E+00, 1.237680614556E+00], dtype=np.float64
         )
 
     def setup_cubic(self):
@@ -97,17 +100,20 @@ class TestInterpolatorLoadBigValues(TestInterpolatorLoadValues):
         #: precalculated result of the function used to calculate self.data on self.xsamples.
         #: array holding precalculated nearest neighbour extrapolation data.
         self.precalc_extrapolation_nearest: np.array = np.array(
-            [0.000000000000e+00, 0.000000000000e+00, 8.414709848079e+19, 8.414709848079e+19], dtype=np.float64
+            [0.000000000000E+00, 0.000000000000E+00, 0.000000000000E+00, 8.414709848079E+19,
+             8.414709848079E+19, 8.414709848079E+19], dtype=np.float64
         )
 
         #: array holding precalculated linear extrapolation data.
         self.precalc_extrapolation_linear: np.array = np.array(
-            [-7.983549252717e+18, -3.991774626358e+18,  8.649066476705e+19,  8.883423105331e+19], dtype=np.float64
+            [-1.995887313179E+20, -1.330591542119E+20, -6.652957710597E+19, 1.232065365851E+20,
+             1.622659746895E+20, 2.013254127938E+20], dtype=np.float64
         )
 
         #: array holding precalculated quadratic extrapolation data.
         self.precalc_extrapolation_quadratic: np.array = np.array(
-            [-8.001272228503E+18, -3.996205370305E+18, 8.645964182651E+19, 8.871013929117E+19], dtype=np.float64
+            [-2.106655911846E+20, -1.379822030416E+20, -6.776033931338E+19, 1.145890531031E+20,
+             1.277960407614E+20, 1.237680614556E+20], dtype=np.float64
         )
 
     def setup_cubic(self):
@@ -152,17 +158,20 @@ class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
         #: precalculated result of the function used to calculate self.data on self.xsamples.
         #: array holding precalculated nearest neighbour extrapolation data.
         self.precalc_extrapolation_nearest: np.array = np.array(
-            [0.000000000000e+00, 0.000000000000e+00, 8.414709848079e-21, 8.414709848079e-21], dtype=np.float64
+            [0.000000000000E+00, 0.000000000000E+00, 0.000000000000E+00, 8.414709848079E-21,
+             8.414709848079E-21, 8.414709848079E-21], dtype=np.float64
         )
 
         #: array holding precalculated linear extrapolation data.
         self.precalc_extrapolation_linear: np.array = np.array(
-            [-7.983549252717e-22, -3.991774626358e-22,  8.649066476705e-21,  8.883423105331e-21], dtype=np.float64
+            [-1.995887313179E-20, -1.330591542119E-20, -6.652957710597E-21, 1.232065365851E-20,
+             1.622659746895E-20, 2.013254127938E-20], dtype=np.float64
         )
 
         #: array holding precalculated quadratic extrapolation data.
         self.precalc_extrapolation_quadratic: np.array = np.array(
-            [-8.001272228503E-22, -3.996205370305E-22, 8.645964182651E-21, 8.871013929117E-21], dtype=np.float64
+            [-2.106655911846E-20, -1.379822030416E-20, -6.776033931338E-21, 1.145890531031E-20,
+             1.277960407614E-20, 1.237680614556E-20], dtype=np.float64
         )
 
     def setup_cubic(self):

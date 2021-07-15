@@ -38,8 +38,8 @@ from raysect.core.math.function.float.function3d.interpolate.interpolator3darray
     id_to_extrapolator, id_to_interpolator
 from raysect.core.math.function.float.function3d.interpolate.tests.scripts.generate_3d_splines import X_LOWER, X_UPPER,\
     NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
-    Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, get_extrapolation_input_values, Z_LOWER, Z_UPPER, \
-    NB_ZSAMPLES, NB_Z, Z_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MIN
+    Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, large_extrapolation_range, Z_LOWER, Z_UPPER, \
+    NB_ZSAMPLES, NB_Z, Z_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MIN, N_EXTRAPOLATION, extrapolation_out_of_bound_points
 from raysect.core.math.function.float.function3d.interpolate.tests.data_store.interpolator3d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 
@@ -72,12 +72,14 @@ class TestInterpolators3D(unittest.TestCase):
         cls.zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
 
         # Extrapolation x, y and z values.
-        cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds, cls.zsamples_out_of_bounds, cls.xsamples_in_bounds,\
-            cls.ysamples_in_bounds, cls.zsamples_in_bounds = get_extrapolation_input_values(
-                X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX,
-                Z_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
-                Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
-            )
+        # cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds, cls.zsamples_out_of_bounds, cls.xsamples_in_bounds,\
+        #     cls.ysamples_in_bounds, cls.zsamples_in_bounds = get_extrapolation_input_values(
+        #         X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX,
+        #         Z_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
+        #         Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
+        #     )
+        cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds, cls.zsamples_out_of_bounds = extrapolation_out_of_bound_points(X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MAX)
+        cls.xsamples_in_bounds, cls.ysamples_in_bounds, cls.zsamples_in_bounds = large_extrapolation_range(cls.xsamples, cls.ysamples, cls.zsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -366,7 +368,7 @@ class TestInterpolators3D(unittest.TestCase):
         """
         Test for bad data being supplied to the interpolators
 
-        Test x, y, z monotonically increases, test if an x, y, z is repeated, test if arrays are different lengths and
+        Test x, y, z monotonically increases, test if an x, y, z is repeated, test if arrays are different lengths.
 
         """
         # monotonicity x

@@ -32,7 +32,7 @@ import numpy as np
 from raysect.core.math.function.float.function3d.interpolate.interpolator3darray import Interpolator3DArray
 from matplotlib.colors import ListedColormap, LogNorm, SymLogNorm
 import scipy
-
+import sys
 
 X_LOWER = -1.0
 X_UPPER = 1.0
@@ -54,16 +54,75 @@ NB_XSAMPLES = 19
 NB_YSAMPLES = 19
 NB_ZSAMPLES = 19
 
-EXTRAPOLATION_RANGE = 0.06
+EXTRAPOLATION_RANGE = 2.0
 
 PRECISION = 12
 
 BIG_VALUE_FACTOR = 20.
 SMALL_VALUE_FACTOR = -20.
 
+N_EXTRAPOLATION = 3
 
 # Force scientific format to get the right number of significant figures
-np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
+np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')}, threshold=sys.maxsize)
+
+
+def large_extrapolation_range(xsamples_in, ysamples_in, zsamples_in, extrapolation_range, n_extrap):
+    x_lower = np.linspace(xsamples_in[0] - extrapolation_range, xsamples_in[0], n_extrap + 1)[:-1]
+    x_upper = np.linspace(xsamples_in[-1], xsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+    y_lower = np.linspace(ysamples_in[0] - extrapolation_range, ysamples_in[0], n_extrap + 1)[:-1]
+    y_upper = np.linspace(ysamples_in[-1], ysamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+    z_lower = np.linspace(zsamples_in[0] - extrapolation_range, zsamples_in[0], n_extrap + 1)[:-1]
+    z_upper = np.linspace(zsamples_in[-1], zsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+
+
+    xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
+    ysamples_in_expanded = np.concatenate((y_lower, ysamples_in, y_upper), axis=0)
+    zsamples_in_expanded = np.concatenate((z_lower, zsamples_in, z_upper), axis=0)
+    edge_start_x = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_x = np.arange(len(xsamples_in_expanded) - 1, len(xsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_start_y = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_y = np.arange(len(ysamples_in_expanded) - 1, len(ysamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_start_z = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_z = np.arange(len(zsamples_in_expanded) - 1, len(zsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_indicies_x = np.concatenate((edge_start_x, edge_end_x), axis=0)
+    edge_indicies_y = np.concatenate((edge_start_y, edge_end_y), axis=0)
+    edge_indicies_z = np.concatenate((edge_start_z, edge_end_z), axis=0)
+
+    xsamples_extrap_in_bounds = []
+    ysamples_extrap_in_bounds = []
+    zsamples_extrap_in_bounds = []
+    for i_x in range(len(xsamples_in_expanded)):
+        for j_y in range(len(ysamples_in_expanded)):
+            for k_z in range(len(zsamples_in_expanded)):
+                if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y and k_z not in edge_indicies_z):
+                    xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
+                    ysamples_extrap_in_bounds.append(ysamples_in_expanded[j_y])
+                    zsamples_extrap_in_bounds.append(zsamples_in_expanded[k_z])
+    return np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds), np.array(zsamples_extrap_in_bounds)
+
+
+def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max, z_extrap_delta_max):
+    xsamples_extrap_out_of_bounds_options = np.array(
+        [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
+
+    ysamples_extrap_out_of_bounds_options = np.array(
+        [y_lower - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_max])
+
+    zsamples_extrap_out_of_bounds_options = np.array(
+        [z_lower - z_extrap_delta_max, (z_lower + z_upper) / 2., z_upper + z_extrap_delta_max])
+    xsamples_extrap_out_of_bounds = []
+    ysamples_extrap_out_of_bounds = []
+    zsamples_extrap_out_of_bounds = []
+    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
+        for j_y in range(len(ysamples_extrap_out_of_bounds_options)):
+            for k_z in range(len(zsamples_extrap_out_of_bounds_options)):
+                if not (i_x not in edge_indicies and j_y not in edge_indicies and k_z not in edge_indicies):
+                    xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
+                    ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
+                    zsamples_extrap_out_of_bounds.append(zsamples_extrap_out_of_bounds_options[k_z])
+    return np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), np.array(zsamples_extrap_out_of_bounds)
 
 
 def get_extrapolation_input_values(
@@ -92,11 +151,13 @@ def get_extrapolation_input_values(
     xsamples_extrap_in_bounds = []
     ysamples_extrap_in_bounds = []
     zsamples_extrap_in_bounds = []
-    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    edge_indicies_x = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    edge_indicies_y = [0, len(ysamples_extrap_out_of_bounds_options) - 1]
+    edge_indicies_z = [0, len(zsamples_extrap_out_of_bounds_options) - 1]
     for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
-        for j_y in range(len(xsamples_extrap_out_of_bounds_options)):
+        for j_y in range(len(ysamples_extrap_out_of_bounds_options)):
             for k_z in range(len(zsamples_extrap_out_of_bounds_options)):
-                if not (i_x not in edge_indicies and j_y not in edge_indicies and k_z not in edge_indicies):
+                if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y and k_z not in edge_indicies_z):
                     xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
                     ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
                     zsamples_extrap_out_of_bounds.append(zsamples_extrap_out_of_bounds_options[k_z])
@@ -145,6 +206,8 @@ if __name__ == '__main__':
     ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
     zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
 
+    xsamples_extrapolation, ysamples_extrapolation, zsamples_extrapolation = large_extrapolation_range(xsamples, ysamples, zsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
+
     # # Extrapolation x and y values
     xsamples_out_of_bounds, ysamples_out_of_bounds, zsamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds,  zsamples_in_bounds = \
         get_extrapolation_input_values(
@@ -160,6 +223,7 @@ if __name__ == '__main__':
     for i in range(len(xsamples_in_bounds)):
         f_extrapolation_output[i] = interpolator3D(xsamples_in_bounds[i], ysamples_in_bounds[i], zsamples_in_bounds[i])
     print('Output of extrapolation to be saved:\n', repr(f_extrapolation_output))
+
     check_plot = True
     if check_plot:
         import matplotlib.pyplot as plt
@@ -178,7 +242,7 @@ if __name__ == '__main__':
         main_plots_on = True
         mayavi_plots_on = False
         if main_plots_on:
-            fig, ax = plt.subplots(1, 3)
+            fig, ax = plt.subplots(1, 4)
             index_x_in = 5
             if not (x_in[index_x_in] == xsamples).any():
                 raise ValueError(
@@ -212,6 +276,18 @@ if __name__ == '__main__':
                 for j in range(len(ysamples_lower_and_upper)):
                     for k in range(len(zsamples_lower_and_upper)):
                         f_out_lower_and_upper[i, j, k] = interpolator3D(xsamples_lower_and_upper[i], ysamples_lower_and_upper[j], zsamples_lower_and_upper[k])
+
+            f_out_extrapolation = np.zeros((len(xsamples_extrapolation), ))
+            for i in range(len(xsamples_extrapolation)):
+                f_out_extrapolation[i] = interpolator3D(xsamples_extrapolation[i], ysamples_extrapolation[i], zsamples_extrapolation[i])
+            print('New output of extrapolation to be saved:\n', repr(f_out_extrapolation))
+
+            index_xsamples_extrap = np.where(x_in[index_x_in] == xsamples_extrapolation)
+            f_out_x_extrapolation = f_out_extrapolation[index_xsamples_extrap]
+
+            im = ax[3].scatter(ysamples_extrapolation[index_xsamples_extrap], zsamples_extrapolation[index_xsamples_extrap], c=f_out_x_extrapolation, norm=c_norm, cmap='viridis', s=10)
+            ax[3].set_aspect('equal')
+
             f_out_x = f_out[index_xsamples, :, :]
 
             ysamples_mesh, zsamples_mesh = np.meshgrid(ysamples, zsamples)

@@ -33,7 +33,8 @@ This script has been used to calculate the reference data for the 1D cubic inter
 """
 
 from raysect.core.math.function.float.function1d.tests.test_interpolator import X_LOWER, X_UPPER, NB_XSAMPLES, NB_X, \
-    X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR
+    X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR, EXTRAPOLATION_RANGE, \
+    N_EXTRAPOLATION
 
 from raysect.core.math.function.float.function1d.interpolate import Interpolate1DArray
 import numpy as np
@@ -48,8 +49,49 @@ def function_to_spline(x_func, factor_in):
     return factor_in*np.sin(x_func)
 
 
-def linear_extrapolation(m, x2, x1, f1):
-    return f1 + m*(x2-x1)
+def large_extrapolation_range(xsamples_in, extrapolation_range, n_extrap):
+    x_lower = np.linspace(xsamples_in[0] - extrapolation_range, xsamples_in[0], n_extrap + 1)[:-1]
+    x_upper = np.linspace(xsamples_in[-1], xsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+
+    xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
+    edge_start_x = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_x = np.arange(len(xsamples_in_expanded) - 1, len(xsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_indicies_x = np.concatenate((edge_start_x, edge_end_x), axis=0)
+
+    xsamples_extrap_in_bounds = []
+    for i_x in range(len(xsamples_in_expanded)):
+        if not (i_x not in edge_indicies_x):
+            xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
+    return np.array(xsamples_extrap_in_bounds)
+
+
+def extrapolation_out_of_bound_points(x_lower, x_upper, x_extrap_delta_max):
+    xsamples_extrap_out_of_bounds_options = np.array(
+        [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
+
+    xsamples_extrap_out_of_bounds = []
+    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
+        if i_x in edge_indicies:
+                    xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
+    return np.array(xsamples_extrap_out_of_bounds)
+
+
+# def linear_extrapolation(m, x2, x1, f1):
+#     return f1 + m*(x2-x1)
+
+def linear_extrapolation(m_start, m_end, f_start, f_end, x_start, x_end, x_array):
+
+    f_return = np.zeros(len(x_array))
+    for i in range(len(x_array)):
+        if x_array[i] > x_end:
+            f_return[i] = f_end + m_end*(x_array[i]-x_end)
+        elif x_array[i] < x_start:
+            f_return[i] = f_start + m_start*(x_array[i] - x_start)
+        else:
+            raise ValueError('Only use on extrapolation data')
+
+    return f_return
 
 
 def linear_interpolation(x_interp, x1, f1, x2, f2):
@@ -125,7 +167,7 @@ def different_quadratic_extrpolation_upper(x_interp, x_spline, y_spline):
 
 # Calculate for big values, small values, or normal values
 big_values = False
-small_values = False
+small_values = True
 
 print('Using scipy version', scipy.__version__)
 
@@ -170,25 +212,39 @@ xsamples_extrap = np.array([
     X_UPPER + X_EXTRAP_DELTA_MAX], dtype=np.float64,
 )
 
-f_extrap_nearest = np.array([data_f[0], data_f[0], data_f[-1], data_f[-1]])
+# f_extrap_nearest = np.array([data_f[0], data_f[0], data_f[-1], data_f[-1]])
 expected_start_grad = ((data_f[1] - data_f[0]) / (x[1] - x[0]))
-expected_end_grad = ((data_f[-2] - data_f[-1]) / (x[-2] - x[-1]))
+expected_end_grad = ((data_f[-1] - data_f[-2]) / (x[-1] - x[-2]))
+
+xsamples_extrapolation = large_extrapolation_range(xsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
+f_extrap_nearest = np.zeros(len(xsamples_extrapolation))
+for i in range(len(xsamples_extrapolation)):
+    if xsamples_extrapolation[i] > x[-1]:
+        f_extrap_nearest[i] = data_f[-1]
+    elif xsamples_extrapolation[i] < x[0]:
+        f_extrap_nearest[i] = data_f[0]
+    else:
+        raise ValueError('Only use on extrapolation data')
+
 print('Output of nearest neighbour extrapolation from the start and end spline knots ',
       'Save this to self.precalc_extrapolation_nearest in test_interpolator:\n', repr(f_extrap_nearest))
 
-f_extrap_linear = linear_extrapolation(
-    np.array([expected_start_grad, expected_start_grad, expected_end_grad, expected_end_grad]), xsamples_extrap,
-    np.array([x[0], x[0], x[-1], x[-1]]), np.array([data_f[0], data_f[0], data_f[-1], data_f[-1]])
-)
+f_extrap_linear = linear_extrapolation(expected_start_grad, expected_end_grad, data_f[0], data_f[-1], X_LOWER, X_UPPER, xsamples_extrapolation)
+# f_extrap_linear = linear_extrapolation(
+#     np.array([expected_start_grad, expected_start_grad, expected_end_grad, expected_end_grad]), xsamples_extrap,
+#     np.array([x[0], x[0], x[-1], x[-1]]), np.array([data_f[0], data_f[0], data_f[-1], data_f[-1]])
+# )
 print('Output of linearly extrapolating from the start and end spline knots ',
       'Save this to self.precalc_extrapolation_linear in test_interpolator:\n', repr(f_extrap_linear))
 
-f_extrap_quadratic = np.array([
-    different_quadratic_extrpolation_lower(xsamples_extrap[0], x, data_f),
-    different_quadratic_extrpolation_lower(xsamples_extrap[1], x, data_f),
-    different_quadratic_extrpolation_upper(xsamples_extrap[-2], x, data_f),
-    different_quadratic_extrpolation_upper(xsamples_extrap[-1], x, data_f),
-])
+f_extrap_quadratic = np.zeros(len(xsamples_extrapolation))
+for i in range(len(xsamples_extrapolation)):
+    if xsamples_extrapolation[i] > x[-1]:
+        f_extrap_quadratic[i] = different_quadratic_extrpolation_upper(xsamples_extrapolation[i], x, data_f)
+    elif xsamples_extrapolation[i] < x[0]:
+        f_extrap_quadratic[i] = different_quadratic_extrpolation_lower(xsamples_extrapolation[i], x, data_f)
+    else:
+        raise ValueError('Only use on extrapolation data')
 
 print('Output of quadratically extrapolating from the start and end spline knots ',
       'Save this to self.precalc_extrapolation_quadratic in test_interpolator:\n', repr(f_extrap_quadratic))
@@ -216,7 +272,6 @@ if check_plot:
     interp_cubic_extrap_nearest = Interpolate1DArray(
         x, data_f, 'linear', 'quadratic', extrapolation_range=2.0
     )
-    print(interp_cubic_extrap_nearest.test_edge_gradients())
     fig, ax = plt.subplots()
     f_check = np.zeros(len(xsamples))
     for i in range(len(xsamples)):
@@ -231,4 +286,5 @@ if check_plot:
     ax.plot(xsamples_extrap[0], different_quadratic_extrpolation_lower(xsamples_extrap[0], x, data_f), 'ko')
     ax.plot(xsamples_extrap[-1], different_quadratic_extrpolation_upper(xsamples_extrap[-1], x, data_f), 'ko')
     ax.plot(x, data_f, 'bo')
+    ax.plot(xsamples_extrapolation, f_extrap_nearest, 'bo')
     plt.show()
