@@ -47,32 +47,50 @@ class TestInterpolators2D(unittest.TestCase):
     """
     Testing class for 2D interpolators and extrapolators.
     """
-    def setUp(self) -> None:
-
+    @classmethod
+    def setUpClass(cls) -> None:
         # data is a precalculated input values for testing. It's the result of applying function f on self.x
         # as in data = f(self.x, self.y), where self.x, self.y are linearly spaced between X_LOWER and X_UPPER ...
 
         #: x and y values used to obtain data
         x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
         y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
-        self.x = x_in
-        self.y = y_in
+        cls.x = x_in
+        cls.y = y_in
 
-        self.test_loaded_values = TestInterpolatorLoadNormalValues()
-        self.test_loaded_big_values = TestInterpolatorLoadBigValues()
-        self.test_loaded_small_values = TestInterpolatorLoadSmallValues()
+        cls.reference_loaded_values = TestInterpolatorLoadNormalValues()
+        cls.reference_loaded_big_values = TestInterpolatorLoadBigValues()
+        cls.reference_loaded_small_values = TestInterpolatorLoadSmallValues()
 
         #: x values on which interpolation_data was samples on.
-        self.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
-        self.ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
+        cls.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
+        cls.ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
 
         #: x, y values on which extrapolation_data arrays were sampled on.
         # Extrapolation x and y values.
-        self.xsamples_out_of_bounds, self.ysamples_out_of_bounds, self.xsamples_in_bounds, self.ysamples_in_bounds = \
+        cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds, cls.xsamples_in_bounds, cls.ysamples_in_bounds = \
             get_extrapolation_input_values(
                 X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
                 Y_EXTRAP_DELTA_MIN
             )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """
+        Remove the larger classes holding load values
+        """
+        try:
+            del cls.reference_loaded_values
+        except AttributeError:
+            pass
+        try:
+            del cls.reference_loaded_big_values
+        except AttributeError:
+            pass
+        try:
+            del cls.reference_loaded_small_values
+        except AttributeError:
+            pass
 
     def setup_linear(
             self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool) -> None:
@@ -92,11 +110,11 @@ class TestInterpolators2D(unittest.TestCase):
         # This is the result of sampling data on self.xsamples, self.ysamples.
 
         if big_values:
-            self.value_storage_obj = self.test_loaded_big_values
+            self.value_storage_obj = self.reference_loaded_big_values
         elif small_values:
-            self.value_storage_obj = self.test_loaded_small_values
+            self.value_storage_obj = self.reference_loaded_small_values
         else:
-            self.value_storage_obj = self.test_loaded_values
+            self.value_storage_obj = self.reference_loaded_values
 
         self.value_storage_obj.setup_linear()
         data = self.value_storage_obj.data
@@ -127,11 +145,11 @@ class TestInterpolators2D(unittest.TestCase):
         # set precalculated expected interpolation results
         # this is the result of sampling data on self.xsamples
         if big_values:
-            self.value_storage_obj = self.test_loaded_big_values
+            self.value_storage_obj = self.reference_loaded_big_values
         elif small_values:
-            self.value_storage_obj = self.test_loaded_small_values
+            self.value_storage_obj = self.reference_loaded_small_values
         else:
-            self.value_storage_obj = self.test_loaded_values
+            self.value_storage_obj = self.reference_loaded_values
 
         self.value_storage_obj.setup_cubic()
         data = self.value_storage_obj.data
@@ -322,7 +340,7 @@ class TestInterpolators2D(unittest.TestCase):
 
     def initialise_tests_on_interpolators(self, x_values, y_values, f_values):
         """
-        Method to create a new interpolator with different x, y, z, f values to test input failures.
+        Method to create a new interpolator with different x, y, f values to test input failures.
         """
         # Test for all combinations
         for extrapolator_type in id_to_extrapolator.keys():
@@ -337,40 +355,40 @@ class TestInterpolators2D(unittest.TestCase):
         """
         Test for bad data being supplied to the interpolators
 
-        Test x, y, z monotonically increases, test if an x, y, z is repeated, test if arrays are different lengths and
+        Test x, y monotonically increases, test if an x, y is repeated, test if arrays are different lengths and
 
         """
         # monotonicity x
         x_wrong = np.copy(self.x)
         x_wrong[0] = self.x[1]
         x_wrong[1] = self.x[0]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(x_wrong, self.y, self.reference_loaded_values.data)
 
         # monotonicity y
         y_wrong = np.copy(self.y)
         y_wrong[0] = self.y[1]
         y_wrong[1] = self.y[0]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(self.x, y_wrong, self.reference_loaded_values.data)
 
         # test repeated coordinate x
         x_wrong = np.copy(self.x)
         x_wrong[0] = x_wrong[1]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(x_wrong, self.y, self.reference_loaded_values.data)
 
         # test repeated coordinate y
         y_wrong = np.copy(self.y)
         y_wrong[0] = y_wrong[1]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(self.x, y_wrong, self.reference_loaded_values.data)
 
         # mismatch array size between x and data
         x_wrong = np.copy(self.x)
         x_wrong = x_wrong[:-1]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(x_wrong, self.y, self.reference_loaded_values.data)
 
         # mismatch array size between y and data
         y_wrong = np.copy(self.y)
         y_wrong = y_wrong[:-1]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(self.x, y_wrong, self.reference_loaded_values.data)
 
         # Test array length 1, Arrays are too short.
         self.run_incorrect_array_length_combination()
@@ -386,8 +404,8 @@ class TestInterpolators2D(unittest.TestCase):
         x = [np.copy(self.x), np.copy(self.x)[0]]
         y = [np.copy(self.y), np.copy(self.y)[0]]
         f = [
-            np.copy(self.test_loaded_values.data), np.copy(self.test_loaded_values.data)[0, 0],
-            np.copy(self.test_loaded_values.data)[0, :], np.copy(self.test_loaded_values.data)[:, 0]
+            np.copy(self.reference_loaded_values.data), np.copy(self.reference_loaded_values.data)[0, 0],
+            np.copy(self.reference_loaded_values.data)[0, :], np.copy(self.reference_loaded_values.data)[:, 0]
         ]
         for i in range(len(x)):
             for j in range(len(y)):
@@ -407,9 +425,9 @@ class TestInterpolators2D(unittest.TestCase):
              np.array(np.concatenate((np.copy(self.y)[:, np.newaxis], np.copy(self.y)[:, np.newaxis]), axis=1)),
              np.array(np.copy(self.y)[0])]
         f = [
-            np.copy(self.test_loaded_values.data), np.array(np.copy(self.test_loaded_values.data)[0, 0]),
-            np.array(np.concatenate((np.copy(self.test_loaded_values.data)[:, :, np.newaxis],
-                                     np.copy(self.test_loaded_values.data)[:, :, np.newaxis]), axis=2))
+            np.copy(self.reference_loaded_values.data), np.array(np.copy(self.reference_loaded_values.data)[0, 0]),
+            np.array(np.concatenate((np.copy(self.reference_loaded_values.data)[:, :, np.newaxis],
+                                     np.copy(self.reference_loaded_values.data)[:, :, np.newaxis]), axis=2))
         ]
 
         for i in range(len(x)):

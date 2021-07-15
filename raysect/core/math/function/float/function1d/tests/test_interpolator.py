@@ -59,23 +59,24 @@ class TestInterpolators1D(unittest.TestCase):
     """
     Testing class for 1D interpolators and extrapolators.
     """
-    def setUp(self) -> None:
+    @classmethod
+    def setUpClass(cls) -> None:
 
         # data is a precalculated input values for testing. It's the result of applying function f on self.x.
         # as in data = f(self.x), where self.x is linearly spaced between X_LOWER and X_UPPER.
 
         #: x values used to obtain data.
-        self.x = np.linspace(X_LOWER, X_UPPER, NB_X)
+        cls.x = np.linspace(X_LOWER, X_UPPER, NB_X)
 
-        self.reference_loaded_values = TestInterpolatorLoadNormalValues()
-        self.reference_loaded_big_values = TestInterpolatorLoadBigValues()
-        self.reference_loaded_small_values = TestInterpolatorLoadSmallValues()
+        cls.reference_loaded_values = TestInterpolatorLoadNormalValues()
+        cls.reference_loaded_big_values = TestInterpolatorLoadBigValues()
+        cls.reference_loaded_small_values = TestInterpolatorLoadSmallValues()
 
         #: x values on which interpolation_data were sampled on.
-        self.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
+        cls.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
 
         #: x values on which extrapolation_data arrays were sampled on.
-        self.xsamples_extrap = np.array(
+        cls.xsamples_extrap = np.array(
             [
                 X_LOWER - X_EXTRAP_DELTA_MAX,
                 X_LOWER - X_EXTRAP_DELTA_MIN,
@@ -85,8 +86,25 @@ class TestInterpolators1D(unittest.TestCase):
             dtype=np.float64,
         )
 
-    def setup_linear(
-            self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool) -> None:
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """
+        Remove the larger classes holding load values
+        """
+        try:
+            del cls.reference_loaded_values
+        except AttributeError:
+            pass
+        try:
+            del cls.reference_loaded_big_values
+        except AttributeError:
+            pass
+        try:
+            del cls.reference_loaded_small_values
+        except AttributeError:
+            pass
+
+    def setup_linear(self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool):
         """
         Sets precalculated values for linear interpolator.
         Called in every test method that addresses linear interpolation.

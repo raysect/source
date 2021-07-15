@@ -48,8 +48,8 @@ class TestInterpolators3D(unittest.TestCase):
     """
     Testing class for 3D interpolators and extrapolators.
     """
-    def setUp(self) -> None:
-
+    @classmethod
+    def setUpClass(cls) -> None:
         # data is a precalculated input array for testing. It's the result of applying function f on self.x,
         # self.y, self.z to create data = f(self.x,self.y,self.z), where self.x, self.y ,self.z are linearly
         # spaced between X_LOWER and X_UPPER ...
@@ -58,29 +58,46 @@ class TestInterpolators3D(unittest.TestCase):
         x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
         y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
         z_in = np.linspace(Z_LOWER, Z_UPPER, NB_Z)
-        self.x = x_in
-        self.y = y_in
-        self.z = z_in
+        cls.x = x_in
+        cls.y = y_in
+        cls.z = z_in
 
-        self.test_loaded_values = TestInterpolatorLoadNormalValues()
-        self.test_loaded_big_values = TestInterpolatorLoadBigValues()
-        self.test_loaded_small_values = TestInterpolatorLoadSmallValues()
+        cls.reference_loaded_values = TestInterpolatorLoadNormalValues()
+        cls.reference_loaded_big_values = TestInterpolatorLoadBigValues()
+        cls.reference_loaded_small_values = TestInterpolatorLoadSmallValues()
 
         #: x, y, z values on which interpolation_data was sampled on.
-        self.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
-        self.ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
-        self.zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
+        cls.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
+        cls.ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
+        cls.zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
 
         # Extrapolation x, y and z values.
-        self.xsamples_out_of_bounds, self.ysamples_out_of_bounds, self.zsamples_out_of_bounds, self.xsamples_in_bounds,\
-            self.ysamples_in_bounds, self.zsamples_in_bounds = get_extrapolation_input_values(
+        cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds, cls.zsamples_out_of_bounds, cls.xsamples_in_bounds,\
+            cls.ysamples_in_bounds, cls.zsamples_in_bounds = get_extrapolation_input_values(
                 X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX,
                 Z_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
                 Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
             )
 
-    def setup_linear(
-            self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool) -> None:
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """
+        Remove the larger classes holding load values
+        """
+        try:
+            del cls.reference_loaded_values
+        except AttributeError:
+            pass
+        try:
+            del cls.reference_loaded_big_values
+        except AttributeError:
+            pass
+        try:
+            del cls.reference_loaded_small_values
+        except AttributeError:
+            pass
+
+    def setup_linear(self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool):
         """
         Sets precalculated values for linear interpolator.
         Called in every test method that addresses linear interpolation.
@@ -94,11 +111,11 @@ class TestInterpolators3D(unittest.TestCase):
         """
 
         if big_values:
-            self.value_storage_obj = self.test_loaded_big_values
+            self.value_storage_obj = self.reference_loaded_big_values
         elif small_values:
-            self.value_storage_obj = self.test_loaded_small_values
+            self.value_storage_obj = self.reference_loaded_small_values
         else:
-            self.value_storage_obj = self.test_loaded_values
+            self.value_storage_obj = self.reference_loaded_values
 
         self.value_storage_obj.setup_linear()
         data = self.value_storage_obj.data
@@ -130,11 +147,11 @@ class TestInterpolators3D(unittest.TestCase):
         # Set precalculated expected interpolation results.
         # This is the result of sampling data on self.xsamples, self.ysamples, self.zsamples.
         if big_values:
-            self.value_storage_obj = self.test_loaded_big_values
+            self.value_storage_obj = self.reference_loaded_big_values
         elif small_values:
-            self.value_storage_obj = self.test_loaded_small_values
+            self.value_storage_obj = self.reference_loaded_small_values
         else:
-            self.value_storage_obj = self.test_loaded_values
+            self.value_storage_obj = self.reference_loaded_values
 
         self.value_storage_obj.setup_cubic()
         data = self.value_storage_obj.data
@@ -356,49 +373,49 @@ class TestInterpolators3D(unittest.TestCase):
         x_wrong = np.copy(self.x)
         x_wrong[0] = self.x[1]
         x_wrong[1] = self.x[0]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.z, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(x_wrong, self.y, self.z, self.reference_loaded_values.data)
 
         # monotonicity y
         y_wrong = np.copy(self.y)
         y_wrong[0] = self.y[1]
         y_wrong[1] = self.y[0]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.z, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(self.x, y_wrong, self.z, self.reference_loaded_values.data)
 
         # monotonicity z
         z_wrong = np.copy(self.z)
         z_wrong[0] = self.z[1]
         z_wrong[1] = self.z[0]
-        self.initialise_tests_on_interpolators(self.x, self.y, z_wrong, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(self.x, self.y, z_wrong, self.reference_loaded_values.data)
 
         # test repeated coordinate x
         x_wrong = np.copy(self.x)
         x_wrong[0] = x_wrong[1]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.z, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(x_wrong, self.y, self.z, self.reference_loaded_values.data)
 
         # test repeated coordinate y
         y_wrong = np.copy(self.y)
         y_wrong[0] = y_wrong[1]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.z, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(self.x, y_wrong, self.z, self.reference_loaded_values.data)
 
         # test repeated coordinate z
         z_wrong = np.copy(self.z)
         z_wrong[0] = z_wrong[1]
-        self.initialise_tests_on_interpolators(self.x, self.y, z_wrong, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(self.x, self.y, z_wrong, self.reference_loaded_values.data)
 
         # mismatch array size between x and data
         x_wrong = np.copy(self.x)
         x_wrong = x_wrong[:-1]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.z, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(x_wrong, self.y, self.z, self.reference_loaded_values.data)
 
         # mismatch array size between y and data
         y_wrong = np.copy(self.y)
         y_wrong = y_wrong[:-1]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.z, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(self.x, y_wrong, self.z, self.reference_loaded_values.data)
 
         # mismatch array size between z and data
         z_wrong = np.copy(self.z)
         z_wrong = z_wrong[:-1]
-        self.initialise_tests_on_interpolators(self.x, self.y, z_wrong, self.test_loaded_values.data)
+        self.initialise_tests_on_interpolators(self.x, self.y, z_wrong, self.reference_loaded_values.data)
 
         # Test array length 1, Arrays are too short.
         self.run_incorrect_array_length_combination()
@@ -415,10 +432,10 @@ class TestInterpolators3D(unittest.TestCase):
         y = [np.copy(self.y), np.copy(self.y)[0]]
         z = [np.copy(self.z), np.copy(self.z)[0]]
         f = [
-            np.copy(self.test_loaded_values.data), np.copy(self.test_loaded_values.data)[0, 0, 0],
-            np.copy(self.test_loaded_values.data)[0, 0, :], np.copy(self.test_loaded_values.data)[0, :, 0],
-            np.copy(self.test_loaded_values.data)[:, 0, 0], np.copy(self.test_loaded_values.data)[0, :, :],
-            np.copy(self.test_loaded_values.data)[:, 0, :], np.copy(self.test_loaded_values.data)[:, :, 0]
+            np.copy(self.reference_loaded_values.data), np.copy(self.reference_loaded_values.data)[0, 0, 0],
+            np.copy(self.reference_loaded_values.data)[0, 0, :], np.copy(self.reference_loaded_values.data)[0, :, 0],
+            np.copy(self.reference_loaded_values.data)[:, 0, 0], np.copy(self.reference_loaded_values.data)[0, :, :],
+            np.copy(self.reference_loaded_values.data)[:, 0, :], np.copy(self.reference_loaded_values.data)[:, :, 0]
         ]
         for i in range(len(x)):
             for j in range(len(y)):
@@ -442,9 +459,9 @@ class TestInterpolators3D(unittest.TestCase):
              np.array(np.concatenate((np.copy(self.z)[:, np.newaxis], np.copy(self.z)[:, np.newaxis]), axis=1)),
              np.array(np.copy(self.z)[0])]
         f = [
-            np.copy(self.test_loaded_values.data), np.array(np.copy(self.test_loaded_values.data)[0, 0, 0]),
-            np.array(np.concatenate((np.copy(self.test_loaded_values.data)[:, :, :, np.newaxis],
-                                     np.copy(self.test_loaded_values.data)[:, :, :, np.newaxis]), axis=3))
+            np.copy(self.reference_loaded_values.data), np.array(np.copy(self.reference_loaded_values.data)[0, 0, 0]),
+            np.array(np.concatenate((np.copy(self.reference_loaded_values.data)[:, :, :, np.newaxis],
+                                     np.copy(self.reference_loaded_values.data)[:, :, :, np.newaxis]), axis=3))
         ]
 
         for i in range(len(x)):
