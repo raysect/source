@@ -313,7 +313,7 @@ class TestInterpolators2D(unittest.TestCase):
                 ValueError, interpolator, x=self.xsamples_out_of_bounds[i], y=self.ysamples_out_of_bounds[i]
             )
 
-        # Test extrapolation inside extrapolation range matches the predefined values
+        # Test extrapolation inside extrapolation range matches the predefined values.
         for i in range(len(self.xsamples_in_bounds)):
             if significant_tolerance is None:
                 delta_max = np.abs(extrapolation_data[i]/np.power(10., PRECISION - 1))

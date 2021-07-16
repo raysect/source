@@ -34,7 +34,7 @@ This script has been used to calculate the reference data for the 1D cubic inter
 
 from raysect.core.math.function.float.function1d.tests.test_interpolator import X_LOWER, X_UPPER, NB_XSAMPLES, NB_X, \
     X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR, EXTRAPOLATION_RANGE, \
-    N_EXTRAPOLATION
+    N_EXTRAPOLATION, large_extrapolation_range
 
 from raysect.core.math.function.float.function1d.interpolate import Interpolate1DArray
 import numpy as np
@@ -47,35 +47,6 @@ np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: form
 
 def function_to_spline(x_func, factor_in):
     return factor_in*np.sin(x_func)
-
-
-def large_extrapolation_range(xsamples_in, extrapolation_range, n_extrap):
-    x_lower = np.linspace(xsamples_in[0] - extrapolation_range, xsamples_in[0], n_extrap + 1)[:-1]
-    x_upper = np.linspace(xsamples_in[-1], xsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
-
-    xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
-    edge_start_x = np.arange(0, n_extrap, 1, dtype=int)
-    edge_end_x = np.arange(len(xsamples_in_expanded) - 1, len(xsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
-    edge_indicies_x = np.concatenate((edge_start_x, edge_end_x), axis=0)
-
-    xsamples_extrap_in_bounds = []
-    for i_x in range(len(xsamples_in_expanded)):
-        if not (i_x not in edge_indicies_x):
-            xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
-    return np.array(xsamples_extrap_in_bounds)
-
-
-def extrapolation_out_of_bound_points(x_lower, x_upper, x_extrap_delta_max):
-    xsamples_extrap_out_of_bounds_options = np.array(
-        [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
-
-    xsamples_extrap_out_of_bounds = []
-    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
-    for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
-        if i_x in edge_indicies:
-                    xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
-    return np.array(xsamples_extrap_out_of_bounds)
-
 
 # def linear_extrapolation(m, x2, x1, f1):
 #     return f1 + m*(x2-x1)

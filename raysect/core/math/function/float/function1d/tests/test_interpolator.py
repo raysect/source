@@ -39,6 +39,36 @@ from raysect.core.math.function.float.function1d.interpolate import Interpolate1
 from raysect.core.math.function.float.function1d.tests.data_store.interpolator1d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 
+
+
+def large_extrapolation_range(xsamples_in, extrapolation_range, n_extrap):
+    x_lower = np.linspace(xsamples_in[0] - extrapolation_range, xsamples_in[0], n_extrap + 1)[:-1]
+    x_upper = np.linspace(xsamples_in[-1], xsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+
+    xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
+    edge_start_x = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_x = np.arange(len(xsamples_in_expanded) - 1, len(xsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_indicies_x = np.concatenate((edge_start_x, edge_end_x), axis=0)
+
+    xsamples_extrap_in_bounds = []
+    for i_x in range(len(xsamples_in_expanded)):
+        if not (i_x not in edge_indicies_x):
+            xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
+    return np.array(xsamples_extrap_in_bounds)
+
+
+def extrapolation_out_of_bound_points(x_lower, x_upper, x_extrap_delta_max, extrapolation_range):
+    xsamples_extrap_out_of_bounds_options = np.array(
+        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + extrapolation_range + x_extrap_delta_max])
+
+    xsamples_extrap_out_of_bounds = []
+    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
+        if i_x in edge_indicies:
+                    xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
+    return np.array(xsamples_extrap_out_of_bounds)
+
+
 X_LOWER = 0.0
 X_UPPER = 1.0
 X_EXTRAP_DELTA_MAX = 0.08
@@ -76,20 +106,27 @@ class TestInterpolators1D(unittest.TestCase):
         cls.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
 
         #: x values on which extrapolation_data arrays were sampled on.
-        cls.xsamples_extrap = np.array(
-            [
-                X_LOWER - X_EXTRAP_DELTA_MAX,
-                X_LOWER - X_EXTRAP_DELTA_MIN,
-                X_UPPER + X_EXTRAP_DELTA_MIN,
-                X_UPPER + X_EXTRAP_DELTA_MAX,
-            ],
-            dtype=np.float64,
+        #: x, y values on which extrapolation_data arrays were sampled on.
+        # Extrapolation x and y values.
+        cls.xsamples_out_of_bounds = extrapolation_out_of_bound_points(
+                X_LOWER, X_UPPER, X_EXTRAP_DELTA_MAX, EXTRAPOLATION_RANGE
         )
+        cls.xsamples_in_bounds = large_extrapolation_range(cls.xsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
+
+        # cls.xsamples_extrap = np.array(
+        #     [
+        #         X_LOWER - X_EXTRAP_DELTA_MAX,
+        #         X_LOWER - X_EXTRAP_DELTA_MIN,
+        #         X_UPPER + X_EXTRAP_DELTA_MIN,
+        #         X_UPPER + X_EXTRAP_DELTA_MAX,
+        #     ],
+        #     dtype=np.float64,
+        # )
 
     @classmethod
     def tearDownClass(cls) -> None:
         """
-        Remove the larger classes holding load values
+        Remove the larger classes holding loaded values.
         """
         try:
             del cls.reference_loaded_values
@@ -197,8 +234,12 @@ class TestInterpolators1D(unittest.TestCase):
         interpolator, _, _ = self.setup_linear(
             'none', EXTRAPOLATION_RANGE, big_values=False, small_values=False
         )
-        self.assertRaises(ValueError, interpolator, self.xsamples_extrap[1])
-        self.assertRaises(ValueError, interpolator, self.xsamples_extrap[2])
+        for i in range(len(self.xsamples_in_bounds)):
+            with self.assertRaises(
+                    ValueError, msg=f'No ValueError raised when testing extrapolator type none, at point '
+                                    f'x ={self.xsamples_in_bounds[i]} that should be '
+                                    f'outside of the interpolator range of {self.x[0]}<=x<={self.x[-1]}'):
+                interpolator(self.xsamples_in_bounds[i])
 
     def test_linear_interpolation_extrapolators(self):
         """
@@ -265,20 +306,33 @@ class TestInterpolators1D(unittest.TestCase):
                 self.run_general_extrapolation_tests(interpolator, extrapolation_data)
             self.run_general_interpolation_tests(interpolator, interpolation_data)
 
-    def run_general_extrapolation_tests(self, interpolator, extrapolation_data):
-        # Test extrapolator out of range, there should be an error raised
-        self.assertRaises(ValueError, interpolator, self.xsamples_extrap[0])
-        self.assertRaises(ValueError, interpolator, self.xsamples_extrap[-1])
+    def run_general_extrapolation_tests(self, interpolator, extrapolation_data, extrapolator_type=''):
+        # Test extrapolator out of range, there should be an error raised.
+        for i in range(len(self.xsamples_out_of_bounds)):
+            self.assertRaises(
+                ValueError, interpolator, x=self.xsamples_out_of_bounds[i]
+            )
 
-        # Test extrapolation inside extrapolation range matches the predefined values
-        delta_max = np.abs(extrapolation_data[1]/np.power(10., PRECISION - 1))
-        self.assertAlmostEqual(
-            interpolator(self.xsamples_extrap[1]), extrapolation_data[1], delta=delta_max
-        )
-        delta_max = np.abs(extrapolation_data[2]/np.power(10., PRECISION - 1))
-        self.assertAlmostEqual(
-            interpolator(self.xsamples_extrap[2]), extrapolation_data[2], delta=delta_max
-        )
+        # Test extrapolation inside extrapolation range matches the predefined values.
+        for i in range(len(self.xsamples_in_bounds)):
+            delta_max = np.abs(extrapolation_data[i]/np.power(10., PRECISION - 1))
+            self.assertAlmostEqual(
+                interpolator(self.xsamples_in_bounds[i]), extrapolation_data[i],
+                delta=delta_max, msg='Failed for ' + extrapolator_type + f'{self.xsamples_in_bounds[i]}'
+            )
+
+        # self.assertRaises(ValueError, interpolator, self.xsamples_extrap[0])
+        # self.assertRaises(ValueError, interpolator, self.xsamples_extrap[-1])
+        #
+        # # Test extrapolation inside extrapolation range matches the predefined values
+        # delta_max = np.abs(extrapolation_data[1]/np.power(10., PRECISION - 1))
+        # self.assertAlmostEqual(
+        #     interpolator(self.xsamples_extrap[1]), extrapolation_data[1], delta=delta_max
+        # )
+        # delta_max = np.abs(extrapolation_data[2]/np.power(10., PRECISION - 1))
+        # self.assertAlmostEqual(
+        #     interpolator(self.xsamples_extrap[2]), extrapolation_data[2], delta=delta_max
+        # )
 
     def run_general_interpolation_tests(self, interpolator, interpolation_data):
         # Test interpolation against xsample
