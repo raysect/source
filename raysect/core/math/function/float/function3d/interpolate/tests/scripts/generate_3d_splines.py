@@ -33,6 +33,8 @@ from raysect.core.math.function.float.function3d.interpolate.interpolator3darray
 from matplotlib.colors import ListedColormap, LogNorm, SymLogNorm
 import scipy
 import sys
+from raysect.core.math.function.float.function3d.interpolate.tests.data_store.interpolator3d_test_data import \
+    TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 
 X_LOWER = -1.0
 X_UPPER = 1.0
@@ -180,7 +182,7 @@ def function_to_spline(x_input, y_input, z_input, factor):
 
 if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
-    big_values = False
+    big_values = True
     small_values = False
 
     print('Using scipy version', scipy.__version__)
@@ -200,13 +202,20 @@ if __name__ == '__main__':
     x_in_full, y_in_full, z_in_full = np.meshgrid(x_in, y_in, z_in, indexing='ij')
     f_in = function_to_spline(x_in_full, y_in_full, z_in_full, factor)
 
-    power_each_element = np.array(np.around(np.log10(np.abs(f_in))), dtype=int)
-    for i in range(len(x_in)):
-        for j in range(len(y_in)):
-            for k in range(len(z_in)):
-                f_in[i, j, k] = np.around(f_in[i, j, k], 12 - power_each_element[i, j, k])
-    print(f_in)
-    quit()
+    # power_each_element = np.array(np.around(np.log10(np.abs(f_in))), dtype=int)
+    # for i in range(len(x_in)):
+    #     for j in range(len(y_in)):
+    #         for k in range(len(z_in)):
+    #             f_in[i, j, k] = np.around(f_in[i, j, k], 12 - power_each_element[i, j, k])
+    use_saved_datastore_spline_knots = True
+    if use_saved_datastore_spline_knots:
+        if big_values:
+            reference_loaded_values = TestInterpolatorLoadBigValues()
+        elif small_values:
+            reference_loaded_values = TestInterpolatorLoadSmallValues()
+        else:
+            reference_loaded_values = TestInterpolatorLoadNormalValues()
+        f_in = reference_loaded_values.data
     print('Save this to self.data in test_interpolator:\n', repr(f_in))
 
     xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
@@ -222,7 +231,7 @@ if __name__ == '__main__':
             Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
         )
 
-    interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0,
+    interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'linear', extrapolation_range_x=2.0,
                                          extrapolation_range_y=2.0, extrapolation_range_z=2.0)
 
     # extrapolation to save

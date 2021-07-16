@@ -206,8 +206,8 @@ class TestInterpolators3D(unittest.TestCase):
             )
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear')
-            self.run_general_interpolation_tests(interpolator, interpolation_data, interpolator_str='linear')
+                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, interpolator_str='linear values')
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -216,9 +216,9 @@ class TestInterpolators3D(unittest.TestCase):
             )
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear')
+                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear big values')
 
-            self.run_general_interpolation_tests(interpolator, interpolation_data, interpolator_str='linear')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, interpolator_str='linear big values')
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -227,9 +227,9 @@ class TestInterpolators3D(unittest.TestCase):
             )
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear')
+                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear small values')
 
-            self.run_general_interpolation_tests(interpolator, interpolation_data, interpolator_str='linear')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, interpolator_str='linear small values')
 
     def test_cubic_interpolation_extrapolators(self):
         """
