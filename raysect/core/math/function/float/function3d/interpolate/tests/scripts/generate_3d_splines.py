@@ -102,15 +102,15 @@ def large_extrapolation_range(xsamples_in, ysamples_in, zsamples_in, extrapolati
     return np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds), np.array(zsamples_extrap_in_bounds)
 
 
-def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max, z_extrap_delta_max):
+def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max, z_extrap_delta_max, extrapolation_range):
     xsamples_extrap_out_of_bounds_options = np.array(
-        [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
+        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + extrapolation_range + x_extrap_delta_max])
 
     ysamples_extrap_out_of_bounds_options = np.array(
-        [y_lower - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_max])
+        [y_lower - extrapolation_range - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + extrapolation_range + y_extrap_delta_max])
 
     zsamples_extrap_out_of_bounds_options = np.array(
-        [z_lower - z_extrap_delta_max, (z_lower + z_upper) / 2., z_upper + z_extrap_delta_max])
+        [z_lower - extrapolation_range - z_extrap_delta_max, (z_lower + z_upper) / 2., z_upper + extrapolation_range + z_extrap_delta_max])
     xsamples_extrap_out_of_bounds = []
     ysamples_extrap_out_of_bounds = []
     zsamples_extrap_out_of_bounds = []
@@ -181,7 +181,7 @@ def function_to_spline(x_input, y_input, z_input, factor):
 if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
     big_values = False
-    small_values = True
+    small_values = False
 
     print('Using scipy version', scipy.__version__)
 
@@ -200,6 +200,13 @@ if __name__ == '__main__':
     x_in_full, y_in_full, z_in_full = np.meshgrid(x_in, y_in, z_in, indexing='ij')
     f_in = function_to_spline(x_in_full, y_in_full, z_in_full, factor)
 
+    power_each_element = np.array(np.around(np.log10(np.abs(f_in))), dtype=int)
+    for i in range(len(x_in)):
+        for j in range(len(y_in)):
+            for k in range(len(z_in)):
+                f_in[i, j, k] = np.around(f_in[i, j, k], 12 - power_each_element[i, j, k])
+    print(f_in)
+    quit()
     print('Save this to self.data in test_interpolator:\n', repr(f_in))
 
     xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
@@ -215,7 +222,7 @@ if __name__ == '__main__':
             Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
         )
 
-    interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'linear', extrapolation_range_x=2.0,
+    interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0,
                                          extrapolation_range_y=2.0, extrapolation_range_z=2.0)
 
     # extrapolation to save

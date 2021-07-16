@@ -92,12 +92,12 @@ def large_extrapolation_range(xsamples_in, ysamples_in, extrapolation_range, n_e
     return np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds)
 
 
-def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, z_upper, x_extrap_delta_max, y_extrap_delta_max):
+def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, x_extrap_delta_max, y_extrap_delta_max, extrapolation_range):
     xsamples_extrap_out_of_bounds_options = np.array(
-        [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
+        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + extrapolation_range + x_extrap_delta_max])
 
     ysamples_extrap_out_of_bounds_options = np.array(
-        [y_lower - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + y_extrap_delta_max])
+        [y_lower - extrapolation_range - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + extrapolation_range + y_extrap_delta_max])
 
     xsamples_extrap_out_of_bounds = []
     ysamples_extrap_out_of_bounds = []
@@ -244,7 +244,7 @@ if __name__ == '__main__':
         surf = ax[0].plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm, linewidth=0, antialiased=False)
         main_plots_on = True
         interpolator2D = Interpolator2DArray(
-            x_in, y_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0
+            x_in, y_in, f_in, 'linear', 'nearest', extrapolation_range_x=2.0, extrapolation_range_y=2.0
         )
 
         if main_plots_on:

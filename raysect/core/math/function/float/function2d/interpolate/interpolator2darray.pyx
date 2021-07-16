@@ -566,29 +566,23 @@ cdef class _Extrapolator2DNone(_Extrapolator2D):
            super().__init__(x, y, f, external_interpolator, extrapolation_range_x, extrapolation_range_y)
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
-        if px != self._x[-1]:
-            raise ValueError(
-                f'Extrapolation not available. Interpolate within function range x '
-                f'{np.min(self._x)}-{np.max(self._x)}.'
-            )
-        return self._external_interpolator.evaluate(self._x[-1], py, index_x, index_y)
+        raise ValueError(
+            f'Extrapolation not available. Interpolate within function range x '
+            f'{np.min(self._x)}-{np.max(self._x)}.'
+        )
 
     cdef double evaluate_edge_y(self, double px, double py, int index_x, int index_y, int edge_y_index) except? -1e999:
-        if py != self._y[-1]:
-            raise ValueError(
-                f'Extrapolation not available. Interpolate within function range y '
-                f'{np.min(self._y)}-{np.max(self._y)}.'
-            )
-        return self._external_interpolator.evaluate(px, self._y[-1], index_x, index_y)
+        raise ValueError(
+            f'Extrapolation not available. Interpolate within function range y '
+            f'{np.min(self._y)}-{np.max(self._y)}.'
+        )
 
     cdef double evaluate_edge_xy(self, double px, double py, int index_x, int index_y, int edge_x_index, int edge_y_index) except? -1e999:
-        if px != self._x[-1] and py != self._y[-1]:
-            raise ValueError(
-                f'Extrapolation not available. Interpolate within function range x '
-                f'{np.min(self._x)}-{np.max(self._x)} '
-                f'and y {np.min(self._y)}-{np.max(self._y)}.'
-            )
-        return self._external_interpolator.evaluate(self._x[-1], self._y[-1], index_x, index_y)
+        raise ValueError(
+            f'Extrapolation not available. Interpolate within function range x '
+            f'{np.min(self._x)}-{np.max(self._x)} '
+            f'and y {np.min(self._y)}-{np.max(self._y)}.'
+        )
 
 
 cdef class _Extrapolator2DNearest(_Extrapolator2D):

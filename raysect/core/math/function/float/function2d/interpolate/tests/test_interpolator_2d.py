@@ -70,8 +70,7 @@ class TestInterpolators2D(unittest.TestCase):
         #: x, y values on which extrapolation_data arrays were sampled on.
         # Extrapolation x and y values.
         cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds = extrapolation_out_of_bound_points(
-                X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
-                Y_EXTRAP_DELTA_MIN
+                X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, EXTRAPOLATION_RANGE
         )
         cls.xsamples_in_bounds, cls.ysamples_in_bounds = large_extrapolation_range(
             cls.xsamples, cls.ysamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION
@@ -95,8 +94,7 @@ class TestInterpolators2D(unittest.TestCase):
         except AttributeError:
             pass
 
-    def setup_linear(
-            self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool) -> None:
+    def setup_linear(self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool):
         """
         Sets precalculated values for linear interpolator.
         Called in every test method that addresses linear interpolation.
@@ -192,9 +190,12 @@ class TestInterpolators2D(unittest.TestCase):
             'none', EXTRAPOLATION_RANGE, big_values=False, small_values=False
         )
         for i in range(len(self.xsamples_in_bounds)):
-            self.assertRaises(
-                ValueError, interpolator, x=self.xsamples_in_bounds[i], y=self.ysamples_in_bounds[i]
-            )
+            with self.assertRaises(
+                    ValueError, msg=f'No ValueError raised when testing extrapolator type none, at point '
+                                    f'x ={self.xsamples_in_bounds[i]} and y={self.ysamples_in_bounds[i]} that should be '
+                                    f'outside of the interpolator range of {self.x[0]}<=x<={self.x[-1]} and '
+                                    f'{self.y[0]}<=y<={self.y[-1]}'):
+                interpolator(self.xsamples_in_bounds[i], self.ysamples_in_bounds[i])
 
     def test_linear_interpolation_extrapolators(self):
         """
