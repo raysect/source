@@ -192,8 +192,8 @@ class TestInterpolators2D(unittest.TestCase):
         for i in range(len(self.xsamples_in_bounds)):
             with self.assertRaises(
                     ValueError, msg=f'No ValueError raised when testing extrapolator type none, at point '
-                                    f'x ={self.xsamples_in_bounds[i]} and y={self.ysamples_in_bounds[i]} that should be '
-                                    f'outside of the interpolator range of {self.x[0]}<=x<={self.x[-1]} and '
+                                    f'x ={self.xsamples_in_bounds[i]} and y={self.ysamples_in_bounds[i]} that should be'
+                                    f' outside of the interpolator range of {self.x[0]}<=x<={self.x[-1]} and '
                                     f'{self.y[0]}<=y<={self.y[-1]}'):
                 interpolator(self.xsamples_in_bounds[i], self.ysamples_in_bounds[i])
 
@@ -212,8 +212,8 @@ class TestInterpolators2D(unittest.TestCase):
             )
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type)
-            self.run_general_interpolation_tests(interpolator, interpolation_data)
+                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values')
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -222,8 +222,8 @@ class TestInterpolators2D(unittest.TestCase):
             )
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type)
-            self.run_general_interpolation_tests(interpolator, interpolation_data)
+                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear big values')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear big values')
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -232,9 +232,9 @@ class TestInterpolators2D(unittest.TestCase):
             )
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type)
+                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear small values')
 
-            self.run_general_interpolation_tests(interpolator, interpolation_data)
+            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear small values')
 
     def test_cubic_interpolation_extrapolators(self):
         """
@@ -263,9 +263,10 @@ class TestInterpolators2D(unittest.TestCase):
                     significant_tolerance_extrapolation = significant_tolerance
                 self.run_general_extrapolation_tests(
                     interpolator, extrapolation_data,
-                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation
+                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation,
+                    interpolator_str='cubic values'
                 )
-            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance)
+            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, extrapolator_type=extrapolator_type, interpolator_str='cubic values')
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -279,9 +280,10 @@ class TestInterpolators2D(unittest.TestCase):
                     significant_tolerance_extrapolation = significant_tolerance
                 self.run_general_extrapolation_tests(
                     interpolator, extrapolation_data,
-                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation
+                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation,
+                    interpolator_str='cubic big values'
                 )
-            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance)
+            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, extrapolator_type=extrapolator_type, interpolator_str='cubic big values')
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -295,12 +297,13 @@ class TestInterpolators2D(unittest.TestCase):
                     significant_tolerance_extrapolation = significant_tolerance
                 self.run_general_extrapolation_tests(
                     interpolator, extrapolation_data,
-                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation
+                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation,
+                    interpolator_str='cubic small values'
                 )
 
-            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance)
+            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, extrapolator_type=extrapolator_type, interpolator_str='cubic small values')
 
-    def run_general_extrapolation_tests(self, interpolator, extrapolation_data, extrapolator_type='', significant_tolerance=None):
+    def run_general_extrapolation_tests(self, interpolator, extrapolation_data, extrapolator_type='', significant_tolerance=None, interpolator_str=''):
         """
         Run general tests for extrapolators.
 
@@ -309,9 +312,14 @@ class TestInterpolators2D(unittest.TestCase):
         """
         # Test extrapolator out of range, there should be an error raised.
         for i in range(len(self.xsamples_out_of_bounds)):
-            self.assertRaises(
-                ValueError, interpolator, x=self.xsamples_out_of_bounds[i], y=self.ysamples_out_of_bounds[i]
-            )
+            with self.assertRaises(
+                    ValueError, msg=f'No ValueError raised when testing interpolator type {interpolator_str} '
+                                    f'extrapolator type {extrapolator_type}, at point x ='
+                                    f'{self.xsamples_out_of_bounds[i]} y = {self.ysamples_out_of_bounds[i]} that '
+                                    f'should be outside of the interpolator range of {self.x[0]}<=x<={self.x[-1]},  '
+                                    f'{self.y[0]}<=y<={self.y[-1]} and also outside of the extrapolation range '
+                                    f'{EXTRAPOLATION_RANGE} from these edges.'):
+                interpolator(x=self.xsamples_out_of_bounds[i], y=self.ysamples_out_of_bounds[i])
 
         # Test extrapolation inside extrapolation range matches the predefined values.
         for i in range(len(self.xsamples_in_bounds)):
@@ -322,11 +330,14 @@ class TestInterpolators2D(unittest.TestCase):
             self.assertAlmostEqual(
                 interpolator(
                     self.xsamples_in_bounds[i], self.ysamples_in_bounds[i]), extrapolation_data[i],
-                delta=delta_max, msg='Failed for ' + extrapolator_type + f'{self.xsamples_in_bounds[i]} and '
-                                                                         f'{self.ysamples_in_bounds[i]}'
+                delta=delta_max, msg=f'Failed for interpolator {interpolator_str} with extrapolator {extrapolator_type}'
+                                     f', attempting to extrapolate at point x ={self.xsamples_in_bounds[i]}, '
+                                     f'y ={self.ysamples_in_bounds[i]} that should be outside of the interpolator '
+                                     f'range of {self.x[0]}<=x<={self.x[-1]}, {self.y[0]}<=y<={self.y[-1]} and '
+                                     f'inside the extrapolation range {EXTRAPOLATION_RANGE} from these edges.'
             )
 
-    def run_general_interpolation_tests(self, interpolator, interpolation_data, significant_tolerance=None):
+    def run_general_interpolation_tests(self, interpolator, interpolation_data, significant_tolerance=None, extrapolator_type='', interpolator_str=''):
         """
         Run general tests for interpolators to match the test data.
         """
@@ -339,21 +350,29 @@ class TestInterpolators2D(unittest.TestCase):
                     delta_max = np.abs(interpolation_data[i, j] * 10 ** (-significant_tolerance))
                 self.assertAlmostEqual(
                     interpolator(self.xsamples[i], self.ysamples[j]), interpolation_data[i, j],
-                    delta=delta_max
+                    delta=delta_max,
+                    msg=f'Failed for interpolator {interpolator_str} with extrapolator {extrapolator_type}, attempting to '
+                        f'interpolate at point x ={self.xsamples[i]}, y ={self.ysamples[i]} that should be inside of '
+                        f'the interpolator range of {self.x[0]}<=x<={self.x[-1]}, {self.y[0]}<=y<={self.y[-1]}.'
+
                 )
 
-    def initialise_tests_on_interpolators(self, x_values, y_values, f_values):
+    def initialise_tests_on_interpolators(self, x_values, y_values, f_values, problem_str=''):
         """
         Method to create a new interpolator with different x, y, f values to test input failures.
         """
         # Test for all combinations
         for extrapolator_type in id_to_extrapolator.keys():
             for interpolator_type in id_to_interpolator.keys():
-                self.assertRaises(
-                    ValueError, Interpolator2DArray, x=x_values, y=y_values, f=f_values,
-                    interpolation_type=interpolator_type, extrapolation_type=extrapolator_type,
-                    extrapolation_range_x=2.0, extrapolation_range_y=2.0
-                )
+                with self.assertRaises(
+                        ValueError, msg=f'No ValueError raised when testing interpolator type {interpolator_type} '
+                                        f'extrapolator type {extrapolator_type}, trying to intitialise a test with '
+                                        f'incorrect {problem_str}.'):
+                    Interpolator2DArray(
+                        x=x_values, y=y_values, f=f_values,
+                        interpolation_type=interpolator_type, extrapolation_type=extrapolator_type,
+                        extrapolation_range_x=2.0, extrapolation_range_y=2.0
+                    )
 
     def test_initialisation_errors(self):
         """
@@ -366,33 +385,51 @@ class TestInterpolators2D(unittest.TestCase):
         x_wrong = np.copy(self.x)
         x_wrong[0] = self.x[1]
         x_wrong[1] = self.x[0]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            x_wrong, self.y, self.reference_loaded_values.data,
+            problem_str='monotonicity with the first and second x spline knot the wrong way around'
+        )
 
         # monotonicity y
         y_wrong = np.copy(self.y)
         y_wrong[0] = self.y[1]
         y_wrong[1] = self.y[0]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            self.x, y_wrong, self.reference_loaded_values.data,
+            problem_str='monotonicity with the first and second y spline knot the wrong way around'
+
+        )
 
         # test repeated coordinate x
         x_wrong = np.copy(self.x)
         x_wrong[0] = x_wrong[1]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            x_wrong, self.y, self.reference_loaded_values.data,
+            problem_str='the first spline knot is a repeat of the second x spline knot'
+        )
 
         # test repeated coordinate y
         y_wrong = np.copy(self.y)
         y_wrong[0] = y_wrong[1]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            self.x, y_wrong, self.reference_loaded_values.data,
+            problem_str='the first spline knot is a repeat of the second y spline knot'
+
+        )
 
         # mismatch array size between x and data
         x_wrong = np.copy(self.x)
         x_wrong = x_wrong[:-1]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            x_wrong, self.y, self.reference_loaded_values.data, problem_str='the last x spline knot has been removed'
+        )
 
         # mismatch array size between y and data
         y_wrong = np.copy(self.y)
         y_wrong = y_wrong[:-1]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            self.x, y_wrong, self.reference_loaded_values.data, problem_str='the last y spline knot has been removed'
+        )
 
         # Test array length 1, Arrays are too short.
         self.run_incorrect_array_length_combination()
@@ -411,11 +448,32 @@ class TestInterpolators2D(unittest.TestCase):
             np.copy(self.reference_loaded_values.data), np.copy(self.reference_loaded_values.data)[0, 0],
             np.copy(self.reference_loaded_values.data)[0, :], np.copy(self.reference_loaded_values.data)[:, 0]
         ]
+        incorrect_x = [False, True]
+        incorrect_y = [False, True]
+        incorrect_fx = [False, True, True, False]
+        incorrect_fy = [False, True, False, True]
         for i in range(len(x)):
+            if incorrect_x[i]:
+                x_str = 'x'
+            else:
+                x_str = ''
             for j in range(len(y)):
+                if incorrect_y[j]:
+                    y_str = 'y'
+                else:
+                    y_str = ''
                 for k in range(len(f)):
+                    if incorrect_fx[k]:
+                        fx_str = 'f in x'
+                    else:
+                        fx_str = ''
+                    if incorrect_fy[k]:
+                        fy_str = 'f in y'
+                    else:
+                        fy_str = ''
                     if not (i == 0 and j == 0 and k == 0):
-                        self.initialise_tests_on_interpolators(x[i], y[j], f[k])
+                        problem_str = f'there is only 1 spline knot in: ({x_str}, {y_str}, {fx_str}, {fy_str})'
+                        self.initialise_tests_on_interpolators(x[i], y[j], f[k], problem_str=problem_str)
 
     def run_incorrect_array_dimension_combination(self):
         """
@@ -433,9 +491,49 @@ class TestInterpolators2D(unittest.TestCase):
             np.array(np.concatenate((np.copy(self.reference_loaded_values.data)[:, :, np.newaxis],
                                      np.copy(self.reference_loaded_values.data)[:, :, np.newaxis]), axis=2))
         ]
-
+        incorrect_x_short = [False, False, True]
+        incorrect_y_short = [False, False, True]
+        incorrect_fx_short = [False, True, False]
+        incorrect_fy_short = [False, True, False]
+        incorrect_x_long = [False, True, False]
+        incorrect_y_long = [False, True, False]
+        incorrect_fx_long = [False, False, True]
+        incorrect_fy_long = [False, False, True]
         for i in range(len(x)):
+            if incorrect_x_long[i]:
+                x_str_long = 'x'
+            else:
+                x_str_long = ''
+            if incorrect_x_short[i]:
+                x_str_short = 'x'
+            else:
+                x_str_short = ''
             for j in range(len(y)):
+                if incorrect_y_long[j]:
+                    y_str_long = 'y'
+                else:
+                    y_str_long = ''
+                if incorrect_y_short[j]:
+                    y_str_short = 'y'
+                else:
+                    y_str_short = ''
                 for k in range(len(f)):
+                    if incorrect_fx_long[k]:
+                        fx_str_long = 'f in x'
+                    else:
+                        fx_str_long = ''
+                    if incorrect_fy_long[k]:
+                        fy_str_long = 'f in y'
+                    else:
+                        fy_str_long = ''
+                    if incorrect_fx_short[k]:
+                        fx_str_short = 'f in x'
+                    else:
+                        fx_str_short = ''
+                    if incorrect_fy_short[k]:
+                        fy_str_short = 'f in y'
+                    else:
+                        fy_str_short = ''
                     if not (i == 0 and j == 0 and k == 0):
-                        self.initialise_tests_on_interpolators(x[i], y[j], f[k])
+                        problem_str = f'there is spline knot array length is too long in : ({x_str_long}, {y_str_long}, {fx_str_long}, {fy_str_long}), too short in : ({x_str_short}, {y_str_short}, {fx_str_short}, {fy_str_short})'
+                        self.initialise_tests_on_interpolators(x[i], y[j], f[k], problem_str=problem_str)

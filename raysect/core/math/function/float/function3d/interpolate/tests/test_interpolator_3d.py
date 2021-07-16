@@ -186,10 +186,13 @@ class TestInterpolators3D(unittest.TestCase):
         """
         interpolator, _, _ = self.setup_linear('none', EXTRAPOLATION_RANGE, big_values=False, small_values=False)
         for i in range(len(self.xsamples_in_bounds)):
-            self.assertRaises(
-                ValueError, interpolator, x=self.xsamples_in_bounds[i], y=self.ysamples_in_bounds[i],
-                z=self.zsamples_in_bounds[i]
-            )
+            with self.assertRaises(
+                    ValueError, msg=f'No ValueError raised when testing extrapolator type none, at point '
+                                    f'x ={self.xsamples_in_bounds[i]}, y={self.ysamples_in_bounds[i]} and '
+                                    f'z={self.zsamples_in_bounds[i]} that should be'
+                                    f' outside of the interpolator range of {self.x[0]}<=x<={self.x[-1]}, '
+                                    f'{self.y[0]}<=y<={self.y[-1]} and {self.z[0]}<=z<={self.z[-1]}'):
+                interpolator(x=self.xsamples_in_bounds[i], y=self.ysamples_in_bounds[i], z=self.zsamples_in_bounds[i])
 
     def test_linear_interpolation_extrapolators(self):
         """
@@ -207,7 +210,7 @@ class TestInterpolators3D(unittest.TestCase):
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
                     self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values')
-            self.run_general_interpolation_tests(interpolator, interpolation_data, interpolator_str='linear values')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values')
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -218,7 +221,7 @@ class TestInterpolators3D(unittest.TestCase):
                 if extrapolator_type not in no_test_for_extrapolator:
                     self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear big values')
 
-            self.run_general_interpolation_tests(interpolator, interpolation_data, interpolator_str='linear big values')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear big values')
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -229,7 +232,7 @@ class TestInterpolators3D(unittest.TestCase):
                 if extrapolator_type not in no_test_for_extrapolator:
                     self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear small values')
 
-            self.run_general_interpolation_tests(interpolator, interpolation_data, interpolator_str='linear small values')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear small values')
 
     def test_cubic_interpolation_extrapolators(self):
         """
@@ -262,7 +265,7 @@ class TestInterpolators3D(unittest.TestCase):
                     interpolator, extrapolation_data,
                     extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation, interpolator_str='cubic values'
                 )
-            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, interpolator_str='cubic values')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, extrapolator_type=extrapolator_type, interpolator_str='cubic values')
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -279,7 +282,7 @@ class TestInterpolators3D(unittest.TestCase):
                     interpolator, extrapolation_data,
                     extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation, interpolator_str='cubic big values'
                 )
-            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, interpolator_str='cubic big values')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, extrapolator_type=extrapolator_type, interpolator_str='cubic big values')
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -297,7 +300,7 @@ class TestInterpolators3D(unittest.TestCase):
                     extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation, interpolator_str='cubic small values'
                 )
 
-            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, interpolator_str='cubic small values')
+            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, extrapolator_type=extrapolator_type, interpolator_str='cubic small values')
 
     def run_general_extrapolation_tests(self, interpolator, extrapolation_data, extrapolator_type='', significant_tolerance=None, interpolator_str=''):
         """
@@ -308,10 +311,17 @@ class TestInterpolators3D(unittest.TestCase):
         """
         # Test extrapolator out of range, there should be an error raised.
         for i in range(len(self.xsamples_out_of_bounds)):
-            self.assertRaises(
-                ValueError, interpolator, x=self.xsamples_out_of_bounds[i], y=self.ysamples_out_of_bounds[i],
-                z=self.zsamples_out_of_bounds[i]
-            )
+            with self.assertRaises(
+                    ValueError, msg=f'No ValueError raised when testing interpolator type {interpolator_str} '
+                                    f'extrapolator type {extrapolator_type}, at point x ='
+                                    f'{self.xsamples_out_of_bounds[i]} y = {self.ysamples_out_of_bounds[i]} '
+                                    f'z = {self.zsamples_out_of_bounds[i]} that '
+                                    f'should be outside of the interpolator range of {self.x[0]}<=x<={self.x[-1]},  '
+                                    f'{self.y[0]}<=y<={self.y[-1]} and {self.z[0]}<=y<={self.z[-1]} and also outside '
+                                    f'of the extrapolation range {EXTRAPOLATION_RANGE} from these edges.'):
+                interpolator(
+                    x=self.xsamples_out_of_bounds[i], y=self.ysamples_out_of_bounds[i], z=self.zsamples_out_of_bounds[i]
+                )
 
         # Test extrapolation inside extrapolation range matches the predefined values
         for i in range(len(self.xsamples_in_bounds)):
@@ -323,12 +333,15 @@ class TestInterpolators3D(unittest.TestCase):
                 interpolator(
                     self.xsamples_in_bounds[i], self.ysamples_in_bounds[i], self.zsamples_in_bounds[i]),
                 extrapolation_data[i],
-                delta=delta_max, msg=f'Failed extrapolation attempt for interpolator {interpolator_str} and extrapolator {extrapolator_type}'
-                                     f'{self.xsamples_in_bounds[i]}, {self.ysamples_in_bounds[i]} and '
-                                     f'{self.zsamples_in_bounds[i]}'
+                delta=delta_max, msg=f'Failed for interpolator {interpolator_str} with extrapolator {extrapolator_type}'
+                                     f', attempting to extrapolate at point x ={self.xsamples_in_bounds[i]}, '
+                                     f'y ={self.ysamples_in_bounds[i]} and z ={self.zsamples_in_bounds[i]} that should '
+                                     f'be outside of the interpolator range of {self.x[0]}<=x<={self.x[-1]}, '
+                                     f'{self.y[0]}<=y<={self.y[-1]} and {self.z[0]}<=z<={self.z[-1]} and '
+                                     f'inside the extrapolation range {EXTRAPOLATION_RANGE} from these edges.'
             )
 
-    def run_general_interpolation_tests(self, interpolator, interpolation_data, significant_tolerance=None, interpolator_str=''):
+    def run_general_interpolation_tests(self, interpolator, interpolation_data, significant_tolerance=None, extrapolator_type='', interpolator_str=''):
         """
         Run general tests for interpolators to match the test data.
         """
@@ -342,7 +355,12 @@ class TestInterpolators3D(unittest.TestCase):
                         delta_max = np.abs(interpolation_data[i, j, k] * 10**(-significant_tolerance))
                     self.assertAlmostEqual(
                         interpolator(self.xsamples[i], self.ysamples[j], self.zsamples[k]),
-                        interpolation_data[i, j, k], delta=delta_max
+                        interpolation_data[i, j, k], delta=delta_max,
+                        msg=f'Failed for interpolator {interpolator_str} with extrapolator {extrapolator_type}, '
+                            f'attempting to interpolate at point x ={self.xsamples[i]}, y ={self.ysamples[i]} and '
+                            f'z ={self.zsamples[i]} that should be inside of the interpolator range of '
+                            f'{self.x[0]}<=x<={self.x[-1]}, {self.y[0]}<=y<={self.y[-1]} and '
+                            f'{self.z[0]}<=z<={self.z[-1]}.'
                     )
 
     def initialise_tests_on_interpolators(self, x_values, y_values, z_values, f_values):
@@ -352,6 +370,7 @@ class TestInterpolators3D(unittest.TestCase):
         # Test for all combinations
         for extrapolator_type in id_to_extrapolator.keys():
             for interpolator_type in id_to_interpolator.keys():
+
                 self.assertRaises(
                     ValueError, Interpolator3DArray, x=x_values, y=y_values, z=z_values, f=f_values,
                     interpolation_type=interpolator_type, extrapolation_type=extrapolator_type,
