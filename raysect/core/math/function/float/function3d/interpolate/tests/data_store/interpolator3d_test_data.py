@@ -38311,3 +38311,137 @@ class TestInterpolatorLoadSmallValues(TestInterpolatorLoadValues):
        5.239536951483E-20, 1.034804216610E-20, -3.169928518264E-20, 2.179612657831E-19,
        4.676218167489E-19, 7.172823677146E-19], dtype=np.float64
         )
+
+
+class TestInterpolatorLoadNormalValuesUneven(TestInterpolatorLoadValues):
+    """
+    Loading normal sized values for a 3D sinc function test.
+
+    For description of data storage, see TestInterpolatorLoadValues.
+    """
+    def __init__(self):
+        super().__init__()
+        #: data array from a function sampled on self.x. dtype should be np.float64
+        self.data: np.array = np.array(
+            [[[]]], dtype=np.float64)
+
+
+    def setup_cubic(self):
+        self.precalc_interpolation = np.array(
+            [[[]]], dtype=np.float64
+        )
+
+        #: array holding precalculated nearest neighbour extrapolation data
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+    def setup_linear(self):
+        self.precalc_interpolation = np.array(
+         [[[]]], dtype=np.float64
+        )
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+
+class TestInterpolatorLoadBigValuesUneven(TestInterpolatorLoadValues):
+    """
+    Loading big values (10^20 times the original) instead of the original 3D sinc function test.
+
+    For description of data storage, see TestInterpolatorLoadValues.
+    """
+    def __init__(self):
+        super().__init__()
+        #: data array from a function sampled on self.x. dtype should be np.float64
+        # self.data: np.array = np.sin(self.x)
+        self.data: np.array = np.array(
+         [[[]]], dtype=np.float64)
+
+        #: array holding precalculated quadratic extrapolation data
+        self.precalc_extrapolation_quadratic: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+    def setup_cubic(self):
+        self.precalc_interpolation = np.array(
+         [[[]]], dtype=np.float64
+        )
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+    def setup_linear(self):
+        self.precalc_interpolation = np.array(
+         [[[]]], dtype=np.float64
+        )
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+
+class TestInterpolatorLoadSmallValuesUneven(TestInterpolatorLoadValues):
+
+    """
+    Loading small values (10^-20 times the original) instead of the original 3D sinc function test.
+
+    For description of data storage, see TestInterpolatorLoadValues.
+    """
+    def __init__(self):
+        super().__init__()
+        #: data array from a function sampled on self.x. dtype should be np.float64
+        # self.data: np.array = np.sin(self.x)
+        self.data: np.array = np.array(
+         [[[]]], dtype=np.float64
+        )
+
+        #: array holding precalculated quadratic extrapolation data
+        self.precalc_extrapolation_quadratic: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+    def setup_cubic(self):
+        self.precalc_interpolation = np.array(
+         [[[]]], dtype=np.float64
+        )
+        #: array holding precalculated nearest neighbour extrapolation data
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [], dtype=np.float64
+        )
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [], dtype=np.float64
+        )
+
+    def setup_linear(self):
+        self.precalc_interpolation = np.array(
+         [[[]]], dtype=np.float64
+        )
+        #: array holding precalculated nearest neighbour extrapolation data
+        self.precalc_extrapolation_nearest: np.array = np.array(
+            [], dtype=np.float64
+        )
+        #: array holding precalculated linear extrapolation data
+        self.precalc_extrapolation_linear: np.array = np.array(
+            [], dtype=np.float64
+        )

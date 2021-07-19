@@ -34,7 +34,8 @@ from matplotlib.colors import ListedColormap, LogNorm, SymLogNorm
 import scipy
 import sys
 from raysect.core.math.function.float.function3d.interpolate.tests.data_store.interpolator3d_test_data import \
-    TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
+    TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues,\
+    TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven
 
 X_LOWER = -1.0
 X_UPPER = 1.0
@@ -180,10 +181,21 @@ def function_to_spline(x_input, y_input, z_input, factor):
     return factor*np.sinc(t)
 
 
+def uneven_linspace(x_lower, x_upper, n_2, offset_fraction):
+    dx = (x_upper - x_lower)/(n_2 - 1)
+    offset_x = offset_fraction * dx
+    x1 = np.linspace(x_lower, x_upper, NB_X)
+    x2 = np.linspace(x_lower + offset_x, x_upper + offset_x, n_2)[:-1]
+    return np.sort(np.concatenate((x1, x2), axis=0))
+
+
 if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
-    big_values = True
+    big_values = False
     small_values = False
+
+    uneven_spacing = True
+    use_saved_datastore_spline_knots = False
 
     print('Using scipy version', scipy.__version__)
 
@@ -195,10 +207,15 @@ if __name__ == '__main__':
     else:
         factor = 1.
 
-    x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
-    y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
-    z_in = np.linspace(Z_LOWER, Z_UPPER, NB_Z)
-    x_in_full, y_in_full = np.meshgrid(x_in, y_in)
+    if uneven_spacing:
+        x_in = uneven_linspace(X_LOWER, X_UPPER, NB_X, offset_fraction=1./3.)
+        y_in = uneven_linspace(Y_LOWER, Y_UPPER, NB_Y, offset_fraction=1./3.)
+        z_in = uneven_linspace(Z_LOWER, Z_UPPER, NB_Z, offset_fraction=1./3.)
+    else:
+        x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
+        y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
+        z_in = np.linspace(Z_LOWER, Z_UPPER, NB_Z)
+
     x_in_full, y_in_full, z_in_full = np.meshgrid(x_in, y_in, z_in, indexing='ij')
     f_in = function_to_spline(x_in_full, y_in_full, z_in_full, factor)
 
@@ -207,14 +224,21 @@ if __name__ == '__main__':
     #     for j in range(len(y_in)):
     #         for k in range(len(z_in)):
     #             f_in[i, j, k] = np.around(f_in[i, j, k], 12 - power_each_element[i, j, k])
-    use_saved_datastore_spline_knots = True
     if use_saved_datastore_spline_knots:
-        if big_values:
-            reference_loaded_values = TestInterpolatorLoadBigValues()
-        elif small_values:
-            reference_loaded_values = TestInterpolatorLoadSmallValues()
+        if uneven_spacing:
+            if big_values:
+                reference_loaded_values = TestInterpolatorLoadBigValuesUneven()
+            elif small_values:
+                reference_loaded_values = TestInterpolatorLoadSmallValuesUneven()
+            else:
+                reference_loaded_values = TestInterpolatorLoadNormalValuesUneven()
         else:
-            reference_loaded_values = TestInterpolatorLoadNormalValues()
+            if big_values:
+                reference_loaded_values = TestInterpolatorLoadBigValues()
+            elif small_values:
+                reference_loaded_values = TestInterpolatorLoadSmallValues()
+            else:
+                reference_loaded_values = TestInterpolatorLoadNormalValues()
         f_in = reference_loaded_values.data
     print('Save this to self.data in test_interpolator:\n', repr(f_in))
 
@@ -231,9 +255,10 @@ if __name__ == '__main__':
             Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
         )
 
-    interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'linear', extrapolation_range_x=2.0,
+    interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0,
                                          extrapolation_range_y=2.0, extrapolation_range_z=2.0)
-
+    # print(interpolator3D(x_in[4], -1.1, 3.))
+    # quit()
     # extrapolation to save
     f_extrapolation_output = np.zeros((len(xsamples_in_bounds),))
     for i in range(len(xsamples_in_bounds)):
@@ -259,7 +284,7 @@ if __name__ == '__main__':
         mayavi_plots_on = False
         if main_plots_on:
             fig, ax = plt.subplots(1, 4)
-            index_x_in = 5
+            index_x_in = 4
             if not (x_in[index_x_in] == xsamples).any():
                 raise ValueError(
                     f'To compare a slice, NB_XSAMPLES={NB_XSAMPLES}-1, NB_YSAMPLES={NB_YSAMPLES}-1, NB_ZSAMPLES='
