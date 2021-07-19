@@ -428,7 +428,9 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
         self._last_index = self._x.shape[0] - 1
         array_derivative = _ArrayDerivative1D(self._x, self._f)
         dfdx_start[0] = array_derivative.evaluate(0, derivative_order_x=1)
-        dfdx_start[1] = array_derivative.evaluate(1, derivative_order_x=1)
+        # Need to have the first derivatives normalised to the distance between spline knot 0->1 (not 1->2),
+        # So un-normalise then re-normalise.
+        dfdx_start[1] = (array_derivative.evaluate(1, derivative_order_x=1)/(x[2] - x[1]))*(x[1] - x[0])
 
         dfdx_end[0] = array_derivative.evaluate(self._last_index - 1, derivative_order_x=1)
         dfdx_end[1] = array_derivative.evaluate(self._last_index, derivative_order_x=1)

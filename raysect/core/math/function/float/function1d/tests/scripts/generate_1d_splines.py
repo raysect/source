@@ -34,7 +34,7 @@ This script has been used to calculate the reference data for the 1D cubic inter
 
 from raysect.core.math.function.float.function1d.tests.test_interpolator import X_LOWER, X_UPPER, NB_XSAMPLES, NB_X, \
     X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR, EXTRAPOLATION_RANGE, \
-    N_EXTRAPOLATION, large_extrapolation_range
+    N_EXTRAPOLATION, large_extrapolation_range, uneven_linspace
 
 from raysect.core.math.function.float.function1d.interpolate import Interpolate1DArray
 import numpy as np
@@ -76,10 +76,11 @@ def calc_gradient(x_spline, y_spline, index_left):
         dfdx = y_spline[index_left] - y_spline[index_left - 1]
     else:
         # Finding the normalised distance x_eff
-        x_eff = (x_spline[index_left + 1] - x_spline[index_left - 1]) \
-                / (x_spline[index_left + 1] - x_spline[index_left])
-        if x_eff != 0:
-            dfdx = (y_spline[index_left + 1] - y_spline[index_left - 1]) / x_eff
+        dx0 = 1.
+        dx1 = (x_spline[index_left] - x_spline[index_left - 1])/(x_spline[index_left + 1] - x_spline[index_left])
+        denominator = dx0*dx1**2 + dx1*dx0**2
+        if denominator != 0:
+            dfdx = (y_spline[index_left + 1]*dx1**2 - y_spline[index_left - 1]*dx0**2 - y_spline[index_left]*(dx1**2 -dx0**2)) / denominator
         else:
             raise ZeroDivisionError('Two adjacent spline points have the same x value!')
     return dfdx
@@ -94,10 +95,11 @@ def different_quadratic_extrpolation_lower(x_interp, x_spline, y_spline):
     index_lower_2 = 1
     x1_lower = x_spline[index_lower_1]
     x2_lower = x_spline[index_lower_2]
+    x3_lower = x_spline[index_lower_2 + 1]
     f1_lower = y_spline[index_lower_1]
 
     df1_dx_lower = calc_gradient(x_spline, y_spline, index_lower_1)/(x2_lower - x1_lower)
-    df2_dx_lower = calc_gradient(x_spline, y_spline, index_lower_2)/(x2_lower - x1_lower)
+    df2_dx_lower = calc_gradient(x_spline, y_spline, index_lower_2)/(x3_lower - x2_lower)
 
     # Solve 2ax-b = df_dx for the gradient at point 1 and 2
     # Rearrange both equations to find 'a' and 'b' quadratic coefficients
@@ -106,7 +108,7 @@ def different_quadratic_extrpolation_lower(x_interp, x_spline, y_spline):
 
     # Find c by solving at the fixed points (f = a x**2 + bx + c) at point 1 for the lower, and point 2 for the upper
     c_lower = f1_lower - a_lower*x1_lower**2 - b_lower*x1_lower
-    print(a_lower, b_lower, c_lower)
+    print('abc', a_lower, b_lower, c_lower)
     return a_lower*x_interp**2 + b_lower*x_interp + c_lower
 
 
@@ -132,18 +134,23 @@ def different_quadratic_extrpolation_upper(x_interp, x_spline, y_spline):
 
     # Find c by solving at the fixed points (f = a x**2 + bx + c) at point 1 for the lower, and point 2 for the upper
     c_upper = f2_upper - a_upper*x2_upper**2 - b_upper*x2_upper
-    print(a_upper, b_upper, c_upper)
+    # print('abc', a_upper, b_upper, c_upper)
     return a_upper*x_interp**2 + b_upper*x_interp + c_upper
 
 
 # Calculate for big values, small values, or normal values
 big_values = False
-small_values = True
+small_values = False
+
+uneven_spacing = True
 
 print('Using scipy version', scipy.__version__)
 
-# Create array to generate spline knots on, and find their functional value
-x = np.linspace(X_LOWER, X_UPPER, NB_X)
+# Create array to generate spline knots on, and find their functional value.
+if uneven_spacing:
+    x = uneven_linspace(X_LOWER, X_UPPER, NB_X, offset_fraction=1./3.)
+else:
+    x = np.linspace(X_LOWER, X_UPPER, NB_X)
 
 # Make the sampled points between spline knots and find the precalc_interpolation used in test_interpolator.setup_cubic
 xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
@@ -249,13 +256,14 @@ if check_plot:
         f_check[i] = interp_cubic_extrap_nearest(xsamples[i])
     ax.plot(xsamples, f_out, '-r')
     ax.plot(xsamples, f_check, 'bx')
-    f_check_extrap = np.zeros(len(xsamples_extrap))
-    for i in range(len(xsamples_extrap)):
-        f_check_extrap[i] = interp_cubic_extrap_nearest(xsamples_extrap[i])
-    ax.plot(xsamples_extrap, f_check_extrap, 'mo')
+    f_check_extrap = np.zeros(len(xsamples_extrapolation))
+    for i in range(len(xsamples_extrapolation)):
+        f_check_extrap[i] = interp_cubic_extrap_nearest(xsamples_extrapolation[i])
+    ax.plot(xsamples_extrapolation, f_check_extrap, 'mx')
     ax.plot(xsamples, f_linear_out, 'go')
-    ax.plot(xsamples_extrap[0], different_quadratic_extrpolation_lower(xsamples_extrap[0], x, data_f), 'ko')
-    ax.plot(xsamples_extrap[-1], different_quadratic_extrpolation_upper(xsamples_extrap[-1], x, data_f), 'ko')
+    ax.plot(xsamples_extrapolation, f_extrap_quadratic, 'ko')
+    # ax.plot(xsamples_extrap[0], different_quadratic_extrpolation_lower(xsamples_extrap[0], x, data_f), 'ko')
+    # ax.plot(xsamples_extrap[-1], different_quadratic_extrpolation_upper(xsamples_extrap[-1], x, data_f), 'ko')
     ax.plot(x, data_f, 'bo')
-    ax.plot(xsamples_extrapolation, f_extrap_nearest, 'bo')
+    ax.plot(xsamples_extrapolation, f_extrap_nearest, 'ro')
     plt.show()
