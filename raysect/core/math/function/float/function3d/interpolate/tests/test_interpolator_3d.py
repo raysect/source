@@ -363,19 +363,22 @@ class TestInterpolators3D(unittest.TestCase):
                             f'{self.z[0]}<=z<={self.z[-1]}.'
                     )
 
-    def initialise_tests_on_interpolators(self, x_values, y_values, z_values, f_values):
+    def initialise_tests_on_interpolators(self, x_values, y_values, z_values, f_values, problem_str=''):
         """
         Method to create a new interpolator with different x, y, z, f values to test input failures.
         """
         # Test for all combinations
         for extrapolator_type in id_to_extrapolator.keys():
             for interpolator_type in id_to_interpolator.keys():
-
-                self.assertRaises(
-                    ValueError, Interpolator3DArray, x=x_values, y=y_values, z=z_values, f=f_values,
-                    interpolation_type=interpolator_type, extrapolation_type=extrapolator_type,
-                    extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0
-                )
+                with self.assertRaises(
+                        ValueError, msg=f'No ValueError raised when testing interpolator type {interpolator_type} '
+                                        f'extrapolator type {extrapolator_type}, trying to initialise a test with '
+                                        f'incorrect {problem_str}.'):
+                    Interpolator3DArray(
+                        x=x_values, y=y_values, z=z_values, f=f_values,
+                        interpolation_type=interpolator_type, extrapolation_type=extrapolator_type,
+                        extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0
+                    )
 
     def test_initialisation_errors(self):
         """
@@ -388,49 +391,77 @@ class TestInterpolators3D(unittest.TestCase):
         x_wrong = np.copy(self.x)
         x_wrong[0] = self.x[1]
         x_wrong[1] = self.x[0]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.z, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            x_wrong, self.y, self.z, self.reference_loaded_values.data,
+            problem_str='monotonicity with the first and second x spline knot the wrong way around'
+)
 
         # monotonicity y
         y_wrong = np.copy(self.y)
         y_wrong[0] = self.y[1]
         y_wrong[1] = self.y[0]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.z, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            self.x, y_wrong, self.z, self.reference_loaded_values.data,
+            problem_str='monotonicity with the first and second y spline knot the wrong way around'
+
+        )
 
         # monotonicity z
         z_wrong = np.copy(self.z)
         z_wrong[0] = self.z[1]
         z_wrong[1] = self.z[0]
-        self.initialise_tests_on_interpolators(self.x, self.y, z_wrong, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            self.x, self.y, z_wrong, self.reference_loaded_values.data,
+            problem_str='monotonicity with the first and second z spline knot the wrong way around'
+        )
 
         # test repeated coordinate x
         x_wrong = np.copy(self.x)
         x_wrong[0] = x_wrong[1]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.z, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            x_wrong, self.y, self.z, self.reference_loaded_values.data,
+            problem_str='the first spline knot is a repeat of the second x spline knot'
+        )
 
         # test repeated coordinate y
         y_wrong = np.copy(self.y)
         y_wrong[0] = y_wrong[1]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.z, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            self.x, y_wrong, self.z, self.reference_loaded_values.data,
+            problem_str='the first spline knot is a repeat of the second y spline knot'
+        )
 
         # test repeated coordinate z
         z_wrong = np.copy(self.z)
         z_wrong[0] = z_wrong[1]
-        self.initialise_tests_on_interpolators(self.x, self.y, z_wrong, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            self.x, self.y, z_wrong, self.reference_loaded_values.data,
+            problem_str='the first spline knot is a repeat of the second z spline knot'
+        )
 
         # mismatch array size between x and data
         x_wrong = np.copy(self.x)
         x_wrong = x_wrong[:-1]
-        self.initialise_tests_on_interpolators(x_wrong, self.y, self.z, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            x_wrong, self.y, self.z, self.reference_loaded_values.data,
+            problem_str='the last x spline knot has been removed'
+        )
 
         # mismatch array size between y and data
         y_wrong = np.copy(self.y)
         y_wrong = y_wrong[:-1]
-        self.initialise_tests_on_interpolators(self.x, y_wrong, self.z, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            self.x, y_wrong, self.z, self.reference_loaded_values.data,
+            problem_str = 'the last y spline knot has been removed'
+        )
 
         # mismatch array size between z and data
         z_wrong = np.copy(self.z)
         z_wrong = z_wrong[:-1]
-        self.initialise_tests_on_interpolators(self.x, self.y, z_wrong, self.reference_loaded_values.data)
+        self.initialise_tests_on_interpolators(
+            self.x, self.y, z_wrong, self.reference_loaded_values.data,
+            problem_str='the last z spline knot has been removed'
+        )
 
         # Test array length 1, Arrays are too short.
         self.run_incorrect_array_length_combination()
@@ -452,12 +483,45 @@ class TestInterpolators3D(unittest.TestCase):
             np.copy(self.reference_loaded_values.data)[:, 0, 0], np.copy(self.reference_loaded_values.data)[0, :, :],
             np.copy(self.reference_loaded_values.data)[:, 0, :], np.copy(self.reference_loaded_values.data)[:, :, 0]
         ]
+        incorrect_x = [False, True]
+        incorrect_y = [False, True]
+        incorrect_z = [False, True]
+        incorrect_fx = [False, True, True, True, False, True, False, False]
+        incorrect_fy = [False, True, True, False, True, False, True, False]
+        incorrect_fz = [False, True, False, True, True, False, False, True]
+
         for i in range(len(x)):
+            if incorrect_x[i]:
+                x_str = 'x'
+            else:
+                x_str = ''
             for j in range(len(y)):
+                if incorrect_y[j]:
+                    y_str = 'y'
+                else:
+                    y_str = ''
                 for k in range(len(z)):
+                    if incorrect_z[k]:
+                        z_str = 'z'
+                    else:
+                        z_str = ''
                     for i2 in range(len(f)):
+                        if incorrect_fx[i2]:
+                            fx_str = 'f in x'
+                        else:
+                            fx_str = ''
+                        if incorrect_fy[i2]:
+                            fy_str = 'f in y'
+                        else:
+                            fy_str = ''
+                        if incorrect_fz[i2]:
+                            fz_str = 'f in z'
+                        else:
+                            fz_str = ''
                         if not (i == 0 and j == 0 and k == 0 and i2 == 0):
-                            self.initialise_tests_on_interpolators(x[i], y[j], z[k], f[i2])
+                            problem_str = f'there is only 1 spline knot in: ({x_str}, {y_str}, {z_str}, {fx_str}, ' \
+                                          f'{fy_str}, {fz_str})'
+                            self.initialise_tests_on_interpolators(x[i], y[j], z[k], f[i2], problem_str=problem_str)
 
     def run_incorrect_array_dimension_combination(self):
         """
@@ -478,10 +542,74 @@ class TestInterpolators3D(unittest.TestCase):
             np.array(np.concatenate((np.copy(self.reference_loaded_values.data)[:, :, :, np.newaxis],
                                      np.copy(self.reference_loaded_values.data)[:, :, :, np.newaxis]), axis=3))
         ]
-
+        incorrect_x_short = [False, False, True]
+        incorrect_y_short = [False, False, True]
+        incorrect_z_short = [False, False, True]
+        incorrect_fx_short = [False, True, False]
+        incorrect_fy_short = [False, True, False]
+        incorrect_fz_short = [False, True, False]
+        incorrect_x_long = [False, True, False]
+        incorrect_y_long = [False, True, False]
+        incorrect_z_long = [False, True, False]
+        incorrect_fx_long = [False, False, True]
+        incorrect_fy_long = [False, False, True]
+        incorrect_fz_long = [False, False, True]
         for i in range(len(x)):
+            if incorrect_x_long[i]:
+                x_str_long = 'x'
+            else:
+                x_str_long = ''
+            if incorrect_x_short[i]:
+                x_str_short = 'x'
+            else:
+                x_str_short = ''
             for j in range(len(y)):
+                if incorrect_y_long[j]:
+                    y_str_long = 'y'
+                else:
+                    y_str_long = ''
+                if incorrect_y_short[j]:
+                    y_str_short = 'y'
+                else:
+                    y_str_short = ''
                 for k in range(len(z)):
+                    if incorrect_z_long[k]:
+                        z_str_long = 'z'
+                    else:
+                        z_str_long = ''
+                    if incorrect_z_short[k]:
+                        z_str_short = 'z'
+                    else:
+                        z_str_short = ''
                     for i2 in range(len(f)):
+                        if incorrect_fx_long[i2]:
+                            fx_str_long = 'f in x'
+                        else:
+                            fx_str_long = ''
+                        if incorrect_fy_long[i2]:
+                            fy_str_long = 'f in y'
+                        else:
+                            fy_str_long = ''
+                        if incorrect_fz_long[i2]:
+                            fz_str_long = 'f in z'
+                        else:
+                            fz_str_long = ''
+                        if incorrect_fx_short[i2]:
+                            fx_str_short = 'f in x'
+                        else:
+                            fx_str_short = ''
+                        if incorrect_fy_short[i2]:
+                            fy_str_short = 'f in y'
+                        else:
+                            fy_str_short = ''
+                        if incorrect_fz_short[i2]:
+                            fz_str_short = 'f in z'
+                        else:
+                            fz_str_short = ''
                         if not (i == 0 and j == 0 and k == 0 and i2 == 0):
-                            self.initialise_tests_on_interpolators(x[i], y[j], z[k], f[i2])
+                            problem_str = f'there is spline knot array length is too long in : ({x_str_long}, ' \
+                                          f'{y_str_long}, {z_str_long}, {fx_str_long}, {fy_str_long}, {fz_str_long}),' \
+                                          f' too short in : ({x_str_short}, {y_str_short}, {z_str_short}, ' \
+                                          f'{fx_str_short}, {fy_str_short}, {fz_str_short})'
+
+                            self.initialise_tests_on_interpolators(x[i], y[j], z[k], f[i2], problem_str=problem_str)

@@ -366,7 +366,7 @@ class TestInterpolators2D(unittest.TestCase):
             for interpolator_type in id_to_interpolator.keys():
                 with self.assertRaises(
                         ValueError, msg=f'No ValueError raised when testing interpolator type {interpolator_type} '
-                                        f'extrapolator type {extrapolator_type}, trying to intitialise a test with '
+                                        f'extrapolator type {extrapolator_type}, trying to initialise a test with '
                                         f'incorrect {problem_str}.'):
                     Interpolator2DArray(
                         x=x_values, y=y_values, f=f_values,
@@ -535,5 +535,7 @@ class TestInterpolators2D(unittest.TestCase):
                     else:
                         fy_str_short = ''
                     if not (i == 0 and j == 0 and k == 0):
-                        problem_str = f'there is spline knot array length is too long in : ({x_str_long}, {y_str_long}, {fx_str_long}, {fy_str_long}), too short in : ({x_str_short}, {y_str_short}, {fx_str_short}, {fy_str_short})'
+                        problem_str = f'there is spline knot array length is too long in : ({x_str_long}, ' \
+                                      f'{y_str_long}, {fx_str_long}, {fy_str_long}), too short in : ({x_str_short}, ' \
+                                      f'{y_str_short}, {fx_str_short}, {fy_str_short})'
                         self.initialise_tests_on_interpolators(x[i], y[j], f[k], problem_str=problem_str)

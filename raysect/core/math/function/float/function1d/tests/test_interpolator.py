@@ -335,7 +335,7 @@ class TestInterpolators1D(unittest.TestCase):
             for interpolator_type in id_to_interpolator.keys():
                 with self.assertRaises(
                         ValueError, msg=f'No ValueError raised when testing interpolator type {interpolator_type} '
-                                        f'extrapolator type {extrapolator_type}, trying to intitialise a test with '
+                                        f'extrapolator type {extrapolator_type}, trying to initialise a test with '
                                         f'incorrect {problem_str}.'):
                     Interpolate1DArray(
                         x=x_values, f=f_values, interpolation_type=interpolator_type,
