@@ -35,7 +35,9 @@ This script has been used to calculate the reference data for the 1D cubic inter
 from raysect.core.math.function.float.function1d.tests.test_interpolator import X_LOWER, X_UPPER, NB_XSAMPLES, NB_X, \
     X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR, EXTRAPOLATION_RANGE, \
     N_EXTRAPOLATION, large_extrapolation_range, uneven_linspace
-
+from raysect.core.math.function.float.function1d.tests.data_store.interpolator1d_test_data import \
+    TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven,\
+    TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 from raysect.core.math.function.float.function1d.interpolate import Interpolate1DArray
 import numpy as np
 from scipy.interpolate import CubicHermiteSpline, interp1d
@@ -143,6 +145,7 @@ big_values = False
 small_values = False
 
 uneven_spacing = True
+use_saved_datastore_spline_knots = False
 
 print('Using scipy version', scipy.__version__)
 
@@ -166,8 +169,27 @@ else:
 data_f = function_to_spline(x, factor)
 precalc_interpolation_function_vals = function_to_spline(xsamples, factor)
 
+# Required for slightly more sensitive calculations to save data f before (only quadratic extrapolation in 1d)
+if use_saved_datastore_spline_knots:
+    if uneven_spacing:
+        if big_values:
+            reference_loaded_values = TestInterpolatorLoadBigValuesUneven()
+        elif small_values:
+            reference_loaded_values = TestInterpolatorLoadSmallValuesUneven()
+        else:
+            reference_loaded_values = TestInterpolatorLoadNormalValuesUneven()
+    else:
+        if big_values:
+            reference_loaded_values = TestInterpolatorLoadBigValues()
+        elif small_values:
+            reference_loaded_values = TestInterpolatorLoadSmallValues()
+        else:
+            reference_loaded_values = TestInterpolatorLoadNormalValues()
+    data_f = reference_loaded_values.data
+
+
 print('Save this to self.data in test_interpolator:\n', repr(data_f))
-print('Save this to self.precalc_function in test_interpolator:\n', repr(precalc_interpolation_function_vals))
+# print('Save this to self.precalc_function in test_interpolator:\n', repr(precalc_interpolation_function_vals))
 
 # Find the unnormalised gradient at each spline knot
 df_dx = np.zeros(len(x))
@@ -181,8 +203,18 @@ cubic_hermite = CubicHermiteSpline(x, data_f, df_dx)
 # Calculate the cubic spline at the sampled points
 f_out = cubic_hermite(xsamples)
 
-print('Output of 3rd party cubic spline at xsamples. ',
+print('Output of 3rd party cubic spline at xsamples. Does not work for central difference uneven spacing. ',
       'Save this to self.precalc_interpolation in test_interpolator in setup_cubic:\n', repr(f_out))
+interp_cubic_uneven = Interpolate1DArray(
+        x, data_f, 'cubic', 'none', extrapolation_range=2.0
+    )
+
+f_uneven_cubic = np.zeros(len(xsamples))
+for i in range(len(xsamples)):
+    f_uneven_cubic[i] = interp_cubic_uneven(xsamples[i])
+
+print('Output of the interpolator cubic at xsamples ONLY to be saved when uneven spaced data is to be generated. ' +
+      'Save this to self.precalc_interpolation in test_interpolator in setup_cubic:\n', repr(f_uneven_cubic))
 
 # Extrapolation x values
 xsamples_extrap = np.array([
@@ -248,7 +280,7 @@ if check_plot:
     import matplotlib.pyplot as plt
 
     interp_cubic_extrap_nearest = Interpolate1DArray(
-        x, data_f, 'linear', 'quadratic', extrapolation_range=2.0
+        x, data_f, 'linear', 'nearest', extrapolation_range=2.0
     )
     fig, ax = plt.subplots()
     f_check = np.zeros(len(xsamples))
