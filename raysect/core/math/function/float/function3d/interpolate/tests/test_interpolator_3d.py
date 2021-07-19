@@ -37,9 +37,9 @@ import numpy as np
 from raysect.core.math.function.float.function3d.interpolate.interpolator3darray import Interpolator3DArray, \
     id_to_extrapolator, id_to_interpolator
 from raysect.core.math.function.float.function3d.interpolate.tests.scripts.generate_3d_splines import X_LOWER, X_UPPER,\
-    NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
-    Y_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MIN, EXTRAPOLATION_RANGE, large_extrapolation_range, Z_LOWER, Z_UPPER, \
-    NB_ZSAMPLES, NB_Z, Z_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MIN, N_EXTRAPOLATION, extrapolation_out_of_bound_points
+    NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
+    Y_EXTRAP_DELTA_MAX, EXTRAPOLATION_RANGE, large_extrapolation_range, Z_LOWER, Z_UPPER, \
+    NB_ZSAMPLES, NB_Z, Z_EXTRAP_DELTA_MAX, N_EXTRAPOLATION, extrapolation_out_of_bound_points
 from raysect.core.math.function.float.function3d.interpolate.tests.data_store.interpolator3d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 
@@ -72,8 +72,15 @@ class TestInterpolators3D(unittest.TestCase):
         cls.zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
 
         # Extrapolation x, y and z values.
-        cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds, cls.zsamples_out_of_bounds = extrapolation_out_of_bound_points(X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MAX, EXTRAPOLATION_RANGE)
-        cls.xsamples_in_bounds, cls.ysamples_in_bounds, cls.zsamples_in_bounds = large_extrapolation_range(cls.xsamples, cls.ysamples, cls.zsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
+        cls.xsamples_out_of_bounds, cls.ysamples_out_of_bounds, cls.zsamples_out_of_bounds = \
+            extrapolation_out_of_bound_points(
+                X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX,
+                Z_EXTRAP_DELTA_MAX, EXTRAPOLATION_RANGE
+            )
+        cls.xsamples_in_bounds, cls.ysamples_in_bounds, cls.zsamples_in_bounds = \
+            large_extrapolation_range(
+                cls.xsamples, cls.ysamples, cls.zsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION
+            )
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -209,8 +216,14 @@ class TestInterpolators3D(unittest.TestCase):
             )
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values')
-            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values')
+                    self.run_general_extrapolation_tests(
+                        interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                        interpolator_str='linear values'
+                    )
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, extrapolator_type=extrapolator_type,
+                interpolator_str='linear values'
+            )
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -219,9 +232,14 @@ class TestInterpolators3D(unittest.TestCase):
             )
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear big values')
-
-            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear big values')
+                    self.run_general_extrapolation_tests(
+                        interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                        interpolator_str='linear big values'
+                    )
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, extrapolator_type=extrapolator_type,
+                interpolator_str='linear big values'
+            )
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -230,9 +248,14 @@ class TestInterpolators3D(unittest.TestCase):
             )
             if extrapolator_type != 'none':
                 if extrapolator_type not in no_test_for_extrapolator:
-                    self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear small values')
-
-            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear small values')
+                    self.run_general_extrapolation_tests(
+                        interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                        interpolator_str='linear small values'
+                    )
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, extrapolator_type=extrapolator_type,
+                interpolator_str='linear small values'
+            )
 
     def test_cubic_interpolation_extrapolators(self):
         """
@@ -262,10 +285,13 @@ class TestInterpolators3D(unittest.TestCase):
 
             if extrapolator_type != 'none':
                 self.run_general_extrapolation_tests(
-                    interpolator, extrapolation_data,
-                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation, interpolator_str='cubic values'
+                    interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                    significant_tolerance=significant_tolerance_extrapolation, interpolator_str='cubic values'
                 )
-            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, extrapolator_type=extrapolator_type, interpolator_str='cubic values')
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, significant_tolerance=significant_tolerance,
+                extrapolator_type=extrapolator_type, interpolator_str='cubic values'
+            )
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -279,10 +305,13 @@ class TestInterpolators3D(unittest.TestCase):
 
             if extrapolator_type != 'none':
                 self.run_general_extrapolation_tests(
-                    interpolator, extrapolation_data,
-                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation, interpolator_str='cubic big values'
+                    interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                    significant_tolerance=significant_tolerance_extrapolation, interpolator_str='cubic big values'
                 )
-            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, extrapolator_type=extrapolator_type, interpolator_str='cubic big values')
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, significant_tolerance=significant_tolerance,
+                extrapolator_type=extrapolator_type, interpolator_str='cubic big values'
+            )
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -296,13 +325,18 @@ class TestInterpolators3D(unittest.TestCase):
 
             if extrapolator_type != 'none':
                 self.run_general_extrapolation_tests(
-                    interpolator, extrapolation_data,
-                    extrapolator_type=extrapolator_type, significant_tolerance=significant_tolerance_extrapolation, interpolator_str='cubic small values'
+                    interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                    significant_tolerance=significant_tolerance_extrapolation, interpolator_str='cubic small values'
                 )
 
-            self.run_general_interpolation_tests(interpolator, interpolation_data, significant_tolerance=significant_tolerance, extrapolator_type=extrapolator_type, interpolator_str='cubic small values')
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, significant_tolerance=significant_tolerance,
+                extrapolator_type=extrapolator_type, interpolator_str='cubic small values'
+            )
 
-    def run_general_extrapolation_tests(self, interpolator, extrapolation_data, extrapolator_type='', significant_tolerance=None, interpolator_str=''):
+    def run_general_extrapolation_tests(
+            self, interpolator, extrapolation_data, extrapolator_type='', significant_tolerance=None,
+            interpolator_str=''):
         """
         Run general tests for extrapolators.
 
@@ -341,7 +375,9 @@ class TestInterpolators3D(unittest.TestCase):
                                      f'inside the extrapolation range {EXTRAPOLATION_RANGE} from these edges.'
             )
 
-    def run_general_interpolation_tests(self, interpolator, interpolation_data, significant_tolerance=None, extrapolator_type='', interpolator_str=''):
+    def run_general_interpolation_tests(
+            self, interpolator, interpolation_data, significant_tolerance=None, extrapolator_type='',
+            interpolator_str=''):
         """
         Run general tests for interpolators to match the test data.
         """
@@ -380,11 +416,11 @@ class TestInterpolators3D(unittest.TestCase):
                         extrapolation_range_x=2.0, extrapolation_range_y=2.0, extrapolation_range_z=2.0
                     )
 
-    def test_initialisation_errors(self):
+    def test_incorrect_spline_knots(self):
         """
-        Test for bad data being supplied to the interpolators
+        Test for bad data being supplied to the interpolators, x, y, z inputs must be increasing.
 
-        Test x, y, z monotonically increases, test if an x, y, z is repeated, test if arrays are different lengths.
+        Test x, y, z monotonically increases, test if x, y, z spline knots have repeated values.
 
         """
         # monotonicity x
@@ -394,7 +430,7 @@ class TestInterpolators3D(unittest.TestCase):
         self.initialise_tests_on_interpolators(
             x_wrong, self.y, self.z, self.reference_loaded_values.data,
             problem_str='monotonicity with the first and second x spline knot the wrong way around'
-)
+        )
 
         # monotonicity y
         y_wrong = np.copy(self.y)
@@ -452,7 +488,7 @@ class TestInterpolators3D(unittest.TestCase):
         y_wrong = y_wrong[:-1]
         self.initialise_tests_on_interpolators(
             self.x, y_wrong, self.z, self.reference_loaded_values.data,
-            problem_str = 'the last y spline knot has been removed'
+            problem_str='the last y spline knot has been removed'
         )
 
         # mismatch array size between z and data
@@ -463,13 +499,7 @@ class TestInterpolators3D(unittest.TestCase):
             problem_str='the last z spline knot has been removed'
         )
 
-        # Test array length 1, Arrays are too short.
-        self.run_incorrect_array_length_combination()
-
-        # Incorrect dimensional data supplied.
-        self.run_incorrect_array_dimension_combination()
-
-    def run_incorrect_array_length_combination(self):
+    def test_incorrect_array_length(self):
         """
         Make array inputs have length 1 (too short) in 1 or more dimensions. Then check for a ValueError.
         """
@@ -523,7 +553,7 @@ class TestInterpolators3D(unittest.TestCase):
                                           f'{fy_str}, {fz_str})'
                             self.initialise_tests_on_interpolators(x[i], y[j], z[k], f[i2], problem_str=problem_str)
 
-    def run_incorrect_array_dimension_combination(self):
+    def test_incorrect_array_dimension(self):
         """
         Make array inputs have higher dimensions or lower dimensions. Then check for a ValueError.
         """

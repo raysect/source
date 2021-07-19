@@ -244,8 +244,13 @@ class TestInterpolators1D(unittest.TestCase):
                 extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False
             )
             if extrapolator_type != 'none':
-                self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values')
-            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values')
+                self.run_general_extrapolation_tests(
+                    interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                    interpolator_str='linear values'
+                )
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear values'
+            )
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -253,8 +258,14 @@ class TestInterpolators1D(unittest.TestCase):
                 extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False
             )
             if extrapolator_type != 'none':
-                self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear big values')
-            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear big values')
+                self.run_general_extrapolation_tests(
+                    interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                    interpolator_str='linear big values'
+                )
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, extrapolator_type=extrapolator_type,
+                interpolator_str='linear big values'
+            )
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -262,9 +273,14 @@ class TestInterpolators1D(unittest.TestCase):
                 extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True
             )
             if extrapolator_type != 'none':
-                self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear small values')
-
-            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='linear small values')
+                self.run_general_extrapolation_tests(
+                    interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                    interpolator_str='linear small values'
+                )
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, extrapolator_type=extrapolator_type,
+                interpolator_str='linear small values'
+            )
 
     def test_cubic_interpolation_extrapolators(self):
         """
@@ -275,8 +291,13 @@ class TestInterpolators1D(unittest.TestCase):
                 extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False
             )
             if extrapolator_type != 'none':
-                self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='cubic values')
-            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='cubic values')
+                self.run_general_extrapolation_tests(
+                    interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                    interpolator_str='cubic values'
+                )
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='cubic values'
+            )
 
         # Tests for big values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -284,8 +305,14 @@ class TestInterpolators1D(unittest.TestCase):
                 extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False
             )
             if extrapolator_type != 'none':
-                self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='cubic big values')
-            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='cubic big values')
+                self.run_general_extrapolation_tests(
+                    interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                    interpolator_str='cubic big values'
+                )
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, extrapolator_type=extrapolator_type,
+                interpolator_str='cubic big values'
+            )
 
         # Tests for small values
         for extrapolator_type in id_to_extrapolator.keys():
@@ -293,8 +320,14 @@ class TestInterpolators1D(unittest.TestCase):
                 extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True
             )
             if extrapolator_type != 'none':
-                self.run_general_extrapolation_tests(interpolator, extrapolation_data, extrapolator_type=extrapolator_type, interpolator_str='cubic small values')
-            self.run_general_interpolation_tests(interpolator, interpolation_data, extrapolator_type=extrapolator_type, interpolator_str='cubic small values')
+                self.run_general_extrapolation_tests(
+                    interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
+                    interpolator_str='cubic small values'
+                )
+            self.run_general_interpolation_tests(
+                interpolator, interpolation_data, extrapolator_type=extrapolator_type,
+                interpolator_str='cubic small values'
+            )
 
     def run_general_extrapolation_tests(self, interpolator, extrapolation_data, extrapolator_type='', interpolator_str=''):
         # Test extrapolator out of range, there should be an error raised.
@@ -342,7 +375,13 @@ class TestInterpolators1D(unittest.TestCase):
                         extrapolation_type=extrapolator_type, extrapolation_range=2.0
                     )
 
-    def test_initialisation_errors(self):
+    def test_incorrect_spline_knots(self):
+        """
+        Test for bad data being supplied to the interpolators, x inputs must be increasing.
+
+        Test x monotonically increases, test if an x spline knots have repeated values.
+
+        """
         # monotonicity
         x_wrong = np.copy(self.x)
         x_wrong[0] = self.x[1]
@@ -367,6 +406,10 @@ class TestInterpolators1D(unittest.TestCase):
             x_wrong, self.reference_loaded_values.data, problem_str='the last x spline knot has been removed'
         )
 
+    def test_incorrect_array_length(self):
+        """
+        Make array inputs have length 1 (too short) in 1 or more dimensions. Then check for a ValueError.
+        """
         # Test array length 1
         # Arrays are too short
         x_wrong = np.copy(self.x)
@@ -377,6 +420,10 @@ class TestInterpolators1D(unittest.TestCase):
             x_wrong, f_wrong, problem_str='there is only 1 (x, f) spline knot, which is not enough knots'
         )
 
+    def test_incorrect_array_dimension_combination(self):
+        """
+        Make array inputs have higher dimensions. Then check for a ValueError.
+        """
         # Incorrect dimension (2D data)
         x_wrong = np.array(np.concatenate((np.copy(self.x)[:, np.newaxis], np.copy(self.x)[:, np.newaxis]), axis=1))
         f_wrong = np.array(np.concatenate((
