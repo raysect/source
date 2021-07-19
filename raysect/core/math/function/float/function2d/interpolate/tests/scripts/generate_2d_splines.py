@@ -31,6 +31,9 @@
 import numpy as np
 from raysect.core.math.function.float.function2d.interpolate.interpolator2darray import Interpolator2DArray
 from scipy.interpolate import griddata, interp2d, RectBivariateSpline, CloughTocher2DInterpolator
+from raysect.core.math.function.float.function2d.interpolate.tests.data_store.interpolator2d_test_data import \
+    TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues, \
+    TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven
 import scipy
 
 X_LOWER = -1.0
@@ -111,10 +114,21 @@ def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, x_extr
     return np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds)
 
 
+def uneven_linspace(x_lower, x_upper, n_2, offset_fraction):
+    dx = (x_upper - x_lower)/(n_2 - 1)
+    offset_x = offset_fraction * dx
+    x1 = np.linspace(x_lower, x_upper, NB_X)
+    x2 = np.linspace(x_lower + offset_x, x_upper + offset_x, n_2)[:-1]
+    return np.sort(np.concatenate((x1, x2), axis=0))
+
+
 if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
     big_values = False
     small_values = True
+
+    uneven_spacing = True
+    use_saved_datastore_spline_knots = True
 
     print('Using scipy version', scipy.__version__)
 
@@ -126,10 +140,31 @@ if __name__ == '__main__':
     else:
         factor = 1.
 
-    x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
-    y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
+    if uneven_spacing:
+        x_in = uneven_linspace(X_LOWER, X_UPPER, NB_X, offset_fraction=1./3.)
+        y_in = uneven_linspace(Y_LOWER, Y_UPPER, NB_Y, offset_fraction=1./3.)
+    else:
+        x_in = np.linspace(X_LOWER, X_UPPER, NB_X)
+        y_in = np.linspace(Y_LOWER, Y_UPPER, NB_Y)
     x_in_full, y_in_full = np.meshgrid(x_in, y_in)
     f_in = function_to_spline(x_in_full, y_in_full, factor)
+
+    if use_saved_datastore_spline_knots:
+        if uneven_spacing:
+            if big_values:
+                reference_loaded_values = TestInterpolatorLoadBigValuesUneven()
+            elif small_values:
+                reference_loaded_values = TestInterpolatorLoadSmallValuesUneven()
+            else:
+                reference_loaded_values = TestInterpolatorLoadNormalValuesUneven()
+        else:
+            if big_values:
+                reference_loaded_values = TestInterpolatorLoadBigValues()
+            elif small_values:
+                reference_loaded_values = TestInterpolatorLoadSmallValues()
+            else:
+                reference_loaded_values = TestInterpolatorLoadNormalValues()
+        f_in = reference_loaded_values.data
 
     print('Save this to self.data in test_interpolator:\n', repr(f_in))
 
