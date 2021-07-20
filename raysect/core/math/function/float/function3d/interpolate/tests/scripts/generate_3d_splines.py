@@ -30,7 +30,7 @@
 
 import numpy as np
 from raysect.core.math.function.float.function3d.interpolate.interpolator3darray import Interpolator3DArray
-from matplotlib.colors import ListedColormap, LogNorm, SymLogNorm
+from matplotlib.colors import ListedColormap, LogNorm, SymLogNorm, Normalize
 import scipy
 import sys
 from raysect.core.math.function.float.function3d.interpolate.tests.data_store.interpolator3d_test_data import \
@@ -173,7 +173,7 @@ def get_extrapolation_input_values(
 
 
 def pcolourmesh_corners(input_array):
-    return np.linspace(input_array[0] - (input_array[1] - input_array[0]) / 2., input_array[-1] + (input_array[-1] - input_array[-2]) / 2., len(input_array) + 1)
+    return np.concatenate((input_array[:-1] - np.diff(input_array)/2., np.array([input_array[-1] - (input_array[-1] - input_array[-2]) / 2., input_array[-1] + (input_array[-1] - input_array[-2]) / 2.])), axis=0)
 
 
 def function_to_spline(x_input, y_input, z_input, factor):
@@ -193,10 +193,13 @@ if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
     big_values = False
     small_values = False
-
-    uneven_spacing = True
+    log_scale = False
+    uneven_spacing = False
     use_saved_datastore_spline_knots = False
-
+    index_x_in = 4
+    index_y_in = 0
+    index_y_plot = 0
+    index_z_plot = 0
     print('Using scipy version', scipy.__version__)
 
     # Find the function values to be used
@@ -255,8 +258,35 @@ if __name__ == '__main__':
             Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
         )
 
-    interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'cubic', 'linear', extrapolation_range_x=2.0,
+    interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'linear', extrapolation_range_x=2.0,
                                          extrapolation_range_y=2.0, extrapolation_range_z=2.0)
+
+    n_lower_upper_interp = 19
+    n_lower = 5
+    lower_p = 0.9
+    xsamples_lower_and_upper = np.linspace(X_LOWER, X_UPPER, n_lower_upper_interp)
+    ysamples_lower_and_upper = np.linspace(Y_LOWER, Y_UPPER, n_lower_upper_interp)
+    zsamples_lower_and_upper = np.linspace(Z_LOWER, Z_UPPER, n_lower_upper_interp)
+    xsamples_lower_and_upper = np.concatenate((np.linspace(X_LOWER - (X_UPPER - X_LOWER) * lower_p, X_LOWER, n_lower)[
+                                               :-1], xsamples_lower_and_upper,
+                                               np.linspace(X_UPPER, X_UPPER + (X_UPPER - X_LOWER) * lower_p, n_lower)[
+                                               1:]))
+    ysamples_lower_and_upper = np.concatenate((np.linspace(Y_LOWER - (Y_UPPER - Y_LOWER) * lower_p, Y_LOWER, n_lower)[
+                                               :-1], ysamples_lower_and_upper,
+                                               np.linspace(Y_UPPER, Y_UPPER + (Y_UPPER - Y_LOWER) * lower_p, n_lower)[
+                                               1:]))
+    zsamples_lower_and_upper = np.concatenate((np.linspace(Z_LOWER - (Z_UPPER - Z_LOWER) * lower_p, Z_LOWER, n_lower)[
+                                               :-1], zsamples_lower_and_upper,
+                                               np.linspace(Z_UPPER, Z_UPPER + (Z_UPPER - Z_LOWER) * lower_p, n_lower)[
+                                               1:]))
+    index_ysamples_lower_upper = np.where(x_in[index_y_in] == ysamples_lower_and_upper)[0].item()
+
+    # print(interpolator3D(x_in[index_x_in], -2.0, -2.0))
+    print(interpolator3D(x_in[index_x_in], ysamples_lower_and_upper[index_ysamples_lower_upper]-0.0001, zsamples_lower_and_upper[0]))
+    # print(x_in[index_x_in], -2.0, -2.0)
+    print(x_in[index_x_in], ysamples_lower_and_upper[index_ysamples_lower_upper], zsamples_lower_and_upper[0])
+
+    # quit()
     # print(interpolator3D(x_in[4], -1.1, 3.))
     # quit()
     # extrapolation to save
@@ -270,27 +300,24 @@ if __name__ == '__main__':
         import matplotlib.pyplot as plt
         from matplotlib import cm
         # Install mayavi and pyQt5
-        n_lower_upper_interp = 19
-        n_lower = 5
-        lower_p = 0.9
-        xsamples_lower_and_upper = np.linspace(X_LOWER, X_UPPER, n_lower_upper_interp)
-        ysamples_lower_and_upper = np.linspace(Y_LOWER, Y_UPPER, n_lower_upper_interp)
-        zsamples_lower_and_upper = np.linspace(Z_LOWER, Z_UPPER, n_lower_upper_interp)
-        xsamples_lower_and_upper = np.concatenate((np.linspace(X_LOWER - (X_UPPER - X_LOWER)*lower_p, X_LOWER, n_lower)[:-1], xsamples_lower_and_upper, np.linspace(X_UPPER, X_UPPER + (X_UPPER - X_LOWER)*lower_p, n_lower)[1:]))
-        ysamples_lower_and_upper = np.concatenate((np.linspace(Y_LOWER - (Y_UPPER - Y_LOWER)*lower_p, Y_LOWER, n_lower)[:-1], ysamples_lower_and_upper, np.linspace(Y_UPPER, Y_UPPER + (Y_UPPER - Y_LOWER)*lower_p, n_lower)[1:]))
-        zsamples_lower_and_upper = np.concatenate((np.linspace(Z_LOWER - (Z_UPPER - Z_LOWER)*lower_p, Z_LOWER, n_lower)[:-1], zsamples_lower_and_upper, np.linspace(Z_UPPER, Z_UPPER + (Z_UPPER - Z_LOWER)*lower_p, n_lower)[1:]))
 
         main_plots_on = True
         mayavi_plots_on = False
         if main_plots_on:
             fig, ax = plt.subplots(1, 4)
-            index_x_in = 4
+            fig1, ax1 = plt.subplots(1, 2)
             if not (x_in[index_x_in] == xsamples).any():
                 raise ValueError(
                     f'To compare a slice, NB_XSAMPLES={NB_XSAMPLES}-1, NB_YSAMPLES={NB_YSAMPLES}-1, NB_ZSAMPLES='
                     f'{NB_ZSAMPLES}-1 must be divisible by NB_X={NB_X}-1, NB_Y={NB_Y}-1, NB_Z={NB_Z}-1'
                 )
+            if not (y_in[index_y_in] == ysamples_lower_and_upper).any():
+                raise ValueError(
+                    f'To compare a slice, NB_XSAMPLES={NB_XSAMPLES}-1, NB_YSAMPLES={NB_YSAMPLES}-1, NB_ZSAMPLES='
+                    f'{NB_ZSAMPLES}-1 must be divisible by NB_X={NB_X}-1, NB_Y={NB_Y}-1, NB_Z={NB_Z}-1'
+                )
             index_xsamples = np.where(x_in[index_x_in] == xsamples)[0].item()
+            index_ysamples_lower_upper = np.where(x_in[index_y_in] == ysamples_lower_and_upper)[0].item()
             f_plot_x = f_in[index_x_in, :, :]
 
             y_corners_x = pcolourmesh_corners(y_in)
@@ -298,7 +325,10 @@ if __name__ == '__main__':
 
             min_colourmap = np.min(f_in)
             max_colourmap = np.max(f_in)
-            c_norm = SymLogNorm(vmin=min_colourmap, vmax=max_colourmap, linthresh=0.03)
+            if log_scale:
+                c_norm = SymLogNorm(vmin=min_colourmap, vmax=max_colourmap, linthresh=0.03)
+            else:
+                c_norm = Normalize(vmin=min_colourmap, vmax=max_colourmap)
             colourmap = cm.get_cmap('viridis', 512)
 
             ax[0].pcolormesh(y_corners_x, z_corners_x, f_plot_x, norm=c_norm, cmap='viridis')
@@ -358,7 +388,20 @@ if __name__ == '__main__':
             f_out_lower_and_upper_x = f_out_lower_and_upper[index_xsamples_lower_and_upper, :, :]
             im3 = ax[2].pcolormesh(y_corners_xsamples_lower_and_upper, z_corners_xsamples_lower_and_upper, f_out_lower_and_upper_x, norm=c_norm, cmap='viridis')
 
+            print(ysamples_lower_and_upper[index_ysamples_lower_upper])
+            print(x_in[index_x_in])
+            check_array_z = np.zeros(len(zsamples_lower_and_upper))
+            for i in range(len(zsamples_lower_and_upper)):
+                check_array_z[i] = interpolator3D(x_in[index_x_in], ysamples_lower_and_upper[index_ysamples_lower_upper], zsamples_lower_and_upper[i])
 
+            ax1[0].plot(zsamples_lower_and_upper, f_out_lower_and_upper_x[index_ysamples_lower_upper, :])
+            ax1[0].plot(z_in, f_in[index_x_in, index_y_in, :], 'bo')
+            ax1[0].plot(zsamples_lower_and_upper, check_array_z, 'gx')
+            ax1[1].plot(ysamples_lower_and_upper, f_out_lower_and_upper_x[:, index_z_plot])
+            ax1[0].axvline(z_in[0], color='r', linestyle='--')
+            ax1[0].axvline(z_in[-1], color='r', linestyle='--')
+            ax1[1].axvline(y_in[0], color='r', linestyle='--')
+            ax1[1].axvline(y_in[-1], color='r', linestyle='--')
             fig.colorbar(im, ax=ax[0])
             fig.colorbar(im2, ax=ax[1])
             fig.colorbar(im3, ax=ax[2])

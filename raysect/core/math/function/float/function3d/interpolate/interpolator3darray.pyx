@@ -36,7 +36,12 @@ from raysect.core.math.cython.interpolation.linear cimport linear3d, linear1d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_3d, evaluate_cubic_3d
 
 # TODO These functions are in 2D too. Move them somewhere common
-
+cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper):
+    """
+    Derivatives that are normalised to the unt square (x_upper - x) = 1 are un-normalised, then re-normalised to
+    (x - x_lower)
+    """
+    return dfdn * (x - x_lower)/(x_upper - x)
 
 cdef double lookup_factorial(int n):
     """
@@ -501,69 +506,69 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
             f[1][1][1] = self._f[index_x + 1, index_y + 1, index_z + 1]
 
             array_derivative = _ArrayDerivative3D(self._x, self._y, self._z, self._f)
-            dfdx[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 0, 0)
-            dfdx[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 0, 0)
-            dfdx[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 0, 0)
-            dfdx[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 0, 0)
-            dfdx[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 0, 0)
-            dfdx[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 0, 0)
-            dfdx[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 0, 0)
-            dfdx[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 0, 0)
+            dfdx[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 0, 0, False, False, False)
+            dfdx[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 0, 0, False, True, False)
+            dfdx[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 0, 0, False, True, True)
+            dfdx[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 0, 0, False, False, True)
+            dfdx[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 0, 0, True, False, False)
+            dfdx[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 0, 0, True, True, False)
+            dfdx[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 0, 0, True, False, True)
+            dfdx[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 0, 0, True, True, True)
 
-            dfdy[0][0][0] = array_derivative(index_x, index_y, index_z, 0, 1, 0)
-            dfdy[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 0, 1, 0)
-            dfdy[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 0, 1, 0)
-            dfdy[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 0, 1, 0)
-            dfdy[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 0, 1, 0)
-            dfdy[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 0, 1, 0)
-            dfdy[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 0, 1, 0)
-            dfdy[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 0, 1, 0)
+            dfdy[0][0][0] = array_derivative(index_x, index_y, index_z, 0, 1, 0, False, False, False)
+            dfdy[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 0, 1, 0, False, True, False)
+            dfdy[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 0, 1, 0, False, True, True)
+            dfdy[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 0, 1, 0, False, False, True)
+            dfdy[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 0, 1, 0, True, False, False)
+            dfdy[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 0, 1, 0, True, True, False)
+            dfdy[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 0, 1, 0, True, False, True)
+            dfdy[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 0, 1, 0, True, True, True)
 
-            dfdz[0][0][0] = array_derivative(index_x, index_y, index_z, 0, 0, 1)
-            dfdz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 0, 0, 1)
-            dfdz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 0, 0, 1)
-            dfdz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 0, 0, 1)
-            dfdz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 0, 0, 1)
-            dfdz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 0, 0, 1)
-            dfdz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 0, 0, 1)
-            dfdz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 0, 0, 1)
+            dfdz[0][0][0] = array_derivative(index_x, index_y, index_z, 0, 0, 1, False, False, False)
+            dfdz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 0, 0, 1, False, True, False)
+            dfdz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 0, 0, 1, False, True, True)
+            dfdz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 0, 0, 1, False, False, True)
+            dfdz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 0, 0, 1, True, False, False)
+            dfdz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 0, 0, 1, True, True, False)
+            dfdz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 0, 0, 1, True, False, True)
+            dfdz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 0, 0, 1, True, True, True)
 
-            d2fdxdy[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 1, 0)
-            d2fdxdy[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 1, 0)
-            d2fdxdy[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 1, 0)
-            d2fdxdy[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 1, 0)
-            d2fdxdy[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 1, 0)
-            d2fdxdy[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 1, 0)
-            d2fdxdy[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 1, 0)
-            d2fdxdy[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 1, 0)
+            d2fdxdy[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 1, 0, False, False, False)
+            d2fdxdy[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 1, 0, False, True, False)
+            d2fdxdy[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 1, 0, False, True, True)
+            d2fdxdy[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 1, 0, False, False, True)
+            d2fdxdy[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 1, 0, True, False, False)
+            d2fdxdy[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 1, 0, True, True, False)
+            d2fdxdy[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 1, 0, True, False, True)
+            d2fdxdy[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 1, 0, True, True, True)
 
-            d2fdxdz[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 0, 1)
-            d2fdxdz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 0, 1)
-            d2fdxdz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 0, 1)
-            d2fdxdz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 0, 1)
-            d2fdxdz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 0, 1)
-            d2fdxdz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 0, 1)
-            d2fdxdz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 0, 1)
-            d2fdxdz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 0, 1)
+            d2fdxdz[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 0, 1, False, False, False)
+            d2fdxdz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 0, 1, False, True, False)
+            d2fdxdz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 0, 1, False, True, True)
+            d2fdxdz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 0, 1, False, False, True)
+            d2fdxdz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 0, 1, True, False, False)
+            d2fdxdz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 0, 1, True, True, False)
+            d2fdxdz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 0, 1, True, False, True)
+            d2fdxdz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 0, 1, True, True, True)
 
-            d2fdydz[0][0][0] = array_derivative(index_x, index_y, index_z, 0, 1, 1)
-            d2fdydz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 0, 1, 1)
-            d2fdydz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 0, 1, 1)
-            d2fdydz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 0, 1, 1)
-            d2fdydz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 0, 1, 1)
-            d2fdydz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 0, 1, 1)
-            d2fdydz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 0, 1, 1)
-            d2fdydz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 0, 1, 1)
+            d2fdydz[0][0][0] = array_derivative(index_x, index_y, index_z, 0, 1, 1, False, False, False)
+            d2fdydz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 0, 1, 1, False, True, False)
+            d2fdydz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 0, 1, 1, False, True, True)
+            d2fdydz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 0, 1, 1, False, False, True)
+            d2fdydz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 0, 1, 1, True, False, False)
+            d2fdydz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 0, 1, 1, True, True, False)
+            d2fdydz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 0, 1, 1, True, False, True)
+            d2fdydz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 0, 1, 1, True, True, True)
 
 
-            d3fdxdydz[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 1, 1)
-            d3fdxdydz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 1, 1)
-            d3fdxdydz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 1, 1)
-            d3fdxdydz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 1, 1)
-            d3fdxdydz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 1, 1)
-            d3fdxdydz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 1, 1)
-            d3fdxdydz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 1, 1)
-            d3fdxdydz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 1, 1)
+            d3fdxdydz[0][0][0] = array_derivative(index_x, index_y, index_z, 1, 1, 1, False, False, False)
+            d3fdxdydz[0][1][0] = array_derivative(index_x, index_y + 1, index_z, 1, 1, 1, False, True, False)
+            d3fdxdydz[0][1][1] = array_derivative(index_x, index_y + 1, index_z + 1, 1, 1, 1, False, True, True)
+            d3fdxdydz[0][0][1] = array_derivative(index_x, index_y, index_z + 1, 1, 1, 1, False, False, True)
+            d3fdxdydz[1][0][0] = array_derivative(index_x + 1, index_y, index_z, 1, 1, 1, True, False, False)
+            d3fdxdydz[1][1][0] = array_derivative(index_x + 1, index_y + 1, index_z, 1, 1, 1, True, True, False)
+            d3fdxdydz[1][0][1] = array_derivative(index_x + 1, index_y, index_z + 1, 1, 1, 1, True, False, True)
+            d3fdxdydz[1][1][1] = array_derivative(index_x + 1, index_y + 1, index_z + 1, 1, 1, 1, True, True, True)
 
             calc_coefficients_3d(f, dfdx, dfdy, dfdz, d2fdxdy, d2fdxdz, d2fdydz, d3fdxdydz, a)
             for i in range(4):
@@ -837,13 +842,11 @@ cdef class _Extrapolator3DNearest(_Extrapolator3D):
     def __init__(self, double[::1] x, double[::1] y, double[::1] z, double[:, :, ::1] f, _Interpolator3D external_interpolator, double extrapolation_range_x, double extrapolation_range_y, double extrapolation_range_z):
            super().__init__(x, y, z, f, external_interpolator, extrapolation_range_x, extrapolation_range_y, extrapolation_range_z)
 
-
     cdef double evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._external_interpolator.evaluate(self._x[edge_x_index], py, pz, index_x, index_y, index_z)
 
     cdef double evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._external_interpolator.evaluate(px, self._y[edge_y_index], pz, index_x, index_y, index_z)
-
 
     cdef double evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._external_interpolator.evaluate(px, py, self._z[edge_z_index], index_x, index_y, index_z)
@@ -854,10 +857,8 @@ cdef class _Extrapolator3DNearest(_Extrapolator3D):
     cdef double evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._external_interpolator.evaluate(self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z)
 
-
     cdef double evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._external_interpolator.evaluate(px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
-
 
     cdef double evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
@@ -912,8 +913,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
         fxy_value = self._external_interpolator._analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 1, 1, 0
         )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y]))
-        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) - \
-               fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) #- fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
 
     cdef double evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fx_value, fz_value, fxz_value
@@ -927,8 +927,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
         fxz_value = self._external_interpolator._analytic_gradient(
             self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 1
         )/((self._x[index_x + 1] - self._x[index_x])*(self._z[index_z + 1] - self._z[index_z]))
-        return f_value + fx_value * (px - self._x[edge_x_index]) + fz_value * (pz - self._z[edge_z_index]) - \
-               fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index])
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fz_value * (pz - self._z[edge_z_index]) #- fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index])
 
     cdef double evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fy_value, fz_value, fyz_value
@@ -942,8 +941,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
         fyz_value = self._external_interpolator._analytic_gradient(
             px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 1
         )/((self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
-        return f_value + fy_value * (py - self._y[edge_y_index]) + fz_value * (pz - self._z[edge_z_index]) - \
-               fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index])
+        return f_value + fy_value * (py - self._y[edge_y_index]) + fz_value * (pz - self._z[edge_z_index]) #- fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index])
 
     cdef double evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fx_value, fy_value, fz_value, fxy_value, fxz_value, fyz_value, fxyz_value
@@ -970,13 +968,11 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 1, 1
         )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
         return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + \
-               fz_value * (pz - self._z[edge_z_index]) \
-               - fxy_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index]) \
-               - fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index]) \
-               - fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index]) \
-               + fxyz_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index])* (pz - self._z[edge_z_index])
-
-
+               fz_value * (pz - self._z[edge_z_index]) #\
+               # - fxy_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index]) \
+               # - fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index]) \
+               # - fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index]) \
+               # + fxyz_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index])* (pz - self._z[edge_z_index])
 
 
 cdef class _ArrayDerivative3D:
@@ -1001,7 +997,7 @@ cdef class _ArrayDerivative3D:
         self._last_index_y = self._y.shape[0] - 1
         self._last_index_z = self._z.shape[0] - 1
 
-    cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z) except? -1e999:
+    cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, bint rescale_norm_x, bint rescale_norm_y, bint rescale_norm_z) except? -1e999:
         """
         Evaluate the derivative of specific order at a grid point.
 
@@ -1086,6 +1082,18 @@ cdef class _ArrayDerivative3D:
                     dfdn = self.eval_xyz(
                         index_x_input, index_y_input, index_z_input, derivative_order_x, derivative_order_y, derivative_order_z,
                     )
+        if rescale_norm_x:
+            if not (index_x == 0 or index_x == self._last_index_x):
+                for i in range(derivative_order_x):
+                    dfdn = rescale_lower_normalisation(dfdn,  self._x[index_x - 1], self._x[index_x], self._x[index_x + 1])
+        if rescale_norm_y:
+            if not (index_y == 0 or index_y == self._last_index_y):
+                for i in range(derivative_order_y):
+                    dfdn = rescale_lower_normalisation(dfdn,  self._y[index_y - 1], self._y[index_y], self._y[index_y + 1])
+        if rescale_norm_z:
+            if not (index_z == 0 or index_z == self._last_index_z):
+                for i in range(derivative_order_z):
+                    dfdn = rescale_lower_normalisation(dfdn,  self._z[index_z - 1], self._z[index_z], self._z[index_z + 1])
         return dfdn
 
     cdef double eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
@@ -1386,10 +1394,9 @@ cdef class _ArrayDerivative3D:
     cdef double derivitive_d3fdxdydz_edge_xyz(self, double[:, :, :] f) except? -1e999:
         return (f[1, 1, 1] - f[0, 1, 1] - f[1, 0, 1] + f[0, 0, 1] - f[1, 1, 0] + f[0, 1, 0] + f[1, 0, 0] - f[0, 0, 0])
 
+    def __call__(self, index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z, rescale_norm_x, rescale_norm_y ,rescale_norm_z):
+        return self.evaluate(index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z, rescale_norm_x, rescale_norm_y ,rescale_norm_z)
 
-
-    def __call__(self, index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z):
-        return self.evaluate(index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z)
 
 id_to_interpolator = {
     _Interpolator3DLinear.ID: _Interpolator3DLinear,

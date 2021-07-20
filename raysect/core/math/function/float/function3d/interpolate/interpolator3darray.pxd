@@ -33,6 +33,9 @@ cimport numpy as np
 from raysect.core.math.function.float.function3d cimport Function3D
 from numpy cimport ndarray
 
+cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper)
+
+
 cdef int find_index_change(int index, int last_index)
 
 
@@ -107,7 +110,7 @@ cdef class _ArrayDerivative3D:
         double [::1] _x, _y, _z
         double [:, :, ::1] _f
         int _last_index_x, _last_index_y, _last_index_z
-    cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z) except? -1e999
+    cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, bint rescale_norm_x, bint rescale_norm_y, bint rescale_norm_z) except? -1e999
 
     cdef double derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999
     cdef double derivitive_dfdx_edge(self, double[:] f)
