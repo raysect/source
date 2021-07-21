@@ -36,10 +36,10 @@ from raysect.core.math.function.float.function2d.interpolate.tests.data_store.in
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven
 import scipy
 
-X_LOWER = -1.0
-X_UPPER = 1.0
-Y_LOWER = -1.0
-Y_UPPER = 1.0
+X_LOWER = -1.2
+X_UPPER = 1.2
+Y_LOWER = -1.2
+Y_UPPER = 1.2
 Y_EXTRAP_DELTA_MAX = 0.08
 Y_EXTRAP_DELTA_MIN = 0.04
 X_EXTRAP_DELTA_MAX = 0.08
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     small_values = True
 
     uneven_spacing = True
-    use_saved_datastore_spline_knots = True
+    use_saved_datastore_spline_knots = False
 
     print('Using scipy version', scipy.__version__)
 
@@ -267,8 +267,8 @@ if __name__ == '__main__':
 
     check_plot = True
     if check_plot:
-        xsamples_lower_and_upper = np.linspace(X_LOWER-0.1*(X_UPPER-X_LOWER), X_UPPER+0.1*(X_UPPER-X_LOWER), 50)
-        ysamples_lower_and_upper = np.linspace(Y_LOWER-0.1*(Y_UPPER-Y_LOWER), Y_UPPER+0.1*(Y_UPPER-Y_LOWER), 50)
+        xsamples_lower_and_upper = np.linspace(X_LOWER-0.*(X_UPPER-X_LOWER), X_UPPER+0.5*(X_UPPER-X_LOWER), 150)
+        ysamples_lower_and_upper = np.linspace(Y_LOWER-0.*(Y_UPPER-Y_LOWER), Y_UPPER+0.*(Y_UPPER-Y_LOWER), 150)
         xsamples_lower_and_upper_full, ysamples_lower_and_upper_full = np.meshgrid(
             xsamples_lower_and_upper, ysamples_lower_and_upper
         )
@@ -279,7 +279,7 @@ if __name__ == '__main__':
         surf = ax[0].plot_surface(x_in_full, y_in_full, f_in, cmap=cm.coolwarm, linewidth=0, antialiased=False)
         main_plots_on = True
         interpolator2D = Interpolator2DArray(
-            x_in, y_in, f_in, 'linear', 'nearest', extrapolation_range_x=2.0, extrapolation_range_y=2.0
+            x_in, y_in, f_in, 'linear', 'linear', extrapolation_range_x=2.0, extrapolation_range_y=2.0
         )
 
         if main_plots_on:
@@ -298,7 +298,7 @@ if __name__ == '__main__':
                         xsamples_lower_and_upper[i], ysamples_lower_and_upper[j]
                     )
             # ax[0].scatter(xsamples_in_full, ysamples_in_full, f_out, color='r')
-            ax[0].scatter(xsamples_extrapolation, ysamples_extrapolation, f_out_extrap, color='g')
+            # ax[0].scatter(xsamples_extrapolation, ysamples_extrapolation, f_out_extrap, color='g')
             # ax[0].scatter(xsamples_in_bounds, ysamples_in_bounds, f_extrap_nearest, color='m')
             # ax[1].scatter(
             # collapsed_xsamples_in_full, collapsed_ysamples_in_full, cubic_2d(xsamples, ysamples), color='m'

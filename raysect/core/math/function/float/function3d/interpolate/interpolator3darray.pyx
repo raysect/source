@@ -913,7 +913,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
         fxy_value = self._external_interpolator._analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 1, 1, 0
         )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y]))
-        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) #- fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
 
     cdef double evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fx_value, fz_value, fxz_value
@@ -927,7 +927,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
         fxz_value = self._external_interpolator._analytic_gradient(
             self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 1
         )/((self._x[index_x + 1] - self._x[index_x])*(self._z[index_z + 1] - self._z[index_z]))
-        return f_value + fx_value * (px - self._x[edge_x_index]) + fz_value * (pz - self._z[edge_z_index]) #- fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index])
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fz_value * (pz - self._z[edge_z_index]) + fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index])
 
     cdef double evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fy_value, fz_value, fyz_value
@@ -941,7 +941,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
         fyz_value = self._external_interpolator._analytic_gradient(
             px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 1
         )/((self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
-        return f_value + fy_value * (py - self._y[edge_y_index]) + fz_value * (pz - self._z[edge_z_index]) #- fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index])
+        return f_value + fy_value * (py - self._y[edge_y_index]) + fz_value * (pz - self._z[edge_z_index]) + fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index])
 
     cdef double evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fx_value, fy_value, fz_value, fxy_value, fxz_value, fyz_value, fxyz_value
@@ -968,11 +968,11 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 1, 1
         )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
         return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + \
-               fz_value * (pz - self._z[edge_z_index]) #\
-               # - fxy_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index]) \
-               # - fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index]) \
-               # - fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index]) \
-               # + fxyz_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index])* (pz - self._z[edge_z_index])
+               fz_value * (pz - self._z[edge_z_index]) \
+               + fxy_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index]) \
+               + fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index]) \
+               + fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index]) \
+               + fxyz_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index])* (pz - self._z[edge_z_index])
 
 
 cdef class _ArrayDerivative3D:

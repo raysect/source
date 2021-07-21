@@ -730,7 +730,7 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
         fxy_value = self._external_interpolator._analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 1
         )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y]))
-        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) - \
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + \
                fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
 
 

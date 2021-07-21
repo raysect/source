@@ -50,12 +50,22 @@ Y_EXTRAP_DELTA_MIN = 0.04
 Z_EXTRAP_DELTA_MAX = 0.08
 Z_EXTRAP_DELTA_MIN = 0.04
 
-NB_X = 10
-NB_Y = 10
-NB_Z = 10
-NB_XSAMPLES = 19
-NB_YSAMPLES = 19
-NB_ZSAMPLES = 19
+VISUAL_NOT_TESTS = True
+if VISUAL_NOT_TESTS:
+    NB_X = 51
+    NB_Y = 51
+    NB_Z = 51
+    NB_XSAMPLES = 101
+    NB_YSAMPLES = 101
+    NB_ZSAMPLES = 101
+else:
+    # These are for tests.
+    NB_X = 10
+    NB_Y = 10
+    NB_Z = 10
+    NB_XSAMPLES = 19
+    NB_YSAMPLES = 19
+    NB_ZSAMPLES = 19
 
 EXTRAPOLATION_RANGE = 2.0
 
@@ -184,7 +194,7 @@ def function_to_spline(x_input, y_input, z_input, factor):
 def uneven_linspace(x_lower, x_upper, n_2, offset_fraction):
     dx = (x_upper - x_lower)/(n_2 - 1)
     offset_x = offset_fraction * dx
-    x1 = np.linspace(x_lower, x_upper, NB_X)
+    x1 = np.linspace(x_lower, x_upper, n_2)
     x2 = np.linspace(x_lower + offset_x, x_upper + offset_x, n_2)[:-1]
     return np.sort(np.concatenate((x1, x2), axis=0))
 
@@ -194,10 +204,14 @@ if __name__ == '__main__':
     big_values = False
     small_values = False
     log_scale = False
-    uneven_spacing = False
+    uneven_spacing = True
     use_saved_datastore_spline_knots = False
-    index_x_in = 4
+    if VISUAL_NOT_TESTS:
+        index_x_in = 40
+    else:
+        index_x_in = 4
     index_y_in = 0
+    index_z_in = 0
     index_y_plot = 0
     index_z_plot = 0
     print('Using scipy version', scipy.__version__)
@@ -260,9 +274,11 @@ if __name__ == '__main__':
 
     interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'linear', extrapolation_range_x=2.0,
                                          extrapolation_range_y=2.0, extrapolation_range_z=2.0)
-
-    n_lower_upper_interp = 19
-    n_lower = 5
+    if VISUAL_NOT_TESTS:
+        n_lower_upper_interp = 51
+    else:
+        n_lower_upper_interp = 19
+    n_lower = 50
     lower_p = 0.9
     xsamples_lower_and_upper = np.linspace(X_LOWER, X_UPPER, n_lower_upper_interp)
     ysamples_lower_and_upper = np.linspace(Y_LOWER, Y_UPPER, n_lower_upper_interp)
@@ -317,7 +333,10 @@ if __name__ == '__main__':
                     f'{NB_ZSAMPLES}-1 must be divisible by NB_X={NB_X}-1, NB_Y={NB_Y}-1, NB_Z={NB_Z}-1'
                 )
             index_xsamples = np.where(x_in[index_x_in] == xsamples)[0].item()
-            index_ysamples_lower_upper = np.where(x_in[index_y_in] == ysamples_lower_and_upper)[0].item()
+            index_ysamples_lower_upper = np.where(y_in[index_y_in] == ysamples_lower_and_upper)[0].item()
+            # index_ysamples_lower_upper = 0
+            # index_zsamples_lower_upper = 0
+            index_zsamples_lower_upper = np.where(z_in[index_z_in] == zsamples_lower_and_upper)[0].item()
             f_plot_x = f_in[index_x_in, :, :]
 
             y_corners_x = pcolourmesh_corners(y_in)
@@ -369,7 +388,7 @@ if __name__ == '__main__':
             index_ysamples_print = np.where(y_in[index_y_print] == ysamples)[0].item()
             index_zsamples_print = np.where(z_in[index_z_print] == zsamples)[0].item()
             ax[0].set_title('Slice of x', size=20)
-            ax[1].set_title('Interpolated points in slice of x', size=20)
+            ax[1].set_title(f'Interpolated points \nin slice of x={x_in[index_x_in]}', size=20)
 
             y_corners_xsamples = pcolourmesh_corners(ysamples)
             z_corners_xsamples = pcolourmesh_corners(zsamples)
@@ -391,13 +410,16 @@ if __name__ == '__main__':
             print(ysamples_lower_and_upper[index_ysamples_lower_upper])
             print(x_in[index_x_in])
             check_array_z = np.zeros(len(zsamples_lower_and_upper))
+            check_array_y = np.zeros(len(ysamples_lower_and_upper))
             for i in range(len(zsamples_lower_and_upper)):
                 check_array_z[i] = interpolator3D(x_in[index_x_in], ysamples_lower_and_upper[index_ysamples_lower_upper], zsamples_lower_and_upper[i])
+                check_array_y[i] = interpolator3D(x_in[index_x_in], ysamples_lower_and_upper[i], zsamples_lower_and_upper[index_zsamples_lower_upper])
 
             ax1[0].plot(zsamples_lower_and_upper, f_out_lower_and_upper_x[index_ysamples_lower_upper, :])
             ax1[0].plot(z_in, f_in[index_x_in, index_y_in, :], 'bo')
             ax1[0].plot(zsamples_lower_and_upper, check_array_z, 'gx')
-            ax1[1].plot(ysamples_lower_and_upper, f_out_lower_and_upper_x[:, index_z_plot])
+            ax1[1].plot(ysamples_lower_and_upper, check_array_y)
+            # ax1[1].plot(ysamples_lower_and_upper, f_out_lower_and_upper_x[:, index_z_plot])
             ax1[0].axvline(z_in[0], color='r', linestyle='--')
             ax1[0].axvline(z_in[-1], color='r', linestyle='--')
             ax1[1].axvline(y_in[0], color='r', linestyle='--')
