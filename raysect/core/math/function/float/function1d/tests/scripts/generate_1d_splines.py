@@ -50,17 +50,15 @@ np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: form
 def function_to_spline(x_func, factor_in):
     return factor_in*np.sin(x_func)
 
-# def linear_extrapolation(m, x2, x1, f1):
-#     return f1 + m*(x2-x1)
 
 def linear_extrapolation(m_start, m_end, f_start, f_end, x_start, x_end, x_array):
 
     f_return = np.zeros(len(x_array))
-    for i in range(len(x_array)):
-        if x_array[i] > x_end:
-            f_return[i] = f_end + m_end*(x_array[i]-x_end)
-        elif x_array[i] < x_start:
-            f_return[i] = f_start + m_start*(x_array[i] - x_start)
+    for ix in range(len(x_array)):
+        if x_array[ix] > x_end:
+            f_return[ix] = f_end + m_end*(x_array[ix]-x_end)
+        elif x_array[ix] < x_start:
+            f_return[ix] = f_start + m_start*(x_array[ix] - x_start)
         else:
             raise ValueError('Only use on extrapolation data')
 
@@ -82,7 +80,8 @@ def calc_gradient(x_spline, y_spline, index_left):
         dx1 = (x_spline[index_left] - x_spline[index_left - 1])/(x_spline[index_left + 1] - x_spline[index_left])
         denominator = dx0*dx1**2 + dx1*dx0**2
         if denominator != 0:
-            dfdx = (y_spline[index_left + 1]*dx1**2 - y_spline[index_left - 1]*dx0**2 - y_spline[index_left]*(dx1**2 -dx0**2)) / denominator
+            dfdx = (y_spline[index_left + 1]*dx1**2 - y_spline[index_left - 1]*dx0**2 -
+                    y_spline[index_left]*(dx1**2 - dx0**2)) / denominator
         else:
             raise ZeroDivisionError('Two adjacent spline points have the same x value!')
     return dfdx
@@ -110,7 +109,6 @@ def different_quadratic_extrpolation_lower(x_interp, x_spline, y_spline):
 
     # Find c by solving at the fixed points (f = a x**2 + bx + c) at point 1 for the lower, and point 2 for the upper
     c_lower = f1_lower - a_lower*x1_lower**2 - b_lower*x1_lower
-    print('abc', a_lower, b_lower, c_lower)
     return a_lower*x_interp**2 + b_lower*x_interp + c_lower
 
 
@@ -136,16 +134,15 @@ def different_quadratic_extrpolation_upper(x_interp, x_spline, y_spline):
 
     # Find c by solving at the fixed points (f = a x**2 + bx + c) at point 1 for the lower, and point 2 for the upper
     c_upper = f2_upper - a_upper*x2_upper**2 - b_upper*x2_upper
-    # print('abc', a_upper, b_upper, c_upper)
     return a_upper*x_interp**2 + b_upper*x_interp + c_upper
 
 
 # Calculate for big values, small values, or normal values
 big_values = False
-small_values = False
+small_values = True
 
 uneven_spacing = True
-use_saved_datastore_spline_knots = False
+use_saved_datastore_spline_knots = True
 
 print('Using scipy version', scipy.__version__)
 
@@ -239,11 +236,9 @@ for i in range(len(xsamples_extrapolation)):
 print('Output of nearest neighbour extrapolation from the start and end spline knots ',
       'Save this to self.precalc_extrapolation_nearest in test_interpolator:\n', repr(f_extrap_nearest))
 
-f_extrap_linear = linear_extrapolation(expected_start_grad, expected_end_grad, data_f[0], data_f[-1], X_LOWER, X_UPPER, xsamples_extrapolation)
-# f_extrap_linear = linear_extrapolation(
-#     np.array([expected_start_grad, expected_start_grad, expected_end_grad, expected_end_grad]), xsamples_extrap,
-#     np.array([x[0], x[0], x[-1], x[-1]]), np.array([data_f[0], data_f[0], data_f[-1], data_f[-1]])
-# )
+f_extrap_linear = linear_extrapolation(expected_start_grad, expected_end_grad, data_f[0], data_f[-1], X_LOWER, X_UPPER,
+                                       xsamples_extrapolation)
+
 print('Output of linearly extrapolating from the start and end spline knots ',
       'Save this to self.precalc_extrapolation_linear in test_interpolator:\n', repr(f_extrap_linear))
 

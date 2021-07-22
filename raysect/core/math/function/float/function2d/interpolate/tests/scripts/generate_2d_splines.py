@@ -36,10 +36,10 @@ from raysect.core.math.function.float.function2d.interpolate.tests.data_store.in
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven
 import scipy
 
-X_LOWER = -1.2
-X_UPPER = 1.2
-Y_LOWER = -1.2
-Y_UPPER = 1.2
+X_LOWER = -1.0
+X_UPPER = 1.0
+Y_LOWER = -1.0
+Y_UPPER = 1.0
 Y_EXTRAP_DELTA_MAX = 0.08
 Y_EXTRAP_DELTA_MIN = 0.04
 X_EXTRAP_DELTA_MAX = 0.08
@@ -75,7 +75,6 @@ def large_extrapolation_range(xsamples_in, ysamples_in, extrapolation_range, n_e
     y_lower = np.linspace(ysamples_in[0] - extrapolation_range, ysamples_in[0], n_extrap + 1)[:-1]
     y_upper = np.linspace(ysamples_in[-1], ysamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
 
-
     xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
     ysamples_in_expanded = np.concatenate((y_lower, ysamples_in, y_upper), axis=0)
     edge_start_x = np.arange(0, n_extrap, 1, dtype=int)
@@ -89,18 +88,21 @@ def large_extrapolation_range(xsamples_in, ysamples_in, extrapolation_range, n_e
     ysamples_extrap_in_bounds = []
     for i_x in range(len(xsamples_in_expanded)):
         for j_y in range(len(ysamples_in_expanded)):
-                if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y):
-                    xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
-                    ysamples_extrap_in_bounds.append(ysamples_in_expanded[j_y])
+            if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y):
+                xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
+                ysamples_extrap_in_bounds.append(ysamples_in_expanded[j_y])
     return np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds)
 
 
-def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, x_extrap_delta_max, y_extrap_delta_max, extrapolation_range):
+def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, x_extrap_delta_max, y_extrap_delta_max,
+                                      extrapolation_range):
     xsamples_extrap_out_of_bounds_options = np.array(
-        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + extrapolation_range + x_extrap_delta_max])
+        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2.,
+         x_upper + extrapolation_range + x_extrap_delta_max])
 
     ysamples_extrap_out_of_bounds_options = np.array(
-        [y_lower - extrapolation_range - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + extrapolation_range + y_extrap_delta_max])
+        [y_lower - extrapolation_range - y_extrap_delta_max, (y_lower + y_upper) / 2.,
+         y_upper + extrapolation_range + y_extrap_delta_max])
 
     xsamples_extrap_out_of_bounds = []
     ysamples_extrap_out_of_bounds = []
@@ -127,8 +129,8 @@ if __name__ == '__main__':
     big_values = False
     small_values = True
 
-    uneven_spacing = True
-    use_saved_datastore_spline_knots = False
+    uneven_spacing = False
+    use_saved_datastore_spline_knots = True
 
     print('Using scipy version', scipy.__version__)
 
@@ -231,7 +233,9 @@ if __name__ == '__main__':
         for j in range(len(ysamples)):
             f_out[i, j] = interpolator2D_cubic_nearest(xsamples[i], ysamples[j])
 
-    xsamples_extrapolation, ysamples_extrapolation = large_extrapolation_range(xsamples, ysamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
+    xsamples_extrapolation, ysamples_extrapolation = large_extrapolation_range(
+        xsamples, ysamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION
+    )
 
     f_extrap_cubic_nearest = np.zeros((len(xsamples_extrapolation),))
     f_extrap_cubic_linear = np.zeros((len(xsamples_extrapolation),))
@@ -263,7 +267,6 @@ if __name__ == '__main__':
     print('Output of nearest neighbour extrapolation from linear interpolator at the start and end spline knots ',
           'Save this to self.precalc_extrapolation_nearest in test_interpolator in setup_linear:\n',
           repr(f_extrap_nearest))
-
 
     check_plot = True
     if check_plot:
@@ -314,7 +317,7 @@ if __name__ == '__main__':
                 xsamples_in_full, ysamples_in_full, f_out, cmap=cm.coolwarm, linewidth=0, antialiased=False
             )
 
-            surf = ax[2].plot_surface(
+            ax[2].plot_surface(
                 xsamples_lower_and_upper_full, ysamples_lower_and_upper_full, f_out_lower_and_upper, cmap=cm.coolwarm,
                 linewidth=0, antialiased=False
             )

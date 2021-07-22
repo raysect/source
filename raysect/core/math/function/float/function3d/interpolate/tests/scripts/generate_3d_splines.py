@@ -30,7 +30,7 @@
 
 import numpy as np
 from raysect.core.math.function.float.function3d.interpolate.interpolator3darray import Interpolator3DArray
-from matplotlib.colors import ListedColormap, LogNorm, SymLogNorm, Normalize
+from matplotlib.colors import SymLogNorm, Normalize
 import scipy
 import sys
 from raysect.core.math.function.float.function3d.interpolate.tests.data_store.interpolator3d_test_data import \
@@ -50,7 +50,7 @@ Y_EXTRAP_DELTA_MIN = 0.04
 Z_EXTRAP_DELTA_MAX = 0.08
 Z_EXTRAP_DELTA_MIN = 0.04
 
-VISUAL_NOT_TESTS = True
+VISUAL_NOT_TESTS = False
 if VISUAL_NOT_TESTS:
     NB_X = 51
     NB_Y = 51
@@ -77,7 +77,8 @@ SMALL_VALUE_FACTOR = -20.
 N_EXTRAPOLATION = 3
 
 # Force scientific format to get the right number of significant figures
-np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')}, threshold=sys.maxsize)
+np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')},
+                    threshold=sys.maxsize)
 
 
 def large_extrapolation_range(xsamples_in, ysamples_in, zsamples_in, extrapolation_range, n_extrap):
@@ -87,7 +88,6 @@ def large_extrapolation_range(xsamples_in, ysamples_in, zsamples_in, extrapolati
     y_upper = np.linspace(ysamples_in[-1], ysamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
     z_lower = np.linspace(zsamples_in[0] - extrapolation_range, zsamples_in[0], n_extrap + 1)[:-1]
     z_upper = np.linspace(zsamples_in[-1], zsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
-
 
     xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
     ysamples_in_expanded = np.concatenate((y_lower, ysamples_in, y_upper), axis=0)
@@ -115,15 +115,20 @@ def large_extrapolation_range(xsamples_in, ysamples_in, zsamples_in, extrapolati
     return np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds), np.array(zsamples_extrap_in_bounds)
 
 
-def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max, z_extrap_delta_max, extrapolation_range):
+def extrapolation_out_of_bound_points(
+        x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max,
+        z_extrap_delta_max, extrapolation_range):
     xsamples_extrap_out_of_bounds_options = np.array(
-        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + extrapolation_range + x_extrap_delta_max])
+        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2.,
+         x_upper + extrapolation_range + x_extrap_delta_max])
 
     ysamples_extrap_out_of_bounds_options = np.array(
-        [y_lower - extrapolation_range - y_extrap_delta_max, (y_lower + y_upper) / 2., y_upper + extrapolation_range + y_extrap_delta_max])
+        [y_lower - extrapolation_range - y_extrap_delta_max, (y_lower + y_upper) / 2.,
+         y_upper + extrapolation_range + y_extrap_delta_max])
 
     zsamples_extrap_out_of_bounds_options = np.array(
-        [z_lower - extrapolation_range - z_extrap_delta_max, (z_lower + z_upper) / 2., z_upper + extrapolation_range + z_extrap_delta_max])
+        [z_lower - extrapolation_range - z_extrap_delta_max, (z_lower + z_upper) / 2.,
+         z_upper + extrapolation_range + z_extrap_delta_max])
     xsamples_extrap_out_of_bounds = []
     ysamples_extrap_out_of_bounds = []
     zsamples_extrap_out_of_bounds = []
@@ -135,11 +140,13 @@ def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, z_lowe
                     xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
                     ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
                     zsamples_extrap_out_of_bounds.append(zsamples_extrap_out_of_bounds_options[k_z])
-    return np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), np.array(zsamples_extrap_out_of_bounds)
+    return np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), np.array(
+        zsamples_extrap_out_of_bounds)
 
 
 def get_extrapolation_input_values(
-        x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max, z_extrap_delta_max, x_extrap_delta_min, y_extrap_delta_min, z_extrap_delta_min):
+        x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max,
+        z_extrap_delta_max, x_extrap_delta_min, y_extrap_delta_min, z_extrap_delta_min):
     xsamples_extrap_out_of_bounds_options = np.array(
         [x_lower - x_extrap_delta_max, (x_lower + x_upper) / 2., x_upper + x_extrap_delta_max])
 
@@ -178,17 +185,20 @@ def get_extrapolation_input_values(
                     ysamples_extrap_in_bounds.append(ysamples_extrap_in_bounds_options[j_y])
                     zsamples_extrap_in_bounds.append(zsamples_extrap_in_bounds_options[k_z])
     return \
-        np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), np.array(zsamples_extrap_out_of_bounds), \
-        np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds), np.array(zsamples_extrap_in_bounds)
+        np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), \
+        np.array(zsamples_extrap_out_of_bounds), np.array(xsamples_extrap_in_bounds), \
+        np.array(ysamples_extrap_in_bounds), np.array(zsamples_extrap_in_bounds)
 
 
 def pcolourmesh_corners(input_array):
-    return np.concatenate((input_array[:-1] - np.diff(input_array)/2., np.array([input_array[-1] - (input_array[-1] - input_array[-2]) / 2., input_array[-1] + (input_array[-1] - input_array[-2]) / 2.])), axis=0)
+    return np.concatenate((input_array[:-1] - np.diff(input_array)/2.,
+                           np.array([input_array[-1] - (input_array[-1] - input_array[-2]) / 2.,
+                                     input_array[-1] + (input_array[-1] - input_array[-2]) / 2.])), axis=0)
 
 
-def function_to_spline(x_input, y_input, z_input, factor):
+def function_to_spline(x_input, y_input, z_input, factor_in):
     t = np.pi * np.sqrt((x_input ** 2 + y_input ** 2 + z_input ** 2))
-    return factor*np.sinc(t)
+    return factor_in*np.sinc(t)
 
 
 def uneven_linspace(x_lower, x_upper, n_2, offset_fraction):
@@ -202,10 +212,11 @@ def uneven_linspace(x_lower, x_upper, n_2, offset_fraction):
 if __name__ == '__main__':
     # Calculate for big values, small values, or normal values
     big_values = False
-    small_values = False
+    small_values = True
     log_scale = False
-    uneven_spacing = True
-    use_saved_datastore_spline_knots = False
+    uneven_spacing = False
+    use_saved_datastore_spline_knots = True
+    verbose_options = [False, True, False, False]
     if VISUAL_NOT_TESTS:
         index_x_in = 40
     else:
@@ -236,11 +247,6 @@ if __name__ == '__main__':
     x_in_full, y_in_full, z_in_full = np.meshgrid(x_in, y_in, z_in, indexing='ij')
     f_in = function_to_spline(x_in_full, y_in_full, z_in_full, factor)
 
-    # power_each_element = np.array(np.around(np.log10(np.abs(f_in))), dtype=int)
-    # for i in range(len(x_in)):
-    #     for j in range(len(y_in)):
-    #         for k in range(len(z_in)):
-    #             f_in[i, j, k] = np.around(f_in[i, j, k], 12 - power_each_element[i, j, k])
     if use_saved_datastore_spline_knots:
         if uneven_spacing:
             if big_values:
@@ -257,19 +263,22 @@ if __name__ == '__main__':
             else:
                 reference_loaded_values = TestInterpolatorLoadNormalValues()
         f_in = reference_loaded_values.data
-    print('Save this to self.data in test_interpolator:\n', repr(f_in))
+    if verbose_options[0]:
+        print('Save this to self.data in test_interpolator:\n', repr(f_in))
 
     xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
     ysamples = np.linspace(Y_LOWER, Y_UPPER, NB_YSAMPLES)
     zsamples = np.linspace(Z_LOWER, Z_UPPER, NB_ZSAMPLES)
 
-    xsamples_extrapolation, ysamples_extrapolation, zsamples_extrapolation = large_extrapolation_range(xsamples, ysamples, zsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
+    xsamples_extrapolation, ysamples_extrapolation, zsamples_extrapolation = large_extrapolation_range(
+        xsamples, ysamples, zsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION
+    )
 
     # # Extrapolation x and y values
-    xsamples_out_of_bounds, ysamples_out_of_bounds, zsamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds,  zsamples_in_bounds = \
-        get_extrapolation_input_values(
-            X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, Z_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
-            Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
+    xsamples_out_of_bounds, ysamples_out_of_bounds, zsamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds, \
+    zsamples_in_bounds = get_extrapolation_input_values(
+        X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, Z_LOWER, Z_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX,
+        Z_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, Y_EXTRAP_DELTA_MIN, Z_EXTRAP_DELTA_MIN
         )
 
     interpolator3D = Interpolator3DArray(x_in, y_in, z_in, f_in, 'linear', 'linear', extrapolation_range_x=2.0,
@@ -297,19 +306,14 @@ if __name__ == '__main__':
                                                1:]))
     index_ysamples_lower_upper = np.where(x_in[index_y_in] == ysamples_lower_and_upper)[0].item()
 
-    # print(interpolator3D(x_in[index_x_in], -2.0, -2.0))
-    print(interpolator3D(x_in[index_x_in], ysamples_lower_and_upper[index_ysamples_lower_upper]-0.0001, zsamples_lower_and_upper[0]))
-    # print(x_in[index_x_in], -2.0, -2.0)
-    print(x_in[index_x_in], ysamples_lower_and_upper[index_ysamples_lower_upper], zsamples_lower_and_upper[0])
-
-    # quit()
-    # print(interpolator3D(x_in[4], -1.1, 3.))
-    # quit()
     # extrapolation to save
-    f_extrapolation_output = np.zeros((len(xsamples_in_bounds),))
-    for i in range(len(xsamples_in_bounds)):
-        f_extrapolation_output[i] = interpolator3D(xsamples_in_bounds[i], ysamples_in_bounds[i], zsamples_in_bounds[i])
-    print('Output of extrapolation to be saved:\n', repr(f_extrapolation_output))
+    f_extrapolation_output = np.zeros((len(xsamples_extrapolation), ))
+    for i in range(len(xsamples_extrapolation)):
+        f_extrapolation_output[i] = interpolator3D(
+            xsamples_extrapolation[i], ysamples_extrapolation[i], zsamples_extrapolation[i]
+        )
+    if verbose_options[1]:
+        print('Output of extrapolation to be saved:\n', repr(f_extrapolation_output))
 
     check_plot = True
     if check_plot:
@@ -318,7 +322,6 @@ if __name__ == '__main__':
         # Install mayavi and pyQt5
 
         main_plots_on = True
-        mayavi_plots_on = False
         if main_plots_on:
             fig, ax = plt.subplots(1, 4)
             fig1, ax1 = plt.subplots(1, 2)
@@ -359,29 +362,41 @@ if __name__ == '__main__':
                 for j in range(len(ysamples)):
                     for k in range(len(zsamples)):
                         f_out[i, j, k] = interpolator3D(xsamples[i], ysamples[j], zsamples[k])
-            print('Test interpolation:\n', repr(f_out))
+            if verbose_options[2]:
+                print('Test interpolation:\n', repr(f_out))
 
-            f_out_lower_and_upper = np.zeros((len(xsamples_lower_and_upper), len(ysamples_lower_and_upper), len(zsamples_lower_and_upper)))
+            f_out_lower_and_upper = np.zeros((len(xsamples_lower_and_upper), len(ysamples_lower_and_upper),
+                                              len(zsamples_lower_and_upper)))
             for i in range(len(xsamples_lower_and_upper)):
                 for j in range(len(ysamples_lower_and_upper)):
                     for k in range(len(zsamples_lower_and_upper)):
-                        f_out_lower_and_upper[i, j, k] = interpolator3D(xsamples_lower_and_upper[i], ysamples_lower_and_upper[j], zsamples_lower_and_upper[k])
+                        f_out_lower_and_upper[i, j, k] = interpolator3D(
+                            xsamples_lower_and_upper[i], ysamples_lower_and_upper[j], zsamples_lower_and_upper[k]
+                        )
 
             f_out_extrapolation = np.zeros((len(xsamples_extrapolation), ))
             for i in range(len(xsamples_extrapolation)):
-                f_out_extrapolation[i] = interpolator3D(xsamples_extrapolation[i], ysamples_extrapolation[i], zsamples_extrapolation[i])
-            print('New output of extrapolation to be saved:\n', repr(f_out_extrapolation))
+                f_out_extrapolation[i] = interpolator3D(
+                    xsamples_extrapolation[i], ysamples_extrapolation[i], zsamples_extrapolation[i]
+                )
+            if verbose_options[3]:
+                print('New output of extrapolation to be saved:\n', repr(f_out_extrapolation))
 
             index_xsamples_extrap = np.where(x_in[index_x_in] == xsamples_extrapolation)
             f_out_x_extrapolation = f_out_extrapolation[index_xsamples_extrap]
 
-            im = ax[3].scatter(ysamples_extrapolation[index_xsamples_extrap], zsamples_extrapolation[index_xsamples_extrap], c=f_out_x_extrapolation, norm=c_norm, cmap='viridis', s=10)
+            im = ax[3].scatter(
+                ysamples_extrapolation[index_xsamples_extrap], zsamples_extrapolation[index_xsamples_extrap],
+                c=f_out_x_extrapolation, norm=c_norm, cmap='viridis', s=10
+            )
             ax[3].set_aspect('equal')
 
             f_out_x = f_out[index_xsamples, :, :]
 
             ysamples_mesh, zsamples_mesh = np.meshgrid(ysamples, zsamples)
-            im = ax[0].scatter(ysamples_mesh.ravel(), zsamples_mesh.ravel(), c=f_out_x.ravel(), norm=c_norm, cmap='viridis', s=10)
+            ax[0].scatter(
+                ysamples_mesh.ravel(), zsamples_mesh.ravel(), c=f_out_x.ravel(), norm=c_norm, cmap='viridis', s=10
+            )
             index_y_print = -1
             index_z_print = 0
 
@@ -398,22 +413,28 @@ if __name__ == '__main__':
             ax[1].set_aspect('equal')
             if not (x_in[index_x_in] == xsamples_lower_and_upper).any():
                 raise ValueError(
-                    f'To compare a slice, n_lower_upper={n_lower}-1, must be divisible by NB_X={NB_X}-1, NB_Y={NB_Y}-1, NB_Z={NB_Z}-1'
+                    f'To compare a slice, n_lower_upper={n_lower}-1, must be divisible by NB_X={NB_X}-1, NB_Y={NB_Y}-1,'
+                    f' NB_Z={NB_Z}-1'
                 )
             index_xsamples_lower_and_upper = np.where(x_in[index_x_in] == xsamples_lower_and_upper)[0].item()
 
             y_corners_xsamples_lower_and_upper = pcolourmesh_corners(ysamples_lower_and_upper)
             z_corners_xsamples_lower_and_upper = pcolourmesh_corners(zsamples_lower_and_upper)
             f_out_lower_and_upper_x = f_out_lower_and_upper[index_xsamples_lower_and_upper, :, :]
-            im3 = ax[2].pcolormesh(y_corners_xsamples_lower_and_upper, z_corners_xsamples_lower_and_upper, f_out_lower_and_upper_x, norm=c_norm, cmap='viridis')
+            im3 = ax[2].pcolormesh(
+                y_corners_xsamples_lower_and_upper, z_corners_xsamples_lower_and_upper, f_out_lower_and_upper_x,
+                norm=c_norm, cmap='viridis'
+            )
 
-            print(ysamples_lower_and_upper[index_ysamples_lower_upper])
-            print(x_in[index_x_in])
             check_array_z = np.zeros(len(zsamples_lower_and_upper))
             check_array_y = np.zeros(len(ysamples_lower_and_upper))
             for i in range(len(zsamples_lower_and_upper)):
-                check_array_z[i] = interpolator3D(x_in[index_x_in], ysamples_lower_and_upper[index_ysamples_lower_upper], zsamples_lower_and_upper[i])
-                check_array_y[i] = interpolator3D(x_in[index_x_in], ysamples_lower_and_upper[i], zsamples_lower_and_upper[index_zsamples_lower_upper])
+                check_array_z[i] = interpolator3D(
+                    x_in[index_x_in], ysamples_lower_and_upper[index_ysamples_lower_upper], zsamples_lower_and_upper[i]
+                )
+                check_array_y[i] = interpolator3D(
+                    x_in[index_x_in], ysamples_lower_and_upper[i], zsamples_lower_and_upper[index_zsamples_lower_upper]
+                )
 
             ax1[0].plot(zsamples_lower_and_upper, f_out_lower_and_upper_x[index_ysamples_lower_upper, :])
             ax1[0].plot(z_in, f_in[index_x_in, index_y_in, :], 'bo')
@@ -430,45 +451,3 @@ if __name__ == '__main__':
             ax[2].set_aspect('equal')
 
             plt.show()
-        if mayavi_plots_on:
-            from mayavi import mlab
-            # https://docs.enthought.com/mayavi/mayavi/mlab_case_studies.html
-            x, y, z = np.mgrid[-1:1:20j, -1:1:20j, -1:1:20j]
-            n = 20
-
-            s = function_to_spline(x, y, z, 1.)
-            # mlab.pipeline.volume(mlab.pipeline.scalar_field(s))        # mlab.volume_slice(s, plane_orientation='x_axes', slice_index=10)
-            src = mlab.pipeline.scalar_field(x, y, z, s)
-            mlab.pipeline.iso_surface(src, contours=[s.min() + 0.1 * s.ptp(), ], opacity=0.1, colormap='viridis')
-            mlab.pipeline.iso_surface(src, contours=[s.max() - 0.1 * s.ptp(), ], colormap='viridis')
-            mlab.pipeline.image_plane_widget(src,
-                                             plane_orientation='z_axes',
-                                             slice_index=10, colormap='viridis'
-                                             )
-            mlab.axes()
-            mlab.orientation_axes()
-            dxyz = 0.1
-            x_point, y_point, z_point = np.mgrid[-0.5:-0.5+dxyz:4j, -0.5:-0.5+dxyz:4j, -0.5:-0.5+dxyz:4j]
-
-            x_point = np.array([-0.5, 0.0])
-            y_point = np.array([-0.5, 0.0])
-            z_point = np.array([0.0, 0.0])
-            s_point = np.array([2000., 0.001])
-            mlab.points3d(x_point, y_point, z_point, s_point, colormap="viridis", scale_mode='none')
-            x_point = 0.5
-            y_point = 0.5
-            z_point = 0.0
-            s_point = 1
-            x_point = np.array([-0.5])
-            y_point = np.array([-0.5])
-            z_point = np.array([0.0])
-            s_point = np.array([10])
-            ones = np.ones(1)
-            scalars = np.arange(1)  # Key point: set an integer for each point
-            # mlab.pipeline.scalar_scatter(x_point, y_point, z_point, scalar=function_to_spline(x_point, y_point, z_point, factor=1.), colormap='viridis')
-            # pts = mlab.quiver3d(x_point, y_point, z_point, ones, ones, ones, scalars=s_point, mode='sphere', scale_factor=1)  # Create points
-            # pts.glyph.color_mode = 'color_by_scalar'  # Color by scalar
-            # mlab.points3d(x_point, y_point, z_point, s_point, colormap="viridis")
-
-            mlab.show()
-

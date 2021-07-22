@@ -551,6 +551,7 @@ cdef class _ArrayDerivative1D:
 
         :param index_x: The lower index of the x array cell to evaluate.
         :param derivative_order_x: An integer of the derivative order x. Only zero if derivative_order_y is nonzero.
+        :param rescale_norm_x: A boolean as whether to rescale to the delta before x[index_x] or after (default).
         """
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
         cdef double dfdn

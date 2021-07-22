@@ -260,7 +260,7 @@ cdef class _Interpolator2D:
         """
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
-    cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
+    cdef double analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
 
@@ -284,7 +284,7 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
             self._f[index_x:index_x + 2, index_y:index_y + 2], px, py
         )
 
-    cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
+    cdef double analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
         """
         Calculate the normalised derivative of specified order in a unit square.
         
@@ -443,7 +443,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
                 for j in range(4):
                     a[i][j] = self._a[index_x, index_y, i, j]
 
-    cdef double _analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
+    cdef double analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
         """
         Calculate the normalised gradient of specified order in a unit square.
 
@@ -681,7 +681,7 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
         """
         cdef double f_value, fx_value
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], py, index_x, index_y)
-        fx_value = self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0)/\
+        fx_value = self._external_interpolator.analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0) / \
                    (self._x[index_x + 1] - self._x[index_x])
         return f_value + fx_value*(px - self._x[edge_x_index])
 
@@ -703,7 +703,7 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
         """
         cdef double f_value, fy_value
         f_value = self._external_interpolator.evaluate(px, self._y[edge_y_index], index_x, index_y)
-        fy_value = self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 0, 1)/\
+        fy_value = self._external_interpolator.analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 0, 1) / \
                    (self._y[index_y + 1] - self._y[index_y])
         return f_value + fy_value * (py - self._y[edge_y_index])
 
@@ -713,11 +713,10 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
 
         The extrapolated value uses the closest value of the function at the edge in x and y, df/dx, df/dy and d2f/dxdy  
         of the interpolator at the edge of the spline knot grid to extrapolate as 
-        f_extrap = f(edge) + Dx*df(edge)/dx + Dy*df(edge)/dy - Dx*Dy*d2f(edge)/dxdy where 
-        Dx = px - edge_x, Dy = py - edge_y. This is  because the bilinear equation f(x, y) = a0 + a1x + a2y + a3xy has 
-        f(edge) = a0 (x=0, y=0) , df/dx = a1 +a3y, df/dy = a2 +a3x and d2f(edge)/dxdy = a3, which can all be substituted
-        in to get the above. This requires x and y to be centred at the point (x=0, y=0) and all 3 derivatives to be 
-        unnormalised.
+        f_extrap = f(edge) + Dx*df(edge)/dx + Dy*df(edge)/dy + Dx*Dy*d2f(edge)/dxdy where 
+        Dx = px - edge_x, Dy = py - edge_y. This is because the bilinear equation f(x, y) as a taylor expansion only 
+        has terms with x and y to a maximum power of 1 in every term. All 3 derivatives are  
+        un-normalised before extrapolation.
         
         :param double px: the point for which an interpolated value is required.
         :param double py: the point for which an interpolated value is required.
@@ -729,13 +728,13 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
         """
         cdef double f_value, fx_value, fy_value, fxy_value
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y)
-        fx_value = self._external_interpolator._analytic_gradient(
+        fx_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0
         )/(self._x[index_x + 1] - self._x[index_x])
-        fy_value = self._external_interpolator._analytic_gradient(
+        fy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 0, 1
         )/(self._y[index_y + 1] - self._y[index_y])
-        fxy_value = self._external_interpolator._analytic_gradient(
+        fxy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 1
         )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y]))
         return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + \
@@ -772,6 +771,8 @@ cdef class _ArrayDerivative2D:
         :param index_y: The lower index of the y grid cell to evaluate.
         :param derivative_order_x: An integer of the derivative order x. Only zero if derivative_order_y is nonzero.
         :param derivative_order_y: An integer of the derivative order y. Only zero if derivative_order_x is nonzero.
+        :param rescale_norm_x: A boolean as whether to rescale to the delta before x[index_x] or after (default).
+        :param rescale_norm_y: A boolean as whether to rescale to the delta before y[index_y] or after (default).
         """
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
         cdef double dfdn

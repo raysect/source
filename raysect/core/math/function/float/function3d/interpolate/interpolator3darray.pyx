@@ -31,8 +31,8 @@
 
 import numpy as np
 cimport cython
-from raysect.core.math.cython.utility cimport find_index, factorial
-from raysect.core.math.cython.interpolation.linear cimport linear3d, linear1d
+from raysect.core.math.cython.utility cimport find_index
+from raysect.core.math.cython.interpolation.linear cimport linear3d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_3d, evaluate_cubic_3d
 
 # TODO These functions are in 2D too. Move them somewhere common
@@ -297,7 +297,7 @@ cdef class _Interpolator3D:
         """
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
-    cdef double _analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
+    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
 
@@ -322,7 +322,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
             self._f[index_x:index_x + 2, index_y:index_y + 2, index_z:index_z + 2], px, py, pz
         )
 
-    cdef double _analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
+    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
         """
         Calculate the normalised derivative of specified order in a unit cube.
 
@@ -582,7 +582,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
                     for k in range(4):
                         a[i][j][k] = self._a[index_x, index_y, index_z, i, j, k]
 
-    cdef double _analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
+    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
         #TODO edit docstring
         """
         Calculate the normalised gradient of specified order in a unit cube.
@@ -883,34 +883,34 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
     cdef double evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fx_value
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], py, pz, index_x, index_y, index_z)
-        fx_value = self._external_interpolator._analytic_gradient(self._x[edge_x_index], py, pz, index_x, index_y, index_z, 1, 0, 0) / \
+        fx_value = self._external_interpolator.analytic_gradient(self._x[edge_x_index], py, pz, index_x, index_y, index_z, 1, 0, 0) / \
                    (self._x[index_x + 1] - self._x[index_x])
         return f_value + fx_value * (px - self._x[edge_x_index])
 
     cdef double evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fy_value
         f_value = self._external_interpolator.evaluate(px, self._y[edge_y_index], pz, index_x, index_y, index_z)
-        fy_value = self._external_interpolator._analytic_gradient(px, self._y[edge_y_index], pz, index_x, index_y, index_z, 0, 1, 0)/\
+        fy_value = self._external_interpolator.analytic_gradient(px, self._y[edge_y_index], pz, index_x, index_y, index_z, 0, 1, 0) / \
                    (self._y[index_y + 1] - self._y[index_y])
         return f_value + fy_value * (py - self._y[edge_y_index])
 
     cdef double evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fz_value
         f_value = self._external_interpolator.evaluate(px, py, self._z[edge_z_index], index_x, index_y, index_z)
-        fz_value = self._external_interpolator._analytic_gradient(px, py, self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1)/\
+        fz_value = self._external_interpolator.analytic_gradient(px, py, self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1) / \
                    (self._z[index_z + 1] - self._z[index_z])
         return f_value + fz_value * (pz - self._z[edge_z_index])
 
     cdef double evaluate_edge_xy(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fx_value, fy_value, fxy_value
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z)
-        fx_value = self._external_interpolator._analytic_gradient(
+        fx_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 1, 0, 0
         )/(self._x[index_x + 1] - self._x[index_x])
-        fy_value = self._external_interpolator._analytic_gradient(
+        fy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 0, 1, 0
         )/(self._y[index_y + 1] - self._y[index_y])
-        fxy_value = self._external_interpolator._analytic_gradient(
+        fxy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 1, 1, 0
         )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y]))
         return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
@@ -918,13 +918,13 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
     cdef double evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fx_value, fz_value, fxz_value
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z)
-        fx_value = self._external_interpolator._analytic_gradient(
+        fx_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 0
         )/(self._x[index_x + 1] - self._x[index_x])
-        fz_value = self._external_interpolator._analytic_gradient(
+        fz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1
         )/(self._z[index_z + 1] - self._z[index_z])
-        fxz_value = self._external_interpolator._analytic_gradient(
+        fxz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 1
         )/((self._x[index_x + 1] - self._x[index_x])*(self._z[index_z + 1] - self._z[index_z]))
         return f_value + fx_value * (px - self._x[edge_x_index]) + fz_value * (pz - self._z[edge_z_index]) + fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index])
@@ -932,39 +932,61 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
     cdef double evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fy_value, fz_value, fyz_value
         f_value = self._external_interpolator.evaluate(px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
-        fy_value = self._external_interpolator._analytic_gradient(
+        fy_value = self._external_interpolator.analytic_gradient(
             px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 0
         )/(self._y[index_y + 1] - self._y[index_y])
-        fz_value = self._external_interpolator._analytic_gradient(
+        fz_value = self._external_interpolator.analytic_gradient(
             px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1
         )/(self._z[index_z + 1] - self._z[index_z])
-        fyz_value = self._external_interpolator._analytic_gradient(
+        fyz_value = self._external_interpolator.analytic_gradient(
             px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 1
         )/((self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
         return f_value + fy_value * (py - self._y[edge_y_index]) + fz_value * (pz - self._z[edge_z_index]) + fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index])
 
     cdef double evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+        """
+        Extrapolate beyond the spline knot domain in the x, y and z directions.
+
+        The extrapolated value uses the closest value of the function at the edge in x and y, df/dx, df/dy, df/dz, 
+        d2f/dxdy, d2f/dxdz, d2f/dydz  
+        of the interpolator at the edge of the spline knot grid to extrapolate as 
+        f_extrap = f(edge) + Dx*df(edge)/dx + Dy*df(edge)/dy + Dx*Dy*d2f(edge)/dxdy + ... where 
+        Dx = px - edge_x, Dy = py - edge_y... This is because the trilinear equation f(x, y, z) as a taylor expansion 
+        only has terms with x, y and z to a maximum power of 1 in every term. All derivatives are un-normalised before 
+        extrapolation.
+
+        :param double px: the point for which an interpolated value is required.
+        :param double py: the point for which an interpolated value is required.
+        :param double pz: the point for which an interpolated value is required.
+        :param int index_x: the lower index of the bin containing point px. (Result of bisection search).   
+        :param int index_y: the lower index of the bin containing point py. (Result of bisection search).   
+        :param int index_z: the lower index of the bin containing point pz. (Result of bisection search).   
+        :param int edge_x_index: the index of the closest edge spline knot in the x direction.
+        :param int edge_y_index: the index of the closest edge spline knot in the y direction.
+        :param int edge_z_index: the index of the closest edge spline knot in the z direction.
+
+        """
         cdef double f_value, fx_value, fy_value, fz_value, fxy_value, fxz_value, fyz_value, fxyz_value
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
-        fx_value = self._external_interpolator._analytic_gradient(
+        fx_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 0
         )/(self._x[index_x + 1] - self._x[index_x])
-        fy_value = self._external_interpolator._analytic_gradient(
+        fy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 0
         )/(self._y[index_y + 1] - self._y[index_y])
-        fz_value = self._external_interpolator._analytic_gradient(
+        fz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1
         )/(self._z[index_z + 1] - self._z[index_z])
-        fxy_value = self._external_interpolator._analytic_gradient(
+        fxy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 1, 0
         )/((self._y[index_y + 1] - self._y[index_y])*(self._x[index_x + 1] - self._x[index_x]))
-        fxz_value = self._external_interpolator._analytic_gradient(
+        fxz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 1
         )/((self._x[index_x + 1] - self._x[index_x])*(self._z[index_z + 1] - self._z[index_z]))
-        fyz_value = self._external_interpolator._analytic_gradient(
+        fyz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 1
         )/((self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
-        fxyz_value = self._external_interpolator._analytic_gradient(
+        fxyz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 1, 1
         )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
         return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + \
@@ -1011,6 +1033,9 @@ cdef class _ArrayDerivative3D:
         :param derivative_order_x: An integer of the derivative order x. Only zero if derivative_order_y/z is nonzero.
         :param derivative_order_y: An integer of the derivative order y. Only zero if derivative_order_x/z is nonzero.
         :param derivative_order_z: An integer of the derivative order z. Only zero if derivative_order_x/y is nonzero.
+        :param rescale_norm_x: A boolean as whether to rescale to the delta before x[index_x] or after (default).
+        :param rescale_norm_y: A boolean as whether to rescale to the delta before y[index_y] or after (default).
+        :param rescale_norm_z: A boolean as whether to rescale to the delta before z[index_z] or after (default).
         """
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
         cdef double dfdn
@@ -1392,7 +1417,7 @@ cdef class _ArrayDerivative3D:
         return (f[2, 1, 1] - f[0, 1, 1] - f[2, 0, 1] + f[0, 0, 1] - f[2, 1, 0] + f[0, 1, 0] + f[2, 0, 0] - f[0, 0, 0]) / (1. + dx1)
 
     cdef double derivitive_d3fdxdydz_edge_xyz(self, double[:, :, :] f) except? -1e999:
-        return (f[1, 1, 1] - f[0, 1, 1] - f[1, 0, 1] + f[0, 0, 1] - f[1, 1, 0] + f[0, 1, 0] + f[1, 0, 0] - f[0, 0, 0])
+        return f[1, 1, 1] - f[0, 1, 1] - f[1, 0, 1] + f[0, 0, 1] - f[1, 1, 0] + f[0, 1, 0] + f[1, 0, 0] - f[0, 0, 0]
 
     def __call__(self, index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z, rescale_norm_x, rescale_norm_y ,rescale_norm_z):
         return self.evaluate(index_x, index_y, index_z, derivative_order_x, derivative_order_y, derivative_order_z, rescale_norm_x, rescale_norm_y ,rescale_norm_z)

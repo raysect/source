@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport numpy as np
 from raysect.core.math.function.float.function3d cimport Function3D
 from numpy cimport ndarray
 
@@ -65,7 +64,7 @@ cdef class _Interpolator3D:
         int _last_index_x, _last_index_y, _last_index_z
 
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999
-    cdef double _analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z)
+    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z)
 
 
 cdef class _Interpolator3DLinear(_Interpolator3D):
