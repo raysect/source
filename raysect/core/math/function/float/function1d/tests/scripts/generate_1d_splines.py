@@ -38,13 +38,35 @@ from raysect.core.math.function.float.function1d.tests.test_interpolator import 
 from raysect.core.math.function.float.function1d.tests.data_store.interpolator1d_test_data import \
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven,\
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
-from raysect.core.math.function.float.function1d.interpolate import Interpolate1DArray
+from raysect.core.math.function.float.function1d.interpolate import Interpolator1DArray
 import numpy as np
 from scipy.interpolate import CubicHermiteSpline, interp1d
 import scipy
 
 # Force scientific format to get the right number of significant figures
 np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
+
+
+def docstring_test():
+    """
+    .. code-block:: python
+
+        >>> from raysect.core.math.function.float.function1d.interpolate import Interpolator1DArray
+        >>>
+        >>> x = np.linspace(-1., 1., 20)
+        >>> f = np.exp(-x**2)
+        >>> interpolator1D = Interpolate1DArray(x, f, 'cubic', 'nearest', 1.0)
+        >>> # Interpolation
+        >>> interpolator1D(0.2)
+        0.9607850606581484
+        >>> # Extrapolation
+        >>> interpolator1D(1.1)
+        0.36787944117144233
+        >>> # Extrapolation out of bounds
+        >>> interpolator1D(2.1)
+        ValueError: The specified value (x=2.1) is outside of extrapolation range.
+    """
+    pass
 
 
 def function_to_spline(x_func, factor_in):

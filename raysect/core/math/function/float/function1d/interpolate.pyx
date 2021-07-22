@@ -32,7 +32,7 @@
 """
 Interpolation functions for float.Function1D
 
-Interpolators are accessed through interface class Interpolate1D.
+Interpolators are accessed through interface class Interpolator1DArray.
 """
 
 import numpy as np
@@ -50,7 +50,7 @@ cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper):
     return dfdn * (x - x_lower)/(x_upper - x)
 
 
-cdef class Interpolate1DArray(Function1D):
+cdef class Interpolator1DArray(Function1D):
     """
     Interface class for Function1D interpolators.
 
@@ -58,24 +58,45 @@ cdef class Interpolate1DArray(Function1D):
     The resulting Numpy arrays are stored as read only. I.e. `writeable` flag of self.x and self.f
     is set to False. Alteration of the flag may result in unwanted behaviour.
 
-    :note: x and f arrays must be of equal length.
-
-    :param object x: 1D array-like object of real values.
-    :param object f: 1D array-like object of real values.
-
+    :param object x: 1D array-like object of real values storing the x spline knot positions.
+    :param object f: 1D array-like object of real values storing the spline knot function value at x.
     :param str interpolation_type: Type of interpolation to use. Options are:
-    `linear_interp`: Interpolates the data using linear interpolation.
-    `cubic_interp`: Interpolates the data using cubic interpolation.
-
+        `linear`: Interpolates the data using piecewise linear interpolation.
+        `cubic`: Interpolates the data using piecewise cubic interpolation.
     :param str extrapolation_type: Type of extrapolation to use. Options are:
-    `no_extrap`: Attempt to access data outside of x's range will yield ValueError.
-    `nearest_extrap`: Extrapolation results is the nearest position x value in the interpolation domain.
-    `linear_extrap`: Extrapolate linearly the interpolation function.
-    `cubic_extrap`: Extrapolate cubically the interpolation function.
-
+        `none`: Attempt to access data outside of x's range will yield ValueError.
+        `nearest`: Extrapolation results is the nearest position x value in the interpolation domain.
+        `linear`: Extrapolate bilinearly the interpolation function.
+        `quadratic`: Extrapolate quadratically the interpolation function. Constrains the function at the edge, and the
+        derivative both at the edge and 1 spline knot from the edge.
     :param double extrapolation_range: Limits the range where extrapolation is permitted. Requesting data beyond the
-    extrapolation range results in ValueError. Extrapolation range will be applied as padding symmetrically to both
-    ends of the interpolation range (x).
+        extrapolation range results in ValueError. Extrapolation range will be applied as padding symmetrically to both
+        ends of the interpolation range (x).
+
+    .. code-block:: python
+
+        >>> from raysect.core.math.function.float.function1d.interpolate import Interpolator1DArray
+        >>>
+        >>> x = np.linspace(-1., 1., 20)
+        >>> f = np.exp(-x**2)
+        >>> interpolator1D = Interpolate1DArray(x, f, 'cubic', 'nearest', 1.0)
+        >>> # Interpolation
+        >>> interpolator1D(0.2)
+        0.9607850606581484
+        >>> # Extrapolation
+        >>> interpolator1D(1.1)
+        0.36787944117144233
+        >>> # Extrapolation out of bounds
+        >>> interpolator1D(2.1)
+        ValueError: The specified value (x=2.1) is outside of extrapolation range.
+
+    :note: All input derivatives used in calculations use the previous and next indices in the spline knot arrays.
+        At the edge of the spline knot arrays the index of the edge of the array is is used instead.
+    :note: x and f arrays must be of equal length.
+    :note: x must be a monotonically increasing array.
+    :warning: x, f must both be c contiguous in memory. Avoid operations that break this condition when
+        preparing data (e.g. don't transpose any data arrays).
+
     """
 
     def __init__(self, object x, object f, str interpolation_type,

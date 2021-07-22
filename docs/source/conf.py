@@ -15,8 +15,7 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.abspath('../../'))
-# sys.path.append('../../')
+sys.path.append('/home/simon/PycharmProjects/mkgessen/raysect')
 import raysect
 
 # If extensions (or modules to document with autodoc) are in another directory,

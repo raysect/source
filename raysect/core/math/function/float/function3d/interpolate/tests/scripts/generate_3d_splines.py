@@ -81,6 +81,31 @@ np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: form
                     threshold=sys.maxsize)
 
 
+def docstring_test():
+    """
+    .. code-block:: python
+
+        >>> from raysect.core.math.function.float.function3d.interpolate.interpolator3darray import Interpolator3DArray
+        >>>
+        >>> x = np.linspace(-1., 1., 20)
+        >>> y = np.linspace(-1., 1., 20)
+        >>> z = np.linspace(-1., 1., 20)
+        >>> x_array, y_array, z_array = np.meshgrid(x, y, z, indexing='ij')
+        >>> f = np.exp(-(x_array**2 + y_array**2 + z_array**2))
+        >>> interpolator3D = Interpolator3DArray(x, y, z, f, 'cubic', 'nearest', 1.0, 1.0, 1.0)
+        >>> # Interpolation
+        >>> interpolator3D(1.0, 1.0, 0.2)
+        0.1300281183136766
+        >>> # Extrapolation
+        >>> interpolator3D(1.0, 1.0, 1.1)
+        0.0497870683678659
+        >>> # Extrapolation out of bounds
+        >>> interpolator3D(1.0, 1.0, 2.1)
+        ValueError: The specified value (z=2.1) is outside of extrapolation range.
+    """
+    pass
+
+
 def large_extrapolation_range(xsamples_in, ysamples_in, zsamples_in, extrapolation_range, n_extrap):
     x_lower = np.linspace(xsamples_in[0] - extrapolation_range, xsamples_in[0], n_extrap + 1)[:-1]
     x_upper = np.linspace(xsamples_in[-1], xsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]

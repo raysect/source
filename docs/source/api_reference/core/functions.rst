@@ -153,7 +153,7 @@ Interpolators
 1D interpolators
 ^^^^^^^^^^^^^^^^
 
-.. autoclass:: raysect.core.math.function.float.function1d.interpolate.Interpolate1DArray
+.. autoclass:: raysect.core.math.function.float.function1d.interpolate.Interpolator1DArray
    :show-inheritance:
 
 2D interpolators

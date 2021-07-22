@@ -64,6 +64,30 @@ SMALL_VALUE_FACTOR = -20.
 np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
 
 
+def docstring_test():
+    """
+    .. code-block:: python
+
+        >>> from raysect.core.math.function.float.function2d.interpolate.interpolator2darray import Interpolator2DArray
+        >>>
+        >>> x = np.linspace(-1., 1., 20)
+        >>> y = np.linspace(-1., 1., 20)
+        >>> x_array, y_array = np.meshgrid(x, y)
+        >>> f = np.exp(-(x_array**2 + y_array**2))
+        >>> interpolator2D = Interpolator2DArray(x, y, f, 'cubic', 'nearest', 1.0, 1.0)
+        >>> # Interpolation
+        >>> interpolator2D(1.0, 0.2)
+        0.35345307120078995
+        >>> # Extrapolation
+        >>> interpolator2D(1.0, 1.1)
+        0.1353352832366128
+        >>> # Extrapolation out of bounds
+        >>> interpolator2D(1.0, 2.1)
+        ValueError: The specified value (y=2.1) is outside of extrapolation range.
+    """
+    pass
+
+
 def function_to_spline(x_input, y_input, factor_in):
     t = np.pi * np.sqrt((x_input ** 2 + y_input ** 2))
     return factor_in*np.sinc(t)

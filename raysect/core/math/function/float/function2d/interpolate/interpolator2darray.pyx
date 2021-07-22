@@ -108,27 +108,49 @@ cdef class Interpolator2DArray(Function2D):
     The resulting Numpy arrays are stored as read only. I.e. `writeable` flag of self.x, self.y and self.f
     is set to False. Alteration of the flag may result in unwanted behaviour.
 
-    :note: x, y arrays must be equal in shape to f in the first and second dimension respectively.
-
-    :param object x: 1D array-like object of real values.
-    :param object y: 1D array-like object of real values.
-    :param object f: 2D array-like object of real values.
-
+    :param object x: 1D array-like object of real values storing the x spline knot positions.
+    :param object y: 1D array-like object of real values storing the y spline knot positions.
+    :param object f: 2D array-like object of real values storing the spline knot function value at x, y.
     :param str interpolation_type: Type of interpolation to use. Options are:
-    `linear`: Interpolates the data using linear interpolation.
-    `cubic`: Interpolates the data using cubic interpolation.
-
+        `linear`: Interpolates the data using piecewise bilinear interpolation.
+        `cubic`: Interpolates the data using piecewise bicubic interpolation.
     :param str extrapolation_type: Type of extrapolation to use. Options are:
-    `none`: Attempt to access data outside of x's and y's range will yield ValueError.
-    `nearest`: Extrapolation results is the nearest position x and y value in the interpolation domain.
-    `linear`: Extrapolate bilinearly the interpolation function.
-
+        `none`: Attempt to access data outside of x's and y's range will yield ValueError.
+        `nearest`: Extrapolation results is the nearest position x and y value in the interpolation domain.
+        `linear`: Extrapolate bilinearly the interpolation function.
     :param double extrapolation_range_x: Limits the range where extrapolation is permitted. Requesting data beyond the
-    extrapolation range results in ValueError. Extrapolation range will be applied as padding symmetrically to both
-    ends of the interpolation range (x).
+        extrapolation range results in ValueError. Extrapolation range will be applied as padding symmetrically to both
+        ends of the interpolation range (x).
     :param double extrapolation_range_y: Limits the range where extrapolation is permitted. Requesting data beyond the
-    extrapolation range results in ValueError. Extrapolation range will be applied as padding symmetrically to both
-    ends of the interpolation range (y).
+        extrapolation range results in ValueError. Extrapolation range will be applied as padding symmetrically to both
+        ends of the interpolation range (y).
+
+    .. code-block:: python
+
+        >>> from raysect.core.math.function.float.function2d.interpolate.interpolator2darray import Interpolator2DArray
+        >>>
+        >>> x = np.linspace(-1., 1., 20)
+        >>> y = np.linspace(-1., 1., 20)
+        >>> x_array, y_array = np.meshgrid(x, y)
+        >>> f = np.exp(-(x_array**2 + y_array**2))
+        >>> interpolator2D = Interpolator2DArray(x, y, f, 'cubic', 'nearest', 1.0, 1.0)
+        >>> # Interpolation
+        >>> interpolator2D(1.0, 0.2)
+        0.35345307120078995
+        >>> # Extrapolation
+        >>> interpolator2D(1.0, 1.1)
+        0.1353352832366128
+        >>> # Extrapolation out of bounds
+        >>> interpolator2D(1.0, 2.1)
+        ValueError: The specified value (y=2.1) is outside of extrapolation range.
+
+    :note: All input derivatives used in calculations use the previous and next indices in the spline knot arrays.
+        At the edge of the spline knot arrays the index of the edge of the array is is used instead.
+    :note: x, y arrays must be equal in shape to f in the first and second dimension respectively.
+    :note: x and y must be monotonically increasing arrays.
+    :warning: x, y, f must all be c contiguous in memory. Avoid operations that break this condition when
+        preparing data (e.g. don't transpose any data arrays).
+
     """
 
     def __init__(self, object x, object y, object f, str interpolation_type, str extrapolation_type,

@@ -29,12 +29,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Unit tests for the Interpolator1DCubic class from within Interpolate1DArray,
+Unit tests for the Interpolator1DCubic class from within Interpolator1DArray,
 including interaction with Extrapolator1DLinear and Extrapolator1DNearest.
 """
 import unittest
 import numpy as np
-from raysect.core.math.function.float.function1d.interpolate import Interpolate1DArray, id_to_extrapolator, \
+from raysect.core.math.function.float.function1d.interpolate import Interpolator1DArray, id_to_extrapolator, \
     id_to_interpolator, permitted_interpolation_combinations
 from raysect.core.math.function.float.function1d.tests.data_store.interpolator1d_test_data import \
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven,\
@@ -163,7 +163,7 @@ class TestInterpolators1D(unittest.TestCase):
         Sets precalculated values for linear interpolator.
         Called in every test method that addresses linear interpolation.
 
-        interpolator will hold Interpolate1DArray object that is being tested. Precalculated interpolation using
+        interpolator will hold Interpolator1DArray object that is being tested. Precalculated interpolation using
         scipy.interpolate.interp1d(kind=linear), generated using scipy version 1.6.3.
 
         :param extrapolator_type: type of extrapolator 'none' or 'linear'.
@@ -200,9 +200,9 @@ class TestInterpolators1D(unittest.TestCase):
 
         #: The interpolator object that is being tested. Set in setup_ method.
         if uneven_spacing:
-            interpolator = Interpolate1DArray(self.x_uneven, data, 'linear', extrapolator_type, extrapolation_range)
+            interpolator = Interpolator1DArray(self.x_uneven, data, 'linear', extrapolator_type, extrapolation_range)
         else:
-            interpolator = Interpolate1DArray(self.x, data, 'linear', extrapolator_type, extrapolation_range)
+            interpolator = Interpolator1DArray(self.x, data, 'linear', extrapolator_type, extrapolation_range)
         return interpolator, interpolation_data, extrapolation_data
 
     def setup_cubic(
@@ -212,7 +212,7 @@ class TestInterpolators1D(unittest.TestCase):
         Sets precalculated values for cubic interpolator.
         Called in every test method that addresses cubic interpolation.
 
-        interpolator will hold Interpolate1DArray object that is being tested. Generated using scipy
+        interpolator will hold Interpolator1DArray object that is being tested. Generated using scipy
         version 1.6.3 scipy.interpolate.CubicHermiteSpline, with input gradients at the spline knots.
 
         :param extrapolator_type: type of extrapolator 'none' or 'linear'.
@@ -246,9 +246,9 @@ class TestInterpolators1D(unittest.TestCase):
         extrapolation_data = self.setup_extrpolation_type(extrapolator_type)
         #: The interpolator object that is being tested. Set in setup_ method.
         if uneven_spacing:
-            interpolator = Interpolate1DArray(self.x_uneven, data, 'cubic', extrapolator_type, extrapolation_range)
+            interpolator = Interpolator1DArray(self.x_uneven, data, 'cubic', extrapolator_type, extrapolation_range)
         else:
-            interpolator = Interpolate1DArray(self.x, data, 'cubic', extrapolator_type, extrapolation_range)
+            interpolator = Interpolator1DArray(self.x, data, 'cubic', extrapolator_type, extrapolation_range)
         return interpolator, interpolation_data, extrapolation_data
 
     def setup_extrpolation_type(self, extrapolator_type: str):
@@ -500,7 +500,7 @@ class TestInterpolators1D(unittest.TestCase):
                         ValueError, msg=f'No ValueError raised when testing interpolator type {interpolator_type} '
                                         f'extrapolator type {extrapolator_type}, trying to initialise a test with '
                                         f'incorrect {problem_str}.'):
-                    Interpolate1DArray(
+                    Interpolator1DArray(
                         x=x_values, f=f_values, interpolation_type=interpolator_type,
                         extrapolation_type=extrapolator_type, extrapolation_range=2.0
                     )
