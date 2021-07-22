@@ -103,7 +103,7 @@ cdef class _ArrayDerivative2D:
         double [::1] _x, _y
         double [:, ::1] _f
         int _last_index_x, _last_index_y
-    cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y) except? -1e999
+    cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, bint rescale_norm_x, bint rescale_norm_y) except? -1e999
     cdef double derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999
     cdef double derivitive_dfdx_edge(self, double[:] f)
     cdef double derivitive_d2fdxdy(self,  double[:] x, double[:] y, double[:, ::1] f) except? -1e999

@@ -42,6 +42,14 @@ from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_1d, 
 from raysect.core.math.cython.utility cimport find_index, lerp
 
 
+cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper):
+    """
+    Derivatives that are normalised to the unt square (x_upper - x) = 1 are un-normalised, then re-normalised to
+    (x - x_lower)
+    """
+    return dfdn * (x - x_lower)/(x_upper - x)
+
+
 cdef class Interpolate1DArray(Function1D):
     """
     Interface class for Function1D interpolators.
@@ -258,8 +266,8 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
             f[0] = self._f[index]
             f[1] = self._f[index + 1]
             array_derivative = _ArrayDerivative1D(self._x, self._f)
-            dfdx[0] = array_derivative.evaluate(index, derivative_order_x=1)
-            dfdx[1] = array_derivative.evaluate(index + 1, derivative_order_x=1)
+            dfdx[0] = array_derivative.evaluate(index, derivative_order_x=1, rescale_norm_x=False)
+            dfdx[1] = array_derivative.evaluate(index + 1, derivative_order_x=1, rescale_norm_x=True)
 
             calc_coefficients_1d(f, dfdx, a)
             self._a_mv[index, :] = a
@@ -284,8 +292,8 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         f[0] = self._f[index]
         f[1] = self._f[index + 1]
         array_derivative = _ArrayDerivative1D(self._x, self._f)
-        dfdx[0] = array_derivative.evaluate(index, derivative_order_x=1)
-        dfdx[1] = array_derivative.evaluate(index + 1, derivative_order_x=1)
+        dfdx[0] = array_derivative.evaluate(index, derivative_order_x=1, rescale_norm_x=False)
+        dfdx[1] = array_derivative.evaluate(index + 1, derivative_order_x=1, rescale_norm_x=True)
 
         calc_coefficients_1d(f, dfdx, a)
 
@@ -431,13 +439,13 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
         super().__init__(x, f)
         self._last_index = self._x.shape[0] - 1
         array_derivative = _ArrayDerivative1D(self._x, self._f)
-        dfdx_start[0] = array_derivative.evaluate(0, derivative_order_x=1)
+        dfdx_start[0] = array_derivative.evaluate(0, derivative_order_x=1, rescale_norm_x=False)
         # Need to have the first derivatives normalised to the distance between spline knot 0->1 (not 1->2),
         # So un-normalise then re-normalise.
-        dfdx_start[1] = (array_derivative.evaluate(1, derivative_order_x=1)/(x[2] - x[1]))*(x[1] - x[0])
+        dfdx_start[1] = array_derivative.evaluate(1, derivative_order_x=1, rescale_norm_x=True)#/(x[2] - x[1]))*(x[1] - x[0])
 
-        dfdx_end[0] = array_derivative.evaluate(self._last_index - 1, derivative_order_x=1)
-        dfdx_end[1] = array_derivative.evaluate(self._last_index, derivative_order_x=1)
+        dfdx_end[0] = array_derivative.evaluate(self._last_index - 1, derivative_order_x=1, rescale_norm_x=False)
+        dfdx_end[1] = array_derivative.evaluate(self._last_index, derivative_order_x=1, rescale_norm_x=True)
 
         self._calculate_quadratic_coefficients_start(f[0], dfdx_start[0], dfdx_start[1], self._a_first)
         self._calculate_quadratic_coefficients_end(f[self._last_index],  dfdx_end[0], dfdx_end[1], self._a_last)
@@ -534,7 +542,7 @@ cdef class _ArrayDerivative1D:
         self._f = f
         self._last_index_x = self._x.shape[0] - 1
 
-    cdef double evaluate(self, int index_x, int derivative_order_x) except? -1e999:
+    cdef double evaluate(self, int index_x, int derivative_order_x, bint rescale_norm_x) except? -1e999:
         """
         Evaluate the derivative of specific order at a grid point.
 
@@ -553,7 +561,10 @@ cdef class _ArrayDerivative1D:
             dfdn = self._evaluate_edge_x(index_x - 1, derivative_order_x)
         else:
             dfdn = self._evaluate_x(index_x, derivative_order_x)
-
+        if rescale_norm_x:
+            if not (index_x == 0 or index_x == self._last_index_x):
+                for i in range(derivative_order_x):
+                    dfdn = rescale_lower_normalisation(dfdn,  self._x[index_x - 1], self._x[index_x], self._x[index_x + 1])
         return dfdn
     #todo should these have an _?
     cdef double _evaluate_edge_x(self, int index_x, int derivative_order_x):

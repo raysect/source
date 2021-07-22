@@ -36,6 +36,14 @@ from raysect.core.math.cython.interpolation.linear cimport linear2d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_2d, evaluate_cubic_2d
 
 
+cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper):
+    """
+    Derivatives that are normalised to the unt square (x_upper - x) = 1 are un-normalised, then re-normalised to
+    (x - x_lower)
+    """
+    return dfdn * (x - x_lower)/(x_upper - x)
+
+
 cdef double lookup_factorial(int n):
     """
     A small lookup table for a factorial calculation.
@@ -410,20 +418,20 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
             f[0][1] = self._f[index_x, index_y + 1]
             f[1][1] = self._f[index_x + 1, index_y + 1]
             array_derivative = _ArrayDerivative2D(self._x, self._y, self._f)
-            dfdx[0][0] = array_derivative(index_x, index_y, 1, 0)
-            dfdx[0][1] = array_derivative(index_x, index_y + 1, 1, 0)
-            dfdx[1][0] = array_derivative(index_x + 1, index_y, 1, 0)
-            dfdx[1][1] = array_derivative(index_x + 1, index_y + 1, 1, 0)
+            dfdx[0][0] = array_derivative(index_x, index_y, 1, 0, False, False)
+            dfdx[0][1] = array_derivative(index_x, index_y + 1, 1, 0, False, True)
+            dfdx[1][0] = array_derivative(index_x + 1, index_y, 1, 0, True, False)
+            dfdx[1][1] = array_derivative(index_x + 1, index_y + 1, 1, 0, True, True)
 
-            dfdy[0][0] = array_derivative(index_x, index_y, 0, 1)
-            dfdy[0][1] = array_derivative(index_x, index_y + 1, 0, 1)
-            dfdy[1][0] = array_derivative(index_x + 1, index_y, 0, 1)
-            dfdy[1][1] = array_derivative(index_x + 1, index_y + 1, 0, 1)
+            dfdy[0][0] = array_derivative(index_x, index_y, 0, 1, False, False)
+            dfdy[0][1] = array_derivative(index_x, index_y + 1, 0, 1, False, True)
+            dfdy[1][0] = array_derivative(index_x + 1, index_y, 0, 1, True, False)
+            dfdy[1][1] = array_derivative(index_x + 1, index_y + 1, 0, 1, True, True)
 
-            d2fdxdy[0][0] = array_derivative(index_x, index_y, 1, 1)
-            d2fdxdy[0][1] = array_derivative(index_x, index_y + 1, 1, 1)
-            d2fdxdy[1][0] = array_derivative(index_x + 1, index_y, 1, 1)
-            d2fdxdy[1][1] = array_derivative(index_x + 1, index_y + 1, 1, 1)
+            d2fdxdy[0][0] = array_derivative(index_x, index_y, 1, 1, False, False)
+            d2fdxdy[0][1] = array_derivative(index_x, index_y + 1, 1, 1, False, True)
+            d2fdxdy[1][0] = array_derivative(index_x + 1, index_y, 1, 1, True, False)
+            d2fdxdy[1][1] = array_derivative(index_x + 1, index_y + 1, 1, 1, True, True)
 
             calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
             for i in range(4):
@@ -753,7 +761,7 @@ cdef class _ArrayDerivative2D:
         self._last_index_x = self._x.shape[0] - 1
         self._last_index_y = self._y.shape[0] - 1
 
-    cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y) except? -1e999:
+    cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, bint rescale_norm_x, bint rescale_norm_y) except? -1e999:
         """
         Evaluate the derivative of specific order at a grid point.
         
@@ -789,7 +797,14 @@ cdef class _ArrayDerivative2D:
                 dfdn = self.eval_edge_y(index_x, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=1)
             else:
                 dfdn = self.eval_xy(index_x, index_y, derivative_order_x, derivative_order_y)
-
+        if rescale_norm_x:
+            if not (index_x == 0 or index_x == self._last_index_x):
+                for i in range(derivative_order_x):
+                    dfdn = rescale_lower_normalisation(dfdn,  self._x[index_x - 1], self._x[index_x], self._x[index_x + 1])
+        if rescale_norm_y:
+            if not (index_y == 0 or index_y == self._last_index_y):
+                for i in range(derivative_order_y):
+                    dfdn = rescale_lower_normalisation(dfdn,  self._y[index_y - 1], self._y[index_y], self._y[index_y + 1])
         return dfdn
 
     cdef double eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
@@ -1014,8 +1029,8 @@ cdef class _ArrayDerivative2D:
         dy1 = (y[1] - y[0])/(y[2] - y[1])
         return (f[2, 2] - f[0, 2] - f[2, 0] + f[0, 0])/(1. + dx1 + dy1 + dx1*dy1)
 
-    def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y):
-        return self.evaluate(index_x, index_y, derivative_order_x, derivative_order_y)
+    def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y, rescale_norm_x, rescale_norm_y):
+        return self.evaluate(index_x, index_y, derivative_order_x, derivative_order_y, rescale_norm_x, rescale_norm_y)
 
 
 id_to_interpolator = {
