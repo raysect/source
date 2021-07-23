@@ -32,6 +32,7 @@
 from raysect.core.math.function.float.function3d cimport Function3D
 from numpy cimport ndarray
 
+
 cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper)
 
 
@@ -54,6 +55,7 @@ cdef class Interpolator3DArray(Function3D):
         _Extrapolator3D _extrapolator
         int _last_index_x, _last_index_y, _last_index_z
         double _extrapolation_range_x, _extrapolation_range_y, _extrapolation_range_z
+
     cdef double evaluate(self, double px, double py, double pz) except? -1e999
 
 
@@ -64,6 +66,7 @@ cdef class _Interpolator3D:
         int _last_index_x, _last_index_y, _last_index_z
 
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999
+
     cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z)
 
 
@@ -75,6 +78,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
     cdef:
         ndarray _a, _mask_a
         double[:, :, :, :, :, ::1] _a_mv
+
     cdef cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a)
 
 
@@ -87,12 +91,19 @@ cdef class _Extrapolator3D:
         double _extrapolation_range_x, _extrapolation_range_y, _extrapolation_range_z
 
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999
+
     cdef double evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
+
     cdef double evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
+
     cdef double evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
+
     cdef double evaluate_edge_xy(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
+
     cdef double evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
+
     cdef double evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
+
     cdef double evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999
 
 
@@ -109,30 +120,49 @@ cdef class _ArrayDerivative3D:
         double [::1] _x, _y, _z
         double [:, :, ::1] _f
         int _last_index_x, _last_index_y, _last_index_z
+
     cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, bint rescale_norm_x, bint rescale_norm_y, bint rescale_norm_z) except? -1e999
 
     cdef double derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999
+
     cdef double derivitive_dfdx_edge(self, double[:] f)
 
     cdef double derivitive_d2fdxdy(self,  double[:] x, double[:] y, double[:, :] f) except? -1e999
+
     cdef double derivitive_d2fdxdy_edge_xy(self, double[:] x, double[:] y, double[:, :] f) except? -1e999
+
     cdef double derivitive_d2fdxdy_edge_x(self, double[:] y, double[:, :] f) except? -1e999
+
     cdef double derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, :] f) except? -1e999
 
     cdef double derivitive_d3fdxdydz(self, double[:] x, double[:] y, double[:] z, double[:, :, :] f) except? -1e999
+
     cdef double derivitive_d3fdxdydz_edge_x(self, double[:] y, double[:] z, double[:, :, :] f) except? -1e999
+
     cdef double derivitive_d3fdxdydz_edge_y(self, double[:] x, double[:] z, double[:, :, :] f) except? -1e999
+
     cdef double derivitive_d3fdxdydz_edge_z(self, double[:] x, double[:] y, double[:, :, :] f) except? -1e999
+
     cdef double derivitive_d3fdxdydz_edge_xy(self, double[:] z, double[:, :, :] f) except? -1e999
+
     cdef double derivitive_d3fdxdydz_edge_xz(self, double[:] y, double[:, :, :] f) except? -1e999
+
     cdef double derivitive_d3fdxdydz_edge_yz(self, double[:] x, double[:, :, :] f) except? -1e999
+
     cdef double derivitive_d3fdxdydz_edge_xyz(self, double[:, :, :] f) except? -1e999
 
     cdef double eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add)
+
     cdef double eval_edge_y(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add)
+
     cdef double eval_edge_z(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
+
     cdef double eval_edge_xy(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
+
     cdef double eval_edge_xz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
+
     cdef double eval_edge_yz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
+
     cdef double eval_edge_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
+
     cdef double eval_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z)

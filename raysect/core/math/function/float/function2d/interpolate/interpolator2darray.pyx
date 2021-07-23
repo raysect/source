@@ -57,6 +57,7 @@ cdef double lookup_factorial(int n):
     factorial[3] = 6.
     return factorial[n]
 
+
 cdef int find_index_change(int index, int last_index):
     """
     Transforming the output of find_index to find the index lower index of a cell required for an extrapolator.
@@ -77,6 +78,7 @@ cdef int find_index_change(int index, int last_index):
     else:
         lower_index = index
     return lower_index
+
 
 cdef int find_edge_index(int index, int last_index):
     """
@@ -325,6 +327,7 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
         """
         cdef double df_dn
         cdef double[4] a
+
         self.calculate_coefficients(index_x, index_y, a)
         if order_x == 1 and order_y == 1:
             df_dn = a[3]
@@ -400,6 +403,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
     @cython.boundscheck(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
+
         # rescale x between 0 and 1
         cdef double x_scal
         cdef double y_scal
@@ -483,6 +487,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         :param int order_x: the derivative order in the x direction.
         :param int order_y: the derivative order in the y direction.
         """
+
         # rescale x between 0 and 1
         cdef double x_scal
         cdef double y_scal
@@ -545,6 +550,7 @@ cdef class _Extrapolator2D:
         self._extrapolation_range_y = extrapolation_range_y
 
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
+
         cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
         cdef int index_lower_y = find_index_change(index_y, self._last_index_y)
         cdef int edge_x_index = find_edge_index(index_x, self._last_index_x)
@@ -702,6 +708,7 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
         :param int edge_x_index: the index of the closest edge spline knot in the x direction.
         """
         cdef double f_value, fx_value
+
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], py, index_x, index_y)
         fx_value = self._external_interpolator.analytic_gradient(self._x[edge_x_index], py, index_x, index_y, 1, 0) / \
                    (self._x[index_x + 1] - self._x[index_x])
@@ -724,6 +731,7 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
         :param int edge_y_index: the index of the closest edge spline knot in the y direction.
         """
         cdef double f_value, fy_value
+
         f_value = self._external_interpolator.evaluate(px, self._y[edge_y_index], index_x, index_y)
         fy_value = self._external_interpolator.analytic_gradient(px, self._y[edge_y_index], index_x, index_y, 0, 1) / \
                    (self._y[index_y + 1] - self._y[index_y])
@@ -749,18 +757,19 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
 
         """
         cdef double f_value, fx_value, fy_value, fxy_value
+
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], index_x, index_y)
+
         fx_value = self._external_interpolator.analytic_gradient(
-            self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0
-        )/(self._x[index_x + 1] - self._x[index_x])
+            self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 0) / (self._x[index_x + 1] - self._x[index_x])
+
         fy_value = self._external_interpolator.analytic_gradient(
-            self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 0, 1
-        )/(self._y[index_y + 1] - self._y[index_y])
+            self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 0, 1) / (self._y[index_y + 1] - self._y[index_y])
+
         fxy_value = self._external_interpolator.analytic_gradient(
-            self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 1
-        )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y]))
-        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + \
-               fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
+            self._x[edge_x_index], self._y[edge_y_index], index_x, index_y, 1, 1) / ((self._x[index_x + 1] - self._x[index_x]) * (self._y[index_y + 1] - self._y[index_y]))
+
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + fxy_value * (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
 
 
 cdef class _ArrayDerivative2D:
@@ -835,9 +844,11 @@ cdef class _ArrayDerivative2D:
         cdef double[::1] x_range, y_range
         cdef double[:, ::1] f_range
         cdef int x_centre = 0, y_centre = 1
+
         x_range = self._x[index_x:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
         f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add])
@@ -847,6 +858,7 @@ cdef class _ArrayDerivative2D:
             dfdn = self.derivitive_d2fdxdy_edge_x(y_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
+
         return dfdn
 
     cdef double eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
@@ -854,9 +866,11 @@ cdef class _ArrayDerivative2D:
         cdef double[::1] x_range, y_range
         cdef double[:, ::1] f_range
         cdef int x_centre = 1, y_centre = 0
+
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add])
@@ -866,6 +880,7 @@ cdef class _ArrayDerivative2D:
             dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
+
         return dfdn
 
     cdef double eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999:
@@ -873,6 +888,7 @@ cdef class _ArrayDerivative2D:
         cdef double[::1] x_range, y_range
         cdef double[:, ::1] f_range
         cdef int x_centre = 0, y_centre = 0
+
         x_range = self._x[index_x:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         f_range = self._f[index_x:index_x + 2, index_y:index_y + 2]
@@ -886,6 +902,7 @@ cdef class _ArrayDerivative2D:
             dfdn = self.derivitive_d2fdxdy_edge_xy(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
         else:
             raise ValueError('No higher order derivatives implemented')
+
         return dfdn
 
     cdef double eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
@@ -893,11 +910,12 @@ cdef class _ArrayDerivative2D:
         cdef double[::1] x_range, y_range
         cdef double[:, ::1] f_range
         cdef int x_centre = 1, y_centre = 1
+
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2]
-        dfdn = 0
 
+        dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre])
         elif derivative_order_x == 0 and derivative_order_y == 1:
@@ -909,6 +927,7 @@ cdef class _ArrayDerivative2D:
             )
         else:
             raise ValueError('No higher order derivatives implemented')
+
         return dfdn
 
     cdef double derivitive_dfdx_edge(self, double[:] f):
@@ -946,6 +965,7 @@ cdef class _ArrayDerivative2D:
         If dx0 = dx1 the central difference approximation is recovered.
         """
         cdef double x1_n, x1_n2
+
         x1_n = (x[1] - x[0])/(x[2] - x[1])
         x1_n2 = x1_n**2
         return (f[2]*x1_n2 - f[0] - f[1]*(x1_n2 - 1.))/(x1_n + x1_n2)
@@ -1000,6 +1020,7 @@ cdef class _ArrayDerivative2D:
         """
         cdef double dy1
         dy1 = (y[1] - y[0])/(y[2] - y[1])
+
         return (f[1, 2] - f[0, 2] - f[1, 0] + f[0, 0])/(1. + dy1)
 
     cdef double derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, ::1] f) except? -1e999:
@@ -1020,6 +1041,7 @@ cdef class _ArrayDerivative2D:
         """
         cdef double dx1
         dx1 = (x[1] - x[0])/(x[2] - x[1])
+
         return (f[2, 1] - f[0, 1] - f[2, 0] + f[0, 0])/(1. + dx1)
 
     cdef double derivitive_d2fdxdy(self, double[:] x, double[:] y, double[:, ::1] f) except? -1e999:
@@ -1050,6 +1072,7 @@ cdef class _ArrayDerivative2D:
         cdef double dx1, dy1
         dx1 = (x[1] - x[0])/(x[2] - x[1])
         dy1 = (y[1] - y[0])/(y[2] - y[1])
+
         return (f[2, 2] - f[0, 2] - f[2, 0] + f[0, 0])/(1. + dx1 + dy1 + dx1*dy1)
 
     def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y, rescale_norm_x, rescale_norm_y):
@@ -1061,12 +1084,13 @@ id_to_interpolator = {
     _Interpolator2DCubic.ID: _Interpolator2DCubic
 }
 
+
 id_to_extrapolator = {
     _Extrapolator2DNone.ID: _Extrapolator2DNone,
     _Extrapolator2DNearest.ID: _Extrapolator2DNearest,
     _Extrapolator2DLinear.ID: _Extrapolator2DLinear,
-    # _Extrapolator2DQuadratic.ID: _Extrapolator2DQuadratic
 }
+
 
 permitted_interpolation_combinations = {
     _Interpolator2DLinear.ID: [_Extrapolator2DNone.ID, _Extrapolator2DNearest.ID, _Extrapolator2DLinear.ID],

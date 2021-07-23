@@ -130,12 +130,10 @@ cdef class Interpolator1DArray(Function1D):
         self._last_index = self.x.shape[0] - 1
         self._extrapolation_range = extrapolation_range
 
-
         # create interpolator per interapolation_type argument
         interpolation_type = interpolation_type.lower()
         if interpolation_type not in id_to_interpolator:
             raise ValueError(f'Interpolation type {interpolation_type} not found. options are {id_to_interpolator.keys()}')
-
 
         self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._f_mv)
 
@@ -461,9 +459,10 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
         self._last_index = self._x.shape[0] - 1
         array_derivative = _ArrayDerivative1D(self._x, self._f)
         dfdx_start[0] = array_derivative.evaluate(0, derivative_order_x=1, rescale_norm_x=False)
+
         # Need to have the first derivatives normalised to the distance between spline knot 0->1 (not 1->2),
         # So un-normalise then re-normalise.
-        dfdx_start[1] = array_derivative.evaluate(1, derivative_order_x=1, rescale_norm_x=True)#/(x[2] - x[1]))*(x[1] - x[0])
+        dfdx_start[1] = array_derivative.evaluate(1, derivative_order_x=1, rescale_norm_x=True)
 
         dfdx_end[0] = array_derivative.evaluate(self._last_index - 1, derivative_order_x=1, rescale_norm_x=False)
         dfdx_end[1] = array_derivative.evaluate(self._last_index, derivative_order_x=1, rescale_norm_x=True)
@@ -477,10 +476,9 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
 
     cdef void _calculate_quadratic_coefficients_start(self, double f1, double df1_dx, double df2_dx, double[3] a):
         """
-        Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1, 
-
-
+        Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1. 
         """
+
         a[0] = -0.5*df1_dx + 0.5*df2_dx
         a[1] = df1_dx
         a[2] = f1
@@ -488,14 +486,14 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
     cdef void _calculate_quadratic_coefficients_end(self, double f2, double df1_dx, double df2_dx, double[3] a):
         """
         Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1. 
-
-
         """
+
         a[0] = - 0.5*df1_dx + 0.5*df2_dx
         a[1] = df1_dx
         a[2] = f2 - 0.5*df1_dx - 0.5*df2_dx
 
     cdef double evaluate(self, double px, int index) except? -1e999:
+
         # The index returned from find_index is -1 at the array start or the length of the array at the end of array
         cdef double f_return
         cdef double x_scal
@@ -513,9 +511,11 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
         return f_return
 
     cdef double _analytic_gradient(self, double px, int index, int order):
+
         # The index returned from find_index is -1 at the array start or the length of the array at the end of array
         cdef double grad
         cdef double x_scal
+
         if index == -1:
             index += 1
             x_scal =  (px - self._x[index])/(self._x[index + 1] - self._x[index])
@@ -588,7 +588,7 @@ cdef class _ArrayDerivative1D:
                 for i in range(derivative_order_x):
                     dfdn = rescale_lower_normalisation(dfdn,  self._x[index_x - 1], self._x[index_x], self._x[index_x + 1])
         return dfdn
-    #todo should these have an _?
+
     cdef double _evaluate_edge_x(self, int index_x, int derivative_order_x):
         """
         Calculate the 1st derivative on an unevenly spaced array as a 1st order approximation.
@@ -627,6 +627,7 @@ cdef class _ArrayDerivative1D:
         
         """
         cdef double x1_n, x1_n2
+
         x1_n = (self._x[index_x] - self._x[index_x - 1])/(self._x[index_x + 1] - self._x[index_x])
         x1_n2 = x1_n**2
         return (self._f[index_x + 1]*x1_n2 - self._f[index_x - 1] - self._f[index_x]*(x1_n2 - 1.))/(x1_n + x1_n2)
@@ -637,12 +638,14 @@ id_to_interpolator = {
     _Interpolator1DCubic.ID: _Interpolator1DCubic
 }
 
+
 id_to_extrapolator = {
     _Extrapolator1DNone.ID: _Extrapolator1DNone,
     _Extrapolator1DNearest.ID: _Extrapolator1DNearest,
     _Extrapolator1DLinear.ID: _Extrapolator1DLinear,
     _Extrapolator1DQuadratic.ID: _Extrapolator1DQuadratic
 }
+
 
 permitted_interpolation_combinations = {
     _Interpolator1DLinear.ID: [_Extrapolator1DNone.ID, _Extrapolator1DNearest.ID, _Extrapolator1DLinear.ID],

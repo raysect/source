@@ -35,7 +35,8 @@ from raysect.core.math.cython.utility cimport find_index
 from raysect.core.math.cython.interpolation.linear cimport linear3d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_3d, evaluate_cubic_3d
 
-# TODO These functions are in 2D too. Move them somewhere common
+
+# todo These functions are in 2D too. Move them somewhere common
 cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper):
     """
     Derivatives that are normalised to the unt square (x_upper - x) = 1 are un-normalised, then re-normalised to
@@ -43,13 +44,17 @@ cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper):
     """
     return dfdn * (x - x_lower)/(x_upper - x)
 
+
 cdef double lookup_factorial(int n):
     """
     A small lookup table for a factorial calculation.
 
     So far this is only required for cubic functions, so going up to 3!.
     """
+
+    # todo factorial is const array. check how it should be defined in Cython.
     cdef double[4] factorial
+
     factorial[0] = 1.
     factorial[1] = 1.
     factorial[2] = 2.
@@ -92,6 +97,7 @@ cdef int find_edge_index(int index, int last_index):
     :return: the index of the border of the interpolator spline knots.
     """
     cdef int edge_index
+
     if index == -1:
         edge_index = index + 1
     elif index == last_index:
@@ -286,7 +292,6 @@ cdef class Interpolator3DArray(Function3D):
         return np.min(self._x_mv), np.max(self._x_mv), np.min(self._y_mv), np.max(self._y_mv)
 
 
-
 cdef class _Interpolator3D:
     """
     Base class for 3D interpolators.
@@ -368,7 +373,9 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         """
         cdef double df_dn
         cdef double[8] a
+
         self.calculate_coefficients(index_x, index_y, index_z, a)
+
         if order_x == 1 and order_y == 1 and order_z == 1:
             df_dn = a[7]
         elif order_x == 1 and order_y == 1 and order_z == 0:
@@ -448,7 +455,6 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         a[7] = - f[0][0][0] + f[0][0][1] + f[0][1][0] - f[0][1][1] + f[1][0][0] - f[1][0][1] - f[1][1][0] + f[1][1][1]
 
 
-
 cdef class _Interpolator3DCubic(_Interpolator3D):
     """
     Cubic interpolation of a 3D function.
@@ -477,6 +483,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999:
+
         # rescale x between 0 and 1
         cdef double x_scal
         cdef double y_scal
@@ -606,7 +613,6 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
                         a[i][j][k] = self._a[index_x, index_y, index_z, i, j, k]
 
     cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
-        #TODO edit docstring
         """
         Calculate the normalised gradient of specified order in a unit cube.
 
@@ -638,16 +644,19 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
 
         if order_x > 3:
             raise ValueError('Can\'t get a gradient of order 4 or more in cubic.')
+
         x_bound = self._x[index_x + 1] - self._x[index_x]
         if x_bound != 0:
             x_scal = (px - self._x[index_x]) / x_bound
         else:
             raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+
         y_bound = self._y[index_y + 1] - self._y[index_y]
         if y_bound != 0:
             y_scal = (py - self._y[index_y]) / y_bound
         else:
             raise ZeroDivisionError('Two adjacent spline points have the same y value!')
+
         z_bound = self._z[index_z + 1] - self._z[index_z]
         if z_bound != 0:
             z_scal = (pz - self._z[index_z]) / z_bound
@@ -672,7 +681,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
         for i in range(order_x, 4):
             for j in range(order_y, 4):
                 for k in range(order_z, 4):
-                    df_dn += (a[i][j][k] * (lookup_factorial(i)/lookup_factorial(i-order_x)) * (lookup_factorial(j)/lookup_factorial(j-order_y))* (lookup_factorial(k)/lookup_factorial(k-order_z)) *
+                    df_dn += (a[i][j][k] * (lookup_factorial(i) / lookup_factorial(i-order_x)) * (lookup_factorial(j) / lookup_factorial(j-order_y))* (lookup_factorial(k) / lookup_factorial(k-order_z)) *
                               x_powers[i-order_x] * y_powers[j-order_y] * z_powers[k-order_z])
         return  df_dn
 
@@ -848,7 +857,6 @@ cdef class _Extrapolator3DNone(_Extrapolator3D):
         )
 
 
-
 cdef class _Extrapolator3DNearest(_Extrapolator3D):
     """
     Extrapolator that returns nearest input value.
@@ -905,66 +913,89 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
     cdef double evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fx_value
+
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], py, pz, index_x, index_y, index_z)
         fx_value = self._external_interpolator.analytic_gradient(self._x[edge_x_index], py, pz, index_x, index_y, index_z, 1, 0, 0) / \
                    (self._x[index_x + 1] - self._x[index_x])
+
         return f_value + fx_value * (px - self._x[edge_x_index])
 
     cdef double evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fy_value
+
         f_value = self._external_interpolator.evaluate(px, self._y[edge_y_index], pz, index_x, index_y, index_z)
         fy_value = self._external_interpolator.analytic_gradient(px, self._y[edge_y_index], pz, index_x, index_y, index_z, 0, 1, 0) / \
                    (self._y[index_y + 1] - self._y[index_y])
+
         return f_value + fy_value * (py - self._y[edge_y_index])
 
     cdef double evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fz_value
+
         f_value = self._external_interpolator.evaluate(px, py, self._z[edge_z_index], index_x, index_y, index_z)
         fz_value = self._external_interpolator.analytic_gradient(px, py, self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1) / \
                    (self._z[index_z + 1] - self._z[index_z])
+
         return f_value + fz_value * (pz - self._z[edge_z_index])
 
     cdef double evaluate_edge_xy(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+
         cdef double f_value, fx_value, fy_value, fxy_value
+
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z)
+
         fx_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 1, 0, 0
-        )/(self._x[index_x + 1] - self._x[index_x])
+        ) / (self._x[index_x + 1] - self._x[index_x])
+
         fy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 0, 1, 0
-        )/(self._y[index_y + 1] - self._y[index_y])
+        ) / (self._y[index_y + 1] - self._y[index_y])
+
         fxy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z, 1, 1, 0
-        )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y]))
-        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + fxy_value* (py - self._y[edge_y_index])* (px - self._x[edge_x_index])
+        ) / ((self._x[index_x + 1] - self._x[index_x]) * (self._y[index_y + 1] - self._y[index_y]))
+
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + fxy_value * (py - self._y[edge_y_index]) * (px - self._x[edge_x_index])
 
     cdef double evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+
         cdef double f_value, fx_value, fz_value, fxz_value
+
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z)
+
         fx_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 0
-        )/(self._x[index_x + 1] - self._x[index_x])
+        ) / (self._x[index_x + 1] - self._x[index_x])
+
         fz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1
-        )/(self._z[index_z + 1] - self._z[index_z])
+        ) / (self._z[index_z + 1] - self._z[index_z])
+
         fxz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 1
-        )/((self._x[index_x + 1] - self._x[index_x])*(self._z[index_z + 1] - self._z[index_z]))
-        return f_value + fx_value * (px - self._x[edge_x_index]) + fz_value * (pz - self._z[edge_z_index]) + fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index])
+        ) / ((self._x[index_x + 1] - self._x[index_x])*(self._z[index_z + 1] - self._z[index_z]))
+
+        return f_value + fx_value * (px - self._x[edge_x_index]) + fz_value * (pz - self._z[edge_z_index]) + fxz_value * (pz - self._z[edge_z_index]) * (px - self._x[edge_x_index])
 
     cdef double evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f_value, fy_value, fz_value, fyz_value
+
         f_value = self._external_interpolator.evaluate(px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
+
         fy_value = self._external_interpolator.analytic_gradient(
             px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 0
-        )/(self._y[index_y + 1] - self._y[index_y])
+        ) / (self._y[index_y + 1] - self._y[index_y])
+
         fz_value = self._external_interpolator.analytic_gradient(
             px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1
-        )/(self._z[index_z + 1] - self._z[index_z])
+        ) / (self._z[index_z + 1] - self._z[index_z])
+
         fyz_value = self._external_interpolator.analytic_gradient(
             px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 1
-        )/((self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
-        return f_value + fy_value * (py - self._y[edge_y_index]) + fz_value * (pz - self._z[edge_z_index]) + fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index])
+        ) / ((self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
+
+        return f_value + fy_value * (py - self._y[edge_y_index]) + fz_value * (pz - self._z[edge_z_index]) + fyz_value * (pz - self._z[edge_z_index]) * (py - self._y[edge_y_index])
 
     cdef double evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         """
@@ -990,34 +1021,43 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
         """
         cdef double f_value, fx_value, fy_value, fz_value, fxy_value, fxz_value, fyz_value, fxyz_value
+
         f_value = self._external_interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
+
         fx_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 0
-        )/(self._x[index_x + 1] - self._x[index_x])
+        ) / (self._x[index_x + 1] - self._x[index_x])
+
         fy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 0
-        )/(self._y[index_y + 1] - self._y[index_y])
+        ) / (self._y[index_y + 1] - self._y[index_y])
+
         fz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 0, 1
-        )/(self._z[index_z + 1] - self._z[index_z])
+        ) / (self._z[index_z + 1] - self._z[index_z])
+
         fxy_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 1, 0
-        )/((self._y[index_y + 1] - self._y[index_y])*(self._x[index_x + 1] - self._x[index_x]))
+        ) / ((self._y[index_y + 1] - self._y[index_y]) * (self._x[index_x + 1] - self._x[index_x]))
+
         fxz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 0, 1
-        )/((self._x[index_x + 1] - self._x[index_x])*(self._z[index_z + 1] - self._z[index_z]))
+        ) / ((self._x[index_x + 1] - self._x[index_x]) * (self._z[index_z + 1] - self._z[index_z]))
+
         fyz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 0, 1, 1
-        )/((self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
+        ) / ((self._y[index_y + 1] - self._y[index_y]) * (self._z[index_z + 1] - self._z[index_z]))
+
         fxyz_value = self._external_interpolator.analytic_gradient(
             self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z, 1, 1, 1
-        )/((self._x[index_x + 1] - self._x[index_x])*(self._y[index_y + 1] - self._y[index_y])*(self._z[index_z + 1] - self._z[index_z]))
+        ) / ((self._x[index_x + 1] - self._x[index_x]) * (self._y[index_y + 1] - self._y[index_y]) * (self._z[index_z + 1] - self._z[index_z]))
+
         return f_value + fx_value * (px - self._x[edge_x_index]) + fy_value * (py - self._y[edge_y_index]) + \
                fz_value * (pz - self._z[edge_z_index]) \
-               + fxy_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index]) \
-               + fxz_value* (pz - self._z[edge_z_index])* (px - self._x[edge_x_index]) \
-               + fyz_value* (pz - self._z[edge_z_index])* (py - self._y[edge_y_index]) \
-               + fxyz_value* (px - self._x[edge_x_index])* (py - self._y[edge_y_index])* (pz - self._z[edge_z_index])
+               + fxy_value * (px - self._x[edge_x_index]) * (py - self._y[edge_y_index]) \
+               + fxz_value * (pz - self._z[edge_z_index]) * (px - self._x[edge_x_index]) \
+               + fyz_value * (pz - self._z[edge_z_index]) * (py - self._y[edge_y_index]) \
+               + fxyz_value * (px - self._x[edge_x_index]) * (py - self._y[edge_y_index]) * (pz - self._z[edge_z_index])
 
 
 cdef class _ArrayDerivative3D:
@@ -1060,6 +1100,7 @@ cdef class _ArrayDerivative3D:
         :param rescale_norm_y: A boolean as whether to rescale to the delta before y[index_y] or after (default).
         :param rescale_norm_z: A boolean as whether to rescale to the delta before z[index_z] or after (default).
         """
+
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
         cdef double dfdn
         cdef int x_centre_add, y_centre_add, z_centre_add
@@ -1130,14 +1171,17 @@ cdef class _ArrayDerivative3D:
                     dfdn = self.eval_xyz(
                         index_x_input, index_y_input, index_z_input, derivative_order_x, derivative_order_y, derivative_order_z,
                     )
+
         if rescale_norm_x:
             if not (index_x == 0 or index_x == self._last_index_x):
                 for i in range(derivative_order_x):
                     dfdn = rescale_lower_normalisation(dfdn,  self._x[index_x - 1], self._x[index_x], self._x[index_x + 1])
+
         if rescale_norm_y:
             if not (index_y == 0 or index_y == self._last_index_y):
                 for i in range(derivative_order_y):
                     dfdn = rescale_lower_normalisation(dfdn,  self._y[index_y - 1], self._y[index_y], self._y[index_y + 1])
+
         if rescale_norm_z:
             if not (index_z == 0 or index_z == self._last_index_z):
                 for i in range(derivative_order_z):
@@ -1145,14 +1189,17 @@ cdef class _ArrayDerivative3D:
         return dfdn
 
     cdef double eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
+
         cdef double dfdn
         cdef double[:] x_range, y_range, z_range
         cdef double[:, :, :] f_range
         cdef int x_centre = 0, y_centre = 1, z_centre = 1
+
         x_range = self._x[index_x:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
         z_range = self._z[index_z - 1:index_z + 2]
         f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2, index_z - 1:index_z + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
@@ -1177,10 +1224,12 @@ cdef class _ArrayDerivative3D:
         cdef double[:] x_range, y_range, z_range
         cdef double[:, :, :] f_range
         cdef int x_centre = 1, y_centre = 0, z_centre = 1
+
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         z_range = self._z[index_z - 1:index_z + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2, index_z - 1:index_z + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
@@ -1189,7 +1238,6 @@ cdef class _ArrayDerivative3D:
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
             dfdn = self.derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            # fixme ALl these functions don't specify 'f' as c contiguous. Can't input this if f_range is cdef double[:, :, ::1] f_range
             dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range[:, :, z_centre + z_centre_add])
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
             dfdn = self.derivitive_d2fdxdy(x_range, z_range, f_range[:, y_centre + y_centre_add, :])
@@ -1206,10 +1254,12 @@ cdef class _ArrayDerivative3D:
         cdef double[:] x_range, y_range, z_range
         cdef double[:, :, :] f_range
         cdef int x_centre = 1, y_centre = 1, z_centre = 0
+
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
         z_range = self._z[index_z:index_z + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2, index_z:index_z + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
@@ -1220,13 +1270,16 @@ cdef class _ArrayDerivative3D:
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self.derivitive_d2fdxdy(x_range, y_range, f_range[:, :, z_centre + z_centre_add])
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range[:, y_centre + y_centre_add, :]) # This should work still, edge is in second variable
+            # Edge is in second variable
+            dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range[:, y_centre + y_centre_add, :])
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self.derivitive_d2fdxdy_edge_y(y_range, f_range[x_centre + x_centre_add, :, :]) # This should work still, edge is in second variable
+            # Edge is in second variable
+            dfdn = self.derivitive_d2fdxdy_edge_y(y_range, f_range[x_centre + x_centre_add, :, :])
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self.derivitive_d3fdxdydz_edge_z(x_range, y_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
+
         return dfdn
 
     cdef double eval_edge_xy(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
@@ -1234,10 +1287,12 @@ cdef class _ArrayDerivative3D:
         cdef double[:] x_range, y_range, z_range
         cdef double[:, :, :] f_range
         cdef int x_centre = 0, y_centre = 0, z_centre = 1
+
         x_range = self._x[index_x:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         z_range = self._z[index_z - 1:index_z + 2]
         f_range = self._f[index_x:index_x + 2, index_y:index_y + 2, index_z - 1:index_z + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
@@ -1255,6 +1310,7 @@ cdef class _ArrayDerivative3D:
             dfdn = self.derivitive_d3fdxdydz_edge_xy(z_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
+
         return dfdn
 
     cdef double eval_edge_xz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
@@ -1262,10 +1318,12 @@ cdef class _ArrayDerivative3D:
         cdef double[:] x_range, y_range, z_range
         cdef double[:, :, :] f_range
         cdef int x_centre = 0, y_centre = 1, z_centre = 0
+
         x_range = self._x[index_x:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
         z_range = self._z[index_z:index_z + 2]
         f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2, index_z:index_z + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
@@ -1283,6 +1341,7 @@ cdef class _ArrayDerivative3D:
             dfdn = self.derivitive_d3fdxdydz_edge_xz(y_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
+
         return dfdn
 
     cdef double eval_edge_yz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
@@ -1290,10 +1349,12 @@ cdef class _ArrayDerivative3D:
         cdef double[:] x_range, y_range, z_range
         cdef double[:, :, :] f_range
         cdef int x_centre = 1, y_centre = 0, z_centre = 0
+
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         z_range = self._z[index_z:index_z + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2, index_z:index_z + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
@@ -1311,6 +1372,7 @@ cdef class _ArrayDerivative3D:
             dfdn = self.derivitive_d3fdxdydz_edge_yz(x_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
+
         return dfdn
 
     cdef double eval_edge_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
@@ -1318,10 +1380,12 @@ cdef class _ArrayDerivative3D:
         cdef double[:] x_range, y_range, z_range
         cdef double[:, :, :] f_range
         cdef int x_centre = 0, y_centre = 0, z_centre = 0
+
         x_range = self._x[index_x:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         z_range = self._z[index_z:index_z + 2]
         f_range = self._f[index_x:index_x + 2, index_y:index_y + 2, index_z:index_z + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
@@ -1339,6 +1403,7 @@ cdef class _ArrayDerivative3D:
             dfdn = self.derivitive_d3fdxdydz_edge_xyz(f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
+
         return dfdn
 
     cdef double eval_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z):
@@ -1346,10 +1411,12 @@ cdef class _ArrayDerivative3D:
         cdef double[:] x_range, y_range, z_range
         cdef double[:, :, :] f_range
         cdef int x_centre = 1, y_centre = 1, z_centre = 1
+
         x_range = self._x[index_x - 1:index_x + 2]
         y_range = self._y[index_y - 1:index_y + 2]
         z_range = self._z[index_z - 1:index_z + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2, index_z - 1:index_z + 2]
+
         dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
             dfdn = self.derivitive_dfdx(x_range, f_range[:, y_centre, z_centre])
@@ -1367,13 +1434,14 @@ cdef class _ArrayDerivative3D:
             dfdn = self.derivitive_d3fdxdydz(x_range, y_range, z_range, f_range)
         else:
             raise ValueError('No higher order derivatives implemented')
-        return dfdn
 
+        return dfdn
 
     cdef double derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999:
         cdef double x1_n, x1_n2
         x1_n = (x[1] - x[0]) / (x[2] - x[1])
         x1_n2 = x1_n ** 2
+
         return (f[2] * x1_n2 - f[0] - f[1] * (x1_n2 - 1.)) / (x1_n + x1_n2)
 
     cdef double derivitive_dfdx_edge(self, double[:] f):
@@ -1383,6 +1451,7 @@ cdef class _ArrayDerivative3D:
         cdef double dx1, dy1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
         dy1 = (y[1] - y[0]) / (y[2] - y[1])
+
         return (f[2, 2] - f[0, 2] - f[2, 0] + f[0, 0]) / (1. + dx1 + dy1 + dx1 * dy1)
 
     cdef double derivitive_d2fdxdy_edge_xy(self, double[:] x, double[:] y, double[:, :] f) except? -1e999:
@@ -1391,12 +1460,13 @@ cdef class _ArrayDerivative3D:
     cdef double derivitive_d2fdxdy_edge_x(self, double[:] y, double[:, :] f) except? -1e999:
         cdef double dy1
         dy1 = (y[1] - y[0]) / (y[2] - y[1])
+
         return (f[1, 2] - f[0, 2] - f[1, 0] + f[0, 0]) / (1. + dy1)
 
     cdef double derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, :] f) except? -1e999:
-        # fixme ALl these functions don't specify 'f' as c contiguous. Can't input this if f_range is cdef double[:, :, ::1] f_range slice as f_range[:, :, n]
         cdef double dx1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
+
         return (f[2, 1] - f[0, 1] - f[2, 0] + f[0, 0]) / (1. + dx1)
 
     cdef double derivitive_d3fdxdydz(self, double[:] x, double[:] y, double[:] z, double[:, :, :] f) except? -1e999:
@@ -1404,39 +1474,46 @@ cdef class _ArrayDerivative3D:
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
         dy1 = (y[1] - y[0]) / (y[2] - y[1])
         dz1 = (z[1] - z[0]) / (z[2] - z[1])
+
         return (f[2, 2, 2] - f[0, 2, 2] - f[2, 0, 2] + f[0, 0, 2] - f[2, 2, 0] + f[0, 2, 0] + f[2, 0, 0] - f[0, 0, 0]) / (1. + dx1 + dy1 + dz1 + dx1 * dy1 + dx1 * dz1 + dy1 * dz1 + dx1 * dy1 * dz1)
 
     cdef double derivitive_d3fdxdydz_edge_x(self, double[:] y, double[:] z, double[:, :, :] f) except? -1e999:
         cdef double dy1, dz1
         dy1 = (y[1] - y[0]) / (y[2] - y[1])
         dz1 = (z[1] - z[0]) / (z[2] - z[1])
+
         return (f[1, 2, 2] - f[0, 2, 2] - f[1, 0, 2] + f[0, 0, 2] - f[1, 2, 0] + f[0, 2, 0] + f[1, 0, 0] - f[0, 0, 0]) / (1. + dy1 + dz1 + dy1 * dz1)
 
     cdef double derivitive_d3fdxdydz_edge_y(self, double[:] x, double[:] z, double[:, :, :] f) except? -1e999:
         cdef double dx1, dz1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
         dz1 = (z[1] - z[0]) / (z[2] - z[1])
+
         return (f[2, 1, 2] - f[0, 1, 2] - f[2, 0, 2] + f[0, 0, 2] - f[2, 1, 0] + f[0, 1, 0] + f[2, 0, 0] - f[0, 0, 0]) / (1. + dx1 + dz1 + dx1 * dz1)
 
     cdef double derivitive_d3fdxdydz_edge_z(self, double[:] x, double[:] y, double[:, :, :] f) except? -1e999:
         cdef double dx1, dy1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
         dy1 = (y[1] - y[0]) / (y[2] - y[1])
+
         return (f[2, 2, 1] - f[0, 2, 1] - f[2, 0, 1] + f[0, 0, 1] - f[2, 2, 0] + f[0, 2, 0] + f[2, 0, 0] - f[0, 0, 0]) / (1. + dx1 + dy1 + dx1 * dy1)
 
     cdef double derivitive_d3fdxdydz_edge_xy(self, double[:] z, double[:, :, :] f) except? -1e999:
         cdef double dz1
         dz1 = (z[1] - z[0]) / (z[2] - z[1])
+
         return (f[1, 1, 2] - f[0, 1, 2] - f[1, 0, 2] + f[0, 0, 2] - f[1, 1, 0] + f[0, 1, 0] + f[1, 0, 0] - f[0, 0, 0]) / (1. + dz1)
 
     cdef double derivitive_d3fdxdydz_edge_xz(self, double[:] y, double[:, :, :] f) except? -1e999:
         cdef double dy1
         dy1 = (y[1] - y[0]) / (y[2] - y[1])
+
         return (f[1, 2, 1] - f[0, 2, 1] - f[1, 0, 1] + f[0, 0, 1] - f[1, 2, 0] + f[0, 2, 0] + f[1, 0, 0] - f[0, 0, 0]) / (1. + dy1)
 
     cdef double derivitive_d3fdxdydz_edge_yz(self, double[:] x, double[:, :, :] f) except? -1e999:
         cdef double dx1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
+
         return (f[2, 1, 1] - f[0, 1, 1] - f[2, 0, 1] + f[0, 0, 1] - f[2, 1, 0] + f[0, 1, 0] + f[2, 0, 0] - f[0, 0, 0]) / (1. + dx1)
 
     cdef double derivitive_d3fdxdydz_edge_xyz(self, double[:, :, :] f) except? -1e999:
@@ -1451,12 +1528,13 @@ id_to_interpolator = {
     _Interpolator3DCubic.ID: _Interpolator3DCubic
 }
 
+
 id_to_extrapolator = {
     _Extrapolator3DNone.ID: _Extrapolator3DNone,
     _Extrapolator3DNearest.ID: _Extrapolator3DNearest,
     _Extrapolator3DLinear.ID: _Extrapolator3DLinear,
-    # _Extrapolator3DQuadratic.ID: _Extrapolator3DQuadratic
 }
+
 
 permitted_interpolation_combinations = {
     _Interpolator3DLinear.ID: [_Extrapolator3DNone.ID, _Extrapolator3DNearest.ID, _Extrapolator3DLinear.ID],
