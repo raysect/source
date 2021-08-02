@@ -36,26 +36,19 @@ from raysect.core.math.cython.interpolation.linear cimport linear2d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_2d, evaluate_cubic_2d
 
 
+cdef double[4] FACTORIAL_ARRAY
+FACTORIAL_ARRAY[0] = 1.
+FACTORIAL_ARRAY[1] = 1.
+FACTORIAL_ARRAY[2] = 2.
+FACTORIAL_ARRAY[3] = 6.
+
+
 cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper):
     """
-    Derivatives that are normalised to the unt square (x_upper - x) = 1 are un-normalised, then re-normalised to
+    Derivatives that are normalised to the unit square (x_upper - x) = 1 are un-normalised, then re-normalised to
     (x - x_lower)
     """
     return dfdn * (x - x_lower)/(x_upper - x)
-
-
-cdef double lookup_factorial(int n):
-    """
-    A small lookup table for a factorial calculation.
-    
-    So far this is only required for cubic functions, so going up to 3!.
-    """
-    cdef double[4] factorial
-    factorial[0] = 1.
-    factorial[1] = 1.
-    factorial[2] = 2.
-    factorial[3] = 6.
-    return factorial[n]
 
 
 cdef int find_index_change(int index, int last_index):
@@ -68,13 +61,14 @@ cdef int find_index_change(int index, int last_index):
 
     :param int index: the index of the lower side of a unit cell.
     :param int last_index: the index of the final point.
-    :return: the index of the lower cell at the border of the interpolator spline knots
+    :return: the index of the lower cell at the border of the interpolator spline knots.
     """
+
     cdef int lower_index
     if index == -1:
-        lower_index = index + 1
+        lower_index = 0
     elif index == last_index:
-        lower_index = index - 1
+        lower_index = last_index - 1
     else:
         lower_index = index
     return lower_index
@@ -92,11 +86,12 @@ cdef int find_edge_index(int index, int last_index):
     :param int last_index: the index of the final point.
     :return: the index of the border of the interpolator spline knots.
     """
+
     cdef int edge_index
     if index == -1:
-        edge_index = index + 1
+        edge_index = 0
     elif index == last_index:
-        edge_index = index
+        edge_index = last_index
     else:
         edge_index = index
     return edge_index
@@ -104,7 +99,7 @@ cdef int find_edge_index(int index, int last_index):
 
 cdef class Interpolator2DArray(Function2D):
     """
-    Interface class for Function2D interpolators.
+    A configurable interpolator for 2D arrays.
 
     Coordinate array (x), array (y) and data array (f) are sorted and transformed into Numpy arrays.
     The resulting Numpy arrays are stored as read only. I.e. `writeable` flag of self.x, self.y and self.f
@@ -150,40 +145,11 @@ cdef class Interpolator2DArray(Function2D):
         At the edge of the spline knot arrays the index of the edge of the array is is used instead.
     :note: x, y arrays must be equal in shape to f in the first and second dimension respectively.
     :note: x and y must be monotonically increasing arrays.
-    :warning: x, y, f must all be c contiguous in memory. Avoid operations that break this condition when
-        preparing data (e.g. don't transpose any data arrays).
 
     """
 
     def __init__(self, object x, object y, object f, str interpolation_type, str extrapolation_type,
                  double extrapolation_range_x, double extrapolation_range_y):
-
-        # extrapolation_ranges must be greater than or equal to 0.
-        if extrapolation_range_x < 0:
-            raise ValueError('extrapolation_range_x must be greater than or equal to 0.')
-        if extrapolation_range_y < 0:
-            raise ValueError('extrapolation_range_y must be greater than or equal to 0.')
-        # dimensions checks.
-        if x.ndim != 1:
-            raise ValueError(f'The x array must be 1D. Got {x.shape}.')
-
-        if y.ndim != 1:
-            raise ValueError(f'The y array must be 1D. Got {y.shape}.')
-
-        if f.ndim != 2:
-            raise ValueError(f'The f array must be 2D. Got {f.shape}.')
-
-        if np.shape(x)[0] != np.shape(f)[0]:
-            raise ValueError(f'Shape mismatch between x array ({x.shape}) and f array ({f.shape}).')
-
-        if np.shape(y)[0] != np.shape(f)[1]:
-            raise ValueError(f'Shape mismatch between y array ({y.shape}) and f array ({f.shape}).')
-
-        # test monotonicity
-        if (np.diff(x) <= 0).any():
-            raise ValueError('The x array must be monotonically increasing.')
-        if (np.diff(y) <= 0).any():
-            raise ValueError('The y array must be monotonically increasing.')
 
         self.x = np.array(x, dtype=np.float64, order='c')
         self.x.flags.writeable = False
@@ -191,6 +157,34 @@ cdef class Interpolator2DArray(Function2D):
         self.y.flags.writeable = False
         self.f = np.array(f, dtype=np.float64, order='c')
         self.f.flags.writeable = False
+
+        # extrapolation_ranges must be greater than or equal to 0.
+        if extrapolation_range_x < 0:
+            raise ValueError('extrapolation_range_x must be greater than or equal to 0.')
+        if extrapolation_range_y < 0:
+            raise ValueError('extrapolation_range_y must be greater than or equal to 0.')
+
+        # Dimensions checks.
+        if self.x.ndim != 1:
+            raise ValueError(f'The x array must be 1D. Got {np.shape(self.x)}.')
+
+        if self.y.ndim != 1:
+            raise ValueError(f'The y array must be 1D. Got {np.shape(self.y)}.')
+
+        if self.f.ndim != 2:
+            raise ValueError(f'The f array must be 2D. Got {np.shape(self.f)}.')
+
+        if np.shape(self.x)[0] != np.shape(self.f)[0]:
+            raise ValueError(f'Shape mismatch between x array ({np.shape(self.x)}) and f array ({np.shape(self.f)}).')
+
+        if np.shape(self.y)[0] != np.shape(self.f)[1]:
+            raise ValueError(f'Shape mismatch between y array ({np.shape(self.y)}) and f array ({np.shape(self.f)}).')
+
+        # Test monotonicity.
+        if (np.diff(self.x) <= 0).any():
+            raise ValueError('The x array must be monotonically increasing.')
+        if (np.diff(self.y) <= 0).any():
+            raise ValueError('The y array must be monotonically increasing.')
 
         self._x_mv = x
         self._y_mv = y
@@ -200,26 +194,27 @@ cdef class Interpolator2DArray(Function2D):
         self._extrapolation_range_x = extrapolation_range_x
         self._extrapolation_range_y = extrapolation_range_y
 
-        # create interpolator per interapolation_type argument
+        # Check the requested interpolation type exists.
         interpolation_type = interpolation_type.lower()
         if interpolation_type not in id_to_interpolator:
-            raise ValueError(f'Interpolation type {interpolation_type} not found. options are {id_to_interpolator.keys()}')
+            raise ValueError(f'Interpolation type {interpolation_type} not found. Options are {id_to_interpolator.keys()}.')
 
-        self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._y_mv, self._f_mv)
-
-        # create extrapolator per extrapolation_type argument
+        # Check the requested extrapolation type exists.
         extrapolation_type = extrapolation_type.lower()
         if extrapolation_type not in id_to_extrapolator:
-            raise ValueError(f'Extrapolation type {extrapolation_type} not found. options are {id_to_extrapolator.keys()}')
+            raise ValueError(f'Extrapolation type {extrapolation_type} not found. Options are {id_to_extrapolator.keys()}.')
+
+        # Permit combinations of interpolator and extrapolator where the order of extrapolator is higher than interpolator.
+        if extrapolation_type not in permitted_interpolation_combinations[interpolation_type]:
+            raise ValueError(
+                f'Extrapolation type {extrapolation_type} not compatible with interpolation type {interpolation_type}.')
+
+        # Create the interpolator and extrapolator objects.
+        self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._y_mv, self._f_mv)
 
         self._extrapolator = id_to_extrapolator[extrapolation_type](
             self._x_mv, self._y_mv, self._f_mv, self._interpolator, extrapolation_range_x, extrapolation_range_y
         )
-
-        # Permit combinations of interpolator and extrapolator that the order of extrapolator is higher than interpolator
-        if extrapolation_type not in permitted_interpolation_combinations[interpolation_type]:
-            raise ValueError(
-                f'Extrapolation type {extrapolation_type} not compatible with interpolation type {interpolation_type}')
 
     cdef double evaluate(self, double px, double py) except? -1e999:
         """
@@ -241,8 +236,9 @@ cdef class Interpolator2DArray(Function2D):
         cdef int index_y = find_index(self._y_mv, py)
         cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
         cdef int index_lower_y = find_index_change(index_y, self._last_index_y)
-
-        if (index_x == -1 or (index_x == self._last_index_x and px != self._x_mv[-1])) or (index_y == -1 or (index_y == self._last_index_y and py != self._y_mv[-1])):
+        cdef bint outside_domain_x = (index_x == -1 or (index_x == self._last_index_x and px != self._x_mv[-1]))
+        cdef bint outside_domain_y = (index_y == -1 or (index_y == self._last_index_y and py != self._y_mv[-1]))
+        if outside_domain_x or outside_domain_y:
             return self._extrapolator.evaluate(px, py, index_x, index_y)
         else:
             return self._interpolator.evaluate(px, py, index_lower_x, index_lower_y)
@@ -250,8 +246,8 @@ cdef class Interpolator2DArray(Function2D):
     @property
     def domain(self):
         """
-        Returns min/max interval of 'x' array.
-        Order: min(x), max(x)
+        Returns min/max interval of 'x' and 'y' arrays.
+        Order: min(x), max(x), min(y), max(y).
         """
         return np.min(self._x_mv), np.max(self._x_mv), np.min(self._y_mv), np.max(self._y_mv)
 
@@ -265,7 +261,8 @@ cdef class _Interpolator2D:
     :param f: 2D memory view of the function value at spline point x, y positions.
     """
 
-    ID = NotImplemented
+    ID = None
+
     def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f):
         self._x = x
         self._y = y
@@ -275,7 +272,7 @@ cdef class _Interpolator2D:
 
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
         """
-        Calculates interpolated value at given point. 
+        Calculates interpolated value at a requested point.
 
         :param double px: the point for which an interpolated value is required.
         :param double py: the point for which an interpolated value is required.
@@ -285,6 +282,15 @@ cdef class _Interpolator2D:
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
     cdef double analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
+        """
+        Calculates the interpolator's derivative of a valid order at a requested point.
+
+        :param double px: the x position of the point for which an interpolated value is required.
+        :param double py: the y position of the point for which an interpolated value is required.
+        :param int index_x: the lower index of the bin containing point px. (Result of bisection search).
+        :param int index_y: the lower index of the bin containing point py. (Result of bisection search).  
+        """
+
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
 
@@ -326,20 +332,19 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
         :param int order_y: the derivative order in the y direction.
         """
         cdef double df_dn
-        cdef double[4] a
 
-        self.calculate_coefficients(index_x, index_y, a)
         if order_x == 1 and order_y == 1:
-            df_dn = a[3]
+            df_dn = self.calculate_coefficients(index_x, index_y, coefficient_index=3)
         elif order_x == 1:
-            df_dn = a[1] + a[3]*(py - self._y[index_y])/(self._y[index_y + 1] - self._y[index_y])
+            df_dn = self.calculate_coefficients(index_x, index_y, coefficient_index=1) + self.calculate_coefficients(index_x, index_y, coefficient_index=3)*(py - self._y[index_y])/(self._y[index_y + 1] - self._y[index_y])
         elif order_y == 1:
-            df_dn = a[2] + a[3]*(px - self._x[index_x])/(self._x[index_x + 1] - self._x[index_x])
+            df_dn = self.calculate_coefficients(index_x, index_y, coefficient_index=2) + self.calculate_coefficients(index_x, index_y, coefficient_index=3)*(px - self._x[index_x])/(self._x[index_x + 1] - self._x[index_x])
         else:
-            raise ValueError('order_x and order_y must be 1 and 0 for the linear interpolator.')
+            raise ValueError('The derivative order for x and y (order_x and order_y) must be a combination of 1 and 0 '
+                             'for the linear interpolator (but 0, 0 should be handled by evaluating the interpolator).')
         return df_dn
 
-    cdef calculate_coefficients(self, int index_x, int index_y, double[4] a):
+    cdef calculate_coefficients(self, int index_x, int index_y, int coefficient_index):
         """
         Calculate the bilinear coefficients in a unit square.
 
@@ -360,21 +365,20 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
 
         :param int index_x: the lower index of the bin containing point px. (Result of bisection search).   
         :param int index_y: the lower index of the bin containing point py. (Result of bisection search). 
-        :param double[4] a: The coefficients of the bilinear equation a0, a1, a2, a3.
+        :param int coefficient_index: Which coefficient of the bilinear equation to return a0, a1, a2, a3.
         """
-        cdef double[2][2] f
 
-        # Calculate the coefficients (and gradients at each spline point) if they dont exist
-        f[0][0] = self._f[index_x, index_y]
-        f[1][0] = self._f[index_x + 1, index_y]
-        f[0][1] = self._f[index_x, index_y + 1]
-        f[1][1] = self._f[index_x + 1, index_y + 1]
-
-        a[0] = f[0][0]
-        a[1] = f[1][0] - f[0][0]
-        a[2] = f[0][1] - f[0][0]
-        a[3] = f[0][0] - f[0][1] - f[1][0] + f[1][1]
-
+        # Calculate the coefficients of the requested spline point.
+        if coefficient_index == 0:
+            return self._f[index_x, index_y]
+        elif coefficient_index == 1:
+            return self._f[index_x + 1, index_y] - self._f[index_x, index_y]
+        elif coefficient_index == 2:
+            return self._f[index_x, index_y + 1] - self._f[index_x, index_y]
+        elif coefficient_index == 3:
+            return self._f[index_x, index_y] - self._f[index_x, index_y + 1] - self._f[index_x + 1, index_y] + self._f[index_x + 1, index_y + 1]
+        else:
+            raise ValueError(f'There are only 4 bilinear coefficients, the index requested:{coefficient_index} is out of range.')
 
 cdef class _Interpolator2DCubic(_Interpolator2D):
     """
@@ -394,8 +398,10 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
     def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f):
         super().__init__(x, y, f)
 
-        # Where 'a' has been calculated already the mask value = 1
+        # Where 'a' has been calculated the mask value = 1.
         self._mask_a = np.zeros((self._last_index_x, self._last_index_y), dtype=np.float64)
+
+        # Store the cubic spline coefficients, where increasing index values are the coefficients for the coefficients of higher powers of x, y in the last 2 dimensions.
         self._a = np.zeros((self._last_index_x, self._last_index_y, 4, 4), dtype=np.float64)
         self._a_mv = self._a
 
@@ -522,7 +528,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         df_dn = 0
         for i in range(order_x, 4):
             for j in range(order_y, 4):
-                df_dn += (a[i][j] * (lookup_factorial(i)/lookup_factorial(i-order_x)) * (lookup_factorial(j)/lookup_factorial(j-order_y)) *
+                df_dn += (a[i][j] * (FACTORIAL_ARRAY[i]/FACTORIAL_ARRAY[i-order_x]) * (FACTORIAL_ARRAY[j]/FACTORIAL_ARRAY[j-order_y]) *
                           x_powers[i-order_x] * y_powers[j-order_y])
         return  df_dn
 
@@ -574,7 +580,7 @@ cdef class _Extrapolator2D:
                     f'The specified value (y={py}) is outside of extrapolation range.')
             return self.evaluate_edge_y(px, py, index_lower_x, index_lower_y, edge_y_index)
         else:
-            raise ValueError('Interpolated index parsed to extrapolator')
+            raise ValueError('Interpolated index parsed to extrapolator.')
 
     cdef double evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         raise NotImplementedError(f'{self.__class__} not implemented.')
@@ -809,34 +815,48 @@ cdef class _ArrayDerivative2D:
         cdef double dfdn
 
         if index_x == 0:
+
             if index_y == 0:
                 dfdn = self.eval_edge_xy(index_x, index_y, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=0)
+
             elif index_y == self._last_index_y:
                 dfdn = self.eval_edge_xy(index_x, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=1)
+
             else:
                 dfdn = self.eval_edge_x(index_x, index_y, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=0)
+
         elif index_x == self._last_index_x:
+
             if index_y == 0:
                 dfdn = self.eval_edge_xy(index_x - 1, index_y, derivative_order_x, derivative_order_y, x_centre_add=1, y_centre_add=0)
+
             elif index_y == self._last_index_y:
                 dfdn = self.eval_edge_xy(index_x - 1, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=1, y_centre_add=1)
+
             else:
                 dfdn = self.eval_edge_x(index_x - 1, index_y, derivative_order_x, derivative_order_y, x_centre_add=1, y_centre_add=0)
+
         else:
+
             if index_y == 0:
                 dfdn = self.eval_edge_y(index_x, index_y, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=0)
+
             elif index_y == self._last_index_y:
                 dfdn = self.eval_edge_y(index_x, index_y - 1, derivative_order_x, derivative_order_y, x_centre_add=0, y_centre_add=1)
+
             else:
                 dfdn = self.eval_xy(index_x, index_y, derivative_order_x, derivative_order_y)
+
         if rescale_norm_x:
             if not (index_x == 0 or index_x == self._last_index_x):
                 for i in range(derivative_order_x):
                     dfdn = rescale_lower_normalisation(dfdn,  self._x[index_x - 1], self._x[index_x], self._x[index_x + 1])
+
         if rescale_norm_y:
             if not (index_y == 0 or index_y == self._last_index_y):
                 for i in range(derivative_order_y):
                     dfdn = rescale_lower_normalisation(dfdn,  self._y[index_y - 1], self._y[index_y], self._y[index_y + 1])
+
         return dfdn
 
     cdef double eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
@@ -857,7 +877,7 @@ cdef class _ArrayDerivative2D:
         elif derivative_order_x == 1 and derivative_order_y == 1:
             dfdn = self.derivitive_d2fdxdy_edge_x(y_range, f_range)
         else:
-            raise ValueError('No higher order derivatives implemented')
+            raise ValueError('No higher order derivatives implemented.')
 
         return dfdn
 
@@ -879,7 +899,7 @@ cdef class _ArrayDerivative2D:
         elif derivative_order_x == 1 and derivative_order_y == 1:
             dfdn = self.derivitive_d2fdxdy_edge_y(x_range, f_range)
         else:
-            raise ValueError('No higher order derivatives implemented')
+            raise ValueError('No higher order derivatives implemented.')
 
         return dfdn
 
@@ -901,7 +921,7 @@ cdef class _ArrayDerivative2D:
         elif derivative_order_x == 1 and derivative_order_y == 1:
             dfdn = self.derivitive_d2fdxdy_edge_xy(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
         else:
-            raise ValueError('No higher order derivatives implemented')
+            raise ValueError('No higher order derivatives implemented.')
 
         return dfdn
 
@@ -926,7 +946,7 @@ cdef class _ArrayDerivative2D:
                 f_range[x_centre - 1:x_centre + 2, y_centre - 1:y_centre + 2]
             )
         else:
-            raise ValueError('No higher order derivatives implemented')
+            raise ValueError('No higher order derivatives implemented.')
 
         return dfdn
 

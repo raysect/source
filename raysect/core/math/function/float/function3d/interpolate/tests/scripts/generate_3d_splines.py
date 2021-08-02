@@ -33,7 +33,7 @@ from raysect.core.math.function.float.function3d.interpolate.interpolator3darray
 from matplotlib.colors import SymLogNorm, Normalize
 import scipy
 import sys
-from raysect.core.math.function.float.function3d.interpolate.tests.data_store.interpolator3d_test_data import \
+from raysect.core.math.function.float.function3d.interpolate.tests.data.interpolator3d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues,\
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven
 

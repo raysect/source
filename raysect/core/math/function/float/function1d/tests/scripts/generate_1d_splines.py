@@ -35,7 +35,7 @@ This script has been used to calculate the reference data for the 1D cubic inter
 from raysect.core.math.function.float.function1d.tests.test_interpolator import X_LOWER, X_UPPER, NB_XSAMPLES, NB_X, \
     X_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN, PRECISION, BIG_VALUE_FACTOR, SMALL_VALUE_FACTOR, EXTRAPOLATION_RANGE, \
     N_EXTRAPOLATION, large_extrapolation_range, uneven_linspace
-from raysect.core.math.function.float.function1d.tests.data_store.interpolator1d_test_data import \
+from raysect.core.math.function.float.function1d.tests.data.interpolator1d_test_data import \
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven,\
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 from raysect.core.math.function.float.function1d.interpolate import Interpolator1DArray
@@ -55,16 +55,17 @@ def docstring_test():
         >>>
         >>> x = np.linspace(-1., 1., 20)
         >>> f = np.exp(-x**2)
-        >>> interpolator1D = Interpolate1DArray(x, f, 'cubic', 'nearest', 1.0)
+        >>> interpolator1D = Interpolator1DArray(x, f, 'cubic', 'nearest', 1.0)
         >>> # Interpolation
         >>> interpolator1D(0.2)
         0.9607850606581484
         >>> # Extrapolation
         >>> interpolator1D(1.1)
         0.36787944117144233
-        >>> # Extrapolation out of bounds
-        >>> interpolator1D(2.1)
-        ValueError: The specified value (x=2.1) is outside of extrapolation range.
+
+    # >>> # Extrapolation out of bounds
+    # >>> interpolator1D(2.1)
+    ValueError: The specified value (x=2.1) is outside of extrapolation range.
     """
     pass
 
@@ -163,7 +164,7 @@ def different_quadratic_extrpolation_upper(x_interp, x_spline, y_spline):
 big_values = False
 small_values = True
 
-uneven_spacing = True
+uneven_spacing = False
 use_saved_datastore_spline_knots = True
 
 print('Using scipy version', scipy.__version__)
@@ -224,7 +225,7 @@ f_out = cubic_hermite(xsamples)
 
 print('Output of 3rd party cubic spline at xsamples. Does not work for central difference uneven spacing. ',
       'Save this to self.precalc_interpolation in test_interpolator in setup_cubic:\n', repr(f_out))
-interp_cubic_uneven = Interpolate1DArray(
+interp_cubic_uneven = Interpolator1DArray(
         x, data_f, 'cubic', 'none', extrapolation_range=2.0
     )
 
@@ -296,7 +297,7 @@ check_plot = True
 if check_plot:
     import matplotlib.pyplot as plt
 
-    interp_cubic_extrap_nearest = Interpolate1DArray(
+    interp_cubic_extrap_nearest = Interpolator1DArray(
         x, data_f, 'linear', 'nearest', extrapolation_range=2.0
     )
     fig, ax = plt.subplots()

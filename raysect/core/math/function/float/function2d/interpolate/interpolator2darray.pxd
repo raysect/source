@@ -34,9 +34,6 @@ from raysect.core.math.function.float.function2d cimport Function2D
 from numpy cimport ndarray
 
 
-cdef double lookup_factorial(int n)
-
-
 cdef int find_index_change(int index, int last_index)
 
 
@@ -68,7 +65,7 @@ cdef class _Interpolator2D:
 
 
 cdef class _Interpolator2DLinear(_Interpolator2D):
-    cdef calculate_coefficients(self, int index_x, int index_y, double[4] a)
+    cdef calculate_coefficients(self, int index_x, int index_y, int coefficient_index)
 
 
 cdef class _Interpolator2DCubic(_Interpolator2D):

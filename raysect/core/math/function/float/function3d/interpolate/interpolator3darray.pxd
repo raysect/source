@@ -42,9 +42,6 @@ cdef int find_index_change(int index, int last_index)
 cdef int find_edge_index(int index, int last_index)
 
 
-cdef double lookup_factorial(int n)
-
-
 cdef class Interpolator3DArray(Function3D):
 
     cdef:

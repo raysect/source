@@ -31,7 +31,7 @@
 import numpy as np
 from raysect.core.math.function.float.function2d.interpolate.interpolator2darray import Interpolator2DArray
 from scipy.interpolate import griddata, interp2d, RectBivariateSpline, CloughTocher2DInterpolator
-from raysect.core.math.function.float.function2d.interpolate.tests.data_store.interpolator2d_test_data import \
+from raysect.core.math.function.float.function2d.interpolate.tests.data.interpolator2d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues, \
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven
 import scipy
@@ -81,9 +81,10 @@ def docstring_test():
         >>> # Extrapolation
         >>> interpolator2D(1.0, 1.1)
         0.1353352832366128
-        >>> # Extrapolation out of bounds
-        >>> interpolator2D(1.0, 2.1)
-        ValueError: The specified value (y=2.1) is outside of extrapolation range.
+
+    # >>> # Extrapolation out of bounds
+    # >>> interpolator2D(1.0, 2.1)
+    # ValueError: The specified value (y=2.1) is outside of extrapolation range.
     """
     pass
 

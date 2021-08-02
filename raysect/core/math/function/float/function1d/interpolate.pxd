@@ -94,9 +94,9 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
 cdef class _ArrayDerivative1D:
     cdef:
         double [::1] _x, _f
-        int _last_index_x
+        int _last_index
 
-    cdef double evaluate(self, int index_x, int derivative_order_x, bint rescale_norm_x) except? -1e999
-    cdef double _evaluate_edge_x(self, int index_x, int derivative_order_x)
-    cdef double _evaluate_x(self, int index_x, int derivative_order_x)
+    cdef double evaluate(self, int index, int derivative_order, bint rescale_norm) except? -1e999
+    cdef double _evaluate_edge_x(self, int index, int derivative_order)
+    cdef double _evaluate_x(self, int index, int derivative_order)
 

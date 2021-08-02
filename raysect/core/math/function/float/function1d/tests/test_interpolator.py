@@ -36,7 +36,7 @@ import unittest
 import numpy as np
 from raysect.core.math.function.float.function1d.interpolate import Interpolator1DArray, id_to_extrapolator, \
     id_to_interpolator, permitted_interpolation_combinations
-from raysect.core.math.function.float.function1d.tests.data_store.interpolator1d_test_data import \
+from raysect.core.math.function.float.function1d.tests.data.interpolator1d_test_data import \
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven,\
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues
 
@@ -98,63 +98,33 @@ class TestInterpolators1D(unittest.TestCase):
     """
     Testing class for 1D interpolators and extrapolators.
     """
-    @classmethod
-    def setUpClass(cls) -> None:
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # data is a precalculated input values for testing. It's the result of applying function f on self.x.
         # as in data = f(self.x), where self.x is linearly spaced between X_LOWER and X_UPPER.
 
         #: x values used to obtain data.
-        cls.x = np.linspace(X_LOWER, X_UPPER, NB_X)
-        cls.x_uneven = uneven_linspace(X_LOWER, X_UPPER, NB_X, offset_fraction=1./3.)
-        cls.reference_loaded_values = TestInterpolatorLoadNormalValues()
-        cls.reference_loaded_big_values = TestInterpolatorLoadBigValues()
-        cls.reference_loaded_small_values = TestInterpolatorLoadSmallValues()
+        self.x = np.linspace(X_LOWER, X_UPPER, NB_X)
+        self.x_uneven = uneven_linspace(X_LOWER, X_UPPER, NB_X, offset_fraction=1./3.)
+        self.reference_loaded_values = TestInterpolatorLoadNormalValues()
+        self.reference_loaded_big_values = TestInterpolatorLoadBigValues()
+        self.reference_loaded_small_values = TestInterpolatorLoadSmallValues()
 
-        cls.reference_loaded_values_uneven = TestInterpolatorLoadNormalValuesUneven()
-        cls.reference_loaded_big_values_uneven = TestInterpolatorLoadBigValuesUneven()
-        cls.reference_loaded_small_values_uneven = TestInterpolatorLoadSmallValuesUneven()
+        self.reference_loaded_values_uneven = TestInterpolatorLoadNormalValuesUneven()
+        self.reference_loaded_big_values_uneven = TestInterpolatorLoadBigValuesUneven()
+        self.reference_loaded_small_values_uneven = TestInterpolatorLoadSmallValuesUneven()
 
         #: x values on which interpolation_data were sampled on.
-        cls.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
+        self.xsamples = np.linspace(X_LOWER, X_UPPER, NB_XSAMPLES)
 
         #: x values on which extrapolation_data arrays were sampled on.
         #: x, y values on which extrapolation_data arrays were sampled on.
         # Extrapolation x and y values.
-        cls.xsamples_out_of_bounds = extrapolation_out_of_bound_points(
+        self.xsamples_out_of_bounds = extrapolation_out_of_bound_points(
                 X_LOWER, X_UPPER, X_EXTRAP_DELTA_MAX, EXTRAPOLATION_RANGE
         )
-        cls.xsamples_in_bounds = large_extrapolation_range(cls.xsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        """
-        Remove the larger classes holding loaded values.
-        """
-        try:
-            del cls.reference_loaded_values_uneven
-        except AttributeError:
-            pass
-        try:
-            del cls.reference_loaded_big_values_uneven
-        except AttributeError:
-            pass
-        try:
-            del cls.reference_loaded_small_values_uneven
-        except AttributeError:
-            pass
-        try:
-            del cls.reference_loaded_values
-        except AttributeError:
-            pass
-        try:
-            del cls.reference_loaded_big_values
-        except AttributeError:
-            pass
-        try:
-            del cls.reference_loaded_small_values
-        except AttributeError:
-            pass
+        self.xsamples_in_bounds = large_extrapolation_range(self.xsamples, EXTRAPOLATION_RANGE, N_EXTRAPOLATION)
 
     def setup_linear(
             self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool,
@@ -292,23 +262,25 @@ class TestInterpolators1D(unittest.TestCase):
         raysect.core.math.function.function1d.tests.scripts.generate_1d_splines. interp1d(kind='linear') was used
         for linear interpolation.
         """
-        uneven_space_list = [True, False]
-        uneven_space_str_list = ['uneven spacing', 'even spacing']
-        for i in range(2):
+        for uneven_spacing in [True, False]:
+            if uneven_spacing:
+                uneven_spacing_str = 'uneven spacing'
+            else:
+                uneven_spacing_str = 'even spacing'
             for extrapolator_type in id_to_extrapolator.keys():
                 if extrapolator_type in permitted_interpolation_combinations['linear']:
                     interpolator, interpolation_data, extrapolation_data = self.setup_linear(
                         extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False,
-                        uneven_spacing=uneven_space_list[i]
+                        uneven_spacing=uneven_spacing
                     )
                     if extrapolator_type != 'none':
                         self.run_general_extrapolation_tests(
                             interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
-                            interpolator_str='linear values ' + uneven_space_str_list[i]
+                            interpolator_str='linear values ' + uneven_spacing_str
                         )
                     self.run_general_interpolation_tests(
                         interpolator, interpolation_data, extrapolator_type=extrapolator_type,
-                        interpolator_str='linear values ' + uneven_space_str_list[i]
+                        interpolator_str='linear values ' + uneven_spacing_str
                     )
                 else:
                     with self.assertRaises(ValueError, msg=f'linear interpolation and {extrapolator_type} extrapolation'
@@ -317,7 +289,7 @@ class TestInterpolators1D(unittest.TestCase):
                                                            f'permitted_interpolation_combinations'):
                         self.setup_linear(
                             extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False,
-                            uneven_spacing=uneven_space_list[i]
+                            uneven_spacing=uneven_spacing
                         )
 
             # Tests for big values
@@ -325,16 +297,16 @@ class TestInterpolators1D(unittest.TestCase):
                 if extrapolator_type in permitted_interpolation_combinations['linear']:
                     interpolator, interpolation_data, extrapolation_data = self.setup_linear(
                         extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False,
-                        uneven_spacing=uneven_space_list[i]
+                        uneven_spacing=uneven_spacing
                     )
                     if extrapolator_type != 'none':
                         self.run_general_extrapolation_tests(
                             interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
-                            interpolator_str='linear big values ' + uneven_space_str_list[i]
+                            interpolator_str='linear big values ' + uneven_spacing_str
                         )
                     self.run_general_interpolation_tests(
                         interpolator, interpolation_data, extrapolator_type=extrapolator_type,
-                        interpolator_str='linear big values ' + uneven_space_str_list[i]
+                        interpolator_str='linear big values ' + uneven_spacing_str
                     )
                 else:
                     with self.assertRaises(ValueError, msg=f'linear interpolation and {extrapolator_type} extrapolation'
@@ -343,7 +315,7 @@ class TestInterpolators1D(unittest.TestCase):
                                                            f'permitted_interpolation_combinations'):
                         self.setup_linear(
                             extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False,
-                            uneven_spacing=uneven_space_list[i]
+                            uneven_spacing=uneven_spacing
                         )
 
             # Tests for small values
@@ -351,16 +323,16 @@ class TestInterpolators1D(unittest.TestCase):
                 if extrapolator_type in permitted_interpolation_combinations['linear']:
                     interpolator, interpolation_data, extrapolation_data = self.setup_linear(
                         extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True,
-                        uneven_spacing=uneven_space_list[i]
+                        uneven_spacing=uneven_spacing
                     )
                     if extrapolator_type != 'none':
                         self.run_general_extrapolation_tests(
                             interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
-                            interpolator_str='linear small values ' + uneven_space_str_list[i]
+                            interpolator_str='linear small values ' + uneven_spacing_str
                         )
                     self.run_general_interpolation_tests(
                         interpolator, interpolation_data, extrapolator_type=extrapolator_type,
-                        interpolator_str='linear small values ' + uneven_space_str_list[i]
+                        interpolator_str='linear small values ' + uneven_spacing_str
                     )
                 else:
                     with self.assertRaises(ValueError, msg=f'linear interpolation and {extrapolator_type} extrapolation'
@@ -369,7 +341,7 @@ class TestInterpolators1D(unittest.TestCase):
                                                            f'permitted_interpolation_combinations'):
                         self.setup_linear(
                             extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True,
-                            uneven_spacing=uneven_space_list[i]
+                            uneven_spacing=uneven_spacing
                         )
 
     def test_cubic_interpolation_extrapolators(self):
@@ -377,23 +349,25 @@ class TestInterpolators1D(unittest.TestCase):
         Testing against scipy.interpolate.CubicHermiteSpline with the same gradient calculations. For uneven spacing,
         the function is tested against itself and is not a mathematical test.
         """
-        uneven_space_list = [True, False]
-        uneven_space_str_list = ['uneven spacing', 'even spacing']
-        for i in range(2):
+        for uneven_spacing in [True, False]:
+            if uneven_spacing:
+                uneven_spacing_str = 'uneven spacing'
+            else:
+                uneven_spacing_str = 'even spacing'
             for extrapolator_type in id_to_extrapolator.keys():
                 if extrapolator_type in permitted_interpolation_combinations['cubic']:
                     interpolator, interpolation_data, extrapolation_data = self.setup_cubic(
                         extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False,
-                        uneven_spacing=uneven_space_list[i]
+                        uneven_spacing=uneven_spacing
                     )
                     if extrapolator_type != 'none':
                         self.run_general_extrapolation_tests(
                             interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
-                            interpolator_str='cubic values ' + uneven_space_str_list[i]
+                            interpolator_str='cubic values ' + uneven_spacing_str
                         )
                     self.run_general_interpolation_tests(
                         interpolator, interpolation_data, extrapolator_type=extrapolator_type,
-                        interpolator_str='cubic values ' + uneven_space_str_list[i]
+                        interpolator_str='cubic values ' + uneven_spacing_str
                     )
                 else:
                     with self.assertRaises(ValueError, msg=f'cubic interpolation and {extrapolator_type} extrapolation'
@@ -402,7 +376,7 @@ class TestInterpolators1D(unittest.TestCase):
                                                            f'permitted_interpolation_combinations'):
                         self.setup_cubic(
                             extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False,
-                            uneven_spacing=uneven_space_list[i]
+                            uneven_spacing=uneven_spacing_str
                         )
 
             # Tests for big values
@@ -410,16 +384,16 @@ class TestInterpolators1D(unittest.TestCase):
                 if extrapolator_type in permitted_interpolation_combinations['cubic']:
                     interpolator, interpolation_data, extrapolation_data = self.setup_cubic(
                         extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False,
-                        uneven_spacing=uneven_space_list[i]
+                        uneven_spacing=uneven_spacing_str
                     )
                     if extrapolator_type != 'none':
                         self.run_general_extrapolation_tests(
                             interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
-                            interpolator_str='cubic big values ' + uneven_space_str_list[i]
+                            interpolator_str='cubic big values ' + uneven_spacing_str
                         )
                     self.run_general_interpolation_tests(
                         interpolator, interpolation_data, extrapolator_type=extrapolator_type,
-                        interpolator_str='cubic big values ' + uneven_space_str_list[i]
+                        interpolator_str='cubic big values ' + uneven_spacing_str
                     )
                 else:
                     with self.assertRaises(ValueError, msg=f'cubic interpolation and {extrapolator_type} extrapolation'
@@ -428,7 +402,7 @@ class TestInterpolators1D(unittest.TestCase):
                                                            f'permitted_interpolation_combinations'):
                         self.setup_cubic(
                             extrapolator_type, EXTRAPOLATION_RANGE, big_values=True, small_values=False,
-                            uneven_spacing=uneven_space_list[i]
+                            uneven_spacing=uneven_spacing_str
                         )
 
             # Tests for small values
@@ -436,16 +410,16 @@ class TestInterpolators1D(unittest.TestCase):
                 if extrapolator_type in permitted_interpolation_combinations['cubic']:
                     interpolator, interpolation_data, extrapolation_data = self.setup_cubic(
                         extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True,
-                        uneven_spacing=uneven_space_list[i]
+                        uneven_spacing=uneven_spacing_str
                     )
                     if extrapolator_type != 'none':
                         self.run_general_extrapolation_tests(
                             interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
-                            interpolator_str='cubic small values ' + uneven_space_str_list[i]
+                            interpolator_str='cubic small values ' + uneven_spacing_str
                         )
                     self.run_general_interpolation_tests(
                         interpolator, interpolation_data, extrapolator_type=extrapolator_type,
-                        interpolator_str='cubic small values ' + uneven_space_str_list[i]
+                        interpolator_str='cubic small values ' + uneven_spacing_str
                     )
                 else:
                     with self.assertRaises(ValueError, msg=f'cubic interpolation and {extrapolator_type} extrapolation'
@@ -454,7 +428,7 @@ class TestInterpolators1D(unittest.TestCase):
                                                            f'permitted_interpolation_combinations'):
                         self.setup_cubic(
                             extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=True,
-                            uneven_spacing=uneven_space_list[i]
+                            uneven_spacing=uneven_spacing_str
                         )
 
     def run_general_extrapolation_tests(self, interpolator, extrapolation_data, extrapolator_type='',
