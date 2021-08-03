@@ -36,20 +36,18 @@ import sys
 from raysect.core.math.function.float.function3d.interpolate.tests.data.interpolator3d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues,\
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven
+from raysect.core.math.function.float.function3d.interpolate.tests.test_interpolator_3d import X_LOWER, X_UPPER,\
+    NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
+    Y_EXTRAP_DELTA_MAX, EXTRAPOLATION_RANGE, large_extrapolation_range, Z_LOWER, Z_UPPER, \
+    NB_ZSAMPLES, NB_Z, Z_EXTRAP_DELTA_MAX, N_EXTRAPOLATION, uneven_linspace
 
-X_LOWER = -1.0
-X_UPPER = 1.0
-Y_LOWER = -1.0
-Y_UPPER = 1.0
-Z_LOWER = -1.0
-Z_UPPER = 1.0
-X_EXTRAP_DELTA_MAX = 0.08
-X_EXTRAP_DELTA_MIN = 0.04
-Y_EXTRAP_DELTA_MAX = 0.08
-Y_EXTRAP_DELTA_MIN = 0.04
-Z_EXTRAP_DELTA_MAX = 0.08
-Z_EXTRAP_DELTA_MIN = 0.04
 
+# Force scientific format to get the right number of significant figures
+np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')},
+                    threshold=sys.maxsize)
+
+
+# Overwrite imported values here.
 VISUAL_NOT_TESTS = False
 if VISUAL_NOT_TESTS:
     NB_X = 51
@@ -58,27 +56,13 @@ if VISUAL_NOT_TESTS:
     NB_XSAMPLES = 101
     NB_YSAMPLES = 101
     NB_ZSAMPLES = 101
-else:
-    # These are for tests.
-    NB_X = 10
-    NB_Y = 10
-    NB_Z = 10
-    NB_XSAMPLES = 19
-    NB_YSAMPLES = 19
-    NB_ZSAMPLES = 19
 
-EXTRAPOLATION_RANGE = 2.0
-
-PRECISION = 12
+X_EXTRAP_DELTA_MIN = 0.04
+Y_EXTRAP_DELTA_MIN = 0.04
+Z_EXTRAP_DELTA_MIN = 0.04
 
 BIG_VALUE_FACTOR = 20.
 SMALL_VALUE_FACTOR = -20.
-
-N_EXTRAPOLATION = 3
-
-# Force scientific format to get the right number of significant figures
-np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')},
-                    threshold=sys.maxsize)
 
 
 def docstring_test():
@@ -104,69 +88,6 @@ def docstring_test():
         ValueError: The specified value (z=2.1) is outside of extrapolation range.
     """
     pass
-
-
-def large_extrapolation_range(xsamples_in, ysamples_in, zsamples_in, extrapolation_range, n_extrap):
-    x_lower = np.linspace(xsamples_in[0] - extrapolation_range, xsamples_in[0], n_extrap + 1)[:-1]
-    x_upper = np.linspace(xsamples_in[-1], xsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
-    y_lower = np.linspace(ysamples_in[0] - extrapolation_range, ysamples_in[0], n_extrap + 1)[:-1]
-    y_upper = np.linspace(ysamples_in[-1], ysamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
-    z_lower = np.linspace(zsamples_in[0] - extrapolation_range, zsamples_in[0], n_extrap + 1)[:-1]
-    z_upper = np.linspace(zsamples_in[-1], zsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
-
-    xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
-    ysamples_in_expanded = np.concatenate((y_lower, ysamples_in, y_upper), axis=0)
-    zsamples_in_expanded = np.concatenate((z_lower, zsamples_in, z_upper), axis=0)
-    edge_start_x = np.arange(0, n_extrap, 1, dtype=int)
-    edge_end_x = np.arange(len(xsamples_in_expanded) - 1, len(xsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
-    edge_start_y = np.arange(0, n_extrap, 1, dtype=int)
-    edge_end_y = np.arange(len(ysamples_in_expanded) - 1, len(ysamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
-    edge_start_z = np.arange(0, n_extrap, 1, dtype=int)
-    edge_end_z = np.arange(len(zsamples_in_expanded) - 1, len(zsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
-    edge_indicies_x = np.concatenate((edge_start_x, edge_end_x), axis=0)
-    edge_indicies_y = np.concatenate((edge_start_y, edge_end_y), axis=0)
-    edge_indicies_z = np.concatenate((edge_start_z, edge_end_z), axis=0)
-
-    xsamples_extrap_in_bounds = []
-    ysamples_extrap_in_bounds = []
-    zsamples_extrap_in_bounds = []
-    for i_x in range(len(xsamples_in_expanded)):
-        for j_y in range(len(ysamples_in_expanded)):
-            for k_z in range(len(zsamples_in_expanded)):
-                if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y and k_z not in edge_indicies_z):
-                    xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
-                    ysamples_extrap_in_bounds.append(ysamples_in_expanded[j_y])
-                    zsamples_extrap_in_bounds.append(zsamples_in_expanded[k_z])
-    return np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds), np.array(zsamples_extrap_in_bounds)
-
-
-def extrapolation_out_of_bound_points(
-        x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max,
-        z_extrap_delta_max, extrapolation_range):
-    xsamples_extrap_out_of_bounds_options = np.array(
-        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2.,
-         x_upper + extrapolation_range + x_extrap_delta_max])
-
-    ysamples_extrap_out_of_bounds_options = np.array(
-        [y_lower - extrapolation_range - y_extrap_delta_max, (y_lower + y_upper) / 2.,
-         y_upper + extrapolation_range + y_extrap_delta_max])
-
-    zsamples_extrap_out_of_bounds_options = np.array(
-        [z_lower - extrapolation_range - z_extrap_delta_max, (z_lower + z_upper) / 2.,
-         z_upper + extrapolation_range + z_extrap_delta_max])
-    xsamples_extrap_out_of_bounds = []
-    ysamples_extrap_out_of_bounds = []
-    zsamples_extrap_out_of_bounds = []
-    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
-    for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
-        for j_y in range(len(ysamples_extrap_out_of_bounds_options)):
-            for k_z in range(len(zsamples_extrap_out_of_bounds_options)):
-                if not (i_x not in edge_indicies and j_y not in edge_indicies and k_z not in edge_indicies):
-                    xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
-                    ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
-                    zsamples_extrap_out_of_bounds.append(zsamples_extrap_out_of_bounds_options[k_z])
-    return np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), np.array(
-        zsamples_extrap_out_of_bounds)
 
 
 def get_extrapolation_input_values(
@@ -224,14 +145,6 @@ def pcolourmesh_corners(input_array):
 def function_to_spline(x_input, y_input, z_input, factor_in):
     t = np.pi * np.sqrt((x_input ** 2 + y_input ** 2 + z_input ** 2))
     return factor_in*np.sinc(t)
-
-
-def uneven_linspace(x_lower, x_upper, n_2, offset_fraction):
-    dx = (x_upper - x_lower)/(n_2 - 1)
-    offset_x = offset_fraction * dx
-    x1 = np.linspace(x_lower, x_upper, n_2)
-    x2 = np.linspace(x_lower + offset_x, x_upper + offset_x, n_2)[:-1]
-    return np.sort(np.concatenate((x1, x2), axis=0))
 
 
 if __name__ == '__main__':

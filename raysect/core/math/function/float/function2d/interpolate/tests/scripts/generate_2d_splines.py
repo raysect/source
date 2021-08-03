@@ -34,34 +34,17 @@ from scipy.interpolate import griddata, interp2d, RectBivariateSpline, CloughToc
 from raysect.core.math.function.float.function2d.interpolate.tests.data.interpolator2d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues, \
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven
+from raysect.core.math.function.float.function2d.interpolate.tests.test_interpolator_2d import X_LOWER, X_UPPER,\
+    NB_XSAMPLES, NB_X, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, EXTRAPOLATION_RANGE, \
+    large_extrapolation_range, N_EXTRAPOLATION, uneven_linspace
 import scipy
-
-X_LOWER = -1.0
-X_UPPER = 1.0
-Y_LOWER = -1.0
-Y_UPPER = 1.0
-Y_EXTRAP_DELTA_MAX = 0.08
-Y_EXTRAP_DELTA_MIN = 0.04
-X_EXTRAP_DELTA_MAX = 0.08
-X_EXTRAP_DELTA_MIN = 0.04
-
-NB_X = 10
-NB_Y = 10
-NB_XSAMPLES = 13
-NB_YSAMPLES = 13
-
-N_EXTRAPOLATION = 3
-
-EXTRAPOLATION_RANGE = 2.0
-
-PRECISION = 12
-
-BIG_VALUE_FACTOR = 20.
-SMALL_VALUE_FACTOR = -20.
 
 
 # Force scientific format to get the right number of significant figures
 np.set_printoptions(30000, linewidth=100, formatter={'float': lambda x_str: format(x_str, '.'+str(PRECISION)+'E')})
+
+BIG_VALUE_FACTOR = 20.
+SMALL_VALUE_FACTOR = -20.
 
 
 def docstring_test():
@@ -92,61 +75,6 @@ def docstring_test():
 def function_to_spline(x_input, y_input, factor_in):
     t = np.pi * np.sqrt((x_input ** 2 + y_input ** 2))
     return factor_in*np.sinc(t)
-
-
-def large_extrapolation_range(xsamples_in, ysamples_in, extrapolation_range, n_extrap):
-    x_lower = np.linspace(xsamples_in[0] - extrapolation_range, xsamples_in[0], n_extrap + 1)[:-1]
-    x_upper = np.linspace(xsamples_in[-1], xsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
-    y_lower = np.linspace(ysamples_in[0] - extrapolation_range, ysamples_in[0], n_extrap + 1)[:-1]
-    y_upper = np.linspace(ysamples_in[-1], ysamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
-
-    xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
-    ysamples_in_expanded = np.concatenate((y_lower, ysamples_in, y_upper), axis=0)
-    edge_start_x = np.arange(0, n_extrap, 1, dtype=int)
-    edge_end_x = np.arange(len(xsamples_in_expanded) - 1, len(xsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
-    edge_start_y = np.arange(0, n_extrap, 1, dtype=int)
-    edge_end_y = np.arange(len(ysamples_in_expanded) - 1, len(ysamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
-    edge_indicies_x = np.concatenate((edge_start_x, edge_end_x), axis=0)
-    edge_indicies_y = np.concatenate((edge_start_y, edge_end_y), axis=0)
-
-    xsamples_extrap_in_bounds = []
-    ysamples_extrap_in_bounds = []
-    for i_x in range(len(xsamples_in_expanded)):
-        for j_y in range(len(ysamples_in_expanded)):
-            if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y):
-                xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
-                ysamples_extrap_in_bounds.append(ysamples_in_expanded[j_y])
-    return np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds)
-
-
-def extrapolation_out_of_bound_points(x_lower, x_upper, y_lower, y_upper, x_extrap_delta_max, y_extrap_delta_max,
-                                      extrapolation_range):
-    xsamples_extrap_out_of_bounds_options = np.array(
-        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2.,
-         x_upper + extrapolation_range + x_extrap_delta_max])
-
-    ysamples_extrap_out_of_bounds_options = np.array(
-        [y_lower - extrapolation_range - y_extrap_delta_max, (y_lower + y_upper) / 2.,
-         y_upper + extrapolation_range + y_extrap_delta_max])
-
-    xsamples_extrap_out_of_bounds = []
-    ysamples_extrap_out_of_bounds = []
-    edge_indicies_x = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
-    edge_indicies_y = [0, len(ysamples_extrap_out_of_bounds_options) - 1]
-    for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
-        for j_y in range(len(ysamples_extrap_out_of_bounds_options)):
-            if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y):
-                xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
-                ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
-    return np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds)
-
-
-def uneven_linspace(x_lower, x_upper, n_2, offset_fraction):
-    dx = (x_upper - x_lower)/(n_2 - 1)
-    offset_x = offset_fraction * dx
-    x1 = np.linspace(x_lower, x_upper, NB_X)
-    x2 = np.linspace(x_lower + offset_x, x_upper + offset_x, n_2)[:-1]
-    return np.sort(np.concatenate((x1, x2), axis=0))
 
 
 if __name__ == '__main__':
@@ -205,12 +133,6 @@ if __name__ == '__main__':
     collapsed_xsamples_in_full = np.reshape(xsamples_in_full, -1)
     collapsed_ysamples_in_full = np.reshape(ysamples_in_full, -1)
 
-    # # Extrapolation x and y values
-    # xsamples_out_of_bounds, ysamples_out_of_bounds, xsamples_in_bounds,  ysamples_in_bounds = \
-    #     get_extrapolation_input_values(
-    #         X_LOWER, X_UPPER, Y_LOWER, Y_UPPER, X_EXTRAP_DELTA_MAX, Y_EXTRAP_DELTA_MAX, X_EXTRAP_DELTA_MIN,
-    #         Y_EXTRAP_DELTA_MIN
-    #     )
 
     linear_2d = interp2d(x_in, y_in, f_in, kind='linear')
     f_linear = linear_2d(xsamples, ysamples)
@@ -219,9 +141,6 @@ if __name__ == '__main__':
 
     interpolator2D = Interpolator2DArray(x_in, y_in, f_in, 'linear', 'nearest', extrapolation_range_x=2.0,
                                          extrapolation_range_y=2.0)
-    # f_extrap_nearest_2 = np.zeros((len(xsamples_in_bounds),))
-    # for i in range(len(xsamples_in_bounds)):
-    #     f_extrap_nearest_2[i] = interpolator2D(xsamples_in_bounds[i], ysamples_in_bounds[i])
 
     # interp2d - Runs dfitpack.regrid_smth (a fortran code in scipy), if on a rectangular grid.
     cubic_2d = interp2d(x_in, y_in, f_in, kind='cubic')

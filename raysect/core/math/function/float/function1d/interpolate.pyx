@@ -140,8 +140,7 @@ cdef class Interpolator1DArray(Function1D):
 
         # Permit combinations of interpolator and extrapolator where the order of extrapolator is higher than interpolator.
         if extrapolation_type not in permitted_interpolation_combinations[interpolation_type]:
-            raise ValueError(
-                f'Extrapolation type {extrapolation_type} not compatible with interpolation type {interpolation_type}.')
+            raise ValueError(f'Extrapolation type {extrapolation_type} not compatible with interpolation type {interpolation_type}.')
 
         # Create the interpolator and extrapolator objects.
         self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._f_mv)
@@ -160,17 +159,22 @@ cdef class Interpolator1DArray(Function1D):
         # find_index returns -1 in the lower extrapolation region, the index of the bin lower than px. The last index
         # is returned if greater than or equal to the largest bin edge, greater is handled by the extrapolator, equal is handled by the interpolator.
         if index == -1:
+
             if px < self._x_mv[0] - self._extrapolation_range:
-                raise ValueError(
-                    f'The specified value (x={px}) is outside of extrapolation range.')
+                raise ValueError(f'The specified value (x={px}) is outside of extrapolation range.')
+
             return self._extrapolator.evaluate(px, index)
+
         elif index == self._last_index and px > self.x[self._last_index]:
+
             if px > self._x_mv[self._last_index] + self._extrapolation_range:
-                raise ValueError(
-                    f'The specified value (x={px}) is outside of extrapolation range.')
+                raise ValueError(f'The specified value (x={px}) is outside of extrapolation range.')
+
             return self._extrapolator.evaluate(px, index)
+
         elif px == self.x[self._last_index]:
             return self._interpolator.evaluate(px, index - 1)
+
         else:
             return self._interpolator.evaluate(px, index)
 
@@ -237,10 +241,13 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
         cdef double grad
         if order == 1:
             grad = (self._f[index + 1] - self._f[index])/(self._x[index + 1] - self._x[index])
+
         elif order > 1:
             grad = 0
+
         else:
             raise ValueError('The derivative order must be 1 for the linear interpolator, order = 0 should be an evaluation, greater values return.')
+
         return grad
 
 
@@ -282,6 +289,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         x_bound = self._x[index + 1] - self._x[index]
         if x_bound != 0:
             x_scal = (px - self._x[index]) / x_bound
+
         else:
             raise ZeroDivisionError('Two adjacent spline points have the same x value!')
 
@@ -296,8 +304,10 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
             calc_coefficients_1d(f, dfdx, a)
             self._a_mv[index, :] = a
             self._mask_a[index] = 1
+
         else:
             a = self._a[index, :4]
+
         return evaluate_cubic_1d(a, x_scal)
 
     cdef double _analytic_gradient(self, double px, int index, int order):
@@ -310,6 +320,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         x_bound = self._x[index + 1] - self._x[index]
         if x_bound != 0:
             x_scal = (px - self._x[index]) / x_bound
+
         else:
             raise ZeroDivisionError('Two adjacent spline points have the same x value!')
 
@@ -324,16 +335,21 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         if order == 1:
             grad = 3.* a[0] * x_scal **2 + 2.* a[1] * x_scal + a[2]
             grad = grad/(self._x[index + 1] - self._x[index])
+
         elif order == 2:
             grad = 6.* a[0] * x_scal + 2.* a[1]
             grad = grad/(self._x[index + 1] - self._x[index])**2
+
         elif order == 3:
             grad = 6.* a[0]
             grad = grad/(self._x[index + 1] - self._x[index])**3
+
         elif order > 3:
             grad = 0
+
         else:
             raise ValueError('order must be an integer greater than or equal to 1.')
+
         return grad
 
 
@@ -392,8 +408,10 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
     cdef double evaluate(self, double px, int index) except? -1e999:
         if px < self._x[0]:
             return self._f[0]
+
         elif px >= self._x[self._last_index]:
             return self._f[self._last_index]
+
         else:
             raise ValueError(f'Cannot evaluate value of function at point {px}. Bad data?')
 
@@ -422,8 +440,10 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
         # The index returned from find_index is -1 at the array start or the length of the array at the end of array.
         if index == -1:
             index = 0
+
         elif index == self._last_index:
             index = self._last_index - 1
+
         else:
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
         # Use a linear interpolator function to extrapolate instead
@@ -433,17 +453,22 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
         cdef double grad
         if index == -1:
             index = 0
+
         elif index == self._last_index:
             index = self._last_index - 1
+
         else:
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
 
         if order == 1:
             grad = (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
+
         elif order > 1:
             grad = 0
+
         else:
             raise ValueError('order must be an integer greater than or equal to 1.')
+
         return grad
 
 
@@ -475,9 +500,7 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
         self._calculate_quadratic_coefficients_start(f[0], dfdx_start[0], dfdx_start[1], self._a_first)
         self._calculate_quadratic_coefficients_end(f[self._last_index],  dfdx_end[0], dfdx_end[1], self._a_last)
         if x.shape[0] <= 1:
-            raise ValueError(
-                f'x array {np.shape(x)} must contain at least 2 spline points to quadratically extrapolate.'
-            )
+            raise ValueError(f'x array {np.shape(x)} must contain at least 2 spline points to quadratically extrapolate.')
 
     cdef void _calculate_quadratic_coefficients_start(self, double f1, double df1_dx, double df2_dx, double[3] a):
         """
@@ -505,9 +528,11 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
         if index == -1:
             x_scal =  (px - self._x[0])/(self._x[1] - self._x[0])
             f_return = self._a_first[0]*x_scal**2 + self._a_first[1]*x_scal + self._a_first[2]
+
         elif index == self._last_index:
             x_scal = (px - self._x[self._last_index - 1])/(self._x[self._last_index] - self._x[self._last_index - 1])
             f_return = self._a_last[0]*x_scal**2 + self._a_last[1]*x_scal + self._a_last[2]
+
         else:
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
 
@@ -522,31 +547,42 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
         if index == -1:
             index += 1
             x_scal =  (px - self._x[0])/(self._x[1] - self._x[0])
+
             if order == 1:
                 grad = 2.*self._a_first[0]*x_scal + self._a_first[1]
                 grad = grad/(self._x[1] - self._x[0])
+
             elif order == 2:
                 grad = 2.*self._a_first[0]
                 grad = grad/(self._x[1] - self._x[0])**2
+
             elif order > 2:
                 grad = 0
+
             else:
                 raise ValueError('order must be an integer greater than or equal to 1.')
+
         elif index == self._last_index:
             index -= 1
             x_scal = (px - self._x[self._last_index - 1])/(self._x[index + 1] - self._x[self._last_index - 1])
+
             if order == 1:
                 grad = 2.*self._a_last[0]*x_scal + self._a_last[1]
                 grad = grad/(self._x[self._last_index] - self._x[self._last_index - 1])
+
             elif order == 2:
                 grad = 2.*self._a_last[0]
                 grad = grad/(self._x[self._last_index] - self._x[self._last_index - 1])**2
+
             elif order > 2:
                 grad = 0
+
             else:
                 raise ValueError('order must be an integer greater than or equal to 1.')
+
         else:
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
+
         return grad
 
 
@@ -582,14 +618,19 @@ cdef class _ArrayDerivative1D:
 
         if index == 0:
             dfdn = self._evaluate_edge_x(index, derivative_order)
+
         elif index == self._last_index:
             dfdn = self._evaluate_edge_x(index - 1, derivative_order)
+
         else:
             dfdn = self._evaluate_x(index, derivative_order)
+
         if rescale_norm:
+
             if not (index == 0 or index == self._last_index):
                 for i in range(derivative_order):
                     dfdn = rescale_lower_normalisation(dfdn, self._x[index - 1], self._x[index], self._x[index + 1])
+
         return dfdn
 
     cdef double _evaluate_edge_x(self, int index, int derivative_order):
@@ -609,8 +650,10 @@ cdef class _ArrayDerivative1D:
         dfdn = 0
         if derivative_order == 1:
             dfdn = self._f[index + 1] - self._f[index]
+
         else:
             raise ValueError('No higher order derivatives implemented.')
+
         return dfdn
 
     @cython.initializedcheck(False)
@@ -646,6 +689,7 @@ cdef class _ArrayDerivative1D:
         dfdn = 0
         if derivative_order == 1:
             dfdn = (self._f[index + 1]*x1_n2 - self._f[index - 1] - self._f[index]*(x1_n2 - 1.))/(x1_n + x1_n2)
+
         else:
             raise ValueError('No higher order derivatives implemented.')
 

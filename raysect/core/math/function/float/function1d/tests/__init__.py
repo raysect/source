@@ -3,3 +3,4 @@ from .test_autowrap import *
 from .test_constant import *
 from .test_arg import *
 from .test_cmath import *
+from .test_interpolator import *

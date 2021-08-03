@@ -36,13 +36,104 @@ import unittest
 import numpy as np
 from raysect.core.math.function.float.function3d.interpolate.interpolator3darray import Interpolator3DArray, \
     id_to_extrapolator, id_to_interpolator
-from raysect.core.math.function.float.function3d.interpolate.tests.scripts.generate_3d_splines import X_LOWER, X_UPPER,\
-    NB_XSAMPLES, NB_X, X_EXTRAP_DELTA_MAX, PRECISION, Y_LOWER, Y_UPPER, NB_YSAMPLES, NB_Y, \
-    Y_EXTRAP_DELTA_MAX, EXTRAPOLATION_RANGE, large_extrapolation_range, Z_LOWER, Z_UPPER, \
-    NB_ZSAMPLES, NB_Z, Z_EXTRAP_DELTA_MAX, N_EXTRAPOLATION, extrapolation_out_of_bound_points, uneven_linspace
 from raysect.core.math.function.float.function3d.interpolate.tests.data.interpolator3d_test_data import \
     TestInterpolatorLoadBigValues, TestInterpolatorLoadNormalValues, TestInterpolatorLoadSmallValues, \
     TestInterpolatorLoadBigValuesUneven, TestInterpolatorLoadNormalValuesUneven, TestInterpolatorLoadSmallValuesUneven
+
+
+X_LOWER = -1.0
+X_UPPER = 1.0
+Y_LOWER = -1.0
+Y_UPPER = 1.0
+Z_LOWER = -1.0
+Z_UPPER = 1.0
+X_EXTRAP_DELTA_MAX = 0.08
+Y_EXTRAP_DELTA_MAX = 0.08
+Z_EXTRAP_DELTA_MAX = 0.08
+
+NB_X = 10
+NB_Y = 10
+NB_Z = 10
+NB_XSAMPLES = 19
+NB_YSAMPLES = 19
+NB_ZSAMPLES = 19
+
+EXTRAPOLATION_RANGE = 2.0
+
+PRECISION = 12
+
+N_EXTRAPOLATION = 3
+
+
+def large_extrapolation_range(xsamples_in, ysamples_in, zsamples_in, extrapolation_range, n_extrap):
+    x_lower = np.linspace(xsamples_in[0] - extrapolation_range, xsamples_in[0], n_extrap + 1)[:-1]
+    x_upper = np.linspace(xsamples_in[-1], xsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+    y_lower = np.linspace(ysamples_in[0] - extrapolation_range, ysamples_in[0], n_extrap + 1)[:-1]
+    y_upper = np.linspace(ysamples_in[-1], ysamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+    z_lower = np.linspace(zsamples_in[0] - extrapolation_range, zsamples_in[0], n_extrap + 1)[:-1]
+    z_upper = np.linspace(zsamples_in[-1], zsamples_in[-1] + extrapolation_range, n_extrap + 1)[1:]
+
+    xsamples_in_expanded = np.concatenate((x_lower, xsamples_in, x_upper), axis=0)
+    ysamples_in_expanded = np.concatenate((y_lower, ysamples_in, y_upper), axis=0)
+    zsamples_in_expanded = np.concatenate((z_lower, zsamples_in, z_upper), axis=0)
+    edge_start_x = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_x = np.arange(len(xsamples_in_expanded) - 1, len(xsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_start_y = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_y = np.arange(len(ysamples_in_expanded) - 1, len(ysamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_start_z = np.arange(0, n_extrap, 1, dtype=int)
+    edge_end_z = np.arange(len(zsamples_in_expanded) - 1, len(zsamples_in_expanded) - 1 - n_extrap, -1, dtype=int)
+    edge_indicies_x = np.concatenate((edge_start_x, edge_end_x), axis=0)
+    edge_indicies_y = np.concatenate((edge_start_y, edge_end_y), axis=0)
+    edge_indicies_z = np.concatenate((edge_start_z, edge_end_z), axis=0)
+
+    xsamples_extrap_in_bounds = []
+    ysamples_extrap_in_bounds = []
+    zsamples_extrap_in_bounds = []
+    for i_x in range(len(xsamples_in_expanded)):
+        for j_y in range(len(ysamples_in_expanded)):
+            for k_z in range(len(zsamples_in_expanded)):
+                if not (i_x not in edge_indicies_x and j_y not in edge_indicies_y and k_z not in edge_indicies_z):
+                    xsamples_extrap_in_bounds.append(xsamples_in_expanded[i_x])
+                    ysamples_extrap_in_bounds.append(ysamples_in_expanded[j_y])
+                    zsamples_extrap_in_bounds.append(zsamples_in_expanded[k_z])
+    return np.array(xsamples_extrap_in_bounds), np.array(ysamples_extrap_in_bounds), np.array(zsamples_extrap_in_bounds)
+
+
+def extrapolation_out_of_bound_points(
+        x_lower, x_upper, y_lower, y_upper, z_lower, z_upper, x_extrap_delta_max, y_extrap_delta_max,
+        z_extrap_delta_max, extrapolation_range):
+    xsamples_extrap_out_of_bounds_options = np.array(
+        [x_lower - extrapolation_range - x_extrap_delta_max, (x_lower + x_upper) / 2.,
+         x_upper + extrapolation_range + x_extrap_delta_max])
+
+    ysamples_extrap_out_of_bounds_options = np.array(
+        [y_lower - extrapolation_range - y_extrap_delta_max, (y_lower + y_upper) / 2.,
+         y_upper + extrapolation_range + y_extrap_delta_max])
+
+    zsamples_extrap_out_of_bounds_options = np.array(
+        [z_lower - extrapolation_range - z_extrap_delta_max, (z_lower + z_upper) / 2.,
+         z_upper + extrapolation_range + z_extrap_delta_max])
+    xsamples_extrap_out_of_bounds = []
+    ysamples_extrap_out_of_bounds = []
+    zsamples_extrap_out_of_bounds = []
+    edge_indicies = [0, len(xsamples_extrap_out_of_bounds_options) - 1]
+    for i_x in range(len(xsamples_extrap_out_of_bounds_options)):
+        for j_y in range(len(ysamples_extrap_out_of_bounds_options)):
+            for k_z in range(len(zsamples_extrap_out_of_bounds_options)):
+                if not (i_x not in edge_indicies and j_y not in edge_indicies and k_z not in edge_indicies):
+                    xsamples_extrap_out_of_bounds.append(xsamples_extrap_out_of_bounds_options[i_x])
+                    ysamples_extrap_out_of_bounds.append(ysamples_extrap_out_of_bounds_options[j_y])
+                    zsamples_extrap_out_of_bounds.append(zsamples_extrap_out_of_bounds_options[k_z])
+    return np.array(xsamples_extrap_out_of_bounds), np.array(ysamples_extrap_out_of_bounds), np.array(
+        zsamples_extrap_out_of_bounds)
+
+
+def uneven_linspace(x_lower, x_upper, n_2, offset_fraction):
+    dx = (x_upper - x_lower)/(n_2 - 1)
+    offset_x = offset_fraction * dx
+    x1 = np.linspace(x_lower, x_upper, n_2)
+    x2 = np.linspace(x_lower + offset_x, x_upper + offset_x, n_2)[:-1]
+    return np.sort(np.concatenate((x1, x2), axis=0))
 
 
 class TestInterpolators3D(unittest.TestCase):
@@ -107,17 +198,24 @@ class TestInterpolators3D(unittest.TestCase):
         """
 
         if uneven_spacing:
+
             if big_values:
                 self.value_storage_obj = self.reference_loaded_big_values_uneven
+
             elif small_values:
                 self.value_storage_obj = self.reference_loaded_small_values_uneven
+
             else:
                 self.value_storage_obj = self.reference_loaded_values_uneven
+
         else:
+
             if big_values:
                 self.value_storage_obj = self.reference_loaded_big_values
+
             elif small_values:
                 self.value_storage_obj = self.reference_loaded_small_values
+
             else:
                 self.value_storage_obj = self.reference_loaded_values
 
@@ -134,11 +232,13 @@ class TestInterpolators3D(unittest.TestCase):
                 self.x_uneven, self.y_uneven, self.z_uneven, data, 'linear', extrapolator_type, extrapolation_range,
                 extrapolation_range, extrapolation_range
             )
+
         else:
             interpolator = Interpolator3DArray(
                 self.x, self.y, self.z, data, 'linear', extrapolator_type, extrapolation_range, extrapolation_range,
                 extrapolation_range
             )
+
         return interpolator, interpolation_data, extrapolation_data
 
     def setup_cubic(self, extrapolator_type: str, extrapolation_range: float, big_values: bool, small_values: bool,
@@ -159,17 +259,24 @@ class TestInterpolators3D(unittest.TestCase):
         # Set precalculated expected interpolation results.
         # This is the result of sampling data on self.xsamples, self.ysamples, self.zsamples.
         if uneven_spacing:
+
             if big_values:
                 self.value_storage_obj = self.reference_loaded_big_values_uneven
+
             elif small_values:
                 self.value_storage_obj = self.reference_loaded_small_values_uneven
+
             else:
                 self.value_storage_obj = self.reference_loaded_values_uneven
+
         else:
+
             if big_values:
                 self.value_storage_obj = self.reference_loaded_big_values
+
             elif small_values:
                 self.value_storage_obj = self.reference_loaded_small_values
+
             else:
                 self.value_storage_obj = self.reference_loaded_values
 
@@ -184,11 +291,13 @@ class TestInterpolators3D(unittest.TestCase):
                 self.x_uneven, self.y_uneven, self.z_uneven, data, 'cubic', extrapolator_type, extrapolation_range,
                 extrapolation_range, extrapolation_range
             )
+
         else:
             interpolator = Interpolator3DArray(
                 self.x, self.y, self.z, data, 'cubic', extrapolator_type, extrapolation_range, extrapolation_range,
                 extrapolation_range
             )
+
         return interpolator, interpolation_data, extrapolation_data
 
     def setup_extrpolation_type(self, extrapolator_type: str):
@@ -197,16 +306,19 @@ class TestInterpolators3D(unittest.TestCase):
         """
         if extrapolator_type == 'linear':
             extrapolation_data = np.copy(self.value_storage_obj.precalc_extrapolation_linear)
+
         elif extrapolator_type == 'nearest':
             extrapolation_data = np.copy(self.value_storage_obj.precalc_extrapolation_nearest)
+
         elif extrapolator_type == 'none':
             extrapolation_data = None
+
         elif extrapolator_type == 'quadratic':
             extrapolation_data = np.copy(self.value_storage_obj.precalc_extrapolation_quadratic)
+
         else:
-            raise ValueError(
-                f'Extrapolation type {extrapolator_type} not found or no test. options are {id_to_extrapolator.keys()}'
-            )
+            raise ValueError(f'Extrapolation type {extrapolator_type} not found or no test. options are {id_to_extrapolator.keys()}')
+
         return extrapolation_data
 
     def test_extrapolation_none(self):
@@ -237,8 +349,10 @@ class TestInterpolators3D(unittest.TestCase):
         for uneven_spacing in [True, False]:
             if uneven_spacing:
                 uneven_spacing_str = 'uneven spacing'
+
             else:
                 uneven_spacing_str = 'even spacing'
+
             for extrapolator_type in id_to_extrapolator.keys():
                 interpolator, interpolation_data, extrapolation_data = self.setup_linear(
                     extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False,
@@ -249,6 +363,7 @@ class TestInterpolators3D(unittest.TestCase):
                         interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
                         interpolator_str='linear values' + uneven_spacing_str
                     )
+
                 self.run_general_interpolation_tests(
                     interpolator, interpolation_data, extrapolator_type=extrapolator_type,
                     interpolator_str='linear values' + uneven_spacing_str
@@ -265,6 +380,7 @@ class TestInterpolators3D(unittest.TestCase):
                         interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
                         interpolator_str='linear big values' + uneven_spacing_str
                     )
+
                 self.run_general_interpolation_tests(
                     interpolator, interpolation_data, extrapolator_type=extrapolator_type,
                     interpolator_str='linear big values' + uneven_spacing_str
@@ -281,6 +397,7 @@ class TestInterpolators3D(unittest.TestCase):
                         interpolator, extrapolation_data, extrapolator_type=extrapolator_type,
                         interpolator_str='linear small values' + uneven_spacing_str
                     )
+
                 self.run_general_interpolation_tests(
                     interpolator, interpolation_data, extrapolator_type=extrapolator_type,
                     interpolator_str='linear small values' + uneven_spacing_str
@@ -305,8 +422,10 @@ class TestInterpolators3D(unittest.TestCase):
         for uneven_spacing in [True, False]:
             if uneven_spacing:
                 uneven_spacing_str = 'uneven spacing'
+
             else:
                 uneven_spacing_str = 'even spacing'
+
             for extrapolator_type in id_to_extrapolator.keys():
                 interpolator, interpolation_data, extrapolation_data = self.setup_cubic(
                     extrapolator_type, EXTRAPOLATION_RANGE, big_values=False, small_values=False,
@@ -314,6 +433,7 @@ class TestInterpolators3D(unittest.TestCase):
                 )
                 if extrapolator_type == 'linear':
                     significant_tolerance_extrapolation = None
+
                 else:
                     significant_tolerance_extrapolation = significant_tolerance
 
@@ -323,6 +443,7 @@ class TestInterpolators3D(unittest.TestCase):
                         significant_tolerance=significant_tolerance_extrapolation,
                         interpolator_str='cubic values' + uneven_spacing_str
                     )
+
                 self.run_general_interpolation_tests(
                     interpolator, interpolation_data, significant_tolerance=significant_tolerance,
                     extrapolator_type=extrapolator_type, interpolator_str='cubic values' + uneven_spacing_str
@@ -336,6 +457,7 @@ class TestInterpolators3D(unittest.TestCase):
                 )
                 if extrapolator_type == 'linear':
                     significant_tolerance_extrapolation = None
+
                 else:
                     significant_tolerance_extrapolation = significant_tolerance
 
@@ -345,6 +467,7 @@ class TestInterpolators3D(unittest.TestCase):
                         significant_tolerance=significant_tolerance_extrapolation,
                         interpolator_str='cubic big values' + uneven_spacing_str
                     )
+
                 self.run_general_interpolation_tests(
                     interpolator, interpolation_data, significant_tolerance=significant_tolerance,
                     extrapolator_type=extrapolator_type, interpolator_str='cubic big values' + uneven_spacing_str
@@ -358,6 +481,7 @@ class TestInterpolators3D(unittest.TestCase):
                 )
                 if extrapolator_type == 'linear':
                     significant_tolerance_extrapolation = None
+
                 else:
                     significant_tolerance_extrapolation = significant_tolerance
 
@@ -401,8 +525,10 @@ class TestInterpolators3D(unittest.TestCase):
         for i in range(len(self.xsamples_in_bounds)):
             if significant_tolerance is None:
                 delta_max = np.abs(extrapolation_data[i]/np.power(10., PRECISION - 1))
+
             else:
                 delta_max = np.abs(extrapolation_data[i] * 10**(-significant_tolerance))
+
             self.assertAlmostEqual(
                 interpolator(
                     self.xsamples_in_bounds[i], self.ysamples_in_bounds[i], self.zsamples_in_bounds[i]),
@@ -427,8 +553,10 @@ class TestInterpolators3D(unittest.TestCase):
                 for k in range(len(self.zsamples)):
                     if significant_tolerance is None:
                         delta_max = np.abs(interpolation_data[i, j, k] / np.power(10., PRECISION - 1))
+
                     else:
                         delta_max = np.abs(interpolation_data[i, j, k] * 10**(-significant_tolerance))
+
                     self.assertAlmostEqual(
                         interpolator(self.xsamples[i], self.ysamples[j], self.zsamples[k]),
                         interpolation_data[i, j, k], delta=delta_max,
@@ -563,31 +691,41 @@ class TestInterpolators3D(unittest.TestCase):
         for i in range(len(x)):
             if incorrect_x[i]:
                 x_str = 'x'
+
             else:
                 x_str = ''
+
             for j in range(len(y)):
                 if incorrect_y[j]:
                     y_str = 'y'
+
                 else:
                     y_str = ''
+
                 for k in range(len(z)):
                     if incorrect_z[k]:
                         z_str = 'z'
+
                     else:
                         z_str = ''
+
                     for i2 in range(len(f)):
                         if incorrect_fx[i2]:
                             fx_str = 'f in x'
+
                         else:
                             fx_str = ''
                         if incorrect_fy[i2]:
                             fy_str = 'f in y'
+
                         else:
                             fy_str = ''
                         if incorrect_fz[i2]:
                             fz_str = 'f in z'
+
                         else:
                             fz_str = ''
+
                         if not (i == 0 and j == 0 and k == 0 and i2 == 0):
                             problem_str = f'there is only 1 spline knot in: ({x_str}, {y_str}, {z_str}, {fx_str}, ' \
                                           f'{fy_str}, {fz_str})'
@@ -627,55 +765,70 @@ class TestInterpolators3D(unittest.TestCase):
         for i in range(len(x)):
             if incorrect_x_long[i]:
                 x_str_long = 'x'
+
             else:
                 x_str_long = ''
             if incorrect_x_short[i]:
                 x_str_short = 'x'
+
             else:
                 x_str_short = ''
             for j in range(len(y)):
                 if incorrect_y_long[j]:
                     y_str_long = 'y'
+
                 else:
                     y_str_long = ''
                 if incorrect_y_short[j]:
                     y_str_short = 'y'
+
                 else:
                     y_str_short = ''
+
                 for k in range(len(z)):
                     if incorrect_z_long[k]:
                         z_str_long = 'z'
+
                     else:
                         z_str_long = ''
+
                     if incorrect_z_short[k]:
                         z_str_short = 'z'
+
                     else:
                         z_str_short = ''
                     for i2 in range(len(f)):
                         if incorrect_fx_long[i2]:
                             fx_str_long = 'f in x'
+
                         else:
                             fx_str_long = ''
                         if incorrect_fy_long[i2]:
                             fy_str_long = 'f in y'
+
                         else:
                             fy_str_long = ''
                         if incorrect_fz_long[i2]:
                             fz_str_long = 'f in z'
+
                         else:
                             fz_str_long = ''
                         if incorrect_fx_short[i2]:
                             fx_str_short = 'f in x'
+
                         else:
                             fx_str_short = ''
                         if incorrect_fy_short[i2]:
                             fy_str_short = 'f in y'
+
                         else:
                             fy_str_short = ''
                         if incorrect_fz_short[i2]:
                             fz_str_short = 'f in z'
+
                         else:
                             fz_str_short = ''
+
                         if not (i == 0 and j == 0 and k == 0 and i2 == 0):
                             problem_str = f'there is spline knot array length is too long in : ({x_str_long}, ' \
                                           f'{y_str_long}, {z_str_long}, {fx_str_long}, {fy_str_long}, {fz_str_long}),' \
