@@ -36,6 +36,7 @@ Interpolators are accessed through interface class Interpolator1DArray.
 """
 
 import numpy as np
+cimport numpy as cnp
 cimport cython
 from raysect.core.math.cython.interpolation.linear cimport linear1d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_1d, evaluate_cubic_1d
@@ -184,7 +185,7 @@ cdef class Interpolator1DArray(Function1D):
         Returns min/max interval of 'x' array.
         Order: min(x), max(x).
         """
-        return np.min(self._x_mv), np.max(self._x_mv)
+        return self._x_mv[0], self._x_mv[-1]
 
 
 cdef class _Interpolator1D:
@@ -287,11 +288,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         cdef double[4] a
 
         x_bound = self._x[index + 1] - self._x[index]
-        if x_bound != 0:
-            x_scal = (px - self._x[index]) / x_bound
-
-        else:
-            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+        x_scal = (px - self._x[index]) / x_bound
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
         if not self._mask_a[index]:
@@ -318,11 +315,7 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         cdef double[4] a
 
         x_bound = self._x[index + 1] - self._x[index]
-        if x_bound != 0:
-            x_scal = (px - self._x[index]) / x_bound
-
-        else:
-            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+        x_scal = (px - self._x[index]) / x_bound
 
         f[0] = self._f[index]
         f[1] = self._f[index + 1]
@@ -386,10 +379,10 @@ cdef class _Extrapolator1DNone(_Extrapolator1D):
            super().__init__(x, f)
 
     cdef double evaluate(self, double px, int index)  except? -1e999:
-        raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
+        raise ValueError(f'Extrapolation not available. Interpolate within function range {self._x[0]}-{self._x[-1]}.')
 
     cdef double _analytic_gradient(self, double px, int index, int order):
-        raise ValueError(f'Extrapolation not available. Interpolate within function range {np.min(self._x)}-{np.max(self._x)}.')
+        raise ValueError(f'Extrapolation not available. Interpolate within function range {self._x[0]}-{self._x[-1]}.')
 
 
 cdef class _Extrapolator1DNearest(_Extrapolator1D):

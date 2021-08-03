@@ -33,7 +33,7 @@ from raysect.core.math.function.float.function3d cimport Function3D
 from numpy cimport ndarray
 
 
-cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper)
+cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper)
 
 
 cdef int find_index_change(int index, int last_index)

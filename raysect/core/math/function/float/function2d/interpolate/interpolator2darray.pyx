@@ -43,7 +43,7 @@ FACTORIAL_ARRAY[2] = 2.
 FACTORIAL_ARRAY[3] = 6.
 
 
-cdef double rescale_lower_normalisation(dfdn, x_lower, x, x_upper):
+cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper):
     """
     Derivatives that are normalised to the unit square (x_upper - x) = 1 are un-normalised, then re-normalised to
     (x - x_lower)
@@ -431,19 +431,10 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         cdef double[4][4] a
 
         x_bound = self._x[index_x + 1] - self._x[index_x]
-        if x_bound != 0:
-            x_scal = (px - self._x[index_x]) / x_bound
-
-        else:
-            #TODO remove these checks as the data must already be monotonic and increasing. Add warning to doc string
-            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+        x_scal = (px - self._x[index_x]) / x_bound
 
         y_bound = self._y[index_y + 1] - self._y[index_y]
-        if y_bound != 0:
-            y_scal = (py - self._y[index_y]) / y_bound
-
-        else:
-            raise ZeroDivisionError('Two adjacent spline points have the same y value!')
+        y_scal = (py - self._y[index_y]) / y_bound
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist.
         self._cache_coefficients(index_x, index_y, a)
@@ -467,22 +458,22 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
             f[1][0] = self._f[index_x + 1, index_y]
             f[0][1] = self._f[index_x, index_y + 1]
             f[1][1] = self._f[index_x + 1, index_y + 1]
+
             array_derivative = _ArrayDerivative2D(self._x, self._y, self._f)
-            #TODO call or .evaluate()?
-            dfdx[0][0] = array_derivative(index_x, index_y, 1, 0, False, False)
-            dfdx[0][1] = array_derivative(index_x, index_y + 1, 1, 0, False, True)
-            dfdx[1][0] = array_derivative(index_x + 1, index_y, 1, 0, True, False)
-            dfdx[1][1] = array_derivative(index_x + 1, index_y + 1, 1, 0, True, True)
+            dfdx[0][0] = array_derivative.evaluate(index_x, index_y, 1, 0, False, False)
+            dfdx[0][1] = array_derivative.evaluate(index_x, index_y + 1, 1, 0, False, True)
+            dfdx[1][0] = array_derivative.evaluate(index_x + 1, index_y, 1, 0, True, False)
+            dfdx[1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, 1, 0, True, True)
 
-            dfdy[0][0] = array_derivative(index_x, index_y, 0, 1, False, False)
-            dfdy[0][1] = array_derivative(index_x, index_y + 1, 0, 1, False, True)
-            dfdy[1][0] = array_derivative(index_x + 1, index_y, 0, 1, True, False)
-            dfdy[1][1] = array_derivative(index_x + 1, index_y + 1, 0, 1, True, True)
+            dfdy[0][0] = array_derivative.evaluate(index_x, index_y, 0, 1, False, False)
+            dfdy[0][1] = array_derivative.evaluate(index_x, index_y + 1, 0, 1, False, True)
+            dfdy[1][0] = array_derivative.evaluate(index_x + 1, index_y, 0, 1, True, False)
+            dfdy[1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, 0, 1, True, True)
 
-            d2fdxdy[0][0] = array_derivative(index_x, index_y, 1, 1, False, False)
-            d2fdxdy[0][1] = array_derivative(index_x, index_y + 1, 1, 1, False, True)
-            d2fdxdy[1][0] = array_derivative(index_x + 1, index_y, 1, 1, True, False)
-            d2fdxdy[1][1] = array_derivative(index_x + 1, index_y + 1, 1, 1, True, True)
+            d2fdxdy[0][0] = array_derivative.evaluate(index_x, index_y, 1, 1, False, False)
+            d2fdxdy[0][1] = array_derivative.evaluate(index_x, index_y + 1, 1, 1, False, True)
+            d2fdxdy[1][0] = array_derivative.evaluate(index_x + 1, index_y, 1, 1, True, False)
+            d2fdxdy[1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, 1, 1, True, True)
 
             calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
             for i in range(4):
@@ -520,7 +511,8 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         cdef double x_bound, y_bound
         cdef double[4][4] a
         cdef double[4] x_powers, y_powers
-        cdef double df_dn
+        cdef double df_dn = 0.
+        cdef int i, j
 
         if order_x > 3:
             raise ValueError('Can\'t get a gradient of order 4 or more in cubic.')
@@ -550,7 +542,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         y_powers[1] = y_scal
         y_powers[2] = y_scal * y_scal
         y_powers[3] = y_scal * y_scal * y_scal
-        df_dn = 0
+
         for i in range(order_x, 4):
             for j in range(order_y, 4):
                 df_dn += (a[i][j] * (FACTORIAL_ARRAY[i]/FACTORIAL_ARRAY[i-order_x]) * (FACTORIAL_ARRAY[j]/FACTORIAL_ARRAY[j-order_y]) *
@@ -883,7 +875,7 @@ cdef class _ArrayDerivative2D:
         return dfdn
 
     cdef double _eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
-        cdef double dfdn
+        cdef double dfdn = 0.
         cdef double[::1] x_range, y_range
         cdef double[:, ::1] f_range
         cdef int x_centre = 0, y_centre = 1
@@ -892,7 +884,6 @@ cdef class _ArrayDerivative2D:
         y_range = self._y[index_y - 1:index_y + 2]
         f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2]
 
-        dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self._derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add])
 
@@ -908,7 +899,7 @@ cdef class _ArrayDerivative2D:
         return dfdn
 
     cdef double _eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
-        cdef double dfdn
+        cdef double dfdn = 0.
         cdef double[::1] x_range, y_range
         cdef double[:, ::1] f_range
         cdef int x_centre = 1, y_centre = 0
@@ -917,7 +908,6 @@ cdef class _ArrayDerivative2D:
         y_range = self._y[index_y:index_y + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2]
 
-        dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self._derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add])
 
@@ -933,7 +923,7 @@ cdef class _ArrayDerivative2D:
         return dfdn
 
     cdef double _eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999:
-        cdef double dfdn
+        cdef double dfdn = 0.
         cdef double[::1] x_range, y_range
         cdef double[:, ::1] f_range
         cdef int x_centre = 0, y_centre = 0
@@ -941,7 +931,6 @@ cdef class _ArrayDerivative2D:
         x_range = self._x[index_x:index_x + 2]
         y_range = self._y[index_y:index_y + 2]
         f_range = self._f[index_x:index_x + 2, index_y:index_y + 2]
-        dfdn = 0
 
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self._derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add])
@@ -958,7 +947,7 @@ cdef class _ArrayDerivative2D:
         return dfdn
 
     cdef double _eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
-        cdef double dfdn
+        cdef double dfdn = 0.
         cdef double[::1] x_range, y_range
         cdef double[:, ::1] f_range
         cdef int x_centre = 1, y_centre = 1
@@ -967,7 +956,6 @@ cdef class _ArrayDerivative2D:
         y_range = self._y[index_y - 1:index_y + 2]
         f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2]
 
-        dfdn = 0
         if derivative_order_x == 1 and derivative_order_y == 0:
             dfdn = self._derivitive_dfdx(x_range, f_range[:, y_centre])
 
