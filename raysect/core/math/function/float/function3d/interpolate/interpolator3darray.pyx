@@ -1290,13 +1290,13 @@ cdef class _ArrayDerivative3D:
         f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2, index_z - 1:index_z + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+            dfdn = self._derivitive_dfdx(lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self._derivitive_d2fdxdy_edge_x(y_range, f_range[:, :, z_centre + z_centre_add])
@@ -1306,6 +1306,7 @@ cdef class _ArrayDerivative3D:
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self._derivitive_d2fdxdy(y_range, z_range, f_range[x_centre + x_centre_add, :, :])
+            dfdn = self._derivitive_d2fdxdy_new(lower_index_1=index_y - 1, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_x + x_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self._derivitive_d3fdxdydz_edge_x(y_range, z_range, f_range)
@@ -1329,13 +1330,13 @@ cdef class _ArrayDerivative3D:
         f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2, index_z - 1:index_z + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+            dfdn = self._derivitive_dfdx(lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self._derivitive_d2fdxdy_edge_y(x_range, f_range[:, :, z_centre + z_centre_add])
@@ -1368,13 +1369,13 @@ cdef class _ArrayDerivative3D:
         f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2, index_z:index_z + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self._derivitive_d2fdxdy(x_range, y_range, f_range[:, :, z_centre + z_centre_add])
@@ -1409,13 +1410,13 @@ cdef class _ArrayDerivative3D:
         f_range = self._f[index_x:index_x + 2, index_y:index_y + 2, index_z - 1:index_z + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx(z_range, f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+            dfdn = self._derivitive_dfdx(lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self._derivitive_d2fdxdy_edge_xy(x_range, y_range, f_range[:, :, z_centre + z_centre_add])
@@ -1448,13 +1449,13 @@ cdef class _ArrayDerivative3D:
         f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2, index_z:index_z + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self._derivitive_d2fdxdy_edge_x(y_range, f_range[:, :, z_centre + z_centre_add])
@@ -1487,13 +1488,13 @@ cdef class _ArrayDerivative3D:
         f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2, index_z:index_z + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self._derivitive_d2fdxdy_edge_y(x_range, f_range[:, :, z_centre + z_centre_add])
@@ -1526,13 +1527,13 @@ cdef class _ArrayDerivative3D:
         f_range = self._f[index_x:index_x + 2, index_y:index_y + 2, index_z:index_z + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :, z_centre + z_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, y_centre + y_centre_add, :])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self._derivitive_d2fdxdy_edge_xy(x_range, y_range, f_range[:, :, z_centre + z_centre_add])
@@ -1565,13 +1566,13 @@ cdef class _ArrayDerivative3D:
         f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2, index_z - 1:index_z + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(x_range, f_range[:, y_centre, z_centre])
+            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y, slice_index_2=index_z)
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(y_range, f_range[x_centre, :, z_centre])
+            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x, slice_index_2=index_z)
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx(z_range, f_range[x_centre, y_centre, :])
+            dfdn = self._derivitive_dfdx(lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x, slice_index_2=index_y)
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
             dfdn = self._derivitive_d2fdxdy(x_range, y_range, f_range[:, :, z_centre])
@@ -1590,20 +1591,71 @@ cdef class _ArrayDerivative3D:
 
         return dfdn
 
+    cdef double _derivitive_d2fdxdy_new(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999:
+        cdef double d1, d2
+
+        if order_x == 1 and order_y == 1:
+            d1 = (self._x[lower_index_1 + 1] - self._x[lower_index_1]) / (self._x[lower_index_1 + 2] - self._x[lower_index_1 + 1])
+            d2 = (self._y[lower_index_2 + 1] - self._y[lower_index_2]) / (self._y[lower_index_2 + 2] - self._y[lower_index_2 + 1])
+
+            return (self._f[lower_index_1 + 2, lower_index_2 + 2, slice_index] - self._f[lower_index_1, lower_index_2 + 2, slice_index] - self._f[lower_index_1 + 2, lower_index_2, slice_index] + self._f[lower_index_1, lower_index_2, slice_index]) / (1. + d1 + d2 + d1 * d2)
+
+        elif order_x == 1 and order_z == 1:
+            d1 = (self._x[lower_index_1 + 1] - self._x[lower_index_1]) / (self._x[lower_index_1 + 2] - self._x[lower_index_1 + 1])
+            d2 = (self._z[lower_index_2 + 1] - self._z[lower_index_2]) / (self._z[lower_index_2 + 2] - self._z[lower_index_2 + 1])
+
+            return (self._f[lower_index_1 + 2, slice_index, lower_index_2 + 2] - self._f[lower_index_1, slice_index, lower_index_2 + 2] - self._f[lower_index_1 + 2, slice_index, lower_index_2] + self._f[lower_index_1, slice_index, lower_index_2]) / (1. + d1 + d2 + d1 * d2)
+
+        elif order_y == 1 and order_z == 1:
+            d1 = (self._y[lower_index_1 + 1] - self._y[lower_index_1]) / (self._y[lower_index_1 + 2] - self._y[lower_index_1 + 1])
+            d2 = (self._z[lower_index_2 + 1] - self._z[lower_index_2]) / (self._z[lower_index_2 + 2] - self._z[lower_index_2 + 1])
+
+            return (self._f[slice_index, lower_index_1 + 2, lower_index_2 + 2] - self._f[slice_index, lower_index_1, lower_index_2 + 2] - self._f[slice_index, lower_index_1 + 2, lower_index_2] + self._f[slice_index, lower_index_1, lower_index_2]) / (1. + d1 + d2 + d1 * d2)
+
+        else:
+            raise ValueError(f'For a second derivative 2 of order_x, order_y or order_z must be 1 instead got:({order_x}, {order_y}, {order_z}')
+
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999:
+    cdef double _derivitive_dfdx(self, int lower_index, int order_x, int order_y, int order_z, int slice_index_1, int slice_index_2) except? -1e999:
         cdef double x1_n, x1_n2
-        x1_n = (x[1] - x[0]) / (x[2] - x[1])
-        x1_n2 = x1_n ** 2
 
-        return (f[2] * x1_n2 - f[0] - f[1] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+        if order_x == 1:
+            x1_n = (self._x[lower_index + 1] - self._x[lower_index]) / (self._x[lower_index + 2] - self._x[lower_index + 1])
+            x1_n2 = x1_n ** 2
+            return (self._f[lower_index + 2, slice_index_1, slice_index_2] * x1_n2 - self._f[lower_index, slice_index_1, slice_index_2] - self._f[lower_index + 1, slice_index_1, slice_index_2] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+
+        elif order_y == 1:
+            x1_n = (self._y[lower_index + 1] - self._y[lower_index]) / (self._y[lower_index + 2] - self._y[lower_index + 1])
+            x1_n2 = x1_n ** 2
+            return (self._f[slice_index_1, lower_index + 2, slice_index_2] * x1_n2 - self._f[slice_index_1, lower_index, slice_index_2] - self._f[slice_index_1, lower_index + 1, slice_index_2] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+
+        elif order_z == 1:
+            x1_n = (self._z[lower_index + 1] - self._z[lower_index]) / (self._z[lower_index + 2] - self._z[lower_index + 1])
+            x1_n2 = x1_n ** 2
+            return (self._f[slice_index_1, slice_index_2, lower_index + 2] * x1_n2 - self._f[slice_index_1, slice_index_2, lower_index] - self._f[slice_index_1, slice_index_2, lower_index + 1] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+
+        else:
+            raise ValueError(f'For a first derivative order_x, order_y or order_z must be 1 instead got:({order_x}, {order_y}, {order_z}')
 
     @cython.boundscheck(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_dfdx_edge(self, double[:] f):
-        return f[1] - f[0]
+    cdef double _derivitive_dfdx_edge(self, int lower_index, int order_x, int order_y, int order_z, int slice_index_1, int slice_index_2):
+        if order_x == 1:
+            return self._f[lower_index + 1, slice_index_1, slice_index_2] - self._f[
+                lower_index, slice_index_1, slice_index_2]
+
+        elif order_y == 1:
+            return self._f[slice_index_1, lower_index + 1, slice_index_2] - self._f[
+                slice_index_1, lower_index, slice_index_2]
+
+        elif order_z == 1:
+            return self._f[slice_index_1, slice_index_2, lower_index + 1] - self._f[
+                slice_index_1, slice_index_2, lower_index]
+
+        else:
+            raise ValueError(f'For a first derivative order_x, order_y or order_z must be 1 instead got:({order_x}, {order_y}, {order_z}')
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
