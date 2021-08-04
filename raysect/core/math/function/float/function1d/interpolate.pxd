@@ -32,6 +32,8 @@
 from raysect.core.math.function.float.function1d.base cimport Function1D
 from numpy cimport ndarray
 
+cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper)
+
 
 cdef class Interpolator1DArray(Function1D):
     cdef:

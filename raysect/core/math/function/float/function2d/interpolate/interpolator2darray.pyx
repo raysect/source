@@ -42,11 +42,14 @@ FACTORIAL_ARRAY[1] = 1.
 FACTORIAL_ARRAY[2] = 2.
 FACTORIAL_ARRAY[3] = 6.
 
-
+@cython.cdivision(True)
 cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper):
     """
     Derivatives that are normalised to the unit square (x_upper - x) = 1 are un-normalised, then re-normalised to
     (x - x_lower)
+    
+    Must be spaced so that x and x_upper are not the same values. Monotonically increasing checks should already provide
+    this.
     """
     return dfdn * (x - x_lower)/(x_upper - x)
 
@@ -156,12 +159,9 @@ cdef class Interpolator2DArray(Function2D):
     def __init__(self, object x, object y, object f, str interpolation_type, str extrapolation_type,
                  double extrapolation_range_x, double extrapolation_range_y):
 
-        self.x = np.array(x, dtype=np.float64, order='c')
-        self.x.flags.writeable = False
-        self.y = np.array(y, dtype=np.float64, order='c')
-        self.y.flags.writeable = False
-        self.f = np.array(f, dtype=np.float64, order='c')
-        self.f.flags.writeable = False
+        x = np.array(x, dtype=np.float64, order='c')
+        y = np.array(y, dtype=np.float64, order='c')
+        f = np.array(f, dtype=np.float64, order='c')
 
         # extrapolation_ranges must be greater than or equal to 0.
         if extrapolation_range_x < 0:
@@ -171,30 +171,36 @@ cdef class Interpolator2DArray(Function2D):
             raise ValueError('extrapolation_range_y must be greater than or equal to 0.')
 
         # Dimensions checks.
-        if self.x.ndim != 1:
-            raise ValueError(f'The x array must be 1D. Got {np.shape(self.x)}.')
+        if x.ndim != 1:
+            raise ValueError(f'The x array must be 1D. Got {x.shape}.')
 
-        if self.y.ndim != 1:
-            raise ValueError(f'The y array must be 1D. Got {np.shape(self.y)}.')
+        if y.ndim != 1:
+            raise ValueError(f'The y array must be 1D. Got {y.shape}.')
 
-        if self.f.ndim != 2:
-            raise ValueError(f'The f array must be 2D. Got {np.shape(self.f)}.')
+        if f.ndim != 2:
+            raise ValueError(f'The f array must be 2D. Got {f.shape}.')
 
-        if np.shape(self.x)[0] != np.shape(self.f)[0]:
-            raise ValueError(f'Shape mismatch between x array ({np.shape(self.x)}) and f array ({np.shape(self.f)}).')
+        if x.shape[0] != f.shape[0]:
+            raise ValueError(f'Shape mismatch between x array ({x.shape}) and f array ({f.shape}).')
 
-        if np.shape(self.y)[0] != np.shape(self.f)[1]:
-            raise ValueError(f'Shape mismatch between y array ({np.shape(self.y)}) and f array ({np.shape(self.f)}).')
+        if y.shape[0] != f.shape[1]:
+            raise ValueError(f'Shape mismatch between y array ({y.shape}) and f array ({f.shape}).')
 
         # Test monotonicity.
-        if (np.diff(self.x) <= 0).any():
+        if (np.diff(x) <= 0).any():
             raise ValueError('The x array must be monotonically increasing.')
-        if (np.diff(self.y) <= 0).any():
+        if (np.diff(y) <= 0).any():
             raise ValueError('The y array must be monotonically increasing.')
 
+        self.x = x
+        self.y = y
         self._x_mv = x
         self._y_mv = y
         self._f_mv = f
+        x.flags.writeable = False
+        y.flags.writeable = False
+        f.flags.writeable = False
+
         self._last_index_x = self.x.shape[0] - 1
         self._last_index_y = self.y.shape[0] - 1
         self._extrapolation_range_x = extrapolation_range_x
@@ -221,6 +227,9 @@ cdef class Interpolator2DArray(Function2D):
             self._x_mv, self._y_mv, self._f_mv, self._interpolator, extrapolation_range_x, extrapolation_range_y
         )
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py) except? -1e999:
         """
         Evaluates the interpolating function.
@@ -241,8 +250,8 @@ cdef class Interpolator2DArray(Function2D):
         cdef int index_y = find_index(self._y_mv, py)
         cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
         cdef int index_lower_y = find_index_change(index_y, self._last_index_y)
-        cdef bint outside_domain_x = index_x == -1 or (index_x == self._last_index_x and px != self._x_mv[-1])
-        cdef bint outside_domain_y = index_y == -1 or (index_y == self._last_index_y and py != self._y_mv[-1])
+        cdef bint outside_domain_x = index_x == -1 or (index_x == self._last_index_x and px != self._x_mv[self._last_index_x])
+        cdef bint outside_domain_y = index_y == -1 or (index_y == self._last_index_y and py != self._y_mv[self._last_index_y])
 
         if outside_domain_x or outside_domain_y:
             return self._extrapolator.evaluate(px, py, index_x, index_y)
@@ -256,7 +265,7 @@ cdef class Interpolator2DArray(Function2D):
         Returns min/max interval of 'x' and 'y' arrays.
         Order: min(x), max(x), min(y), max(y).
         """
-        return np.min(self._x_mv), np.max(self._x_mv), np.min(self._y_mv), np.max(self._y_mv)
+        return self._x_mv[0], self._x_mv[self._last_index_x], self._y_mv[0], self._y_mv[self._last_index_y]
 
 
 cdef class _Interpolator2D:
@@ -315,12 +324,19 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
     def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f):
         super().__init__(x, y, f)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
         return linear2d(
             self._x[index_x], self._x[index_x + 1], self._y[index_y], self._y[index_y + 1],
             self._f[index_x:index_x + 2, index_y:index_y + 2], px, py
         )
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
         """
         Calculate the normalised derivative of specified order in a unit square.
@@ -354,7 +370,10 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
 
         return df_dn
 
-    cdef _calculate_coefficients(self, int index_x, int index_y, int coefficient_index):
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_coefficients(self, int index_x, int index_y, int coefficient_index):
         """
         Calculate the bilinear coefficients in a unit square.
 
@@ -421,6 +440,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
 
@@ -441,6 +461,9 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
 
         return evaluate_cubic_2d(a, x_scal, y_scal)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef _cache_coefficients(self, int index_x, int index_y, double[4][4] a):
         """
         Calculates and stores, or loads previously stored cubic coefficients.
@@ -451,6 +474,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         """
         cdef double[2][2] f, dfdx, dfdy, d2fdxdy
         cdef int i, j
+        cdef _ArrayDerivative2D array_derivative
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
         if not self._mask_a[index_x, index_y]:
@@ -486,6 +510,10 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
                 for j in range(4):
                     a[i][j] = self._a[index_x, index_y, i, j]
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y):
         """
         Calculate the normalised gradient of specified order in a unit square.
@@ -518,19 +546,10 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
             raise ValueError('Can\'t get a gradient of order 4 or more in cubic.')
 
         x_bound = self._x[index_x + 1] - self._x[index_x]
-        if x_bound != 0:
-            x_scal = (px - self._x[index_x]) / x_bound
-
-        else:
-            #TODO remove these checks as the data must already be monotonic and increasing. Add warning to doc string
-            raise ZeroDivisionError('Two adjacent spline points have the same x value!')
+        x_scal = (px - self._x[index_x]) / x_bound
 
         y_bound = self._y[index_y + 1] - self._y[index_y]
-        if y_bound != 0:
-            y_scal = (py - self._y[index_y]) / y_bound
-
-        else:
-            raise ZeroDivisionError('Two adjacent spline points have the same y value!')
+        y_scal = (py - self._y[index_y]) / y_bound
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
         self._cache_coefficients(index_x, index_y, a)
@@ -572,6 +591,9 @@ cdef class _Extrapolator2D:
         self._extrapolation_range_x = extrapolation_range_x
         self._extrapolation_range_y = extrapolation_range_y
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999:
 
         cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
@@ -655,6 +677,9 @@ cdef class _Extrapolator2DNearest(_Extrapolator2D):
     def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D interpolator, double extrapolation_range_x, double extrapolation_range_y):
            super().__init__(x, y, f, interpolator, extrapolation_range_x, extrapolation_range_y)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         """
         Extrapolate beyond the spline knot domain in the y direction, but within the spline knot domain in the x 
@@ -668,6 +693,9 @@ cdef class _Extrapolator2DNearest(_Extrapolator2D):
         """
         return self._interpolator.evaluate(self._x[edge_x_index], py, index_x, index_y)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_y(self, double px, double py, int index_x, int index_y, int edge_y_index) except? -1e999:
         """
         Extrapolate beyond the spline knot domain in the x direction, but within the spline knot domain in the y 
@@ -681,6 +709,9 @@ cdef class _Extrapolator2DNearest(_Extrapolator2D):
         """
         return self._interpolator.evaluate(px, self._y[edge_y_index], index_x, index_y)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_xy(self, double px, double py, int index_x, int index_y, int edge_x_index, int edge_y_index) except? -1e999:
         """
         Extrapolate beyond the spline knot domain in the x and y directions to find the nearest neighbour.
@@ -710,6 +741,10 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
     def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f, _Interpolator2D interpolator, double extrapolation_range_x, double extrapolation_range_y):
            super().__init__(x, y, f, interpolator, extrapolation_range_x, extrapolation_range_y)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999:
         """
         Extrapolate beyond the spline knot domain in the x direction, but within the spline knot domain in the y 
@@ -733,6 +768,10 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
                 (self._x[index_x + 1] - self._x[index_x])
         return f + df_dx*(px - self._x[edge_x_index])
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_y(self, double px, double py, int index_x, int index_y, int edge_y_index) except? -1e999:
         """
         Extrapolate beyond the spline knot domain in the y direction, but within the spline knot domain in the x 
@@ -756,6 +795,10 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
                    (self._y[index_y + 1] - self._y[index_y])
         return f + df_dy * (py - self._y[edge_y_index])
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_xy(self, double px, double py, int index_x, int index_y, int edge_x_index, int edge_y_index) except? -1e999:
         """
         Extrapolate beyond the spline knot domain in the x and y direction.
@@ -810,6 +853,9 @@ cdef class _ArrayDerivative2D:
         self._last_index_x = self._x.shape[0] - 1
         self._last_index_y = self._y.shape[0] - 1
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, bint rescale_norm_x, bint rescale_norm_y) except? -1e999:
         """
         Evaluate the derivative of specific order at a grid point.
@@ -825,7 +871,7 @@ cdef class _ArrayDerivative2D:
         :param rescale_norm_y: A boolean as whether to rescale to the delta before y[index_y] or after (default).
         """
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
-        cdef double dfdn
+        cdef double dfdn = 0.
 
         if index_x == 0:
 
@@ -874,6 +920,9 @@ cdef class _ArrayDerivative2D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
         cdef double dfdn = 0.
         cdef double[::1] x_range, y_range
@@ -898,6 +947,9 @@ cdef class _ArrayDerivative2D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
         cdef double dfdn = 0.
         cdef double[::1] x_range, y_range
@@ -922,6 +974,9 @@ cdef class _ArrayDerivative2D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999:
         cdef double dfdn = 0.
         cdef double[::1] x_range, y_range
@@ -946,6 +1001,9 @@ cdef class _ArrayDerivative2D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
         cdef double dfdn = 0.
         cdef double[::1] x_range, y_range
@@ -973,6 +1031,9 @@ cdef class _ArrayDerivative2D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_dfdx_edge(self, double[:] f):
         """
         Calculate the 1st derivative on an unevenly spaced grid as a 1st order approximation.
@@ -987,6 +1048,10 @@ cdef class _ArrayDerivative2D:
         """
         return f[1] - f[0]
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999:
         """
         Calculate the 1st derivative on an unevenly spaced grid as a 2nd order approximation.
@@ -1013,6 +1078,9 @@ cdef class _ArrayDerivative2D:
         x1_n2 = x1_n**2
         return (f[2]*x1_n2 - f[0] - f[1]*(x1_n2 - 1.))/(x1_n + x1_n2)
 
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_edge_xy(self, double[:, ::1] f) except? -1e999:
         """
         Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation. Valid at the edges of the grid 
@@ -1034,6 +1102,10 @@ cdef class _ArrayDerivative2D:
         """
         return f[1, 1] - f[0, 1] - f[1, 0] + f[0, 0]
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_edge_x(self, double[:] y, double[:, ::1] f) except? -1e999:
         """
         Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation. Valid at the edges of the grid 
@@ -1066,6 +1138,10 @@ cdef class _ArrayDerivative2D:
 
         return (f[1, 2] - f[0, 2] - f[1, 0] + f[0, 0])/(1. + dy1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, ::1] f) except? -1e999:
         """
         Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation. Valid at the edges of the grid 
@@ -1087,6 +1163,10 @@ cdef class _ArrayDerivative2D:
 
         return (f[2, 1] - f[0, 1] - f[2, 0] + f[0, 0])/(1. + dx1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy(self, double[:] x, double[:] y, double[:, ::1] f) except? -1e999:
         """
         Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation.

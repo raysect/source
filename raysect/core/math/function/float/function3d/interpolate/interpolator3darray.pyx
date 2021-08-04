@@ -44,6 +44,7 @@ FACTORIAL_ARRAY[3] = 6.
 
 
 # todo These functions are in 2D too. Move them somewhere common
+@cython.cdivision(True)
 cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper):
     """
     Derivatives that are normalised to the unit square (x_upper - x) = 1 are un-normalised, then re-normalised to
@@ -65,6 +66,7 @@ cdef int find_index_change(int index, int last_index):
     :return: the index of the lower cell at the border of the interpolator spline knots.
     """
     cdef int lower_index
+
     if index == -1:
         lower_index = 0
 
@@ -162,14 +164,10 @@ cdef class Interpolator3DArray(Function3D):
     def __init__(self, object x, object y, object z, object f, str interpolation_type, str extrapolation_type,
                  double extrapolation_range_x, double extrapolation_range_y, double extrapolation_range_z):
 
-        self.x = np.array(x, dtype=np.float64, order='c')
-        self.x.flags.writeable = False
-        self.y = np.array(y, dtype=np.float64, order='c')
-        self.y.flags.writeable = False
-        self.z = np.array(z, dtype=np.float64, order='c')
-        self.z.flags.writeable = False
-        self.f = np.array(f, dtype=np.float64, order='c')
-        self.f.flags.writeable = False
+        x = np.array(x, dtype=np.float64, order='c')
+        y = np.array(y, dtype=np.float64, order='c')
+        z = np.array(z, dtype=np.float64, order='c')
+        f = np.array(f, dtype=np.float64, order='c')
 
         # extrapolation_ranges must be greater than or equal to 0.
         if extrapolation_range_x < 0:
@@ -194,18 +192,18 @@ cdef class Interpolator3DArray(Function3D):
         if f.ndim != 3:
             raise ValueError(f'The f array must be 3D. Got {f.shape}.')
 
-        if np.shape(x)[0] != np.shape(f)[0]:
+        if x.shape[0] != f.shape[0]:
             raise ValueError(f'Shape mismatch between x array ({x.shape}) and f array ({f.shape}).')
 
-        if np.shape(y)[0] != np.shape(f)[1]:
+        if y.shape[0] != f.shape[1]:
             raise ValueError(f'Shape mismatch between y array ({y.shape}) and f array ({f.shape}).')
 
-        if np.shape(z)[0] != np.shape(f)[2]:
+        if z.shape[0] != f.shape[2]:
             raise ValueError(f'Shape mismatch between z array ({z.shape}) and f array ({f.shape}).')
 
         # Test that arrays are too short for any interpolation. Specific requirements for interpolation/extrapolation
         # objects should be in __init__ of the internal interpolator/extrapolator. Must check after size checks.
-        if np.shape(x)[0] < 1:
+        if x.shape[0] <= 1:
             raise ValueError('The x, y, z arrays need more than 1 point to interpolate from.')
 
         # test monotonicity
@@ -218,10 +216,18 @@ cdef class Interpolator3DArray(Function3D):
         if (np.diff(z) <= 0).any():
             raise ValueError('The z array must be monotonically increasing.')
 
+        self.x = x
+        self.y = y
+        self.z = z
         self._x_mv = x
         self._y_mv = y
         self._z_mv = z
         self._f_mv = f
+        x.flags.writeable = False
+        y.flags.writeable = False
+        z.flags.writeable = False
+        f.flags.writeable = False
+
         self._last_index_x = self.x.shape[0] - 1
         self._last_index_y = self.y.shape[0] - 1
         self._last_index_z = self.z.shape[0] - 1
@@ -254,6 +260,8 @@ cdef class Interpolator3DArray(Function3D):
             extrapolation_range_y, extrapolation_range_z
         )
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz) except? -1e999:
         """
         Evaluates the interpolating function.
@@ -276,9 +284,9 @@ cdef class Interpolator3DArray(Function3D):
         cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
         cdef int index_lower_y = find_index_change(index_y, self._last_index_y)
         cdef int index_lower_z = find_index_change(index_z, self._last_index_z)
-        cdef bint outside_domain_x = index_x == -1 or (index_x == self._last_index_x and px != self._x_mv[-1])
-        cdef bint outside_domain_y = index_y == -1 or (index_y == self._last_index_y and py != self._y_mv[-1])
-        cdef bint outside_domain_z = index_z == -1 or (index_z == self._last_index_z and pz != self._z_mv[-1])
+        cdef bint outside_domain_x = index_x == -1 or (index_x == self._last_index_x and px != self._x_mv[self._last_index_x])
+        cdef bint outside_domain_y = index_y == -1 or (index_y == self._last_index_y and py != self._y_mv[self._last_index_y])
+        cdef bint outside_domain_z = index_z == -1 or (index_z == self._last_index_z and pz != self._z_mv[self._last_index_z])
 
         if outside_domain_x or outside_domain_y or outside_domain_z:
             return self._extrapolator.evaluate(px, py, pz, index_x, index_y, index_z)
@@ -292,7 +300,7 @@ cdef class Interpolator3DArray(Function3D):
         Returns min/max interval of 'x', 'y' and 'z' arrays.
         Order: min(x), max(x), min(y), max(y)., min(z), max(z).
         """
-        return np.min(self._x_mv), np.max(self._x_mv), np.min(self._y_mv), np.max(self._y_mv), np.min(self._z_mv), np.max(self._z_mv)
+        return self._x_mv[0], self._x_mv[self._last_index_x], self._y_mv[0], self._y_mv[self._last_index_y], self._z_mv[0], self._z_mv[self._last_index_z]
 
 
 cdef class _Interpolator3D:
@@ -359,12 +367,17 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     def __init__(self, double[::1] x, double[::1] y, double[::1] z, double[:, :, ::1] f):
         super().__init__(x, y, z, f)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999:
         return linear3d(
             self._x[index_x], self._x[index_x + 1], self._y[index_y], self._y[index_y + 1], self._z[index_z], self._z[index_z + 1],
             self._f[index_x:index_x + 2, index_y:index_y + 2, index_z:index_z + 2], px, py, pz
         )
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
         """
         Calculate the normalised derivative of specified order in a unit cube.
@@ -420,8 +433,9 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
 
         return df_dn
 
-
-    cdef _calculate_coefficients(self, int index_x, int index_y, int index_z, int coefficient_index):
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_coefficients(self, int index_x, int index_y, int index_z, int coefficient_index):
         """
         Calculate the trilinear coefficients in a unit cube.
 
@@ -482,6 +496,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         else:
             raise ValueError(f'There are only 8 bilinear coefficients, the index requested:{coefficient_index} is out of range.')
 
+
 cdef class _Interpolator3DCubic(_Interpolator3D):
     """
     Cubic interpolation of a 3D function.
@@ -534,6 +549,8 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
 
         return evaluate_cubic_3d(a, x_scal, y_scal, z_scal)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef _cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a):
         """
         Calculates and stores, or loads previously stored cubic coefficients.
@@ -545,6 +562,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
         """
         cdef double[2][2][2] f, dfdx, dfdy, dfdz, d2fdxdy, d2fdxdz, d2fdydz, d3fdxdydz
         cdef int i, j, k
+        cdef _ArrayDerivative3D array_derivative
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
         if not self._mask_a[index_x, index_y, index_z]:
@@ -634,6 +652,9 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
                     for k in range(4):
                         a[i][j][k] = self._a[index_x, index_y, index_z, i, j, k]
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
         """
         Calculate the normalised gradient of specified order in a unit cube.
@@ -726,6 +747,8 @@ cdef class _Extrapolator3D:
         self._extrapolation_range_y = extrapolation_range_y
         self._extrapolation_range_z = extrapolation_range_z
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999:
         cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
         cdef int index_lower_y = find_index_change(index_y, self._last_index_y)
@@ -879,24 +902,38 @@ cdef class _Extrapolator3DNearest(_Extrapolator3D):
     def __init__(self, double[::1] x, double[::1] y, double[::1] z, double[:, :, ::1] f, _Interpolator3D interpolator, double extrapolation_range_x, double extrapolation_range_y, double extrapolation_range_z):
            super().__init__(x, y, z, f, interpolator, extrapolation_range_x, extrapolation_range_y, extrapolation_range_z)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(self._x[edge_x_index], py, pz, index_x, index_y, index_z)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(px, self._y[edge_y_index], pz, index_x, index_y, index_z)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(px, py, self._z[edge_z_index], index_x, index_y, index_z)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_xy(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
 
@@ -917,6 +954,9 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
     def __init__(self, double[::1] x, double[::1] y, double[::1] z, double[:, :, ::1] f, _Interpolator3D interpolator, double extrapolation_range_x, double extrapolation_range_y, double extrapolation_range_z):
            super().__init__(x, y, z, f, interpolator, extrapolation_range_x, extrapolation_range_y, extrapolation_range_z)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f, df_dx
 
@@ -926,6 +966,9 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
         return f + df_dx * (px - self._x[edge_x_index])
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f, df_dy
 
@@ -935,6 +978,9 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
         return f + df_dy * (py - self._y[edge_y_index])
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f, df_dz
 
@@ -944,6 +990,9 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
         return f + df_dz * (pz - self._z[edge_z_index])
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_xy(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
 
         cdef double f, df_dx, df_dy, d2f_dxdy
@@ -964,6 +1013,9 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
         return f + df_dx * (px - self._x[edge_x_index]) + df_dy * (py - self._y[edge_y_index]) + d2f_dxdy * (py - self._y[edge_y_index]) * (px - self._x[edge_x_index])
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
 
         cdef double f, df_dx, df_dz, d2f_dxdz
@@ -984,6 +1036,9 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
         return f + df_dx * (px - self._x[edge_x_index]) + df_dz * (pz - self._z[edge_z_index]) + d2f_dxdz * (pz - self._z[edge_z_index]) * (px - self._x[edge_x_index])
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f, df_dy, df_dz, d2f_dydz
 
@@ -1003,6 +1058,9 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
         return f + df_dy * (py - self._y[edge_y_index]) + df_dz * (pz - self._z[edge_z_index]) + d2f_dydz * (pz - self._z[edge_z_index]) * (py - self._y[edge_y_index])
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         """
         Extrapolate beyond the spline knot domain in the x, y and z directions.
@@ -1088,6 +1146,8 @@ cdef class _ArrayDerivative3D:
         self._last_index_y = self._y.shape[0] - 1
         self._last_index_z = self._z.shape[0] - 1
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, bint rescale_norm_x, bint rescale_norm_y, bint rescale_norm_z) except? -1e999:
         """
         Evaluate the derivative of specific order at a grid point.
@@ -1108,7 +1168,7 @@ cdef class _ArrayDerivative3D:
         """
 
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
-        cdef double dfdn
+        cdef double dfdn = 0.
         cdef int x_centre_add, y_centre_add, z_centre_add
         cdef int index_x_input, index_y_input, index_z_input
 
@@ -1215,6 +1275,8 @@ cdef class _ArrayDerivative3D:
                     dfdn = rescale_lower_normalisation(dfdn,  self._z[index_z - 1], self._z[index_z], self._z[index_z + 1])
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
 
         cdef double dfdn = 0.
@@ -1253,6 +1315,8 @@ cdef class _ArrayDerivative3D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_y(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
         cdef double dfdn = 0.
         cdef double[:] x_range, y_range, z_range
@@ -1290,6 +1354,8 @@ cdef class _ArrayDerivative3D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_z(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
         cdef double[:] x_range, y_range, z_range
@@ -1329,6 +1395,8 @@ cdef class _ArrayDerivative3D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_xy(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
         cdef double[:] x_range, y_range, z_range
@@ -1366,6 +1434,8 @@ cdef class _ArrayDerivative3D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_xz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
         cdef double[:] x_range, y_range, z_range
@@ -1403,6 +1473,8 @@ cdef class _ArrayDerivative3D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_yz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
         cdef double[:] x_range, y_range, z_range
@@ -1440,6 +1512,8 @@ cdef class _ArrayDerivative3D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _eval_edge_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
         cdef double[:] x_range, y_range, z_range
@@ -1477,6 +1551,8 @@ cdef class _ArrayDerivative3D:
 
         return dfdn
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _eval_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z):
         cdef double dfdn = 0.
         cdef double[:] x_range, y_range, z_range
@@ -1514,6 +1590,9 @@ cdef class _ArrayDerivative3D:
 
         return dfdn
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999:
         cdef double x1_n, x1_n2
         x1_n = (x[1] - x[0]) / (x[2] - x[1])
@@ -1521,9 +1600,14 @@ cdef class _ArrayDerivative3D:
 
         return (f[2] * x1_n2 - f[0] - f[1] * (x1_n2 - 1.)) / (x1_n + x1_n2)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_dfdx_edge(self, double[:] f):
         return f[1] - f[0]
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy(self,  double[:] x, double[:] y, double[:, :] f) except? -1e999:
         cdef double dx1, dy1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
@@ -1531,21 +1615,32 @@ cdef class _ArrayDerivative3D:
 
         return (f[2, 2] - f[0, 2] - f[2, 0] + f[0, 0]) / (1. + dx1 + dy1 + dx1 * dy1)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_edge_xy(self, double[:] x, double[:] y, double[:, :] f) except? -1e999:
         return f[1, 1] - f[0, 1] - f[1, 0] + f[0, 0]
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_edge_x(self, double[:] y, double[:, :] f) except? -1e999:
         cdef double dy1
         dy1 = (y[1] - y[0]) / (y[2] - y[1])
 
         return (f[1, 2] - f[0, 2] - f[1, 0] + f[0, 0]) / (1. + dy1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, :] f) except? -1e999:
         cdef double dx1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
 
         return (f[2, 1] - f[0, 1] - f[2, 0] + f[0, 0]) / (1. + dx1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz(self, double[:] x, double[:] y, double[:] z, double[:, :, :] f) except? -1e999:
         cdef double dx1, dy1, dz1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
@@ -1554,6 +1649,9 @@ cdef class _ArrayDerivative3D:
 
         return (f[2, 2, 2] - f[0, 2, 2] - f[2, 0, 2] + f[0, 0, 2] - f[2, 2, 0] + f[0, 2, 0] + f[2, 0, 0] - f[0, 0, 0]) / (1. + dx1 + dy1 + dz1 + dx1 * dy1 + dx1 * dz1 + dy1 * dz1 + dx1 * dy1 * dz1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_x(self, double[:] y, double[:] z, double[:, :, :] f) except? -1e999:
         cdef double dy1, dz1
         dy1 = (y[1] - y[0]) / (y[2] - y[1])
@@ -1561,6 +1659,9 @@ cdef class _ArrayDerivative3D:
 
         return (f[1, 2, 2] - f[0, 2, 2] - f[1, 0, 2] + f[0, 0, 2] - f[1, 2, 0] + f[0, 2, 0] + f[1, 0, 0] - f[0, 0, 0]) / (1. + dy1 + dz1 + dy1 * dz1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_y(self, double[:] x, double[:] z, double[:, :, :] f) except? -1e999:
         cdef double dx1, dz1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
@@ -1568,6 +1669,9 @@ cdef class _ArrayDerivative3D:
 
         return (f[2, 1, 2] - f[0, 1, 2] - f[2, 0, 2] + f[0, 0, 2] - f[2, 1, 0] + f[0, 1, 0] + f[2, 0, 0] - f[0, 0, 0]) / (1. + dx1 + dz1 + dx1 * dz1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_z(self, double[:] x, double[:] y, double[:, :, :] f) except? -1e999:
         cdef double dx1, dy1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
@@ -1575,24 +1679,35 @@ cdef class _ArrayDerivative3D:
 
         return (f[2, 2, 1] - f[0, 2, 1] - f[2, 0, 1] + f[0, 0, 1] - f[2, 2, 0] + f[0, 2, 0] + f[2, 0, 0] - f[0, 0, 0]) / (1. + dx1 + dy1 + dx1 * dy1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_xy(self, double[:] z, double[:, :, :] f) except? -1e999:
         cdef double dz1
         dz1 = (z[1] - z[0]) / (z[2] - z[1])
 
         return (f[1, 1, 2] - f[0, 1, 2] - f[1, 0, 2] + f[0, 0, 2] - f[1, 1, 0] + f[0, 1, 0] + f[1, 0, 0] - f[0, 0, 0]) / (1. + dz1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_xz(self, double[:] y, double[:, :, :] f) except? -1e999:
         cdef double dy1
         dy1 = (y[1] - y[0]) / (y[2] - y[1])
 
         return (f[1, 2, 1] - f[0, 2, 1] - f[1, 0, 1] + f[0, 0, 1] - f[1, 2, 0] + f[0, 2, 0] + f[1, 0, 0] - f[0, 0, 0]) / (1. + dy1)
 
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_yz(self, double[:] x, double[:, :, :] f) except? -1e999:
         cdef double dx1
         dx1 = (x[1] - x[0]) / (x[2] - x[1])
 
         return (f[2, 1, 1] - f[0, 1, 1] - f[2, 0, 1] + f[0, 0, 1] - f[2, 1, 0] + f[0, 1, 0] + f[2, 0, 0] - f[0, 0, 0]) / (1. + dx1)
 
+    @cython.boundscheck(False)
+    @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_xyz(self, double[:, :, :] f) except? -1e999:
         return f[1, 1, 1] - f[0, 1, 1] - f[1, 0, 1] + f[0, 0, 1] - f[1, 1, 0] + f[0, 1, 0] + f[1, 0, 0] - f[0, 0, 0]
 

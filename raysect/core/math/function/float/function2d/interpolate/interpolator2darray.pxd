@@ -68,7 +68,7 @@ cdef class _Interpolator2D:
 
 
 cdef class _Interpolator2DLinear(_Interpolator2D):
-    cdef _calculate_coefficients(self, int index_x, int index_y, int coefficient_index)
+    cdef double _calculate_coefficients(self, int index_x, int index_y, int coefficient_index)
 
 
 cdef class _Interpolator2DCubic(_Interpolator2D):
