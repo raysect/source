@@ -116,17 +116,17 @@ cdef class _ArrayDerivative2D:
 
     cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, bint rescale_norm_x, bint rescale_norm_y) except? -1e999
 
-    cdef double _derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999
+    cdef double _derivitive_dfdx(self, int lower_index, int order_x, int order_y, int slice_index) except? -1e999
 
-    cdef double _derivitive_dfdx_edge(self, double[:] f)
+    cdef double _derivitive_dfdx_edge(self, int lower_index, int order_x, int order_y, int slice_index)
 
-    cdef double _derivitive_d2fdxdy(self,  double[:] x, double[:] y, double[:, ::1] f) except? -1e999
+    cdef double _derivitive_d2fdxdy(self, int lower_index_x, int lower_index_y) except? -1e999
 
-    cdef double _derivitive_d2fdxdy_edge_xy(self, double[:, ::1] f) except? -1e999
+    cdef double _derivitive_d2fdxdy_edge_xy(self, int lower_index_x, int lower_index_y) except? -1e999
 
-    cdef double _derivitive_d2fdxdy_edge_x(self, double[:] y, double[:, ::1] f) except? -1e999
+    cdef double _derivitive_d2fdxdy_edge_x(self, int lower_index_x, int lower_index_y) except? -1e999
 
-    cdef double _derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, ::1] f) except? -1e999
+    cdef double _derivitive_d2fdxdy_edge_y(self, int lower_index_x, int lower_index_y) except? -1e999
 
     cdef double _eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add)
 

@@ -925,22 +925,15 @@ cdef class _ArrayDerivative2D:
     @cython.initializedcheck(False)
     cdef double _eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
         cdef double dfdn = 0.
-        cdef double[::1] x_range, y_range
-        cdef double[:, ::1] f_range
-        cdef int x_centre = 0, y_centre = 1
-
-        x_range = self._x[index_x:index_x + 2]
-        y_range = self._y[index_y - 1:index_y + 2]
-        f_range = self._f[index_x:index_x + 2, index_y - 1:index_y + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, slice_index=index_y + y_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1:
-            dfdn = self._derivitive_dfdx(y_range, f_range[x_centre + x_centre_add, :])
+            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, slice_index=index_x + x_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self._derivitive_d2fdxdy_edge_x(y_range, f_range)
+            dfdn = self._derivitive_d2fdxdy_edge_x(lower_index_x=index_x, lower_index_y=index_y - 1)
 
         else:
             raise ValueError('No higher order derivatives implemented.')
@@ -952,22 +945,15 @@ cdef class _ArrayDerivative2D:
     @cython.initializedcheck(False)
     cdef double _eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
         cdef double dfdn = 0.
-        cdef double[::1] x_range, y_range
-        cdef double[:, ::1] f_range
-        cdef int x_centre = 1, y_centre = 0
-
-        x_range = self._x[index_x - 1:index_x + 2]
-        y_range = self._y[index_y:index_y + 2]
-        f_range = self._f[index_x - 1:index_x + 2, index_y:index_y + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0:
-            dfdn = self._derivitive_dfdx(x_range, f_range[:, y_centre + y_centre_add])
+            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, slice_index=index_y + y_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, slice_index=index_x + x_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self._derivitive_d2fdxdy_edge_y(x_range, f_range)
+            dfdn = self._derivitive_d2fdxdy_edge_y(lower_index_x=index_x - 1, lower_index_y=index_y)
 
         else:
             raise ValueError('No higher order derivatives implemented.')
@@ -979,22 +965,15 @@ cdef class _ArrayDerivative2D:
     @cython.initializedcheck(False)
     cdef double _eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999:
         cdef double dfdn = 0.
-        cdef double[::1] x_range, y_range
-        cdef double[:, ::1] f_range
-        cdef int x_centre = 0, y_centre = 0
-
-        x_range = self._x[index_x:index_x + 2]
-        y_range = self._y[index_y:index_y + 2]
-        f_range = self._f[index_x:index_x + 2, index_y:index_y + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0:
-            dfdn = self._derivitive_dfdx_edge(f_range[:, y_centre + y_centre_add])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, slice_index=index_y + y_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1:
-            dfdn = self._derivitive_dfdx_edge(f_range[x_centre + x_centre_add, :])
+            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, slice_index=index_x + x_centre_add)
 
         elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self._derivitive_d2fdxdy_edge_xy(f_range[x_centre:x_centre + 2, y_centre:y_centre + 2])
+            dfdn = self._derivitive_d2fdxdy_edge_xy(lower_index_x=index_x, lower_index_y=index_y)
 
         else:
             raise ValueError('No higher order derivatives implemented.')
@@ -1006,25 +985,15 @@ cdef class _ArrayDerivative2D:
     @cython.initializedcheck(False)
     cdef double _eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
         cdef double dfdn = 0.
-        cdef double[::1] x_range, y_range
-        cdef double[:, ::1] f_range
-        cdef int x_centre = 1, y_centre = 1
-
-        x_range = self._x[index_x - 1:index_x + 2]
-        y_range = self._y[index_y - 1:index_y + 2]
-        f_range = self._f[index_x - 1:index_x + 2, index_y - 1:index_y + 2]
 
         if derivative_order_x == 1 and derivative_order_y == 0:
-            dfdn = self._derivitive_dfdx(x_range, f_range[:, y_centre])
+            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, slice_index=index_y)
 
         elif derivative_order_x == 0 and derivative_order_y == 1:
-            dfdn = self._derivitive_dfdx(y_range, f_range[x_centre, :])
+            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, slice_index=index_x)
 
         elif derivative_order_x == 1 and derivative_order_y == 1:
-            dfdn = self._derivitive_d2fdxdy(
-                x_range[x_centre - 1:x_centre + 2], y_range[y_centre - 1:y_centre + 2],
-                f_range[x_centre - 1:x_centre + 2, y_centre - 1:y_centre + 2]
-            )
+            dfdn = self._derivitive_d2fdxdy(lower_index_x=index_x - 1, lower_index_y=index_y - 1)
 
         else:
             raise ValueError('No higher order derivatives implemented.')
@@ -1034,7 +1003,7 @@ cdef class _ArrayDerivative2D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_dfdx_edge(self, double[:] f):
+    cdef double _derivitive_dfdx_edge(self, int lower_index, int order_x, int order_y, int slice_index):
         """
         Calculate the 1st derivative on an unevenly spaced grid as a 1st order approximation.
 
@@ -1046,13 +1015,21 @@ cdef class _ArrayDerivative2D:
         The input x and f are 2 long, where [0] is the central value, [1] is the forward value (where x[1]-x[0] = 1 
         when normalised).
         """
-        return f[1] - f[0]
+
+        if order_x == 1:
+            return self._f[lower_index + 1, slice_index] - self._f[lower_index, slice_index]
+
+        elif order_y == 1:
+            return self._f[slice_index, lower_index + 1] - self._f[slice_index, lower_index]
+
+        else:
+            raise ValueError(f'For a first derivative order_x, or order_y must be 1 instead got:({order_x}, {order_y}')
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_dfdx(self, double[:] x, double[:] f) except? -1e999:
+    cdef double _derivitive_dfdx(self, int lower_index, int order_x, int order_y, int slice_index) except? -1e999:
         """
         Calculate the 1st derivative on an unevenly spaced grid as a 2nd order approximation.
         
@@ -1074,14 +1051,23 @@ cdef class _ArrayDerivative2D:
         """
         cdef double x1_n, x1_n2
 
-        x1_n = (x[1] - x[0])/(x[2] - x[1])
-        x1_n2 = x1_n**2
-        return (f[2]*x1_n2 - f[0] - f[1]*(x1_n2 - 1.))/(x1_n + x1_n2)
+        if order_x == 1:
+            x1_n = (self._x[lower_index + 1] - self._x[lower_index]) / (self._x[lower_index + 2] - self._x[lower_index + 1])
+            x1_n2 = x1_n ** 2
+            return (self._f[lower_index + 2, slice_index] * x1_n2 - self._f[lower_index, slice_index] - self._f[lower_index + 1, slice_index] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+
+        elif order_y == 1:
+            x1_n = (self._y[lower_index + 1] - self._y[lower_index]) / (self._y[lower_index + 2] - self._y[lower_index + 1])
+            x1_n2 = x1_n ** 2
+            return (self._f[slice_index, lower_index + 2] * x1_n2 - self._f[slice_index, lower_index] - self._f[slice_index, lower_index + 1] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+
+        else:
+            raise ValueError(f'For a first derivative order_x, or order_y must be 1 instead got:({order_x}, {order_y}')
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_d2fdxdy_edge_xy(self, double[:, ::1] f) except? -1e999:
+    cdef double _derivitive_d2fdxdy_edge_xy(self, int lower_index_x, int lower_index_y) except? -1e999:
         """
         Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation. Valid at the edges of the grid 
         where higher/lower spline knots don't exist in both x and y.
@@ -1100,13 +1086,13 @@ cdef class _ArrayDerivative2D:
         For unit square normalisation, dy0 = 1 and dx0 = 1.
         fxy(x, y) = f(x+dx0, y+dy0) - f(x+dx0, y) - f(x, y+dy0) + f(x, y)
         """
-        return f[1, 1] - f[0, 1] - f[1, 0] + f[0, 0]
+        return self._f[lower_index_x + 1, lower_index_y + 1] - self._f[lower_index_x, lower_index_y + 1] - self._f[lower_index_x + 1, lower_index_y] + self._f[lower_index_x, lower_index_y]
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_d2fdxdy_edge_x(self, double[:] y, double[:, ::1] f) except? -1e999:
+    cdef double _derivitive_d2fdxdy_edge_x(self, int lower_index_x, int lower_index_y) except? -1e999:
         """
         Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation. Valid at the edges of the grid 
         where higher/lower spline knots don't exist in x.
@@ -1133,16 +1119,17 @@ cdef class _ArrayDerivative2D:
 
         Simplifies to (f[1, 2] - f[0, 2] - f[1, 0] + f[0, 0])/2 if dx0=dx1 and dy0=dy1.
         """
-        cdef double dy1
-        dy1 = (y[1] - y[0])/(y[2] - y[1])
 
-        return (f[1, 2] - f[0, 2] - f[1, 0] + f[0, 0])/(1. + dy1)
+        cdef double dy1
+
+        dy1 = (self._y[lower_index_y + 1] - self._y[lower_index_y]) / (self._y[lower_index_y + 2] - self._y[lower_index_y + 1])
+        return (self._f[lower_index_x + 1, lower_index_y + 2] - self._f[lower_index_x, lower_index_y + 2] - self._f[lower_index_x + 1, lower_index_y] + self._f[lower_index_x, lower_index_y] )/ (1. + dy1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, ::1] f) except? -1e999:
+    cdef double _derivitive_d2fdxdy_edge_y(self, int lower_index_x, int lower_index_y) except? -1e999:
         """
         Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation. Valid at the edges of the grid 
         where higher/lower spline knots don't exist in y.
@@ -1159,15 +1146,15 @@ cdef class _ArrayDerivative2D:
         Simplifies to (f[2, 1] - f[2, 0] - f[0, 1] + f[0, 0])/2 if dx0=dx1 and dy0=dy1.
         """
         cdef double dx1
-        dx1 = (x[1] - x[0])/(x[2] - x[1])
 
-        return (f[2, 1] - f[0, 1] - f[2, 0] + f[0, 0])/(1. + dx1)
+        dx1 = (self._x[lower_index_x + 1] - self._x[lower_index_x]) / (self._x[lower_index_x + 2] - self._x[lower_index_x + 1])
+        return (self._f[lower_index_x + 2, lower_index_y + 1] - self._f[lower_index_x, lower_index_y + 1] - self._f[lower_index_x + 2, lower_index_y] + self._f[lower_index_x, lower_index_y] )/ (1. + dx1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_d2fdxdy(self, double[:] x, double[:] y, double[:, ::1] f) except? -1e999:
+    cdef double _derivitive_d2fdxdy(self, int lower_index_x, int lower_index_y) except? -1e999:
         """
         Calculate d2f/dxdy on an unevenly spaced grid as a 2nd order approximation.
         
@@ -1193,10 +1180,9 @@ cdef class _ArrayDerivative2D:
         Simplifies to (f[2, 2] - f[0, 2] - f[2, 0] + f[0, 0])/4 if dx0=dx1 and dy0=dy1.
         """
         cdef double dx1, dy1
-        dx1 = (x[1] - x[0])/(x[2] - x[1])
-        dy1 = (y[1] - y[0])/(y[2] - y[1])
-
-        return (f[2, 2] - f[0, 2] - f[2, 0] + f[0, 0])/(1. + dx1 + dy1 + dx1*dy1)
+        dx1 = (self._x[lower_index_x + 1] - self._x[lower_index_x])/(self._x[lower_index_x + 2] - self._x[lower_index_x + 1])
+        dy1 = (self._y[lower_index_y + 1] - self._y[lower_index_y])/(self._y[lower_index_y + 2] - self._y[lower_index_y + 1])
+        return (self._f[lower_index_x + 2, lower_index_y + 2] - self._f[lower_index_x, lower_index_y + 2] - self._f[lower_index_x + 2, lower_index_y] + self._f[lower_index_x, lower_index_y])/(1. + dx1 + dy1 + dx1*dy1)
 
     def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y, rescale_norm_x, rescale_norm_y):
         return self.evaluate(index_x, index_y, derivative_order_x, derivative_order_y, rescale_norm_x, rescale_norm_y)
