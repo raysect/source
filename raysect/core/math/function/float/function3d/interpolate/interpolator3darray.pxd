@@ -124,29 +124,27 @@ cdef class _ArrayDerivative3D:
 
     cdef double _derivitive_dfdx_edge(self, int lower_index, int order_x, int order_y, int order_z, int slice_index_1, int slice_index_2)
 
-    cdef double _derivitive_d2fdxdy(self,  double[:] x, double[:] y, double[:, :] f) except? -1e999
+    cdef double _derivitive_d2fdxdy(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999
 
-    cdef double _derivitive_d2fdxdy_edge_xy(self, double[:] x, double[:] y, double[:, :] f) except? -1e999
+    cdef double _derivitive_d2fdxdy_edge_xy(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999
 
-    cdef double _derivitive_d2fdxdy_edge_x(self, double[:] y, double[:, :] f) except? -1e999
+    cdef double _derivitive_d2fdxdy_near_1_edge(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index, bint edge_is_1) except? -1e999
 
-    cdef double _derivitive_d2fdxdy_edge_y(self, double[:] x, double[:, :] f) except? -1e999
+    cdef double _derivitive_d3fdxdydz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
 
-    cdef double _derivitive_d3fdxdydz(self, double[:] x, double[:] y, double[:] z, double[:, :, :] f) except? -1e999
+    cdef double _derivitive_d3fdxdydz_edge_x(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
 
-    cdef double _derivitive_d3fdxdydz_edge_x(self, double[:] y, double[:] z, double[:, :, :] f) except? -1e999
+    cdef double _derivitive_d3fdxdydz_edge_y(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
 
-    cdef double _derivitive_d3fdxdydz_edge_y(self, double[:] x, double[:] z, double[:, :, :] f) except? -1e999
+    cdef double _derivitive_d3fdxdydz_edge_z(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
 
-    cdef double _derivitive_d3fdxdydz_edge_z(self, double[:] x, double[:] y, double[:, :, :] f) except? -1e999
+    cdef double _derivitive_d3fdxdydz_edge_xy(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
 
-    cdef double _derivitive_d3fdxdydz_edge_xy(self, double[:] z, double[:, :, :] f) except? -1e999
+    cdef double _derivitive_d3fdxdydz_edge_xz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
 
-    cdef double _derivitive_d3fdxdydz_edge_xz(self, double[:] y, double[:, :, :] f) except? -1e999
+    cdef double _derivitive_d3fdxdydz_edge_yz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
 
-    cdef double _derivitive_d3fdxdydz_edge_yz(self, double[:] x, double[:, :, :] f) except? -1e999
-
-    cdef double _derivitive_d3fdxdydz_edge_xyz(self, double[:, :, :] f) except? -1e999
+    cdef double _derivitive_d3fdxdydz_edge_xyz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
 
     cdef double _eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add)
 
@@ -163,4 +161,3 @@ cdef class _ArrayDerivative3D:
     cdef double _eval_edge_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
 
     cdef double _eval_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z)
-    cdef double _derivitive_d2fdxdy_new(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999
