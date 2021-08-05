@@ -285,10 +285,12 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
 
         # Where 'a' has been calculated the mask value = 1.
         self._mask_a = np.zeros((self._last_index,), dtype=np.float64)
+        self._mask_a_mv = np.int_(self._mask_a)
 
         # Store the cubic spline coefficients, where increasing index values are the coefficients for the coefficients of higher powers of x in the last dimension.
         self._a = np.zeros((self._last_index, 4), dtype=np.float64)
         self._a_mv = self._a
+        self._array_derivative = _ArrayDerivative1D(self._x, self._f)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
@@ -301,22 +303,20 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         cdef double[2] f, dfdx
         cdef double x_bound
         cdef double[4] a
-        cdef _ArrayDerivative1D array_derivative
 
         x_bound = self._x[index + 1] - self._x[index]
         x_scal = (px - self._x[index]) / x_bound
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
-        if not self._mask_a[index]:
+        if not self._mask_a_mv[index]:
             f[0] = self._f[index]
             f[1] = self._f[index + 1]
-            array_derivative = _ArrayDerivative1D(self._x, self._f)
-            dfdx[0] = array_derivative.evaluate(index, derivative_order=1, rescale_norm=False)
-            dfdx[1] = array_derivative.evaluate(index + 1, derivative_order=1, rescale_norm=True)
+            dfdx[0] = self._array_derivative.evaluate(index, derivative_order=1, rescale_norm=False)
+            dfdx[1] = self._array_derivative.evaluate(index + 1, derivative_order=1, rescale_norm=True)
 
             calc_coefficients_1d(f, dfdx, a)
             self._a_mv[index, :] = a
-            self._mask_a[index] = 1
+            self._mask_a_mv[index] = 1
 
         else:
             a = self._a[index, :4]
@@ -339,9 +339,8 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
 
         f[0] = self._f[index]
         f[1] = self._f[index + 1]
-        array_derivative = _ArrayDerivative1D(self._x, self._f)
-        dfdx[0] = array_derivative.evaluate(index, derivative_order=1, rescale_norm=False)
-        dfdx[1] = array_derivative.evaluate(index + 1, derivative_order=1, rescale_norm=True)
+        dfdx[0] = self._array_derivative.evaluate(index, derivative_order=1, rescale_norm=False)
+        dfdx[1] = self._array_derivative.evaluate(index + 1, derivative_order=1, rescale_norm=True)
 
         calc_coefficients_1d(f, dfdx, a)
 

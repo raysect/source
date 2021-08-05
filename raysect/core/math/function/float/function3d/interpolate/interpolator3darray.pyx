@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import numpy as np
+cimport numpy as cnp
 cimport cython
 from raysect.core.math.cython.utility cimport find_index
 from raysect.core.math.cython.interpolation.linear cimport linear3d
@@ -261,6 +262,7 @@ cdef class Interpolator3DArray(Function3D):
         )
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz) except? -1e999:
         """
@@ -368,6 +370,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         super().__init__(x, y, z, f)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999:
         return linear3d(
@@ -377,6 +380,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
         """
@@ -434,6 +438,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         return df_dn
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _calculate_coefficients(self, int index_x, int index_y, int index_z, int coefficient_index):
         """
@@ -517,14 +522,17 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
         super().__init__(x, y, z, f)
 
         # Where 'a' has been calculated the mask value = 1.
-        self._mask_a = np.zeros((self._last_index_x, self._last_index_y, self._last_index_z), dtype=np.float64)
+        self._mask_a = np.zeros((self._last_index_x, self._last_index_y, self._last_index_z), dtype=np.int8)
+        self._mask_a_mv = np.int_(self._mask_a)
 
         # Store the cubic spline coefficients, where increasing index values are the coefficients for the coefficients of higher powers of x, y, z in the last 3 dimensions.
         self._a = np.zeros((self._last_index_x, self._last_index_y, self._last_index_z, 4, 4, 4), dtype=np.float64)
         self._a_mv = self._a
+        self._array_derivative = _ArrayDerivative3D(self._x, self._y, self._z, self._f)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999:
 
@@ -550,6 +558,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
         return evaluate_cubic_3d(a, x_scal, y_scal, z_scal)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef _cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a):
         """
@@ -562,10 +571,9 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
         """
         cdef double[2][2][2] f, dfdx, dfdy, dfdz, d2fdxdy, d2fdxdz, d2fdydz, d3fdxdydz
         cdef int i, j, k
-        cdef _ArrayDerivative3D array_derivative
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
-        if not self._mask_a[index_x, index_y, index_z]:
+        if not self._mask_a_mv[index_x, index_y, index_z]:
             f[0][0][0] = self._f[index_x, index_y, index_z]
             f[0][1][0] = self._f[index_x, index_y + 1, index_z]
             f[0][1][1] = self._f[index_x, index_y + 1, index_z + 1]
@@ -575,85 +583,85 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
             f[1][0][1] = self._f[index_x + 1, index_y, index_z + 1]
             f[1][1][1] = self._f[index_x + 1, index_y + 1, index_z + 1]
 
-            array_derivative = _ArrayDerivative3D(self._x, self._y, self._z, self._f)
-            dfdx[0][0][0] = array_derivative.evaluate(index_x, index_y, index_z, 1, 0, 0, False, False, False)
-            dfdx[0][1][0] = array_derivative.evaluate(index_x, index_y + 1, index_z, 1, 0, 0, False, True, False)
-            dfdx[0][1][1] = array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 1, 0, 0, False, True, True)
-            dfdx[0][0][1] = array_derivative.evaluate(index_x, index_y, index_z + 1, 1, 0, 0, False, False, True)
-            dfdx[1][0][0] = array_derivative.evaluate(index_x + 1, index_y, index_z, 1, 0, 0, True, False, False)
-            dfdx[1][1][0] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 1, 0, 0, True, True, False)
-            dfdx[1][0][1] = array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 1, 0, 0, True, False, True)
-            dfdx[1][1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 1, 0, 0, True, True, True)
+            dfdx[0][0][0] = self._array_derivative.evaluate(index_x, index_y, index_z, 1, 0, 0, False, False, False)
+            dfdx[0][1][0] = self._array_derivative.evaluate(index_x, index_y + 1, index_z, 1, 0, 0, False, True, False)
+            dfdx[0][1][1] = self._array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 1, 0, 0, False, True, True)
+            dfdx[0][0][1] = self._array_derivative.evaluate(index_x, index_y, index_z + 1, 1, 0, 0, False, False, True)
+            dfdx[1][0][0] = self._array_derivative.evaluate(index_x + 1, index_y, index_z, 1, 0, 0, True, False, False)
+            dfdx[1][1][0] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 1, 0, 0, True, True, False)
+            dfdx[1][0][1] = self._array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 1, 0, 0, True, False, True)
+            dfdx[1][1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 1, 0, 0, True, True, True)
 
-            dfdy[0][0][0] = array_derivative.evaluate(index_x, index_y, index_z, 0, 1, 0, False, False, False)
-            dfdy[0][1][0] = array_derivative.evaluate(index_x, index_y + 1, index_z, 0, 1, 0, False, True, False)
-            dfdy[0][1][1] = array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 0, 1, 0, False, True, True)
-            dfdy[0][0][1] = array_derivative.evaluate(index_x, index_y, index_z + 1, 0, 1, 0, False, False, True)
-            dfdy[1][0][0] = array_derivative.evaluate(index_x + 1, index_y, index_z, 0, 1, 0, True, False, False)
-            dfdy[1][1][0] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 0, 1, 0, True, True, False)
-            dfdy[1][0][1] = array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 0, 1, 0, True, False, True)
-            dfdy[1][1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 0, 1, 0, True, True, True)
+            dfdy[0][0][0] = self._array_derivative.evaluate(index_x, index_y, index_z, 0, 1, 0, False, False, False)
+            dfdy[0][1][0] = self._array_derivative.evaluate(index_x, index_y + 1, index_z, 0, 1, 0, False, True, False)
+            dfdy[0][1][1] = self._array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 0, 1, 0, False, True, True)
+            dfdy[0][0][1] = self._array_derivative.evaluate(index_x, index_y, index_z + 1, 0, 1, 0, False, False, True)
+            dfdy[1][0][0] = self._array_derivative.evaluate(index_x + 1, index_y, index_z, 0, 1, 0, True, False, False)
+            dfdy[1][1][0] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 0, 1, 0, True, True, False)
+            dfdy[1][0][1] = self._array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 0, 1, 0, True, False, True)
+            dfdy[1][1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 0, 1, 0, True, True, True)
 
-            dfdz[0][0][0] = array_derivative.evaluate(index_x, index_y, index_z, 0, 0, 1, False, False, False)
-            dfdz[0][1][0] = array_derivative.evaluate(index_x, index_y + 1, index_z, 0, 0, 1, False, True, False)
-            dfdz[0][1][1] = array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 0, 0, 1, False, True, True)
-            dfdz[0][0][1] = array_derivative.evaluate(index_x, index_y, index_z + 1, 0, 0, 1, False, False, True)
-            dfdz[1][0][0] = array_derivative.evaluate(index_x + 1, index_y, index_z, 0, 0, 1, True, False, False)
-            dfdz[1][1][0] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 0, 0, 1, True, True, False)
-            dfdz[1][0][1] = array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 0, 0, 1, True, False, True)
-            dfdz[1][1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 0, 0, 1, True, True, True)
+            dfdz[0][0][0] = self._array_derivative.evaluate(index_x, index_y, index_z, 0, 0, 1, False, False, False)
+            dfdz[0][1][0] = self._array_derivative.evaluate(index_x, index_y + 1, index_z, 0, 0, 1, False, True, False)
+            dfdz[0][1][1] = self._array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 0, 0, 1, False, True, True)
+            dfdz[0][0][1] = self._array_derivative.evaluate(index_x, index_y, index_z + 1, 0, 0, 1, False, False, True)
+            dfdz[1][0][0] = self._array_derivative.evaluate(index_x + 1, index_y, index_z, 0, 0, 1, True, False, False)
+            dfdz[1][1][0] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 0, 0, 1, True, True, False)
+            dfdz[1][0][1] = self._array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 0, 0, 1, True, False, True)
+            dfdz[1][1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 0, 0, 1, True, True, True)
 
-            d2fdxdy[0][0][0] = array_derivative.evaluate(index_x, index_y, index_z, 1, 1, 0, False, False, False)
-            d2fdxdy[0][1][0] = array_derivative.evaluate(index_x, index_y + 1, index_z, 1, 1, 0, False, True, False)
-            d2fdxdy[0][1][1] = array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 1, 1, 0, False, True, True)
-            d2fdxdy[0][0][1] = array_derivative.evaluate(index_x, index_y, index_z + 1, 1, 1, 0, False, False, True)
-            d2fdxdy[1][0][0] = array_derivative.evaluate(index_x + 1, index_y, index_z, 1, 1, 0, True, False, False)
-            d2fdxdy[1][1][0] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 1, 1, 0, True, True, False)
-            d2fdxdy[1][0][1] = array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 1, 1, 0, True, False, True)
-            d2fdxdy[1][1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 1, 1, 0, True, True, True)
+            d2fdxdy[0][0][0] = self._array_derivative.evaluate(index_x, index_y, index_z, 1, 1, 0, False, False, False)
+            d2fdxdy[0][1][0] = self._array_derivative.evaluate(index_x, index_y + 1, index_z, 1, 1, 0, False, True, False)
+            d2fdxdy[0][1][1] = self._array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 1, 1, 0, False, True, True)
+            d2fdxdy[0][0][1] = self._array_derivative.evaluate(index_x, index_y, index_z + 1, 1, 1, 0, False, False, True)
+            d2fdxdy[1][0][0] = self._array_derivative.evaluate(index_x + 1, index_y, index_z, 1, 1, 0, True, False, False)
+            d2fdxdy[1][1][0] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 1, 1, 0, True, True, False)
+            d2fdxdy[1][0][1] = self._array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 1, 1, 0, True, False, True)
+            d2fdxdy[1][1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 1, 1, 0, True, True, True)
 
-            d2fdxdz[0][0][0] = array_derivative.evaluate(index_x, index_y, index_z, 1, 0, 1, False, False, False)
-            d2fdxdz[0][1][0] = array_derivative.evaluate(index_x, index_y + 1, index_z, 1, 0, 1, False, True, False)
-            d2fdxdz[0][1][1] = array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 1, 0, 1, False, True, True)
-            d2fdxdz[0][0][1] = array_derivative.evaluate(index_x, index_y, index_z + 1, 1, 0, 1, False, False, True)
-            d2fdxdz[1][0][0] = array_derivative.evaluate(index_x + 1, index_y, index_z, 1, 0, 1, True, False, False)
-            d2fdxdz[1][1][0] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 1, 0, 1, True, True, False)
-            d2fdxdz[1][0][1] = array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 1, 0, 1, True, False, True)
-            d2fdxdz[1][1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 1, 0, 1, True, True, True)
+            d2fdxdz[0][0][0] = self._array_derivative.evaluate(index_x, index_y, index_z, 1, 0, 1, False, False, False)
+            d2fdxdz[0][1][0] = self._array_derivative.evaluate(index_x, index_y + 1, index_z, 1, 0, 1, False, True, False)
+            d2fdxdz[0][1][1] = self._array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 1, 0, 1, False, True, True)
+            d2fdxdz[0][0][1] = self._array_derivative.evaluate(index_x, index_y, index_z + 1, 1, 0, 1, False, False, True)
+            d2fdxdz[1][0][0] = self._array_derivative.evaluate(index_x + 1, index_y, index_z, 1, 0, 1, True, False, False)
+            d2fdxdz[1][1][0] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 1, 0, 1, True, True, False)
+            d2fdxdz[1][0][1] = self._array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 1, 0, 1, True, False, True)
+            d2fdxdz[1][1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 1, 0, 1, True, True, True)
 
-            d2fdydz[0][0][0] = array_derivative.evaluate(index_x, index_y, index_z, 0, 1, 1, False, False, False)
-            d2fdydz[0][1][0] = array_derivative.evaluate(index_x, index_y + 1, index_z, 0, 1, 1, False, True, False)
-            d2fdydz[0][1][1] = array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 0, 1, 1, False, True, True)
-            d2fdydz[0][0][1] = array_derivative.evaluate(index_x, index_y, index_z + 1, 0, 1, 1, False, False, True)
-            d2fdydz[1][0][0] = array_derivative.evaluate(index_x + 1, index_y, index_z, 0, 1, 1, True, False, False)
-            d2fdydz[1][1][0] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 0, 1, 1, True, True, False)
-            d2fdydz[1][0][1] = array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 0, 1, 1, True, False, True)
-            d2fdydz[1][1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 0, 1, 1, True, True, True)
+            d2fdydz[0][0][0] = self._array_derivative.evaluate(index_x, index_y, index_z, 0, 1, 1, False, False, False)
+            d2fdydz[0][1][0] = self._array_derivative.evaluate(index_x, index_y + 1, index_z, 0, 1, 1, False, True, False)
+            d2fdydz[0][1][1] = self._array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 0, 1, 1, False, True, True)
+            d2fdydz[0][0][1] = self._array_derivative.evaluate(index_x, index_y, index_z + 1, 0, 1, 1, False, False, True)
+            d2fdydz[1][0][0] = self._array_derivative.evaluate(index_x + 1, index_y, index_z, 0, 1, 1, True, False, False)
+            d2fdydz[1][1][0] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 0, 1, 1, True, True, False)
+            d2fdydz[1][0][1] = self._array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 0, 1, 1, True, False, True)
+            d2fdydz[1][1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 0, 1, 1, True, True, True)
 
-            d3fdxdydz[0][0][0] = array_derivative.evaluate(index_x, index_y, index_z, 1, 1, 1, False, False, False)
-            d3fdxdydz[0][1][0] = array_derivative.evaluate(index_x, index_y + 1, index_z, 1, 1, 1, False, True, False)
-            d3fdxdydz[0][1][1] = array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 1, 1, 1, False, True, True)
-            d3fdxdydz[0][0][1] = array_derivative.evaluate(index_x, index_y, index_z + 1, 1, 1, 1, False, False, True)
-            d3fdxdydz[1][0][0] = array_derivative.evaluate(index_x + 1, index_y, index_z, 1, 1, 1, True, False, False)
-            d3fdxdydz[1][1][0] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 1, 1, 1, True, True, False)
-            d3fdxdydz[1][0][1] = array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 1, 1, 1, True, False, True)
-            d3fdxdydz[1][1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 1, 1, 1, True, True, True)
+            d3fdxdydz[0][0][0] = self._array_derivative.evaluate(index_x, index_y, index_z, 1, 1, 1, False, False, False)
+            d3fdxdydz[0][1][0] = self._array_derivative.evaluate(index_x, index_y + 1, index_z, 1, 1, 1, False, True, False)
+            d3fdxdydz[0][1][1] = self._array_derivative.evaluate(index_x, index_y + 1, index_z + 1, 1, 1, 1, False, True, True)
+            d3fdxdydz[0][0][1] = self._array_derivative.evaluate(index_x, index_y, index_z + 1, 1, 1, 1, False, False, True)
+            d3fdxdydz[1][0][0] = self._array_derivative.evaluate(index_x + 1, index_y, index_z, 1, 1, 1, True, False, False)
+            d3fdxdydz[1][1][0] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z, 1, 1, 1, True, True, False)
+            d3fdxdydz[1][0][1] = self._array_derivative.evaluate(index_x + 1, index_y, index_z + 1, 1, 1, 1, True, False, True)
+            d3fdxdydz[1][1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, index_z + 1, 1, 1, 1, True, True, True)
 
             calc_coefficients_3d(f, dfdx, dfdy, dfdz, d2fdxdy, d2fdxdz, d2fdydz, d3fdxdydz, a)
             for i in range(4):
                 for j in range(4):
                     for k in range(4):
-                        self._a[index_x, index_y, index_z, i, j, k] = a[i][j][k]
-            self._mask_a[index_x, index_y, index_z] = 1
+                        self._a_mv[index_x, index_y, index_z, i, j, k] = a[i][j][k]
+            self._mask_a_mv[index_x, index_y, index_z] = 1
 
         else:
             for i in range(4):
                 for j in range(4):
                     for k in range(4):
-                        a[i][j][k] = self._a[index_x, index_y, index_z, i, j, k]
+                        a[i][j][k] = self._a_mv[index_x, index_y, index_z, i, j, k]
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
         """
@@ -748,6 +756,7 @@ cdef class _Extrapolator3D:
         self._extrapolation_range_z = extrapolation_range_z
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999:
         cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
@@ -903,36 +912,43 @@ cdef class _Extrapolator3DNearest(_Extrapolator3D):
            super().__init__(x, y, z, f, interpolator, extrapolation_range_x, extrapolation_range_y, extrapolation_range_z)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(self._x[edge_x_index], py, pz, index_x, index_y, index_z)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(px, self._y[edge_y_index], pz, index_x, index_y, index_z)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(px, py, self._z[edge_z_index], index_x, index_y, index_z)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_xy(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], pz, index_x, index_y, index_z)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(self._x[edge_x_index], py, self._z[edge_z_index], index_x, index_y, index_z)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         return self._interpolator.evaluate(self._x[edge_x_index], self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
@@ -956,6 +972,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f, df_dx
@@ -968,6 +985,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f, df_dy
@@ -980,6 +998,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f, df_dz
@@ -992,6 +1011,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_xy(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
 
@@ -1015,6 +1035,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
 
@@ -1038,6 +1059,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         cdef double f, df_dy, df_dz, d2f_dydz
@@ -1060,6 +1082,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_xyz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
         """
@@ -1147,6 +1170,7 @@ cdef class _ArrayDerivative3D:
         self._last_index_z = self._z.shape[0] - 1
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, bint rescale_norm_x, bint rescale_norm_y, bint rescale_norm_z) except? -1e999:
         """
@@ -1276,6 +1300,7 @@ cdef class _ArrayDerivative3D:
         return dfdn
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
         cdef double dfdn = 0.
@@ -1307,6 +1332,7 @@ cdef class _ArrayDerivative3D:
         return dfdn
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_y(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
         cdef double dfdn = 0.
@@ -1338,6 +1364,7 @@ cdef class _ArrayDerivative3D:
         return dfdn
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_z(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
@@ -1369,6 +1396,7 @@ cdef class _ArrayDerivative3D:
         return dfdn
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_xy(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
@@ -1400,6 +1428,7 @@ cdef class _ArrayDerivative3D:
         return dfdn
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_xz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
@@ -1431,6 +1460,7 @@ cdef class _ArrayDerivative3D:
         return dfdn
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_yz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
@@ -1462,6 +1492,7 @@ cdef class _ArrayDerivative3D:
         return dfdn
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
         cdef double dfdn = 0.
@@ -1493,6 +1524,7 @@ cdef class _ArrayDerivative3D:
         return dfdn
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z):
         cdef double dfdn = 0.
@@ -1525,6 +1557,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_dfdx(self, int lower_index, int order_x, int order_y, int order_z, int slice_index_1, int slice_index_2) except? -1e999:
         cdef double x1_n, x1_n2
@@ -1548,6 +1581,7 @@ cdef class _ArrayDerivative3D:
             raise ValueError(f'For a first derivative order_x, order_y or order_z must be 1 instead got:({order_x}, {order_y}, {order_z}')
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_dfdx_edge(self, int lower_index, int order_x, int order_y, int order_z, int slice_index_1, int slice_index_2):
         if order_x == 1:
@@ -1564,6 +1598,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999:
         cdef double d1, d2
@@ -1590,6 +1625,7 @@ cdef class _ArrayDerivative3D:
             raise ValueError(f'For a second derivative 2 of order_x, order_y or order_z must be 1 instead got:({order_x}, {order_y}, {order_z}')
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_edge_xy(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999:
         cdef double d1, d2
@@ -1608,6 +1644,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_near_1_edge(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index, bint edge_is_1) except? -1e999:
         cdef double d1
@@ -1648,6 +1685,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
         cdef double dx1, dy1, dz1
@@ -1660,6 +1698,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_x(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
         cdef double dy1, dz1
@@ -1670,6 +1709,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_y(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
         cdef double dx1, dz1
@@ -1681,6 +1721,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_z(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
         cdef double dx1, dy1
@@ -1692,6 +1733,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_xy(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
         cdef double dz1
@@ -1702,6 +1744,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_xz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
         cdef double dy1
@@ -1712,6 +1755,7 @@ cdef class _ArrayDerivative3D:
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_yz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
         cdef double dx1
@@ -1721,6 +1765,7 @@ cdef class _ArrayDerivative3D:
         return (self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z + 1] - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 1] - self._f[lower_index_x + 2, lower_index_y, lower_index_z + 1] + self._f[lower_index_x, lower_index_y, lower_index_z + 1] - self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z] + self._f[lower_index_x, lower_index_y + 1, lower_index_z] + self._f[lower_index_x + 2, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dx1)
 
     @cython.boundscheck(False)
+    @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_xyz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
         return self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z + 1] - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 1] - self._f[lower_index_x + 1, lower_index_y, lower_index_z + 1] + self._f[lower_index_x, lower_index_y, lower_index_z + 1] - self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z] + self._f[lower_index_x, lower_index_y + 1, lower_index_z] + self._f[lower_index_x + 1, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]

@@ -433,10 +433,12 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
 
         # Where 'a' has been calculated the mask value = 1.
         self._mask_a = np.zeros((self._last_index_x, self._last_index_y), dtype=np.float64)
+        self._mask_a_mv = np.int_(self._mask_a)
 
         # Store the cubic spline coefficients, where increasing index values are the coefficients for the coefficients of higher powers of x, y in the last 2 dimensions.
         self._a = np.zeros((self._last_index_x, self._last_index_y, 4, 4), dtype=np.float64)
         self._a_mv = self._a
+        self._array_derivative = _ArrayDerivative2D(self._x, self._y, self._f)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
@@ -474,41 +476,39 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         """
         cdef double[2][2] f, dfdx, dfdy, d2fdxdy
         cdef int i, j
-        cdef _ArrayDerivative2D array_derivative
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
-        if not self._mask_a[index_x, index_y]:
+        if not self._mask_a_mv[index_x, index_y]:
             f[0][0] = self._f[index_x, index_y]
             f[1][0] = self._f[index_x + 1, index_y]
             f[0][1] = self._f[index_x, index_y + 1]
             f[1][1] = self._f[index_x + 1, index_y + 1]
 
-            array_derivative = _ArrayDerivative2D(self._x, self._y, self._f)
-            dfdx[0][0] = array_derivative.evaluate(index_x, index_y, 1, 0, False, False)
-            dfdx[0][1] = array_derivative.evaluate(index_x, index_y + 1, 1, 0, False, True)
-            dfdx[1][0] = array_derivative.evaluate(index_x + 1, index_y, 1, 0, True, False)
-            dfdx[1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, 1, 0, True, True)
+            dfdx[0][0] = self._array_derivative.evaluate(index_x, index_y, 1, 0, False, False)
+            dfdx[0][1] = self._array_derivative.evaluate(index_x, index_y + 1, 1, 0, False, True)
+            dfdx[1][0] = self._array_derivative.evaluate(index_x + 1, index_y, 1, 0, True, False)
+            dfdx[1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, 1, 0, True, True)
 
-            dfdy[0][0] = array_derivative.evaluate(index_x, index_y, 0, 1, False, False)
-            dfdy[0][1] = array_derivative.evaluate(index_x, index_y + 1, 0, 1, False, True)
-            dfdy[1][0] = array_derivative.evaluate(index_x + 1, index_y, 0, 1, True, False)
-            dfdy[1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, 0, 1, True, True)
+            dfdy[0][0] = self._array_derivative.evaluate(index_x, index_y, 0, 1, False, False)
+            dfdy[0][1] = self._array_derivative.evaluate(index_x, index_y + 1, 0, 1, False, True)
+            dfdy[1][0] = self._array_derivative.evaluate(index_x + 1, index_y, 0, 1, True, False)
+            dfdy[1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, 0, 1, True, True)
 
-            d2fdxdy[0][0] = array_derivative.evaluate(index_x, index_y, 1, 1, False, False)
-            d2fdxdy[0][1] = array_derivative.evaluate(index_x, index_y + 1, 1, 1, False, True)
-            d2fdxdy[1][0] = array_derivative.evaluate(index_x + 1, index_y, 1, 1, True, False)
-            d2fdxdy[1][1] = array_derivative.evaluate(index_x + 1, index_y + 1, 1, 1, True, True)
+            d2fdxdy[0][0] = self._array_derivative.evaluate(index_x, index_y, 1, 1, False, False)
+            d2fdxdy[0][1] = self._array_derivative.evaluate(index_x, index_y + 1, 1, 1, False, True)
+            d2fdxdy[1][0] = self._array_derivative.evaluate(index_x + 1, index_y, 1, 1, True, False)
+            d2fdxdy[1][1] = self._array_derivative.evaluate(index_x + 1, index_y + 1, 1, 1, True, True)
 
             calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
             for i in range(4):
                 for j in range(4):
-                    self._a[index_x, index_y, i, j] = a[i][j]
-            self._mask_a[index_x, index_y] = 1
+                    self._a_mv[index_x, index_y, i, j] = a[i][j]
+            self._mask_a_mv[index_x, index_y] = 1
 
         else:
             for i in range(4):
                 for j in range(4):
-                    a[i][j] = self._a[index_x, index_y, i, j]
+                    a[i][j] = self._a_mv[index_x, index_y, i, j]
 
     @cython.cdivision(True)
     @cython.boundscheck(False)

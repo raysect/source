@@ -74,7 +74,9 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
 cdef class _Interpolator3DCubic(_Interpolator3D):
     cdef:
         ndarray _a, _mask_a
+        long[:, :, ::1] _mask_a_mv
         double[:, :, :, :, :, ::1] _a_mv
+        _ArrayDerivative3D _array_derivative
 
     cdef _cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a)
 

@@ -61,9 +61,10 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
 cdef class _Interpolator1DCubic(_Interpolator1D):
     cdef:
         ndarray _a, _mask_a
+        long[::1] _mask_a_mv
         double[:, ::1] _a_mv
         int _n
-        double evaluate(self, double px, int index) except? -1e999
+        _ArrayDerivative1D _array_derivative
 
 
 cdef class _Extrapolator1D:
