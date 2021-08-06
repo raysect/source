@@ -403,40 +403,50 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         :param int order_y: the derivative order in the y direction.
         :param int order_z: the derivative order in the z direction.
         """
-        cdef double df_dn
-        #TODO make this neater
+        cdef double df_dn, dx, dy, dz
+
         if order_x == 1 and order_y == 1 and order_z == 1:
             df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7)
 
         elif order_x == 1 and order_y == 1 and order_z == 0:
+            dz = (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
             df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dz
 
         elif order_x == 1 and order_y == 0 and order_z == 1:
+            dy = (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
             df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dy
 
         elif order_x == 0 and order_y == 1 and order_z == 1:
+            dx = (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
             df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dx
 
         elif order_x == 1 and order_y == 0 and order_z == 0:
+            dy = (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
+            dz = (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
             df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=1) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z]) + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * dy + \
+                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) * dz + \
+                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dy * dz
 
         elif order_x == 0 and order_y == 1 and order_z == 0:
+            dx = (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
+            dz = (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
             df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=2) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z]) + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * dx + \
+                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) * dz + \
+                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dx * dz
 
         elif order_x == 0 and order_y == 0 and order_z == 1:
+            dx = (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
+            dy = (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
+            dz = (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
             df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=3) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) * dx + \
+                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) * dy + \
+                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dx * dy
 
         else:
             raise ValueError('The derivative order for x, y and z (order_x, order_y and order_z) must be a combination of 1 and 0 for the linear interpolator (but 0, 0, 0 should be handled by evaluating the interpolator).')

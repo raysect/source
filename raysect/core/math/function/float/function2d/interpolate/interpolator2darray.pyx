@@ -354,18 +354,21 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
         :param int order_x: the derivative order in the x direction.
         :param int order_y: the derivative order in the y direction.
         """
-        cdef double df_dn
-        #TODO make this neater
+        cdef double df_dn, dxy
+
         if order_x == 1 and order_y == 1:
             df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=3)
 
         elif order_x == 1:
+            dxy = (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
             df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=1) \
-                    + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
+                    + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * dxy
 
         elif order_y == 1:
+            dxy = (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
+
             df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=2) \
-                    + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
+                    + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * dxy
 
         else:
             raise ValueError('The derivative order for x and y (order_x and order_y) must be a combination of 1 and 0 for the linear interpolator (but 0, 0 should be handled by evaluating the interpolator).')
