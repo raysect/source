@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.function.float.function3d cimport Function3D
-from numpy cimport ndarray
+cimport numpy as np
 
 
 cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper)
@@ -45,7 +45,7 @@ cdef int find_edge_index(int index, int last_index)
 cdef class Interpolator3DArray(Function3D):
 
     cdef:
-        ndarray x, y, z, f
+        np.ndarray x, y, z, f
         double[::1] _x_mv, _y_mv, _z_mv
         double [:, :, ::1] _f_mv
         _Interpolator3D _interpolator
@@ -73,9 +73,8 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
 
 cdef class _Interpolator3DCubic(_Interpolator3D):
     cdef:
-        ndarray _a, _mask_a
-        long[:, :, ::1] _mask_a_mv
-        double[:, :, :, :, :, ::1] _a_mv
+        np.uint8_t[:, :, ::1] _mask_a
+        double[:, :, :, :, :, ::1] _a
         _ArrayDerivative3D _array_derivative
 
     cdef _cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a)

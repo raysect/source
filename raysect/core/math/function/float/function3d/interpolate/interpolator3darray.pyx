@@ -544,12 +544,10 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
         super().__init__(x, y, z, f)
 
         # Where 'a' has been calculated the mask value = 1.
-        self._mask_a = np.zeros((self._last_index_x, self._last_index_y, self._last_index_z), dtype=np.int8)
-        self._mask_a_mv = np.int_(self._mask_a)
+        self._mask_a = np.zeros((self._last_index_x, self._last_index_y, self._last_index_z), dtype=np.uint8)
 
         # Store the cubic spline coefficients, where increasing index values are the coefficients for the coefficients of higher powers of x, y, z in the last 3 dimensions.
         self._a = np.zeros((self._last_index_x, self._last_index_y, self._last_index_z, 4, 4, 4), dtype=np.float64)
-        self._a_mv = self._a
         self._array_derivative = _ArrayDerivative3D(self._x, self._y, self._z, self._f)
 
     @cython.cdivision(True)
@@ -595,7 +593,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
         cdef int i, j, k
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
-        if not self._mask_a_mv[index_x, index_y, index_z]:
+        if not self._mask_a[index_x, index_y, index_z]:
             f[0][0][0] = self._f[index_x, index_y, index_z]
             f[0][1][0] = self._f[index_x, index_y + 1, index_z]
             f[0][1][1] = self._f[index_x, index_y + 1, index_z + 1]
@@ -672,14 +670,14 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
             for i in range(4):
                 for j in range(4):
                     for k in range(4):
-                        self._a_mv[index_x, index_y, index_z, i, j, k] = a[i][j][k]
-            self._mask_a_mv[index_x, index_y, index_z] = 1
+                        self._a[index_x, index_y, index_z, i, j, k] = a[i][j][k]
+            self._mask_a[index_x, index_y, index_z] = 1
 
         else:
             for i in range(4):
                 for j in range(4):
                     for k in range(4):
-                        a[i][j][k] = self._a_mv[index_x, index_y, index_z, i, j, k]
+                        a[i][j][k] = self._a[index_x, index_y, index_z, i, j, k]
 
     @cython.cdivision(True)
     @cython.boundscheck(False)

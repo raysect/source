@@ -438,12 +438,10 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         super().__init__(x, y, f)
 
         # Where 'a' has been calculated the mask value = 1.
-        self._mask_a = np.zeros((self._last_index_x, self._last_index_y), dtype=np.float64)
-        self._mask_a_mv = np.int_(self._mask_a)
+        self._mask_a = np.zeros((self._last_index_x, self._last_index_y), dtype=np.uint8)
 
         # Store the cubic spline coefficients, where increasing index values are the coefficients for the coefficients of higher powers of x, y in the last 2 dimensions.
         self._a = np.zeros((self._last_index_x, self._last_index_y, 4, 4), dtype=np.float64)
-        self._a_mv = self._a
         self._array_derivative = _ArrayDerivative2D(self._x, self._y, self._f)
 
     @cython.cdivision(True)
@@ -484,7 +482,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         cdef int i, j
 
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
-        if not self._mask_a_mv[index_x, index_y]:
+        if not self._mask_a[index_x, index_y]:
             f[0][0] = self._f[index_x, index_y]
             f[1][0] = self._f[index_x + 1, index_y]
             f[0][1] = self._f[index_x, index_y + 1]
@@ -508,13 +506,13 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
             calc_coefficients_2d(f, dfdx, dfdy, d2fdxdy, a)
             for i in range(4):
                 for j in range(4):
-                    self._a_mv[index_x, index_y, i, j] = a[i][j]
-            self._mask_a_mv[index_x, index_y] = 1
+                    self._a[index_x, index_y, i, j] = a[i][j]
+            self._mask_a[index_x, index_y] = 1
 
         else:
             for i in range(4):
                 for j in range(4):
-                    a[i][j] = self._a_mv[index_x, index_y, i, j]
+                    a[i][j] = self._a[index_x, index_y, i, j]
 
     @cython.cdivision(True)
     @cython.boundscheck(False)

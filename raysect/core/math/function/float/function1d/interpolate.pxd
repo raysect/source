@@ -30,14 +30,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.function.float.function1d.base cimport Function1D
-from numpy cimport ndarray
+cimport numpy as np
 
 cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper)
 
 
 cdef class Interpolator1DArray(Function1D):
     cdef:
-        ndarray x, f
+        np.ndarray x, f
         double[::1] _x_mv, _f_mv
         _Interpolator1D _interpolator
         _Extrapolator1D _extrapolator
@@ -60,9 +60,8 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
 
 cdef class _Interpolator1DCubic(_Interpolator1D):
     cdef:
-        ndarray _a, _mask_a
-        long[::1] _mask_a_mv
-        double[:, ::1] _a_mv
+        np.uint8_t[::1] _mask_a
+        double[:, ::1] _a
         int _n
         _ArrayDerivative1D _array_derivative
 

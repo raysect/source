@@ -73,9 +73,8 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
 
 cdef class _Interpolator2DCubic(_Interpolator2D):
     cdef:
-        ndarray _a, _mask_a
-        long[:, ::1] _mask_a_mv
-        double[:, :, :, ::1] _a_mv
+        np.uint8_t[:, ::1] _mask_a
+        double[:, :, :, ::1] _a
         _ArrayDerivative2D _array_derivative
 
     cdef _cache_coefficients(self, int index_x, int index_y, double[4][4] a)
