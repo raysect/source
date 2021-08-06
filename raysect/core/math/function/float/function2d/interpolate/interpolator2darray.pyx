@@ -360,10 +360,12 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
             df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=3)
 
         elif order_x == 1:
-            df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=1) + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
+            df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=1) \
+                    + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
 
         elif order_y == 1:
-            df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=2) + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
+            df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=2) \
+                    + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
 
         else:
             raise ValueError('The derivative order for x and y (order_x and order_y) must be a combination of 1 and 0 for the linear interpolator (but 0, 0 should be handled by evaluating the interpolator).')
@@ -408,7 +410,8 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
             return self._f[index_x, index_y + 1] - self._f[index_x, index_y]
 
         elif coefficient_index == 3:
-            return self._f[index_x, index_y] - self._f[index_x, index_y + 1] - self._f[index_x + 1, index_y] + self._f[index_x + 1, index_y + 1]
+            return self._f[index_x, index_y] - self._f[index_x, index_y + 1] \
+                   - self._f[index_x + 1, index_y] + self._f[index_x + 1, index_y + 1]
 
         else:
             raise ValueError(f'There are only 4 bilinear coefficients, the index requested:{coefficient_index} is out of range.')
@@ -564,8 +567,8 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
 
         for i in range(order_x, 4):
             for j in range(order_y, 4):
-                df_dn += (a[i][j] * (FACTORIAL_ARRAY[i]/FACTORIAL_ARRAY[i-order_x]) * (FACTORIAL_ARRAY[j]/FACTORIAL_ARRAY[j-order_y]) *
-                          x_powers[i-order_x] * y_powers[j-order_y])
+                df_dn += (a[i][j] * (FACTORIAL_ARRAY[i]/FACTORIAL_ARRAY[i-order_x]) *
+                          (FACTORIAL_ARRAY[j]/FACTORIAL_ARRAY[j-order_y]) * x_powers[i-order_x] * y_powers[j-order_y])
         return  df_dn
 
 
@@ -924,6 +927,9 @@ cdef class _ArrayDerivative2D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
+        """
+        Calculate derivatives of a 2D array near the edge in the x dimension.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0:
@@ -944,6 +950,9 @@ cdef class _ArrayDerivative2D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add):
+        """
+        Calculate derivatives of a 2D array near the edge in the y dimension.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0:
@@ -964,6 +973,9 @@ cdef class _ArrayDerivative2D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999:
+        """
+        Calculate derivatives of a 2D array near the edge in both dimensions.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0:
@@ -984,6 +996,9 @@ cdef class _ArrayDerivative2D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y):
+        """
+        Calculate derivatives of a 2D array away from edges in both dimensions.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0:
@@ -1054,12 +1069,14 @@ cdef class _ArrayDerivative2D:
         if order_x == 1:
             x1_n = (self._x[lower_index + 1] - self._x[lower_index]) / (self._x[lower_index + 2] - self._x[lower_index + 1])
             x1_n2 = x1_n ** 2
-            return (self._f[lower_index + 2, slice_index] * x1_n2 - self._f[lower_index, slice_index] - self._f[lower_index + 1, slice_index] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+            return (self._f[lower_index + 2, slice_index] * x1_n2 - self._f[lower_index, slice_index]
+                    - self._f[lower_index + 1, slice_index] * (x1_n2 - 1.)) / (x1_n + x1_n2)
 
         elif order_y == 1:
             x1_n = (self._y[lower_index + 1] - self._y[lower_index]) / (self._y[lower_index + 2] - self._y[lower_index + 1])
             x1_n2 = x1_n ** 2
-            return (self._f[slice_index, lower_index + 2] * x1_n2 - self._f[slice_index, lower_index] - self._f[slice_index, lower_index + 1] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+            return (self._f[slice_index, lower_index + 2] * x1_n2 - self._f[slice_index, lower_index]
+                    - self._f[slice_index, lower_index + 1] * (x1_n2 - 1.)) / (x1_n + x1_n2)
 
         else:
             raise ValueError(f'For a first derivative order_x, or order_y must be 1 instead got:({order_x}, {order_y}')
@@ -1086,7 +1103,8 @@ cdef class _ArrayDerivative2D:
         For unit square normalisation, dy0 = 1 and dx0 = 1.
         fxy(x, y) = f(x+dx0, y+dy0) - f(x+dx0, y) - f(x, y+dy0) + f(x, y)
         """
-        return self._f[lower_index_x + 1, lower_index_y + 1] - self._f[lower_index_x, lower_index_y + 1] - self._f[lower_index_x + 1, lower_index_y] + self._f[lower_index_x, lower_index_y]
+        return self._f[lower_index_x + 1, lower_index_y + 1] - self._f[lower_index_x, lower_index_y + 1] \
+               - self._f[lower_index_x + 1, lower_index_y] + self._f[lower_index_x, lower_index_y]
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
@@ -1123,7 +1141,8 @@ cdef class _ArrayDerivative2D:
         cdef double dy1
 
         dy1 = (self._y[lower_index_y + 1] - self._y[lower_index_y]) / (self._y[lower_index_y + 2] - self._y[lower_index_y + 1])
-        return (self._f[lower_index_x + 1, lower_index_y + 2] - self._f[lower_index_x, lower_index_y + 2] - self._f[lower_index_x + 1, lower_index_y] + self._f[lower_index_x, lower_index_y] )/ (1. + dy1)
+        return (self._f[lower_index_x + 1, lower_index_y + 2] - self._f[lower_index_x, lower_index_y + 2]
+                - self._f[lower_index_x + 1, lower_index_y] + self._f[lower_index_x, lower_index_y] )/ (1. + dy1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
@@ -1148,7 +1167,8 @@ cdef class _ArrayDerivative2D:
         cdef double dx1
 
         dx1 = (self._x[lower_index_x + 1] - self._x[lower_index_x]) / (self._x[lower_index_x + 2] - self._x[lower_index_x + 1])
-        return (self._f[lower_index_x + 2, lower_index_y + 1] - self._f[lower_index_x, lower_index_y + 1] - self._f[lower_index_x + 2, lower_index_y] + self._f[lower_index_x, lower_index_y] )/ (1. + dx1)
+        return (self._f[lower_index_x + 2, lower_index_y + 1] - self._f[lower_index_x, lower_index_y + 1]
+                - self._f[lower_index_x + 2, lower_index_y] + self._f[lower_index_x, lower_index_y] )/ (1. + dx1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
@@ -1182,7 +1202,8 @@ cdef class _ArrayDerivative2D:
         cdef double dx1, dy1
         dx1 = (self._x[lower_index_x + 1] - self._x[lower_index_x])/(self._x[lower_index_x + 2] - self._x[lower_index_x + 1])
         dy1 = (self._y[lower_index_y + 1] - self._y[lower_index_y])/(self._y[lower_index_y + 2] - self._y[lower_index_y + 1])
-        return (self._f[lower_index_x + 2, lower_index_y + 2] - self._f[lower_index_x, lower_index_y + 2] - self._f[lower_index_x + 2, lower_index_y] + self._f[lower_index_x, lower_index_y])/(1. + dx1 + dy1 + dx1*dy1)
+        return (self._f[lower_index_x + 2, lower_index_y + 2] - self._f[lower_index_x, lower_index_y + 2]
+                - self._f[lower_index_x + 2, lower_index_y] + self._f[lower_index_x, lower_index_y])/(1. + dx1 + dy1 + dx1*dy1)
 
     def __call__(self, index_x, index_y, derivative_order_x, derivative_order_y, rescale_norm_x, rescale_norm_y):
         return self.evaluate(index_x, index_y, derivative_order_x, derivative_order_y, rescale_norm_x, rescale_norm_y)

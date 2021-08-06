@@ -409,26 +409,32 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
             df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7)
 
         elif order_x == 1 and order_y == 1 and order_z == 0:
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
+            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) \
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
 
         elif order_x == 1 and order_y == 0 and order_z == 1:
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
+            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) \
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
 
         elif order_x == 0 and order_y == 1 and order_z == 1:
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
+            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) \
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
 
         elif order_x == 1 and order_y == 0 and order_z == 0:
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=1) + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) + \
+            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=1) \
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) + \
                     self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z]) + \
                     self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
 
         elif order_x == 0 and order_y == 1 and order_z == 0:
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=2) + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) + \
+            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=2) \
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) + \
                     self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z]) + \
                     self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) * (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
 
         elif order_x == 0 and order_y == 0 and order_z == 1:
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=3) + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) + \
+            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=3) \
+                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) + \
                     self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y]) + \
                     self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x]) * (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
 
@@ -487,16 +493,22 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
             return - self._f[index_x, index_y, index_z] + self._f[index_x, index_y, index_z + 1]
 
         elif coefficient_index == 4:
-            return self._f[index_x, index_y, index_z] - self._f[index_x, index_y + 1, index_z] - self._f[index_x + 1, index_y, index_z] + self._f[index_x + 1, index_y + 1, index_z]
+            return self._f[index_x, index_y, index_z] - self._f[index_x, index_y + 1, index_z] \
+                   - self._f[index_x + 1, index_y, index_z] + self._f[index_x + 1, index_y + 1, index_z]
 
         elif coefficient_index == 5:
-            return self._f[index_x, index_y, index_z] - self._f[index_x, index_y, index_z + 1] - self._f[index_x + 1, index_y, index_z] + self._f[index_x + 1, index_y, index_z + 1]
+            return self._f[index_x, index_y, index_z] - self._f[index_x, index_y, index_z + 1] \
+                   - self._f[index_x + 1, index_y, index_z] + self._f[index_x + 1, index_y, index_z + 1]
 
         elif coefficient_index == 6:
-            return self._f[index_x, index_y, index_z] - self._f[index_x, index_y, index_z + 1] - self._f[index_x, index_y + 1, index_z] + self._f[index_x, index_y + 1, index_z + 1]
+            return self._f[index_x, index_y, index_z] - self._f[index_x, index_y, index_z + 1] \
+                   - self._f[index_x, index_y + 1, index_z] + self._f[index_x, index_y + 1, index_z + 1]
 
         elif coefficient_index == 7:
-            return - self._f[index_x, index_y, index_z] + self._f[index_x, index_y, index_z + 1] + self._f[index_x, index_y + 1, index_z] - self._f[index_x, index_y + 1, index_z + 1] + self._f[index_x + 1, index_y, index_z] - self._f[index_x + 1, index_y, index_z + 1] - self._f[index_x + 1, index_y + 1, index_z] + self._f[index_x + 1, index_y + 1, index_z + 1]
+            return - self._f[index_x, index_y, index_z] + self._f[index_x, index_y, index_z + 1] \
+                   + self._f[index_x, index_y + 1, index_z] - self._f[index_x, index_y + 1, index_z + 1] \
+                   + self._f[index_x + 1, index_y, index_z] - self._f[index_x + 1, index_y, index_z + 1] \
+                   - self._f[index_x + 1, index_y + 1, index_z] + self._f[index_x + 1, index_y + 1, index_z + 1]
 
         else:
             raise ValueError(f'There are only 8 bilinear coefficients, the index requested:{coefficient_index} is out of range.')
@@ -724,7 +736,9 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
         for i in range(order_x, 4):
             for j in range(order_y, 4):
                 for k in range(order_z, 4):
-                    df_dn += (a[i][j][k] * (FACTORIAL_ARRAY[i] / FACTORIAL_ARRAY[i-order_x]) * (FACTORIAL_ARRAY[j] / FACTORIAL_ARRAY[j-order_y])* (FACTORIAL_ARRAY[k] / FACTORIAL_ARRAY[k-order_z]) *
+                    df_dn += (a[i][j][k] * (FACTORIAL_ARRAY[i] / FACTORIAL_ARRAY[i-order_x]) *
+                              (FACTORIAL_ARRAY[j] / FACTORIAL_ARRAY[j-order_y])*
+                              (FACTORIAL_ARRAY[k] / FACTORIAL_ARRAY[k-order_z]) *
                               x_powers[i-order_x] * y_powers[j-order_y] * z_powers[k-order_z])
         return df_dn
 
@@ -1303,25 +1317,46 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
+        """
+        Calculate derivatives of a 3D array near the edge in the x dimension.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx(lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_x, lower_index_2=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_z + z_centre_add, edge_is_1=True)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_x, lower_index_2=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_z + z_centre_add, edge_is_1=True
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_x, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_y + y_centre_add, edge_is_1=True)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_x, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_y + y_centre_add, edge_is_1=True
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy(lower_index_1=index_y - 1, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_x + x_centre_add)
+            dfdn = self._derivitive_d2fdxdy(
+                lower_index_1=index_y - 1, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_x + x_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self._derivitive_d3fdxdydz_edge_x(lower_index_x=index_x, lower_index_y=index_y - 1, lower_index_z=index_z - 1)
@@ -1335,25 +1370,46 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_y(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add):
+        """
+        Calculate derivatives of a 3D array near the edge in the y dimension.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx(lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_x - 1, lower_index_2=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_z + z_centre_add, edge_is_1=False)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_x - 1, lower_index_2=index_y, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_z + z_centre_add, edge_is_1=False
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy(lower_index_1=index_x - 1, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_y + y_centre_add)
+            dfdn = self._derivitive_d2fdxdy(
+                lower_index_1=index_x - 1, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_y + y_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_y, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_x + x_centre_add, edge_is_1=True)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_y, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_x + x_centre_add, edge_is_1=True
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self._derivitive_d3fdxdydz_edge_y(lower_index_x=index_x - 1, lower_index_y=index_y, lower_index_z=index_z - 1)
@@ -1367,25 +1423,46 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_z(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
+        """
+        Calculate derivatives of a 3D array near the edge in the z dimension.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_d2fdxdy(lower_index_1=index_x - 1, lower_index_2=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_z + z_centre_add)
+            dfdn = self._derivitive_d2fdxdy(
+                lower_index_1=index_x - 1, lower_index_2=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_x - 1, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_y + y_centre_add, edge_is_1=False)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_x - 1, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_y + y_centre_add, edge_is_1=False
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_y - 1, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_x + x_centre_add, edge_is_1=False)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_y - 1, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_x + x_centre_add, edge_is_1=False
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self._derivitive_d3fdxdydz_edge_z(lower_index_x=index_x - 1, lower_index_y=index_y - 1, lower_index_z=index_z)
@@ -1399,25 +1476,46 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_xy(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
+        """
+        Calculate derivatives of a 3D array near the edge in x and y dimensions.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx(lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_d2fdxdy_edge_xy(lower_index_1=index_x, lower_index_2=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_z + z_centre_add)
+            dfdn = self._derivitive_d2fdxdy_edge_xy(
+                lower_index_1=index_x, lower_index_2=index_y, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_x, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_y + y_centre_add, edge_is_1=True)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_x, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_y + y_centre_add, edge_is_1=True
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_y, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_x + x_centre_add, edge_is_1=True)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_y, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_x + x_centre_add, edge_is_1=True
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self._derivitive_d3fdxdydz_edge_xy(lower_index_x=index_x, lower_index_y=index_y, lower_index_z=index_z - 1)
@@ -1431,25 +1529,45 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_xz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
+        """
+        Calculate derivatives of a 3D array near the edge in x and z dimensions.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_x, lower_index_2=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_z + z_centre_add, edge_is_1=True)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_x, lower_index_2=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_z + z_centre_add, edge_is_1=True
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_edge_xy(lower_index_1=index_x, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_y + y_centre_add)
+            dfdn = self._derivitive_d2fdxdy_edge_xy(
+                lower_index_1=index_x, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_y + y_centre_add)
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_y - 1, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_x + x_centre_add, edge_is_1=False)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_y - 1, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_x + x_centre_add, edge_is_1=False
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self._derivitive_d3fdxdydz_edge_xz(lower_index_x=index_x, lower_index_y=index_y - 1, lower_index_z=index_z)
@@ -1463,25 +1581,46 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_yz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
+        """
+        Calculate derivatives of a 3D array near the edge in y and z dimensions.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_x - 1, lower_index_2=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_z + z_centre_add, edge_is_1=False)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_x - 1, lower_index_2=index_y, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_z + z_centre_add, edge_is_1=False
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_near_1_edge(lower_index_1=index_x - 1, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_y + y_centre_add, edge_is_1=False)
+            dfdn = self._derivitive_d2fdxdy_near_1_edge(
+                lower_index_1=index_x - 1, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_y + y_centre_add, edge_is_1=False
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_edge_xy(lower_index_1=index_y, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_x + x_centre_add)
+            dfdn = self._derivitive_d2fdxdy_edge_xy(
+                lower_index_1=index_y, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_x + x_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
             dfdn = self._derivitive_d3fdxdydz_edge_yz(lower_index_x=index_x - 1, lower_index_y=index_y, lower_index_z=index_z)
@@ -1495,28 +1634,51 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_edge_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999:
+        """
+        Calculate derivatives of a 3D array near the edge in all 3 dimensions.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_x, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_y + y_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx_edge(lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add)
+            dfdn = self._derivitive_dfdx_edge(
+                lower_index=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x + x_centre_add, slice_index_2=index_y + y_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_d2fdxdy_edge_xy(lower_index_1=index_x, lower_index_2=index_y, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_z + z_centre_add)
+            dfdn = self._derivitive_d2fdxdy_edge_xy(
+                lower_index_1=index_x, lower_index_2=index_y, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_z + z_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_edge_xy(lower_index_1=index_x, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_y + y_centre_add)
+            dfdn = self._derivitive_d2fdxdy_edge_xy(
+                lower_index_1=index_x, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_y + y_centre_add
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy_edge_xy(lower_index_1=index_y, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_x + x_centre_add)
+            dfdn = self._derivitive_d2fdxdy_edge_xy(
+                lower_index_1=index_y, lower_index_2=index_z, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_x + x_centre_add
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d3fdxdydz_edge_xyz(lower_index_x=index_x, lower_index_y=index_y, lower_index_z=index_z)
+            dfdn = self._derivitive_d3fdxdydz_edge_xyz(
+                lower_index_x=index_x, lower_index_y=index_y, lower_index_z=index_z
+            )
 
         else:
             raise ValueError('No higher order derivatives implemented.')
@@ -1527,28 +1689,50 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _eval_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z):
+        """
+        Calculate derivatives of a 3D array away from any edge.
+        """
         cdef double dfdn = 0.
 
         if derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_y, slice_index_2=index_z)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_x - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_y, slice_index_2=index_z
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_dfdx(lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x, slice_index_2=index_z)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x, slice_index_2=index_z
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_dfdx(lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index_1=index_x, slice_index_2=index_y)
+            dfdn = self._derivitive_dfdx(
+                lower_index=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z,
+                slice_index_1=index_x, slice_index_2=index_y
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 0:
-            dfdn = self._derivitive_d2fdxdy(lower_index_1=index_x - 1, lower_index_2=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_z)
+            dfdn = self._derivitive_d2fdxdy(
+                lower_index_1=index_x - 1, lower_index_2=index_y - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_z
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 0 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy(lower_index_1=index_x - 1, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_y)
+            dfdn = self._derivitive_d2fdxdy(
+                lower_index_1=index_x - 1, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_y
+            )
 
         elif derivative_order_x == 0 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d2fdxdy(lower_index_1=index_y - 1, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y, order_z=derivative_order_z, slice_index=index_x)
+            dfdn = self._derivitive_d2fdxdy(
+                lower_index_1=index_y - 1, lower_index_2=index_z - 1, order_x=derivative_order_x, order_y=derivative_order_y,
+                order_z=derivative_order_z, slice_index=index_x
+            )
 
         elif derivative_order_x == 1 and derivative_order_y == 1 and derivative_order_z == 1:
-            dfdn = self._derivitive_d3fdxdydz(lower_index_x=index_x - 1, lower_index_y=index_y - 1, lower_index_z=index_z - 1)
+            dfdn = self._derivitive_d3fdxdydz(
+                lower_index_x=index_x - 1, lower_index_y=index_y - 1, lower_index_z=index_z - 1)
 
         else:
             raise ValueError('No higher order derivatives implemented.')
@@ -1560,22 +1744,43 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_dfdx(self, int lower_index, int order_x, int order_y, int order_z, int slice_index_1, int slice_index_2) except? -1e999:
+        """
+        Calculate df/dm on an unevenly spaced grid as a 2nd order approximation, where m is either
+        x, y, or z depending on the order supplied. This is only valid if exactly 1 of order_x, order_y and 
+        order_z are 1. The _1 and _2 mark which two out of three dimensions are lowest and highest in the 
+        list:[x, y, z] that don't have order_n=1. e.g. for df/dx _1 is used for y and _2 for z, but if trying to find
+         df/dy, then _1 is x and _2 is z. slice index are the array indices not in the dimension of the derivative 
+         being calculated so are constant. 
+
+        This calculation is the same as in 1D, and is made by writing out 2 second order taylor expansions at 
+        f(m + dm0, ...),  f(m - dm1, ...) then multiplying the first by dm1**2, the second by dm0**2 and subtracting 
+        the second from the first to leave df/dn terms. 
+
+        For unit square normalisation, dm0 = 1, the denominator simplifies, and dm1 
+        is rescaled to be normalised to distance dm0.
+        """
         cdef double x1_n, x1_n2
 
         if order_x == 1:
             x1_n = (self._x[lower_index + 1] - self._x[lower_index]) / (self._x[lower_index + 2] - self._x[lower_index + 1])
             x1_n2 = x1_n ** 2
-            return (self._f[lower_index + 2, slice_index_1, slice_index_2] * x1_n2 - self._f[lower_index, slice_index_1, slice_index_2] - self._f[lower_index + 1, slice_index_1, slice_index_2] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+            return (self._f[lower_index + 2, slice_index_1, slice_index_2] * x1_n2
+                    - self._f[lower_index, slice_index_1, slice_index_2]
+                    - self._f[lower_index + 1, slice_index_1, slice_index_2] * (x1_n2 - 1.)) / (x1_n + x1_n2)
 
         elif order_y == 1:
             x1_n = (self._y[lower_index + 1] - self._y[lower_index]) / (self._y[lower_index + 2] - self._y[lower_index + 1])
             x1_n2 = x1_n ** 2
-            return (self._f[slice_index_1, lower_index + 2, slice_index_2] * x1_n2 - self._f[slice_index_1, lower_index, slice_index_2] - self._f[slice_index_1, lower_index + 1, slice_index_2] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+            return (self._f[slice_index_1, lower_index + 2, slice_index_2] * x1_n2
+                    - self._f[slice_index_1, lower_index, slice_index_2]
+                    - self._f[slice_index_1, lower_index + 1, slice_index_2] * (x1_n2 - 1.)) / (x1_n + x1_n2)
 
         elif order_z == 1:
             x1_n = (self._z[lower_index + 1] - self._z[lower_index]) / (self._z[lower_index + 2] - self._z[lower_index + 1])
             x1_n2 = x1_n ** 2
-            return (self._f[slice_index_1, slice_index_2, lower_index + 2] * x1_n2 - self._f[slice_index_1, slice_index_2, lower_index] - self._f[slice_index_1, slice_index_2, lower_index + 1] * (x1_n2 - 1.)) / (x1_n + x1_n2)
+            return (self._f[slice_index_1, slice_index_2, lower_index + 2] * x1_n2
+                    - self._f[slice_index_1, slice_index_2, lower_index]
+                    - self._f[slice_index_1, slice_index_2, lower_index + 1] * (x1_n2 - 1.)) / (x1_n + x1_n2)
 
         else:
             raise ValueError(f'For a first derivative order_x, order_y or order_z must be 1 instead got:({order_x}, {order_y}, {order_z}')
@@ -1584,6 +1789,19 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_dfdx_edge(self, int lower_index, int order_x, int order_y, int order_z, int slice_index_1, int slice_index_2):
+        """
+        Calculate df/dm on an unevenly spaced grid as a 1st order approximation, where m is either
+        x, y, or z depending on the order supplied. This is only valid if exactly 1 of order_x, order_y and 
+        order_z are 1. The _1 and _2 mark which two out of three dimensions are lowest and highest in the 
+        list:[x, y, z] that don't have order_n=1. e.g. for df/dx _1 is used for y and _2 for z, but if trying to find
+         df/dy, then _1 is x and _2 is z.slice index are the array indices not in the dimension of the derivative 
+         being calculated so are constant. 
+
+        This calculation is the same as in 1D, and is made by writing out 2 first order taylor expansions at 
+        f(m + dm0, ...),  f(m, ...) and subtracting the second from the first.
+
+        For unit square normalisation, dm0 = 1, the denominator simplifies..
+        """
         if order_x == 1:
             return self._f[lower_index + 1, slice_index_1, slice_index_2] - self._f[lower_index, slice_index_1, slice_index_2]
 
@@ -1601,25 +1819,52 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999:
+        """
+        Calculate d2f/dmdn on an unevenly spaced grid as a 2nd order approximation, where m, n are a combination of
+        x, y, or z depending on the order supplied. These are only valid if exactly 2 of order_x, order_y and 
+        order_z are 1. The _1 and _2 mark which two out of three dimensions are lowest and highest in the 
+        list:[x, y, z]. e.g. _1 is always used for x and _2 for z, but if trying to find d2f/dydz, then _1 is y and 
+        _2 is z.slice index are the array indices not in the dimension of the derivative 
+         being calculated so are constant. 
+
+        This calculation is the same as in 2D, but just handles second order taylor expansions at 4 different 
+        points around f(x, y, z) for every combination of +dm0, +dn0 or -dm1, -dn1 are written out (where n, m are 
+        either x, y or z). The Taylor expansions 
+        are subtracted from each other that have the same delta m positions, but higher/lower dn (dn0, 
+        dn1 respectively). The remaining 2 equations have higher/lower dn (dn1, dn2 respectively), so finally 
+        subtract the higher delta n from the lower delta n to cancel all terms leaving the d2f/dmdn.
+
+        For unit square normalisation, dm0 = 1 and dn0 = 1, the denominator simplifies, and dm1 and dn1 
+        are rescaled to be normalised to distance dm0 and dn0.
+        """
         cdef double d1, d2
 
         if order_x == 1 and order_y == 1:
             d1 = (self._x[lower_index_1 + 1] - self._x[lower_index_1]) / (self._x[lower_index_1 + 2] - self._x[lower_index_1 + 1])
             d2 = (self._y[lower_index_2 + 1] - self._y[lower_index_2]) / (self._y[lower_index_2 + 2] - self._y[lower_index_2 + 1])
 
-            return (self._f[lower_index_1 + 2, lower_index_2 + 2, slice_index] - self._f[lower_index_1, lower_index_2 + 2, slice_index] - self._f[lower_index_1 + 2, lower_index_2, slice_index] + self._f[lower_index_1, lower_index_2, slice_index]) / (1. + d1 + d2 + d1 * d2)
+            return (self._f[lower_index_1 + 2, lower_index_2 + 2, slice_index]
+                    - self._f[lower_index_1, lower_index_2 + 2, slice_index]
+                    - self._f[lower_index_1 + 2, lower_index_2, slice_index]
+                    + self._f[lower_index_1, lower_index_2, slice_index]) / (1. + d1 + d2 + d1 * d2)
 
         elif order_x == 1 and order_z == 1:
             d1 = (self._x[lower_index_1 + 1] - self._x[lower_index_1]) / (self._x[lower_index_1 + 2] - self._x[lower_index_1 + 1])
             d2 = (self._z[lower_index_2 + 1] - self._z[lower_index_2]) / (self._z[lower_index_2 + 2] - self._z[lower_index_2 + 1])
 
-            return (self._f[lower_index_1 + 2, slice_index, lower_index_2 + 2] - self._f[lower_index_1, slice_index, lower_index_2 + 2] - self._f[lower_index_1 + 2, slice_index, lower_index_2] + self._f[lower_index_1, slice_index, lower_index_2]) / (1. + d1 + d2 + d1 * d2)
+            return (self._f[lower_index_1 + 2, slice_index, lower_index_2 + 2]
+                    - self._f[lower_index_1, slice_index, lower_index_2 + 2]
+                    - self._f[lower_index_1 + 2, slice_index, lower_index_2]
+                    + self._f[lower_index_1, slice_index, lower_index_2]) / (1. + d1 + d2 + d1 * d2)
 
         elif order_y == 1 and order_z == 1:
             d1 = (self._y[lower_index_1 + 1] - self._y[lower_index_1]) / (self._y[lower_index_1 + 2] - self._y[lower_index_1 + 1])
             d2 = (self._z[lower_index_2 + 1] - self._z[lower_index_2]) / (self._z[lower_index_2 + 2] - self._z[lower_index_2 + 1])
 
-            return (self._f[slice_index, lower_index_1 + 2, lower_index_2 + 2] - self._f[slice_index, lower_index_1, lower_index_2 + 2] - self._f[slice_index, lower_index_1 + 2, lower_index_2] + self._f[slice_index, lower_index_1, lower_index_2]) / (1. + d1 + d2 + d1 * d2)
+            return (self._f[slice_index, lower_index_1 + 2, lower_index_2 + 2]
+                    - self._f[slice_index, lower_index_1, lower_index_2 + 2]
+                    - self._f[slice_index, lower_index_1 + 2, lower_index_2]
+                    + self._f[slice_index, lower_index_1, lower_index_2]) / (1. + d1 + d2 + d1 * d2)
 
         else:
             raise ValueError(f'For a second derivative 2 of order_x, order_y or order_z must be 1 instead got:({order_x}, {order_y}, {order_z}')
@@ -1628,16 +1873,41 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_edge_xy(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999:
-        cdef double d1, d2
+        """
+        Calculate d2f/dmdn on an unevenly spaced grid as a 2nd order approximation, where m, n are a combination of
+        x, y, or z depending on the order supplied. These are only valid if exactly 2 of order_x, order_y and 
+        order_z are 1. The _1 and _2 mark which two out of three dimensions are lowest and highest in the 
+        list:[x, y, z]. e.g. _1 is always used for x and _2 for z, but if trying to find d2f/dydz, then _1 is y and 
+        _2 is z. This function is for the edge of an array of spline points in 2 directions.slice index are the array 
+        indices not in the dimension of the derivative being calculated so are constant. 
+
+        This calculation is the same as in 2D, but just handles second order taylor expansions at 4 different 
+        points around f(x, y, z) for every combination of +dm0, +dn0 or -dm1, -dn1 are written out (where n, m are 
+        either x, y or z and both of -dm1 and -dn1 are 0 because it is near an edge of the spline knot array). The Taylor expansions 
+        are subtracted from each other that have the same delta m positions, but higher/lower dn (dn0, 
+        dn1 respectively). The remaining 2 equations have higher/lower dn (dn1, dn2 respectively), so finally 
+        subtract the higher delta n from the lower delta n to cancel all terms leaving the d2f/dmdn.
+
+        For unit square normalisation, dm0 = 1 and dn0 = 1, the denominator simplifies.
+        """
 
         if order_x == 1 and order_y == 1:
-            return (self._f[lower_index_1 + 1, lower_index_2 + 1, slice_index] - self._f[lower_index_1, lower_index_2 + 1, slice_index] - self._f[lower_index_1 + 1, lower_index_2, slice_index] + self._f[lower_index_1, lower_index_2, slice_index])
+            return self._f[lower_index_1 + 1, lower_index_2 + 1, slice_index] \
+                   - self._f[lower_index_1, lower_index_2 + 1, slice_index] \
+                   - self._f[lower_index_1 + 1, lower_index_2, slice_index] \
+                   + self._f[lower_index_1, lower_index_2, slice_index]
 
         elif order_x == 1 and order_z == 1:
-            return (self._f[lower_index_1 + 1, slice_index, lower_index_2 + 1] - self._f[lower_index_1, slice_index, lower_index_2 + 1] - self._f[lower_index_1 + 1, slice_index, lower_index_2] + self._f[lower_index_1, slice_index, lower_index_2])
+            return self._f[lower_index_1 + 1, slice_index, lower_index_2 + 1] \
+                   - self._f[lower_index_1, slice_index, lower_index_2 + 1] \
+                   - self._f[lower_index_1 + 1, slice_index, lower_index_2] \
+                   + self._f[lower_index_1, slice_index, lower_index_2]
 
         elif order_y == 1 and order_z == 1:
-            return (self._f[slice_index, lower_index_1 + 1, lower_index_2 + 1] - self._f[slice_index, lower_index_1, lower_index_2 + 1] - self._f[slice_index, lower_index_1 + 1, lower_index_2] + self._f[slice_index, lower_index_1, lower_index_2])
+            return self._f[slice_index, lower_index_1 + 1, lower_index_2 + 1] \
+                   - self._f[slice_index, lower_index_1, lower_index_2 + 1]\
+                   - self._f[slice_index, lower_index_1 + 1, lower_index_2]\
+                   + self._f[slice_index, lower_index_1, lower_index_2]
 
         else:
             raise ValueError(f'For a second derivative 2 of order_x, order_y or order_z must be 1 instead got:({order_x}, {order_y}, {order_z}')
@@ -1647,37 +1917,74 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d2fdxdy_near_1_edge(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index, bint edge_is_1) except? -1e999:
+        """
+        Calculate d2f/dmdn on an unevenly spaced grid as a 2nd order approximation, where m, n are a combination of
+        x, y, or z depending on the order supplied. These are only valid if exactly 2 of order_x, order_y and 
+        order_z are 1. The _1 and _2 mark which two out of three dimensions are lowest and highest in the 
+        list:[x, y, z]. e.g. _1 is always used for x and _2 for z, but if trying to find d2f/dydz, then _1 is y and 
+        _2 is z. This function is for the edge of an array of spline points in 1 direction, and that direction is 
+        marked with edge_is_1.slice index are the array indices not in the dimension of the derivative 
+         being calculated so are constant. 
+
+        This calculation is the same as in 2D, but just handles second order taylor expansions at 4 different 
+        points around f(x, y, z) for every combination of +dm0, +dn0 or -dm1, -dn1 are written out (where n, m are 
+        either x, y or z and of -dm1 or -dn1 is 0 because it is near an edge of the spline knot array). The Taylor expansions 
+        are subtracted from each other that have the same delta m positions, but higher/lower dn (dn0, 
+        dn1 respectively). The remaining 2 equations have higher/lower dn (dn1, dn2 respectively), so finally 
+        subtract the higher delta n from the lower delta n to cancel all terms leaving the d2f/dmdn.
+
+        For unit square normalisation, dm0 = 1 and dn0 = 1, the denominator simplifies, and either dm1 or dn1 
+        (the dimension NOT at the edge of the array) are rescaled to be normalised to distance dm0 or dn0.
+        """
         cdef double d1
 
         if order_x == 1 and order_y == 1:
 
             if edge_is_1:
                 d1 = (self._y[lower_index_2 + 1] - self._y[lower_index_2]) / (self._y[lower_index_2 + 2] - self._y[lower_index_2 + 1])
-                return (self._f[lower_index_1 + 1, lower_index_2 + 2, slice_index] - self._f[lower_index_1, lower_index_2 + 2, slice_index] - self._f[lower_index_1 + 1, lower_index_2, slice_index] + self._f[lower_index_1, lower_index_2, slice_index]) / (1. + d1)
+                return (self._f[lower_index_1 + 1, lower_index_2 + 2, slice_index]
+                        - self._f[lower_index_1, lower_index_2 + 2, slice_index]
+                        - self._f[lower_index_1 + 1, lower_index_2, slice_index]
+                        + self._f[lower_index_1, lower_index_2, slice_index]) / (1. + d1)
 
             else:
                 d1 = (self._x[lower_index_1 + 1] - self._x[lower_index_1]) / (self._x[lower_index_1 + 2] - self._x[lower_index_1 + 1])
-                return (self._f[lower_index_1 + 2, lower_index_2 + 1, slice_index] - self._f[lower_index_1, lower_index_2 + 1, slice_index] - self._f[lower_index_1 + 2, lower_index_2, slice_index] + self._f[lower_index_1, lower_index_2, slice_index]) / (1. + d1)
+                return (self._f[lower_index_1 + 2, lower_index_2 + 1, slice_index]
+                        - self._f[lower_index_1, lower_index_2 + 1, slice_index]
+                        - self._f[lower_index_1 + 2, lower_index_2, slice_index]
+                        + self._f[lower_index_1, lower_index_2, slice_index]) / (1. + d1)
 
         elif order_x == 1 and order_z == 1:
 
             if edge_is_1:
                 d1 = (self._z[lower_index_2 + 1] - self._z[lower_index_2]) / (self._z[lower_index_2 + 2] - self._z[lower_index_2 + 1])
-                return (self._f[lower_index_1 + 1, slice_index, lower_index_2 + 2] - self._f[lower_index_1, slice_index, lower_index_2 + 2] - self._f[lower_index_1 + 1, slice_index, lower_index_2] + self._f[lower_index_1, slice_index, lower_index_2]) / (1. + d1)
+                return (self._f[lower_index_1 + 1, slice_index, lower_index_2 + 2]
+                        - self._f[lower_index_1, slice_index, lower_index_2 + 2]
+                        - self._f[lower_index_1 + 1, slice_index, lower_index_2]
+                        + self._f[lower_index_1, slice_index, lower_index_2]) / (1. + d1)
 
             else:
                 d1 = (self._x[lower_index_1 + 1] - self._x[lower_index_1]) / (self._x[lower_index_1 + 2] - self._x[lower_index_1 + 1])
-                return (self._f[lower_index_1 + 2, slice_index, lower_index_2 + 1] - self._f[lower_index_1, slice_index, lower_index_2 + 1] - self._f[lower_index_1 + 2, slice_index, lower_index_2] + self._f[lower_index_1, slice_index, lower_index_2]) / (1. + d1)
+                return (self._f[lower_index_1 + 2, slice_index, lower_index_2 + 1]
+                        - self._f[lower_index_1, slice_index, lower_index_2 + 1]
+                        - self._f[lower_index_1 + 2, slice_index, lower_index_2]
+                        + self._f[lower_index_1, slice_index, lower_index_2]) / (1. + d1)
 
         elif order_y == 1 and order_z == 1:
 
             if edge_is_1:
                 d1 = (self._z[lower_index_2 + 1] - self._z[lower_index_2]) / (self._z[lower_index_2 + 2] - self._z[lower_index_2 + 1])
-                return (self._f[slice_index, lower_index_1 + 1, lower_index_2 + 2] - self._f[slice_index, lower_index_1, lower_index_2 + 2] - self._f[slice_index, lower_index_1 + 1, lower_index_2] + self._f[slice_index, lower_index_1, lower_index_2]) / (1. + d1)
+                return (self._f[slice_index, lower_index_1 + 1, lower_index_2 + 2]
+                        - self._f[slice_index, lower_index_1, lower_index_2 + 2]
+                        - self._f[slice_index, lower_index_1 + 1, lower_index_2]
+                        + self._f[slice_index, lower_index_1, lower_index_2]) / (1. + d1)
 
             else:
                 d1 = (self._y[lower_index_1 + 1] - self._y[lower_index_1]) / (self._y[lower_index_1 + 2] - self._y[lower_index_1 + 1])
-                return (self._f[slice_index, lower_index_1 + 2, lower_index_2 + 1] - self._f[slice_index, lower_index_1, lower_index_2 + 1] - self._f[slice_index, lower_index_1 + 2, lower_index_2] + self._f[slice_index, lower_index_1, lower_index_2]) / (1. + d1)
+                return (self._f[slice_index, lower_index_1 + 2, lower_index_2 + 1]
+                        - self._f[slice_index, lower_index_1, lower_index_2 + 1]
+                        - self._f[slice_index, lower_index_1 + 2, lower_index_2]
+                        + self._f[slice_index, lower_index_1, lower_index_2]) / (1. + d1)
 
         else:
             raise ValueError(
@@ -1688,87 +1995,260 @@ cdef class _ArrayDerivative3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
+        """
+        Calculate d3f/dxdydz on an unevenly spaced grid as a 3rd order approximation.
+
+        A third order taylor expansions at 8 different points around f(x, y, z) for every combination of +dx0, +dy0, +dz0 or
+        -dx1, -dy1, -dz1 are written out. The Taylor expansions are subtracted from each other that have the same 
+        delta y and delta z positions, but higher/lower dx (dx0, dx1 respectively). The resulting equations are 
+        subtracted from each other where they have the same delta z positions, but higher/lower dy 
+        (dy0, dy1 respectively). The remaining 2 equations have higher/lower dz (dz1, dz2 respectively), so similarly 
+        subtract the higher delta z from the lower delta z to cancel all terms.
+
+        For unit square normalisation, dy0 = 1, dz0 = 1 and dx0 = 1, the denominator simplifies, and dx1, dy1 and dz1 
+        are rescaled to be normalised to distance dx0, dy0, dz0.
+        """
         cdef double dx1, dy1, dz1
 
         dx1 = (self._x[lower_index_x + 1] - self._x[lower_index_x]) / (self._x[lower_index_x + 2] - self._x[lower_index_x + 1])
         dy1 = (self._y[lower_index_y + 1] - self._y[lower_index_y]) / (self._y[lower_index_y + 2] - self._y[lower_index_y + 1])
         dz1 = (self._z[lower_index_z + 1] - self._z[lower_index_z]) / (self._z[lower_index_z + 2] - self._z[lower_index_z + 1])
 
-        return (self._f[lower_index_x + 2, lower_index_y + 2, lower_index_z + 2] - self._f[lower_index_x, lower_index_y + 2, lower_index_z + 2] - self._f[lower_index_x + 2, lower_index_y, lower_index_z + 2] + self._f[lower_index_x, lower_index_y, lower_index_z + 2] - self._f[lower_index_x + 2, lower_index_y + 2, lower_index_z] + self._f[lower_index_x, lower_index_y + 2, lower_index_z] + self._f[lower_index_x + 2, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dx1 + dy1 + dz1 + dx1 * dy1 + dx1 * dz1 + dy1 * dz1 + dx1 * dy1 * dz1)
+        return (self._f[lower_index_x + 2, lower_index_y + 2, lower_index_z + 2]
+                - self._f[lower_index_x, lower_index_y + 2, lower_index_z + 2]
+                - self._f[lower_index_x + 2, lower_index_y, lower_index_z + 2]
+                + self._f[lower_index_x, lower_index_y, lower_index_z + 2]
+                - self._f[lower_index_x + 2, lower_index_y + 2, lower_index_z]
+                + self._f[lower_index_x, lower_index_y + 2, lower_index_z]
+                + self._f[lower_index_x + 2, lower_index_y, lower_index_z]
+                - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dx1 + dy1 + dz1 + dx1 * dy1 + dx1 * dz1 + dy1 * dz1 + dx1 * dy1 * dz1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_x(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
+        """
+        Calculate d3f/dxdydz on an unevenly spaced grid as a 3rd order approximation. This is used when on the border of
+        the spline knot array in x.
+
+        A third order taylor expansions at 8 different points around f(x, y, z) for every combination of +dx0, +dy0, +dz0 or
+        -dx1=0, -dy1, -dz1 (where dx1 = 0 because we are looking at the edge in x), at the same location as the spline knot we are looking 
+        at), are written out. The Taylor expansions are subtracted from each other that have the same 
+        delta y and delta z positions, but higher/lower dx (dx0, dx1 respectively). The resulting equations are 
+        subtracted from each other where they have the same delta z positions, but higher/lower dy 
+        (dy0, dy1 respectively). The remaining 2 equations have higher/lower dz (dz1, dz2 respectively), so similarly 
+        subtract the higher delta z from the lower delta z to cancel all terms.
+
+        For unit square normalisation, dy0 = 1, dz0 = 1 and dx0 = 1, the denominator simplifies, and dy1 and dz1 
+        are rescaled to be normalised to distance dy0, dz0.
+        """
         cdef double dy1, dz1
 
         dy1 = (self._y[lower_index_y + 1] - self._y[lower_index_y]) / (self._y[lower_index_y + 2] - self._y[lower_index_y + 1])
         dz1 = (self._z[lower_index_z + 1] - self._z[lower_index_z]) / (self._z[lower_index_z + 2] - self._z[lower_index_z + 1])
-        return (self._f[lower_index_x + 1, lower_index_y + 2, lower_index_z + 2] - self._f[lower_index_x, lower_index_y + 2, lower_index_z + 2] - self._f[lower_index_x + 1, lower_index_y, lower_index_z + 2] + self._f[lower_index_x, lower_index_y, lower_index_z + 2] - self._f[lower_index_x + 1, lower_index_y + 2, lower_index_z] + self._f[lower_index_x, lower_index_y + 2, lower_index_z] + self._f[lower_index_x + 1, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dy1 + dz1 + dy1 * dz1)
+        return (self._f[lower_index_x + 1, lower_index_y + 2, lower_index_z + 2]
+                - self._f[lower_index_x, lower_index_y + 2, lower_index_z + 2]
+                - self._f[lower_index_x + 1, lower_index_y, lower_index_z + 2]
+                + self._f[lower_index_x, lower_index_y, lower_index_z + 2]
+                - self._f[lower_index_x + 1, lower_index_y + 2, lower_index_z]
+                + self._f[lower_index_x, lower_index_y + 2, lower_index_z]
+                + self._f[lower_index_x + 1, lower_index_y, lower_index_z]
+                - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dy1 + dz1 + dy1 * dz1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_y(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
+        """
+        Calculate d3f/dxdydz on an unevenly spaced grid as a 3rd order approximation. This is used when on the border of
+        the spline knot array in y.
+
+        A third order taylor expansions at 8 different points around f(x, y, z) for every combination of +dx0, +dy0, +dz0 or
+        -dx1, -dy1=0, -dz1 (where dy1 = 0 because we are looking at the edge in y), at the same location as the spline knot we are looking 
+        at), are written out. The Taylor expansions are subtracted from each other that have the same 
+        delta y and delta z positions, but higher/lower dx (dx0, dx1 respectively). The resulting equations are 
+        subtracted from each other where they have the same delta z positions, but higher/lower dy 
+        (dy0, dy1 respectively). The remaining 2 equations have higher/lower dz (dz1, dz2 respectively), so similarly 
+        subtract the higher delta z from the lower delta z to cancel all terms.
+
+        For unit square normalisation, dy0 = 1, dz0 = 1 and dx0 = 1, the denominator simplifies, and dx1 and dz1 
+        are rescaled to be normalised to distance dx0, dz0.
+        """
         cdef double dx1, dz1
 
         dx1 = (self._x[lower_index_x + 1] - self._x[lower_index_x]) / (self._x[lower_index_x + 2] - self._x[lower_index_x + 1])
         dz1 = (self._z[lower_index_z + 1] - self._z[lower_index_z]) / (self._z[lower_index_z + 2] - self._z[lower_index_z + 1])
 
-        return (self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z + 2] - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 2] - self._f[lower_index_x + 2, lower_index_y, lower_index_z + 2] + self._f[lower_index_x, lower_index_y, lower_index_z + 2] - self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z] + self._f[lower_index_x, lower_index_y + 1, lower_index_z] + self._f[lower_index_x + 2, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dx1 + dz1 + dx1 * dz1)
+        return (self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z + 2]
+                - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 2]
+                - self._f[lower_index_x + 2, lower_index_y, lower_index_z + 2]
+                + self._f[lower_index_x, lower_index_y, lower_index_z + 2]
+                - self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z]
+                + self._f[lower_index_x, lower_index_y + 1, lower_index_z]
+                + self._f[lower_index_x + 2, lower_index_y, lower_index_z]
+                - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dx1 + dz1 + dx1 * dz1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_z(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
+        """
+        Calculate d3f/dxdydz on an unevenly spaced grid as a 3rd order approximation. This is used when on the border of
+        the spline knot array in z.
+
+        A third order taylor expansions at 8 different points around f(x, y, z) for every combination of +dx0, +dy0, +dz0 or
+        -dx1, -dy1, -dz1=0 (where dz1 = 0 because we are looking at the edge in z), at the same location as the spline knot we are looking 
+        at), are written out. The Taylor expansions are subtracted from each other that have the same 
+        delta y and delta z positions, but higher/lower dx (dx0, dx1 respectively). The resulting equations are 
+        subtracted from each other where they have the same delta z positions, but higher/lower dy 
+        (dy0, dy1 respectively). The remaining 2 equations have higher/lower dz (dz1, dz2 respectively), so similarly 
+        subtract the higher delta z from the lower delta z to cancel all terms.
+
+        For unit square normalisation, dy0 = 1, dz0 = 1 and dx0 = 1, the denominator simplifies, and dx1 and dy1 
+        are rescaled to be normalised to distance dx0, dy0.
+        """
         cdef double dx1, dy1
 
         dx1 = (self._x[lower_index_x + 1] - self._x[lower_index_x]) / (self._x[lower_index_x + 2] - self._x[lower_index_x + 1])
         dy1 = (self._y[lower_index_y + 1] - self._y[lower_index_y]) / (self._y[lower_index_y + 2] - self._y[lower_index_y + 1])
 
-        return (self._f[lower_index_x + 2, lower_index_y + 2, lower_index_z + 1] - self._f[lower_index_x, lower_index_y + 2, lower_index_z + 1] - self._f[lower_index_x + 2, lower_index_y, lower_index_z + 1] + self._f[lower_index_x, lower_index_y, lower_index_z + 1] - self._f[lower_index_x + 2, lower_index_y + 2, lower_index_z] + self._f[lower_index_x, lower_index_y + 2, lower_index_z] + self._f[lower_index_x + 2, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dx1 + dy1 + dx1 * dy1)
+        return (self._f[lower_index_x + 2, lower_index_y + 2, lower_index_z + 1]
+                - self._f[lower_index_x, lower_index_y + 2, lower_index_z + 1]
+                - self._f[lower_index_x + 2, lower_index_y, lower_index_z + 1]
+                + self._f[lower_index_x, lower_index_y, lower_index_z + 1]
+                - self._f[lower_index_x + 2, lower_index_y + 2, lower_index_z]
+                + self._f[lower_index_x, lower_index_y + 2, lower_index_z]
+                + self._f[lower_index_x + 2, lower_index_y, lower_index_z]
+                - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dx1 + dy1 + dx1 * dy1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_xy(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
+        """
+        Calculate d3f/dxdydz on an unevenly spaced grid as a 3rd order approximation. This is used when on the border of
+        the spline knot array in x and y.
+
+        A third order taylor expansions at 8 different points around f(x, y, z) for every combination of +dx0, +dy0, +dz0 or
+        -dx1=0, -dy1=0, -dz1 (where dx1 = 0 and dy1 = 0 because we are looking at the edge in x and y), at the same location as the spline knot we are looking 
+        at), are written out. The Taylor expansions are subtracted from each other that have the same 
+        delta y and delta z positions, but higher/lower dx (dx0, dx1 respectively). The resulting equations are 
+        subtracted from each other where they have the same delta z positions, but higher/lower dy 
+        (dy0, dy1 respectively). The remaining 2 equations have higher/lower dz (dz1, dz2 respectively), so similarly 
+        subtract the higher delta z from the lower delta z to cancel all terms.
+
+        For unit square normalisation, dy0 = 1, dz0 = 1 and dx0 = 1, the denominator simplifies, and dz1 
+        is rescaled to be normalised to distance dz0.
+        """
         cdef double dz1
 
         dz1 = (self._z[lower_index_z + 1] - self._z[lower_index_z]) / (self._z[lower_index_z + 2] - self._z[lower_index_z + 1])
 
-        return (self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z + 2] - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 2] - self._f[lower_index_x + 1, lower_index_y, lower_index_z + 2] + self._f[lower_index_x, lower_index_y, lower_index_z + 2] - self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z] + self._f[lower_index_x, lower_index_y + 1, lower_index_z] + self._f[lower_index_x + 1, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dz1)
+        return (self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z + 2]
+                - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 2]
+                - self._f[lower_index_x + 1, lower_index_y, lower_index_z + 2]
+                + self._f[lower_index_x, lower_index_y, lower_index_z + 2]
+                - self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z]
+                + self._f[lower_index_x, lower_index_y + 1, lower_index_z]
+                + self._f[lower_index_x + 1, lower_index_y, lower_index_z]
+                - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dz1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_xz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
+        """
+        Calculate d3f/dxdydz on an unevenly spaced grid as a 3rd order approximation. This is used when on the border of
+        the spline knot array in x and z.
+
+        A third order taylor expansions at 8 different points around f(x, y, z) for every combination of +dx0, +dy0, +dz0 or
+        -dx1=0, -dy1, -dz1=0 (where dx1 = 0 and dz1 = 0 because we are looking at the edge in x and z), at the same location as the spline knot we are looking 
+        at), are written out. The Taylor expansions are subtracted from each other that have the same 
+        delta y and delta z positions, but higher/lower dx (dx0, dx1 respectively). The resulting equations are 
+        subtracted from each other where they have the same delta z positions, but higher/lower dy 
+        (dy0, dy1 respectively). The remaining 2 equations have higher/lower dz (dz1, dz2 respectively), so similarly 
+        subtract the higher delta z from the lower delta z to cancel all terms.
+
+        For unit square normalisation, dy0 = 1, dz0 = 1 and dx0 = 1, the denominator simplifies, and dy1
+        is rescaled to be normalised to distance dy0.
+        """
         cdef double dy1
 
         dy1 = (self._y[lower_index_y + 1] - self._y[lower_index_y]) / (self._y[lower_index_y + 2] - self._y[lower_index_y + 1])
 
-        return (self._f[lower_index_x + 1, lower_index_y + 2, lower_index_z + 1] - self._f[lower_index_x, lower_index_y + 2, lower_index_z + 1] - self._f[lower_index_x + 1, lower_index_y, lower_index_z + 1] + self._f[lower_index_x, lower_index_y, lower_index_z + 1] - self._f[lower_index_x + 1, lower_index_y + 2, lower_index_z] + self._f[lower_index_x, lower_index_y + 2, lower_index_z] + self._f[lower_index_x + 1, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dy1)
+        return (self._f[lower_index_x + 1, lower_index_y + 2, lower_index_z + 1]
+                - self._f[lower_index_x, lower_index_y + 2, lower_index_z + 1]
+                - self._f[lower_index_x + 1, lower_index_y, lower_index_z + 1]
+                + self._f[lower_index_x, lower_index_y, lower_index_z + 1]
+                - self._f[lower_index_x + 1, lower_index_y + 2, lower_index_z]
+                + self._f[lower_index_x, lower_index_y + 2, lower_index_z]
+                + self._f[lower_index_x + 1, lower_index_y, lower_index_z]
+                - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dy1)
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_yz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
+        """
+        Calculate d3f/dxdydz on an unevenly spaced grid as a 3rd order approximation. This is used when on the border of
+        the spline knot array in y and z.
+
+        A third order taylor expansions at 8 different points around f(x, y, z) for every combination of +dx0, +dy0, +dz0 or
+        -dx1, -dy1=0, -dz1=0 (where dy1 = 0 and dz1 = 0 because we are looking at the edge in y and z), at the same location as the spline knot we are looking 
+        at), are written out. The Taylor expansions are subtracted from each other that have the same 
+        delta y and delta z positions, but higher/lower dx (dx0, dx1 respectively). The resulting equations are 
+        subtracted from each other where they have the same delta z positions, but higher/lower dy 
+        (dy0, dy1 respectively). The remaining 2 equations have higher/lower dz (dz1, dz2 respectively), so similarly 
+        subtract the higher delta z from the lower delta z to cancel all terms.
+
+        For unit square normalisation, dy0 = 1, dz0 = 1 and dx0 = 1, the denominator simplifies, and dx1
+        is rescaled to be normalised to distance dx0.
+        """
         cdef double dx1
 
         dx1 = (self._x[lower_index_x + 1] - self._x[lower_index_x]) / (self._x[lower_index_x + 2] - self._x[lower_index_x + 1])
 
-        return (self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z + 1] - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 1] - self._f[lower_index_x + 2, lower_index_y, lower_index_z + 1] + self._f[lower_index_x, lower_index_y, lower_index_z + 1] - self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z] + self._f[lower_index_x, lower_index_y + 1, lower_index_z] + self._f[lower_index_x + 2, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dx1)
+        return (self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z + 1]
+                - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 1]
+                - self._f[lower_index_x + 2, lower_index_y, lower_index_z + 1]
+                + self._f[lower_index_x, lower_index_y, lower_index_z + 1]
+                - self._f[lower_index_x + 2, lower_index_y + 1, lower_index_z]
+                + self._f[lower_index_x, lower_index_y + 1, lower_index_z]
+                + self._f[lower_index_x + 2, lower_index_y, lower_index_z]
+                - self._f[lower_index_x, lower_index_y, lower_index_z]) / (1. + dx1)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _derivitive_d3fdxdydz_edge_xyz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999:
-        return self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z + 1] - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 1] - self._f[lower_index_x + 1, lower_index_y, lower_index_z + 1] + self._f[lower_index_x, lower_index_y, lower_index_z + 1] - self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z] + self._f[lower_index_x, lower_index_y + 1, lower_index_z] + self._f[lower_index_x + 1, lower_index_y, lower_index_z] - self._f[lower_index_x, lower_index_y, lower_index_z]
+        """
+        Calculate d3f/dxdydz on an unevenly spaced grid as a 3rd order approximation. This is used when on the border of
+        the spline knot array in x, y and z.
+
+        A third order taylor expansions at 8 different points around f(x, y, z) for every combination of +dx0, +dy0, 
+        +dz0 or -dx1=0, -dy1=0, -dz1=0 (where dy1 = 0 and dz1 = 0 because we are looking at the edge in x, y and z), 
+        at the same location as the spline knot we are looking at), are written out. The Taylor expansions are 
+        subtracted from each other that have the same delta y and delta z positions, but higher/lower dx (dx0, dx1 
+        respectively). The resulting equations are subtracted from each other where they have the same delta z 
+        positions, but higher/lower dy (dy0, dy1 respectively). The remaining 2 equations have higher/lower dz (dz1, 
+        dz2 respectively), so similarly subtract the higher delta z from the lower delta z to cancel all terms.
+
+        For unit square normalisation, dy0 = 1, dz0 = 1 and dx0 = 1, the denominator simplifies.
+        """
+        return self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z + 1] \
+               - self._f[lower_index_x, lower_index_y + 1, lower_index_z + 1] \
+               - self._f[lower_index_x + 1, lower_index_y, lower_index_z + 1] \
+               + self._f[lower_index_x, lower_index_y, lower_index_z + 1] \
+               - self._f[lower_index_x + 1, lower_index_y + 1, lower_index_z] \
+               + self._f[lower_index_x, lower_index_y + 1, lower_index_z] \
+               + self._f[lower_index_x + 1, lower_index_y, lower_index_z] \
+               - self._f[lower_index_x, lower_index_y, lower_index_z]
 
 
 id_to_interpolator = {
