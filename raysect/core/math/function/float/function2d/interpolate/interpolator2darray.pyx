@@ -604,6 +604,7 @@ cdef class _Extrapolator2D:
         cdef int index_lower_y = find_index_change(index_y, self._last_index_y)
         cdef int edge_x_index = find_edge_index(index_x, self._last_index_x)
         cdef int edge_y_index = find_edge_index(index_y, self._last_index_y)
+
         if (index_x == -1 or index_x == self._last_index_x) and (index_y == -1 or index_y == self._last_index_y):
 
             if np.abs(px - self._x[edge_x_index]) > self._extrapolation_range_x:
@@ -1201,6 +1202,7 @@ cdef class _ArrayDerivative2D:
         Simplifies to (f[2, 2] - f[0, 2] - f[2, 0] + f[0, 0])/4 if dx0=dx1 and dy0=dy1.
         """
         cdef double dx1, dy1
+
         dx1 = (self._x[lower_index_x + 1] - self._x[lower_index_x])/(self._x[lower_index_x + 2] - self._x[lower_index_x + 1])
         dy1 = (self._y[lower_index_y + 1] - self._y[lower_index_y])/(self._y[lower_index_y + 2] - self._y[lower_index_y + 1])
         return (self._f[lower_index_x + 2, lower_index_y + 2] - self._f[lower_index_x, lower_index_y + 2]

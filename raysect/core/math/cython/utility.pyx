@@ -510,6 +510,7 @@ cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty):
 
 
 cdef int factorial(int n):
+    """Calculate the factorial of an interger n (n!) through recursive calculation."""
     if n <= 0:
         return 1
     else:

@@ -781,6 +781,7 @@ cdef class _Extrapolator3D:
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999:
+
         cdef int index_lower_x = find_index_change(index_x, self._last_index_x)
         cdef int index_lower_y = find_index_change(index_y, self._last_index_y)
         cdef int index_lower_z = find_index_change(index_z, self._last_index_z)
@@ -997,6 +998,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_x(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+
         cdef double f, df_dx
 
         f = self._interpolator.evaluate(self._x[edge_x_index], py, pz, index_x, index_y, index_z)
@@ -1010,6 +1012,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_y(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+
         cdef double f, df_dy
 
         f = self._interpolator.evaluate(px, self._y[edge_y_index], pz, index_x, index_y, index_z)
@@ -1023,6 +1026,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_z(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+
         cdef double f, df_dz
 
         f = self._interpolator.evaluate(px, py, self._z[edge_z_index], index_x, index_y, index_z)
@@ -1084,6 +1088,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_yz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
+
         cdef double f, df_dy, df_dz, d2f_dydz
 
         f = self._interpolator.evaluate(px, self._y[edge_y_index], self._z[edge_z_index], index_x, index_y, index_z)
