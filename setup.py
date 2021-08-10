@@ -5,10 +5,13 @@ import os
 import os.path as path
 import multiprocessing
 
+multiprocessing.set_start_method('fork')
+
 use_cython = True
 force = False
 profile = False
 line_profile = False
+annotate = False
 
 if "--skip-cython" in sys.argv:
     use_cython = False
@@ -25,6 +28,10 @@ if "--profile" in sys.argv:
 if "--line-profile" in sys.argv:
     line_profile = True
     del sys.argv[sys.argv.index("--line-profile")]
+
+if "--annotate" in sys.argv:
+    annotate = True
+    sys.argv.remove("--annotate")
 
 source_paths = ['raysect', 'demos']
 compilation_includes = [".", numpy.get_include()]
@@ -58,7 +65,7 @@ if use_cython:
         cython_directives["profile"] = True
 
     # generate .c files from .pyx
-    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives)
+    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives, annotate=annotate)
 
 else:
 
