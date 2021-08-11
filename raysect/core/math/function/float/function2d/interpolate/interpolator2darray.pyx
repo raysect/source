@@ -357,18 +357,18 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
         cdef double df_dn, dxy
 
         if order_x == 1 and order_y == 1:
-            df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=3)
+            df_dn = self._calculate_bilinear_coefficients_3(index_x, index_y)
 
         elif order_x == 1:
             dxy = (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
-            df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=1) \
-                    + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * dxy
+            df_dn = self._calculate_bilinear_coefficients_1(index_x, index_y) \
+                    + self._calculate_bilinear_coefficients_3(index_x, index_y) * dxy
 
         elif order_y == 1:
             dxy = (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
 
-            df_dn = self._calculate_coefficients(index_x, index_y, coefficient_index=2) \
-                    + self._calculate_coefficients(index_x, index_y, coefficient_index=3) * dxy
+            df_dn = self._calculate_bilinear_coefficients_2(index_x, index_y) \
+                    + self._calculate_bilinear_coefficients_3(index_x, index_y) * dxy
 
         else:
             raise ValueError('The derivative order for x and y (order_x and order_y) must be a combination of 1 and 0 for the linear interpolator (but 0, 0 should be handled by evaluating the interpolator).')
@@ -378,9 +378,9 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_coefficients(self, int index_x, int index_y, int coefficient_index):
+    cdef double _calculate_bilinear_coefficients_0(self, int index_x, int index_y):
         """
-        Calculate the bilinear coefficients in a unit square.
+        Calculate the bilinear coefficients in a unit square. This function returns coefficient 0 (of the range 0-3).
 
         The bilinear function (which is the product of 2 linear functions) f(x, y) = a0 + a1x + a2y + a3xy. Coefficients 
         a0, a1, a2, a3 are calculated for one unit square. The coefficients are calculated from inverting the equation
@@ -401,23 +401,36 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
         :param int index_y: the lower index of the bin containing point py. (Result of bisection search). 
         :param int coefficient_index: Which coefficient of the bilinear equation to return a0, a1, a2, a3.
         """
+        return self._f[index_x, index_y]
 
-        # Calculate the coefficients of the requested spline point.
-        if coefficient_index == 0:
-            return self._f[index_x, index_y]
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_bilinear_coefficients_1(self, int index_x, int index_y):
+        """
+        Calculate the bilinear coefficients in a unit square. This function returns coefficient 1 (of the range 0-3).
+        """
+        return self._f[index_x + 1, index_y] - self._f[index_x, index_y]
 
-        elif coefficient_index == 1:
-            return self._f[index_x + 1, index_y] - self._f[index_x, index_y]
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_bilinear_coefficients_2(self, int index_x, int index_y):
+        """
+        Calculate the bilinear coefficients in a unit square. This function returns coefficient 2 (of the range 0-3).
+        """
+        return self._f[index_x, index_y + 1] - self._f[index_x, index_y]
 
-        elif coefficient_index == 2:
-            return self._f[index_x, index_y + 1] - self._f[index_x, index_y]
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_bilinear_coefficients_3(self, int index_x, int index_y):
+        """
+        Calculate the bilinear coefficients in a unit square. This function returns coefficient 3 (of the range 0-3).
+        """
+        return self._f[index_x, index_y] - self._f[index_x, index_y + 1] \
+               - self._f[index_x + 1, index_y] + self._f[index_x + 1, index_y + 1]
 
-        elif coefficient_index == 3:
-            return self._f[index_x, index_y] - self._f[index_x, index_y + 1] \
-                   - self._f[index_x + 1, index_y] + self._f[index_x + 1, index_y + 1]
-
-        else:
-            raise ValueError(f'There are only 4 bilinear coefficients, the index requested:{coefficient_index} is out of range.')
 
 cdef class _Interpolator2DCubic(_Interpolator2D):
     """
@@ -568,8 +581,8 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
 
         for i in range(order_x, 4):
             for j in range(order_y, 4):
-                df_dn += (a[i][j] * (FACTORIAL_ARRAY[i]/FACTORIAL_ARRAY[i-order_x]) *
-                          (FACTORIAL_ARRAY[j]/FACTORIAL_ARRAY[j-order_y]) * x_powers[i-order_x] * y_powers[j-order_y])
+                df_dn += (a[i][j] * (FACTORIAL_ARRAY[i] / FACTORIAL_ARRAY[i-order_x]) *
+                          (FACTORIAL_ARRAY[j] / FACTORIAL_ARRAY[j-order_y]) * x_powers[i-order_x] * y_powers[j-order_y])
         return  df_dn
 
 

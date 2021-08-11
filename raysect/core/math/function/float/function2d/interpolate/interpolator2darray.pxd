@@ -68,7 +68,10 @@ cdef class _Interpolator2D:
 
 
 cdef class _Interpolator2DLinear(_Interpolator2D):
-    cdef double _calculate_coefficients(self, int index_x, int index_y, int coefficient_index)
+    cdef double _calculate_bilinear_coefficients_0(self, int index_x, int index_y)
+    cdef double _calculate_bilinear_coefficients_1(self, int index_x, int index_y)
+    cdef double _calculate_bilinear_coefficients_2(self, int index_x, int index_y)
+    cdef double _calculate_bilinear_coefficients_3(self, int index_x, int index_y)
 
 
 cdef class _Interpolator2DCubic(_Interpolator2D):

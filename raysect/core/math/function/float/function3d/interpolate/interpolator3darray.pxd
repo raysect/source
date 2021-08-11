@@ -68,7 +68,14 @@ cdef class _Interpolator3D:
 
 
 cdef class _Interpolator3DLinear(_Interpolator3D):
-    cdef double _calculate_coefficients(self, int index_x, int index_y, int index_z, int coefficient_index)
+    cdef double _calculate_trilinear_coefficients_0(self, int index_x, int index_y, int index_z)
+    cdef double _calculate_trilinear_coefficients_1(self, int index_x, int index_y, int index_z)
+    cdef double _calculate_trilinear_coefficients_2(self, int index_x, int index_y, int index_z)
+    cdef double _calculate_trilinear_coefficients_3(self, int index_x, int index_y, int index_z)
+    cdef double _calculate_trilinear_coefficients_4(self, int index_x, int index_y, int index_z)
+    cdef double _calculate_trilinear_coefficients_5(self, int index_x, int index_y, int index_z)
+    cdef double _calculate_trilinear_coefficients_6(self, int index_x, int index_y, int index_z)
+    cdef double _calculate_trilinear_coefficients_7(self, int index_x, int index_y, int index_z)
 
 
 cdef class _Interpolator3DCubic(_Interpolator3D):

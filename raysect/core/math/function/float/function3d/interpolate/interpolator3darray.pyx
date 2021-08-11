@@ -406,47 +406,47 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         cdef double df_dn, dx, dy, dz
 
         if order_x == 1 and order_y == 1 and order_z == 1:
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7)
+            df_dn = self._calculate_trilinear_coefficients_7(index_x, index_y, index_z)
 
         elif order_x == 1 and order_y == 1 and order_z == 0:
             dz = (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dz
+            df_dn = self._calculate_trilinear_coefficients_4(index_x, index_y, index_z) \
+                    + self._calculate_trilinear_coefficients_7(index_x, index_y, index_z) * dz
 
         elif order_x == 1 and order_y == 0 and order_z == 1:
             dy = (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dy
+            df_dn = self._calculate_trilinear_coefficients_5(index_x, index_y, index_z) \
+                    + self._calculate_trilinear_coefficients_7(index_x, index_y, index_z) * dy
 
         elif order_x == 0 and order_y == 1 and order_z == 1:
             dx = (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dx
+            df_dn = self._calculate_trilinear_coefficients_6(index_x, index_y, index_z) \
+                    + self._calculate_trilinear_coefficients_7(index_x, index_y, index_z) * dx
 
         elif order_x == 1 and order_y == 0 and order_z == 0:
             dy = (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
             dz = (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=1) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * dy + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) * dz + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dy * dz
+            df_dn = self._calculate_trilinear_coefficients_1(index_x, index_y, index_z) \
+                    + self._calculate_trilinear_coefficients_4(index_x, index_y, index_z) * dy + \
+                    self._calculate_trilinear_coefficients_5(index_x, index_y, index_z) * dz + \
+                    self._calculate_trilinear_coefficients_7(index_x, index_y, index_z) * dy * dz
 
         elif order_x == 0 and order_y == 1 and order_z == 0:
             dx = (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
             dz = (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=2) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=4) * dx + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) * dz + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dx * dz
+            df_dn = self._calculate_trilinear_coefficients_2(index_x, index_y, index_z) \
+                    + self._calculate_trilinear_coefficients_4(index_x, index_y, index_z) * dx + \
+                    self._calculate_trilinear_coefficients_6(index_x, index_y, index_z) * dz + \
+                    self._calculate_trilinear_coefficients_7(index_x, index_y, index_z) * dx * dz
 
         elif order_x == 0 and order_y == 0 and order_z == 1:
             dx = (px - self._x[index_x]) / (self._x[index_x + 1] - self._x[index_x])
             dy = (py - self._y[index_y]) / (self._y[index_y + 1] - self._y[index_y])
             dz = (pz - self._z[index_z]) / (self._z[index_z + 1] - self._z[index_z])
-            df_dn = self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=3) \
-                    + self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=5) * dx + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=6) * dy + \
-                    self._calculate_coefficients(index_x, index_y, index_z, coefficient_index=7) * dx * dy
+            df_dn = self._calculate_trilinear_coefficients_3(index_x, index_y, index_z) \
+                    + self._calculate_trilinear_coefficients_5(index_x, index_y, index_z) * dx + \
+                    self._calculate_trilinear_coefficients_6(index_x, index_y, index_z) * dy + \
+                    self._calculate_trilinear_coefficients_7(index_x, index_y, index_z) * dx * dy
 
         else:
             raise ValueError('The derivative order for x, y and z (order_x, order_y and order_z) must be a combination of 1 and 0 for the linear interpolator (but 0, 0, 0 should be handled by evaluating the interpolator).')
@@ -456,9 +456,9 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_coefficients(self, int index_x, int index_y, int index_z, int coefficient_index):
+    cdef double _calculate_trilinear_coefficients_0(self, int index_x, int index_y, int index_z):
         """
-        Calculate the trilinear coefficients in a unit cube.
+        Calculate the trilinear coefficients in a unit cube. This function returns coefficient 0 (of the range 0-7).
 
         The trilinear function (which is the product of 3 linear functions) 
         f(x, y, z) = a0 + a1x + a2y + a3z + a4xy + a5xz +a6yz + a7xyz. Coefficients a0 - a7 are calculated for one unit 
@@ -486,42 +486,91 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
         :param int index_x: the lower index of the bin containing point px. (Result of bisection search).   
         :param int index_y: the lower index of the bin containing point py. (Result of bisection search). 
         :param int index_z: the lower index of the bin containing point pz. (Result of bisection search).
-        :param int coefficient_index: Which coefficient of the  the trilinear equation a0, - a7.
         """
+        return self._f[index_x, index_y, index_z]
 
-        # Calculate the coefficients of the requested spline point.
-        if coefficient_index == 0:
-            return self._f[index_x, index_y, index_z]
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_trilinear_coefficients_1(self, int index_x, int index_y, int index_z):
+        """
+        Calculate the trilinear coefficients in a unit cube. This function returns coefficient 1 (of the range 0-7).
+        
+        See _calculate_trilinear_coefficients_0 for a full description.
+        """
+        return - self._f[index_x, index_y, index_z] + self._f[index_x + 1, index_y, index_z]
 
-        elif coefficient_index == 1:
-            return - self._f[index_x, index_y, index_z] + self._f[index_x + 1, index_y, index_z]
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_trilinear_coefficients_2(self, int index_x, int index_y, int index_z):
+        """
+        Calculate the trilinear coefficients in a unit cube. This function returns coefficient 2 (of the range 0-7).
 
-        elif coefficient_index == 2:
-            return - self._f[index_x, index_y, index_z] + self._f[index_x, index_y + 1, index_z]
+        See _calculate_trilinear_coefficients_0 for a full description.
+        """
+        return - self._f[index_x, index_y, index_z] + self._f[index_x, index_y + 1, index_z]
 
-        elif coefficient_index == 3:
-            return - self._f[index_x, index_y, index_z] + self._f[index_x, index_y, index_z + 1]
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_trilinear_coefficients_3(self, int index_x, int index_y, int index_z):
+        """
+        Calculate the trilinear coefficients in a unit cube. This function returns coefficient 3 (of the range 0-7).
 
-        elif coefficient_index == 4:
-            return self._f[index_x, index_y, index_z] - self._f[index_x, index_y + 1, index_z] \
-                   - self._f[index_x + 1, index_y, index_z] + self._f[index_x + 1, index_y + 1, index_z]
+        See _calculate_trilinear_coefficients_0 for a full description.
+        """
+        return - self._f[index_x, index_y, index_z] + self._f[index_x, index_y, index_z + 1]
 
-        elif coefficient_index == 5:
-            return self._f[index_x, index_y, index_z] - self._f[index_x, index_y, index_z + 1] \
-                   - self._f[index_x + 1, index_y, index_z] + self._f[index_x + 1, index_y, index_z + 1]
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_trilinear_coefficients_4(self, int index_x, int index_y, int index_z):
+        """
+        Calculate the trilinear coefficients in a unit cube. This function returns coefficient 4 (of the range 0-7).
 
-        elif coefficient_index == 6:
-            return self._f[index_x, index_y, index_z] - self._f[index_x, index_y, index_z + 1] \
-                   - self._f[index_x, index_y + 1, index_z] + self._f[index_x, index_y + 1, index_z + 1]
+        See _calculate_trilinear_coefficients_0 for a full description.
+        """
+        return self._f[index_x, index_y, index_z] - self._f[index_x, index_y + 1, index_z] \
+               - self._f[index_x + 1, index_y, index_z] + self._f[index_x + 1, index_y + 1, index_z]
 
-        elif coefficient_index == 7:
-            return - self._f[index_x, index_y, index_z] + self._f[index_x, index_y, index_z + 1] \
-                   + self._f[index_x, index_y + 1, index_z] - self._f[index_x, index_y + 1, index_z + 1] \
-                   + self._f[index_x + 1, index_y, index_z] - self._f[index_x + 1, index_y, index_z + 1] \
-                   - self._f[index_x + 1, index_y + 1, index_z] + self._f[index_x + 1, index_y + 1, index_z + 1]
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_trilinear_coefficients_5(self, int index_x, int index_y, int index_z):
+        """
+        Calculate the trilinear coefficients in a unit cube. This function returns coefficient 5 (of the range 0-7).
 
-        else:
-            raise ValueError(f'There are only 8 bilinear coefficients, the index requested:{coefficient_index} is out of range.')
+        See _calculate_trilinear_coefficients_0 for a full description.
+        """
+        return self._f[index_x, index_y, index_z] - self._f[index_x, index_y, index_z + 1] \
+               - self._f[index_x + 1, index_y, index_z] + self._f[index_x + 1, index_y, index_z + 1]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_trilinear_coefficients_6(self, int index_x, int index_y, int index_z):
+        """
+        Calculate the trilinear coefficients in a unit cube. This function returns coefficient 6 (of the range 0-7).
+
+        See _calculate_trilinear_coefficients_0 for a full description.
+        """
+        return self._f[index_x, index_y, index_z] - self._f[index_x, index_y, index_z + 1] \
+               - self._f[index_x, index_y + 1, index_z] + self._f[index_x, index_y + 1, index_z + 1]
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef double _calculate_trilinear_coefficients_7(self, int index_x, int index_y, int index_z):
+        """
+        Calculate the trilinear coefficients in a unit cube. This function returns coefficient 7 (of the range 0-7).
+
+        See _calculate_trilinear_coefficients_0 for a full description.
+        """
+        return - self._f[index_x, index_y, index_z] + self._f[index_x, index_y, index_z + 1] \
+               + self._f[index_x, index_y + 1, index_z] - self._f[index_x, index_y + 1, index_z + 1] \
+               + self._f[index_x + 1, index_y, index_z] - self._f[index_x + 1, index_y, index_z + 1] \
+               - self._f[index_x + 1, index_y + 1, index_z] + self._f[index_x + 1, index_y + 1, index_z + 1]
 
 
 cdef class _Interpolator3DCubic(_Interpolator3D):
