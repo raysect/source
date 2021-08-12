@@ -116,6 +116,10 @@ cdef class Interpolator1DArray(Function1D):
         if f.ndim != 1:
             raise ValueError(f'The f array must be 1D. Got {f.shape}.')
 
+        if x.shape[0] < 2:
+            raise ValueError(
+                f'There must be at least 2 spline knots to interpolate. The shape of the spline knot array is ({x.shape}).')
+
         if x.shape != f.shape:
             raise ValueError(f'Shape mismatch between x array ({x.shape}) and f array ({f.shape}).')
 

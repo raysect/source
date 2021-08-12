@@ -563,8 +563,9 @@ class TestInterpolators1D(unittest.TestCase):
         # Arrays are too short
         x_wrong = np.copy(self.x)
         f_wrong = np.copy(self.reference_loaded_values.data)
-        x_wrong = x_wrong[0]
-        f_wrong = f_wrong[0]
+        x_wrong = np.array([x_wrong[0]])
+        f_wrong = np.array([f_wrong[0]])
+
         self.initialise_tests_on_interpolators(
             x_wrong, f_wrong, problem_str='there is only 1 (x, f) spline knot, which is not enough knots'
         )

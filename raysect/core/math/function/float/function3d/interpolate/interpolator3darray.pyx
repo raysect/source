@@ -193,6 +193,15 @@ cdef class Interpolator3DArray(Function3D):
         if f.ndim != 3:
             raise ValueError(f'The f array must be 3D. Got {f.shape}.')
 
+        if x.shape[0] < 2:
+            raise ValueError(f'There must be at least 2 spline knots in all dimensions to interpolate. The shape of the x spline knot array is ({x.shape}).')
+
+        if y.shape[0] < 2:
+            raise ValueError(f'There must be at least 2 spline knots in all dimensions to interpolate. The shape of the y spline knot array is ({y.shape}).')
+
+        if z.shape[0] < 2:
+            raise ValueError(f'There must be at least 2 spline knots in all dimensions to interpolate. The shape of the z spline knot array is ({z.shape}).')
+
         if x.shape[0] != f.shape[0]:
             raise ValueError(f'Shape mismatch between x array ({x.shape}) and f array ({f.shape}).')
 

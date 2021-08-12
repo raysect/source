@@ -688,12 +688,14 @@ class TestInterpolators2D(unittest.TestCase):
         Make array inputs have length 1 (too short) in 1 or more dimensions. Then check for a ValueError.
         """
 
-        x = [np.copy(self.x), np.copy(self.x)[0]]
-        y = [np.copy(self.y), np.copy(self.y)[0]]
+        x = [np.copy(self.x), np.array([np.copy(self.x)[0]])]
+        y = [np.copy(self.y), np.array([np.copy(self.y)[0]])]
         f = [
-            np.copy(self.reference_loaded_values.data), np.copy(self.reference_loaded_values.data)[0, 0],
-            np.copy(self.reference_loaded_values.data)[0, :], np.copy(self.reference_loaded_values.data)[:, 0]
+            np.copy(self.reference_loaded_values.data), np.array([[np.copy(self.reference_loaded_values.data)[0, 0]]]),
+            np.reshape(np.copy(self.reference_loaded_values.data)[0, :], (1, -1)),
+            np.reshape(np.copy(self.reference_loaded_values.data)[:, 0], (-1, 1))
         ]
+
         incorrect_x = [False, True]
         incorrect_y = [False, True]
         incorrect_fx = [False, True, True, False]
