@@ -126,46 +126,42 @@ cdef class _ArrayDerivative3D:
         double [:, :, ::1] _f
         int _last_index_x, _last_index_y, _last_index_z
 
-    cdef double evaluate(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, bint rescale_norm_x, bint rescale_norm_y, bint rescale_norm_z) except? -1e999
+    cdef double evaluate_df_dx(self, int index_x, int index_y, int index_z, bint rescale_norm_x) except? -1e999
+    cdef double _derivitive_dfdx(self, int lower_index_x, int slice_index_y, int slice_index_z) except? -1e999
+    cdef double _derivitive_dfdx_edge(self, int lower_index_x, int slice_index_y, int slice_index_z) except? -1e999
 
-    cdef double _derivitive_dfdx(self, int lower_index, int order_x, int order_y, int order_z, int slice_index_1, int slice_index_2) except? -1e999
+    cdef double evaluate_df_dy(self, int index_x, int index_y, int index_z, bint rescale_norm_y) except? -1e999
+    cdef double _derivitive_dfdy(self, int slice_index_x, int lower_index_y, int slice_index_z) except? -1e999
+    cdef double _derivitive_dfdy_edge(self, int slice_index_x, int lower_index_y, int slice_index_z) except? -1e999
 
-    cdef double _derivitive_dfdx_edge(self, int lower_index, int order_x, int order_y, int order_z, int slice_index_1, int slice_index_2)
+    cdef double evaluate_df_dz(self, int index_x, int index_y, int index_z, bint rescale_norm_z) except? -1e999
+    cdef double _derivitive_dfdz(self, int slice_index_x, int slice_index_y, int lower_index_z) except? -1e999
+    cdef double _derivitive_dfdz_edge(self, int slice_index_x, int slice_index_y, int lower_index_z) except? -1e999
 
-    cdef double _derivitive_d2fdxdy(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999
+    cdef double evaluate_d2fdxdy(self, int index_x, int index_y, int index_z, bint rescale_norm_x, bint rescale_norm_y) except? -1e999
+    cdef double _derivitive_d2fdxdy_edge_xy(self, int lower_index_x, int lower_index_y, int slice_index_z) except? -1e999
+    cdef double _derivitive_d2fdxdy_edge_x(self, int lower_index_x, int lower_index_y, int slice_index_z) except? -1e999
+    cdef double _derivitive_d2fdxdy_edge_y(self, int lower_index_x, int lower_index_y, int slice_index_z) except? -1e999
+    cdef double _derivitive_d2fdxdy(self, int lower_index_x, int lower_index_y, int slice_index_z) except? -1e999
 
-    cdef double _derivitive_d2fdxdy_edge_xy(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index) except? -1e999
+    cdef double evaluate_d2fdxdz(self, int index_x, int index_y, int index_z, bint rescale_norm_x, bint rescale_norm_z) except? -1e999
+    cdef double _derivitive_d2fdxdz_edge_xz(self, int lower_index_x, int slice_index_y, int lower_index_z) except? -1e999
+    cdef double _derivitive_d2fdxdz_edge_x(self, int lower_index_x, int slice_index_y, int lower_index_z) except? -1e999
+    cdef double _derivitive_d2fdxdz_edge_z(self, int lower_index_x, int slice_index_y, int lower_index_z) except? -1e999
+    cdef double _derivitive_d2fdxdz(self, int lower_index_x, int slice_index_y, int lower_index_z) except? -1e999
 
-    cdef double _derivitive_d2fdxdy_near_1_edge(self, int lower_index_1, int lower_index_2, int order_x, int order_y, int order_z, int slice_index, bint edge_is_1) except? -1e999
+    cdef double evaluate_d2fdydz(self, int index_x, int index_y, int index_z, bint rescale_norm_y, bint rescale_norm_z) except? -1e999
+    cdef double _derivitive_d2fdydz_edge_yz(self, int slice_index_x, int lower_index_y, int lower_index_z) except? -1e999
+    cdef double _derivitive_d2fdydz_edge_y(self, int slice_index_x, int lower_index_y, int lower_index_z) except? -1e999
+    cdef double _derivitive_d2fdydz_edge_z(self, int slice_index_x, int lower_index_y, int lower_index_z) except? -1e999
+    cdef double _derivitive_d2fdydz(self, int slice_index_x, int lower_index_y, int lower_index_z) except? -1e999
 
+    cdef double evaluate_d3fdxdydz(self, int index_x, int index_y, int index_z, bint rescale_norm_x, bint rescale_norm_y, bint rescale_norm_z) except? -1e999
     cdef double _derivitive_d3fdxdydz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
-
     cdef double _derivitive_d3fdxdydz_edge_x(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
-
     cdef double _derivitive_d3fdxdydz_edge_y(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
-
     cdef double _derivitive_d3fdxdydz_edge_z(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
-
     cdef double _derivitive_d3fdxdydz_edge_xy(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
-
     cdef double _derivitive_d3fdxdydz_edge_xz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
-
     cdef double _derivitive_d3fdxdydz_edge_yz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
-
     cdef double _derivitive_d3fdxdydz_edge_xyz(self, int lower_index_x, int lower_index_y, int lower_index_z) except? -1e999
-
-    cdef double _eval_edge_x(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add)
-
-    cdef double _eval_edge_y(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add)
-
-    cdef double _eval_edge_z(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
-
-    cdef double _eval_edge_xy(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
-
-    cdef double _eval_edge_xz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
-
-    cdef double _eval_edge_yz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
-
-    cdef double _eval_edge_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z, int x_centre_add, int y_centre_add, int z_centre_add) except? -1e999
-
-    cdef double _eval_xyz(self, int index_x, int index_y, int index_z, int derivative_order_x, int derivative_order_y, int derivative_order_z)
