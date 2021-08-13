@@ -314,8 +314,8 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
         if not self._mask_a[index]:
             f[0] = self._f[index]
             f[1] = self._f[index + 1]
-            dfdx[0] = self._array_derivative.evaluate(index, derivative_order=1, rescale_norm=False)
-            dfdx[1] = self._array_derivative.evaluate(index + 1, derivative_order=1, rescale_norm=True)
+            dfdx[0] = self._array_derivative.evaluate(index, rescale_norm=False)
+            dfdx[1] = self._array_derivative.evaluate(index + 1, rescale_norm=True)
 
             calc_coefficients_1d(f, dfdx, a)
             self._a[index, :] = a
@@ -343,8 +343,8 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
 
         f[0] = self._f[index]
         f[1] = self._f[index + 1]
-        dfdx[0] = self._array_derivative.evaluate(index, derivative_order=1, rescale_norm=False)
-        dfdx[1] = self._array_derivative.evaluate(index + 1, derivative_order=1, rescale_norm=True)
+        dfdx[0] = self._array_derivative.evaluate(index, rescale_norm=False)
+        dfdx[1] = self._array_derivative.evaluate(index + 1, rescale_norm=True)
 
         calc_coefficients_1d(f, dfdx, a)
 
@@ -516,14 +516,14 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
         super().__init__(x, f)
         self._last_index = self._x.shape[0] - 1
         array_derivative = _ArrayDerivative1D(self._x, self._f)
-        dfdx_start[0] = array_derivative.evaluate(0, derivative_order=1, rescale_norm=False)
+        dfdx_start[0] = array_derivative.evaluate(0, rescale_norm=False)
 
         # Need to have the first derivatives normalised to the distance between spline knot 0->1 (not 1->2),
         # So un-normalise then re-normalise.
-        dfdx_start[1] = array_derivative.evaluate(1, derivative_order=1, rescale_norm=True)
+        dfdx_start[1] = array_derivative.evaluate(1, rescale_norm=True)
 
-        dfdx_end[0] = array_derivative.evaluate(self._last_index - 1, derivative_order=1, rescale_norm=False)
-        dfdx_end[1] = array_derivative.evaluate(self._last_index, derivative_order=1, rescale_norm=True)
+        dfdx_end[0] = array_derivative.evaluate(self._last_index - 1, rescale_norm=False)
+        dfdx_end[1] = array_derivative.evaluate(self._last_index, rescale_norm=True)
 
         self._calculate_quadratic_coefficients_start(f[0], dfdx_start[0], dfdx_start[1], self._a_first)
         self._calculate_quadratic_coefficients_end(f[self._last_index],  dfdx_end[0], dfdx_end[1], self._a_last)
@@ -647,7 +647,7 @@ cdef class _ArrayDerivative1D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double evaluate(self, int index, int derivative_order, bint rescale_norm) except? -1e999:
+    cdef double evaluate(self, int index, bint rescale_norm) except? -1e999:
         """
         Evaluate the derivative of specific order at a grid point.
 
@@ -655,33 +655,31 @@ cdef class _ArrayDerivative1D:
         derivative is near the edge or not (respectively).
 
         :param index: The lower index of the x array cell to evaluate.
-        :param derivative_order: An integer of the derivative order x. Only zero if derivative_order_y is nonzero.
         :param rescale_norm: A boolean as whether to rescale to the delta before x[index] or after (default).
         """
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
         cdef double dfdn = 0.
 
         if index == 0:
-            dfdn = self._evaluate_edge_x(index, derivative_order)
+            dfdn = self._evaluate_edge_x(index)
 
         elif index == self._last_index:
-            dfdn = self._evaluate_edge_x(index - 1, derivative_order)
+            dfdn = self._evaluate_edge_x(index - 1)
 
         else:
-            dfdn = self._evaluate_x(index, derivative_order)
+            dfdn = self._evaluate_x(index)
 
         if rescale_norm:
 
             if not (index == 0 or index == self._last_index):
-                for i in range(derivative_order):
-                    dfdn = rescale_lower_normalisation(dfdn, self._x[index - 1], self._x[index], self._x[index + 1])
+                dfdn = rescale_lower_normalisation(dfdn, self._x[index - 1], self._x[index], self._x[index + 1])
 
         return dfdn
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _evaluate_edge_x(self, int index, int derivative_order):
+    cdef double _evaluate_edge_x(self, int index):
         """
         Calculate the 1st derivative on an unevenly spaced array as a 1st order approximation.
         
@@ -695,11 +693,7 @@ cdef class _ArrayDerivative1D:
 
         cdef double dfdn = 0.
 
-        if derivative_order == 1:
-            dfdn = self._f[index + 1] - self._f[index]
-
-        else:
-            raise ValueError('No higher order derivatives implemented.')
+        dfdn = self._f[index + 1] - self._f[index]
 
         return dfdn
     
@@ -707,7 +701,7 @@ cdef class _ArrayDerivative1D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _evaluate_x(self, int index, int derivative_order):
+    cdef double _evaluate_x(self, int index):
         """
         Calculate the 1st derivative on an unevenly spaced array as a 2nd order approximation.
 
@@ -734,11 +728,7 @@ cdef class _ArrayDerivative1D:
         x1_n = (self._x[index] - self._x[index - 1])/(self._x[index + 1] - self._x[index])
         x1_n2 = x1_n**2
 
-        if derivative_order == 1:
-            dfdn = (self._f[index + 1]*x1_n2 - self._f[index - 1] - self._f[index]*(x1_n2 - 1.))/(x1_n + x1_n2)
-
-        else:
-            raise ValueError('No higher order derivatives implemented.')
+        dfdn = (self._f[index + 1]*x1_n2 - self._f[index - 1] - self._f[index]*(x1_n2 - 1.))/(x1_n + x1_n2)
 
         return dfdn
 

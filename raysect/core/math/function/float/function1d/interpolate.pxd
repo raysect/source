@@ -98,7 +98,7 @@ cdef class _ArrayDerivative1D:
         double [::1] _x, _f
         int _last_index
 
-    cdef double evaluate(self, int index, int derivative_order, bint rescale_norm) except? -1e999
-    cdef double _evaluate_edge_x(self, int index, int derivative_order)
-    cdef double _evaluate_x(self, int index, int derivative_order)
+    cdef double evaluate(self, int index, bint rescale_norm) except? -1e999
+    cdef double _evaluate_edge_x(self, int index)
+    cdef double _evaluate_x(self, int index)
 
