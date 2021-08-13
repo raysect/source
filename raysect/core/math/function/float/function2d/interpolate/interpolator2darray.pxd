@@ -118,24 +118,17 @@ cdef class _ArrayDerivative2D:
         double [:, ::1] _f
         int _last_index_x, _last_index_y
 
-    cdef double evaluate(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, bint rescale_norm_x, bint rescale_norm_y) except? -1e999
+    cdef double evaluate_df_dx(self, int index_x, int index_y, bint rescale_norm_x) except? -1e999
+    cdef double _derivitive_dfdx_edge_copy(self, int lower_index_x, int slice_index_y) except? -1e999
+    cdef double _derivitive_dfdx_copy(self, int lower_index_x, int slice_index_y) except? -1e999
 
-    cdef double _derivitive_dfdx(self, int lower_index, int order_x, int order_y, int slice_index) except? -1e999
+    cdef double evaluate_df_dy(self, int index_x, int index_y, bint rescale_norm_y) except? -1e999
+    cdef double _derivitive_dfdy_edge_copy(self, int slice_index_x, int lower_index_y) except? -1e999
+    cdef double _derivitive_dfdy_copy(self, int slice_index_x, int lower_index_y) except? -1e999
 
-    cdef double _derivitive_dfdx_edge(self, int lower_index, int order_x, int order_y, int slice_index)
-
+    cdef double evaluate_d2f_dxdy(self, int index_x, int index_y, bint rescale_norm_x, bint rescale_norm_y) except? -1e999
     cdef double _derivitive_d2fdxdy(self, int lower_index_x, int lower_index_y) except? -1e999
-
     cdef double _derivitive_d2fdxdy_edge_xy(self, int lower_index_x, int lower_index_y) except? -1e999
-
     cdef double _derivitive_d2fdxdy_edge_x(self, int lower_index_x, int lower_index_y) except? -1e999
-
     cdef double _derivitive_d2fdxdy_edge_y(self, int lower_index_x, int lower_index_y) except? -1e999
 
-    cdef double _eval_edge_x(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add)
-
-    cdef double _eval_edge_y(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add)
-
-    cdef double _eval_edge_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y, int x_centre_add, int y_centre_add) except? -1e999
-
-    cdef double _eval_xy(self, int index_x, int index_y, int derivative_order_x, int derivative_order_y)
