@@ -92,3 +92,8 @@ cdef inline Quaternion new_quaternion(double x, double y, double z, double s):
     q.s = s
     return q
 
+
+cdef Quaternion new_quaternion_from_matrix(AffineMatrix3D matrix)
+
+
+cdef Quaternion new_quaternion_from_axis_angle(Vector3D axis, double angle)
