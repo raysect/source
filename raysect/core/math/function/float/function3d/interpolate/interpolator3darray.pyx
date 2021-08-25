@@ -211,11 +211,6 @@ cdef class Interpolator3DArray(Function3D):
         if z.shape[0] != f.shape[2]:
             raise ValueError(f'Shape mismatch between z array ({z.shape}) and f array ({f.shape}).')
 
-        # Test that arrays are too short for any interpolation. Specific requirements for interpolation/extrapolation
-        # objects should be in __init__ of the internal interpolator/extrapolator. Must check after size checks.
-        if x.shape[0] <= 1:
-            raise ValueError('The x, y, z arrays need more than 1 point to interpolate from.')
-
         # test monotonicity
         if (np.diff(x) <= 0).any():
             raise ValueError('The x array must be monotonically increasing.')

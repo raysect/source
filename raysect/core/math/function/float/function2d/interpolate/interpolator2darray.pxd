@@ -119,12 +119,12 @@ cdef class _ArrayDerivative2D:
         int _last_index_x, _last_index_y
 
     cdef double evaluate_df_dx(self, int index_x, int index_y, bint rescale_norm_x) except? -1e999
-    cdef double _derivitive_dfdx_edge_copy(self, int lower_index_x, int slice_index_y) except? -1e999
-    cdef double _derivitive_dfdx_copy(self, int lower_index_x, int slice_index_y) except? -1e999
+    cdef double _derivitive_dfdx_edge(self, int lower_index_x, int slice_index_y) except? -1e999
+    cdef double _derivitive_dfdx(self, int lower_index_x, int slice_index_y) except? -1e999
 
     cdef double evaluate_df_dy(self, int index_x, int index_y, bint rescale_norm_y) except? -1e999
-    cdef double _derivitive_dfdy_edge_copy(self, int slice_index_x, int lower_index_y) except? -1e999
-    cdef double _derivitive_dfdy_copy(self, int slice_index_x, int lower_index_y) except? -1e999
+    cdef double _derivitive_dfdy_edge(self, int slice_index_x, int lower_index_y) except? -1e999
+    cdef double _derivitive_dfdy(self, int slice_index_x, int lower_index_y) except? -1e999
 
     cdef double evaluate_d2f_dxdy(self, int index_x, int index_y, bint rescale_norm_x, bint rescale_norm_y) except? -1e999
     cdef double _derivitive_d2fdxdy(self, int lower_index_x, int lower_index_y) except? -1e999

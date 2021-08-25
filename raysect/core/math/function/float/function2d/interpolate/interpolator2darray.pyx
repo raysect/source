@@ -896,13 +896,13 @@ cdef class _ArrayDerivative2D:
         cdef double dfdn = 0.
 
         if index_x == 0:
-            dfdn = self._derivitive_dfdx_edge_copy(index_x, index_y)
+            dfdn = self._derivitive_dfdx_edge(index_x, index_y)
 
         elif index_x == self._last_index_x:
-            dfdn = self._derivitive_dfdx_edge_copy(index_x - 1, index_y)
+            dfdn = self._derivitive_dfdx_edge(index_x - 1, index_y)
 
         else:
-            dfdn = self._derivitive_dfdx_copy(index_x - 1, index_y)
+            dfdn = self._derivitive_dfdx(index_x - 1, index_y)
 
         if rescale_norm_x:
 
@@ -928,13 +928,13 @@ cdef class _ArrayDerivative2D:
         cdef double dfdn = 0.
 
         if index_y == 0:
-            dfdn = self._derivitive_dfdy_edge_copy(index_x, index_y)
+            dfdn = self._derivitive_dfdy_edge(index_x, index_y)
 
         elif index_y == self._last_index_y:
-            dfdn = self._derivitive_dfdy_edge_copy(index_x, index_y - 1)
+            dfdn = self._derivitive_dfdy_edge(index_x, index_y - 1)
 
         else:
-            dfdn = self._derivitive_dfdy_copy(index_x, index_y - 1)
+            dfdn = self._derivitive_dfdy(index_x, index_y - 1)
 
         if rescale_norm_y:
 
@@ -1008,7 +1008,7 @@ cdef class _ArrayDerivative2D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_dfdx_edge_copy(self, int lower_index_x, int slice_index_y) except? -1e999:
+    cdef double _derivitive_dfdx_edge(self, int lower_index_x, int slice_index_y) except? -1e999:
         """
         Calculate the 1st derivative df/dx on an unevenly spaced grid as a 1st order approximation. Used near the edge 
         of the array in the x direction.
@@ -1031,7 +1031,7 @@ cdef class _ArrayDerivative2D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_dfdx_copy(self, int lower_index_x, int slice_index_y) except? -1e999:
+    cdef double _derivitive_dfdx(self, int lower_index_x, int slice_index_y) except? -1e999:
         """
         Calculate the 1st derivative df/dx on an unevenly spaced grid as a 2nd order approximation.
 
@@ -1064,7 +1064,7 @@ cdef class _ArrayDerivative2D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_dfdy_edge_copy(self, int slice_index_x, int lower_index_y) except? -1e999:
+    cdef double _derivitive_dfdy_edge(self, int slice_index_x, int lower_index_y) except? -1e999:
         """
         Calculate the 1st derivative df/dy on an unevenly spaced grid as a 1st order approximation. Used near the edge 
         of the array in the x direction.
@@ -1087,7 +1087,7 @@ cdef class _ArrayDerivative2D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _derivitive_dfdy_copy(self, int slice_index_x, int lower_index_y) except? -1e999:
+    cdef double _derivitive_dfdy(self, int slice_index_x, int lower_index_y) except? -1e999:
         """
         Calculate the 1st derivative on an unevenly spaced grid as a 2nd order approximation.
 
