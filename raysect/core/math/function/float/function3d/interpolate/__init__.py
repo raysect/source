@@ -31,3 +31,4 @@
 
 # from .interpolator3dmesh import Interpolator3DMesh
 from .discrete3dmesh import Discrete3DMesh
+from .interpolator3darray import Interpolator3DArray

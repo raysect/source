@@ -146,3 +146,24 @@ Functions Returning a Vector3D
 
 .. autoclass:: raysect.core.math.function.vector3d.function3d.utility.FloatToVector3DFunction3D
    :show-inheritance:
+
+Interpolators
+-------------
+
+1D interpolators
+^^^^^^^^^^^^^^^^
+
+.. autoclass:: raysect.core.math.function.float.function1d.interpolate.Interpolator1DArray
+   :show-inheritance:
+
+2D interpolators
+^^^^^^^^^^^^^^^^
+
+.. autoclass:: raysect.core.math.function.float.function2d.interpolate.interpolator2darray.Interpolator2DArray
+   :show-inheritance:
+
+3D interpolators
+^^^^^^^^^^^^^^^^
+
+.. autoclass:: raysect.core.math.function.float.function3d.interpolate.interpolator3darray.Interpolator3DArray
+   :show-inheritance:

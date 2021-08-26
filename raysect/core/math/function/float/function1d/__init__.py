@@ -35,3 +35,4 @@ from .blend import Blend1D
 from .arg import Arg1D
 from .cmath import *
 from .samplers import *
+from .interpolate import Interpolator1DArray
