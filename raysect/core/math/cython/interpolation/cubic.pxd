@@ -29,22 +29,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport cython
-
-# @cython.cdivision(True)
-# cdef inline double cubic1d(double x0, double x1, double f0, double f1, double dfdx0, double dfdx1, double x) nogil:
-#     pass
 cdef double evaluate_cubic_1d(double a[4], double x) nogil
 
 cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) nogil
 
 cdef double evaluate_cubic_2d(double a[4][4], double x, double y) nogil
 
-
 cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2][2], double d2fdxdy[2][2], double a[4][4]) nogil
 
 cdef double evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) nogil
-
 
 cdef void calc_coefficients_3d(double f[2][2][2], double dfdx[2][2][2], double dfdy[2][2][2], double dfdz[2][2][2],
                               double d2fdxdy[2][2][2], double d2fdxdz[2][2][2], double d2fdydz[2][2][2],

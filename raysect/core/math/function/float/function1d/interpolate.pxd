@@ -32,10 +32,9 @@
 from raysect.core.math.function.float.function1d.base cimport Function1D
 cimport numpy as np
 
-cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper)
-
 
 cdef class Interpolator1DArray(Function1D):
+
     cdef:
         np.ndarray x, f
         double[::1] _x_mv, _f_mv
@@ -46,12 +45,13 @@ cdef class Interpolator1DArray(Function1D):
 
 
 cdef class _Interpolator1D:
+
     cdef:
         double[::1] _x, _f
         int _last_index
 
     cdef double evaluate(self, double px, int index) except? -1e999
-    cdef double _analytic_gradient(self, double px, int index, int order)
+    # cdef double _analytic_gradient(self, double px, int index, int order)
 
 
 cdef class _Interpolator1DLinear(_Interpolator1D):
@@ -60,19 +60,20 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
 
 cdef class _Interpolator1DCubic(_Interpolator1D):
     cdef:
-        np.uint8_t[::1] _mask_a
+        np.uint8_t[::1] _calculated
         double[:, ::1] _a
         int _n
         _ArrayDerivative1D _array_derivative
 
 
 cdef class _Extrapolator1D:
+
     cdef:
         double [::1] _x, _f
         int _last_index
-    cdef double _analytic_gradient(self, double px, int index, int order)
-    cdef double evaluate(self, double px, int index) except? -1e999
 
+    cdef double evaluate(self, double px, int index) except? -1e999
+    # cdef double _analytic_gradient(self, double px, int index, int order)
 
 cdef class _Extrapolator1DNone(_Extrapolator1D):
     pass
@@ -87,18 +88,21 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
 
 
 cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
+
     cdef double[3] _a_first, _a_last
-    cdef int[2] _mask_a
+
     cdef void _calculate_quadratic_coefficients_start(self, double f1, double df1_dx, double df2_dx, double[3] a)
     cdef void _calculate_quadratic_coefficients_end(self, double f2, double df1_dx, double df2_dx, double[3] a)
 
 
 cdef class _ArrayDerivative1D:
+
     cdef:
         double [::1] _x, _f
         int _last_index
 
     cdef double evaluate(self, int index, bint rescale_norm) except? -1e999
+    cdef double _rescale_lower_normalisation(self, double dfdn, double x_lower, double x, double x_upper)
     cdef double _evaluate_edge_x(self, int index)
     cdef double _evaluate_x(self, int index)
 

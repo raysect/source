@@ -36,20 +36,10 @@ Interpolators are accessed through interface class Interpolator1DArray.
 """
 
 import numpy as np
-cimport numpy as cnp
 cimport cython
 from raysect.core.math.cython.interpolation.linear cimport linear1d
 from raysect.core.math.cython.interpolation.cubic cimport calc_coefficients_1d, evaluate_cubic_1d
 from raysect.core.math.cython.utility cimport find_index, lerp
-
-
-@cython.cdivision(True)
-cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper):
-    """
-    Derivatives that are normalised to the unit square (x_upper - x) = 1 are un-normalised, then re-normalised to
-    (x - x_lower)
-    """
-    return dfdn * (x - x_lower)/(x_upper - x)
 
 
 cdef class Interpolator1DArray(Function1D):
@@ -117,8 +107,7 @@ cdef class Interpolator1DArray(Function1D):
             raise ValueError(f'The f array must be 1D. Got {f.shape}.')
 
         if x.shape[0] < 2:
-            raise ValueError(
-                f'There must be at least 2 spline knots to interpolate. The shape of the spline knot array is ({x.shape}).')
+            raise ValueError(f'There must be at least 2 spline knots to interpolate. The shape of the spline knot array is ({x.shape}).')
 
         if x.shape != f.shape:
             raise ValueError(f'Shape mismatch between x array ({x.shape}) and f array ({f.shape}).')
@@ -129,10 +118,14 @@ cdef class Interpolator1DArray(Function1D):
 
         self.x = x
         self.f = f
+
+        # obtain memory views for fast data access
         self._x_mv = x
         self._f_mv = f
-        x.flags.writeable = False
-        f.flags.writeable = False
+
+        # prevent users being able to change the data arrays
+        self.x.flags.writeable = False
+        self.f.flags.writeable = False
 
         self._last_index = self.x.shape[0] - 1
         self._extrapolation_range = extrapolation_range
@@ -153,7 +146,6 @@ cdef class Interpolator1DArray(Function1D):
 
         # Create the interpolator and extrapolator objects.
         self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._f_mv)
-
         self._extrapolator = id_to_extrapolator[extrapolation_type](self._x_mv, self._f_mv)
 
     @cython.boundscheck(False)
@@ -166,22 +158,19 @@ cdef class Interpolator1DArray(Function1D):
         :param double px: the point for which an interpolated value is required.
         :return: the interpolated value at point x.
         """
+
         cdef int index = find_index(self._x_mv, px)
 
         # find_index returns -1 in the lower extrapolation region, the index of the bin lower than px. The last index
         # is returned if greater than or equal to the largest bin edge, greater is handled by the extrapolator, equal is handled by the interpolator.
         if index == -1:
-
             if px < self._x_mv[0] - self._extrapolation_range:
                 raise ValueError(f'The specified value (x={px}) is outside of extrapolation range.')
-
             return self._extrapolator.evaluate(px, index)
 
         elif index == self._last_index and px > self.x[self._last_index]:
-
             if px > self._x_mv[self._last_index] + self._extrapolation_range:
                 raise ValueError(f'The specified value (x={px}) is outside of extrapolation range.')
-
             return self._extrapolator.evaluate(px, index)
 
         elif px == self.x[self._last_index]:
@@ -223,14 +212,14 @@ cdef class _Interpolator1D:
         """
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
-    cdef double _analytic_gradient(self, double px, int index, int order):
-        """
-        Calculates the interpolator's derivative of a valid order at a requested point.
-
-        :param double px: the point for which an interpolated value is required.
-        :param int index: the lower index of the bin containing point px. (Result of bisection search).
-        """
-        raise NotImplementedError('_Interpolator is an abstract base class.')
+    # cdef double _analytic_gradient(self, double px, int index, int order):
+    #     """
+    #     Calculates the interpolator's derivative of a valid order at a requested point.
+    #
+    #     :param double px: the point for which an interpolated value is required.
+    #     :param int index: the lower index of the bin containing point px. (Result of bisection search).
+    #     """
+    #     raise NotImplementedError('_Interpolator is an abstract base class.')
 
 
 cdef class _Interpolator1DLinear(_Interpolator1D):
@@ -252,22 +241,22 @@ cdef class _Interpolator1DLinear(_Interpolator1D):
     cdef double evaluate(self, double px, int index) except? -1e999:
         return linear1d(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
 
-    @cython.cdivision(True)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef double _analytic_gradient(self, double px, int index, int order):
-        cdef double grad
-        if order == 1:
-            grad = (self._f[index + 1] - self._f[index])/(self._x[index + 1] - self._x[index])
-
-        elif order > 1:
-            grad = 0
-
-        else:
-            raise ValueError('The derivative order must be 1 for the linear interpolator, order = 0 should be an evaluation, greater values return.')
-
-        return grad
+    # @cython.cdivision(True)
+    # @cython.boundscheck(False)
+    # @cython.wraparound(False)
+    # @cython.initializedcheck(False)
+    # cdef double _analytic_gradient(self, double px, int index, int order):
+    #
+    #     cdef double grad
+    #
+    #     if order == 1:
+    #         grad = (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
+    #     elif order > 1:
+    #         grad = 0
+    #     else:
+    #         raise ValueError('The derivative order must be 1 for the linear interpolator, order = 0 should be an evaluation, greater values return.')
+    #
+    #     return grad
 
 
 cdef class _Interpolator1DCubic(_Interpolator1D):
@@ -285,12 +274,13 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
     ID = 'cubic'
 
     def __init__(self, double[::1] x, double[::1] f):
+
         super().__init__(x, f)
 
-        # Where 'a' has been calculated the mask value = 1.
-        self._mask_a = np.zeros((self._last_index,), dtype=np.uint8)
+        # where the spline coefficients (a) have been calculated the value is set to 1, 0 otherwise
+        self._calculated = np.zeros((self._last_index,), dtype=np.uint8)
 
-        # Store the cubic spline coefficients, where increasing index values are the coefficients for the coefficients of higher powers of x in the last dimension.
+        # store the cubic spline coefficients, where increasing index values are the coefficients for the coefficients of higher powers of x in the last dimension.
         self._a = np.zeros((self._last_index, 4), dtype=np.float64)
         self._array_derivative = _ArrayDerivative1D(self._x, self._f)
 
@@ -301,72 +291,77 @@ cdef class _Interpolator1DCubic(_Interpolator1D):
     cdef double evaluate(self, double px, int index) except? -1e999:
 
         # rescale x between 0 and 1
-        cdef double x_scal
+        cdef double nx
         cdef double[2] f, dfdx
-        cdef double x_bound
         cdef double[4] a
         cdef int i
 
-        x_bound = self._x[index + 1] - self._x[index]
-        x_scal = (px - self._x[index]) / x_bound
-
         # Calculate the coefficients (and gradients at each spline point) if they dont exist
-        if not self._mask_a[index]:
+        if not self._calculated[index]:
+
             f[0] = self._f[index]
             f[1] = self._f[index + 1]
+
             dfdx[0] = self._array_derivative.evaluate(index, rescale_norm=False)
             dfdx[1] = self._array_derivative.evaluate(index + 1, rescale_norm=True)
 
             calc_coefficients_1d(f, dfdx, a)
-            self._a[index, :] = a
-            self._mask_a[index] = 1
+
+            for i in range(4):
+                self._a[index, i] = a[i]
+            self._calculated[index] = 1
 
         else:
             for i in range(4):
                 a[i] = self._a[index, i]
 
-        return evaluate_cubic_1d(a, x_scal)
+        # obtain normalised x coordinate inside cell
+        nx = (px - self._x[index]) / (self._x[index + 1] - self._x[index])
 
-    @cython.cdivision(True)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef double _analytic_gradient(self, double px, int index, int order):
-        cdef double grad
-        cdef double x_scal
-        cdef double[2] f, dfdx
-        cdef double x_bound
-        cdef double[4] a
+        return evaluate_cubic_1d(a, nx)
 
-        x_bound = self._x[index + 1] - self._x[index]
-        x_scal = (px - self._x[index]) / x_bound
-
-        f[0] = self._f[index]
-        f[1] = self._f[index + 1]
-        dfdx[0] = self._array_derivative.evaluate(index, rescale_norm=False)
-        dfdx[1] = self._array_derivative.evaluate(index + 1, rescale_norm=True)
-
-        calc_coefficients_1d(f, dfdx, a)
-
-        if order == 1:
-            grad = 3.* a[0] * x_scal **2 + 2.* a[1] * x_scal + a[2]
-            grad = grad/(self._x[index + 1] - self._x[index])
-
-        elif order == 2:
-            grad = 6.* a[0] * x_scal + 2.* a[1]
-            grad = grad/(self._x[index + 1] - self._x[index])**2
-
-        elif order == 3:
-            grad = 6.* a[0]
-            grad = grad/(self._x[index + 1] - self._x[index])**3
-
-        elif order > 3:
-            grad = 0
-
-        else:
-            raise ValueError('order must be an integer greater than or equal to 1.')
-
-        return grad
+    # @cython.cdivision(True)
+    # @cython.boundscheck(False)
+    # @cython.wraparound(False)
+    # @cython.initializedcheck(False)
+    # cdef double _analytic_gradient(self, double px, int index, int order):
+    #
+    #     cdef double grad
+    #     cdef double nx
+    #     cdef double[2] f, dfdx
+    #     cdef double rdx
+    #     cdef double[4] a
+    #
+    #     rdx = 1.0 / (self._x[index + 1] - self._x[index])
+    #     nx = (px - self._x[index]) * rdx
+    #
+    #     f[0] = self._f[index]
+    #     f[1] = self._f[index + 1]
+    #
+    #     dfdx[0] = self._array_derivative.evaluate(index, rescale_norm=False)
+    #     dfdx[1] = self._array_derivative.evaluate(index + 1, rescale_norm=True)
+    #
+    #     calc_coefficients_1d(f, dfdx, a)
+    #
+    #     if order == 1:
+    #         grad = 3*a[0]*nx*nx + 2*a[1]*nx + a[2]
+    #         grad *= rdx
+    #
+    #     elif order == 2:
+    #         grad = 6*a[0]*nx + 2*a[1]
+    #         grad *= rdx*rdx
+    #
+    #     elif order == 3:
+    #         grad = 6*a[0]
+    #         grad *= rdx*rdx*rdx
+    #
+    #     elif order > 3:
+    #         grad = 0
+    #
+    #     else:
+    #         raise ValueError('Order must be an integer greater than or equal to 1.')
+    #
+    #     return grad
 
 
 cdef class _Extrapolator1D:
@@ -387,8 +382,8 @@ cdef class _Extrapolator1D:
     cdef double evaluate(self, double px, int index) except? -1e999:
         raise NotImplementedError(f'{self.__class__} not implemented.')
 
-    cdef double _analytic_gradient(self, double px, int index, int order):
-        raise NotImplementedError(f'{self.__class__} not implemented.')
+    # cdef double _analytic_gradient(self, double px, int index, int order):
+    #     raise NotImplementedError(f'{self.__class__} not implemented.')
 
 
 cdef class _Extrapolator1DNone(_Extrapolator1D):
@@ -404,8 +399,8 @@ cdef class _Extrapolator1DNone(_Extrapolator1D):
     cdef double evaluate(self, double px, int index)  except? -1e999:
         raise ValueError(f'Extrapolation not available. Interpolate within function range {self._x[0]}-{self._x[self._last_index]}.')
 
-    cdef double _analytic_gradient(self, double px, int index, int order):
-        raise ValueError(f'Extrapolation not available. Interpolate within function range {self._x[0]}-{self._x[self._last_index]}.')
+    # cdef double _analytic_gradient(self, double px, int index, int order):
+    #     raise ValueError(f'Extrapolation not available. Interpolate within function range {self._x[0]}-{self._x[self._last_index]}.')
 
 
 cdef class _Extrapolator1DNearest(_Extrapolator1D):
@@ -418,26 +413,21 @@ cdef class _Extrapolator1DNearest(_Extrapolator1D):
 
     ID = 'nearest'
 
-    def __init__(self, double [::1] x, double[::1] f):
-        super().__init__(x, f)
-
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, int index) except? -1e999:
-        if px < self._x[0]:
+
+        if index == -1:
             return self._f[0]
-
-        elif px >= self._x[self._last_index]:
+        elif index == self._last_index:
             return self._f[self._last_index]
-
         else:
             raise ValueError(f'Cannot evaluate value of function at point {px}. Bad data?')
 
-    @cython.initializedcheck(False)
-    cdef double _analytic_gradient(self, double px, int index, int order):
-        cdef double grad = 0.
-        return grad
+    # @cython.initializedcheck(False)
+    # cdef double _analytic_gradient(self, double px, int index, int order):
+    #     return 0.0
 
 
 cdef class _Extrapolator1DLinear(_Extrapolator1D):
@@ -450,53 +440,42 @@ cdef class _Extrapolator1DLinear(_Extrapolator1D):
 
     ID = 'linear'
 
-    def __init__(self, double [::1] x, double[::1] f):
-        super().__init__(x, f)
-
-        if x.shape[0] <= 1:
-            raise ValueError(f'x array {x.shape} must contain at least 2 spline points to linearly extrapolate.')
-
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, int index) except? -1e999:
+
         # The index returned from find_index is -1 at the array start or the length of the array at the end of array.
         if index == -1:
             index = 0
-
         elif index == self._last_index:
             index = self._last_index - 1
-
         else:
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
+
         # Use a linear interpolator function to extrapolate instead
         return lerp(self._x[index], self._x[index + 1], self._f[index], self._f[index + 1], px)
 
-    @cython.cdivision(True)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef double _analytic_gradient(self, double px, int index, int order):
-        cdef double grad
-        if index == -1:
-            index = 0
-
-        elif index == self._last_index:
-            index = self._last_index - 1
-
-        else:
-            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
-
-        if order == 1:
-            grad = (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
-
-        elif order > 1:
-            grad = 0
-
-        else:
-            raise ValueError('order must be an integer greater than or equal to 1.')
-
-        return grad
+    # @cython.cdivision(True)
+    # @cython.boundscheck(False)
+    # @cython.wraparound(False)
+    # @cython.initializedcheck(False)
+    # cdef double _analytic_gradient(self, double px, int index, int order):
+    #
+    #     # The index returned from find_index is -1 at the array start or the length of the array at the end of array.
+    #     if index == -1:
+    #         index = 0
+    #     elif index == self._last_index:
+    #         index = self._last_index - 1
+    #     else:
+    #         raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
+    #
+    #     if order == 1:
+    #         return (self._f[index + 1] - self._f[index]) / (self._x[index + 1] - self._x[index])
+    #     elif order > 1:
+    #         return 0.0
+    #     else:
+    #         raise ValueError('order must be an integer greater than or equal to 1.')
 
 
 cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
@@ -510,6 +489,7 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
     ID = 'quadratic'
 
     def __init__(self, double [::1] x, double[::1] f):
+
         cdef double[2] dfdx_start, dfdx_end
         cdef _ArrayDerivative1D array_derivative
 
@@ -527,8 +507,6 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
 
         self._calculate_quadratic_coefficients_start(f[0], dfdx_start[0], dfdx_start[1], self._a_first)
         self._calculate_quadratic_coefficients_end(f[self._last_index],  dfdx_end[0], dfdx_end[1], self._a_last)
-        if x.shape[0] <= 1:
-            raise ValueError(f'x array {x.shape} must contain at least 2 spline points to quadratically extrapolate.')
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -560,72 +538,72 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
     @cython.initializedcheck(False)
     cdef double evaluate(self, double px, int index) except? -1e999:
 
+        cdef double nx
+
         # The index returned from find_index is -1 at the array start or the length of the array at the end of array.
-        cdef double f_return
-        cdef double x_scal
         if index == -1:
-            x_scal =  (px - self._x[0])/(self._x[1] - self._x[0])
-            f_return = self._a_first[0]*x_scal**2 + self._a_first[1]*x_scal + self._a_first[2]
+            nx = (px - self._x[0]) / (self._x[1] - self._x[0])
+            return self._a_first[0]*nx*nx + self._a_first[1]*nx + self._a_first[2]
 
         elif index == self._last_index:
-            x_scal = (px - self._x[self._last_index - 1])/(self._x[self._last_index] - self._x[self._last_index - 1])
-            f_return = self._a_last[0]*x_scal**2 + self._a_last[1]*x_scal + self._a_last[2]
+            nx = (px - self._x[self._last_index - 1])/(self._x[self._last_index] - self._x[self._last_index - 1])
+            return self._a_last[0]*nx*nx + self._a_last[1]*nx + self._a_last[2]
 
         else:
             raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
 
-        return f_return
-
-    @cython.cdivision(True)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef double _analytic_gradient(self, double px, int index, int order):
-
-        # The index returned from find_index is -1 at the array start or the length of the array at the end of array.
-        cdef double grad
-        cdef double x_scal
-
-        if index == -1:
-            index += 1
-            x_scal =  (px - self._x[0])/(self._x[1] - self._x[0])
-
-            if order == 1:
-                grad = 2.*self._a_first[0]*x_scal + self._a_first[1]
-                grad = grad/(self._x[1] - self._x[0])
-
-            elif order == 2:
-                grad = 2.*self._a_first[0]
-                grad = grad/(self._x[1] - self._x[0])**2
-
-            elif order > 2:
-                grad = 0
-
-            else:
-                raise ValueError('order must be an integer greater than or equal to 1.')
-
-        elif index == self._last_index:
-            index -= 1
-            x_scal = (px - self._x[self._last_index - 1])/(self._x[index + 1] - self._x[self._last_index - 1])
-
-            if order == 1:
-                grad = 2.*self._a_last[0]*x_scal + self._a_last[1]
-                grad = grad/(self._x[self._last_index] - self._x[self._last_index - 1])
-
-            elif order == 2:
-                grad = 2.*self._a_last[0]
-                grad = grad/(self._x[self._last_index] - self._x[self._last_index - 1])**2
-
-            elif order > 2:
-                grad = 0
-
-            else:
-                raise ValueError('order must be an integer greater than or equal to 1.')
-
-        else:
-            raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
-
-        return grad
+    # @cython.cdivision(True)
+    # @cython.boundscheck(False)
+    # @cython.wraparound(False)
+    # @cython.initializedcheck(False)
+    # cdef double _analytic_gradient(self, double px, int index, int order):
+    #
+    #     cdef double rdx, nx
+    #     cdef double grad
+    #
+    #     # The index returned from find_index is -1 at the array start or the length of the array at the end of array.
+    #     if index == -1:
+    #
+    #         rdx = 1.0 / (self._x[1] - self._x[0])
+    #         nx =  (px - self._x[0]) * rdx
+    #
+    #         if order == 1:
+    #             grad = 2.0*self._a_first[0]*nx + self._a_first[1]
+    #             grad *= rdx
+    #
+    #         elif order == 2:
+    #             grad = 2.0*self._a_first[0]
+    #             grad *= rdx*rdx
+    #
+    #         elif order > 2:
+    #             grad = 0
+    #
+    #         else:
+    #             raise ValueError('order must be an integer greater than or equal to 1.')
+    #
+    #     elif index == self._last_index:
+    #
+    #         rdx = 1.0 / (self._x[self._last_index] - self._x[self._last_index - 1])
+    #         nx = (px - self._x[self._last_index - 1]) * rdx
+    #
+    #         if order == 1:
+    #             grad = 2.0*self._a_last[0]*nx + self._a_last[1]
+    #             grad *= rdx
+    #
+    #         elif order == 2:
+    #             grad = 2.0*self._a_last[0]
+    #             grad *= rdx*rdx
+    #
+    #         elif order > 2:
+    #             grad = 0
+    #
+    #         else:
+    #             raise ValueError('order must be an integer greater than or equal to 1.')
+    #
+    #     else:
+    #         raise ValueError('Invalid extrapolator index. Must be -1 for lower and shape-1 for upper extrapolation.')
+    #
+    #     return grad
 
 
 cdef class _ArrayDerivative1D:
@@ -657,24 +635,27 @@ cdef class _ArrayDerivative1D:
         :param index: The lower index of the x array cell to evaluate.
         :param rescale_norm: A boolean as whether to rescale to the delta before x[index] or after (default).
         """
+
+        cdef double dfdn
+
         # Find if at the edge of the grid, and in what direction. Then evaluate the gradient.
-        cdef double dfdn = 0.
-
         if index == 0:
-            dfdn = self._evaluate_edge_x(index)
-
+            return self._evaluate_edge_x(index)
         elif index == self._last_index:
-            dfdn = self._evaluate_edge_x(index - 1)
+            return self._evaluate_edge_x(index - 1)
 
-        else:
-            dfdn = self._evaluate_x(index)
-
+        dfdn = self._evaluate_x(index)
         if rescale_norm:
-
-            if not (index == 0 or index == self._last_index):
-                dfdn = rescale_lower_normalisation(dfdn, self._x[index - 1], self._x[index], self._x[index + 1])
-
+            return self._rescale_lower_normalisation(dfdn, self._x[index - 1], self._x[index], self._x[index + 1])
         return dfdn
+
+    @cython.cdivision(True)
+    cdef double _rescale_lower_normalisation(self, double dfdn, double x_lower, double x, double x_upper):
+        """
+        Derivatives that are normalised to the unit square (x_upper - x) = 1 are un-normalised, then re-normalised to
+        (x - x_lower)
+        """
+        return dfdn * (x - x_lower) / (x_upper - x)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -691,12 +672,8 @@ cdef class _ArrayDerivative1D:
         normalised to the first or last array width to make sure this is always the case.
         """
 
-        cdef double dfdn = 0.
+        return self._f[index + 1] - self._f[index]
 
-        dfdn = self._f[index + 1] - self._f[index]
-
-        return dfdn
-    
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -706,14 +683,19 @@ cdef class _ArrayDerivative1D:
         Calculate the 1st derivative on an unevenly spaced array as a 2nd order approximation.
 
         A taylor expansion of f(x) with changes in x:
-        f(x+dx0) = f(x) + dx0*fx(x) + dx0^2*fxx(x)/2 + O^3(dx0)
-        f(x-dx1) = f(x) - dx1*fx(x) + dx1^2*fxx(x)/2 + O^3(dx1)
+        
+            f(x+dx0) = f(x) + dx0*fx(x) + dx0^2*fxx(x)/2 + O^3(dx0)
+            f(x-dx1) = f(x) - dx1*fx(x) + dx1^2*fxx(x)/2 + O^3(dx1)
+        
         Can be multiplied by dx1^2 or dx0^2 respectively then taken away to rearrange for the derivative fx(x) as
         second order terms cancel, this is a second order approximation.
-        f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 = f(x)*(dx1^2 - dx0^2) +dx0*fx(x)*dx1^2 +dx1*fx(x)*dx0^2
-        fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 - f(x)*(dx1^2 - dx0^2)]/(dx0*dx1^2 +dx1*dx0^2)
-        Which simplifies in the unit normalisation (dx0 = 1) to :
-        fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1) - f(x)*(dx1^2 - 1)]/(dx1^2 +dx1)
+        
+            f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 = f(x)*(dx1^2 - dx0^2) +dx0*fx(x)*dx1^2 +dx1*fx(x)*dx0^2
+            fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 - f(x)*(dx1^2 - dx0^2)]/(dx0*dx1^2 +dx1*dx0^2)
+        
+        Which simplifies in the unit normalisation (dx0 = 1) to:
+        
+            fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1) - f(x)*(dx1^2 - 1)]/(dx1^2 +dx1)
 
         If dx0 = dx1 the central difference approximation is recovered.
         
@@ -722,15 +704,10 @@ cdef class _ArrayDerivative1D:
           segmentation fault.
         
         """
-        cdef double x1_n, x1_n2
-        cdef double dfdn = 0.
 
-        x1_n = (self._x[index] - self._x[index - 1])/(self._x[index + 1] - self._x[index])
-        x1_n2 = x1_n**2
-
-        dfdn = (self._f[index + 1]*x1_n2 - self._f[index - 1] - self._f[index]*(x1_n2 - 1.))/(x1_n + x1_n2)
-
-        return dfdn
+        cdef double x1_n = (self._x[index] - self._x[index - 1]) / (self._x[index + 1] - self._x[index])
+        cdef double x1_n2 = x1_n * x1_n
+        return (self._f[index + 1]*x1_n2 - self._f[index - 1] - self._f[index]*(x1_n2 - 1.0)) / (x1_n + x1_n2)
 
 
 id_to_interpolator = {

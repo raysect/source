@@ -30,9 +30,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 cimport cython
-from libc.stdint cimport uint8_t
-import numpy as np
-cimport numpy as np
 
 
 @cython.boundscheck(False)
