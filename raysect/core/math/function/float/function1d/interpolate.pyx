@@ -546,7 +546,7 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
             return self._a_first[0]*nx*nx + self._a_first[1]*nx + self._a_first[2]
 
         elif index == self._last_index:
-            nx = (px - self._x[self._last_index - 1])/(self._x[self._last_index] - self._x[self._last_index - 1])
+            nx = (px - self._x[self._last_index - 1]) / (self._x[self._last_index] - self._x[self._last_index - 1])
             return self._a_last[0]*nx*nx + self._a_last[1]*nx + self._a_last[2]
 
         else:
@@ -690,12 +690,12 @@ cdef class _ArrayDerivative1D:
         Can be multiplied by dx1^2 or dx0^2 respectively then taken away to rearrange for the derivative fx(x) as
         second order terms cancel, this is a second order approximation.
         
-            f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 = f(x)*(dx1^2 - dx0^2) +dx0*fx(x)*dx1^2 +dx1*fx(x)*dx0^2
-            fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 - f(x)*(dx1^2 - dx0^2)]/(dx0*dx1^2 +dx1*dx0^2)
+            f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 = f(x)*(dx1^2 - dx0^2) + dx0*fx(x)*dx1^2 + dx1*fx(x)*dx0^2
+            fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1)*dx0^2 - f(x)*(dx1^2 - dx0^2)] / (dx0*dx1^2 + dx1*dx0^2)
         
-        Which simplifies in the unit normalisation (dx0 = 1) to:
+        Which simplifies in the unit normalisation (such that dx0 = 1) to:
         
-            fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1) - f(x)*(dx1^2 - 1)]/(dx1^2 +dx1)
+            fx(x) = [f(x+dx0)*dx1^2 - f(x-dx1) - f(x)*(dx1^2 - 1)]/(dx1^2 + dx1)
 
         If dx0 = dx1 the central difference approximation is recovered.
         
