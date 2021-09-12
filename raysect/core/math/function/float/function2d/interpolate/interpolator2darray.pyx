@@ -53,7 +53,8 @@ cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, d
     Must be spaced so that x and x_upper are not the same values. Monotonically increasing checks should already provide
     this.
     """
-    return dfdn * (x - x_lower)/(x_upper - x)
+
+    return dfdn * (x - x_lower) / (x_upper - x)
 
 
 cdef int to_cell_index(int index, int last_index):
@@ -281,6 +282,7 @@ cdef class _Interpolator2D:
     ID = None
 
     def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f):
+
         self._x = x
         self._y = y
         self._f = f
@@ -329,7 +331,8 @@ cdef class _Interpolator2DLinear(_Interpolator2D):
         return linear2d(
             self._x[index_x], self._x[index_x + 1],
             self._y[index_y], self._y[index_y + 1],
-            self._f[index_x:index_x + 2, index_y:index_y + 2], px, py
+            self._f[index_x:index_x + 2, index_y:index_y + 2],
+            px, py
         )
 
     @cython.cdivision(True)
@@ -442,9 +445,10 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
     ID = 'cubic'
 
     def __init__(self, double[::1] x, double[::1] y, double[:, ::1] f):
+
         super().__init__(x, y, f)
 
-        # Where 'a' has been calculated the mask value = 1.
+        # where the spline coefficients (a) have been calculated the value is set to 1, 0 otherwise
         self._calculated = np.zeros((self._last_index_x, self._last_index_y), dtype=np.uint8)
 
         # Store the cubic spline coefficients, where increasing index values are the coefficients for the coefficients of higher powers of x, y in the last 2 dimensions.
