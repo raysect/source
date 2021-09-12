@@ -35,15 +35,12 @@ from numpy cimport ndarray
 
 
 cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper)
-
-
-cdef int find_index_change(int index, int last_index)
-
-
-cdef int find_edge_index(int index, int last_index)
+cdef int to_cell_index(int index, int last_index)
+cdef int to_knot_index(int index, int last_index)
 
 
 cdef class Interpolator2DArray(Function2D):
+
     cdef:
         ndarray x, y, f
         double[::1] _x_mv, _y_mv
@@ -57,33 +54,36 @@ cdef class Interpolator2DArray(Function2D):
 
 
 cdef class _Interpolator2D:
+
     cdef:
         double [::1] _x, _y
         double [:, ::1] _f
         int _last_index_x, _last_index_y
 
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999
-
     cdef double analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y)
 
 
 cdef class _Interpolator2DLinear(_Interpolator2D):
-    cdef double _calculate_bilinear_coefficients_0(self, int index_x, int index_y)
-    cdef double _calculate_bilinear_coefficients_1(self, int index_x, int index_y)
-    cdef double _calculate_bilinear_coefficients_2(self, int index_x, int index_y)
-    cdef double _calculate_bilinear_coefficients_3(self, int index_x, int index_y)
+
+    cdef double _calculate_a0(self, int ix, int iy)
+    cdef double _calculate_a1(self, int ix, int iy)
+    cdef double _calculate_a2(self, int ix, int iy)
+    cdef double _calculate_a3(self, int ix, int iy)
 
 
 cdef class _Interpolator2DCubic(_Interpolator2D):
+
     cdef:
-        np.uint8_t[:, ::1] _mask_a
         double[:, :, :, ::1] _a
+        np.uint8_t[:, ::1] _calculated
         _ArrayDerivative2D _array_derivative
 
-    cdef _cache_coefficients(self, int index_x, int index_y, double[4][4] a)
+    cdef _calc_coefficients(self, int index_x, int index_y, double[4][4] a)
 
 
 cdef class _Extrapolator2D:
+
     cdef:
         double [::1] _x, _y
         double [:, ::1] _f
@@ -92,11 +92,8 @@ cdef class _Extrapolator2D:
         double _extrapolation_range_x, _extrapolation_range_y
 
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999
-
     cdef double _evaluate_edge_x(self, double px, double py, int index_x, int index_y, int edge_x_index) except? -1e999
-
     cdef double _evaluate_edge_y(self, double px, double py, int index_x, int index_y, int edge_y_index) except? -1e999
-
     cdef double _evaluate_edge_xy(self, double px, double py, int index_x, int index_y, int edge_x_index, int edge_y_index) except? -1e999
 
 
@@ -113,22 +110,23 @@ cdef class _Extrapolator2DLinear(_Extrapolator2D):
 
 
 cdef class _ArrayDerivative2D:
+
     cdef:
         double [::1] _x, _y
         double [:, ::1] _f
         int _last_index_x, _last_index_y
 
     cdef double evaluate_df_dx(self, int index_x, int index_y, bint rescale_norm_x) except? -1e999
-    cdef double _derivitive_dfdx_edge(self, int lower_index_x, int slice_index_y) except? -1e999
-    cdef double _derivitive_dfdx(self, int lower_index_x, int slice_index_y) except? -1e999
+    cdef double _derivative_dfdx_edge(self, int lower_index_x, int slice_index_y) except? -1e999
+    cdef double _derivative_dfdx(self, int lower_index_x, int slice_index_y) except? -1e999
 
     cdef double evaluate_df_dy(self, int index_x, int index_y, bint rescale_norm_y) except? -1e999
-    cdef double _derivitive_dfdy_edge(self, int slice_index_x, int lower_index_y) except? -1e999
-    cdef double _derivitive_dfdy(self, int slice_index_x, int lower_index_y) except? -1e999
+    cdef double _derivative_dfdy_edge(self, int slice_index_x, int lower_index_y) except? -1e999
+    cdef double _derivative_dfdy(self, int slice_index_x, int lower_index_y) except? -1e999
 
     cdef double evaluate_d2f_dxdy(self, int index_x, int index_y, bint rescale_norm_x, bint rescale_norm_y) except? -1e999
-    cdef double _derivitive_d2fdxdy(self, int lower_index_x, int lower_index_y) except? -1e999
-    cdef double _derivitive_d2fdxdy_edge_xy(self, int lower_index_x, int lower_index_y) except? -1e999
-    cdef double _derivitive_d2fdxdy_edge_x(self, int lower_index_x, int lower_index_y) except? -1e999
-    cdef double _derivitive_d2fdxdy_edge_y(self, int lower_index_x, int lower_index_y) except? -1e999
+    cdef double _derivative_d2fdxdy(self, int lower_index_x, int lower_index_y) except? -1e999
+    cdef double _derivative_d2fdxdy_edge_xy(self, int lower_index_x, int lower_index_y) except? -1e999
+    cdef double _derivative_d2fdxdy_edge_x(self, int lower_index_x, int lower_index_y) except? -1e999
+    cdef double _derivative_d2fdxdy_edge_y(self, int lower_index_x, int lower_index_y) except? -1e999
 
