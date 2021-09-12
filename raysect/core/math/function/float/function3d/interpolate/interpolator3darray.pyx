@@ -1091,7 +1091,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
     @cython.initializedcheck(False)
     cdef double _evaluate_edge_xz(self, double px, double py, double pz, int index_x, int index_y, int index_z, int edge_x_index, int edge_y_index, int edge_z_index) except? -1e999:
 
-        cdef double f, df_dx, df_dz, d2f_dxdz
+        cdef double rdx, rdz, f, df_dx, df_dz, d2f_dxdz
 
         rdx = 1.0 / (self._x[index_x + 1] - self._x[index_x])
         rdz = 1.0 / (self._z[index_z + 1] - self._z[index_z])
@@ -1152,7 +1152,7 @@ cdef class _Extrapolator3DLinear(_Extrapolator3D):
         :param int edge_z_index: the index of the closest edge spline knot in the z direction.
         """
 
-        cdef double f, df_dx, df_dy, df_dz, d2f_dxdy, d2f_dxdz, d2f_dydz, d3f_dxdydz
+        cdef double rdx, rdy, rdz, f, df_dx, df_dy, df_dz, d2f_dxdy, d2f_dxdz, d2f_dydz, d3f_dxdydz
 
         rdx = 1.0 / (self._x[index_x + 1] - self._x[index_x])
         rdy = 1.0 / (self._y[index_y + 1] - self._y[index_y])
@@ -1420,7 +1420,7 @@ cdef class _ArrayDerivative3D:
         Evaluate d2f/dydz at index_x, index_y, index_z. If near the edge of the grid, the array size that the 
         derivative is calculated on is reduced.
         
-                :param index_x: The lower index of the x grid cell to evaluate.
+        :param index_x: The lower index of the x grid cell to evaluate.
         :param index_y: The lower index of the y grid cell to evaluate.
         :param index_z: The lower index of the z grid cell to evaluate.
 
@@ -1646,7 +1646,6 @@ cdef class _ArrayDerivative3D:
         f(x + dx0, ...),  f(x, ...) and subtracting the second from the first.
 
         For unit square normalisation, dx0 = 1, the denominator simplifies.
-
         """
 
         return self._f[lower_index_x + 1, slice_index_y, slice_index_z] - self._f[lower_index_x, slice_index_y, slice_index_z]
