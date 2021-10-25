@@ -1,6 +1,23 @@
 Raysect Changelog
 =================
 
+Release 0.7.1 (24 Sept 2021)
+----------------------------
+
+Bug fixes:
+* MulticoreEngine fixes for MacOS and python 3.8+
+* The spectral pipeline 'display_progress' attribute was not accessible from python.
+* The pipeline line 'name' attribute was not accessible from python.
+* Fixed half-pixel offset in multiple cameras due to an index offset error.
+* Improved normalisation in quaternion_to().
+
+New:
+* Added cython factory functions for quaternions.
+* Tetrahedral mesh interpolation function.
+* 1D, 2D and 3D array interpolation functions.
+* 12, 2D and 3D blend functions.
+
+
 Release 0.7.0 (7 Nov 2020)
 --------------------------
 
