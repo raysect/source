@@ -32,5 +32,6 @@
 from .base import Function3D
 from .constant import Constant3D
 from .blend import Blend3D
+from .interpolate import *
 from .arg import Arg3D
 from .cmath import *
