@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,3 +29,4 @@
 
 from raysect.core.math.function.float.function2d.interpolate.interpolator2dmesh cimport Interpolator2DMesh
 from raysect.core.math.function.float.function2d.interpolate.discrete2dmesh cimport Discrete2DMesh
+from raysect.core.math.function.float.function2d.interpolate.interpolator2darray cimport Interpolator2DArray

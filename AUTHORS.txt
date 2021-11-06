@@ -11,4 +11,7 @@ Contributors
 * Dr Scott Silburn
 * Vlad Neverov
 * Dr Jack Lovell
+* Koyo Munechika
 * Dr Matej Tomes
+* Dr Simon Orchard
+

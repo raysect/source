@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from multiprocessing import Process, cpu_count, SimpleQueue, Value
+from multiprocessing import get_context, cpu_count
 from raysect.core.math import random
 import time
 
@@ -145,6 +145,7 @@ class MulticoreEngine(RenderEngine):
 
     :param processes: The number of worker processes, or None to use all available cores (default).
     :param tasks_per_job: The number of tasks to group into a single job, or None if this should be determined automatically (default).
+    :param start_method: The method used to start child processes: 'fork' (default), 'spawn' or 'forkserver'.
 
     .. code-block:: pycon
 
@@ -160,10 +161,11 @@ class MulticoreEngine(RenderEngine):
         >>> camera.render_engine = MulticoreEngine(processes=8)
     """
 
-    def __init__(self, processes=None, tasks_per_job=None):
+    def __init__(self, processes=None, tasks_per_job=None, start_method='fork'):
         super().__init__()
         self.processes = processes
         self.tasks_per_job = tasks_per_job
+        self._context = get_context(start_method)
 
     @property
     def processes(self):
@@ -197,19 +199,19 @@ class MulticoreEngine(RenderEngine):
     def run(self, tasks, render, update, render_args=(), render_kwargs={}, update_args=(), update_kwargs={}):
 
         # establish ipc queues
-        job_queue = SimpleQueue()
-        result_queue = SimpleQueue()
-        tasks_per_job = Value('i')
+        job_queue = self._context.SimpleQueue()
+        result_queue = self._context.SimpleQueue()
+        tasks_per_job = self._context.Value('i')
 
         # start process to generate jobs
         tasks_per_job.value = self._tasks_per_job
-        producer = Process(target=self._producer, args=(tasks, job_queue, tasks_per_job))
+        producer = self._context.Process(target=self._producer, args=(tasks, job_queue, tasks_per_job))
         producer.start()
 
         # start worker processes
         workers = []
         for pid in range(self._processes):
-            p = Process(target=self._worker, args=(render, render_args, render_kwargs, job_queue, result_queue))
+            p = self._context.Process(target=self._worker, args=(render, render_args, render_kwargs, job_queue, result_queue))
             p.start()
             workers.append(p)
 

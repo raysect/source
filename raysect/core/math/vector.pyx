@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,8 @@
 import numbers
 cimport cython
 from libc.math cimport sqrt, fabs, NAN, acos, cos, sin
+
+DEF EPSILON = 1e-12
 
 
 cdef class Vector3D(_Vec3):
@@ -550,48 +552,54 @@ cdef class Vector3D(_Vec3):
         """
 
         cdef:
-            double theta, theta_0, magnitude_a, magnitude_b, dot_product, ctheta, stheta
+            double angle, a_magnitude, b_magnitude, d, c, s
             Vector3D a_normalised, b_normalised, e_vec, v_vec
 
         if not 0 <= t <= 1:
-            raise ValueError("Spherical lerp parameter t must be in range (0, 1).")
+            raise ValueError("Spherical lerp parameter t must be in range [0, 1].")
 
+        # obtain unit vectors
         a_normalised = self.normalise()
         b_normalised = b.normalise()
-        magnitude_a = self.get_length()
-        magnitude_b = b.get_length()
+
+        # obtain magnitudes
+        a_magnitude = self.get_length()
+        b_magnitude = b.get_length()
 
         # Calculate angle between vectors a and b through dot product
-        theta_0 = acos(a_normalised.dot(b_normalised))
+        angle = acos(a_normalised.dot(b_normalised))
 
-        # Calculate interpolated angle theta
-        theta = t * theta_0
+        if angle < EPSILON:
 
-        # Calculate new orthogonal basis vector e
-        dot_product = a_normalised.dot(b_normalised)
-        e_vec = new_vector3d(
-            b_normalised.x - a_normalised.x * dot_product,
-            b_normalised.y - a_normalised.y * dot_product,
-            b_normalised.z - a_normalised.z * dot_product
-        )
+            # vectors are parallel
+            v_vec = a_normalised
 
-        if e_vec.get_length() == 0:
-            raise ValueError("Vectors a and b are parallel, the spherical lerp operation is "
-                             "undefined for these vectors.")
-        e_vec = e_vec.normalise()
+        else:
 
-        # calculate direction of interpolated vector
-        # v_vec = a_normalised * cos(theta) + e_vec * sin(theta)
-        ctheta = cos(theta)
-        stheta = sin(theta)
-        v_vec = new_vector3d(
-            a_normalised.x * ctheta + e_vec.x * stheta,
-            a_normalised.y * ctheta + e_vec.y * stheta,
-            a_normalised.z * ctheta + e_vec.z * stheta
-        )
+            # Calculate interpolated angle
+            angle *= t
+
+            # Calculate new orthogonal basis vector e
+            d = a_normalised.dot(b_normalised)
+            e_vec = new_vector3d(
+                b_normalised.x - a_normalised.x * d,
+                b_normalised.y - a_normalised.y * d,
+                b_normalised.z - a_normalised.z * d
+            )
+            e_vec = e_vec.normalise()
+
+            # calculate direction of interpolated vector
+            # v_vec = a_normalised * cos(theta) + e_vec * sin(theta)
+            c = cos(angle)
+            s = sin(angle)
+            v_vec = new_vector3d(
+                a_normalised.x * c + e_vec.x * s,
+                a_normalised.y * c + e_vec.y * s,
+                a_normalised.z * c + e_vec.z * s
+            )
 
         # scale by the interpolated magnitudes
-        return v_vec.mul(magnitude_a * (1 - t) + t * magnitude_b)
+        return v_vec.mul((1 - t) * a_magnitude + t * b_magnitude)
 
 
 cdef class Vector2D:

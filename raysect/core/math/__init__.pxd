@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@ from raysect.core.math.point cimport Point3D, Point2D, new_point3d, new_point2d
 from raysect.core.math.vector cimport Vector2D, new_vector2d, Vector3D, new_vector3d
 from raysect.core.math.normal cimport Normal3D, new_normal3d
 from raysect.core.math.affinematrix cimport AffineMatrix3D, new_affinematrix3d
-from raysect.core.math.quaternion cimport Quaternion, new_quaternion
+from raysect.core.math.quaternion cimport Quaternion, new_quaternion, new_quaternion_from_matrix, new_quaternion_from_axis_angle
 from raysect.core.math.transform cimport translate, rotate_x, rotate_y, rotate_z, rotate_vector, rotate, rotate_basis, to_cylindrical, from_cylindrical, extract_translation, extract_rotation
 from raysect.core.math.units cimport *
 from raysect.core.math.statsarray cimport StatsBin, StatsArray1D, StatsArray2D, StatsArray3D

@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,7 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
         readonly int bins
         readonly double min_wavelength, max_wavelength, delta_wavelength
         readonly np.ndarray wavelengths
-        bint display_progress
+        public bint display_progress
         object _display_figure
         bint _quiet
 

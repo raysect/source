@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 
 from .base import Function2D
 from .constant import Constant2D
+from .blend import Blend2D
 from .interpolate import *
 from .arg import Arg2D
 from .cmath import *

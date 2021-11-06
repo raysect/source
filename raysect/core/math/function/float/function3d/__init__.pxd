@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,8 @@
 
 from raysect.core.math.function.float.function3d.base cimport Function3D
 from raysect.core.math.function.float.function3d.constant cimport Constant3D
+from raysect.core.math.function.float.function3d.blend cimport Blend3D
 from raysect.core.math.function.float.function3d.autowrap cimport autowrap_function3d
+from raysect.core.math.function.float.function3d.interpolate cimport *
 from raysect.core.math.function.float.function3d.arg cimport Arg3D
 from raysect.core.math.function.float.function3d.cmath cimport *
