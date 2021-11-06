@@ -72,14 +72,6 @@ Functions Returning a Float
 .. autoclass:: raysect.core.math.function.float.function2d.cmath.Atan4Q2D
    :show-inheritance:
 
-.. automodule:: raysect.core.math.function.float.function2d.interpolate.discrete2dmesh
-   :show-inheritance:
-   :members:
-
-.. automodule:: raysect.core.math.function.float.function2d.interpolate.interpolator2dmesh
-   :show-inheritance:
-   :members:
-
 .. autoclass:: raysect.core.math.function.float.function3d.base.Function3D
    :members:
    :special-members: __call__
@@ -113,6 +105,7 @@ Functions Returning a Float
 
 .. autoclass:: raysect.core.math.function.float.function3d.cmath.Atan4Q3D
    :show-inheritance:
+
 
 Functions Returning a Vector3D
 ------------------------------
@@ -162,8 +155,21 @@ Interpolators
 .. autoclass:: raysect.core.math.function.float.function2d.interpolate.interpolator2darray.Interpolator2DArray
    :show-inheritance:
 
+.. automodule:: raysect.core.math.function.float.function2d.interpolate.interpolator2dmesh
+   :show-inheritance:
+   :members:
+
+.. automodule:: raysect.core.math.function.float.function2d.interpolate.discrete2dmesh
+   :show-inheritance:
+   :members:
+
 3D interpolators
 ^^^^^^^^^^^^^^^^
 
 .. autoclass:: raysect.core.math.function.float.function3d.interpolate.interpolator3darray.Interpolator3DArray
    :show-inheritance:
+
+.. automodule:: raysect.core.math.function.float.function3d.interpolate.discrete3dmesh
+   :show-inheritance:
+   :members:
+
