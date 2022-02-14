@@ -76,18 +76,12 @@ cdef class TargettedCCDArray(Observer2D):
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
-    cdef:
-        double _width, _pixel_area, _image_delta, _image_start_x, _image_start_y, _targetted_path_prob
-        tuple _targets
-        RectangleSampler3D _point_sampler
-        HemisphereCosineSampler _cosine_sampler
-        TargettedHemisphereSampler _targetted_sampler
-
-    def __init__(self, targets, pixels=(720, 480), width=0.035, targetted_path_prob=None, parent=None, transform=None, name=None, pipelines=None):
+    def __init__(self, targets, pixels=(512, 512), width=0.035, targetted_path_prob=None,
+                 parent=None, transform=None, name=None, pipelines=None):
 
         # initial values to prevent undefined behaviour when setting via self.width
         self._width = 0.035
-        self._pixels = (720, 480)
+        self._pixels = (512, 512)
 
         pipelines = pipelines or [RGBPipeline2D()]
 

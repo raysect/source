@@ -57,11 +57,6 @@ cdef class VectorCamera(Observer2D):
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
-    cdef:
-        double _sensitivity
-        double image_delta, image_start_x, image_start_y
-        readonly np.ndarray pixel_origins, pixel_directions
-
     def __init__(self, pixel_origins, pixel_directions, frame_sampler=None, pipelines=None, sensitivity=None, parent=None, transform=None, name=None):
 
         # defaults to an adaptively sampled RGB pipeline

@@ -70,12 +70,6 @@ cdef class OpenCVCamera(Observer2D):
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
-    cdef:
-        double image_delta, image_start_x, image_start_y, _sensitivity
-        np.ndarray camera_matrix, distortion, r_vector, t_vector, _rotation_matrix,
-        Point3D _origin
-        RectangleSampler3D point_sampler
-
     def __init__(self, camera_matrix, distortion, r_vector, t_vector, pixels,
                  frame_sampler=None, pipelines=None, etendue=None, parent=None, transform=None, name=None):
 

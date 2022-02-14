@@ -56,16 +56,11 @@ cdef class CCDArray(Observer2D):
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
-    cdef:
-        double _width, _pixel_area, image_delta, image_start_x, image_start_y
-        SurfaceSampler3D point_sampler
-        SolidAngleSampler vector_sampler
-
-    def __init__(self, pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
+    def __init__(self, pixels=(512, 512), width=0.035, parent=None, transform=None, name=None, pipelines=None):
 
         # initial values to prevent undefined behaviour when setting via self.width
         self._width = 0.035
-        self._pixels = (720, 480)
+        self._pixels = (512, 512)
 
         pipelines = pipelines or [RGBPipeline2D()]
 
@@ -117,14 +112,6 @@ cdef class CCDArray(Observer2D):
         self._pixel_area = (self._width / self._pixels[0])**2
 
     cpdef list _generate_rays(self, int ix, int iy, Ray template, int ray_count):
-
-        cdef:
-            double pixel_x, pixel_y
-            list origin_points, direction_vectors, rays
-            Point3D origin
-            Vector3D direction
-            Ray ray
-            AffineMatrix3D pixel_to_local
 
         # generate pixel transform
         pixel_x = self.image_start_x - self.image_delta * (ix + 0.5)

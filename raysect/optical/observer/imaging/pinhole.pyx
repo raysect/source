@@ -69,10 +69,6 @@ cdef class PinholeCamera(Observer2D):
         >>> camera.observe()
     """
 
-    cdef:
-        double _sensitivity, _fov, image_delta, image_start_x, image_start_y
-        RectangleSampler3D point_sampler
-
     def __init__(self, pixels, fov=None, sensitivity=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
         # defaults to an adaptively sampled RGB pipeline
