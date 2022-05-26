@@ -1,10 +1,14 @@
 Raysect Changelog
 =================
 
-Release 0.8.0 (TBD)
--------------------
+Release 0.7.2 (26 May 2022)
+---------------------------
 
-<TBD>
+Bug fixes:
+* Spectrum samples attribute is now readonly to prevent users replacing the array and potentially causing a segfault.
+
+New:
+* Added pyproject.toml (Jack Lovell)
 
 
 Release 0.7.1 (6 Nov 2021)
