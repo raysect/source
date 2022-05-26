@@ -1,14 +1,18 @@
 Raysect Changelog
 =================
 
-Release 0.7.2 (26 May 2022)
+Release 0.8.0 (26 May 2022)
 ---------------------------
+
+API changes:
+* Intersection object is now passed to evaluate_surface, user code will need to be updated to include the additional parameter.
 
 Bug fixes:
 * Spectrum samples attribute is now readonly to prevent users replacing the array and potentially causing a segfault.
 
 New:
 * Added pyproject.toml (Jack Lovell)
+* Mesh returns a specialised MeshIntersection object that exposes the triangle and barycentric coordinates of the intersection.
 
 
 Release 0.7.1 (6 Nov 2021)
