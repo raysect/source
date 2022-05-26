@@ -64,7 +64,8 @@ cdef class Material(CoreMaterial):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
         """
         Virtual method for evaluating the spectrum at a material surface.
 
@@ -83,6 +84,7 @@ cdef class Material(CoreMaterial):
           from world space to local primitive space.
         :param AffineMatrix3D primitive_to_world: Affine matrix defining transformation
           from local primitive space to world space.
+        :param Intersection intersection: The full ray-primitive intersection object.
         """
         raise NotImplementedError("Material virtual method evaluate_surface() has not been implemented.")
 
@@ -123,7 +125,8 @@ cdef class NullSurface(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
 
         cdef:
             Point3D origin
@@ -170,7 +173,8 @@ cdef class NullMaterial(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
 
         cdef:
             Point3D origin
@@ -220,7 +224,8 @@ cdef class DiscreteBSDF(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D p_hit_point,
                                     bint exiting, Point3D p_inside_point, Point3D p_outside_point,
-                                    Normal3D p_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D p_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
 
         cdef:
             Vector3D w_outgoing, s_incoming
@@ -253,11 +258,13 @@ cdef class DiscreteBSDF(Material):
         s_incoming = ray.direction.transform(world_to_surface).neg()
 
         # bsdf sampling
-        return self.evaluate_shading(world, ray, s_incoming, w_reflection_origin, w_transmission_origin, exiting, world_to_surface, surface_to_world)
+        return self.evaluate_shading(world, ray, s_incoming, w_reflection_origin, w_transmission_origin, exiting, world_to_surface, surface_to_world, intersection)
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
+                                    Intersection intersection):
+
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
 
 
@@ -283,7 +290,8 @@ cdef class ContinuousBSDF(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D p_hit_point,
                                     bint exiting, Point3D p_inside_point, Point3D p_outside_point,
-                                    Normal3D p_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D p_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
 
         cdef:
             double pdf, pdf_importance, pdf_bsdf
@@ -339,7 +347,7 @@ cdef class ContinuousBSDF(Material):
             pdf = ray.get_important_path_weight() * pdf_important + (1 - ray.get_important_path_weight()) * pdf_bsdf
 
             # evaluate bsdf and normalise
-            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_reflection_origin, w_transmission_origin, exiting, world_to_surface, surface_to_world)
+            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_reflection_origin, w_transmission_origin, exiting, world_to_surface, surface_to_world, intersection)
             spectrum.div_scalar(pdf)
             return spectrum
 
@@ -347,7 +355,7 @@ cdef class ContinuousBSDF(Material):
 
             # bsdf sampling
             s_outgoing = self.sample(s_incoming, exiting)
-            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_reflection_origin, w_transmission_origin, exiting, world_to_surface, surface_to_world)
+            spectrum = self.evaluate_shading(world, ray, s_incoming, s_outgoing, w_reflection_origin, w_transmission_origin, exiting, world_to_surface, surface_to_world, intersection)
             pdf = self.pdf(s_incoming, s_outgoing, exiting)
             spectrum.div_scalar(pdf)
             return spectrum
@@ -362,7 +370,8 @@ cdef class ContinuousBSDF(Material):
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
+                                    Intersection intersection):
 
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
 

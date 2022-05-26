@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core.math.sampler cimport HemisphereCosineSampler
-from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF
+from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF, Intersection
 from raysect.optical.material cimport ContinuousBSDF
 from numpy cimport ndarray
 
@@ -77,7 +77,8 @@ cdef class Lambert(ContinuousBSDF):
 
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
+                                    Intersection intersection):
 
         cdef:
             Spectrum spectrum

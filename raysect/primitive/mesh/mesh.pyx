@@ -77,6 +77,60 @@ DEF NO_INTERSECTION = -1
 DEF RSM_VERSION_MAJOR = 1
 DEF RSM_VERSION_MINOR = 0
 
+
+cdef class MeshIntersection(Intersection):
+    """
+    Describes the result of a ray-primitive intersection with a Mesh primitive.
+
+    :param Ray ray: The incident ray object (world space).
+    :param double ray_distance: The distance of the intersection along the ray path.
+    :param Primitive primitive: The intersected primitive object.
+    :param Point3D hit_point: The point of intersection between the ray and the primitive (primitive local space).
+    :param Point3D inside_point: The interior ray launch point (primitive local space).
+    :param Point3D outside_point: The exterior ray launch point (primitive local space).
+    :param Normal3D normal: The surface normal (primitive local space)
+    :param bool exiting: True if the ray is exiting the surface, False otherwise.
+    :param AffineMatrix3D world_to_primitive: A world to primitive local transform matrix.
+    :param AffineMatrix3D primitive_to_world: A primitive local to world transform matrix.
+
+    :ivar bool exiting: True if the ray is exiting the surface, False otherwise.
+    :ivar Point3D hit_point: The point of intersection between the ray and the primitive
+      (primitive local space).
+    :ivar Point3D inside_point: The interior ray launch point (primitive local space).
+    :ivar Normal3D normal: The surface normal (primitive local space).
+    :ivar Point3D outside_point: The exterior ray launch point (primitive local space).
+    :ivar Primitive primitive: The primitive object that was intersected by the Ray.
+    :ivar AffineMatrix3D primitive_to_world: The primitive's local to world transform matrix.
+    :ivar Ray ray: The incident ray object (world space).
+    :ivar double ray_distance: The distance of the intersection along the ray path.
+    :ivar AffineMatrix3D world_to_primitive: A world to primitive local transform matrix.
+    :ivar int triangle: The index of the triangle intersected.
+    :ivar float u: The barycentric coordinate U of the intersection.
+    :ivar float v: The barycentric coordinate V of the intersection.
+    :ivar float w: The barycentric coordinate W of the intersection.
+    """
+
+    def __init__(self, Ray ray, double ray_distance, Primitive primitive,
+                 Point3D hit_point, Point3D inside_point, Point3D outside_point,
+                 Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                 int32_t triangle, float u, float v, float w):
+
+        self._construct(ray, ray_distance, primitive, hit_point, inside_point, outside_point, normal, exiting, world_to_primitive, primitive_to_world)
+        self.triangle = triangle
+        self.u = u
+        self.v = v
+        self.w = w
+
+    def __repr__(self):
+
+        return "MeshIntersection({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(
+            self.ray, self.ray_distance, self.primitive,
+            self.hit_point, self.inside_point, self.outside_point,
+            self.normal, self.exiting,
+            self.world_to_primitive, self.primitive_to_world,
+            self.triangle, self.u, self.v, self.w)
+
+
 # TODO: fire exceptions if degenerate triangles are found and tolerant mode is not enabled (the face normal call will fail @ normalisation)
 # TODO: tidy up the internal storage of triangles - separate the triangle reference arrays for vertices, normals etc...
 # TODO: the following code really is a bit opaque, needs a general tidy up
@@ -697,10 +751,12 @@ cdef class MeshData(KDTree3DCore):
         normal = self._intersection_normal()
         exiting = ray.direction.dot(face_normal) > 0.0
 
-        return new_intersection(
+        return new_mesh_intersection(
             ray, t, None,
             hit_point, inside_point, outside_point,
-            normal, exiting, None, None
+            normal, exiting, None, None,
+            self._i, self._u, self._v, self._w
+
         )
 
     @cython.boundscheck(False)

@@ -81,7 +81,7 @@ camera.ray_extinction_prob = 0.01
 
 # RAY TRACE
 ion()
-name = 'standford_bunny'
+name = 'stanford_bunny'
 timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
 render_pass = 1
 while not camera.render_complete:

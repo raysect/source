@@ -34,6 +34,13 @@ from raysect.core.math.spatial cimport KDTree3DCore
 from numpy cimport float32_t, int32_t, uint8_t, ndarray
 
 
+cdef class MeshIntersection(Intersection):
+
+    cdef:
+        public int32_t triangle
+        public float u, v, w
+
+
 cdef class MeshData(KDTree3DCore):
 
     cdef:
@@ -87,8 +94,6 @@ cdef class MeshData(KDTree3DCore):
     cdef double _read_float(self, object file)
 
 
-
-
 cdef class Mesh(Primitive):
 
     cdef:
@@ -99,3 +104,19 @@ cdef class Mesh(Primitive):
         double _ray_distance
 
     cdef Intersection _process_intersection(self, Ray world_ray, Ray local_ray)
+
+
+cdef inline MeshIntersection new_mesh_intersection(
+        Ray ray, double ray_distance, Primitive primitive,
+        Point3D hit_point, Point3D inside_point, Point3D outside_point, Normal3D normal, bint exiting,
+        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+        int32_t triangle, float u, float v, float w):
+
+    cdef Intersection intersection
+    intersection = MeshIntersection.__new__(MeshIntersection)
+    intersection._construct(ray, ray_distance, primitive, hit_point, inside_point, outside_point, normal, exiting, world_to_primitive, primitive_to_world)
+    intersection.triangle = triangle
+    intersection.u = u
+    intersection.v = v
+    intersection.w = w
+    return intersection
