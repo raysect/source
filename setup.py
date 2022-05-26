@@ -104,7 +104,7 @@ setup(
         "Topic :: Multimedia :: Graphics :: 3D Rendering",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    install_requires=['numpy>=0.14', 'cython>=0.28', 'matplotlib'],
+    install_requires=['numpy>=0.14', 'matplotlib'],
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
