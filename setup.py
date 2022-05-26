@@ -35,7 +35,7 @@ if "--annotate" in sys.argv:
 
 source_paths = ['raysect', 'demos']
 compilation_includes = [".", numpy.get_include()]
-compilation_args = []
+compilation_args = ['-O3']
 cython_directives = {
     # 'auto_pickle': True,
     'language_level': 3
