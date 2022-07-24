@@ -3,14 +3,13 @@ import os
 import time
 import numpy as np
 from matplotlib import pyplot as plt
-from Py3DViewer import Tetmesh
 
 from raysect.optical import World, translate, Point3D, Vector3D, rotate_basis
 from raysect.core.math.function.float.function3d.interpolate import Discrete3DMesh
 from raysect.optical.library import RoughTitanium
 from raysect.optical.material import InhomogeneousVolumeEmitter
 from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
-from raysect.primitive import Box
+from raysect.primitive import Box, TetraMesh
 
 BASE_PATH = os.path.split(os.path.realpath(__file__))[0]
 
@@ -28,18 +27,15 @@ class UnityEmitter(InhomogeneousVolumeEmitter):
 
 
 # Rabbit tetrahedra mesh emitter
-mesh = Tetmesh(os.path.join(BASE_PATH, "../resources/stanford_bunny.mesh"))
-
-try:
-    tetra = Discrete3DMesh(mesh.vertices, mesh.polys, np.ones((mesh.num_polys)), False, 0)
-except AttributeError:  # for backward compatibility with older versions of Py3DViewer
-    tetra = Discrete3DMesh(mesh.vertices, mesh.tets, np.ones((mesh.num_tets)), False, 0)
+vertices = np.load(os.path.join(BASE_PATH, "../resources/stanford_bunny_vertex.npy"))
+tetrahedra = np.load(os.path.join(BASE_PATH, "../resources/stanford_bunny_tetra.npy"))
+mesh = TetraMesh(vertices, tetrahedra)
+tetra = Discrete3DMesh.from_mesh(mesh, np.ones(mesh.tetrahedra.shape[0]), limit=False, default_value=0.0)
 
 # scene
 world = World()
-lower = Point3D(mesh.bbox[0, 0], mesh.bbox[0, 1], mesh.bbox[0, 2])
-upper = Point3D(mesh.bbox[1, 0], mesh.bbox[1, 1], mesh.bbox[1, 2])
-emitter = Box(lower, upper, material=UnityEmitter(tetra), parent=world)
+bbox = mesh.bounding_box(world.to(world))
+emitter = Box(bbox.lower, bbox.upper, material=UnityEmitter(tetra), parent=world)
 floor = Box(Point3D(-100, -0.1, -100), Point3D(100, -0.01, 100), world, material=RoughTitanium(0.1))
 
 # camera
