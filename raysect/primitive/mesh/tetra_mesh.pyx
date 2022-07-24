@@ -108,8 +108,8 @@ cdef class TetraMesh(KDTree3DCore):
         self._tetrahedra = tetrahedra
 
         # assign to memory views
-        self._vertices_mv = vertices
-        self._tetrahedra_mv = tetrahedra
+        self.vertices_mv = vertices
+        self.tetrahedra_mv = tetrahedra
 
         # initialise hit state attributes
         self.tetrahedra_id = -1
@@ -308,21 +308,21 @@ cdef class TetraMesh(KDTree3DCore):
             np.int32_t i1, i2, i3, i4
             BoundingBox3D bbox
 
-        i1 = self._tetrahedra_mv[tetrahedra, V1]
-        i2 = self._tetrahedra_mv[tetrahedra, V2]
-        i3 = self._tetrahedra_mv[tetrahedra, V3]
-        i4 = self._tetrahedra_mv[tetrahedra, V4]
+        i1 = self.tetrahedra_mv[tetrahedra, V1]
+        i2 = self.tetrahedra_mv[tetrahedra, V2]
+        i3 = self.tetrahedra_mv[tetrahedra, V3]
+        i4 = self.tetrahedra_mv[tetrahedra, V4]
 
         bbox = new_boundingbox3d(
             new_point3d(
-                min(self._vertices_mv[i1, X], self._vertices_mv[i2, X], self._vertices_mv[i3, X], self._vertices_mv[i4, X]),
-                min(self._vertices_mv[i1, Y], self._vertices_mv[i2, Y], self._vertices_mv[i3, Y], self._vertices_mv[i4, Y]),
-                min(self._vertices_mv[i1, Z], self._vertices_mv[i2, Z], self._vertices_mv[i3, Z], self._vertices_mv[i4, Z]),
+                min(self.vertices_mv[i1, X], self.vertices_mv[i2, X], self.vertices_mv[i3, X], self.vertices_mv[i4, X]),
+                min(self.vertices_mv[i1, Y], self.vertices_mv[i2, Y], self.vertices_mv[i3, Y], self.vertices_mv[i4, Y]),
+                min(self.vertices_mv[i1, Z], self.vertices_mv[i2, Z], self.vertices_mv[i3, Z], self.vertices_mv[i4, Z]),
             ),
             new_point3d(
-                max(self._vertices_mv[i1, X], self._vertices_mv[i2, X], self._vertices_mv[i3, X], self._vertices_mv[i4, X]),
-                max(self._vertices_mv[i1, Y], self._vertices_mv[i2, Y], self._vertices_mv[i3, Y], self._vertices_mv[i4, Y]),
-                max(self._vertices_mv[i1, Z], self._vertices_mv[i2, Z], self._vertices_mv[i3, Z], self._vertices_mv[i4, Z]),
+                max(self.vertices_mv[i1, X], self.vertices_mv[i2, X], self.vertices_mv[i3, X], self.vertices_mv[i4, X]),
+                max(self.vertices_mv[i1, Y], self.vertices_mv[i2, Y], self.vertices_mv[i3, Y], self.vertices_mv[i4, Y]),
+                max(self.vertices_mv[i1, Z], self.vertices_mv[i2, Z], self.vertices_mv[i3, Z], self.vertices_mv[i4, Z]),
             ),
         )
 
@@ -347,15 +347,15 @@ cdef class TetraMesh(KDTree3DCore):
 
             # obtain vertex indices
             tetrahedra_id = self._nodes[id].items[index]
-            i1 = self._tetrahedra_mv[tetrahedra_id, V1]
-            i2 = self._tetrahedra_mv[tetrahedra_id, V2]
-            i3 = self._tetrahedra_mv[tetrahedra_id, V3]
-            i4 = self._tetrahedra_mv[tetrahedra_id, V4]
+            i1 = self.tetrahedra_mv[tetrahedra_id, V1]
+            i2 = self.tetrahedra_mv[tetrahedra_id, V2]
+            i3 = self.tetrahedra_mv[tetrahedra_id, V3]
+            i4 = self.tetrahedra_mv[tetrahedra_id, V4]
 
-            barycentric_coords_tetra(self._vertices_mv[i1, X], self._vertices_mv[i1, Y], self._vertices_mv[i1, Z],
-                                     self._vertices_mv[i2, X], self._vertices_mv[i2, Y], self._vertices_mv[i2, Z],
-                                     self._vertices_mv[i3, X], self._vertices_mv[i3, Y], self._vertices_mv[i3, Z],
-                                     self._vertices_mv[i4, X], self._vertices_mv[i4, Y], self._vertices_mv[i4, Z],
+            barycentric_coords_tetra(self.vertices_mv[i1, X], self.vertices_mv[i1, Y], self.vertices_mv[i1, Z],
+                                     self.vertices_mv[i2, X], self.vertices_mv[i2, Y], self.vertices_mv[i2, Z],
+                                     self.vertices_mv[i3, X], self.vertices_mv[i3, Y], self.vertices_mv[i3, Z],
+                                     self.vertices_mv[i4, X], self.vertices_mv[i4, Y], self.vertices_mv[i4, Z],
                                      point.x, point.y, point.z, &alpha, &beta, &gamma, &delta)
 
             if barycentric_inside_tetrahedra(alpha, beta, gamma, delta):
@@ -443,9 +443,8 @@ cdef class TetraMesh(KDTree3DCore):
                 file.write(struct.pack("<f", vertices[i, j]))
 
         # tetrahedra
-        width = 4
         for i in range(tetrahedra.shape[0]):
-            for j in range(width):
+            for j in range(4):
                 file.write(struct.pack("<i", tetrahedra[i, j]))
 
         # write kd-tree
@@ -501,11 +500,10 @@ cdef class TetraMesh(KDTree3DCore):
                 self.vertices_mv[i, j] = self._read_double(file)
 
         # read tetrahedra
-        width = 4
-        self._tetrahedra = np.zeros((num_tetrahedra, width), dtype=np.int32)
+        self._tetrahedra = np.zeros((num_tetrahedra, 4), dtype=np.int32)
         self.tetrahedra_mv = self._tetrahedra
         for i in range(num_tetrahedra):
-            for j in range(width):
+            for j in range(4):
                 self.tetrahedra_mv[i, j] = self._read_int32(file)
 
         # read kdtree

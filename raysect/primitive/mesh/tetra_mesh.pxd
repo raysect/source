@@ -39,8 +39,8 @@ cdef class TetraMesh(KDTree3DCore):
     cdef:
         ndarray _vertices
         ndarray _tetrahedra
-        double[:, ::1] _vertices_mv
-        int32_t[:, ::1] _tetrahedra_mv
+        double[:, ::1] vertices_mv
+        int32_t[:, ::1] tetrahedra_mv
         int32_t tetrahedra_id
         int32_t i1, i2, i3, i4
         double alpha, beta, gamma, delta
