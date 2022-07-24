@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from numpy cimport ndarray, int32_t, uint8_t
-from raysect.core.boundingbox cimport BoundingBox3D
+from raysect.core cimport BoundingBox3D, Point3D
 from raysect.core.math.spatial.kdtree3d cimport KDTree3DCore
 
 
@@ -52,7 +52,7 @@ cdef class TetraMesh(KDTree3DCore):
 
     cpdef Point3D vertex(self, int index)
 
-    cpdef ndarray tetrahedra(self, int index)
+    cpdef ndarray tetrahedron(self, int index)
 
     cpdef double volume(self, int index)
 

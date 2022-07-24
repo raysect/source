@@ -30,4 +30,4 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.primitive.mesh.mesh cimport Mesh, MeshIntersection
-from raysect.primitive.mesh.tetra_mesh cimport TeteraMesh
+from raysect.primitive.mesh.tetra_mesh cimport TetraMesh

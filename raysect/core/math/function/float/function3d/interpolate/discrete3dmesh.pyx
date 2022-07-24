@@ -89,7 +89,7 @@ cdef class Discrete3DMesh(Function3D):
             raise ValueError("tetrahedra_data dimensions ({}) are incompatible with the number of tetrahedra ({}).".format(tetrahedra_data.shape[0], tetrahedra.shape[0]))
 
         # build kdtree
-        self._kdtree = MeshKDTree3D(vertex_coords, tetrahedra)
+        self._kdtree = TetraMesh(vertex_coords, tetrahedra)
 
         # populate internal attributes
         self._tetrahedra_data = tetrahedra_data

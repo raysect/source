@@ -31,7 +31,7 @@
 
 cimport numpy as np
 from raysect.core.math.function.float.function3d cimport Function3D
-from raysect.core.math.function.float.function3d.interpolate.common cimport MeshKDTree3D
+from raysect.primitive.mesh cimport TetraMesh
 
 
 cdef class Discrete3DMesh(Function3D):
@@ -39,7 +39,7 @@ cdef class Discrete3DMesh(Function3D):
     cdef:
         np.ndarray _tetrahedra_data
         double[::1] _tetrahedra_data_mv
-        MeshKDTree3D _kdtree
+        TetraMesh _kdtree
         bint _limit
         double _default_value
 

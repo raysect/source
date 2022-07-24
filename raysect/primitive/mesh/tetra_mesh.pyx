@@ -37,8 +37,9 @@ cimport numpy as np
 from libc.math cimport fabs
 from raysect.core.math.spatial.kdtree3d cimport Item3D
 from raysect.core.boundingbox cimport BoundingBox3D, new_boundingbox3d
-from raysect.core.math.point cimport Point3D, new_point3d, Vector3D, new_vector3d
+from raysect.core.math.point cimport Point3D, new_point3d, Vector3D
 from raysect.core.math.cython cimport barycentric_inside_tetrahedra, barycentric_coords_tetra
+from cpython.bytes cimport PyBytes_AsString
 cimport cython
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
@@ -493,7 +494,7 @@ cdef class TetraMesh(KDTree3DCore):
         num_tetrahedra = self._read_int32(file)
 
         # read vertices
-        self._vertices = zeros((num_vertices, 3), dtype=np.double)
+        self._vertices = np.zeros((num_vertices, 3), dtype=np.double)
         self.vertices_mv = self._vertices
         for i in range(num_vertices):
             for j in range(3):
@@ -501,7 +502,7 @@ cdef class TetraMesh(KDTree3DCore):
 
         # read tetrahedra
         width = 4
-        self._tetrahedra = zeros((num_tetrahedra, width), dtype=np.int32)
+        self._tetrahedra = np.zeros((num_tetrahedra, width), dtype=np.int32)
         self.tetrahedra_mv = self._tetrahedra
         for i in range(num_tetrahedra):
             for j in range(width):
