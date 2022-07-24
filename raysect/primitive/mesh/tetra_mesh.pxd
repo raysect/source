@@ -29,20 +29,20 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport numpy as np
+from numpy cimport ndarray, int32_t, uint8_t
 from raysect.core.boundingbox cimport BoundingBox3D
 from raysect.core.math.spatial.kdtree3d cimport KDTree3DCore
 
 
-cdef class MeshKDTree3D(KDTree3DCore):
+cdef class TetraMesh(KDTree3DCore):
 
     cdef:
-        np.ndarray _vertices
-        np.ndarray _tetrahedra
+        ndarray _vertices
+        ndarray _tetrahedra
         double[:, ::1] _vertices_mv
-        np.int32_t[:, ::1] _tetrahedra_mv
-        np.int32_t tetrahedra_id
-        np.int32_t i1, i2, i3, i4
+        int32_t[:, ::1] _tetrahedra_mv
+        int32_t tetrahedra_id
+        int32_t i1, i2, i3, i4
         double alpha, beta, gamma, delta
         bint _cache_available
         double _cached_x
@@ -50,4 +50,20 @@ cdef class MeshKDTree3D(KDTree3DCore):
         double _cached_z
         bint _cached_result
 
-    cdef BoundingBox3D _generate_bounding_box(self, np.int32_t tetrahedra)
+    cpdef Point3D vertex(self, int index)
+
+    cpdef ndarray tetrahedra(self, int index)
+
+    cpdef double volume(self, int index)
+
+    cpdef double volume_total(self)
+
+    cdef double _volume(self, int index)
+
+    cdef object _filter_tetrahedra(self)
+
+    cdef BoundingBox3D _generate_bounding_box(self, int32_t tetrahedra)
+    
+    cdef uint8_t _read_uint8(self, object file)
+
+    cdef bint _read_bool(self, object file)

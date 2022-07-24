@@ -30,6 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .mesh import Mesh, MeshIntersection
+from .tetra_mesh import TetraMesh
 from .stl import import_stl, export_stl, STL_AUTOMATIC, STL_ASCII, STL_BINARY
 from .obj import import_obj, export_obj
 from .ply import import_ply, export_ply, PLY_AUTOMATIC, PLY_ASCII, PLY_BINARY
