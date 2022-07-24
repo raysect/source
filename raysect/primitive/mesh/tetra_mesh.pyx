@@ -37,7 +37,7 @@ cimport numpy as np
 from libc.math cimport fabs
 from raysect.core.math.spatial.kdtree3d cimport Item3D
 from raysect.core.boundingbox cimport BoundingBox3D, new_boundingbox3d
-from raysect.core.math.point cimport Point3D, new_point3d, Vector3D
+from raysect.core.math cimport AffineMatrix3D, Point3D, new_point3d, Vector3D
 from raysect.core.math.cython cimport barycentric_inside_tetrahedra, barycentric_coords_tetra
 from cpython.bytes cimport PyBytes_AsString
 cimport cython
@@ -399,6 +399,35 @@ cdef class TetraMesh(KDTree3DCore):
         self._cached_result = result
 
         return result
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef BoundingBox3D bounding_box(self, AffineMatrix3D to_world):
+        """
+        Returns a bounding box that encloses the mesh.
+
+        The box is padded by a small margin to reduce the risk of numerical
+        accuracy problems between the mesh and box representations following
+        coordinate transforms.
+
+        :param to_world: Local to world space transform matrix.
+        :return: A BoundingBox3D object.
+        """
+
+        cdef:
+            np.int32_t i
+            BoundingBox3D bbox
+            Point3D vertex
+
+        # TODO: padding should really be a function of mesh extent
+        # convert vertices to world space and grow a bounding box around them
+        bbox = BoundingBox3D()
+        for i in range(self.vertices_mv.shape[0]):
+            vertex = new_point3d(self.vertices_mv[i, X], self.vertices_mv[i, Y], self.vertices_mv[i, Z])
+            bbox.extend(vertex.transform(to_world), BOX_PADDING)
+
+        return bbox
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
