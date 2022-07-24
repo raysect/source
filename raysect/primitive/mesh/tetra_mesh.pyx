@@ -440,7 +440,7 @@ cdef class TetraMesh(KDTree3DCore):
         # write vertices
         for i in range(vertices.shape[0]):
             for j in range(3):
-                file.write(struct.pack("<f", vertices[i, j]))
+                file.write(struct.pack("<d", vertices[i, j]))
 
         # tetrahedra
         for i in range(tetrahedra.shape[0]):
