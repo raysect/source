@@ -178,3 +178,47 @@ cdef class Discrete3DMesh(Function3D):
             return self._default_value
 
         raise ValueError("Requested value outside mesh bounds.")
+
+    @classmethod
+    def from_mesh(cls, TetraMesh mesh not None, object tetrahedra_data not None, bint limit=True, double default_value=0.0):
+        """
+        Creates a new interpolator instance from a TetraMesh instance.
+
+        The new interpolator instance will share the same internal acceleration
+        data as the TetraMesh's accelarator. 
+
+        This method should be used if the user has multiple sets of tetrahedra_data
+        that lie on the same mesh geometry. Using this methods avoids the
+        repeated rebuilding of the mesh acceleration structures by sharing the
+        geometry data between multiple interpolator objects.
+
+        :param TetraMesh instance: TetraMesh object.
+        :param ndarray tetrahedra_data: An array containing data for each tetrahedra of shape Mx1.
+        :param bool limit: Raise an exception outside mesh limits - True (default) or False.
+        :param float default_value: The value to return outside the mesh limits if limit is set to False (default 0.0).
+        :return: An Discrete3DMesh object.
+        :rtype: Discrete3DMesh
+        """
+
+        cdef Discrete3DMesh m
+
+        # validate mesh parameter
+        if not isinstance(mesh, TetraMesh):
+            raise TypeError("mesh argument must be TetraMesh instance.")
+
+        # populate new Discrete3DMesh instance
+        m = Discrete3DMesh.__new__(Discrete3DMesh)
+
+        # validate tetrahedra_data
+        tetrahedra_data = np.array(tetrahedra_data, dtype=np.float64)
+        if tetrahedra_data.ndim != 1 or tetrahedra_data.shape[0] != mesh.tetrahedra_mv.shape[0]:
+            raise ValueError("tetrahedra_data dimensions ({}) are incompatible with the number of tetrahedra ({}).".format(tetrahedra_data.shape[0], mesh.tetrahedra_mv.shape[0]))
+
+        # populate internal attributes
+        m._tetrahedra_data = tetrahedra_data
+        m._tetrahedra_data_mv = m._tetrahedra_data
+        m._kdtree = mesh
+        m._default_value = default_value
+        m._limit = limit
+
+        return m
