@@ -29,3 +29,11 @@ Meshes
 .. autofunction:: raysect.primitive.mesh.vtk.import_vtk
 
 .. autofunction:: raysect.primitive.mesh.vtk.export_vtk
+
+
+Tetrahedral Meshes
+==================
+
+.. autoclass:: raysect.primitive.mesh.tetra_mesh.TetraMesh
+   :members: from_file, load, save, volume, volume_total
+   :show-inheritance:

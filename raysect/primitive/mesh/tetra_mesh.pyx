@@ -84,6 +84,10 @@ cdef class TetraMesh(KDTree3DCore):
       must be four integers identifying the tetrahedral vertices in the vertices array.
     :param bool tolerant: Toggles filtering out of degenerate tetrahedra
       (default=True).
+
+    :ivar ndarray vertices: tetrahedral vertices with shape Nx3, where N is the number of vertices.
+    :ivar ndarray tetrahedra: tetrahedra with shape Mx4, where M is the number
+      of tetrahedra in the mesh.
     """
 
     def __init__(self, object vertices not None, object tetrahedra not None, bint tolerant=True):
@@ -168,8 +172,9 @@ cdef class TetraMesh(KDTree3DCore):
         """
         Returns the specified vertex.
 
-        :param index: The vertex index.
-        :return: A Point3D object. 
+        :param int index: The vertex index.
+        :return: A Point3D object.
+        :rtype: Point3D
         """
 
         if index < 0 or index >= self.vertices_mv.shape[0]:
@@ -187,8 +192,9 @@ cdef class TetraMesh(KDTree3DCore):
 
         The returned data will be a 4 element numpy array which are the tetrahedral vertex indices.
 
-        :param index: The tetrahedral index.
+        :param int index: The tetrahedral index.
         :return: A numpy array.
+        :rtype: ndarray
         """
 
         if index < 0 or index >= self.vertices_mv.shape[0]:
@@ -205,6 +211,7 @@ cdef class TetraMesh(KDTree3DCore):
 
         :param index: The tetrahedral index.
         :return: A volume of specified tetrahedron
+        :rtype: double
         """
         if index < 0 or index >= self.tetrahedra_mv.shape[0]:
             raise ValueError('Tetrahedral index is out of range: [0, {}].'.format(self.tetrahedra_mv.shape[0]))
@@ -219,6 +226,7 @@ cdef class TetraMesh(KDTree3DCore):
         Calculate a total volume of all tetrahedra
 
         :return: total volume of all tetrahedra
+        :rtype: double
         """
         cdef:
             np.int32_t i
@@ -302,6 +310,7 @@ cdef class TetraMesh(KDTree3DCore):
 
         :param tetrahedra: tetrahedral array index.
         :return: A BoundingBox3D object.
+        :rtype: BoundingBox3D
         """
 
         cdef:
@@ -382,6 +391,7 @@ cdef class TetraMesh(KDTree3DCore):
         Traverses the kd-Tree to identify if the point is contained by an item.
         :param Point3D point: A Point3D object.
         :return: True if the point lies inside an item, false otherwise.
+        :rtype: bool
         """
 
         cdef bint result
