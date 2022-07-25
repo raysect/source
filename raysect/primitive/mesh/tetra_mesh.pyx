@@ -209,7 +209,7 @@ cdef class TetraMesh(KDTree3DCore):
         """
         Calculate a volume of the specified tetrahedron
 
-        :param index: The tetrahedral index.
+        :param int index: The tetrahedral index.
         :return: A volume of specified tetrahedron
         :rtype: double
         """
@@ -576,6 +576,12 @@ cdef class TetraMesh(KDTree3DCore):
         Load a mesh with its kd-Tree representation from Raysect mesh binary file (.rsm).
 
         :param object file: File stream or string file name to save state.
+
+        .. code-block:: pycon
+
+            >>> from raysect.primitive import TetraMesh
+            >>>
+            >>> mesh = TetraMesh.from_file("test.rsm")
         """
 
         m = TetraMesh.__new__(TetraMesh)
