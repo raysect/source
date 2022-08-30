@@ -134,7 +134,7 @@ cdef class Discrete3DMesh(Function3D):
         cdef Discrete3DMesh m
 
         # copy source data
-        m = Discrete3DMesh.__new__(Discrete3DMesh)
+        m = cls.__new__(cls)
         m._kdtree = instance._kdtree
 
         # do we have replacement tetrahedra data?
@@ -207,7 +207,7 @@ cdef class Discrete3DMesh(Function3D):
             raise TypeError("mesh argument must be TetraMesh instance.")
 
         # populate new Discrete3DMesh instance
-        m = Discrete3DMesh.__new__(Discrete3DMesh)
+        m = cls.__new__(cls)
 
         # validate tetrahedra_data
         tetrahedra_data = np.array(tetrahedra_data, dtype=np.float64)
