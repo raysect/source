@@ -584,7 +584,7 @@ cdef class TetraMesh(KDTree3DCore):
             >>> mesh = TetraMesh.from_file("test.rsm")
         """
 
-        m = TetraMesh.__new__(TetraMesh)
+        m = cls.__new__(cls)
         m.load(file)
         return m
 
