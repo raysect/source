@@ -742,7 +742,7 @@ cdef class Observer1D(_ObserverBase):
         super().__init__(
             parent, transform, name, render_engine, spectral_rays, spectral_bins,
             min_wavelength, max_wavelength, ray_extinction_prob, ray_extinction_min_depth,
-            ray_max_depth, ray_importance_sampling, ray_important_path_weight
+            ray_max_depth, ray_importance_sampling, ray_important_path_weight, quiet
         )
 
     @property
@@ -921,7 +921,7 @@ cdef class Observer2D(_ObserverBase):
         super().__init__(
             parent, transform, name, render_engine, spectral_rays, spectral_bins,
             min_wavelength, max_wavelength, ray_extinction_prob, ray_extinction_min_depth,
-            ray_max_depth, ray_importance_sampling, ray_important_path_weight
+            ray_max_depth, ray_importance_sampling, ray_important_path_weight, quiet
         )
 
     @property
