@@ -1,6 +1,17 @@
 Raysect Changelog
 =================
 
+Release 0.8.1 (TBD)
+-------------------
+
+API changes:
+* Both extract_rotation() and extract_translation() now return ctuples in cython.
+* The extract_rotation() slow string z_axis parameter has been replaced with a boolean z_up parameter for switching coordinate systems.
+
+Bug fixes:
+* extract_rotation() now returns the correct values for yaw, pitch and roll in the z axis up coordinate system (Jamie Bayne).
+
+
 Release 0.8.0 (26 May 2022)
 ---------------------------
 
