@@ -177,11 +177,12 @@ cdef class SpectralPowerPipeline0D(Pipeline0D):
 
         # create a fresh figure if the existing figure window has gone missing
         if not self._display_figure or not plt.fignum_exists(self._display_figure.number):
-            self._display_figure = plt.figure(facecolor=(1, 1, 1), figsize=_DISPLAY_SIZE, dpi=_DISPLAY_DPI)
+            self._display_figure = plt.figure(self.name, facecolor=(1, 1, 1), figsize=_DISPLAY_SIZE, dpi=_DISPLAY_DPI)
         fig = self._display_figure
 
-        # set window title
-        fig.canvas.set_window_title(self.name)
+        # update window title if possible
+        if fig.canvas.manager is not None:
+            fig.canvas.manager.set_window_title(self.name)
 
         fig.clf()
         plt.plot(self.wavelengths, self.samples.mean[:], color=(0, 0, 1))

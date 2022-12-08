@@ -377,14 +377,15 @@ cdef class RGBPipeline2D(Pipeline2D):
 
         # create a fresh figure if the existing figure window has gone missing
         if not self._display_figure or not plt.fignum_exists(self._display_figure.number):
-            self._display_figure = plt.figure(facecolor=(0.5, 0.5, 0.5), figsize=_DISPLAY_SIZE, dpi=_DISPLAY_DPI)
+            self._display_figure = plt.figure(self.name, facecolor=(0.5, 0.5, 0.5), figsize=_DISPLAY_SIZE, dpi=_DISPLAY_DPI)
         fig = self._display_figure
 
-        # set window title
-        if status:
-            fig.canvas.set_window_title("{} - {}".format(self.name, status))
-        else:
-            fig.canvas.set_window_title(self.name)
+        # update window title if possible
+        if fig.canvas.manager is not None:
+            if status:
+                fig.canvas.manager.set_window_title("{} - {}".format(self.name, status))
+            else:
+                fig.canvas.manager.set_window_title(self.name)
 
         # populate figure
         fig.clf()
