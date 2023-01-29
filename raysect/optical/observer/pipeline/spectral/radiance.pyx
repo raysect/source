@@ -88,7 +88,8 @@ cdef class SpectralRadiancePipeline0D(SpectralPowerPipeline0D):
         fig = self._display_figure
 
         # set window title
-        fig.canvas.set_window_title(self.name)
+        if fig.canvas.manager is not None:
+            fig.canvas.manager.set_window_title(self.name)
 
         fig.clf()
         plt.plot(self.wavelengths, self.samples.mean[:], color=(0, 0, 1))
