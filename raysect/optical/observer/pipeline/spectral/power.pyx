@@ -388,7 +388,7 @@ cdef class SpectralPowerPipeline2D(Pipeline2D):
         ) = state
 
         # initialise internal state
-        self._pixels = 0
+        self._pixels = None
         self._samples = 0
         self._spectral_slices = None
 
