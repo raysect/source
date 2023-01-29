@@ -13,6 +13,7 @@ Bug fixes:
 * The quiet parameter is now correctly handled by Observer1D and Observer2D.
 * Fixed Ray.extinction_min_depth bug that prevented the attribute being set to 1.
 * Fixed pipeline figure title rendering due to matplotlib canvas.set_window_title() deprecation.
+* Fixed __setstate__() bug in SpectralPowerPipeline that prevented unpickling.
 
 
 Release 0.8.0 (26 May 2022)
