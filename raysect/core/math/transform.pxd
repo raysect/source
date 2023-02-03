@@ -52,6 +52,6 @@ cpdef tuple to_cylindrical(Point3D point)
 
 cpdef Point3D from_cylindrical(double r, double z, double phi)
 
-cpdef tuple extract_rotation(AffineMatrix3D m, str z_axis=*)
+cpdef (double, double, double) extract_rotation(AffineMatrix3D m, bint z_up=*)
 
-cpdef tuple extract_translation(AffineMatrix3D m)
+cpdef (double, double, double) extract_translation(AffineMatrix3D m)

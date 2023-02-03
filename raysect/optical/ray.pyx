@@ -275,7 +275,7 @@ cdef class Ray(CoreRay):
 
     @extinction_min_depth.setter
     def extinction_min_depth(self, int extinction_min_depth):
-        if extinction_min_depth <= 1:
+        if extinction_min_depth < 1:
             raise ValueError("The minimum extinction depth cannot be less than 1.")
         self._extinction_min_depth = extinction_min_depth
 

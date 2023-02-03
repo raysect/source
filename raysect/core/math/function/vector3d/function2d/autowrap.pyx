@@ -80,7 +80,7 @@ cdef Function2D autowrap_function2d(object obj):
     if isinstance(obj, Function2D):
         return <Function2D> obj
     elif isinstance(obj, Function):
-        raise TypeError('A vector3d.Function1D object is required.')
+        raise TypeError('A vector3d.Function2D object is required.')
     try:
         obj = Vector3D(*obj)
     except (TypeError, ValueError):  # Not an iterable which can be converted to Vector3D

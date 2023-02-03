@@ -39,7 +39,7 @@ cdef class Spectrum(SpectralFunction):
         readonly double max_wavelength
         readonly int bins
         readonly double delta_wavelength
-        public ndarray samples
+        readonly ndarray samples
         ndarray _wavelengths
         double[::1] samples_mv
 

@@ -1,10 +1,32 @@
 Raysect Changelog
 =================
 
-Release 0.8.0 (TBD)
+Release 0.8.1 (TBD)
 -------------------
 
-<TBD>
+API changes:
+* Both extract_rotation() and extract_translation() now return ctuples in cython.
+* The extract_rotation() slow string z_axis parameter has been replaced with a boolean z_up parameter for switching coordinate systems.
+
+Bug fixes:
+* extract_rotation() now returns the correct values for yaw, pitch and roll in the z axis up coordinate system (Jamie Bayne).
+* The quiet parameter is now correctly handled by Observer1D and Observer2D.
+* Fixed Ray.extinction_min_depth bug that prevented the attribute being set to 1.
+* Fixed pipeline figure title rendering due to matplotlib canvas.set_window_title() deprecation.
+
+
+Release 0.8.0 (26 May 2022)
+---------------------------
+
+API changes:
+* Intersection object is now passed to evaluate_surface, user code will need to be updated to include the additional parameter.
+
+Bug fixes:
+* Spectrum samples attribute is now readonly to prevent users replacing the array and potentially causing a segfault.
+
+New:
+* Added pyproject.toml (Jack Lovell)
+* Mesh returns a specialised MeshIntersection object that exposes the triangle and barycentric coordinates of the intersection.
 
 
 Release 0.7.1 (6 Nov 2021)
