@@ -33,7 +33,7 @@
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
-from raysect.core cimport RectangleSampler3D, HemisphereCosineSampler, SolidAngleSampler, SurfaceSampler3D
+from raysect.core cimport RectangleSampler3D, HemisphereCosineSampler
 from raysect.optical cimport Ray, AffineMatrix3D, Point3D, Vector3D, translate
 from libc.math cimport M_PI
 from raysect.optical.observer.base cimport Observer2D
@@ -49,17 +49,12 @@ cdef class CCDArray(Observer2D):
     from the width and the number of vertical and horizontal pixels. The
     default width and sensor ratio approximates a 35mm camera sensor.
 
-    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(512, 512)).
+    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(720, 480)).
     :param float width: The CCD sensor x-width in metres (default=35mm).
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
-
-    cdef:
-        double _width, _pixel_area, image_delta, image_start_x, image_start_y
-        SurfaceSampler3D point_sampler
-        SolidAngleSampler vector_sampler
 
     def __init__(self, pixels=(720, 480), width=0.035, parent=None, transform=None, name=None, pipelines=None):
 

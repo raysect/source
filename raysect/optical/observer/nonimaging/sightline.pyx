@@ -60,9 +60,6 @@ cdef class SightLine(Observer0D):
         >>> los.observe()
     """
 
-    cdef:
-        double _sensitivity
-
     def __init__(self, sensitivity=None, pipelines=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,

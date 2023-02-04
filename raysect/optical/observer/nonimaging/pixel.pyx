@@ -29,10 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport cos, M_PI as PI
+from libc.math cimport M_PI as PI
 
 from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler
-from raysect.optical cimport Ray, new_point3d, new_vector3d
+from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 cimport cython
@@ -63,11 +63,6 @@ cdef class Pixel(Observer0D):
                                     parent=world, transform=rotate(0, 0, 0)*translate(0, 0, -1))
         >>> observing_plane.observe()
     """
-
-    cdef:
-        double _x_width, _y_width, _solid_angle, _collection_area
-        RectangleSampler3D _point_sampler
-        HemisphereCosineSampler _vector_sampler
 
     def __init__(self, pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,

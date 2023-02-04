@@ -72,11 +72,6 @@ cdef class FibreOptic(Observer0D):
         >>> fibre.observe()
     """
 
-    cdef:
-        double _acceptance_angle, _radius, _solid_angle, _collection_area
-        DiskSampler3D _point_sampler
-        ConeUniformSampler _vector_sampler
-
     def __init__(self, pipelines=None, acceptance_angle=None, radius=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,

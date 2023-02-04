@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport cos, M_PI as PI
+from libc.math cimport M_PI as PI
 
 from raysect.core.math.random cimport probability
 from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
@@ -86,13 +86,6 @@ cdef class TargettedPixel(Observer0D):
         >>>                                  pixel_samples=250, pipelines=[targetted_pipeline])
         >>> targetted_pixel.observe()
     """
-
-    cdef:
-        double _x_width, _y_width, _solid_angle, _collection_area, _targetted_path_prob
-        tuple _targets
-        RectangleSampler3D _point_sampler
-        HemisphereCosineSampler _cosine_sampler
-        TargettedHemisphereSampler _targetted_sampler
 
     def __init__(self, targets, targetted_path_prob=None,
                  pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
