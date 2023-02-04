@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,7 @@
 
 from numpy cimport ndarray
 from raysect.core.math.random cimport uniform
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, new_vector3d
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, new_vector3d, Intersection
 from libc.math cimport M_PI, sqrt, fabs, atan, cos, sin
 cimport cython
 
@@ -76,7 +76,8 @@ cdef class Conductor(Material):
     @cython.initializedcheck(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
 
         cdef:
             Vector3D incident, reflected
@@ -248,7 +249,8 @@ cdef class RoughConductor(ContinuousBSDF):
     @cython.cdivision(True)
     cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
                                     Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world):
+                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
+                                    Intersection intersection):
 
         cdef:
             Vector3D s_half
@@ -279,45 +281,6 @@ cdef class RoughConductor(ContinuousBSDF):
         # evaluate lighting with Cook-Torrance bsdf (optimised)
         spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) / (4 * s_incoming.z))
         return self._f(spectrum, s_outgoing, s_half)
-
-    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
-
-        cdef:
-            double n, k, ci, microfacet_factor, fresnel_reflectance
-            Vector3D s_half, normal
-
-        # material does not transmit
-        if s_incident.z < 0.0:
-            return 0.0
-
-        # ignore parallel rays which could cause a divide by zero later
-        if s_reflected.z == 0:
-            return 0.0
-
-        # ensure vectors are normalised for bsdf calculation
-        s_reflected = s_reflected.normalise()
-        s_incident = s_incident.normalise()
-
-        # calculate half vector
-        s_half = new_vector3d(
-            s_reflected.x + s_incident.x,
-            s_reflected.y + s_incident.y,
-            s_reflected.z + s_incident.z
-        ).normalise()
-
-        # calculate cosine of angle between incident and normal
-        normal = new_vector3d(0, 0, 1)
-        ci = normal.dot(s_incident)
-
-        # Constant micro-facet factor
-        microfacet_factor = self._d(s_half) * self._g(s_reflected, s_incident) / (4 * s_reflected.z)
-
-        # Fresnel reflectance
-        n = self.index.evaluate(wavelength)
-        k = self.extinction.evaluate(wavelength)
-        fresnel_reflectance = self._fresnel_conductor(ci, n, k)
-
-        return microfacet_factor * fresnel_reflectance
 
     @cython.cdivision(True)
     cdef double _d(self, Vector3D s_half):

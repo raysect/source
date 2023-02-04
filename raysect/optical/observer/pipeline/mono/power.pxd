@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@ from raysect.optical.observer.base.sampler cimport FrameSampler2D
 cdef class PowerPipeline0D(Pipeline0D):
 
     cdef:
-        str name
+        public str name
         public SpectralFunction filter
         public bint accumulate
         readonly StatsBin value
@@ -49,7 +49,7 @@ cdef class PowerPipeline0D(Pipeline0D):
 cdef class PowerPipeline1D(Pipeline1D):
 
     cdef:
-        str name
+        public str name
         public SpectralFunction filter
         public bint accumulate
         readonly StatsArray1D frame
@@ -63,7 +63,7 @@ cdef class PowerPipeline1D(Pipeline1D):
 cdef class PowerPipeline2D(Pipeline2D):
 
     cdef:
-        str name
+        public str name
         public SpectralFunction filter
         public bint display_progress
         double _display_timer

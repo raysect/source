@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -66,7 +66,7 @@ cdef class FullFrameSampler2D(FrameSampler2D):
         else:
             if value.ndim != 2:
                 raise ValueError("Mask must be a 2D array.")
-            self._mask = value.astype(np.bool)
+            self._mask = value.astype(bool)
             self._mask_mv = np.frombuffer(self._mask, dtype=np.uint8).reshape(self.mask.shape)
 
     @cython.boundscheck(False)
@@ -80,10 +80,14 @@ cdef class FullFrameSampler2D(FrameSampler2D):
 
         # The all-true mask is created during the first call of generate_tasks if no mask was provided
         if self.mask is None:
-            self.mask = np.ones(pixels, dtype=np.bool)
+            self.mask = np.ones(pixels, dtype=bool)
 
         if pixels != (self._mask.shape[0], self._mask.shape[1]):
-            raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask frame size.')
+            if np.all(self._mask):
+                # In case of all-true mask, generate a new one that matches the pixel geometry.
+                self.mask = np.ones(pixels, dtype=bool)
+            else:
+                raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask shape.')
 
         tasks = []
         nx, ny = pixels
@@ -201,7 +205,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
         else:
             if value.ndim != 2:
                 raise ValueError("Mask must be a 2D array.")
-            self._mask = value.astype(np.bool)
+            self._mask = value.astype(bool)
             self._mask_mv = np.frombuffer(self._mask, dtype=np.uint8).reshape(self.mask.shape)
 
     @cython.boundscheck(False)
@@ -220,10 +224,14 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
 
         # The all-true mask is created during the first call of generate_tasks if no mask was provided
         if self.mask is None:
-            self.mask = np.ones(pixels, dtype=np.bool)
+            self.mask = np.ones(pixels, dtype=bool)
 
         if pixels != (self._mask.shape[0], self._mask.shape[1]):
-            raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask frame size.')
+            if np.all(self._mask):
+                # In case of all-true mask, generate a new one that matches the pixel geometry.
+                self.mask = np.ones(pixels, dtype=bool)
+            else:
+                raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask shape.')
 
         frame = self._pipeline.frame
         if frame is None:
@@ -272,7 +280,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
             int nx, ny, x, y
 
         if self.mask is None:  # just in case if _full_frame() is called before generate_tasks()
-            self.mask = np.ones(pixels, dtype=np.bool)
+            self.mask = np.ones(pixels, dtype=bool)
 
         tasks = []
         nx, ny = pixels
@@ -454,7 +462,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
         else:
             if value.ndim != 2:
                 raise ValueError("Mask must be a 2D array.")
-            self._mask = value.astype(np.bool)
+            self._mask = value.astype(bool)
             self._mask_mv = np.frombuffer(self._mask, dtype=np.uint8).reshape(self.mask.shape)
 
     @cython.boundscheck(False)
@@ -474,10 +482,14 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
 
         # The all-true mask is created during the first call of generate_tasks if no mask was provided
         if self.mask is None:
-            self.mask = np.ones(pixels, dtype=np.bool)
+            self.mask = np.ones(pixels, dtype=bool)
 
         if pixels != (self._mask.shape[0], self._mask.shape[1]):
-            raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask frame size.')
+            if np.all(self._mask):
+                # In case of all-true mask, generate a new one that matches the pixel geometry.
+                self.mask = np.ones(pixels, dtype=bool)
+            else:
+                raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask shape.')
 
         frame = self._pipeline.frame
         if frame is None:
@@ -667,7 +679,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
             int nx, ny, x, y
 
         if self.mask is None:  # just in case if _full_frame() is called before generate_tasks()
-            self.mask = np.ones(pixels, dtype=np.bool)
+            self.mask = np.ones(pixels, dtype=bool)
 
         tasks = []
         nx, ny = pixels
@@ -784,7 +796,7 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
         else:
             if value.ndim != 2:
                 raise ValueError("Mask must be a 2D array.")
-            self._mask = value.astype(np.bool)
+            self._mask = value.astype(bool)
             self._mask_mv = np.frombuffer(self._mask, dtype=np.uint8).reshape(self.mask.shape)
 
     @cython.boundscheck(False)
@@ -805,10 +817,14 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
 
         # The all-true mask is created during the first call of generate_tasks if no mask was provided
         if self.mask is None:
-            self.mask = np.ones(pixels, dtype=np.bool)
+            self.mask = np.ones(pixels, dtype=bool)
 
         if pixels != (self._mask.shape[0], self._mask.shape[1]):
-            raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask frame size.')
+            if np.all(self._mask):
+                # In case of all-true mask, generate a new one that matches the pixel geometry.
+                self.mask = np.ones(pixels, dtype=bool)
+            else:
+                raise ValueError('The pixel geometry passed to the frame sampler is inconsistent with the mask shape.')
 
         frame = self._pipeline.xyz_frame
         if frame is None:
@@ -861,7 +877,7 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
             int nx, ny, x, y
 
         if self.mask is None:  # just in case if _full_frame() is called before generate_tasks()
-            self.mask = np.ones(pixels, dtype=np.bool)
+            self.mask = np.ones(pixels, dtype=bool)
 
         tasks = []
         nx, ny = pixels

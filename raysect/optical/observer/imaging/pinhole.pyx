@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,7 +46,7 @@ cdef class PinholeCamera(Observer2D):
     A simple camera that launches rays from the observer's origin point over a
     specified field of view.
 
-    :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
+    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(720, 480)).
     :param float fov: The field of view of the camera in degrees (default=45 degrees).
     :param float sensitivity: The sensitivity of each pixel (default=1.0)
     :param FrameSampler2D frame_sampler: The frame sampling strategy, defaults to adaptive
@@ -68,10 +70,6 @@ cdef class PinholeCamera(Observer2D):
         >>>
         >>> camera.observe()
     """
-
-    cdef:
-        double _sensitivity, _fov, image_delta, image_start_x, image_start_y
-        RectangleSampler3D point_sampler
 
     def __init__(self, pixels, fov=None, sensitivity=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
@@ -153,14 +151,14 @@ cdef class PinholeCamera(Observer2D):
 
         if max_pixels > 1:
 
-            # Get width of image plane at a distance of 1m from aperture.
+            # get width of image plane at a distance of 1m from aperture
             image_max_width = 2 * tan(pi / 180 * 0.5 * self._fov)
 
             # set pixel step size in image plane
-            self.image_delta = image_delta = image_max_width / max_pixels
+            self.image_delta = image_max_width / max_pixels
 
-            self.image_start_x = 0.5 * self.pixels[0] * image_delta
-            self.image_start_y = 0.5 * self.pixels[1] * image_delta
+            self.image_start_x = 0.5 * self.pixels[0] * self.image_delta
+            self.image_start_y = 0.5 * self.pixels[1] * self.image_delta
 
             # rebuild point generator
             self.point_sampler = RectangleSampler3D(self.image_delta, self.image_delta)
@@ -178,8 +176,8 @@ cdef class PinholeCamera(Observer2D):
             Ray ray
 
         # generate pixel transform
-        pixel_x = self.image_start_x - self.image_delta * x
-        pixel_y = self.image_start_y - self.image_delta * y
+        pixel_x = self.image_start_x - self.image_delta * (x + 0.5)
+        pixel_y = self.image_start_y - self.image_delta * (y + 0.5)
         pixel_centre = new_point3d(pixel_x, pixel_y, 1)
 
         points = self.point_sampler.samples(ray_count)

@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -41,7 +43,7 @@ cdef class OrthographicCamera(Observer2D):
     A camera observing an orthogonal (orthographic) projection of the scene,
     avoiding perspective effects.
 
-    :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
+    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(720, 480)).
     :param double width: width of the orthographic area to observe in meters,
       the height is deduced from the 'pixels' attribute.
     :param float sensitivity: The sensitivity of each pixel (default=1.0)
@@ -51,10 +53,6 @@ cdef class OrthographicCamera(Observer2D):
       at each pixel by the camera (default=RGBPipeline2D()).
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
-
-    cdef:
-        double image_delta, image_start_x, image_start_y, _width, _sensitivity
-        RectangleSampler3D _point_sampler
 
     def __init__(self, pixels, width, sensitivity=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
@@ -144,12 +142,12 @@ cdef class OrthographicCamera(Observer2D):
             list points, rays
             Point3D origin
             Ray ray
-            AffineMatrix3D to_local
+            AffineMatrix3D pixel_to_local
 
         # generate pixel transform
-        pixel_x = self.image_start_x - self.image_delta * ix
-        pixel_y = self.image_start_y - self.image_delta * iy
-        to_local = translate(pixel_x, pixel_y, 0)
+        pixel_x = self.image_start_x - self.image_delta * (ix + 0.5)
+        pixel_y = self.image_start_y - self.image_delta * (iy + 0.5)
+        pixel_to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin and direction vectors
         points = self._point_sampler.samples(self._pixel_samples)
@@ -159,7 +157,7 @@ cdef class OrthographicCamera(Observer2D):
         for origin in points:
 
             # transform to local space from pixel space
-            origin = origin.transform(to_local)
+            origin = origin.transform(pixel_to_local)
             ray = template.copy(origin, new_vector3d(0, 0, 1))
 
             # non-physical camera samples radiance directly, rays fired along normal so no projection

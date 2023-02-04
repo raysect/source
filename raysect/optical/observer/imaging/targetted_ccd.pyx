@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -69,19 +69,12 @@ cdef class TargettedCCDArray(Observer2D):
        targeted directions, otherwise they will not be sampled and the result will be biased.
 
     :param list targets: The list of primitives for targetted sampling.
-    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(512, 512)).
+    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(720, 480)).
     :param float width: The CCD sensor x-width in metres (default=35mm).
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
-
-    cdef:
-        double _width, _pixel_area, _image_delta, _image_start_x, _image_start_y, _targetted_path_prob
-        tuple _targets
-        RectangleSampler3D _point_sampler
-        HemisphereCosineSampler _cosine_sampler
-        TargettedHemisphereSampler _targetted_sampler
 
     def __init__(self, targets, pixels=(720, 480), width=0.035, targetted_path_prob=None, parent=None, transform=None, name=None, pipelines=None):
 
@@ -223,8 +216,8 @@ cdef class TargettedCCDArray(Observer2D):
         self._targetted_sampler = TargettedHemisphereSampler(spheres)
 
         # generate pixel transform
-        pixel_x = self._image_start_x - self._image_delta * ix
-        pixel_y = self._image_start_y - self._image_delta * iy
+        pixel_x = self._image_start_x - self._image_delta * (ix + 0.5)
+        pixel_y = self._image_start_y - self._image_delta * (iy + 0.5)
         pixel_to_local = translate(pixel_x, pixel_y, 0)
 
         # generate origin points in pixel space

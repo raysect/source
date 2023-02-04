@@ -5,10 +5,13 @@ import os
 import os.path as path
 import multiprocessing
 
+multiprocessing.set_start_method('fork')
+
 use_cython = True
 force = False
 profile = False
 line_profile = False
+annotate = False
 
 if "--skip-cython" in sys.argv:
     use_cython = False
@@ -26,9 +29,13 @@ if "--line-profile" in sys.argv:
     line_profile = True
     del sys.argv[sys.argv.index("--line-profile")]
 
+if "--annotate" in sys.argv:
+    annotate = True
+    sys.argv.remove("--annotate")
+
 source_paths = ['raysect', 'demos']
 compilation_includes = [".", numpy.get_include()]
-compilation_args = []
+compilation_args = ['-O3']
 cython_directives = {
     # 'auto_pickle': True,
     'language_level': 3
@@ -58,7 +65,7 @@ if use_cython:
         cython_directives["profile"] = True
 
     # generate .c files from .pyx
-    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives)
+    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives, annotate=annotate)
 
 else:
 
@@ -97,9 +104,9 @@ setup(
         "Topic :: Multimedia :: Graphics :: 3D Rendering",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    install_requires=['numpy>=0.14', 'cython>=0.28', 'matplotlib'],
+    install_requires=['numpy>=0.14', 'matplotlib'],
     packages=find_packages(),
     include_package_data=True,
-    zip_safe= False,
+    zip_safe=False,
     ext_modules=extensions
 )

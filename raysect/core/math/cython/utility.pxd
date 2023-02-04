@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from numpy cimport ndarray
 cimport cython
 
 cdef int find_index(double[::1] x, double v) nogil
@@ -74,3 +73,5 @@ cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) 
 cdef bint winding2d(double[:,::1] vertices) nogil
 
 cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty)
+
+cdef int factorial(int n)

@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -477,10 +477,11 @@ cdef class BayerPipeline2D(Pipeline2D):
         fig = self._display_figure
 
         # set window title
-        if status:
-            fig.canvas.set_window_title("{} - {}".format(self.name, status))
-        else:
-            fig.canvas.set_window_title(self.name)
+        if fig.canvas.manager is not None:
+            if status:
+                fig.canvas.manager.set_window_title("{} - {}".format(self.name, status))
+            else:
+                fig.canvas.manager.set_window_title(self.name)
 
         # populate figure
         fig.clf()

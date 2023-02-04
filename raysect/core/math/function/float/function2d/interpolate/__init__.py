@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,4 +30,5 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .interpolator2dmesh import Interpolator2DMesh
+from .interpolator2darray import Interpolator2DArray
 from .discrete2dmesh import Discrete2DMesh

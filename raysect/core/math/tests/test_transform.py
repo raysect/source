@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -201,21 +201,17 @@ class TestTransform(unittest.TestCase):
 
         # test z axis forward convention
         mf = rotate(*r)
-        vf = extract_rotation(mf, 'forward')
+        vf = extract_rotation(mf)
         self.assertAlmostEqual(vf[0], r[0], delta=1e-10, msg="Failed to extract yaw from affine matrix (z-axis forward).")
         self.assertAlmostEqual(vf[1], r[1], delta=1e-10, msg="Failed to extract pitch from affine matrix (z-axis forward).")
         self.assertAlmostEqual(vf[2], r[2], delta=1e-10, msg="Failed to extract roll from affine matrix (z-axis forward).")
 
         # test z axis up convention
-        mu = rotate_z(r[0]) * rotate_y(r[1]) * rotate_x(r[2])
-        vu = extract_rotation(mu, 'up')
+        mu = rotate_z(-r[0]) * rotate_y(-r[1]) * rotate_x(r[2])
+        vu = extract_rotation(mu, z_up=True)
         self.assertAlmostEqual(vu[0], r[0], delta=1e-10, msg="Failed to extract yaw from affine matrix (z-axis up).")
         self.assertAlmostEqual(vu[1], r[1], delta=1e-10, msg="Failed to extract pitch from affine matrix (z-axis up).")
         self.assertAlmostEqual(vu[2], r[2], delta=1e-10, msg="Failed to extract roll from affine matrix (z-axis up).")
-
-        # test invalid convention
-        with self.assertRaises(ValueError, msg="Extract rotation mishandled an invalid convention."):
-            extract_rotation(mu, 'banana')
 
     def test_extract_translation(self):
 

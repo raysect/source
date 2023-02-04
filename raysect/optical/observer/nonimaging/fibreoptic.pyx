@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -71,11 +71,6 @@ cdef class FibreOptic(Observer0D):
                                 transform=translate(0, 0, -5), parent=world)
         >>> fibre.observe()
     """
-
-    cdef:
-        double _acceptance_angle, _radius, _solid_angle, _collection_area
-        DiskSampler3D _point_sampler
-        ConeUniformSampler _vector_sampler
 
     def __init__(self, pipelines=None, acceptance_angle=None, radius=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -440,7 +440,7 @@ cdef class Quaternion:
         :return: A new Quaternion object representing the specified rotation.        
         """
 
-        return q.normalise().mul_quaternion(self.normalise().conjugate())
+        return q.normalise().mul_quaternion(self.normalise().conjugate()).normalise()
 
     @classmethod
     def from_matrix(cls, AffineMatrix3D matrix):
@@ -460,46 +460,7 @@ cdef class Quaternion:
            Quaternion(0.7071067811865475, 0.0, 0.0, 0.7071067811865476)
         """
 
-        cdef:
-            AffineMatrix3D m = matrix
-            double qs, qx, qy, qz
-            double trace, s
-
-        trace = m.m[0][0] + m.m[1][1] + m.m[2][2]
-
-        if trace > 0:
-
-            s = sqrt(trace+1.0) * 2  # s = 4*qs
-            qx = (m.m[2][1] - m.m[1][2]) / s
-            qy = (m.m[0][2] - m.m[2][0]) / s
-            qz = (m.m[1][0] - m.m[0][1]) / s
-            qs = 0.25 * s
-
-        elif m.m[0][0] > m.m[1][1] and m.m[0][0] > m.m[2][2]:
-
-            s = sqrt(1.0 + m.m[0][0] - m.m[1][1] - m.m[2][2]) * 2  # s = 4*qx
-            qx = 0.25 * s
-            qy = (m.m[0][1] + m.m[1][0]) / s
-            qz = (m.m[0][2] + m.m[2][0]) / s
-            qs = (m.m[2][1] - m.m[1][2]) / s
-
-        elif m.m[1][1] > m.m[2][2]:
-
-            s = sqrt(1.0 + m.m[1][1] - m.m[0][0] - m.m[2][2]) * 2  # s = 4*qy
-            qx = (m.m[0][1] + m.m[1][0]) / s
-            qy = 0.25 * s
-            qz = (m.m[1][2] + m.m[2][1]) / s
-            qs = (m.m[0][2] - m.m[2][0]) / s
-
-        else:
-
-            s = sqrt(1.0 + m.m[2][2] - m.m[0][0] - m.m[1][1]) * 2  # s = 4*qz
-            qx = (m.m[0][2] + m.m[2][0]) / s
-            qy = (m.m[1][2] + m.m[2][1]) / s
-            qz = 0.25 * s
-            qs = (m.m[1][0] - m.m[0][1]) / s
-
-        return new_quaternion(qx, qy, qz, qs)
+        return new_quaternion_from_matrix(matrix)
 
     @classmethod
     def from_axis_angle(cls, Vector3D axis, double angle):
@@ -519,20 +480,7 @@ cdef class Quaternion:
            Quaternion(0.3826834323650898, 0.0, 0.0, 0.9238795325112867)
         """
 
-        # keep the angle inside [-180, 180) to avoid negative quaternions
-        angle = (angle + 180) % 360 - 180
-        if angle == 0:
-            return new_quaternion(0, 0, 0, 1)
-
-        axis = axis.normalise()
-        theta_2 = angle * DEG2RAD / 2
-
-        qx = axis.x * sin(theta_2)
-        qy = axis.y * sin(theta_2)
-        qz = axis.z * sin(theta_2)
-        qs = cos(theta_2)
-
-        return new_quaternion(qx, qy, qz, qs)
+        return new_quaternion_from_axis_angle(axis, angle)
 
     cdef Quaternion neg(self):
         """
@@ -655,3 +603,87 @@ cdef class Quaternion:
         self.y = self.y * t
         self.z = self.z * t
         self.s = self.s * t
+
+
+cdef Quaternion new_quaternion_from_matrix(AffineMatrix3D matrix):
+    """
+    Quaternion factory function to instance a Quaternion from an AffineMatrix3D.
+
+    Note, the translation component of this matrix will be ignored.
+
+    Creates a new Quaternion object with less overhead than the equivalent Python
+    call. This function is callable from cython only.
+
+    :param AffineMatrix3D matrix: The AffineMatrix3D instance from which to extract the rotation component.
+    :return: A quaternion representation of the rotation specified in this transform matrix.
+    """
+
+    cdef:
+        AffineMatrix3D m = matrix
+        double qs, qx, qy, qz
+        double trace, s
+
+    trace = m.m[0][0] + m.m[1][1] + m.m[2][2]
+
+    if trace > 0:
+
+        s = sqrt(trace+1.0) * 2  # s = 4*qs
+        qx = (m.m[2][1] - m.m[1][2]) / s
+        qy = (m.m[0][2] - m.m[2][0]) / s
+        qz = (m.m[1][0] - m.m[0][1]) / s
+        qs = 0.25 * s
+
+    elif m.m[0][0] > m.m[1][1] and m.m[0][0] > m.m[2][2]:
+
+        s = sqrt(1.0 + m.m[0][0] - m.m[1][1] - m.m[2][2]) * 2  # s = 4*qx
+        qx = 0.25 * s
+        qy = (m.m[0][1] + m.m[1][0]) / s
+        qz = (m.m[0][2] + m.m[2][0]) / s
+        qs = (m.m[2][1] - m.m[1][2]) / s
+
+    elif m.m[1][1] > m.m[2][2]:
+
+        s = sqrt(1.0 + m.m[1][1] - m.m[0][0] - m.m[2][2]) * 2  # s = 4*qy
+        qx = (m.m[0][1] + m.m[1][0]) / s
+        qy = 0.25 * s
+        qz = (m.m[1][2] + m.m[2][1]) / s
+        qs = (m.m[0][2] - m.m[2][0]) / s
+
+    else:
+
+        s = sqrt(1.0 + m.m[2][2] - m.m[0][0] - m.m[1][1]) * 2  # s = 4*qz
+        qx = (m.m[0][2] + m.m[2][0]) / s
+        qy = (m.m[1][2] + m.m[2][1]) / s
+        qz = 0.25 * s
+        qs = (m.m[1][0] - m.m[0][1]) / s
+
+    return new_quaternion(qx, qy, qz, qs)
+
+
+cdef Quaternion new_quaternion_from_axis_angle(Vector3D axis, double angle):
+    """
+    Quaternion factory function to instance a Quaternion from an axis and angle.
+
+    Creates a new Quaternion object with less overhead than the equivalent Python
+    call. This function is callable from cython only.
+
+    :param Vector3D axis: The axis about which rotation will be performed.
+    :param float angle: An angle in degrees specifying the magnitude of the
+      rotation about the axis vector.
+    :return: A new Quaternion object representing the specified rotation.
+    """
+
+    # keep the angle inside [-180, 180) to avoid negative quaternions
+    angle = (angle + 180) % 360 - 180
+    if angle == 0:
+        return new_quaternion(0, 0, 0, 1)
+
+    axis = axis.normalise()
+    theta_2 = angle * DEG2RAD / 2
+
+    qx = axis.x * sin(theta_2)
+    qy = axis.y * sin(theta_2)
+    qz = axis.z * sin(theta_2)
+    qs = cos(theta_2)
+
+    return new_quaternion(qx, qy, qz, qs)

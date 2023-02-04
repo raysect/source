@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -345,50 +345,44 @@ cpdef Point3D from_cylindrical(double r, double z, double phi):
     return new_point3d(x, y, z)
 
 
-cpdef tuple extract_rotation(AffineMatrix3D m, str z_axis=None):
+cpdef (double, double, double) extract_rotation(AffineMatrix3D m, bint z_up=False):
     """
     Extracts the rotation component of the affine matrix.
     
     The yaw, pitch and roll can be extracted for two common coordinate
     conventions by specifying the z_axis orientation:
     
-        'forward': +ve z is forward, +ve y is up, +ve x is left  
-        'up':      +ve z is up, +ve y is left, +ve x is forward
+        forward: +ve z is forward, +ve y is up, +ve x is left  
+        up:      +ve z is up, +ve y is left, +ve x is forward
 
-    The Raysect default is z axis forward.
+    The Raysect default is z axis forward. This function can be switched
+    to z axis up by setting the z_up parameter to True. 
     
     The matrix must consist of only rotation and translation operations.
     
     :param AffineMatrix3D m: An affine matrix.
-    :param z_axis: Coordinate convention (default='forward'). 
+    :param bint z_up: Is the z-axis pointed upwards (default=False). 
     :return: A tuple containing (yaw, pitch, roll). 
     """
 
     cdef double yaw, pitch, roll
 
-    z_axis = z_axis or FORWARD
-    z_axis = z_axis.lower()
-
-    if z_axis.lower() == FORWARD:
-
-        # operation order ZYX
-        yaw = -atan2(m.get_element(0, 2), m.get_element(2, 2)) * RAD2DEG
-        pitch = asin(m.get_element(1, 2)) * RAD2DEG
-        roll = atan2(m.get_element(1, 0), m.get_element(1, 1)) * RAD2DEG
-        return yaw, pitch, roll
-
-    elif z_axis.lower() == UP:
+    if z_up:
 
         # operation order XYZ
-        yaw = atan2(m.get_element(1, 0), m.get_element(0, 0)) * RAD2DEG
-        pitch = -asin(m.get_element(2, 0)) * RAD2DEG
+        yaw = -atan2(m.get_element(1, 0), m.get_element(0, 0)) * RAD2DEG
+        pitch = asin(m.get_element(2, 0)) * RAD2DEG
         roll = atan2(m.get_element(2, 1), m.get_element(2, 2)) * RAD2DEG
         return yaw, pitch, roll
-    else:
-        raise ValueError(f'Unrecognised coordinate convention: \'{z_axis}\'.')
+
+    # operation order ZYX
+    yaw = -atan2(m.get_element(0, 2), m.get_element(2, 2)) * RAD2DEG
+    pitch = asin(m.get_element(1, 2)) * RAD2DEG
+    roll = atan2(m.get_element(1, 0), m.get_element(1, 1)) * RAD2DEG
+    return yaw, pitch, roll
 
 
-cpdef tuple extract_translation(AffineMatrix3D m):
+cpdef (double, double, double) extract_translation(AffineMatrix3D m):
     """
     Extracts the translation component of the affine matrix.
     

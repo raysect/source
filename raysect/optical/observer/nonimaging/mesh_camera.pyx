@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -100,16 +100,6 @@ cdef class MeshCamera(Observer1D):
                                 pixel_samples=250)
         >>> camera.observe()
     """
-
-    cdef:
-        double _surface_offset, _solid_angle, _collection_area
-        readonly Mesh mesh
-        float32_t[:, ::1] _vertices_mv
-        float32_t[:, ::1] _face_normals_mv
-        int32_t[:, ::1] _triangles_mv
-        np.ndarray _areas
-        double [::1] _areas_mv
-        HemisphereCosineSampler _vector_sampler
 
     def __init__(self, Mesh mesh not None, surface_offset=None, frame_sampler=None, pipelines=None, parent=None,
                  transform=None, name=None, render_engine=None, pixel_samples=None,

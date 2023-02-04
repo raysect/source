@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -507,6 +507,14 @@ cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty):
         return False
     else:
         return True
+
+
+cdef int factorial(int n):
+    """Calculate the factorial of an interger n (n!) through recursive calculation."""
+    if n <= 0:
+        return 1
+    else:
+        return n * factorial(n - 1)
 
 
 def _maximum(data):

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -59,9 +59,6 @@ cdef class SightLine(Observer0D):
                             parent=world, transform=rotate(0, 0, 0)*translate(0, 0, -1))
         >>> los.observe()
     """
-
-    cdef:
-        double _sensitivity
 
     def __init__(self, sensitivity=None, pipelines=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
