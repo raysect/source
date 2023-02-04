@@ -92,16 +92,6 @@ cdef class MeshPixel(Observer0D):
         >>> observer.observe()
     """
 
-    cdef:
-        double _surface_offset, _solid_angle, _collection_area
-        readonly Mesh mesh
-        float32_t[:, ::1] _vertices_mv
-        float32_t[:, ::1] _face_normals_mv
-        int32_t[:, ::1] _triangles_mv
-        np.ndarray _cdf
-        double [::1] _cdf_mv
-        HemisphereCosineSampler _vector_sampler
-
     def __init__(self, Mesh mesh not None, surface_offset=None, pipelines=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
