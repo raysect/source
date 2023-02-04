@@ -177,11 +177,11 @@ cdef class NullMaterial(NullSurface):
     cpdef Spectrum evaluate_volume(
             self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
             Point3D start_point, Point3D end_point,
-            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world
-            Intersection intersection):
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # no volume contribution
         return spectrum
+
 
 # Surface space
 #

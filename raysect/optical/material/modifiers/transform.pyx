@@ -78,10 +78,10 @@ cdef class VolumeTransform(Material):
         self._transform_inv = m.inverse()
 
     cpdef Spectrum evaluate_surface(
-            self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-            bint exiting, Point3D inside_point, Point3D outside_point,
-            Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
-            intersection):
+        self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point, Normal3D normal,
+        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+        Intersection intersection):
 
         return self.material.evaluate_surface(
             world, ray, primitive, hit_point, exiting, inside_point, outside_point,

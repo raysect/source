@@ -31,7 +31,7 @@
 
 from raysect.optical.colour import d65_white
 
-from raysect.optical cimport World, Primitive, Point3D, AffineMatrix3D, Normal3D, Ray, Spectrum
+from raysect.optical cimport World, Primitive, Point3D, AffineMatrix3D, Normal3D, Ray, Spectrum, Intersection
 from libc.math cimport round, fabs
 cimport cython
 
@@ -93,10 +93,11 @@ cdef class Checkerboard(NullVolume):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
-                                    Intersection intersection):
+    cpdef Spectrum evaluate_surface(
+            self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+            bint exiting, Point3D inside_point, Point3D outside_point,
+            Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+            Intersection intersection):
 
         cdef:
             Spectrum spectrum
