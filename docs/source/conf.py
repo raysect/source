@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Raysect'
-copyright = '2014-2021, Dr Alex Meakins'
+copyright = '2014-2023, Dr Alex Meakins'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -266,8 +266,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'raysect', 'raysect Documentation',
-   'Dr Alex Meakins', 'raysect', 'One line description of project.',
+  ('index', 'raysect', 'Raysect Documentation',
+   'Dr Alex Meakins', 'raysect', 'Scientific Python raytracer.',
    'Miscellaneous'),
 ]
 
