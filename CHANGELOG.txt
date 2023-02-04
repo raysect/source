@@ -15,6 +15,9 @@ Bug fixes:
 * Fixed pipeline figure title rendering due to matplotlib canvas.set_window_title() deprecation.
 * Fixed __setstate__() bug in SpectralPowerPipeline that prevented unpickling.
 
+New:
+* Added cython pxd files for all observers.
+
 
 Release 0.8.0 (26 May 2022)
 ---------------------------
