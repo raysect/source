@@ -31,9 +31,13 @@
 
 from numpy cimport ndarray
 from raysect.core.math.random cimport uniform
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, new_vector3d, Intersection
-from libc.math cimport M_PI, sqrt, fabs, atan, cos, sin
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, new_vector3d, Ray, Intersection
+from libc.math cimport M_PI, sqrt, fabs, atan, atan2, cos, sin
 cimport cython
+
+DEF EPSILON = 1e-12
+DEF RAD2DEG = 57.29577951308232000  # 180 / pi
+DEF DEG2RAD = 0.017453292519943295  # pi / 180
 
 
 cdef class Conductor(Material):
@@ -74,82 +78,187 @@ cdef class Conductor(Material):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
-                                    Intersection intersection):
+    cpdef Spectrum evaluate_surface(
+        self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D surface_normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+        Intersection intersection):
 
         cdef:
-            Vector3D incident, reflected
-            double temp, ci
-            ndarray reflection_coefficient
-            Ray reflected_ray
-            Spectrum spectrum
+            double ci
             double[::1] n, k
-            int i
 
         # convert ray direction normal to local coordinates
-        incident = ray.direction.transform(world_to_primitive)
+        i_direction = ray.direction.transform(world_to_primitive)
 
         # ensure vectors are normalised for reflection calculation
-        incident = incident.normalise()
-        normal = normal.normalise()
+        i_direction = i_direction.normalise()
+        normal = surface_normal.as_vector().normalise()
 
         # calculate cosine of angle between incident and normal
-        ci = normal.dot(incident)
+        ci = -normal.dot(i_direction)
+
+        # map normal and select launch point to the same side as the incident ray
+        if ci < 0.0:
+
+            # flip normal to point into the primitive
+            normal = normal.neg()
+
+            # ray launch point
+            r_origin = inside_point
+
+        else:
+
+            # ray launch point
+            r_origin = outside_point
 
         # sample refractive index and absorption
         n = self.index.sample_mv(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
         k = self.extinction.sample_mv(ray.get_min_wavelength(), ray.get_max_wavelength(), ray.get_bins())
 
-        # reflection
+        # incident cosine magnitude
+        ci = fabs(ci)
+
+        # establish polarisation frame for fresnel calculation
+        #
+        # The Ex component of the Stoke's vector corresponds to the
+        # perpendicular (Es) component in the original derivation.
+        #
+        # If the incident ray and normal are collinear, an arbitrary orthogonal
+        # vector is generated. In the collinear case this orientation must be
+        # replicated for the transmitted and reflected rays or the fresnel
+        # calculation will be invalid.
+        f_orientation = i_direction.cross(normal) if (1.0 - ci) > EPSILON else normal.orthogonal()
+
+        # reflected ray configuration
         temp = 2 * ci
-        reflected = new_vector3d(incident.x - temp * normal.x,
-                                 incident.y - temp * normal.y,
-                                 incident.z - temp * normal.z)
+        r_direction = new_vector3d(
+            i_direction.x + temp * normal.x,
+            i_direction.y + temp * normal.y,
+            i_direction.z + temp * normal.z
+        )
+        # r_orientation = i_direction.cross(normal) if (1.0 - ci) > EPSILON else i_orientation
 
-        # convert reflected ray direction to world space
-        reflected = reflected.transform(primitive_to_world)
-
-        # spawn reflected ray and trace
-        # note, we do not use the supplied exiting parameter as the normal is
-        # not guaranteed to be perpendicular to the surface for meshes
-        if ci > 0.0:
-
-            # incident ray is pointing out of surface, reflection is therefore inside
-            reflected_ray = ray.spawn_daughter(inside_point.transform(primitive_to_world), reflected)
-
-        else:
-
-            # incident ray is pointing in to surface, reflection is therefore outside
-            reflected_ray = ray.spawn_daughter(outside_point.transform(primitive_to_world), reflected)
-
+        # launch reflected ray and apply fresnel
+        reflected_ray = ray.spawn_daughter(
+            r_origin.transform(primitive_to_world),
+            r_direction.transform(primitive_to_world),
+            f_orientation.transform(primitive_to_world)
+        )
         spectrum = reflected_ray.trace(world)
 
-        # calculate reflection coefficients at each wavelength and apply
-        ci = fabs(ci)
-        for i in range(spectrum.bins):
-            spectrum.samples_mv[i] *= self._fresnel(ci, n[i], k[i])
+        # apply fresnel mueller matrix
+        self._apply_fresnel(spectrum, ci, n, k)
 
+        # ray stokes orientation
+        s_orientation = ray.orientation.transform(world_to_primitive)
+        s_orientation = s_orientation.normalise()
+
+        # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
+        theta = self._polarisation_frame_angle(i_direction, s_orientation, f_orientation)
+        self._apply_stokes_rotation(spectrum, theta)
         return spectrum
 
     @cython.cdivision(True)
-    cdef double _fresnel(self, double ci, double n, double k) nogil:
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_fresnel(self, Spectrum spectrum, double ci, double[::1] ns, double[::1] ks):
 
-        cdef double c12, k0, k1, k2, k3
+        cdef:
+            double si, ti, c2i, s2i, t2i
+            double n, k, n2, k2
+            double s0, s1, s2, s3
+            double a, b, c, r2p, r2s
+            double v, w, f, g, phase
+            double cp, sp, m0, m1, m2
 
-        ci2 = ci * ci
-        k0 = n * n + k * k
-        k1 = k0 * ci2 + 1
-        k2 = 2 * n * ci
-        k3 = k0 + ci2
+        # trigonometry
+        si = sqrt(1 - ci*ci)
+        ti = si / ci
 
-        return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
+        # common constants
+        c2i = ci*ci
+        s2i = si*si
+        t2i = ti*ti
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+        for bin in range(spectrum.bins):
+
+            # obtain refractive index and extinction
+            n = ns[bin]
+            k = ks[bin]
+            n2 = n*n
+            k2 = k*k
+
+            # stokes components
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            # calculate fresnel reflection coefficients
+            a = (n2 + k2) + c2i
+            b = (n2 + k2)*c2i + 1
+            c = 2*n*ci
+            r2s = (a - c) / (a + c)
+            r2p = (b - c) / (b + c)
+
+            # calculate phase
+            v = n2 - k2 - s2i
+            w = sqrt(v*v + 4*n2*k2)
+            f = 0.5*(n2 - k2 - s2i + w)
+            g = 0.5*(k2 - n2 + s2i + w)
+            phase = M_PI - atan2(2*sqrt(g)*si*ti, s2i*t2i - (f + g))
+
+            # apply matrix
+            cp = cos(phase)
+            sp = sin(phase)
+            m0 = 0.5*(r2s + r2p)
+            m1 = 0.5*(r2s - r2p)
+            m2 = sqrt(r2s*r2p)
+            spectrum.samples_mv[bin, 0] = m0*s0 + m1*s1
+            spectrum.samples_mv[bin, 1] = m1*s0 + m0*s1
+            spectrum.samples_mv[bin, 2] = -m2*cp*s2 - m2*sp*s3
+            spectrum.samples_mv[bin, 3] = m2*sp*s2 - m2*cp*s3
+
+    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation):
+
+        # light propagation direction is opposite to ray direction
+        propagation = direction.neg()
+
+        # calculate rotation about light propagation direction
+        angle = ray_orientation.angle(interface_orientation) * DEG2RAD
+        if propagation.dot(ray_orientation.cross(interface_orientation)) < 0:
+            angle = -angle
+        return angle
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta):
+
+        cdef:
+            double c, s
+            double s0, s1, s2, s3
+
+        c = cos(2*theta)
+        s = sin(2*theta)
+        for bin in range(spectrum.bins):
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0
+            spectrum.samples_mv[bin, 1] = c * s1 - s * s2
+            spectrum.samples_mv[bin, 2] = s * s1 + c * s2
+            spectrum.samples_mv[bin, 3] = s3
+
+    cpdef Spectrum evaluate_volume(
+        self, Spectrum spectrum, World world, Ray ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # do nothing!
         return spectrum
@@ -247,40 +356,75 @@ cdef class RoughConductor(ContinuousBSDF):
         )
 
     @cython.cdivision(True)
-    cpdef Spectrum evaluate_shading(self, World world, Ray ray, Vector3D s_incoming, Vector3D s_outgoing,
-                                    Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
-                                    AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
-                                    Intersection intersection):
+    cpdef Spectrum evaluate_shading(
+        self, World world, Ray ray, Vector3D s_in_direction, Vector3D s_out_direction,
+        Point3D w_reflection_origin, Point3D w_transmission_origin, bint back_face,
+        AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
+        Intersection intersection):
 
         cdef:
             Vector3D s_half
             Spectrum spectrum
             Ray reflected
+            double[::1] n, k
 
-        # outgoing ray is sampling incident light so s_outgoing = incident
+        # the in direction points towards the observer, the out direction points towards the light
 
         # material does not transmit
-        if s_outgoing.z <= 0:
+        if s_out_direction.z <= 0:
             return ray.new_spectrum()
 
         # ignore parallel rays which could cause a divide by zero later
-        if s_incoming.z == 0:
+        if s_in_direction.z == 0:
             return ray.new_spectrum()
 
         # calculate half vector
         s_half = new_vector3d(
-            s_incoming.x + s_outgoing.x,
-            s_incoming.y + s_outgoing.y,
-            s_incoming.z + s_outgoing.z
+            s_in_direction.x + s_out_direction.x,
+            s_in_direction.y + s_out_direction.y,
+            s_in_direction.z + s_out_direction.z
         ).normalise()
 
+        # calculate cosine of angle between incident ray and micro-facet surface normal
+        ci = s_in_direction.dot(s_half)
+
+        # establish polarisation frame for fresnel calculation
+        # The Ex component of the Stoke's vector corresponds to the
+        # perpendicular (Es) component in the original derivation.
+        #
+        # If the incident ray and normal are collinear, an arbitrary orthogonal
+        # vector is generated. In the collinear case this orientation must be
+        # replicated for the transmitted and reflected rays or the fresnel
+        # calculation will be invalid.
+        s_frame_orientation = s_in_direction.cross(s_half)  if (1.0 - ci) > EPSILON else s_half.orthogonal()
+
         # generate and trace ray
-        reflected = ray.spawn_daughter(w_reflection_origin, s_outgoing.transform(surface_to_world))
+        reflected = ray.spawn_daughter(
+            w_reflection_origin,
+            s_out_direction.transform(surface_to_world),
+            s_frame_orientation.transform(surface_to_world)
+        )
         spectrum = reflected.trace(world)
 
-        # evaluate lighting with Cook-Torrance bsdf (optimised)
-        spectrum.mul_scalar(self._d(s_half) * self._g(s_incoming, s_outgoing) / (4 * s_incoming.z))
-        return self._f(spectrum, s_outgoing, s_half)
+        # sample refractive index and absorption
+        n = self.index.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        k = self.extinction.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+
+        # apply mueller matrix for micro-facet reflection
+        self._apply_fresnel(spectrum, ci, n, k)
+
+        # modulate intensity with Cook-Torrance bsdf (optimised)
+        spectrum.mul_scalar(self._d(s_half) * self._g(s_in_direction, s_out_direction) / (4 * s_in_direction.z))
+
+        # ray stokes orientation
+        s_ray_orientation = ray.orientation.transform(world_to_surface)
+        s_ray_orientation = s_ray_orientation.normalise()
+
+        # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
+        theta = self._polarisation_frame_angle(s_in_direction, s_ray_orientation, s_frame_orientation)
+        self._apply_stokes_rotation(spectrum, theta)
+
+        return spectrum
 
     @cython.cdivision(True)
     cdef double _d(self, Vector3D s_half):
@@ -307,38 +451,99 @@ cdef class RoughConductor(ContinuousBSDF):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal):
+    cdef void _apply_fresnel(self, Spectrum spectrum, double ci, double[::1] ns, double[::1] ks):
 
         cdef:
-            double[::1] n, k
-            double ci
-            int i
+            double si, ti, c2i, s2i, t2i
+            double n, k, n2, k2
+            double s0, s1, s2, s3
+            double a, b, c, r2p, r2s
+            double v, w, f, g, phase
+            double cp, sp, m0, m1, m2
 
-        # sample refractive index and absorption
-        n = self.index.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
-        k = self.extinction.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
+        # trigonometry
+        si = sqrt(1 - ci*ci)
+        ti = si / ci
 
-        ci = s_normal.dot(s_outgoing)
-        for i in range(spectrum.bins):
-            spectrum.samples_mv[i] *= self._fresnel_conductor(ci, n[i], k[i])
+        # common constants
+        c2i = ci*ci
+        s2i = si*si
+        t2i = ti*ti
 
-        return spectrum
+        for bin in range(spectrum.bins):
+
+            # obtain refractive index and extinction
+            n = ns[bin]
+            k = ks[bin]
+            n2 = n*n
+            k2 = k*k
+
+            # stokes components
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            # calculate fresnel reflection coefficients
+            a = (n2 + k2) + c2i
+            b = (n2 + k2)*c2i + 1
+            c = 2*n*ci
+            r2s = (a - c) / (a + c)
+            r2p = (b - c) / (b + c)
+
+            # calculate phase
+            v = n2 - k2 - s2i
+            w = sqrt(v*v + 4*n2*k2)
+            f = 0.5*(n2 + k2 - s2i + w)
+            g = 0.5*(k2 - n2 + s2i + w)
+            phase = M_PI - atan2(2*sqrt(g)*si*ti, s2i*t2i - (f + g))
+
+            # apply matrix
+            cp = cos(phase)
+            sp = sin(phase)
+            m0 = 0.5*(r2s + r2p)
+            m1 = 0.5*(r2s - r2p)
+            m2 = sqrt(r2s*r2p)
+            spectrum.samples_mv[bin, 0] = m0*s0 + m1*s1
+            spectrum.samples_mv[bin, 1] = m1*s0 + m0*s1
+            spectrum.samples_mv[bin, 2] = -m2*cp*s2 - m2*sp*s3
+            spectrum.samples_mv[bin, 3] = m2*sp*s2 - m2*cp*s3
+
+    cdef double _polarisation_frame_angle(self, Vector3D propagation, Vector3D ray_orientation, Vector3D interface_orientation):
+
+        # calculate rotation about light propagation direction
+        angle = ray_orientation.angle(interface_orientation) * DEG2RAD
+        if propagation.dot(ray_orientation.cross(interface_orientation)) < 0:
+            angle = -angle
+        return angle
 
     @cython.cdivision(True)
-    cdef double _fresnel_conductor(self, double ci, double n, double k) nogil:
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta):
 
-        cdef double c12, k0, k1, k2, k3
+        cdef:
+            double c, s
+            double s0, s1, s2, s3
 
-        ci2 = ci * ci
-        k0 = n * n + k * k
-        k1 = k0 * ci2 + 1
-        k2 = 2 * n * ci
-        k3 = k0 + ci2
-        return 0.5 * ((k1 - k2) / (k1 + k2) + (k3 - k2) / (k3 + k2))
+        c = cos(2*theta)
+        s = sin(2*theta)
+        for bin in range(spectrum.bins):
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0
+            spectrum.samples_mv[bin, 1] = c * s1 - s * s2
+            spectrum.samples_mv[bin, 2] = s * s1 + c * s2
+            spectrum.samples_mv[bin, 3] = s3
+
+    cpdef Spectrum evaluate_volume(
+        self, Spectrum spectrum, World world, Ray ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         # no volume contribution
         return spectrum

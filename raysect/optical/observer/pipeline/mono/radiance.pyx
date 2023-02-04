@@ -27,6 +27,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: hacked for polarisation - incomplete
+
 from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.spectrum cimport Spectrum
 cimport cython
@@ -190,7 +192,7 @@ cdef class RadiancePixelProcessor(PixelProcessor):
 
         # apply filter curve and integrate
         for index in range(spectrum.bins):
-            total += spectrum.samples_mv[index] * self.filter[index] * spectrum.delta_wavelength
+            total += spectrum.samples_mv[index, 0] * self.filter[index] * spectrum.delta_wavelength
 
         self.bin.add_sample(total)
 

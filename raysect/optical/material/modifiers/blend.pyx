@@ -34,6 +34,7 @@ from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World
 from raysect.optical.material cimport Material
 
 
+
 cdef class Blend(Material):
     """
     Blend combines the behaviours of two materials.
@@ -85,25 +86,30 @@ cdef class Blend(Material):
         self.surface_only = surface_only
         self.volume_only = volume_only
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
-                                    Intersection intersection):
+    cpdef Spectrum evaluate_surface(
+        self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+        Intersection intersection):
 
         if not self.volume_only and probability(self.ratio):
-            return self.m2.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point,
-                                                  normal, world_to_primitive, primitive_to_world, intersection)
+            return self.m2.evaluate_surface(
+                world, ray, primitive, hit_point, exiting, inside_point, outside_point,
+                normal, world_to_primitive, primitive_to_world, intersection
+            )
         else:
-            return self.m1.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point,
-                                                  normal, world_to_primitive, primitive_to_world, intersection)
+            return self.m1.evaluate_surface(
+                world, ray, primitive, hit_point, exiting, inside_point, outside_point,
+                normal, world_to_primitive, primitive_to_world, intersection
+            )
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D to_local, AffineMatrix3D to_world):
+    cpdef Spectrum evaluate_volume(
+        self, Spectrum spectrum, World world, Ray ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D to_local, AffineMatrix3D to_world):
 
         if not self.surface_only and probability(self.ratio):
             return self.m2.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
         else:
             return self.m1.evaluate_volume(spectrum, world, ray, primitive, start_point, end_point, to_local, to_world)
+
 

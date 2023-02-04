@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D, Normal3D, Intersection
+from raysect.optical cimport World, Primitive, Point3D, Vector3D, AffineMatrix3D, Normal3D, Ray, Spectrum, Intersection
 cimport cython
 
 
@@ -64,10 +64,11 @@ cdef class UniformSurfaceEmitter(NullVolume):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
-                                    Intersection intersection):
+    cpdef Spectrum evaluate_surface(
+        self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point,
+        Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+        Intersection intersection):
 
         cdef:
             Spectrum spectrum
@@ -77,14 +78,8 @@ cdef class UniformSurfaceEmitter(NullVolume):
         spectrum = ray.new_spectrum()
         emission = self.emission_spectrum.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         for index in range(spectrum.bins):
-            spectrum.samples_mv[index] = emission[index] * self.scale
-        return spectrum
-
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
-
-        # no volume contribution
+            # unpolarised emission, only populate total radiance component of stokes vector
+            spectrum.samples_mv[index, 0] = emission[index] * self.scale
         return spectrum
 
 
@@ -118,9 +113,9 @@ cdef class UniformVolumeEmitter(HomogeneousVolumeEmitter):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef Spectrum emission_function(
+        self, Vector3D direction, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             double[::1] emission
@@ -128,7 +123,7 @@ cdef class UniformVolumeEmitter(HomogeneousVolumeEmitter):
 
         emission = self.emission_spectrum.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
         for index in range(spectrum.bins):
-            spectrum.samples_mv[index] += emission[index] * self.scale
+            # unpolarised emission, only add to total radiance component of stokes vector
+            spectrum.samples_mv[index, 0] += emission[index] * self.scale
 
         return spectrum
-

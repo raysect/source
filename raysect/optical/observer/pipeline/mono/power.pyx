@@ -27,6 +27,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: hacked for polarisation - incomplete
+
 from time import time
 import matplotlib.pyplot as plt
 import numpy as np
@@ -775,7 +777,7 @@ cdef class PowerPixelProcessor(PixelProcessor):
 
         # apply filter curve and integrate
         for index in range(spectrum.bins):
-            total += spectrum.samples_mv[index] * self.filter[index] * sensitivity * spectrum.delta_wavelength
+            total += spectrum.samples_mv[index, 0] * self.filter[index] * sensitivity * spectrum.delta_wavelength
 
         self.bin.add_sample(total)
 

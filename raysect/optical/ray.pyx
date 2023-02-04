@@ -35,59 +35,68 @@ from raysect.core cimport Intersection
 from raysect.core.math.random cimport probability
 from raysect.core.math.cython cimport clamp
 from raysect.optical.material.material cimport Material
-from raysect.optical.spectrum cimport new_spectrum
 from raysect.optical.scenegraph cimport Primitive
+from raysect.optical.spectrum cimport new_spectrum
 cimport cython
 
 # cython doesn't have a built-in infinity constant, this compiles to +infinity
 DEF INFINITY = 1e999
 
+# todo: Rework raysect core ray to stop direction and origin being public, can then use setters
+#  and getters in cython to ensure orientation is orthogonal. This will remove the need for expensive
+#  _make_orthogonal every trace.
 
+# todo: rework unpolarised spectrum to remove the dependency on spectral function (users can place data
+#  in an appropriate interpolator), then make both spectrum classes derive from a common base -> much of the
+#  Ray's code is common and can then be simplified. This will also tidy up the observers.
 cdef class Ray(CoreRay):
-    """
-    Optical Ray class for optical applications, inherits from core Ray class.
+    # """
+    # Ray class for polarised optical applications, inherits from core Ray class.
+    #
+    # Provides the trace(world) method.
+    #
+    # :param Point3D origin: Point defining ray’s origin (default=Point3D(0, 0, 0))
+    # :param Vector3D direction: Vector defining ray’s direction (default=Vector3D(0, 0, 1))
+    # :param float min_wavelength: Lower wavelength bound for observed spectrum
+    # :param float max_wavelength: Upper wavelength bound for observed spectrum
+    # :param int bins: Number of samples to use over the spectral range
+    # :param float max_distance: The terminating distance of the ray
+    # :param float extinction_prob: Probability of path extinction at every
+    #   material surface interaction (default=0.1)
+    # :param int extinction_min_depth: Minimum number of paths before triggering
+    #   extinction probability (default=3)
+    # :param int max_depth: Maximum number of material interactions before
+    #   terminating ray trajectory.
+    # :param bool importance_sampling: Toggles use of importance sampling for
+    #   important primitives. See help documentation on importance sampling,
+    #   (default=True).
+    # :param float important_path_weight: Weight to use for important paths when
+    #   using importance sampling.
+    #
+    # .. code-block:: pycon
+    #
+    #     >>> from raysect.core import Point3D, Vector3D
+    #     >>> from raysect.optical import World, Ray
+    #     >>>
+    #     >>> world = World()
+    #     >>>
+    #     >>> ray = Ray(origin=Point3D(0, 0, -5),
+    #     >>>           direction=Vector3D(0, 0, 1),
+    #     >>>           min_wavelength=375,
+    #     >>>           max_wavelength=785,
+    #     >>>           bins=100)
+    #     >>>
+    #     >>> spectrum = ray.trace(world)
+    #     >>> spectrum
+    #     <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e048>
+    # """
 
-    Provides the trace(world) method.
-
-    :param Point3D origin: Point defining ray’s origin (default=Point3D(0, 0, 0))
-    :param Vector3D direction: Vector defining ray’s direction (default=Vector3D(0, 0, 1))
-    :param float min_wavelength: Lower wavelength bound for observed spectrum
-    :param float max_wavelength: Upper wavelength bound for observed spectrum
-    :param int bins: Number of samples to use over the spectral range
-    :param float max_distance: The terminating distance of the ray
-    :param float extinction_prob: Probability of path extinction at every
-      material surface interaction (default=0.1)
-    :param int extinction_min_depth: Minimum number of paths before triggering
-      extinction probability (default=3)
-    :param int max_depth: Maximum number of material interactions before
-      terminating ray trajectory.
-    :param bool importance_sampling: Toggles use of importance sampling for
-      important primitives. See help documentation on importance sampling,
-      (default=True).
-    :param float important_path_weight: Weight to use for important paths when
-      using importance sampling.
-
-    .. code-block:: pycon
-
-        >>> from raysect.core import Point3D, Vector3D
-        >>> from raysect.optical import World, Ray
-        >>>
-        >>> world = World()
-        >>>
-        >>> ray = Ray(origin=Point3D(0, 0, -5),
-        >>>           direction=Vector3D(0, 0, 1),
-        >>>           min_wavelength=375,
-        >>>           max_wavelength=785,
-        >>>           bins=100)
-        >>>
-        >>> spectrum = ray.trace(world)
-        >>> spectrum
-        <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e048>
-    """
+    # ORIENTATION IS ALIGNED WITH HORIZONTAL POLARISATION (aligned with the Ex component of the field)
 
     def __init__(self,
-                 Point3D origin = Point3D(0, 0, 0),
-                 Vector3D direction = Vector3D(0, 0, 1),
+                 Point3D origin = None,
+                 Vector3D direction = None,
+                 Vector3D orientation = None,
                  double min_wavelength = 375,
                  double max_wavelength = 785,
                  int bins = 40,
@@ -110,7 +119,12 @@ cdef class Ray(CoreRay):
         if important_path_weight < 0 or important_path_weight > 1.0:
             raise ValueError("Important path weight must be in the range [0, 1].")
 
+        origin = origin or Point3D(0, 0, 0)
+        direction = direction or Vector3D(0, 0, 1)
+        orientation = orientation or direction.orthogonal()
+
         super().__init__(origin, direction, max_distance)
+        self.orientation = direction.orthogonal(orientation)
 
         self._bins = bins
         self._min_wavelength = min_wavelength
@@ -128,11 +142,15 @@ cdef class Ray(CoreRay):
         self.ray_count = 0
         self._primary_ray = None
 
+    def __repr__(self):
+        return f'Ray({self.origin}, {self.direction}, {self.orientation}, {self.max_distance})'
+
     def __getstate__(self):
         """Encodes state for pickling."""
 
         return (
             super().__getstate__(),
+            self.orientation,
             self._bins,
             self._min_wavelength,
             self._max_wavelength,
@@ -150,6 +168,7 @@ cdef class Ray(CoreRay):
         """Decodes state for pickling."""
 
         (super_state,
+         self.orientation,
          self._bins,
          self._min_wavelength,
          self._max_wavelength,
@@ -323,16 +342,17 @@ cdef class Ray(CoreRay):
         .. code-block:: pycon
 
             >>> from raysect.core import Point3D, Vector3D
-            >>> from raysect.optical import Ray
+            >>> from raysect.optical.polarised import Ray
             >>>
             >>> ray = Ray(origin=Point3D(0, 0, -5),
             >>>           direction=Vector3D(0, 0, 1),
+            >>>           orientation=Vector3D(0, 1, 0),
             >>>           min_wavelength=375,
             >>>           max_wavelength=785,
             >>>           bins=100)
             >>>
             >>> ray.new_spectrum()
-            <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e1b0>
+            <raysect.optical.polarised.spectrum.Spectrum at 0x7f5b08b6e1b0>
         """
 
         return new_spectrum(self._min_wavelength, self._max_wavelength, self._bins)
@@ -350,19 +370,21 @@ cdef class Ray(CoreRay):
         .. code-block:: pycon
 
             >>> from raysect.core import Point3D, Vector3D
-            >>> from raysect.optical import World, Ray
+            >>> from raysect.optical import World
+            >>> from raysect.optical.polarised import Ray
             >>>
             >>> world = World()
             >>>
             >>> ray = Ray(origin=Point3D(0, 0, -5),
             >>>           direction=Vector3D(0, 0, 1),
+            >>>           orientation=Vector3D(0, 1, 0),
             >>>           min_wavelength=375,
             >>>           max_wavelength=785,
             >>>           bins=100)
             >>>
             >>> spectrum = ray.trace(world)
             >>> spectrum
-            <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e048>
+            <raysect.optical.polarised.spectrum.Spectrum at 0x7f5b08b6e048>
         """
 
         cdef:
@@ -373,6 +395,12 @@ cdef class Ray(CoreRay):
             Point3D start_point, end_point
             Material material
             double normalisation
+
+        if not world:
+            raise TypeError('The world argument must be a valid World object.')
+
+        # ensure orientation is orthogonal to direction
+        self.orientation = self.direction.orthogonal(self.orientation)
 
         # reset ray statistics
         if self._primary_ray is None:
@@ -410,17 +438,19 @@ cdef class Ray(CoreRay):
 
         # request surface contribution to spectrum from primitive material
         material = intersection.primitive.get_material()
-        return material.evaluate_surface(world,
-                                         self,
-                                         intersection.primitive,
-                                         intersection.hit_point,
-                                         intersection.exiting,
-                                         intersection.inside_point,
-                                         intersection.outside_point,
-                                         intersection.normal,
-                                         intersection.world_to_primitive,
-                                         intersection.primitive_to_world,
-                                         intersection)
+        return material.evaluate_surface(
+            world,
+            self,
+            intersection.primitive,
+            intersection.hit_point,
+            intersection.exiting,
+            intersection.inside_point,
+            intersection.outside_point,
+            intersection.normal,
+            intersection.world_to_primitive,
+            intersection.primitive_to_world,
+            intersection
+        )
 
     cdef Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):
 
@@ -461,7 +491,7 @@ cdef class Ray(CoreRay):
     @cython.initializedcheck(False)
     cpdef Spectrum sample(self, World world, int count):
         """
-        Samples the radiance directed along the ray direction.
+        Samples the polarised spectrum along the ray direction.
 
         This methods calls trace repeatedly to obtain a statistical sample of
         the radiance directed along the ray direction from the world. The count
@@ -482,12 +512,13 @@ cdef class Ray(CoreRay):
             >>>
             >>> ray = Ray(origin=Point3D(0, 0, -5),
             >>>           direction=Vector3D(0, 0, 1),
+            >>>           orientation=Vector3D(0, 1, 0),
             >>>           min_wavelength=375,
             >>>           max_wavelength=785,
             >>>           bins=100)
             >>>
             >>> ray.sample(world, 10)
-            <raysect.optical.spectrum.Spectrum at 0x7f5b08b6e318>
+            <raysect.optical.polarised.spectrum.Spectrum at 0x7f5b08b6e318>
         """
 
         cdef:
@@ -506,7 +537,7 @@ cdef class Ray(CoreRay):
 
         return spectrum
 
-    cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction):
+    cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction, Vector3D orientation):
         """
         Spawns a new daughter of the ray.
 
@@ -515,6 +546,7 @@ cdef class Ray(CoreRay):
 
         :param Point3D origin: A Point3D defining the ray origin.
         :param Vector3D direction: A vector defining the ray direction.
+        :param Vector3D orientation: A vector defining the ray polarisation orientation.
         :return: A daughter Ray object.
         :rtype: Ray
         """
@@ -525,6 +557,7 @@ cdef class Ray(CoreRay):
 
         ray.origin = origin
         ray.direction = direction
+        ray.orientation = orientation
         ray._bins = self._bins
         ray._min_wavelength = self._min_wavelength
         ray._max_wavelength = self._max_wavelength
@@ -563,16 +596,17 @@ cdef class Ray(CoreRay):
         .. code-block:: pycon
 
             >>> from raysect.core import Point3D, Vector3D
-            >>> from raysect.optical import Ray
+            >>> from raysect.optical.polarised import Ray
             >>>
             >>> ray = Ray(origin=Point3D(0, 0, -5),
             >>>           direction=Vector3D(0, 0, 1),
+            >>>           orientation=Vector3D(0, 1, 0),
             >>>           min_wavelength=375,
             >>>           max_wavelength=785,
             >>>           bins=100)
             >>>
             >>> ray.copy()
-            Ray(Point3D(0.0, 0.0, -5.0), Vector3D(0.0, 0.0, 1.0), inf)
+            Ray(Point3D(0.0, 0.0, -5.0), Vector3D(0.0, 0.0, 1.0), Vector(0.0, 1.0, 0.0), inf)
         """
 
         if origin is None:
@@ -582,11 +616,12 @@ cdef class Ray(CoreRay):
             direction =self.direction.copy()
 
         return new_ray(
-            origin, direction,
+            origin, direction, self.orientation,
             self._min_wavelength, self._max_wavelength, self._bins,
             self.max_distance,
             self._extinction_prob, self._extinction_min_depth, self._max_depth,
             self.importance_sampling,
             self._important_path_weight
         )
+
 

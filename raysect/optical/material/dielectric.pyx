@@ -29,12 +29,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport cython
-from numpy import array, float64
-from numpy cimport ndarray
-from libc.math cimport sqrt, pow as cpow
+# TODO: POLARISATION
+
 from raysect.core.math.random cimport probability
-from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray, Intersection
+from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Ray, Intersection
+from libc.math cimport fabs, sqrt, pow as cpow, atan2, cos, sin
+cimport cython
+
+DEF EPSILON = 1e-12
+DEF RAD2DEG = 57.29577951308232000  # 180 / pi
+DEF DEG2RAD = 0.017453292519943295  # pi / 180
 
 
 cdef class Sellmeier(NumericallyIntegratedSF):
@@ -58,7 +62,7 @@ cdef class Sellmeier(NumericallyIntegratedSF):
                                           ConstantSF(1))
     """
 
-    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, double sample_resolution=10):
+    def __init__(self, double b1, double b2, double b3, double c1, double c2, double c3, double sample_resolution=1):
         super().__init__(sample_resolution)
 
         self.b1 = b1
@@ -117,6 +121,7 @@ cdef class Sellmeier(NumericallyIntegratedSF):
                       + (self.b3 * w2) / (w2 - self.c3))
 
 
+# todo: apply mueller matrix per bin for better spectral accuracy when not using dispersion, like conductor
 cdef class Dielectric(Material):
     """
     An ideal dielectric material.
@@ -136,11 +141,10 @@ cdef class Dielectric(Material):
                                           ConstantSF(1))
     """
 
-    def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None, bint transmission_only=False):
+    def __init__(self, SpectralFunction index, SpectralFunction transmission, SpectralFunction external_index=None):
         super().__init__()
         self.index = index
         self.transmission = transmission
-        self.transmission_only = transmission_only
 
         if external_index is None:
             self.external_index = ConstantSF(1.0)
@@ -150,181 +154,347 @@ cdef class Dielectric(Material):
         self.importance = 1.0
 
     @cython.cdivision(True)
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
-                                    Intersection intersection):
+    cpdef Spectrum evaluate_surface(
+        self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+        bint exiting, Point3D inside_point, Point3D outside_point, Normal3D surface_normal,
+        AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+        Intersection intersection):
 
-        cdef:
-            Vector3D incident, reflected, transmitted
-            double internal_index, external_index, n1, n2
-            double c1, c2s, gamma, reflectivity, transmission, temp
-            Ray reflected_ray, transmitted_ray
-            Spectrum spectrum
+        # Raysect is a reverse raytracer, so the inbound ray is the outbound ray
+        # from the perspective of the light propagation. Be aware that the
+        # transmitted, reflected and incident rays in this material refer to
+        # the raytracing direction, not the light propagation direction. The
+        # inbound ray corresponds to either the transmitted or reflected ray of
+        # an incident light beam. This material samples one of the possible
+        # light paths that would result in the propagation down the incident
+        # ray path.
+        #
+        # Rays launched by this material are aligned with the interface frame,
+        # the ray orientation vector lies in the plane of incidence.
 
-        # convert ray direction normal to local coordinates
-        incident = ray.direction.transform(world_to_primitive)
+        # convert ray direction to local coordinates
+        i_direction = ray.direction.transform(world_to_primitive)
 
         # ensure vectors are normalised for reflection calculation
-        incident = incident.normalise()
-        normal = normal.normalise()
+        i_direction = i_direction.normalise()
+        normal = surface_normal.as_vector().normalise()
 
-        # calculate cosine of angle between incident and normal
-        c1 = -normal.dot(incident)
+        # calculate signed cosine of angle between incident and normal
+        k = -normal.dot(i_direction)
+
+        # are we entering or leaving material - calculate refractive change
+        # note, we do not use the supplied exiting parameter as the normal is
+        # not guaranteed to be perpendicular to the surface for some primitives
+        # (e.g. mesh with normal interpolation)
+        # todo: modify mesh to use facet normal for source point calculation, use interpolated normal for everything
+        #  then this calculation can be removed - caveats with interpolated normals should be highlighted in mesh docs
+        exiting = k < 0.0
 
         # sample refractive indices
         internal_index = self.index.average(ray.get_min_wavelength(), ray.get_max_wavelength())
         external_index = self.external_index.average(ray.get_min_wavelength(), ray.get_max_wavelength())
 
-        # are we entering or leaving material - calculate refractive change
-        # note, we do not use the supplied exiting parameter as the normal is
-        # not guaranteed to be perpendicular to the surface for meshes
-        if c1 < 0.0:
+        # map normal, points and indices to lie on the right side of the surface relative to the incident ray
+        if exiting:
 
-            # leaving material
-            n1 = internal_index
-            n2 = external_index
+            # flip normal to point into the primitive
+            normal = normal.neg()
+
+            # ray launch points
+            r_origin = inside_point
+            t_origin = outside_point
+
+            # refractive indices
+            ni = internal_index
+            nt = external_index
 
         else:
+
+            # ray launch points
+            r_origin = outside_point
+            t_origin = inside_point
 
             # entering material
-            n1 = external_index
-            n2 = internal_index
+            ni = external_index
+            nt = internal_index
 
-        gamma = n1 / n2
+        gamma = ni / nt
 
-        # calculate square of cosine of angle between transmitted ray and normal
-        c2s = 1 - (gamma * gamma) * (1 - c1 * c1)
+        # incident and transmitted cosine magnitudes required for fresnel calculation
+        ci = fabs(k)
+        ct_sqr = 1.0 - (gamma*gamma) * (1.0 - ci*ci)
+        ct = sqrt(ct_sqr)
+
+        # establish polarisation frame for fresnel calculation
+        #
+        # The Ex component of the Stoke's vector corresponds to the
+        # perpendicular (Es) component in the original derivation.
+        #
+        # If the incident ray and normal are collinear, an arbitrary orthogonal
+        # vector is generated. In the collinear case this orientation must be
+        # replicated for the transmitted and reflected rays or the fresnel
+        # calculation will be invalid.
+        f_orientation = i_direction.cross(normal) if (1.0 - ci) > EPSILON else normal.orthogonal()
 
         # check for total internal reflection
-        if c2s <= 0:
+        if ct_sqr <= 0:
 
-            # skip calculation if transmission only enabled
-            if self.transmission_only:
-                return ray.new_spectrum()
+            # calculate direction and orientation
+            temp = 2 * ci
+            r_direction = new_vector3d(
+                i_direction.x + temp * normal.x,
+                i_direction.y + temp * normal.y,
+                i_direction.z + temp * normal.z
+            )
 
-            # total internal reflection
-            temp = 2 * c1
-            reflected = new_vector3d(incident.x + temp * normal.x,
-                                     incident.y + temp * normal.y,
-                                     incident.z + temp * normal.z)
+            # launch reflected ray
+            reflected_ray = ray.spawn_daughter(
+                r_origin.transform(primitive_to_world),
+                r_direction.transform(primitive_to_world),
+                f_orientation.transform(primitive_to_world)
+            )
+            spectrum = reflected_ray.trace(world)
 
-            # convert reflected ray direction to world space
-            reflected = reflected.transform(primitive_to_world)
-
-            # spawn reflected ray and trace
-            # note, we do not use the supplied exiting parameter as the normal is
-            # not guaranteed to be perpendicular to the surface for meshes
-            if c1 < 0.0:
-
-                # incident ray is pointing out of surface, reflection is therefore inside
-                reflected_ray = ray.spawn_daughter(inside_point.transform(primitive_to_world), reflected)
-
-            else:
-
-                # incident ray is pointing in to surface, reflection is therefore outside
-                reflected_ray = ray.spawn_daughter(outside_point.transform(primitive_to_world), reflected)
-
-            return reflected_ray.trace(world)
+            # apply mueller matrix
+            self._apply_mueller_reflection_tir(spectrum, ci, gamma)
 
         else:
 
-            # calculate transmitted ray normal
-            # note, we do not use the supplied exiting parameter as the normal is
-            # not guaranteed to be perpendicular to the surface for meshes
-            if c1 < 0.0:
-                temp = gamma * c1 + sqrt(c2s)
-            else:
-                temp = gamma * c1 - sqrt(c2s)
-
-            transmitted = new_vector3d(gamma * incident.x + temp * normal.x,
-                                       gamma * incident.y + temp * normal.y,
-                                       gamma * incident.z + temp * normal.z)
-
             # calculate fresnel reflection and transmission coefficients
-            self._fresnel(c1, -normal.dot(transmitted), n1, n2, &reflectivity, &transmission)
+            rp, rs, tp, ts, ta = self._fresnel(ci, ct, ni, nt)
+            transmission = 0.5*ta*(ts*ts + tp*tp)
 
             # select path by roulette using the strength of the coefficients as probabilities
-            if self.transmission_only or probability(transmission):
+            if probability(transmission):
 
                 # transmitted ray path selected
-
-                # we have already calculated the transmitted normal
-                transmitted = transmitted.transform(primitive_to_world)
+                temp = gamma * ci - ct
+                t_direction = new_vector3d(
+                    gamma * i_direction.x + temp * normal.x,
+                    gamma * i_direction.y + temp * normal.y,
+                    gamma * i_direction.z + temp * normal.z
+                )
 
                 # spawn ray on correct side of surface
-                # note, we do not use the supplied exiting parameter as the normal is
-                # not guaranteed to be perpendicular to the surface for meshes
-                if c1 < 0.0:
-
-                    # incident ray is pointing out of surface
-                    outside_point = outside_point.transform(primitive_to_world)
-                    transmitted_ray = ray.spawn_daughter(outside_point, transmitted)
-
-                else:
-
-                    # incident ray is pointing in to surface
-                    inside_point = inside_point.transform(primitive_to_world)
-                    transmitted_ray = ray.spawn_daughter(inside_point, transmitted)
-
+                transmitted_ray = ray.spawn_daughter(
+                    t_origin.transform(primitive_to_world),
+                    t_direction.transform(primitive_to_world),
+                    f_orientation.transform(primitive_to_world)
+                )
                 spectrum = transmitted_ray.trace(world)
+
+                # apply normalised mueller matrix
+                self._apply_mueller_transmission(spectrum, tp, ts)
 
             else:
 
                 # reflected ray path selected
+                temp = 2 * ci
+                r_direction = new_vector3d(
+                    i_direction.x + temp * normal.x,
+                    i_direction.y + temp * normal.y,
+                    i_direction.z + temp * normal.z
+                )
 
-                # calculate ray normal
-                temp = 2 * c1
-                reflected = new_vector3d(incident.x + temp * normal.x,
-                                         incident.y + temp * normal.y,
-                                         incident.z + temp * normal.z)
-                reflected = reflected.transform(primitive_to_world)
-
-                # spawn ray on correct side of surface
-                # note, we do not use the supplied exiting parameter as the normal is
-                # not guaranteed to be perpendicular to the surface for meshes
-                if c1 < 0.0:
-
-                    # incident ray is pointing out of surface
-                    inside_point = inside_point.transform(primitive_to_world)
-                    reflected_ray = ray.spawn_daughter(inside_point, reflected)
-
-                else:
-
-                    # incident ray is pointing in to surface
-                    outside_point = outside_point.transform(primitive_to_world)
-                    reflected_ray = ray.spawn_daughter(outside_point, reflected)
-
+                # spawn reflected ray
+                reflected_ray = ray.spawn_daughter(
+                    r_origin.transform(primitive_to_world),
+                    r_direction.transform(primitive_to_world),
+                    f_orientation.transform(primitive_to_world)
+                )
                 spectrum = reflected_ray.trace(world)
 
-            # note, normalisation not required as path probability equals the reflection/transmission coefficient
-            # the two values cancel exactly
-            return spectrum
+                # apply normalised mueller matrix
+                self._apply_mueller_reflection_non_tir(spectrum, rp, rs)
 
-    @cython.cdivision(True)
-    cdef void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil:
+        # ray stokes orientation
+        s_orientation = ray.orientation.transform(world_to_primitive)
+        s_orientation = s_orientation.normalise()
 
-        reflectivity[0] = 0.5 * (((n1*ci - n2*ct) / (n1*ci + n2*ct))**2 + ((n1*ct - n2*ci) / (n1*ct + n2*ci))**2)
-        transmission[0] = 1 - reflectivity[0]
+        # calculate rotation from fresnel polarisation frame to incident polarisation frame (inbound ray)
+        theta = self._polarisation_frame_angle(i_direction, s_orientation, f_orientation)
+        self._apply_stokes_rotation(spectrum, theta)
+        return spectrum
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cdef void _apply_mueller_reflection_tir(self, Spectrum spectrum, double ci, double gamma):
+
+        cdef:
+            double theta, c, s
+            double s0, s1, s2, s3
+
+        # phase shift between perpendicular and parallel reflected beam components
+        theta = -2.0 * atan2(ci * sqrt(gamma*gamma * (1.0 - ci*ci) - 1.0), gamma * (1.0 - ci*ci))
+
+        # apply retarder mueller matrix with phase shift
+        c = cos(theta)
+        s = sin(theta)
+        for bin in range(spectrum.bins):
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0
+            spectrum.samples_mv[bin, 1] = s1
+            spectrum.samples_mv[bin, 2] = c * s2 - s * s3
+            spectrum.samples_mv[bin, 3] = s * s2 + c * s3
+
+    @cython.cdivision(True)
+    cdef (double, double, double, double, double) _fresnel(self, double ci, double ct, double ni, double nt) nogil:
+
+        cdef double k0, k1, k2, k3, a, b, rp, rs, tp, ts, ta
+
+        # calculation expects magnitude of cosines
+
+        # common coefficients
+        k0 = ni * ct
+        k1 = nt * ci
+        k2 = ni * ci
+        k3 = nt * ct
+
+        a = 1.0 / (k1 + k0)
+        b = 1.0 / (k2 + k3)
+
+        # reflection coefficients
+        rp = a * (k0 - k1)
+        rs = b * (k2 - k3)
+
+        # transmission coefficients
+        tp = 2.0 * a * k2
+        ts = 2.0 * b * k2
+
+        # projected area for transmitted beam
+        ta = k3 / k2
+
+        return rp, rs, tp, ts, ta
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_mueller_reflection_non_tir(self, Spectrum spectrum, double p, double s):
+        """
+        Applies a normalised mueller matrix for reflection.
+        
+        A reflected or transmitted ray is selected by roulette with the
+        probability determined by the transmission strength. To obtain an
+        unbiased sample, the spectrum must be normalised by the probability of
+        the selected path. This normalisation results in a simpler calculation
+        of the mueller matrices due to term cancellation.
+        """
+
+        cdef:
+            int bin
+            double k0, k1, k2
+            double s0, s1, s2, s3
+
+        k0 = 1.0 / (s*s + p*p)
+        k1 = k0 * (s*s - p*p)
+        k2 = -2 * k0 * s * p
+
+        for bin in range(spectrum.bins):
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0 + k1 * s1
+            spectrum.samples_mv[bin, 1] = k1 * s0 + s1
+            spectrum.samples_mv[bin, 2] = k2 * s2
+            spectrum.samples_mv[bin, 3] = k2 * s3
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_mueller_transmission(self, Spectrum spectrum, double p, double s):
+        """
+        Applies a normalised mueller matrix for reflection.
+        
+        A reflected or transmitted ray is selected by roulette with the
+        probability determined by the transmission strength. To obtain an
+        unbiased sample, the spectrum must be normalised by the probability of
+        the selected path. This normalisation results in a simpler calculation
+        of the mueller matrices due to term cancellation.
+        """
+
+        cdef:
+            int bin
+            double k0, k1, k2
+            double s0, s1, s2, s3
+
+        k0 = 1.0 / (s*s + p*p)
+        k1 = k0 * (s*s - p*p)
+        k2 = 2 * k0 * s * p
+
+        for bin in range(spectrum.bins):
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0 + k1 * s1
+            spectrum.samples_mv[bin, 1] = k1 * s0 + s1
+            spectrum.samples_mv[bin, 2] = k2 * s2
+            spectrum.samples_mv[bin, 3] = k2 * s3
+
+    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation):
+
+        # light propagation direction is opposite to ray direction
+        propagation = direction.neg()
+
+        # calculate rotation about light propagation direction
+        angle = ray_orientation.angle(interface_orientation) * DEG2RAD
+        if propagation.dot(ray_orientation.cross(interface_orientation)) < 0:
+            angle = -angle
+        return angle
+
+    @cython.cdivision(True)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta):
+
+        cdef:
+            double c, s
+            double s0, s1, s2, s3
+
+        c = cos(2*theta)
+        s = sin(2*theta)
+        for bin in range(spectrum.bins):
+
+            s0 = spectrum.samples_mv[bin, 0]
+            s1 = spectrum.samples_mv[bin, 1]
+            s2 = spectrum.samples_mv[bin, 2]
+            s3 = spectrum.samples_mv[bin, 3]
+
+            spectrum.samples_mv[bin, 0] = s0
+            spectrum.samples_mv[bin, 1] = c * s1 - s * s2
+            spectrum.samples_mv[bin, 2] = s * s1 + c * s2
+            spectrum.samples_mv[bin, 3] = s3
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef Spectrum evaluate_volume(
+        self, Spectrum spectrum, World world, Ray ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             double length
             double[::1] transmission
-            int index
+            int bin, component
 
         length = start_point.vector_to(end_point).get_length()
         transmission = self.transmission.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
-        for index in range(spectrum.bins):
-            spectrum.samples_mv[index] *= cpow(transmission[index], length)
+        for bin in range(spectrum.bins):
+            for component in range(4):
+                spectrum.samples_mv[bin, component] *= cpow(transmission[bin], length)
 
         return spectrum
-
-

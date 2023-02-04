@@ -31,7 +31,7 @@
 
 from raysect.optical.colour import d65_white
 
-from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, AffineMatrix3D, Normal3D, Intersection
+from raysect.optical cimport World, Primitive, Point3D, AffineMatrix3D, Normal3D, Ray, Spectrum
 from libc.math cimport round, fabs
 cimport cython
 
@@ -102,7 +102,7 @@ cdef class Checkerboard(NullVolume):
             Spectrum spectrum
             double[::1] emission
             bint v
-            int index
+            int bin, component
             double scale
 
         v = False
@@ -122,8 +122,8 @@ cdef class Checkerboard(NullVolume):
             emission = self.emission_spectrum2.sample_mv(spectrum.min_wavelength, spectrum.max_wavelength, spectrum.bins)
             scale = self.scale2
 
-        for index in range(spectrum.bins):
-            spectrum.samples_mv[index] = emission[index] * scale
+        for bin in range(spectrum.bins):
+            spectrum.samples_mv[bin, 0] = emission[bin] * scale
 
         return spectrum
 

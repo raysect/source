@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: hacked for polarisation - incomplete
+
 from libc.math cimport cos, M_PI as PI
 
 from raysect.core cimport Vector3D

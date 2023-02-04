@@ -29,9 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: hacked for polarisation - incomplete
+
 from raysect.optical.observer import SpectralPowerPipeline0D
 
-from raysect.optical cimport Ray, new_point3d, new_vector3d
+from raysect.optical cimport new_point3d, new_vector3d
+from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer0D
 
 

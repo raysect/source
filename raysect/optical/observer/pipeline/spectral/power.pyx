@@ -27,6 +27,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# TODO: hacked for polarisation - incomplete
+
 cimport cython
 import numpy as np
 from matplotlib import pyplot as plt
@@ -480,7 +482,7 @@ cdef class SpectralPowerPixelProcessor(PixelProcessor):
 
         cdef int index
         for index in range(self.bins.length):
-            self.bins.add_sample(index, spectrum.samples_mv[index] * sensitivity)
+            self.bins.add_sample(index, spectrum.samples_mv[index, 0] * sensitivity)
 
     cpdef tuple pack_results(self):
         return self.bins.mean, self.bins.variance

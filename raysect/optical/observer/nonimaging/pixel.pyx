@@ -29,9 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI as PI
+# TODO: hacked for polarisation - incomplete
+
+from libc.math cimport cos, M_PI as PI
 
 from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler
+from raysect.optical cimport new_point3d, new_vector3d
 from raysect.optical cimport Ray
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D

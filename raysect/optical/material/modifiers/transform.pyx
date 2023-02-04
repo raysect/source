@@ -77,21 +77,25 @@ cdef class VolumeTransform(Material):
         self._transform = m
         self._transform_inv = m.inverse()
 
-    cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
-                                    bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
-                                    Intersection intersection):
+    cpdef Spectrum evaluate_surface(
+            self, World world, Ray ray, Primitive primitive, Point3D hit_point,
+            bint exiting, Point3D inside_point, Point3D outside_point,
+            Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+            intersection):
 
-        return self.material.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point,
-                                              normal, world_to_primitive, primitive_to_world, intersection)
+        return self.material.evaluate_surface(
+            world, ray, primitive, hit_point, exiting, inside_point, outside_point,
+            normal, world_to_primitive, primitive_to_world, intersection
+        )
 
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef Spectrum evaluate_volume(
+            self, Spectrum spectrum, World world, Ray ray, Primitive primitive, Point3D start_point,
+            Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef AffineMatrix3D m = primitive_to_world.mul(self._transform_inv.mul(world_to_primitive))
         start_point = start_point.transform(m)
         end_point = end_point.transform(m)
-        return self.material.evaluate_volume(spectrum, world, ray, primitive,
-                                             start_point, end_point, world_to_primitive, primitive_to_world)
+        return self.material.evaluate_volume(
+            spectrum, world, ray, primitive, start_point, end_point,
+            world_to_primitive, primitive_to_world
+        )

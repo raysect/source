@@ -29,9 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# todo: hacked for polarisation
+
 from libc.stdint cimport *
-from raysect.optical cimport Ray
-from raysect.optical cimport Observer
+from raysect.optical cimport Observer, Ray
 from raysect.optical.observer.base.sampler cimport FrameSampler1D, FrameSampler2D
 
 

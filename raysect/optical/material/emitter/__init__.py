@@ -27,9 +27,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# todo: polarisation: reenable imports when implemented
+
 from .uniform import UniformSurfaceEmitter, UniformVolumeEmitter
 from .unity import UnitySurfaceEmitter, UnityVolumeEmitter
 from .homogeneous import HomogeneousVolumeEmitter
-from .inhomogeneous import InhomogeneousVolumeEmitter, VolumeIntegrator, NumericalIntegrator
+# from .inhomogeneous import InhomogeneousVolumeEmitter, VolumeIntegrator, NumericalIntegrator
 from .checkerboard import Checkerboard
-from .anisotropic import AnisotropicSurfaceEmitter
+# from .anisotropic import AnisotropicSurfaceEmitter

@@ -29,8 +29,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+# todo: add getters and setters for arrays of stokes components
+# todo: add maths utilities to simplify update of each stokes component e.g. mul_i_array, mul_q_scalar, mad_q_scalar etc...
+#  or use an enumeration for the first array index e.g. mul_array(Q, ....) where I=0, Q=1, etc... or better yest just use s0-s3 notation and an index
+# todo: add utility functions to check the stokes vector validity (i >= sqrt(q**2...))
+
 cimport cython
-from raysect.core.math.cython cimport integrate, interpolate
+from raysect.optical.stokes cimport StokesVector, new_stokesvector
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 
 # Plank's constant * speed of light in a vacuum
@@ -39,10 +44,15 @@ DEF CONSTANT_HC = 1.9864456832693028e-25
 # required by numpy c-api
 import_array()
 
-
-cdef class Spectrum(SpectralFunction):
+# todo: only the most rudimentary functions have been implemented for now, these will be fleshed out before the v1 release
+# todo: for v1 rewrite using array.array or malloc/free
+@cython.freelist(256)
+cdef class Spectrum:
+    # todo: update docstring
     """
-    A class for working with spectra.
+    A class for working with polarised spectra.
+
+    Each column of the spectrum defines a Stokes vector.
 
     Describes the distribution of light at each wavelength in units of radiance (W/m^2/str/nm).
     Spectral samples are regularly spaced over the wavelength range and lie in the centre of
@@ -54,7 +64,7 @@ cdef class Spectrum(SpectralFunction):
 
     .. code-block:: pycon
 
-        >>> from raysect.optical import Spectrum
+        >>> from raysect.optical.polarised import Spectrum
         >>>
         >>> spectrum = Spectrum(400, 720, 250)
     """
@@ -116,24 +126,33 @@ cdef class Spectrum(SpectralFunction):
         if self.samples is None:
             raise ValueError("Cannot generate sample as the sample array is None.")
 
+        if self.samples.ndim != 2:
+            raise ValueError("The sample array must have the dimensions (n, 4), where n is the number of bins.")
+
         if self.samples.shape[0] != self.bins:
-            raise ValueError("Sample array length is inconsistent with the number of bins.")
+            raise ValueError("The sample array length is inconsistent with the number of bins.")
+
+        if self.samples.shape[1] != 4:
+            raise ValueError("The sample array must be 4 elements wide.")
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
     cdef void _construct(self, double min_wavelength, double max_wavelength, int bins):
 
-        cdef npy_intp size, index
+        cdef:
+            npy_intp size[2]
+            npy_intp index
 
         self.min_wavelength = min_wavelength
         self.max_wavelength = max_wavelength
         self.bins = bins
         self.delta_wavelength = (max_wavelength - min_wavelength) / bins
 
-        # create spectral sample bins, initialise with zero
-        size = bins
-        self.samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
+        # create sample bins for Stoke's vectors, initialise with zero
+        size[0] = bins
+        size[1] = 4
+        self.samples = PyArray_SimpleNew(2, size, NPY_FLOAT64)
         PyArray_FILLWBYTE(self.samples, 0)
 
         # obtain memory view
@@ -198,192 +217,24 @@ cdef class Spectrum(SpectralFunction):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    @cython.cdivision(True)
-    cpdef double average(self, double min_wavelength, double max_wavelength):
-        """
-        Finds the average number of spectral samples over the specified wavelength range.
-
-        :param float min_wavelength: The minimum wavelength in nanometers
-        :param float max_wavelength: The maximum wavelength in nanometers
-        :return: Average radiance in W/m^2/str/nm
-        :rtype: float
-
-        .. code-block:: pycon
-
-            >>> spectrum = ray.trace(world)
-            >>> spectrum.average(400, 700)
-            1.095030870970234
-        """
-
-        self._wavelength_check(min_wavelength, max_wavelength)
-        self._attribute_check()
-
-        # require wavelength information for this calculation
-        self._populate_wavelengths()
-
-        # average value obtained by integrating linearly interpolated data and normalising
-        return integrate(self._wavelengths, self.samples, min_wavelength, max_wavelength) / (max_wavelength - min_wavelength)
-
-    cpdef double integrate(self, double min_wavelength, double max_wavelength):
-        """
-        Calculates the integrated radiance over the specified spectral range.
-
-        :param float min_wavelength: The minimum wavelength in nanometers
-        :param float max_wavelength: The maximum wavelength in nanometers
-        :return: Integrated radiance in W/m^2/str
-        :rtype: float
-
-        .. code-block:: pycon
-
-            >>> spectrum = ray.trace(world)
-            >>> spectrum.integrate(400, 700)
-            328.50926129107023
-        """
-
-        self._wavelength_check(min_wavelength, max_wavelength)
-        self._attribute_check()
-
-        # this calculation requires the wavelength array
-        self._populate_wavelengths()
-
-        return integrate(self._wavelengths, self.samples, min_wavelength, max_wavelength)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int bins):
-        """
-        Re-sample this spectrum over a new spectral range.
-
-        :param float min_wavelength: The minimum wavelength in nanometers
-        :param float max_wavelength: The maximum wavelength in nanometers
-        :param int bins: The number of spectral bins.
-        :rtype: ndarray
-
-        .. code-block:: pycon
-
-            >>> spectrum
-            <raysect.optical.spectrum.Spectrum at 0x7f56c22bd8b8>
-            >>> spectrum.min_wavelength, spectrum.max_wavelength
-            (375.0, 785.0)
-            >>> sub_spectrum = spectrum.sample(450, 550, 100)
-        """
-
-        cdef:
-            ndarray samples
-            double[::1] samples_mv
-            npy_intp size, index
-            double lower_wavelength, upper_wavelength, centre_wavelength, delta_wavelength, reciprocal
-
-        self._wavelength_check(min_wavelength, max_wavelength)
-        self._attribute_check()
-
-        # create new sample object and obtain a memoryview for fast access
-        size = bins
-        samples = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-        PyArray_FILLWBYTE(samples, 0)
-        samples_mv = samples
-
-        # require wavelength information for this calculation
-        self._populate_wavelengths()
-
-        delta_wavelength = (max_wavelength - min_wavelength) / bins
-
-        # re-sample by averaging data across each bin
-        lower_wavelength = min_wavelength
-        reciprocal = 1.0 / delta_wavelength
-        for index in range(bins):
-
-            # average value obtained by integrating linearly interpolated data and normalising
-            upper_wavelength = min_wavelength + (index + 1) * delta_wavelength
-            samples_mv[index] = reciprocal * integrate(self._wavelengths, self.samples, lower_wavelength, upper_wavelength)
-            lower_wavelength = upper_wavelength
-
-        return samples
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    cpdef bint is_zero(self):
-        """
-        Can be used to determine if all the samples are zero.
-
-        True if the spectrum is zero, False otherwise.
-
-        :rtype: bool
-
-        .. code-block:: pycon
-
-            >>> spectrum = ray.trace(world)
-            >>> spectrum.is_zero()
-            False
-        """
-
-        cdef int index
-        self._attribute_check()
-        for index in range(self.bins):
-            if self.samples_mv[index] != 0.0:
-                return False
-        return True
-
-    cpdef double total(self):
-        """
-        Calculates the total radiance integrated over the whole spectral range.
-
-        Returns radiance in W/m^2/str
-
-        :rtype: float
-
-        .. code-block:: pycon
-
-            >>> spectrum = ray.trace(world)
-            >>> spectrum.total()
-            416.6978223103715
-        """
-
-        self._attribute_check()
-
-        # this calculation requires the wavelength array
-        self._populate_wavelengths()
-        return integrate(self._wavelengths, self.samples, self.min_wavelength, self.max_wavelength)
-
-    @cython.cdivision(True)
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef ndarray to_photons(self):
+    cpdef StokesVector as_stokes(self, npy_intp index):
         """
-        Converts the spectrum sample array from radiance W/m^2/str/nm to Photons/s/m^2/str/nm
-        and returns the data in a numpy array.
+        Returns a StokesVector for the specified bin.
 
-        :rtype: ndarray
-
-        .. code-block:: pycon
-
-            >>> spectrum = ray.trace(world)
-            >>> spectrum.to_photons()
-            array([2.30744985e+17, 3.12842916e+17, ...])
+        :param index: The bin index 
+        :return: A StokesVector object.
         """
 
-        cdef:
-            npy_intp size
-            int index
-            ndarray photons
-            double[::1] photons_view
+        if index < 0 or index > self.bins:
+            raise ValueError('The bin index is out of range.')
 
-        self._attribute_check()
-
-        # this calculation requires the wavelength array
-        self._populate_wavelengths()
-
-        # create array to hold photon samples
-        size = self.bins
-        photons = PyArray_SimpleNew(1, &size, NPY_FLOAT64)
-        photons_view = photons
-
-        # convert each sample to photons
-        for index in range(self.bins):
-            photons_view[index] = self.samples_mv[index] / photon_energy(self._wavelengths[index])
-        return photons
+        return new_stokesvector(
+            self.samples_mv[index, 0],
+            self.samples_mv[index, 1],
+            self.samples_mv[index, 2],
+            self.samples_mv[index, 3]
+        )
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -417,40 +268,23 @@ cdef class Spectrum(SpectralFunction):
 
         cdef:
             Spectrum spectrum
-            npy_intp index
+            npy_intp i, j
 
         spectrum = self.new_spectrum()
-        for index in range(self.samples_mv.shape[0]):
-            spectrum.samples_mv[index] = self.samples_mv[index]
+        for i in range(self.samples_mv.shape[0]):
+            for j in range(self.samples_mv.shape[1]):
+                spectrum.samples_mv[i, j] = self.samples_mv[i, j]
         return spectrum
-
-    # low level scalar maths functions
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef void add_scalar(self, double value) nogil:
-
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] += value
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef void sub_scalar(self, double value) nogil:
-
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] -= value
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cdef void mul_scalar(self, double value) nogil:
 
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] *= value
+        cdef npy_intp i, j
+        for i in range(self.samples_mv.shape[0]):
+            for j in range(self.samples_mv.shape[1]):
+                self.samples_mv[i, j] *= value
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -460,108 +294,28 @@ cdef class Spectrum(SpectralFunction):
 
         cdef:
             double reciprocal
-            npy_intp index
+            npy_intp i, j
 
         reciprocal = 1.0 / value
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] *= reciprocal
-
-    # low level array maths functions
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef void add_array(self, double[::1] array) nogil:
-
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] += array[index]
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef void sub_array(self, double[::1] array) nogil:
-
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] -= array[index]
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.initializedcheck(False)
-    cdef void mul_array(self, double[::1] array) nogil:
-
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] *= array[index]
+        for i in range(self.samples_mv.shape[0]):
+            for j in range(self.samples_mv.shape[1]):
+                self.samples_mv[i, j] *= reciprocal
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cdef void div_array(self, double[::1] array) nogil:
+    cdef void mad_scalar(self, double scalar, double[:,::1] array) nogil:
 
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] /= array[index]
-
-    # low level spectrum maths functions
-    cdef void add_spectrum(self, Spectrum spectrum) nogil:
-        self.add_array(spectrum.samples_mv)
-
-    cdef void sub_spectrum(self, Spectrum spectrum) nogil:
-        self.sub_array(spectrum.samples_mv)
-
-    cdef void mul_spectrum(self, Spectrum spectrum) nogil:
-        self.mul_array(spectrum.samples_mv)
-
-    cdef void div_spectrum(self, Spectrum spectrum) nogil:
-        self.div_array(spectrum.samples_mv)
-
-    # multiply and add
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    @cython.initializedcheck(False)
-    cdef void mad_array(self, double[::1] a, double[::1] b) nogil:
-
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] += a[index] * b[index]    # low level array maths functions
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
-    @cython.initializedcheck(False)
-    cdef void mad_scalar(self, double scalar, double[::1] array) nogil:
-
-        cdef npy_intp index
-        for index in range(self.samples_mv.shape[0]):
-            self.samples_mv[index] += scalar * array[index]
+        cdef npy_intp i, j
+        for i in range(self.samples_mv.shape[0]):
+            for j in range(self.samples_mv.shape[1]):
+              self.samples_mv[i, j] += scalar * array[i, j]
 
 
 cdef Spectrum new_spectrum(double min_wavelength, double max_wavelength, int bins):
 
     cdef Spectrum v
-
     v = Spectrum.__new__(Spectrum)
     v._construct(min_wavelength, max_wavelength, bins)
-
     return v
-
-
-@cython.cdivision(True)
-cpdef double photon_energy(double wavelength) except -1:
-    """
-    Returns the energy of a photon with the specified wavelength.
-
-    :param float wavelength: Photon wavelength in nanometers.
-    :return: Photon energy in Joules.
-    :rtype: float
-    """
-
-    if wavelength <= 0.0:
-        raise ValueError("Wavelength must be greater than zero.")
-
-    # h * c / lambda
-    return CONSTANT_HC / (wavelength * 1e-9)
-

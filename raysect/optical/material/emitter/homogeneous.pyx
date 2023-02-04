@@ -50,17 +50,16 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world,
-                                   Ray ray, Primitive primitive,
-                                   Point3D start_point, Point3D end_point,
-                                   AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef Spectrum evaluate_volume(
+        self, Spectrum spectrum, World world, Ray ray, Primitive primitive, Point3D start_point,
+        Point3D end_point, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
 
         cdef:
             Point3D start, end
             Vector3D direction
             double length
             Spectrum emission
-            int index
+            int i, j
 
         # convert start and end points to local space
         start = start_point.transform(world_to_primitive)
@@ -83,18 +82,18 @@ cdef class HomogeneousVolumeEmitter(NullSurface):
         emission = self.emission_function(direction, emission, world, ray, primitive, world_to_primitive, primitive_to_world)
 
         # sanity check as bounds checking is disabled
-        if emission.samples.ndim != 1 or spectrum.samples.ndim != 1 or emission.samples.shape[0] != spectrum.samples.shape[0]:
+        if emission.samples.ndim != 2 or emission.samples.shape[0] != spectrum.samples.shape[0] or emission.samples.shape[1] != 4:
             raise ValueError("Spectrum returned by emission function has the wrong number of bins.")
 
         # integrate emission density along ray path
-        for index in range(spectrum.bins):
-            spectrum.samples_mv[index] += emission.samples_mv[index] * length
-
+        for i in range(spectrum.bins):
+            for j in range(4):
+                spectrum.samples_mv[i, j] += emission.samples_mv[i, j] * length
         return spectrum
 
-    cpdef Spectrum emission_function(self, Vector3D direction, Spectrum spectrum,
-                                     World world, Ray ray, Primitive primitive,
-                                     AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+    cpdef Spectrum emission_function(
+            self, Vector3D direction, Spectrum spectrum, World world, Ray ray, Primitive primitive,
+            AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
         """
         The emission function for the material.
 

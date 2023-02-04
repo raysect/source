@@ -31,6 +31,9 @@
 
 from raysect.optical.material.material cimport *
 from raysect.optical.material.emitter cimport *
+from raysect.optical.material.attenuator cimport *
+from raysect.optical.material.polariser cimport *
+from raysect.optical.material.retarder cimport *
 from raysect.optical.material.absorber cimport *
 from raysect.optical.material.dielectric cimport *
 from raysect.optical.material.conductor cimport *

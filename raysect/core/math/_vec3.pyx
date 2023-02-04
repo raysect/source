@@ -125,6 +125,7 @@ cdef class _Vec3:
 
         return self.x * v.x + self.y * v.y + self.z * v.z
 
+    @cython.cdivision
     cpdef double angle(self, _Vec3 v):
         """
         Calculates the angle between this vector and the supplied vector.
@@ -137,7 +138,22 @@ cdef class _Vec3:
             54.735610317245346
         """
 
-        return acos(min(1, self.dot(v) / (self.get_length() * v.get_length()))) * 180 / M_PI
+        cdef double ls, lv, c
+
+        # check vector lengths
+        ls = self.get_length()
+        lv = v.get_length()
+        if ls == 0 or lv == 0:
+            raise ValueError('The angle cannot be calculated for a zero length vector as the direction of a zero length vector is undefined.')
+
+        # calculate cosine
+        c = self.dot(v) / (ls * lv)
+
+        # clamp to [-1, 1] as numerics can occasionally just exceed range causing acos to return NaN
+        c = max(-1, min(1, c))
+
+        # angle in degrees
+        return acos(c) * 180 / M_PI
 
     cdef double get_length(self) nogil:
         """

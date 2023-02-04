@@ -56,13 +56,14 @@ from raysect.core.math import *
 from raysect.core.boundingbox import *
 
 # optical modules
-from .ray import *
-from .colour import *
-from .spectrum import *
 from .spectralfunction import *
 from .scenegraph import *
 from .material import *
-
+from .colour import *
+from .ray import *
+from .spectrum import *
+from .stokes import StokesVector
+from .mueller import MuellerMatrix
 
 
 

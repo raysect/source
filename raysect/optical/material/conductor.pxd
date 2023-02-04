@@ -31,7 +31,8 @@
 
 from raysect.optical cimport SpectralFunction
 from raysect.optical.material cimport Material, ContinuousBSDF
-from raysect.optical cimport Vector3D, Spectrum
+from raysect.optical cimport Vector3D
+from raysect.optical cimport Spectrum
 
 
 cdef class Conductor(Material):
@@ -40,7 +41,9 @@ cdef class Conductor(Material):
         public SpectralFunction index
         public SpectralFunction extinction
 
-    cdef double _fresnel(self, double ci, double n, double k) nogil
+    cdef void _apply_fresnel(self, Spectrum spectrum, double ci, double[::1] ns, double[::1] ks)
+    cdef double _polarisation_frame_angle(self, Vector3D direction, Vector3D ray_orientation, Vector3D interface_orientation)
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta)
 
 
 cdef class RoughConductor(ContinuousBSDF):
@@ -51,11 +54,8 @@ cdef class RoughConductor(ContinuousBSDF):
         double _roughness
 
     cdef double _d(self, Vector3D s_half)
-
     cdef double _g(self, Vector3D s_incoming, Vector3D s_outgoing)
-
     cdef double _g1(self, Vector3D v)
-
-    cdef Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal)
-
-    cdef double _fresnel_conductor(self, double ci, double n, double k) nogil
+    cdef void _apply_fresnel(self, Spectrum spectrum, double ci, double[::1] ns, double[::1] ks)
+    cdef double _polarisation_frame_angle(self, Vector3D propagation, Vector3D ray_orientation, Vector3D interface_orientation)
+    cdef void _apply_stokes_rotation(self, Spectrum spectrum, double theta)

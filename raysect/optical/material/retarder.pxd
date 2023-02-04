@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2020, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,15 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .material import *
-from .emitter import *
-from .attenuator import *
-from .polariser import *
-from .retarder import *
-from .absorber import *
-from .lambert import *
-from .dielectric import *
-from .conductor import *
-from .modifiers import *
+from raysect.optical.material cimport NullSurface
+from raysect.optical cimport Vector3D, Spectrum
 
 
+cdef class Retarder(NullSurface):
+
+    cdef:
+        Vector3D axis
+        double _phase_shift
+
+    cdef void _apply_rotated_retarder(self, Spectrum spectrum, int bin, double angle, double phase) nogil
