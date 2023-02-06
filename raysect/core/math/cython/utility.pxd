@@ -70,6 +70,13 @@ cdef inline double lerp(double x0, double x1, double y0, double y1, double x) no
 
 cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil
 
+cdef bint is_zero(double v) nogil
+
+cdef int solve_cubic(double a, double b, double c, double d, double *t0, double *t1, double *t2) nogil
+
+cdef int solve_quartic(double a, double b, double c, double d, double e,
+                       double *t0, double *t1, double *t2, double *t3) nogil
+
 cdef bint winding2d(double[:,::1] vertices) nogil
 
 cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty)

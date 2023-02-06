@@ -29,10 +29,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport sqrt
+from libc.math cimport sqrt, cbrt, acos, cos, M_PI
 cimport cython
 
 #TODO: Write unit tests!
+
+DEF EQN_EPS = 1.0e-9
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
@@ -420,6 +422,182 @@ cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) 
     t1[0] = c / q
     return True
 
+cdef inline bint is_zero(double v) nogil:
+    return v < EQN_EPS and v > -EQN_EPS
+
+@cython.cdivision(True)
+cdef int solve_cubic(double a, double b, double c, double d, double *t0, double *t1, double *t2) nogil:
+    """
+    Calculates the real roots of a cubic equation.
+
+    The a, b, c and d arguments are the four constants of the cubic equation:
+
+        f = a.x^3 + b.x^2 + c.x + d
+
+    The cubic equation has 1, 2 or 3 real roots, and this function will return the number of real roots.
+
+    The values of the real roots, are returned by setting the values of the
+    memory locations pointed to by t0, t1, and t2. In the case of two real roots,
+    both t0/t1 or t1/t2 or t2/t0 will have the same value. If there is only one real root, the values
+    of t1 and t2 will be undefined. 
+
+    :param double a: Cubic constant. 
+    :param double b: Cubic constant.
+    :param double c: Cubic constant.
+    :param double d: Cubic constant.
+    :param double t0: 1st root of the cubic.
+    :param double t1: 2nd root of the cubic.
+    :param double t2: 3rd root of the cubic.
+    :return: Number of real roots.
+    :rtype: int
+    """
+    cdef:
+        int num
+        double p, q, sq_b, cb_p, D, cbrt_q, phi, u, sqrt_D
+    
+    # normal form: x^3 + bx^2 + cx + d = 0
+    b /= a
+    c /= a
+    d /= a
+
+    # substitute x = y - b/3 to eliminate quadric term: y^3 + 3py + 2q = 0
+    sq_b = b * b
+    p = 1.0 / 3.0 * (c - sq_b / 3.0)
+    q = 0.5 * (2.0 * b * sq_b / 27.0 - b * c / 3.0 + d)
+
+    # calculate discriminant
+    cb_p = p * p * p
+    D = cb_p + q * q
+
+    if is_zero(D):
+
+        # one triple solution
+        if is_zero(q):
+            t0[0] = 0
+            t1[0] = 0
+            t2[0] = 0
+            num = 1
+
+        # one single and one double solution
+        else:
+            cbrt_q = cbrt(q)
+            t0[0] = cbrt_q
+            t1[0] = cbrt_q
+            t2[0] = -2 * cbrt_q
+            num = 2
+
+    # Trigonometric solution for three real roots
+    elif D < 0:
+        phi = 1.0 / 3.0 * acos(-q / sqrt(-cb_p))
+        u = 2.0 * sqrt(-p)
+
+        t0[0] = u * cos(phi)
+        t1[0] = -u * cos(phi + M_PI / 3.0)
+        t2[0] = -u * cos(phi - M_PI / 3.0)
+
+        num = 3
+
+    # one real solution
+    else:
+        sqrt_D = sqrt(D)
+        t0[0] = cbrt(sqrt_D - q) - cbrt(sqrt_D + q)
+        num = 1
+
+    # resubstitute
+    t0[0] -= b / 3.0
+    t1[0] -= b / 3.0
+    t2[0] -= b / 3.0
+
+    return num
+
+
+@cython.cdivision(True)
+cdef int solve_quartic(double a, double b, double c, double d, double e,
+                       double *t0, double *t1, double *t2, double *t3) nogil:
+    """
+    Calculates the real roots of a quartic equation.
+
+    The a, b, c, d and e arguments are the five constants of the quartic equation:
+
+        f = a.x^4 + b.x^3 + c.x^2 + d.x + e
+
+    The quartic equation has 0, 1, 2, 3 or 4 real roots, and this function will return the number of real roots.
+
+    The values of the real roots, are returned by setting the values of the
+    memory locations pointed to by t0, t1, t2, and t3. If there is one or two real root,
+    the values of t2 and t3 will be undefined. If there is no real root,
+    all values will be undefined.
+
+    :param double a: Qurtic constant. 
+    :param double b: Qurtic constant.
+    :param double c: Qurtic constant.
+    :param double d: Qurtic constant.
+    :param double e: Qurtic constant.
+    :param double t0: 1st root of the quartic.
+    :param double t1: 2nd root of the quartic.
+    :param double t2: 3rd root of the quartic.
+    :param double t3: 4th root of the quartic.
+    :return: Number of real roots.
+    :rtype: int
+    """
+    cdef:
+        double p, q, r, sq_b, v, z
+        int cubic_num, num = 0
+        double s0, s1, s2
+
+    # normal form: x^4 + bx^3 + cx^2 + dx + e = 0
+    b /= a
+    c /= a
+    d /= a
+    e /= a
+
+    # substitute x = y - b / 4 to eliminate quadric term: y^4 + py^2 + qy + r = 0
+    sq_b = b * b
+    p = c - 3 * sq_b / 8.0
+    q = sq_b * b / 8.0 - 0.5 * b * c + d
+    r = -3.0 * sq_b * sq_b / 256.0 + sq_b * c / 16.0 - b * d / 4.0 + e
+
+    if is_zero(r):
+        # no absolute term: y(y^3 + py + q) = 0
+        t0[0] = 0
+        cubic_num = solve_cubic(1, 0, p, q, t1, t2, t3)
+        num = 1 + cubic_num
+
+    else:
+        # solve resolvent cubic
+        cubic_num = solve_cubic(8.0, -4.0 * p, -8.0 * r, 4.0 * p * r - q * q, &s0, &s1, &s2)
+
+        # take the minimum one real solution
+        if cubic_num == 1:
+            z = s0
+        else:
+            z = max(s0, s1, s2)
+
+        # build two quadratic equation
+        if 2.0 * z < p:
+            return 0
+        else:
+            v = sqrt(2.0 * z - p)
+
+        # solve two quadratic equation
+        if solve_quadratic(1.0, v, z - 0.5 * q / v, t0, t1):
+            num += 2
+            if solve_quadratic(1.0, -v, z + 0.5 * q / v, t2, t3):
+                num += 2
+        else:
+            if solve_quadratic(1.0, -v, z + 0.5 * q / v, t0, t1):
+                num += 2
+            else:
+                return 0
+
+    # resubstitute
+    t0[0] -= b / 4.0
+    t1[0] -= b / 4.0
+    t2[0] -= b / 4.0
+    t3[0] -= b / 4.0
+
+    return num
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -540,3 +718,24 @@ def _test_winding2d(p):
 def _point_inside_polygon(vertices, ptx, pty):
     """Expose cython function for testing."""
     return point_inside_polygon(vertices, ptx, pty)
+
+def _solve_cubic(a, b, c, d):
+    """Expose cython function for testing."""
+    t0 = 0.0
+    t1 = 0.0
+    t2 = 0.0
+    num = 0.0
+    num = solve_cubic(a, b, c, d, &t0, &t1, &t2)
+
+    return (t0, t1, t2, num)
+
+def _solve_quartic(a, b, c, d, e):
+    """Expose cython function for testing."""
+    t0 = 0.0
+    t1 = 0.0
+    t2 = 0.0
+    t3 = 0.0
+    num = 0.0
+    num = solve_quartic(a, b, c, d, e, &t0, &t1, &t2, &t3)
+
+    return (t0, t1, t2, t3, num)
