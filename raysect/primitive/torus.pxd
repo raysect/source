@@ -33,7 +33,7 @@ from raysect.core cimport Primitive, Point3D, Vector3D, Ray, Intersection
 
 cdef class Torus(Primitive):
 
-    cdef double _mjor_radius, _minor_radius
+    cdef double _major_radius, _minor_radius
     cdef bint _further_intersection
     cdef double _next_t
     cdef Point3D _cached_origin
