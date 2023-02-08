@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport sqrt, cbrt, acos, cos, M_PI
+from libc.math cimport sqrt, fabs, cbrt, acos, cos, M_PI
 cimport cython
 
 #TODO: Write unit tests!
@@ -424,87 +424,75 @@ cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) 
 @cython.cdivision(True)
 cdef int solve_cubic(double a, double b, double c, double d, double *t0, double *t1, double *t2) nogil:
     """
-    Calculates the real roots of a cubic equation.
+    Calculates the roots of a cubic equation.
 
     The a, b, c and d arguments are the four constants of the cubic equation:
 
         f = a.x^3 + b.x^2 + c.x + d
 
     The cubic equation has 1, 2 or 3 real roots, and this function will return the number of real roots.
+    The values of the roots, are returned by setting the values of the memory locations pointed to by t0, t1, and t2.
+    
+    In the case of three real roots, the roots themselves back in t0, t1 and t2.
+    In the case of two real roots, a pair in t0, t1, and t2 will have the same value, and the other is a different one.
+    In the case of one real root, t0 will be the real root, and t1 + i * t2 will a pair of coplex-conjugated roots.
 
-    The values of the real roots, are returned by setting the values of the
-    memory locations pointed to by t0, t1, and t2. In the case of two real roots,
-    both t0/t1 or t1/t2 or t2/t0 will have the same value. If there is only one real root, the values
-    of t1 and t2 will be undefined. 
+    The practical algorithm is followed by https://quarticequations.com
 
     :param double a: Cubic constant. 
     :param double b: Cubic constant.
     :param double c: Cubic constant.
     :param double d: Cubic constant.
-    :param double t0: 1st root of the cubic.
-    :param double t1: 2nd root of the cubic.
-    :param double t2: 3rd root of the cubic.
+    :param double t0: 1st real root.
+    :param double t1: either 2nd real root or real part of coplex-conjugated roots.
+    :param double t2: either 3rd real root or imaginary part of coplex-conjugated roots.
     :return: Number of real roots.
     :rtype: int
     """
     cdef:
-        int num
-        double p, q, sq_b, cb_p, D, cbrt_q, phi, u, sqrt_D
+        double q, r, sq_b, cb_q, D, A, phi, u
     
     # normal form: x^3 + bx^2 + cx + d = 0
     b /= a
     c /= a
     d /= a
 
-    # substitute x = y - b/3 to eliminate quadric term: y^3 + 3py + 2q = 0
+    # convert depressed cubic: y^3 + 3qy - 2r = 0
     sq_b = b * b
-    p = 1.0 / 3.0 * (c - sq_b / 3.0)
-    q = 0.5 * (2.0 * b * sq_b / 27.0 - b * c / 3.0 + d)
+    q = (3.0 * c - sq_b) / 9.0
+    r = (c * b - 3.0 * d) / 6.0 - b * sq_b / 27.0
 
     # calculate discriminant
-    cb_p = p * p * p
-    D = cb_p + q * q
-
-    if is_zero(D):
-
-        # one triple solution
-        if is_zero(q):
-            t0[0] = 0
-            t1[0] = 0
-            t2[0] = 0
-            num = 1
-
-        # one single and one double solution
+    cb_q = q * q * q
+    D = cb_q + r * r
+    
+    # one real root and a pair of complex-conjugate roots
+    if D > 0:
+        A = cbrt(fabs(r) + sqrt(D))
+        if r < 0:
+            t0[0] = q / A - A - b / 3.0
         else:
-            cbrt_q = cbrt(q)
-            t0[0] = cbrt_q
-            t1[0] = cbrt_q
-            t2[0] = -2 * cbrt_q
-            num = 2
+            t0[0] = A - q / A - b / 3.0
+        
+        t1[0] = -0.5 * t0[0] - b / 3.0
+        t2[0] = 0.5 * sqrt(3.0) * (A + q / A)
+
+        return 1
 
     # Trigonometric solution for three real roots
-    elif D < 0:
-        phi = 1.0 / 3.0 * acos(-q / sqrt(-cb_p))
-        u = 2.0 * sqrt(-p)
-
-        t0[0] = u * cos(phi)
-        t1[0] = -u * cos(phi + M_PI / 3.0)
-        t2[0] = -u * cos(phi - M_PI / 3.0)
-
-        num = 3
-
-    # one real solution
     else:
-        sqrt_D = sqrt(D)
-        t0[0] = cbrt(sqrt_D - q) - cbrt(sqrt_D + q)
-        num = 1
+        if is_zero(q):
+            phi = 0.0
+        elif q < 0:
+            phi = acos(r / sqrt(-cb_q)) / 3.0
+        
+        u = 2.0 * sqrt(-q)
 
-    # resubstitute
-    t0[0] -= b / 3.0
-    t1[0] -= b / 3.0
-    t2[0] -= b / 3.0
+        t0[0] = u * cos(phi) - b / 3.0
+        t1[0] = -u * cos(phi + M_PI / 3.0) - b / 3.0
+        t2[0] = -u * cos(phi - M_PI / 3.0) - b / 3.0
 
-    return num
+        return 3
 
 
 cdef int solve_biquadratic(double a, double c, double e, double *t0, double *t1, double *t2, double *t3) nogil:
@@ -570,59 +558,109 @@ cdef int _solve_depressed_quartic(double p, double q, double r, double *t0, doub
     """
     cdef:
         int num
-        double s0, s1, s2, sr, si
+        double s0, sigma, A, B, sq_A, sq_B
+    
+    if q > 0:
+        sigma = 1.0
+    else:
+        sigma = -1.0
 
+    # q = 0 => x^4 + p.x^2 + r = 0
     if is_zero(q):
         return solve_biquadratic(1.0, p, r, t0, t1, t2, t3)
 
-    # solve resolvent cubic: t^3 - 2pt^2 + (p^2-4r)t - q^2 = 0
-    num = solve_cubic(1.0, 2.0 * p, p * p - 4.0 * r, -q * q, t0, t1, t2)
+    # solve resolvent cubic: t^3 - 2pt^2 + (p^2-4r)t + q^2 = 0
+    # using Van der Waerden's method
+    num = solve_cubic(1.0, -2.0 * p, p * p - 4.0 * r, q * q, t0, t1, t2)
 
     if num > 1:
-        # sort roots to t0 <= t1 <= t2
+        # sort roots to t0 < t1 < t2
         sort_3double(t0, t1, t2)
 
-        # t0 > 0 => all roots are positive because vieta's therem: t0*t1*t2 = q^2 != 0
-        if t0[0] > 0:
-            s0 = sqrt(t0[0])
-            s1 = sqrt(t1[0])
-            s2 = sqrt(t2[0])
-        
-            if q > 0:
-                t0[0] = 0.5 * (-s0 -s1 -s2)
-                t1[0] = 0.5 * (-s0 +s1 +s2)
-                t2[0] = 0.5 * (+s0 -s1 +s2)
-                t3[0] = 0.5 * (+s0 +s1 -s2)
+        # t0 <= 0 => t1*t2 >= 0 because vieta's therem: -t0*t1*t2 = q^2
+        if t0[0] <= 0:
+            s0 = sqrt(-t0[0])
+            A = -t1[0] - t2[0] - 2.0 * sigma * sqrt(t1[0] * t2[0])
+            B = -t1[0] - t2[0] + 2.0 * sigma * sqrt(t1[0] * t2[0])
+
+            # four real roots
+            if A >= 0 and B >= 0:
+                sq_A = sqrt(A)
+                sq_B = sqrt(B)
+                t0[0] = 0.5 * (s0 + sq_A)
+                t1[0] = 0.5 * (s0 - sq_A)
+                t2[0] = 0.5 * (-s0 + sq_B)
+                t3[0] = 0.5 * (-s0 - sq_B)
                 return 4
+
+            # two real roots
+            elif A < 0 and B >= 0:
+                sq_B = sqrt(B)
+                t0[0] = 0.5 * (-s0 + sq_B)
+                t1[0] = 0.5 * (-s0 - sq_B)
+                return 2
+
+            # two real roots
+            elif A >= 0 and B < 0:
+                sq_A = sqrt(A)
+                t0[0] = 0.5 * (s0 + sq_A)
+                t1[0] = 0.5 * (s0 - sq_A)
+                return 2
+
+            # no real root
             else:
-                t0[0] = 0.5 * (-s0 -s1 +s2)
-                t1[0] = 0.5 * (-s0 +s1 -s2)
-                t2[0] = 0.5 * (+s0 -s1 -s2)
-                t3[0] = 0.5 * (+s0 +s1 +s2)
-                return 4
-    
-    # resolvent cubic solution have 1 real root
-    if t0[0] < 0:
-        t0[0] = 0.0
-    
-    s0 = sqrt(t0[0])
+                return 0
 
-    # calculate (sr + i*si)^2 = t1[0] + i*t2[0]
-    # TODO
-    csqrt(t0[0], t1[0], &sr, &si)
-
-    if q > 0:
-        t0[0] = -0.5 * s0 - sr
-        t0[0] = -0.5 * s0 + sr
-        return 2
+    # if resolvent cubic solutions have only one real root t0
     else:
-        t0[0] = 0.5 * s0 - sr
-        t0[0] = 0.5 * s0 + sr
-        return 2
+        if t0[0] <= 0:
+            s0 = sqrt(-t0[0])
+            A = -2.0 * t1[0] - 2.0 * sigma * sqrt(t1[0] * t1[0] + t2[0] * t2[0])
+            A = -2.0 * t1[0] + 2.0 * sigma * sqrt(t1[0] * t1[0] + t2[0] * t2[0])
+
+            # four real roots
+            if A >= 0 and B >= 0:
+                sq_A = sqrt(A)
+                sq_B = sqrt(B)
+                t0[0] = 0.5 * (s0 + sq_A)
+                t1[0] = 0.5 * (s0 - sq_A)
+                t2[0] = 0.5 * (-s0 + sq_B)
+                t3[0] = 0.5 * (-s0 - sq_B)
+                return 4
+
+            # two real roots
+            elif A < 0 and B >= 0:
+                sq_B = sqrt(B)
+                t0[0] = 0.5 * (-s0 + sq_B)
+                t1[0] = 0.5 * (-s0 - sq_B)
+                return 2
+
+            # two real roots
+            elif A >= 0 and B < 0:
+                sq_A = sqrt(A)
+                t0[0] = 0.5 * (s0 + sq_A)
+                t1[0] = 0.5 * (s0 - sq_A)
+                return 2
+
+            # no real root
+            else:
+                return 0
+
+    # no real root if -t0 < 0
+    return 0
 
 
 @cython.cdivision(True)
 cdef void one_newton_step(double b, double c, double d, double e, double *x) nogil:
+    """
+    One step Newton's method for monic quartic polinomial: x^4 + b.x^3 + c.x^2 * d.x + e = 0
+
+    :param double b: Qurtic constant.
+    :param double c: Qurtic constant.
+    :param double d: Qurtic constant.
+    :param double e: Qurtic constant.
+    :param double x: one root of the quartic.
+    """
     cdef double fx, dfx
     dfx = ((4.0 * x[0] + 3 * b) * x[0] + 2.0 * d) * x[0] + e
     if not is_zero(dfx):
@@ -634,7 +672,7 @@ cdef void one_newton_step(double b, double c, double d, double e, double *x) nog
 cdef int solve_quartic(double a, double b, double c, double d, double e,
                        double *t0, double *t1, double *t2, double *t3) nogil:
     """
-    Calculates the real roots of a quartic equation with Descartes-Euler method.
+    Calculates the real roots of a quartic equation with Van der Waerden method.
 
     The a, b, c, d and e arguments are the five constants of the quartic equation:
 
@@ -646,6 +684,8 @@ cdef int solve_quartic(double a, double b, double c, double d, double e,
     memory locations pointed to by t0, t1, t2, and t3. If there are one or two real roots,
     the values of t2 and t3 will be undefined. If there is no real root,
     all values will be undefined.
+
+    The practical algorithm of Van der Waerden method is followed by https://quarticequations.com
 
     :param double a: Qurtic constant. 
     :param double b: Qurtic constant.
@@ -678,7 +718,7 @@ cdef int solve_quartic(double a, double b, double c, double d, double e,
     if is_zero(r):
         # no absolute term: y(y^3 + py + q) = 0
         t0[0] = 0
-        cubic_num = solve_cubic(1, 0, p, q, t1, t2, t3)
+        cubic_num = solve_cubic(1.0, 0.0, p, q, t1, t2, t3)
         num = 1 + cubic_num
 
     else:

@@ -77,9 +77,6 @@ cdef inline void swap_int(int *a, int *b) nogil:
 cdef inline bint is_zero(double v) nogil:
     return v < EQN_EPS and v > -EQN_EPS
 
-cdef inline void csqrt(double x, double y, double *a, double *b) nogil:
-    raise NotImplementedError("Not impremented yet")
-
 @cython.cdivision(True)
 cdef inline double lerp(double x0, double x1, double y0, double y1, double x) nogil:
     return ((y1 - y0) / (x1 - x0)) * (x - x0) + y0
