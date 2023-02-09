@@ -382,10 +382,10 @@ cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) 
     The a, b and c arguments are the three constants of the quadratic equation:
 
         f = a.x^2 + b.x^2 + c
-        
+
     If the quadratic equation has 1 or 2 real roots, this function will return
     True. If there are no real roots this method will return False.
-    
+
     The values of the real roots, are returned by setting the values of the
     memory locations pointed to by t0 and t1. In the case of a single root,
     both t0 and t1 will have the same value. If there are not roots, the values
@@ -432,7 +432,7 @@ cdef int solve_cubic(double a, double b, double c, double d, double *t0, double 
 
     The cubic equation has 1, 2 or 3 real roots, and this function will return the number of real roots.
     The values of the roots, are returned by setting the values of the memory locations pointed to by t0, t1, and t2.
-    
+
     In the case of three real roots, the roots themselves back in t0, t1 and t2.
     In the case of two real roots, a pair in t0, t1, and t2 will have the same value, and the other is a different one.
     In the case of one real root, t0 will be the real root, and t1 + i * t2 will a pair of coplex-conjugated roots.
@@ -450,8 +450,8 @@ cdef int solve_cubic(double a, double b, double c, double d, double *t0, double 
     :rtype: int
     """
     cdef:
-        double q, r, sq_b, cb_q, D, A, phi, u
-    
+        double q, r, sq_b, cb_q, D, A, z0, phi, u
+
     # normal form: x^3 + bx^2 + cx + d = 0
     b /= a
     c /= a
@@ -465,16 +465,17 @@ cdef int solve_cubic(double a, double b, double c, double d, double *t0, double 
     # calculate discriminant
     cb_q = q * q * q
     D = cb_q + r * r
-    
+
     # one real root and a pair of complex-conjugate roots
     if D > 0:
         A = cbrt(fabs(r) + sqrt(D))
         if r < 0:
-            t0[0] = q / A - A - b / 3.0
+            z0 = q / A - A
         else:
-            t0[0] = A - q / A - b / 3.0
-        
-        t1[0] = -0.5 * t0[0] - b / 3.0
+            z0 = A - q / A
+
+        t0[0] = z0 - b / 3.0
+        t1[0] = -0.5 * z0 - b / 3.0
         t2[0] = 0.5 * sqrt(3.0) * (A + q / A)
 
         return 1
@@ -483,9 +484,11 @@ cdef int solve_cubic(double a, double b, double c, double d, double *t0, double 
     else:
         if is_zero(q):
             phi = 0.0
-        elif q < 0:
+
+        # otherwise q < 0 because of D = q^3 + r^2 < 0
+        else:
             phi = acos(r / sqrt(-cb_q)) / 3.0
-        
+
         u = 2.0 * sqrt(-q)
 
         t0[0] = u * cos(phi) - b / 3.0
@@ -616,7 +619,7 @@ cdef int _solve_depressed_quartic(double p, double q, double r, double *t0, doub
         if t0[0] <= 0:
             s0 = sqrt(-t0[0])
             A = -2.0 * t1[0] - 2.0 * sigma * sqrt(t1[0] * t1[0] + t2[0] * t2[0])
-            A = -2.0 * t1[0] + 2.0 * sigma * sqrt(t1[0] * t1[0] + t2[0] * t2[0])
+            B = -2.0 * t1[0] + 2.0 * sigma * sqrt(t1[0] * t1[0] + t2[0] * t2[0])
 
             # four real roots
             if A >= 0 and B >= 0:
