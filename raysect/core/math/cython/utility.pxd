@@ -60,7 +60,13 @@ cdef inline void swap_double(double *a, double *b) nogil:
     a[0] = b[0]
     b[0] = temp
 
-cdef inline void sort_3double(double *a, double *b, double *c) nogil:
+cdef inline void swap_int(int *a, int *b) nogil:
+    cdef int temp
+    temp = a[0]
+    a[0] = b[0]
+    b[0] = temp
+
+cdef inline void sort_three_doubles(double *a, double *b, double *c) nogil:
     if a[0] > b[0]:
         swap_double(a, b)
     if b[0] > c[0]:
@@ -68,11 +74,19 @@ cdef inline void sort_3double(double *a, double *b, double *c) nogil:
         if a[0] > c[0]:
             swap_double(a, c)
 
-cdef inline void swap_int(int *a, int *b) nogil:
-    cdef int temp
-    temp = a[0]
-    a[0] = b[0]
-    b[0] = temp
+cdef inline void sort_four_doubles(double *a, double *b, double *c, double *d) nogil:
+    if a[0] > b[0]:
+        swap_double(a, b)
+    if b[0] > c[0]:
+        swap_double(b, c)
+    if c[0] > d[0]:
+        swap_double(c, d)
+    if a[0] > b[0]:
+        swap_double(a, b)
+    if b[0] > c[0]:
+        swap_double(b, c)
+    if a[0] > b[0]:
+        swap_double(a, b)
 
 cdef inline bint is_zero(double v) nogil:
     return v < EQN_EPS and v > -EQN_EPS

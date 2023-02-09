@@ -578,7 +578,7 @@ cdef int _solve_depressed_quartic(double p, double q, double r, double *t0, doub
 
     if num > 1:
         # sort roots to t0 < t1 < t2
-        sort_3double(t0, t1, t2)
+        sort_three_doubles(t0, t1, t2)
 
         # t0 <= 0 => t1*t2 >= 0 because vieta's therem: -t0*t1*t2 = q^2
         if t0[0] <= 0:
