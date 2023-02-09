@@ -31,8 +31,8 @@
 
 
 from raysect.core cimport Material, new_intersection, BoundingBox3D, BoundingSphere3D, new_point3d, new_normal3d, Normal3D, AffineMatrix3D
-from raysect.core.math.cython cimport solve_quartic, swap_double
-from libc.math import atan2, cos, sin
+from raysect.core.math.cython cimport solve_quartic, swap_double, sort_three_doubles, sort_four_doubles
+from libc.math cimport hypot
 
 
 # bounding box and sphere are padded by small amounts to avoid numerical accuracy issues
@@ -51,7 +51,8 @@ cdef class Torus(Primitive):
     The major radius is the distance from the center of the tube to the center of the torus.
     The minor radius is the radius of the tube.
     The center of the torus corresponds to the origin of the local co-ordinate system.
-    The axis of revolution coincides with the z-axis
+    The axis of revolution coincides with the z-axis, and The center of the torus tube lies
+    on the x-y plane.
 
     :param float major_radius: Major radius of the torus in meters (default = 1.0).
     :param float minor_radius: Minor radius of the torus in meters (default = 0.5).
@@ -60,7 +61,7 @@ cdef class Torus(Primitive):
     :param Material material: A Material object defining the torus's material (default = None).
     :param str name: A string specifying a user-friendly name for the torus (default = "").
 
-    :ivar float mjor_radius: The major radius of the torus in meters.
+    :ivar float major_radius: The major radius of the torus in meters.
     :ivar float minor_radius: The minor radius of the torus in meters.
 
     .. code-block:: pycon
@@ -153,9 +154,12 @@ cdef class Torus(Primitive):
 
     cpdef Intersection hit(self, Ray ray):
 
-        cdef Point3D origin
-        cdef Vector3D direction
-        cdef double sq_origin, sq_r, sq_R, dot_origin_direction, f, b, c, d, e, t0, t1, t2, t3, t_closest
+        cdef:
+            Point3D origin
+            Vector3D direction
+            double sq_origin, sq_r, sq_R, dot_origin_direction, f, b, c, d, e, t_closest
+            double[4] t
+            int i
 
         # reset further intersection state
         self._further_intersection = False
@@ -178,46 +182,62 @@ cdef class Torus(Primitive):
 
         # calculate intersection distances by solving the quartic equation
         # ray misses if there are no real roots of the quartic
-        num = solve_quartic(1.0, b, c, d, e, &t0, &t1, &t2, &t3)
+        num = solve_quartic(1.0, b, c, d, e, &t[0], &t[1], &t[2], &t[3])
 
         if num == 0:
             return None
         
         elif num == 1:
             # test the intersection points inside the ray search range [0, max_distance]
-            if t0 > ray.max_distance or t0 < 0.0:
+            if t[0] > ray.max_distance or t[0] < 0.0:
                 return None
             else:
-                t_closest = t0
-                return self._generate_intersection(ray, origin, direction, t_closest)
-        
-        elif num == 2:
-            # ensure t0 is always smaller than t1
-            if t0 > t1:
-                swap_double(&t0, &t1)
-
-
-
-        # ensure t0 is always smaller than t1
-        if t0 > t1:
-            swap_double(&t0, &t1)
-
-        # test the intersection points inside the ray search range [0, max_distance]
-        if t0 > ray.max_distance or t1 < 0.0:
-            return None
-
-        if t0 >= 0.0:
-            t_closest = t0
-            if t1 <= ray.max_distance:
-                self._further_intersection = True
-                self._cached_ray = ray
-                self._cached_origin = origin
-                self._cached_direction = direction
-                self._next_t = t1
-        elif t1 <= ray.max_distance:
-            t_closest = t1
+                t_closest = t[0]
+ 
         else:
-            return None
+            # sorting solutions in each number of them
+            if num == 2:
+                # ensure t0 < t1
+                if t[0] > t[1]:
+                    swap_double(&t[0], &t[1])
+
+                # substitute the last value into undefined variables
+                t[2] = t[1]
+                t[3] = t[1]
+
+            elif num == 3:
+                # ensure t0 < t1 < t2
+                sort_three_doubles(&t[0], &t[1], &t[2])
+
+                # substitute the last value into undefined variables
+                t[3] = t[2]
+
+            elif num == 4:
+                # ensure t0 < t1 < t2 < t3
+                sort_four_doubles(&t[0], &t[1], &t[2], &t[3])
+            else:
+                return None
+
+            # test the intersection points inside the ray search range [0, max_distance]
+            if t[0] > ray.max_distance or t[3] < 0.0:
+                return None
+
+            for i in range(num - 1):
+                if t[i] >= 0.0:
+                    t_closest = t[i]
+                    if t[i + 1] <= ray.max_distance:
+                        self._further_intersection = True
+                        self._cached_ray = ray
+                        self._cached_origin = origin
+                        self._cached_direction = direction
+                        self._next_t = t[i + 1]
+
+                    return self._generate_intersection(ray, origin, direction, t_closest)
+
+            if t[num - 1] <= ray.max_distance:
+                t_closest = t[num - 1]
+            else:
+                return None
 
         return self._generate_intersection(ray, origin, direction, t_closest)
 
@@ -226,15 +246,15 @@ cdef class Torus(Primitive):
         if not self._further_intersection:
             return None
 
-        # this is the 2nd and therefore last intersection
+        # this is the 2nd intersection
         self._further_intersection = False
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t)
 
     cdef Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance):
 
-        cdef Point3D hit_point, tube_centre, inside_point, outside_point
+        cdef Point3D hit_point, inside_point, outside_point
         cdef Normal3D normal
-        cdef double phi, delta_x, delta_y, delta_z
+        cdef double alpha, delta_x, delta_y, delta_z
         cdef bint exiting
 
         # point of surface intersection in local space
@@ -243,10 +263,8 @@ cdef class Torus(Primitive):
                                 origin.z + ray_distance * direction.z)
 
         # normal is normalised vector from torus tube centre to hit_point
-        phi = atan2(hit_point.y, hit_point.x)
-        tube_centre = new_point3d(self._major_radius * cos(phi), self._major_radius * sin(phi), 0.0)
-        tube_to_hit = tube_centre.vector_to(hit_point)
-        normal = new_normal3d(tube_to_hit.x, tube_to_hit.y, tube_to_hit.z)
+        alpha = self._major_radius / hypot(hit_point.x, hit_point.y)
+        normal = new_normal3d((1.0 - alpha) * hit_point.x, (1.0 - alpha) * hit_point.y, hit_point.z)
         normal = normal.normalise()
 
         # calculate points inside and outside of surface for daughter rays to
@@ -285,18 +303,29 @@ cdef class Torus(Primitive):
 
     cpdef BoundingBox3D bounding_box(self):
 
-        cdef double extent
-        cdef Point3D origin, lower, upper
+        cdef:
+            double extent
+            list points
+            Point3D point
+            BoundingBox3D box
 
-        # obtain torus origin in world space
-        origin = new_point3d(0, 0, 0).transform(self.to_root())
+        box = BoundingBox3D()
 
-        # calculate upper and lower corners of box
+        # calculate local bounds
         extent = self._major_radius + self._minor_radius + BOX_PADDING
-        lower = new_point3d(origin.x - extent, origin.y - extent, origin.z - extent)
-        upper = new_point3d(origin.x + extent, origin.y + extent, origin.z + extent)
+        box.lower = new_point3d(-extent, -extent, -self._minor_radius - BOX_PADDING)
+        box.upper = new_point3d(extent, extent, self._minor_radius + BOX_PADDING)
 
-        return BoundingBox3D(lower, upper)
+        # obtain local space vertices
+        points = box.vertices()
+
+        # convert points to world space and build an enclosing world space bounding box
+        # a small degree of padding is added to avoid potential numerical accuracy issues
+        box = BoundingBox3D()
+        for point in points:
+            box.extend(point.transform(self.to_root()), BOX_PADDING)
+
+        return box
 
     cpdef BoundingSphere3D bounding_sphere(self):
         cdef Point3D centre = new_point3d(0, 0, 0).transform(self.to_root())
