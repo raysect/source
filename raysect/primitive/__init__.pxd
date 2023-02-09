@@ -29,6 +29,7 @@
 
 from raysect.primitive.box cimport Box
 from raysect.primitive.sphere cimport Sphere
+from raysect.primitive.torus cimport Torus
 from raysect.primitive.cylinder cimport Cylinder
 from raysect.primitive.csg cimport Union, Intersect, Subtract
 from raysect.primitive.mesh cimport Mesh
