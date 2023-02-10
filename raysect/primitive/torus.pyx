@@ -157,32 +157,43 @@ cdef class Torus(Primitive):
         cdef:
             Point3D origin
             Vector3D direction
-            double sq_origin, sq_r, sq_R, dot_origin_direction, f, b, c, d, e, t_closest
+            double sq_origin_xy, sq_direction_xy, sq_origin, sq_direction
+            double origin_direction_xy, origin_dot_direction, sq_r, sq_R, R2_r2
+            double a, b, c, d, e, t_closest
             double[4] t
-            int i
+            int num, i
 
         # reset further intersection state
         self._further_intersection = False
 
         # convert ray parameters to local space
         origin = ray.origin.transform(self.to_local())
-        direction = ray.direction.transform(self.to_local()).normalise()
+        direction = ray.direction.transform(self.to_local())
 
-        # coefficients of quartic equation
-        sq_origin = origin.x * origin.x + origin.y * origin.y + origin.z * origin.z
-        dot_origin_direction = direction.x * origin.x + direction.y * origin.y + direction.z * origin.z
+        # calculate temporary values
+        sq_origin_xy = origin.x * origin.x + origin.y * origin.y
+        sq_direction_xy = direction.x * direction.x + direction.y * direction.y
+
+        sq_origin = sq_origin_xy + origin.z * origin.z
+        sq_direction = sq_direction_xy + direction.z * direction.z
+
+        origin_direction_xy = origin.x * direction.x + origin.y * direction.y
+        origin_dot_direction = origin_direction_xy + origin.z * direction.z
+
         sq_r = self._minor_radius * self._minor_radius
         sq_R = self._major_radius * self._major_radius
-        f = sq_origin - (sq_r + sq_R)
+        R2_r2 = sq_R - sq_r
 
-        b = 4.0 * dot_origin_direction
-        c = 2.0 * f + 4.0 * dot_origin_direction * dot_origin_direction + 4.0 * sq_R * direction.y * direction.y
-        d = 4.0 * f * dot_origin_direction + 8.0 * sq_R * origin.y * direction.y
-        e = f * f - 4.0 * sq_R * (sq_r - origin.y * origin.y)
+        # coefficients of quartic equation
+        a = sq_direction * sq_direction
+        b = 4.0 * sq_direction * origin_dot_direction
+        c = 2.0 * (2.0 * origin_dot_direction * origin_dot_direction + sq_direction * (sq_origin + R2_r2)) - 4.0 * sq_R * sq_direction_xy
+        d = 4.0 * origin_dot_direction * (sq_origin + R2_r2) - 8.0 * sq_R * origin_direction_xy
+        e = (sq_origin + R2_r2) * (sq_origin + R2_r2) - 4.0 * sq_R * sq_origin_xy
 
         # calculate intersection distances by solving the quartic equation
         # ray misses if there are no real roots of the quartic
-        num = solve_quartic(1.0, b, c, d, e, &t[0], &t[1], &t[2], &t[3])
+        num = solve_quartic(a, b, c, d, e, &t[0], &t[1], &t[2], &t[3])
 
         if num == 0:
             return None
