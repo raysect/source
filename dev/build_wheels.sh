@@ -28,7 +28,7 @@ auditwheel repair dist/raysect-$VERSION-cp38-cp38-linux_x86_64.whl --plat $PLAT
 auditwheel repair dist/raysect-$VERSION-cp39-cp39-linux_x86_64.whl --plat $PLAT
 
 # python 3.10
-/opt/python/cp310-cp310/bin/python -m pip install cython numpy==1.19.5
-/opt/python/cp310-cp310/bin/python setup.py build_ext -j$CORES
-/opt/python/cp310-cp310/bin/python setup.py bdist_wheel
-auditwheel repair dist/raysect-$VERSION-cp310-cp310-linux_x86_64.whl --plat $PLAT
+#/opt/python/cp310-cp310/bin/python -m pip install cython numpy==1.19.5
+#/opt/python/cp310-cp310/bin/python setup.py build_ext -j$CORES
+#/opt/python/cp310-cp310/bin/python setup.py bdist_wheel
+#auditwheel repair dist/raysect-$VERSION-cp310-cp310-linux_x86_64.whl --plat $PLAT
