@@ -3,7 +3,7 @@
 # sudo docker run -ti -v $(pwd):/io quay.io/pypa/manylinux2010_x86_64 /bin/bash
 # in the container run dev/build_wheels.sh
 
-VERSION=0.8.1
+VERSION=0.8.2
 PLAT=manylinux2010_x86_64
 CORES=32
 

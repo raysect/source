@@ -15,9 +15,9 @@ This will drop you into the manylinux container terminal. The /opt/python folder
     cd io/source
     /opt/python/cp37-cp37m/bin/python -m pip install cython numpy==1.14.6
     /opt/python/cp37-cp37m/bin/python setup.py bdist_wheel
-    auditwheel repair dist/raysect-0.8.1-cp37-cp37m-linux_x86_64.whl --plat manylinux2010_x86_64
+    auditwheel repair dist/raysect-0.8.2-cp37-cp37m-linux_x86_64.whl --plat manylinux2010_x86_64
 
-This will compile the wheel and repair any library references to produce the manylinux wheel files in a folder ./wheelhouse. e.g. raysect-0.8.1-cp37-cp37m-manylinux1_x86_64.whl and raysect-0.8.1-cp37-cp37m-manylinux2010_x86_64.whl.
+This will compile the wheel and repair any library references to produce the manylinux wheel files in a folder ./wheelhouse. e.g. raysect-0.8.2-cp37-cp37m-manylinux1_x86_64.whl and raysect-0.8.2-cp37-cp37m-manylinux2010_x86_64.whl.
 
 These can then be uploaded to pypi (just the manylinux2010 packages for now).
 
