@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -41,7 +43,7 @@ cdef class OrthographicCamera(Observer2D):
     A camera observing an orthogonal (orthographic) projection of the scene,
     avoiding perspective effects.
 
-    :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
+    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(720, 480)).
     :param double width: width of the orthographic area to observe in meters,
       the height is deduced from the 'pixels' attribute.
     :param float sensitivity: The sensitivity of each pixel (default=1.0)
@@ -51,10 +53,6 @@ cdef class OrthographicCamera(Observer2D):
       at each pixel by the camera (default=RGBPipeline2D()).
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
-
-    cdef:
-        double image_delta, image_start_x, image_start_y, _width, _sensitivity
-        RectangleSampler3D _point_sampler
 
     def __init__(self, pixels, width, sensitivity=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 
