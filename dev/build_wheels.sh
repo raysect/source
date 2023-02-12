@@ -12,16 +12,16 @@ cd /io || exit
 /opt/python/cp37-cp37m/bin/python -m pip install cython numpy==1.14.6
 /opt/python/cp37-cp37m/bin/python setup.py build_ext -j$CORES
 /opt/python/cp37-cp37m/bin/python setup.py bdist_wheel
-auditwheel repair dist/raysect-0.7.1-cp37-cp37m-linux_x86_64.whl --plat $PLAT
+auditwheel repair dist/raysect-0.8.1-cp37-cp37m-linux_x86_64.whl --plat $PLAT
 
 # python 3.8
 /opt/python/cp38-cp38/bin/python -m pip install cython numpy==1.17.5
 /opt/python/cp38-cp38/bin/python setup.py build_ext -j$CORES
 /opt/python/cp38-cp38/bin/python setup.py bdist_wheel
-auditwheel repair dist/raysect-0.7.1-cp38-cp38-linux_x86_64.whl --plat $PLAT
+auditwheel repair dist/raysect-0.8.1-cp38-cp38-linux_x86_64.whl --plat $PLAT
 
 # python 3.9
 /opt/python/cp39-cp39/bin/python -m pip install cython numpy==1.19.5
 /opt/python/cp39-cp39/bin/python setup.py build_ext -j$CORES
 /opt/python/cp39-cp39/bin/python setup.py bdist_wheel
-auditwheel repair dist/raysect-0.7.1-cp39-cp39-linux_x86_64.whl --plat $PLAT
+auditwheel repair dist/raysect-0.8.1-cp39-cp39-linux_x86_64.whl --plat $PLAT
