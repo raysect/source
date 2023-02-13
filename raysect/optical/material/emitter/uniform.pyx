@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D, Normal3D
+from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, AffineMatrix3D, Normal3D, Intersection
 cimport cython
 
 
@@ -66,7 +66,8 @@ cdef class UniformSurfaceEmitter(NullVolume):
     @cython.initializedcheck(False)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
 
         cdef:
             Spectrum spectrum

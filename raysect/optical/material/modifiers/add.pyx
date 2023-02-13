@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum
+from raysect.optical cimport Point3D, Normal3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, Intersection
 from raysect.optical.material cimport Material
 
 
@@ -95,17 +95,18 @@ cdef class Add(Material):
 
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
 
         cdef Spectrum s1, s2
 
         # sample material 1
-        s1 = self.m1.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, world_to_primitive, primitive_to_world)
+        s1 = self.m1.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, world_to_primitive, primitive_to_world, intersection)
         if self.volume_only:
             return s1
 
         # sample material 2
-        s2 = self.m2.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, world_to_primitive, primitive_to_world)
+        s2 = self.m2.evaluate_surface(world, ray, primitive, hit_point, exiting, inside_point, outside_point, normal, world_to_primitive, primitive_to_world, intersection)
 
         # combine
         s1.add_spectrum(s2)

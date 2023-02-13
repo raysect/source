@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -56,11 +58,6 @@ cdef class VectorCamera(Observer2D):
       at each pixel by the camera (default=RGBPipeline2D()).
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
-
-    cdef:
-        double _sensitivity
-        double image_delta, image_start_x, image_start_y
-        readonly np.ndarray pixel_origins, pixel_directions
 
     def __init__(self, pixel_origins, pixel_directions, frame_sampler=None, pipelines=None, sensitivity=None, parent=None, transform=None, name=None):
 

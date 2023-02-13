@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -44,7 +46,7 @@ cdef class PinholeCamera(Observer2D):
     A simple camera that launches rays from the observer's origin point over a
     specified field of view.
 
-    :param tuple pixels: A tuple of pixel dimensions for the camera, i.e. (512, 512).
+    :param tuple pixels: A tuple of pixel dimensions for the camera (default=(720, 480)).
     :param float fov: The field of view of the camera in degrees (default=45 degrees).
     :param float sensitivity: The sensitivity of each pixel (default=1.0)
     :param FrameSampler2D frame_sampler: The frame sampling strategy, defaults to adaptive
@@ -68,10 +70,6 @@ cdef class PinholeCamera(Observer2D):
         >>>
         >>> camera.observe()
     """
-
-    cdef:
-        double _sensitivity, _fov, image_delta, image_start_x, image_start_y
-        RectangleSampler3D point_sampler
 
     def __init__(self, pixels, fov=None, sensitivity=None, frame_sampler=None, pipelines=None, parent=None, transform=None, name=None):
 

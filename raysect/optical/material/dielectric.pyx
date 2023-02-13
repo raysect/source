@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@ from numpy import array, float64
 from numpy cimport ndarray
 from libc.math cimport sqrt, pow as cpow
 from raysect.core.math.random cimport probability
-from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray
+from raysect.optical cimport Point3D, Vector3D, new_vector3d, Normal3D, AffineMatrix3D, World, Primitive, ConstantSF, Spectrum, Ray, Intersection
 
 
 cdef class Sellmeier(NumericallyIntegratedSF):
@@ -152,7 +152,8 @@ cdef class Dielectric(Material):
     @cython.cdivision(True)
     cpdef Spectrum evaluate_surface(self, World world, Ray ray, Primitive primitive, Point3D hit_point,
                                     bint exiting, Point3D inside_point, Point3D outside_point,
-                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world):
+                                    Normal3D normal, AffineMatrix3D world_to_primitive, AffineMatrix3D primitive_to_world,
+                                    Intersection intersection):
 
         cdef:
             Vector3D incident, reflected, transmitted

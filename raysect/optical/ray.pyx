@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -275,7 +275,7 @@ cdef class Ray(CoreRay):
 
     @extinction_min_depth.setter
     def extinction_min_depth(self, int extinction_min_depth):
-        if extinction_min_depth <= 1:
+        if extinction_min_depth < 1:
             raise ValueError("The minimum extinction depth cannot be less than 1.")
         self._extinction_min_depth = extinction_min_depth
 
@@ -419,7 +419,8 @@ cdef class Ray(CoreRay):
                                          intersection.outside_point,
                                          intersection.normal,
                                          intersection.world_to_primitive,
-                                         intersection.primitive_to_world)
+                                         intersection.primitive_to_world,
+                                         intersection)
 
     cdef Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world):
 
