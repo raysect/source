@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -104,13 +104,6 @@ cdef class Lambert(ContinuousBSDF):
         spectrum.mul_array(reflectivity)
         spectrum.mul_scalar(pdf)
         return spectrum
-
-    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
-
-        if s_reflected.z < 0.0:
-            return 0.0
-        else:
-            return self.reflectivity.evaluate(wavelength)
 
     cpdef Spectrum evaluate_volume(self, Spectrum spectrum, World world, Ray ray, Primitive primitive,
                                    Point3D start_point, Point3D end_point,
