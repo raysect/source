@@ -28,8 +28,7 @@ target = Box(lower=Point3D(-50, -50, -0), upper=Point3D(50, 50, 0), material=Abs
 
 # for each sample direction trace a logging ray and plot the ray trajectory
 plt.ion()
-fig = plt.figure()
-ax = fig.gca(projection='3d')
+ax = plt.axes(projection='3d')
 
 for u in np.linspace(-0.006, 0.006, 5):
     for v in np.linspace(-0.012, 0.012, 11):
@@ -39,7 +38,8 @@ for u in np.linspace(-0.006, 0.006, 5):
         log_ray.trace(world)
 
         p = [(start.x, start.y, start.z)]
-        for point in log_ray.log:
+        for intersection in log_ray.log:
+            point = intersection.hit_point
             p.append((point.x, point.y, point.z))
         p = np.array(p)
 

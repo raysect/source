@@ -65,3 +65,6 @@ while not ccd.render_complete:
     # ccd.pipelines[0].save("demo_metal_lens_{}.png".format(p))
     print()
     p += 1
+
+ioff()
+show()
