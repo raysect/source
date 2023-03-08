@@ -202,6 +202,31 @@ cdef class TetraMesh(KDTree3DCore):
 
         return self._tetrahedra[index, :].copy()
 
+    cpdef Point3D barycenter(self, int index):
+        """
+        Returns the barycenter point of the specified tetrahedron.
+
+        :param int index: The tetrahedral index.
+        :return: A barycenter point
+        :rtype: Point3D
+        """
+        cdef:
+            np.int32_t i1, i2, i3, i4
+
+        if index < 0 or index >= self.tetrahedra_mv.shape[0]:
+            raise ValueError('Tetrahedral index is out of range: [0, {}].'.format(self.tetrahedra_mv.shape[0]))
+
+        i1 = self.tetrahedra_mv[index, V1]
+        i2 = self.tetrahedra_mv[index, V2]
+        i3 = self.tetrahedra_mv[index, V3]
+        i4 = self.tetrahedra_mv[index, V4]
+
+        return new_point3d(
+            0.25 * (self.vertices_mv[i1, X] + self.vertices_mv[i2, X] + self.vertices_mv[i3, X] + self.vertices_mv[i4, X]),
+            0.25 * (self.vertices_mv[i1, Y] + self.vertices_mv[i2, Y] + self.vertices_mv[i3, Y] + self.vertices_mv[i4, Y]),
+            0.25 * (self.vertices_mv[i1, Z] + self.vertices_mv[i2, Z] + self.vertices_mv[i3, Z] + self.vertices_mv[i4, Z]),
+        )
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
