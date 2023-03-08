@@ -54,6 +54,8 @@ cdef class TetraMesh(KDTree3DCore):
 
     cpdef ndarray tetrahedron(self, int index)
 
+    cpdef Point3D barycenter(self, int index)
+
     cpdef double volume(self, int index)
 
     cpdef double volume_total(self)
