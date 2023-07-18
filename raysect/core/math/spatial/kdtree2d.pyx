@@ -74,7 +74,7 @@ cdef class Item2D:
         self.box = box
 
 
-cdef int _edge_compare(const void *p1, const void *p2) nogil:
+cdef int _edge_compare(const void *p1, const void *p2) noexcept nogil:
 
     cdef edge e1, e2
 
