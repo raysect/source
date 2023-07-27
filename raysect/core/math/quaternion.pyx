@@ -127,7 +127,7 @@ cdef class Quaternion:
 
         return new_quaternion(-self.x, -self.y, -self.z, -self.s)
 
-    def __eq__(object x, object y):
+    def __eq__(self, object y):
         """
         Equality operator.
 
@@ -137,18 +137,17 @@ cdef class Quaternion:
             True
         """
 
-        cdef Quaternion q1, q2
+        cdef Quaternion q
 
-        if isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        if isinstance(y, Quaternion):
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return q1.x == q2.x and q1.y == q2.y and q1.z == q2.z and q1.s == q2.s
+            q = <Quaternion> y
+            return self.x == q.x and self.y == q.y and self.z == q.z and self.s == q.s
 
         else:
             raise TypeError('A quaternion can only be equality tested against another quaternion.')
 
-    def __add__(object x, object y):
+    def __add__(self, object y):
         """
         Addition operator.
 
@@ -158,18 +157,17 @@ cdef class Quaternion:
             Quaternion(0.0, 1.0, 0.0, 1.0)
         """
 
-        cdef Quaternion q1, q2
+        cdef Quaternion q
 
-        if isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        if isinstance(y, Quaternion):
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return new_quaternion(q1.x + q2.x, q1.y + q2.y, q1.z + q2.z, q1.s + q2.s)
+            q = <Quaternion> y
+            return new_quaternion(self.x + q.x, self.y + q.y, self.z + q.z, self.s + q.s)
 
         else:
             return NotImplemented
 
-    def __sub__(object x, object y):
+    def __sub__(self, object y):
         """Subtraction operator.
 
         .. code-block:: pycon
@@ -178,18 +176,17 @@ cdef class Quaternion:
             Quaternion(0.0, -1.0, 0, 1.0)
         """
 
-        cdef Quaternion q1, q2
+        cdef Quaternion q
 
-        if isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        if isinstance(y, Quaternion):
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return new_quaternion(q1.x - q2.x, q1.y - q2.y, q1.z - q2.z, q1.s - q2.s)
+            q = <Quaternion> y
+            return new_quaternion(self.x - q.x, self.y - q.y, self.z - q.z, self.s - q.s)
 
         else:
             return NotImplemented
 
-    def __mul__(object x, object y):
+    def __mul__(self, object y):
         """Multiplication operator.
 
         .. code-block:: pycon
@@ -201,31 +198,34 @@ cdef class Quaternion:
         """
 
         cdef double s
-        cdef Quaternion q1, q2
+        cdef Quaternion q
 
-        if isinstance(x, numbers.Real) and isinstance(y, Quaternion):
+        if isinstance(y, numbers.Real):
 
-            s = <double> x
-            q1 = <Quaternion> y
-            return q1.mul_scalar(s)
-
-        elif isinstance(x, Quaternion) and isinstance(y, numbers.Real):
-
-            q1 = <Quaternion> x
             s = <double> y
-            return q1.mul_scalar(s)
+            return self.mul_scalar(s)
 
-        elif isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        elif isinstance(y, Quaternion):
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return q1.mul_quaternion(q2)
+            q = <Quaternion> y
+            return self.mul_quaternion(q)
 
         else:
             return NotImplemented()
 
+    def __rmul__(self, x):
+        """Reverse multiplication operator.
+
+        .. code-block:: pycon
+
+            >>> 2 * Quaternion(0, 0, 1, 1)
+            Quaternion(0.0, 0.0, 2.0, 2.0)
+        """
+
+        return self.__mul__(x)
+
     @cython.cdivision(True)
-    def __truediv__(object x, object y):
+    def __truediv__(self, object y):
         """Division operator.
 
         .. code-block:: pycon
@@ -237,19 +237,17 @@ cdef class Quaternion:
         """
 
         cdef double d
-        cdef Quaternion q1, q2, q2_inv
+        cdef Quaternion q
 
-        if isinstance(x, Quaternion) and isinstance(y, numbers.Real):
+        if isinstance(y, numbers.Real):
 
             d = <double> y
-            q1 = <Quaternion> x
-            return q1.div_scalar(d)
+            return self.div_scalar(d)
 
-        elif isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        elif isinstance(y, Quaternion):
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return q1.div_quaternion(q2)
+            q = <Quaternion> y
+            return self.div_quaternion(q)
 
         else:
             raise TypeError('Unsupported operand type. Expects a real number.')
