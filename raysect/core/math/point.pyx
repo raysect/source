@@ -506,7 +506,7 @@ cdef class Point2D:
     @cython.cdivision(True)
     def __rmul__(self, object x):
         """Multiply operator."""
-        raise NotImplemented
+        return NotImplemented
 
         # cdef AffineMatrix3D m
         # cdef double w
