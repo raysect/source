@@ -63,104 +63,121 @@ cdef class Function2D(FloatFunction):
         """
         return self.evaluate(x, y)
 
-    def __add__(object a, object b):
-        if is_callable(a):
-            if is_callable(b):
-                # a() + b()
-                return AddFunction2D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() + B -> B + a()
-                return AddScalar2D(<double> b, a)
-        elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A + b()
-                return AddScalar2D(<double> a, b)
+    def __add__(self, object b):
+        if is_callable(b):
+            # a() + b()
+            return AddFunction2D(self, b)
+        elif isinstance(b, numbers.Real):
+            # a() + B -> B + a()
+            return AddScalar2D(<double> b, self)
         return NotImplemented
 
-    def __sub__(object a, object b):
-        if is_callable(a):
-            if is_callable(b):
-                # a() - b()
-                return SubtractFunction2D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() - B -> -B + a()
-                return AddScalar2D(-(<double> b), a)
-        elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A - b()
-                return SubtractScalar2D(<double> a, b)
+    def __radd__(self, object a):
+        return self.__add__(a)
+
+    def __sub__(self, object b):
+        if is_callable(b):
+            # a() - b()
+            return SubtractFunction2D(self, b)
+        elif isinstance(b, numbers.Real):
+            # a() - B -> -B + a()
+            return AddScalar2D(-(<double> b), self)
         return NotImplemented
 
-    def __mul__(object a, object b):
+    def __rsub__(self, object a):
         if is_callable(a):
-            if is_callable(b):
-                # a() * b()
-                return MultiplyFunction2D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() * B -> B * a()
-                return MultiplyScalar2D(<double> b, a)
+            # a() - b()
+            return SubtractFunction2D(a, self)
         elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A * b()
-                return MultiplyScalar2D(<double> a, b)
+            # A - b()
+            return SubtractScalar2D(<double> a, self)
+        return NotImplemented
+
+    def __mul__(self, object b):
+        if is_callable(b):
+            # a() * b()
+            return MultiplyFunction2D(self, b)
+        elif isinstance(b, numbers.Real):
+            # a() * B -> B * a()
+            return MultiplyScalar2D(<double> b, self)
+        return NotImplemented
+
+    def __rmul__(self, object a):
+        return self.__mul__(a)  
+
+    @cython.cdivision(True)
+    def __truediv__(self, object b):
+        cdef double v
+        if is_callable(b):
+            # a() / b()
+            return DivideFunction2D(self, b)
+        elif isinstance(b, numbers.Real):
+            # a() / B -> 1/B * a()
+            v = <double> b
+            if v == 0.0:
+                raise ZeroDivisionError("Scalar used as the denominator of the division is zero valued.")
+            return MultiplyScalar2D(1/v, self)
         return NotImplemented
 
     @cython.cdivision(True)
-    def __truediv__(object a, object b):
-        cdef double v
+    def __rtruediv__(self, object a):
         if is_callable(a):
-            if is_callable(b):
-                # a() / b()
-                return DivideFunction2D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() / B -> 1/B * a()
-                v = <double> b
-                if v == 0.0:
-                    raise ZeroDivisionError("Scalar used as the denominator of the division is zero valued.")
-                return MultiplyScalar2D(1/v, a)
+            # a() / b()
+            return DivideFunction2D(a, self)
         elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A * b()
-                return DivideScalar2D(<double> a, b)
+            # A / b()
+            return DivideScalar2D(<double> a, self)
         return NotImplemented
 
-    def __mod__(object a, object b):
+    def __mod__(self, object b):
         cdef double v
+        if is_callable(b):
+            # a() % b()
+            return ModuloFunction2D(self, b)
+        elif isinstance(b, numbers.Real):
+            # a() % B
+            v = <double> b
+            if v == 0.0:
+                raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
+            return ModuloFunctionScalar2D(self, v)
+        return NotImplemented
+
+    def __rmod__(self, object a):
         if is_callable(a):
-            if is_callable(b):
-                # a() % b()
-                return ModuloFunction2D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() % B
-                v = <double> b
-                if v == 0.0:
-                    raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
-                return ModuloFunctionScalar2D(a, v)
+            # a() % b()
+            return ModuloFunction2D(a, self)
         elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A % b()
-                return ModuloScalarFunction2D(<double> a, b)
+            # A % b()
+            return ModuloScalarFunction2D(<double> a, self)
         return NotImplemented
 
     def __neg__(self):
         return MultiplyScalar2D(-1, self)
 
-    def __pow__(object a, object b, object c):
+    def __pow__(self, object b, object c):
         if c is not None:
             # Optimised implementation of pow(a, b, c) not available: fall back
             # to general implementation
-            return (a ** b) % c
+            return PowFunction2D(self, b) % c
+        if is_callable(b):
+            # a() ** b()
+            return PowFunction2D(self, b)
+        elif isinstance(b, numbers.Real):
+            # a() ** b
+            return PowFunctionScalar2D(self, <double> b)
+        return NotImplemented
+    
+    def __rpow__(self, object a, object c):
+        if c is not None:
+            # Optimised implementation of pow(a, b, c) not available: fall back
+            # to general implementation
+            return PowFunction2D(a, self) % c
         if is_callable(a):
-            if is_callable(b):
-                # a() ** b()
-                return PowFunction2D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() ** b
-                return PowFunctionScalar2D(a, <double> b)
+            # a() ** b()
+            return PowFunction2D(a, self)
         elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # a ** b()
-                return PowScalarFunction2D(<double> a, b)
+            # A ** b()
+            return PowScalarFunction2D(<double> a, self)
         return NotImplemented
 
     def __abs__(self):

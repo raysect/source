@@ -66,31 +66,34 @@ cdef class Function3D(Vector3DFunction):
         """
         return self.evaluate(x, y, z)
 
-    def __add__(object a, object b):
-        if is_callable(a) or isinstance(a, Vector3D):
-            if is_callable(b) or isinstance(b, Vector3D):
-                return AddFunction3D(a, b)
-        return NotImplemented
-
-    def __sub__(object a, object b):
-        if is_callable(a) or isinstance(a, Vector3D):
-            if is_callable(b) or isinstance(b, Vector3D):
-                return SubtractFunction3D(a, b)
-        return NotImplemented
-
-    def __mul__(object a, object b):
-        if is_callable(a) or isinstance(a, Vector3D):
-            if float_is_callable(b) or isinstance(b, numbers.Real):
-                return MultiplyFunction3D(a, b)
+    def __add__(self, object b):
         if is_callable(b) or isinstance(b, Vector3D):
-            if float_is_callable(a) or isinstance(a, numbers.Real):
-                return MultiplyFunction3D(b, a)
+            return AddFunction3D(self, b)
         return NotImplemented
 
-    def __truediv__(object a, object b):
+    def __radd__(self, object a):
+        return self.__add__(a)
+
+    def __sub__(self, object b):
+        if is_callable(b) or isinstance(b, Vector3D):
+            return SubtractFunction3D(self, b)
+        return NotImplemented
+
+    def __rsub__(self, object a):
         if is_callable(a) or isinstance(a, Vector3D):
-            if float_is_callable(b) or isinstance(b, numbers.Real):
-                return DivideFunction3D(a, b)
+            return SubtractFunction3D(a, self)
+
+    def __mul__(self, object b):
+        if float_is_callable(b) or isinstance(b, numbers.Real):
+            return MultiplyFunction3D(self, b)
+        return NotImplemented
+    
+    def __rmul__(self, object a):
+        return self.__mul__(a)
+
+    def __truediv__(self, object b):
+        if float_is_callable(b) or isinstance(b, numbers.Real):
+            return DivideFunction3D(self, b)
         return NotImplemented
 
     def __neg__(self):
