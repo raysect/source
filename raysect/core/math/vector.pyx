@@ -266,18 +266,18 @@ cdef class Vector3D(_Vec3):
             return new_vector3d(s * self.x,
                                 s * self.y,
                                 s * self.z)
-        
+
         elif isinstance(x, AffineMatrix3D):
-                
-                m = <AffineMatrix3D>x
-    
-                return new_vector3d(m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,
-                                    m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z,
-                                    m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z)
-    
-            else:
-    
-                return NotImplemented
+
+            m = <AffineMatrix3D>x
+
+            return new_vector3d(m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,
+                                m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z,
+                                m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z)
+
+        else:
+
+            return NotImplemented
 
 
     @cython.cdivision(True)
