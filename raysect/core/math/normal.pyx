@@ -153,7 +153,6 @@ cdef class Normal3D(_Vec3):
         """Multiply operator."""
 
         cdef double s
-        cdef AffineMatrix3D m, minv
 
         if isinstance(y, numbers.Real):
 
@@ -163,9 +162,27 @@ cdef class Normal3D(_Vec3):
                                 s * self.y,
                                 s * self.z)
 
-        elif isinstance(y, AffineMatrix3D):
+        else:
 
-            m = <AffineMatrix3D>y
+            return NotImplemented
+
+    def __rmul__(self, object x):
+        """Reverse multiply operator."""
+
+        cdef double s
+        cdef AffineMatrix3D m, minv
+
+        if isinstance(x, numbers.Real):
+
+            s = <double>x
+
+            return new_normal3d(s * self.x,
+                                s * self.y,
+                                s * self.z)
+
+        elif isinstance(x, AffineMatrix3D):
+
+            m = <AffineMatrix3D>x
 
             minv = m.inverse()
             return new_normal3d(minv.m[0][0] * self.x + minv.m[1][0] * self.y + minv.m[2][0] * self.z,
