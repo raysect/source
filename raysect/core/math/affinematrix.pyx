@@ -133,7 +133,7 @@ cdef class AffineMatrix3D(_Mat4):
                 s += ", "
         return s + "])"
 
-    def __mul__(object x, object y):
+    def __mul__(self, object y):
         """Multiplication operator.
 
             >>> from raysect.core import translate, rotate_x
@@ -146,9 +146,9 @@ cdef class AffineMatrix3D(_Mat4):
 
         cdef AffineMatrix3D mx, my
 
-        if isinstance(x, AffineMatrix3D) and isinstance(y, AffineMatrix3D):
+        if isinstance(y, AffineMatrix3D):
 
-            mx = <AffineMatrix3D>x
+            mx = self
             my = <AffineMatrix3D>y
             return new_affinematrix3d(mx.m[0][0] * my.m[0][0] + mx.m[0][1] * my.m[1][0] + mx.m[0][2] * my.m[2][0] + mx.m[0][3] * my.m[3][0],
                                       mx.m[0][0] * my.m[0][1] + mx.m[0][1] * my.m[1][1] + mx.m[0][2] * my.m[2][1] + mx.m[0][3] * my.m[3][1],

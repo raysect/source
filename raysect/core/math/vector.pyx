@@ -147,52 +147,105 @@ cdef class Vector3D(_Vec3):
                             -self.y,
                             -self.z)
 
-    def __add__(object x, object y):
+    def __add__(self, object y):
         """Addition operator.
 
             >>> Vector3D(1, 0, 0) + Vector3D(0, 1, 0)
             Vector3D(1.0, 1.0, 0.0)
         """
 
-        cdef _Vec3 vx, vy
+        cdef _Vec3 vy
 
-        if isinstance(x, _Vec3) and isinstance(y, _Vec3):
+        if isinstance(y, _Vec3):
 
-            vx = <_Vec3>x
             vy = <_Vec3>y
 
-            return new_vector3d(vx.x + vy.x,
-                                vx.y + vy.y,
-                                vx.z + vy.z)
+            return new_vector3d(self.x + vy.x,
+                                self.y + vy.y,
+                                self.z + vy.z)
 
         else:
 
             return NotImplemented
+    
+    def __radd__(self, object x):
+        """ Reverse addition operator.
 
-    def __sub__(object x, object y):
+            >>> Vector3D(1, 0, 0) + Vector3D(0, 1, 0)
+            Vector3D(1.0, 1.0, 0.0)
+        """
+
+        return self.__add__(x)
+
+    def __sub__(self, object y):
         """Subtraction operator.
 
             >>> Vector3D(1, 0, 0) - Vector3D(0, 1, 0)
             Vector3D(1.0, -1.0, 0.0)
         """
 
-        cdef _Vec3 vx, vy
+        cdef _Vec3 vy
 
-        if isinstance(x, _Vec3) and isinstance(y, _Vec3):
+        if isinstance(y, _Vec3):
 
-            vx = <_Vec3>x
             vy = <_Vec3>y
 
-            return new_vector3d(vx.x - vy.x,
-                                vx.y - vy.y,
-                                vx.z - vy.z)
+            return new_vector3d(self.x - vy.x,
+                                self.y - vy.y,
+                                self.z - vy.z)
+
+        else:
+
+            return NotImplemented
+    
+    def __rsub__(self, object x):
+        """ Reverse subtraction operator.
+
+            >>> Vector3D(1, 0, 0) - Vector3D(0, 1, 0)
+            Vector3D(1.0, -1.0, 0.0)
+        """
+
+        cdef _Vec3 vx
+
+        if isinstance(x, _Vec3):
+
+            vx = <_Vec3>x
+
+            return new_vector3d(vx.x - self.x,
+                                vx.y - self.y,
+                                vx.z - self.z)
 
         else:
 
             return NotImplemented
 
-    def __mul__(object x, object y):
+    def __mul__(self, object y):
         """Multiplication operator.
+
+        3D vectors can be multiplied with both scalars and transformation matrices.
+
+            >>> from raysect.core import Vector3D, rotate_x
+            >>> Vector3D(1, 2, 3) * 2
+            Vector3D(2.0, 4.0, 6.0)
+        """
+
+        cdef double s
+        cdef AffineMatrix3D m
+
+        if isinstance(y, numbers.Real):
+
+            s = <double>y
+
+            return new_vector3d(s * self.x,
+                                s * self.y,
+                                s * self.z)
+
+        else:
+
+            return NotImplemented
+
+    def __rmul__(self, object x):
+        """ Reverse multiplication operator.
 
         3D vectors can be multiplied with both scalars and transformation matrices.
 
@@ -204,42 +257,31 @@ cdef class Vector3D(_Vec3):
         """
 
         cdef double s
-        cdef Vector3D v
         cdef AffineMatrix3D m
 
-        if isinstance(x, numbers.Real) and isinstance(y, Vector3D):
+        if isinstance(x, numbers.Real):
 
             s = <double>x
-            v = <Vector3D>y
 
-            return new_vector3d(s * v.x,
-                                s * v.y,
-                                s * v.z)
+            return new_vector3d(s * self.x,
+                                s * self.y,
+                                s * self.z)
 
-        elif isinstance(x, Vector3D) and isinstance(y, numbers.Real):
-
-            s = <double>y
-            v = <Vector3D>x
-
-            return new_vector3d(s * v.x,
-                                s * v.y,
-                                s * v.z)
-
-        elif isinstance(x, AffineMatrix3D) and isinstance(y, Vector3D):
+        elif isinstance(x, AffineMatrix3D):
 
             m = <AffineMatrix3D>x
-            v = <Vector3D>y
 
-            return new_vector3d(m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z,
-                                m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z,
-                                m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z)
+            return new_vector3d(m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,
+                                m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z,
+                                m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z)
 
         else:
 
             return NotImplemented
 
+
     @cython.cdivision(True)
-    def __truediv__(object x, object y):
+    def __truediv__(self, object y):
         """Division operator.
 
             >>> Vector3D(1, 1, 1) / 2
@@ -247,9 +289,8 @@ cdef class Vector3D(_Vec3):
         """
 
         cdef double d
-        cdef Vector3D v
 
-        if isinstance(x, Vector3D) and isinstance(y, numbers.Real):
+        if isinstance(y, numbers.Real):
 
             d = <double>y
 
@@ -258,12 +299,11 @@ cdef class Vector3D(_Vec3):
 
                 raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
-            v = <Vector3D>x
             d = 1.0 / d
 
-            return new_vector3d(d * v.x,
-                                d * v.y,
-                                d * v.z)
+            return new_vector3d(d * self.x,
+                                d * self.y,
+                                d * self.z)
 
         else:
 
@@ -705,87 +745,92 @@ cdef class Vector2D:
 
         return new_vector2d(-self.x, -self.y)
 
-    def __add__(object x, object y):
+    def __add__(self, object y):
         """Addition operator.
 
             >>> Vector2D(1, 0) + Vector2D(0, 1)
             Vector2D(1.0, 1.0)
         """
 
-        cdef Vector2D vx, vy
+        cdef Vector2D vy
 
-        if isinstance(x, Vector2D) and isinstance(y, Vector2D):
+        if isinstance(y, Vector2D):
 
-            vx = <Vector2D>x
             vy = <Vector2D>y
 
-            return new_vector2d(vx.x + vy.x, vx.y + vy.y)
+            return new_vector2d(self.x + vy.x, self.y + vy.y)
 
         else:
 
             return NotImplemented
 
-    def __sub__(object x, object y):
+    def __sub__(self, object y):
         """Subtraction operator.
 
             >>> Vector2D(1, 0) - Vector2D(0, 1)
             Vector2D(1.0, -1.0)
         """
 
-        cdef Vector2D vx, vy
+        cdef Vector2D vy
 
-        if isinstance(x, Vector2D) and isinstance(y, Vector2D):
+        if isinstance(y, Vector2D):
 
-            vx = <Vector2D>x
             vy = <Vector2D>y
 
-            return new_vector2d(vx.x - vy.x, vx.y - vy.y)
+            return new_vector2d(self.x - vy.x, self.y - vy.y)
 
         else:
 
             return NotImplemented
 
-    # TODO - add 2D affine transformations
-    def __mul__(object x, object y):
+    def __mul__(self, object y):
         """Multiplication operator.
+
+            >>> Vector3D(1, 2) * 2
+            Vector2D(2.0, 4.0)
+        """
+
+        cdef double s
+        # cdef AffineMatrix2D m
+
+        if isinstance(y, numbers.Real):
+
+            s = <double>y
+
+            return new_vector2d(s * self.x, s * self.y)
+
+        else:
+
+            return NotImplemented
+
+    # TODO - add 2D affine transformations    
+    def __rmul__(self, object x):
+        """Reverse multiplication operator.
 
             >>> 2 * Vector3D(1, 2)
             Vector2D(2.0, 4.0)
         """
 
         cdef double s
-        cdef Vector2D v
         # cdef AffineMatrix2D m
 
-        if isinstance(x, numbers.Real) and isinstance(y, Vector2D):
+        if isinstance(x, numbers.Real):
 
             s = <double>x
-            v = <Vector2D>y
 
-            return new_vector2d(s * v.x, s * v.y,)
-
-        elif isinstance(x, Vector2D) and isinstance(y, numbers.Real):
-
-            s = <double>y
-            v = <Vector2D>x
-
-            return new_vector2d(s * v.x, s * v.y)
-
-        # elif isinstance(x, AffineMatrix3D) and isinstance(y, Vector3D):
+            return new_vector2d(s * self.x, s * self.y)
+        
+        # elif isinstance(x, AffineMatrix2D):
         #
-        #     m = <AffineMatrix3D>x
-        #     v = <Vector3D>y
+        #     m = <AffineMatrix2D>x
         #
-        #     return new_vector3d(m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z,
-        #                         m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z,
-        #                         m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z)
+        #     return new_vector2d(m.m[0][0] * self.x + m.m[0][1] * self.y,
+        #                         m.m[1][0] * self.x + m.m[1][1] * self.y)
 
-        else:
 
-            return NotImplemented
 
     @cython.cdivision(True)
-    def __truediv__(object x, object y):
+    def __truediv__(self, object y):
         """Division operator.
 
             >>> Vector2D(1, 1) / 2
@@ -793,9 +838,8 @@ cdef class Vector2D:
         """
 
         cdef double d
-        cdef Vector2D v
 
-        if isinstance(x, Vector2D) and isinstance(y, numbers.Real):
+        if isinstance(y, numbers.Real):
 
             d = <double>y
 
@@ -804,10 +848,9 @@ cdef class Vector2D:
 
                 raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
-            v = <Vector2D>x
             d = 1.0 / d
 
-            return new_vector2d(d * v.x, d * v.y)
+            return new_vector2d(d * self.x, d * self.y)
 
         else:
 
