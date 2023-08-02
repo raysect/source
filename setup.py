@@ -40,6 +40,7 @@ cython_directives = {
     # 'auto_pickle': True,
     'language_level': 3
 }
+macros = [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
 setup_path = path.dirname(path.abspath(__file__))
 
 if line_profile:
@@ -59,7 +60,7 @@ if use_cython:
                 if path.splitext(file)[1] == ".pyx":
                     pyx_file = path.relpath(path.join(root, file), setup_path)
                     module = path.splitext(pyx_file)[0].replace("/", ".")
-                    extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+                    extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args, define_macros=macros),)
 
     if profile:
         cython_directives["profile"] = True
@@ -77,7 +78,7 @@ else:
                 if path.splitext(file)[1] == ".c":
                     c_file = path.relpath(path.join(root, file), setup_path)
                     module = path.splitext(c_file)[0].replace("/", ".")
-                    extensions.append(Extension(module, [c_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+                    extensions.append(Extension(module, [c_file], include_dirs=compilation_includes, extra_compile_args=compilation_args, define_macros=macros),)
 
 # parse the package version number
 with open(path.join(path.dirname(__file__), 'raysect/VERSION')) as version_file:
