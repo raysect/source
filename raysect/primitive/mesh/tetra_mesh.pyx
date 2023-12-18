@@ -60,10 +60,10 @@ DEF RSM_VERSION_MAJOR = 1
 DEF RSM_VERSION_MINOR = 1
 
 
-cdef class TetraMesh(KDTree3DCore):
+cdef class TetraMeshData(KDTree3DCore):
     """
     Holds the 3D tetrahedral mesh data and acceleration structures.
-    
+
     This arrangement simplifies tetrahedral mesh instancing and the load/dump methods.
 
     The mesh vertices are supplied as an Nx3 list/array of floating point
@@ -604,9 +604,9 @@ cdef class TetraMesh(KDTree3DCore):
 
         .. code-block:: pycon
 
-            >>> from raysect.primitive import TetraMesh
+            >>> from raysect.primitive.mesh import TetraMeshData
             >>>
-            >>> mesh = TetraMesh.from_file("test.rsm")
+            >>> mesh = TetraMeshData.from_file("test.rsm")
         """
 
         m = cls.__new__(cls)

@@ -89,7 +89,7 @@ cdef class Discrete3DMesh(Function3D):
             raise ValueError("tetrahedra_data dimensions ({}) are incompatible with the number of tetrahedra ({}).".format(tetrahedra_data.shape[0], tetrahedra.shape[0]))
 
         # build kdtree
-        self._kdtree = TetraMesh(vertex_coords, tetrahedra)
+        self._kdtree = TetraMeshData(vertex_coords, tetrahedra)
 
         # populate internal attributes
         self._tetrahedra_data = tetrahedra_data
@@ -180,19 +180,19 @@ cdef class Discrete3DMesh(Function3D):
         raise ValueError("Requested value outside mesh bounds.")
 
     @classmethod
-    def from_mesh(cls, TetraMesh mesh not None, object tetrahedra_data not None, bint limit=True, double default_value=0.0):
+    def from_mesh(cls, TetraMeshData mesh not None, object tetrahedra_data not None, bint limit=True, double default_value=0.0):
         """
-        Creates a new interpolator instance from a TetraMesh instance.
+        Creates a new interpolator instance from a TetraMeshData instance.
 
         The new interpolator instance will share the same internal acceleration
-        data as the TetraMesh's accelarator. 
+        data as the TetraMeshData's accelarator.
 
         This method should be used if the user has multiple sets of tetrahedra_data
         that lie on the same mesh geometry. Using this methods avoids the
         repeated rebuilding of the mesh acceleration structures by sharing the
         geometry data between multiple interpolator objects.
 
-        :param TetraMesh instance: TetraMesh object.
+        :param TetraMeshData instance: TetraMeshData object.
         :param ndarray tetrahedra_data: An array containing data for each tetrahedra of shape Mx1.
         :param bool limit: Raise an exception outside mesh limits - True (default) or False.
         :param float default_value: The value to return outside the mesh limits if limit is set to False (default 0.0).
@@ -203,8 +203,8 @@ cdef class Discrete3DMesh(Function3D):
         cdef Discrete3DMesh m
 
         # validate mesh parameter
-        if not isinstance(mesh, TetraMesh):
-            raise TypeError("mesh argument must be TetraMesh instance.")
+        if not isinstance(mesh, TetraMeshData):
+            raise TypeError("mesh argument must be TetraMeshData instance.")
 
         # populate new Discrete3DMesh instance
         m = cls.__new__(cls)
