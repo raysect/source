@@ -1,17 +1,18 @@
-
 import os
 import time
+from pathlib import Path
+
 import numpy as np
 from matplotlib import pyplot as plt
 
-from raysect.optical import World, translate, Point3D, Vector3D, rotate_basis
 from raysect.core.math.function.float.function3d.interpolate import Discrete3DMesh
+from raysect.optical import Point3D, Vector3D, World, rotate_basis, translate
 from raysect.optical.library import RoughTitanium
 from raysect.optical.material import InhomogeneousVolumeEmitter
-from raysect.optical.observer import PinholeCamera, RGBPipeline2D, RGBAdaptiveSampler2D
-from raysect.primitive import Box, TetraMesh
+from raysect.optical.observer import PinholeCamera, RGBAdaptiveSampler2D, RGBPipeline2D
+from raysect.primitive import Box, TetraMeshData
 
-BASE_PATH = os.path.split(os.path.realpath(__file__))[0]
+RESOURCE_PATH = Path(__file__).parent.parent / "resources"
 
 
 class UnityEmitter(InhomogeneousVolumeEmitter):
@@ -27,10 +28,13 @@ class UnityEmitter(InhomogeneousVolumeEmitter):
 
 
 # Rabbit tetrahedra mesh emitter
-vertices = np.load(os.path.join(BASE_PATH, "../resources/stanford_bunny_vertex.npy"))
-tetrahedra = np.load(os.path.join(BASE_PATH, "../resources/stanford_bunny_tetra.npy"))
-mesh = TetraMesh(vertices, tetrahedra)
+data = np.load(RESOURCE_PATH / "stanford_bunny_tetra_mesh.npz")
+vertices = data["vertices"]
+tetrahedra = data["tetrahedra"]
+print("Creating tetra mesh...")
+mesh = TetraMeshData(vertices, tetrahedra)
 tetra = Discrete3DMesh.from_mesh(mesh, np.ones(mesh.tetrahedra.shape[0]), limit=False, default_value=0.0)
+print("Done.")
 
 # scene
 world = World()
