@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .box import Box
+from .torus import Torus
 from .sphere import Sphere
 from .cylinder import Cylinder
 from .csg import Union, Intersect, Subtract
