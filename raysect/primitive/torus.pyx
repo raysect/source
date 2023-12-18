@@ -50,14 +50,14 @@ cdef class Torus(Primitive):
     The torus is defined by major and minor radius.
     The major radius is the distance from the center of the tube to the center of the torus.
     The minor radius is the radius of the tube.
-    The center of the torus corresponds to the origin of the local co-ordinate system.
+    The center of the torus corresponds to the origin of the local coordinate system.
     The axis of revolution coincides with the z-axis, and The center of the torus tube lies
     on the x-y plane.
 
     :param float major_radius: Major radius of the torus in meters (default = 1.0).
     :param float minor_radius: Minor radius of the torus in meters (default = 0.5).
     :param Node parent: Scene-graph parent node or None (default = None).
-    :param AffineMatrix3D transform: An AffineMatrix3D defining the local co-ordinate system relative to the scene-graph parent (default = identity matrix).
+    :param AffineMatrix3D transform: An AffineMatrix3D defining the local coordinate system relative to the scene-graph parent (default = identity matrix).
     :param Material material: A Material object defining the torus's material (default = None).
     :param str name: A string specifying a user-friendly name for the torus (default = "").
 
@@ -197,14 +197,14 @@ cdef class Torus(Primitive):
 
         if num == 0:
             return None
-        
+
         elif num == 1:
             # test the intersection points inside the ray search range [0, max_distance]
             if t[0] > ray.max_distance or t[0] < 0.0:
                 return None
             else:
                 t_closest = t[0]
- 
+
         else:
             # sorting solutions in each number of them
             if num == 2:
@@ -330,11 +330,10 @@ cdef class Torus(Primitive):
         # obtain local space vertices
         points = box.vertices()
 
-        # convert points to world space and build an enclosing world space bounding box
-        # a small degree of padding is added to avoid potential numerical accuracy issues
+        # convert points to world space
         box = BoundingBox3D()
         for point in points:
-            box.extend(point.transform(self.to_root()), BOX_PADDING)
+            box.extend(point.transform(self.to_root()))
 
         return box
 

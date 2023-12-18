@@ -389,9 +389,9 @@ cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) 
     The values of the real roots, are returned by setting the values of the
     memory locations pointed to by t0 and t1. In the case of a single root,
     both t0 and t1 will have the same value. If there are not roots, the values
-    of t0 and t1 will be undefined. 
+    of t0 and t1 will be undefined.
 
-    :param double a: Quadratic constant. 
+    :param double a: Quadratic constant.
     :param double b: Quadratic constant.
     :param double c: Quadratic constant.
     :param double t0: 1st root of the quadratic.
@@ -430,16 +430,19 @@ cdef int solve_cubic(double a, double b, double c, double d, double *t0, double 
 
         f = a.x^3 + b.x^2 + c.x + d
 
-    The cubic equation has 1, 2 or 3 real roots, and this function will return the number of real roots.
+    The cubic equation has 1, 2 or 3 real roots, and this function returns either 1 or 3, but in a special case,
+    2 of the 3 roots found by this function will be equal to each other up to machine epsilon.
+
+
     The values of the roots, are returned by setting the values of the memory locations pointed to by t0, t1, and t2.
 
     In the case of three real roots, the roots themselves back in t0, t1 and t2.
     In the case of two real roots, a pair in t0, t1, and t2 will have the same value, and the other is a different one.
-    In the case of one real root, t0 will be the real root, and t1 + i * t2 will a pair of coplex-conjugated roots.
+    In the case of one real root, t0 will be the real root, and t1 +- i * t2 will a pair of complex-conjugated roots.
 
     The practical algorithm is followed by https://quarticequations.com
 
-    :param double a: Cubic constant. 
+    :param double a: Cubic constant.
     :param double b: Cubic constant.
     :param double c: Cubic constant.
     :param double d: Cubic constant.
@@ -513,7 +516,7 @@ cdef int solve_biquadratic(double a, double c, double e, double *t0, double *t1,
     the values of t2 and t3 will be undefined. If there is no real root,
     all values will be undefined.
 
-    :param double a: Biquadratic constant. 
+    :param double a: Biquadratic constant.
     :param double c: Biquadratic constant.
     :param double e: Biquadratic constant.
     :param double t0: 1st root of the biquadratic.
@@ -521,7 +524,7 @@ cdef int solve_biquadratic(double a, double c, double e, double *t0, double *t1,
     :param double t2: 3rd root of the biquadratic.
     :param double t3: 4th root of the biquadratic.
     :return: Number of real roots.
-    :rtype: int    
+    :rtype: int
     """
     cdef double s0, s1, sx0, sx1
 
@@ -542,7 +545,7 @@ cdef int solve_biquadratic(double a, double c, double e, double *t0, double *t1,
         t2[0] = sx0
         t3[0] = sx1
         return 4
-    
+
     # s0 < 0 <= s1, 2 real roots
     elif s1 >= 0:
         sx1 = sqrt(s1)
@@ -562,7 +565,7 @@ cdef int _solve_depressed_quartic(double p, double q, double r, double *t0, doub
     cdef:
         int num
         double s0, sigma, A, B, sq_A, sq_B
-    
+
     if q > 0:
         sigma = 1.0
     else:
@@ -690,7 +693,7 @@ cdef int solve_quartic(double a, double b, double c, double d, double e,
 
     The practical algorithm of Van der Waerden method is followed by https://quarticequations.com
 
-    :param double a: Qurtic constant. 
+    :param double a: Qurtic constant.
     :param double b: Qurtic constant.
     :param double c: Qurtic constant.
     :param double d: Qurtic constant.
