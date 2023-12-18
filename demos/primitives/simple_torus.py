@@ -45,7 +45,7 @@ camera = PinholeCamera(
     frame_sampler=sampler,
 )
 camera.spectral_bins = 21
-camera.spectral_rays = 21
+camera.spectral_rays = 1
 camera.pixel_samples = 250
 camera.ray_max_depth = 10000
 camera.ray_extinction_min_depth = 3
