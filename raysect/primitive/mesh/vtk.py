@@ -46,13 +46,16 @@ VTK_BINARY = 'binary'
 class VTKHandler:
 
     @classmethod
-    def import_vtk(cls, filename, scaling=1.0, mode=VTK_AUTOMATIC, **kwargs):
+    def my_import_vtk(cls, filename, scaling=1e-3, mode=VTK_AUTOMATIC, **kwargs):
         """
         Create a mesh instance from a VTK mesh data file (.vtk).
 
         .. warning ::
            Currently only supports VTK DataFile v2.0 and unstructured grid data with
            3 element (triangular) cells.
+
+        .. warning ::
+            Trying to update the version to be able to read VTK DataFile 4.2.
 
         :param str filename: Mesh file path.
         :param double scaling: Scale the mesh by this factor (default=1.0).
@@ -87,11 +90,11 @@ class VTKHandler:
         with open(filename, 'r') as f:
 
             # parse the file header
-            assert f.readline().strip() == "# vtk DataFile Version 2.0"
+            assert f.readline().strip() == "# vtk DataFile Version 4.2"
             mesh_name = f.readline().strip()
             assert f.readline().strip() == "ASCII"
 
-            if not f.readline().strip() == "DATASET UNSTRUCTURED_GRID":
+            if not f.readline().strip() == "DATASET POLYDATA":
                 raise RuntimeError("Unrecognised dataset encountered in vtk file.")
 
             vertices = cls._ascii_read_vertices(f, scaling)
@@ -109,36 +112,47 @@ class VTKHandler:
 
         vertices = np.empty((num_points, 3))
 
-        for i in range(num_points):
+        i=0
+
+        while i < num_points:
             coordinates = f.readline().split()
-            vertices[i, 0] = float(coordinates[0]) * scaling
-            vertices[i, 1] = float(coordinates[1]) * scaling
-            vertices[i, 2] = float(coordinates[2]) * scaling
+
+            j=0
+
+            while j < np.size(coordinates):
+                vertices[i, 0] = float(coordinates[j]) * scaling
+                vertices[i, 1] = float(coordinates[j+1]) * scaling
+                vertices[i, 2] = float(coordinates[j+2]) * scaling
+                j += 3
+                i += 1
 
         return vertices
 
     @classmethod
     def _ascii_read_triangles(cls, f):
 
-        match = re.match("CELLS\s*([0-9]*)\s*([0-9]*)", f.readline())
+        #match = re.match("CELLS\s*([0-9]*)\s*([0-9]*)", f.readline())
+        match = False
+
+        while not match:
+            match = re.match("POLYGONS\s*([0-9]*)\s*([0-9]*)", f.readline())
+
         if not match:
             raise RuntimeError("Unrecognised dataset encountered in vtk file.")
         num_triangles = int(match.group(1))
         triangles = np.empty((num_triangles, 3), dtype=np.int32)
         for i in range(num_triangles):
             triangle_specification = f.readline().split()
+
+            #assert triangle specification[0] == 3
             triangles[i, 0] = int(triangle_specification[1])
             triangles[i, 1] = int(triangle_specification[2])
             triangles[i, 2] = int(triangle_specification[3])
 
-        assert f.readline().split()[0] == 'CELL_TYPES'
-        for i in range(num_triangles):
-            assert int(f.readline().strip()) == 5
-
         return triangles
 
     @classmethod
-    def export_vtk(cls, mesh, filename, triangle_data=None, vertex_data=None, mode=VTK_ASCII):
+    def my_export_vtk(cls, mesh, filename, triangle_data=None, vertex_data=None, mode=VTK_ASCII):
         """
         Write a mesh instance to a vtk mesh file (.vtk) with optional cell and point data.
 
@@ -152,7 +166,8 @@ class VTKHandler:
           equal to the number of vertices in the mesh.
         :param str mode: The file format to write: 'ascii' or 'binary' (default='ascii').
         """
-
+ 		print('\n\n***WARNING***\n\nMY_EXPORT_VTK: still to be revised & NO normals & other missing data\n\n')
+        
         if not isinstance(mesh, Mesh):
             raise ValueError("The mesh argument to write_vtk() must be a valid Raysect Mesh primitive object.")
 
@@ -170,12 +185,13 @@ class VTKHandler:
 
         with open(filename, 'w') as f:
 
-            # # vtk DataFile Version 2.0
-            # My Raysect mesh data
+            # # vtk DataFile Version 4.2
+            # vtk output
             # ASCII
             mesh_name = (mesh.name or 'RaysectMesh').replace(" ", "_")
-            f.write('# vtk DataFile Version 2.0\n')
-            f.write('{}\n'.format(mesh_name))
+            f.write('# vtk DataFile Version 4.2\n')
+            #f.write('{}\n'.format(mesh_name))
+            f.write('vtk output\n')
             f.write('ASCII\n')
 
             cls._ascii_write_geometry(f, mesh)
@@ -194,31 +210,38 @@ class VTKHandler:
         num_triangles = mesh.data.triangles.shape[0]
         num_vertices = mesh.data.vertices.shape[0]
 
-        # DATASET UNSTRUCTURED_GRID
-        # POINTS  5081  float
-        # 5.12135678592 3.59400404579 5.20377763887
-        # 5.07735666785 3.40460816029 5.27386350545
+        # DATASET POLYDATA
+        # POINTS  36013  float
+        # 5.12135678592 3.59400404579 5.20377763887 5.07735666785 3.40460816029 5.27386350545
         # ...
-        f.write('DATASET UNSTRUCTURED_GRID\n')
+        f.write('DATASET POLYDATA\n')
         f.write('POINTS {} float\n'.format(num_vertices))
-        for i in range(num_vertices):
-            f.write('{} {} {}\n'.format(vertices[i, 0], vertices[i, 1], vertices[i, 2]))
 
-        # CELLS  9804 39216
+        i = 0
+
+        while i < num_vertices:
+            j = 0
+            while i < num_vertices and j < 3:
+                f.write('{} {} {} '.format(vertices[i, 0], vertices[i, 1], vertices[i, 2]))
+                i += 1
+                j += 1
+            f.write('\n')
+
+        f.write('METADATA\nINFORMATION 2\n')
+        f.write('NAME L2_NORM_RANGE LOCATION vtkDataArray\n')
+        f.write('DATA 2 2.37105 2.7879\n')
+        f.write('NAME L2_NORM_FINITE_RANGE LOCATION vtkDataArray\n')
+        f.write('DATA 2 2.37105 2.7879\n\n')
+
+
+        # POLYGONS  9804 39216
+
         # 3 447 4361 446
         # 3 444 4248 445
         # ...
-        f.write('CELLS {} {}\n'.format(num_triangles, 4 * num_triangles))
+        f.write('POLYGONS {} {}\n'.format(num_triangles, 4 * num_triangles))
         for i in range(num_triangles):
             f.write('3 {} {} {}\n'.format(triangles[i, 0], triangles[i, 1], triangles[i, 2]))
-
-        # CELL_TYPES  9804
-        # 5
-        # 5
-        # ...
-        f.write('CELL_TYPES {}\n'.format(num_triangles))
-        for i in range(num_triangles):
-            f.write('5\n')
 
     @classmethod
     def _ascii_write_vertex_data(cls, f, mesh, vertex_data):
@@ -237,7 +260,7 @@ class VTKHandler:
         # ...
 
         num_triangles = mesh.data.triangles.shape[0]
-        f.write('CELL_DATA {}\n'.format(num_triangles))
+        f.write('\nCELL_DATA {}\n'.format(num_triangles))
 
         error_msg = "The triangle_data argument in write_vtk() must be a dictionary or arrays/lists " \
                     "with length equal to the number of triangles."
@@ -253,11 +276,19 @@ class VTKHandler:
             except TypeError:
                 raise ValueError(error_msg)
 
-            f.write('SCALARS {} FLOAT\n'.format(var_name.replace(" ", "_")))
-            f.write('LOOKUP_TABLE default\n')
-            for value in values:
-                f.write('{}\n'.format(value))
+            f.write('FIELD FieldData 1\n')
+            f.write('GroupIds 1 {} float\n'.format(num_triangles))
+
+            i = 0
+
+            while i < num_triangles:
+                j = 0
+                while i < num_triangles and j < 9:
+                    f.write('{} '.format(values[i]))
+                    i += 1
+                    j += 1
+                f.write('\n')
 
 
-import_vtk = VTKHandler.import_vtk
-export_vtk = VTKHandler.export_vtk
+my_import_vtk = VTKHandler.my_import_vtk
+my_export_vtk = VTKHandler.my_export_vtk
