@@ -1,12 +1,17 @@
-from setuptools import setup, find_packages, Extension
-from setuptools.command.build_ext import build_ext as _build_ext
-import sys
-import numpy
-import os
-import os.path as path
 import multiprocessing
+import os
+import sys
+from pathlib import Path
 
-multiprocessing.set_start_method('fork')
+import numpy
+from setuptools import Extension, find_packages, setup
+from setuptools.command.build_ext import build_ext as _build_ext
+
+
+if os.name == "nt":
+    multiprocessing.set_start_method("spawn")
+else:
+    multiprocessing.set_start_method("fork")
 
 use_cython = True
 force = False
@@ -34,14 +39,14 @@ if "--annotate" in sys.argv:
     annotate = True
     sys.argv.remove("--annotate")
 
-source_paths = ['raysect', 'demos']
+source_paths = ["raysect", "demos"]
 compilation_includes = [".", numpy.get_include()]
-compilation_args = ['-O3']
+compilation_args = ["-O3"]
 cython_directives = {
     # 'auto_pickle': True,
-    'language_level': 3
+    "language_level": 3
 }
-setup_path = path.dirname(path.abspath(__file__))
+setup_path = Path(__file__).parent
 
 if line_profile:
     compilation_args.append("-DCYTHON_TRACE=1")
@@ -49,40 +54,54 @@ if line_profile:
     cython_directives["linetrace"] = True
 
 if use_cython:
-
     from Cython.Build import cythonize
 
     # build .pyx extension list
     extensions = []
     for package in source_paths:
-        for root, dirs, files in os.walk(path.join(setup_path, package)):
-            for file in files:
-                if path.splitext(file)[1] == ".pyx":
-                    pyx_file = path.relpath(path.join(root, file), setup_path)
-                    module = path.splitext(pyx_file)[0].replace("/", ".")
-                    extensions.append(Extension(module, [pyx_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
+        for pyx in (setup_path / package).glob("**/*.pyx"):
+            pyx_path = pyx.relative_to(setup_path)
+            module = ".".join(pyx_path.with_suffix("").parts)
+            extensions.append(
+                Extension(
+                    module,
+                    [str(pyx_path)],
+                    include_dirs=compilation_includes,
+                    extra_compile_args=compilation_args,
+                ),
+            )
 
     if profile:
         cython_directives["profile"] = True
 
     # generate .c files from .pyx
-    extensions = cythonize(extensions, nthreads=multiprocessing.cpu_count(), force=force, compiler_directives=cython_directives, annotate=annotate)
+    extensions = cythonize(
+        extensions,
+        nthreads=multiprocessing.cpu_count(),
+        force=force,
+        compiler_directives=cython_directives,
+        annotate=annotate,
+    )
 
 else:
-
     # build .c extension list
     extensions = []
     for package in source_paths:
-        for root, dirs, files in os.walk(path.join(setup_path, package)):
-            for file in files:
-                if path.splitext(file)[1] == ".c":
-                    c_file = path.relpath(path.join(root, file), setup_path)
-                    module = path.splitext(c_file)[0].replace("/", ".")
-                    extensions.append(Extension(module, [c_file], include_dirs=compilation_includes, extra_compile_args=compilation_args),)
-
+        for c_file in (setup_path / package).glob("**/*.c"):
+            c_file_path = c_file.relative_to(setup_path)
+            module = ".".join(c_file_path.with_suffix("").parts)
+            extensions.append(
+                Extension(
+                    module,
+                    [str(c_file_path)],
+                    include_dirs=compilation_includes,
+                    extra_compile_args=compilation_args,
+                ),
+            )
 # parse the package version number
-with open(path.join(path.dirname(__file__), 'raysect/VERSION')) as version_file:
+with (Path(__file__).parent / "raysect/VERSION").open("r") as version_file:
     version = version_file.read().strip()
+
 
 # Use multiple processes by default for building extensions
 class build_ext(_build_ext):
@@ -92,13 +111,14 @@ class build_ext(_build_ext):
             nproc = int(os.getenv("RAYSECT_BUILD_JOBS", str(multiprocessing.cpu_count())))
             self.parallel = nproc
 
+
 setup(
     name="raysect",
     version=version,
     url="http://www.raysect.org",
     author="Dr Alex Meakins et al.",
     author_email="developers@raysect.org",
-    description='A Ray-tracing Framework for Science and Engineering',
+    description="A Ray-tracing Framework for Science and Engineering",
     license="BSD",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -111,12 +131,12 @@ setup(
         "Programming Language :: Cython",
         "Programming Language :: Python :: 3",
         "Topic :: Multimedia :: Graphics :: 3D Rendering",
-        "Topic :: Scientific/Engineering :: Physics"
+        "Topic :: Scientific/Engineering :: Physics",
     ],
-    install_requires=['numpy', 'matplotlib'],
+    install_requires=["numpy", "matplotlib"],
     packages=find_packages(),
     include_package_data=True,
-    zip_safe= False,
+    zip_safe=False,
     ext_modules=extensions,
     cmdclass={"build_ext": build_ext},
 )
