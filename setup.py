@@ -9,7 +9,7 @@ from setuptools.command.build_ext import build_ext as _build_ext
 
 
 if os.name == "nt":
-    multiprocessing.set_start_method("spawn")
+    raise OSError("Raysect does not currently support Windows. Please use a Linux or MacOS system.")
 else:
     multiprocessing.set_start_method("fork")
 
