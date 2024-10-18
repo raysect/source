@@ -133,7 +133,7 @@ setup(
         "Topic :: Multimedia :: Graphics :: 3D Rendering",
         "Topic :: Scientific/Engineering :: Physics",
     ],
-    install_requires=["numpy", "matplotlib"],
+    install_requires=["numpy<2.0", "matplotlib"],
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
