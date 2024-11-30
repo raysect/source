@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import build_ext as _build_ext
 import sys
 import numpy
 import os
@@ -83,6 +84,14 @@ else:
 with open(path.join(path.dirname(__file__), 'raysect/VERSION')) as version_file:
     version = version_file.read().strip()
 
+# Use multiple processes by default for building extensions
+class build_ext(_build_ext):
+    def finalize_options(self):
+        super().finalize_options()
+        if self.parallel is None:
+            nproc = int(os.getenv("RAYSECT_BUILD_JOBS", str(multiprocessing.cpu_count())))
+            self.parallel = nproc
+
 setup(
     name="raysect",
     version=version,
@@ -104,9 +113,10 @@ setup(
         "Topic :: Multimedia :: Graphics :: 3D Rendering",
         "Topic :: Scientific/Engineering :: Physics"
     ],
-    install_requires=['numpy>=0.14', 'scipy', 'matplotlib'],
+    install_requires=['numpy', 'matplotlib'],
     packages=find_packages(),
     include_package_data=True,
-    zip_safe=False,
-    ext_modules=extensions
+    zip_safe= False,
+    ext_modules=extensions,
+    cmdclass={"build_ext": build_ext},
 )
