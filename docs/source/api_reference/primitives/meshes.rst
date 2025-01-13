@@ -34,6 +34,6 @@ Meshes
 Tetrahedral Meshes
 ==================
 
-.. autoclass:: raysect.primitive.mesh.tetra_mesh.TetraMesh
-   :members: from_file, load, save, vertex, tetrahedron, volume, volume_total
+.. autoclass:: raysect.primitive.mesh.tetra_mesh.TetraMeshData
+   :members: from_file, load, save, vertex, tetrahedron, barycenter, volume, volume_total
    :show-inheritance:
