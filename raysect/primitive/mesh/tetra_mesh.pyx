@@ -495,7 +495,7 @@ cdef class TetraMeshData(KDTree3DCore):
         file.write(struct.pack("<B", RSM_VERSION_MINOR))
 
         # mesh setting flags
-        file.write(struct.pack("<?", True))    # kdtree in file (hardcoded for now, will be an option)
+        file.write(struct.pack("<?", True))  # kdtree in file (hardcoded for now, will be an option)
 
         # item counts
         file.write(struct.pack("<i", vertices.shape[0]))
@@ -550,7 +550,7 @@ cdef class TetraMeshData(KDTree3DCore):
             raise ValueError("Unsupported Raysect mesh version.")
 
         # mesh setting flags
-        _ = self._read_bool(file)    # kdtree option, ignore for now (to be implemented)
+        _ = self._read_bool(file)  # kdtree option, ignore for now (to be implemented)
 
         # item counts
         num_vertices = self._read_int32(file)
