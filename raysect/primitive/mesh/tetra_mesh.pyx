@@ -105,7 +105,7 @@ cdef class TetraMeshData(KDTree3DCore):
         # check tetrahedra contains only valid indices
         invalid = (tetrahedra[:, 0:4] < 0) | (tetrahedra[:, 0:4] >= vertices.shape[0])
         if invalid.any():
-            raise ValueError("The tetrahedra array references non-existent vertices.")
+            raise IndexError("The tetrahedra array references non-existent vertices.")
 
         # assign to internal attributes
         self._vertices = vertices
