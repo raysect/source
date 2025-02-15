@@ -178,7 +178,7 @@ cdef class TetraMeshData(KDTree3DCore):
         """
 
         if index < 0 or index >= self.vertices_mv.shape[0]:
-            raise ValueError('Vertex index is out of range: [0, {}].'.format(self.vertices_mv.shape[0]))
+            raise IndexError('Vertex index is out of range: [0, {}].'.format(self.vertices_mv.shape[0]))
 
         return new_point3d(
             self.vertices_mv[index, X],
@@ -198,7 +198,7 @@ cdef class TetraMeshData(KDTree3DCore):
         """
 
         if index < 0 or index >= self.vertices_mv.shape[0]:
-            raise ValueError('Tetrahedral index is out of range: [0, {}].'.format(self.tetrahedra_mv.shape[0]))
+            raise IndexError('Tetrahedral index is out of range: [0, {}].'.format(self.tetrahedra_mv.shape[0]))
 
         return self._tetrahedra[index, :].copy()
 
@@ -214,7 +214,7 @@ cdef class TetraMeshData(KDTree3DCore):
             np.int32_t i1, i2, i3, i4
 
         if index < 0 or index >= self.tetrahedra_mv.shape[0]:
-            raise ValueError('Tetrahedral index is out of range: [0, {}].'.format(self.tetrahedra_mv.shape[0]))
+            raise IndexError('Tetrahedral index is out of range: [0, {}].'.format(self.tetrahedra_mv.shape[0]))
 
         i1 = self.tetrahedra_mv[index, V1]
         i2 = self.tetrahedra_mv[index, V2]
@@ -239,7 +239,7 @@ cdef class TetraMeshData(KDTree3DCore):
         :rtype: double
         """
         if index < 0 or index >= self.tetrahedra_mv.shape[0]:
-            raise ValueError('Tetrahedral index is out of range: [0, {}].'.format(self.tetrahedra_mv.shape[0]))
+            raise IndexError('Tetrahedral index is out of range: [0, {}].'.format(self.tetrahedra_mv.shape[0]))
 
         return self._volume(index)
 
