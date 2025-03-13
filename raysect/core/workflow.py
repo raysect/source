@@ -27,9 +27,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from collections import defaultdict
 from multiprocessing import get_context, cpu_count
 from raysect.core.math import random
 import time
+
+try:
+    from mpi4py import MPI
+    HAVE_MPI = True
+except ImportError:
+    HAVE_MPI = False
 
 
 class RenderEngine:
@@ -324,6 +331,110 @@ class MulticoreEngine(RenderEngine):
 
             # hand back results
             result_queue.put(results)
+
+
+class MPIEngine(RenderEngine):
+    """
+    Render engine for running in an MPI context.
+
+    This engine is useful for distributed memory systems, and for shared
+    memory systems where the overhead of inter-process communication of
+    the scenegraph is large compared with the time taken for a single
+    process to produce the scenegraph (e.g. on Windows).
+
+    This render engine requires mpi4py to be installed, and the program
+    to be run using ``mpirun -n <nproc> python <script.py>``.
+
+        >>> from raysect.core import MPIEngine
+        >>> from raysect.optical.observer import PinholeCamera
+        >>>
+        >>> camera = PinholeCamera((512, 512))
+        >>> camera.render_engine = MPIEngine()
+
+    The render engine uses the single process, multiple data (SPMD) paradigm.
+    Each process is treated as a separate serial renderer. It is assumed that
+    the scene graph is created in every process, and each process processes a
+    subset of the total rendering tasks sequentially. The results are then
+    gathered back to the root (rank 0) process.
+
+    The SPMD paradigm means there are many copies of the program running and
+    each copy runs the same instructions, so programs must be written with
+    this in mind. While all copies build the scene to render, only one copy
+    (the process with rank 0) actually receives all the render results
+    and calls the update function. This means that after an observe,
+    only the rank 0 process contains the results of the call to the render
+    function for all tasks, and so any post processing (including plotting
+    or saving images) should only be done on the rank 0 process.
+
+    Also, any further renders which depend on the results of a previous render
+    (for example, using adapive samplers) will require communication of the
+    results from rank 0 to all the other processes:
+
+        >>> pipeline = RGBPipeline2d()
+        >>> camera.pipelines = [pipeline]
+        >>> camera.sampler = RGBAdaptivesampler2d(pipeline)
+        >>> camera.observe()
+        >>> # Update the sampler in each worker process with the results
+        >>> # of the previous render for the next pass.
+        >>> root_pipeline = camera.render_engine.comm.bcast(pipeline, root=0)
+        >>> camera.sampler.pipeline = root_pipeline
+        >>> # Now subsequent observes will have the correct statistics.
+        >>> camera.observe()
+
+    The class contains some attributes relevant to the MPI environment:
+
+    :ivar comm: the MPI communicator (``MPI_COMM_WORLD``).
+    :ivar rank: the process rank in the communicator. Only rank 0 contains the
+                full results after a call ``to RenderEngine.run()``.
+    :ivar size: the number of processes in the communicator.
+    """
+    def __init__(self):
+        if not HAVE_MPI:
+            raise RuntimeError("The mpi4py package is required to use this engine.")
+        comm = MPI.COMM_WORLD
+        self.comm = comm
+        self.rank = comm.Get_rank()
+        self.size = comm.Get_size()
+        if self.size < 2:
+            raise RuntimeError("At least 2 separate processes are required to use this engine.")
+
+    def run(self, tasks, render, update, render_args=(), render_kwargs=None, update_args=(), update_kwargs=None):
+        # Avoid mutable default arguments.
+        if render_kwargs is None:
+            render_kwargs = {}
+        if update_kwargs is None:
+            update_kwargs = {}
+        # All processes must have the same tasks, in the same order, so that
+        # all processes agree on which subset of tasks each is to work on.
+        tasks = self.comm.bcast(tasks, root=0)
+        ntasks = len(tasks)
+        nworkers = self.size - 1
+        worker_tasks = defaultdict(list)
+        for i, task in enumerate(tasks):
+            worker_tasks[i % nworkers].append(task)
+        if self.rank == 0:  # The root node processes the results.
+            remaining = ntasks
+            while remaining:
+                result = self.comm.recv()
+                if isinstance(result, Exception):
+                    raise result
+                update(result, *update_args, **update_kwargs)
+                remaining -= 1
+        else:  # Each worker renders the subset of tasks assigned to them.
+            # Unlike MulticoreEngine, there is no need to re-seed the random
+            # number generator to prevent all workers inheriting the same sequence
+            # since all processes are independent.
+            for task in worker_tasks[self.rank - 1]:
+                try:
+                    result = render(task, *render_args, **render_kwargs)
+                except Exception as e:
+                    result = e
+                self.comm.send(result, 0)
+        self.comm.Barrier()
+
+    def worker_count(self):
+        return self.size
+
 
 
 if __name__ == '__main__':
