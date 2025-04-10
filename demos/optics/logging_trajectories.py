@@ -1,17 +1,15 @@
 
 # External imports
-import matplotlib as mpl
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
 
 # Raysect imports
-from raysect.optical import World, translate, rotate, Point3D, d65_white, Ray, Vector3D
+from raysect.optical import World, translate, Point3D, Vector3D
 from raysect.optical.material.absorber import AbsorbingSurface
 from raysect.optical.library import schott
-from raysect.primitive import Sphere, Box
+from raysect.primitive import Box
 from raysect.optical.loggingray import LoggingRay
-from raysect.primitive.lens.spherical import *
+from raysect.primitive.lens.spherical import BiConvex
 
 
 world = World()
@@ -29,7 +27,7 @@ target = Box(lower=Point3D(-50, -50, -0), upper=Point3D(50, 50, 0), material=Abs
 # for each sample direction trace a logging ray and plot the ray trajectory
 plt.ion()
 fig = plt.figure()
-ax = fig.gca(projection='3d')
+ax = fig.add_subplot(111, projection='3d')
 
 for u in np.linspace(-0.006, 0.006, 5):
     for v in np.linspace(-0.012, 0.012, 11):
@@ -39,8 +37,8 @@ for u in np.linspace(-0.006, 0.006, 5):
         log_ray.trace(world)
 
         p = [(start.x, start.y, start.z)]
-        for point in log_ray.log:
-            p.append((point.x, point.y, point.z))
+        for intersection in log_ray.log:
+            p.append((intersection.hit_point.x, intersection.hit_point.y, intersection.hit_point.z))
         p = np.array(p)
 
         ax.plot(p[:, 0], p[:, 1], p[:, 2], 'k-')
