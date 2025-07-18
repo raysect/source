@@ -33,7 +33,7 @@ import numbers
 cimport cython
 from libc.math cimport sqrt, fabs, NAN, acos, cos, sin
 
-DEF EPSILON = 1e-12
+cdef const double EPSILON = 1e-12
 
 
 cdef class Vector3D(_Vec3):
@@ -167,7 +167,7 @@ cdef class Vector3D(_Vec3):
         else:
 
             return NotImplemented
-    
+
     def __radd__(self, object x):
         """ Reverse addition operator.
 
@@ -197,7 +197,7 @@ cdef class Vector3D(_Vec3):
         else:
 
             return NotImplemented
-    
+
     def __rsub__(self, object x):
         """ Reverse subtraction operator.
 
@@ -791,7 +791,6 @@ cdef class Vector2D:
         """
 
         cdef double s
-        # cdef AffineMatrix2D m
 
         if isinstance(y, numbers.Real):
 
@@ -800,10 +799,8 @@ cdef class Vector2D:
             return new_vector2d(s * self.x, s * self.y)
 
         else:
+            raise TypeError("Unsupported operand type. Expects a real number.")
 
-            return NotImplemented
-
-    # TODO - add 2D affine transformations    
     def __rmul__(self, object x):
         """Reverse multiplication operator.
 
@@ -812,20 +809,15 @@ cdef class Vector2D:
         """
 
         cdef double s
-        # cdef AffineMatrix2D m
 
         if isinstance(x, numbers.Real):
 
             s = <double>x
 
             return new_vector2d(s * self.x, s * self.y)
-        
-        # elif isinstance(x, AffineMatrix2D):
-        #
-        #     m = <AffineMatrix2D>x
-        #
-        #     return new_vector2d(m.m[0][0] * self.x + m.m[0][1] * self.y,
-        #                         m.m[1][0] * self.x + m.m[1][1] * self.y)
+
+        else:
+            raise TypeError("Unsupported operand type. Expects a real number.")
 
 
 

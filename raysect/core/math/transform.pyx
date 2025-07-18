@@ -35,9 +35,8 @@ from raysect.core.math.point cimport new_point3d
 cimport cython
 
 
-DEF RAD2DEG = 57.29577951308232000  # 180 / pi
-DEF DEG2RAD = 0.017453292519943295  # pi / 180
-
+cdef const double RAD2DEG = 57.29577951308232000  # 180 / pi
+cdef const double DEG2RAD = 0.017453292519943295  # pi / 180
 
 FORWARD = 'forward'
 UP = 'up'

@@ -44,13 +44,14 @@ from raysect.primitive.mesh.mesh cimport Mesh
 cimport cython
 
 # convenience defines
-DEF X = 0
-DEF Y = 1
-DEF Z = 2
+cdef enum:
+    X = 0
+    Y = 1
+    Z = 2
 
-DEF V1 = 0
-DEF V2 = 1
-DEF V3 = 2
+    V1 = 0
+    V2 = 1
+    V3 = 2
 
 
 cdef class MeshPixel(Observer0D):
@@ -167,8 +168,8 @@ cdef class MeshPixel(Observer0D):
         self._collection_area = 0.0
         self._cdf = np.zeros(self._triangles_mv.shape[0])
         self._cdf_mv = self._cdf
-        
-        # calculate cumulative and total area simultaneously 
+
+        # calculate cumulative and total area simultaneously
         for i in range(self._triangles_mv.shape[0]):
 
             # obtain vertex indices
@@ -184,7 +185,7 @@ cdef class MeshPixel(Observer0D):
             )
             self._collection_area += triangle_area
             self._cdf_mv[i] = self._collection_area
-        
+
         # normalise cumulative area to make cdf
         self._cdf /= self._collection_area
 

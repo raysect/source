@@ -34,7 +34,7 @@ from raysect.core.math.cython cimport integrate, interpolate
 from numpy cimport PyArray_SimpleNew, PyArray_FILLWBYTE, NPY_FLOAT64, npy_intp, import_array
 
 # Plank's constant * speed of light in a vacuum
-DEF CONSTANT_HC = 1.9864456832693028e-25
+cdef const double CONSTANT_HC = 1.9864456832693028e-25
 
 # required by numpy c-api
 import_array()

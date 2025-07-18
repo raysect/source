@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI as PI, asin, cos
+from libc.math cimport M_PI as PI, asin, cos, INFINITY
 
 from raysect.core cimport Intersection
 from raysect.core.math.random cimport probability
@@ -38,9 +38,6 @@ from raysect.optical.material.material cimport Material
 from raysect.optical.spectrum cimport new_spectrum
 from raysect.optical.scenegraph cimport Primitive
 cimport cython
-
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
 
 
 cdef class Ray(CoreRay):

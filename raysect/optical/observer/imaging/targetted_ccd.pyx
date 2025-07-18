@@ -40,7 +40,7 @@ from raysect.optical.observer.base cimport Observer2D
 cimport cython
 
 
-DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
+cdef const double R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 
 cdef class TargettedCCDArray(Observer2D):

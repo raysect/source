@@ -96,8 +96,9 @@ from libc.math cimport cos, sin, asin, log, fabs, sqrt, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
 cimport cython
 
-DEF NN = 312
-DEF MM = 156
+cdef enum:
+    NN = 312
+    MM = 156
 
 # The array for the state vector
 cdef uint64_t mt[NN]

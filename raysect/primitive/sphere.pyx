@@ -35,11 +35,11 @@ from raysect.core.math.cython cimport solve_quadratic, swap_double
 
 
 # bounding box and sphere are padded by small amounts to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-9
-DEF SPHERE_PADDING = 1.000000001
+cdef const double BOX_PADDING = 1e-9
+cdef const double SPHERE_PADDING = 1.000000001
 
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-9
+cdef const double EPSILON = 1e-9
 
 
 cdef class Sphere(Primitive):

@@ -38,15 +38,16 @@ from raysect.core.math.cython cimport barycentric_inside_triangle, barycentric_c
 cimport cython
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-6
+cdef const double BOX_PADDING = 1e-6
 
 # convenience defines
-DEF V1 = 0
-DEF V2 = 1
-DEF V3 = 2
+cdef enum:
+    V1 = 0
+    V2 = 1
+    V3 = 2
 
-DEF X = 0
-DEF Y = 1
+    X = 0
+    Y = 1
 
 
 cdef class MeshKDTree2D(KDTree2DCore):

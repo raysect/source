@@ -36,8 +36,8 @@ from libc.math cimport sqrt, sin, cos, asin, acos, atan2, fabs, M_PI, copysign
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.affinematrix cimport new_affinematrix3d, AffineMatrix3D
 
-DEF RAD2DEG = 57.29577951308232000  # 180 / pi
-DEF DEG2RAD = 0.017453292519943295  # pi / 180
+cdef const double RAD2DEG = 57.29577951308232000  # 180 / pi
+cdef const double DEG2RAD = 0.017453292519943295  # pi / 180
 
 
 cdef class Quaternion:
@@ -288,8 +288,8 @@ cdef class Quaternion:
 
     cpdef Quaternion conjugate(self):
         """
-        Complex conjugate operator. 
-        
+        Complex conjugate operator.
+
         .. code-block:: pycon
 
             >>> Quaternion(1, 2, 3, 0).conjugate()
@@ -320,7 +320,7 @@ cdef class Quaternion:
         The returned quaternion is normalised to have norm length 1.0 - a unit quaternion.
 
         .. code-block:: pycon
-        
+
             >>> a = Quaternion(1, 2, 3, 0)
             >>> a.normalise()
             Quaternion(0.26726, 0.53452, 0.80178, 0.0)
@@ -419,12 +419,12 @@ cdef class Quaternion:
         This method calculates the quaternion required to map this quaternion
         onto the supplied quaternion. Both quaternions will be normalised and
         a normalised quaternion will be returned.
-        
+
         .. code-block:: pycon
-        
+
           >>> from raysect.core.math import Quaternion
           >>>
-          >>> q1 = Quaternion.from_axis_angle(Vector3D(1,0,0), 10) 
+          >>> q1 = Quaternion.from_axis_angle(Vector3D(1,0,0), 10)
           >>> q2 = Quaternion.from_axis_angle(Vector3D(1,0,0), 25)
           >>> d = q1.quaternion_to(q2)
           >>> d
@@ -433,9 +433,9 @@ cdef class Quaternion:
           15.000000000000027
           >>> d.axis
           Vector3D(1.0, 0.0, 0.0)
-        
+
         :param Quaternion q: The target quaternion.
-        :return: A new Quaternion object representing the specified rotation.        
+        :return: A new Quaternion object representing the specified rotation.
         """
 
         return q.normalise().mul_quaternion(self.normalise().conjugate()).normalise()

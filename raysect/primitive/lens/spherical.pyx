@@ -40,7 +40,7 @@ from libc.math cimport sqrt
 Basic spherical lens primitives.
 """
 
-DEF PADDING = 0.000001
+cdef const double PADDING = 0.000001
 
 
 cdef class BiConvex(EncapsulatedPrimitive):
@@ -128,7 +128,7 @@ cdef class BiConvex(EncapsulatedPrimitive):
 
     cdef bint _is_short(self):
         """
-        Do the facing spheres overlap sufficiently to build a lens using just their intersection?        
+        Do the facing spheres overlap sufficiently to build a lens using just their intersection?
         """
 
         cdef double available_thickness = min(
@@ -326,7 +326,7 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
 
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
-    
+
     cdef void _calc_geometry(self):
 
         cdef double radius, radius_sqr
@@ -343,7 +343,7 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
 
     cdef bint _is_short(self):
         """
-        Does the front sphere have sufficient radius to build the lens with just an intersection?        
+        Does the front sphere have sufficient radius to build the lens with just an intersection?
         """
 
         cdef double available_thickness = 2 * (self.curvature - self.curve_thickness)
@@ -548,7 +548,7 @@ cdef class Meniscus(EncapsulatedPrimitive):
 
     cdef bint _is_short(self):
         """
-        Does the front sphere have sufficient radius to build the lens with just an intersection?        
+        Does the front sphere have sufficient radius to build the lens with just an intersection?
         """
 
         cdef double available_thickness = 2 * self.front_curvature - self.front_thickness
