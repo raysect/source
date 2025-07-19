@@ -44,13 +44,14 @@ from raysect.primitive.mesh.mesh cimport Mesh
 cimport cython
 
 # convenience defines
-DEF X = 0
-DEF Y = 1
-DEF Z = 2
+cdef enum:
+    X = 0
+    Y = 1
+    Z = 2
 
-DEF V1 = 0
-DEF V2 = 1
-DEF V3 = 2
+    V1 = 0
+    V2 = 1
+    V3 = 2
 
 
 cdef class MeshCamera(Observer1D):

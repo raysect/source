@@ -40,17 +40,18 @@ from libc.stdint cimport int32_t
 from libc.math cimport log, ceil
 cimport cython
 
-# this number of nodes will be pre-allocated when the kd-tree is initially created
-DEF INITIAL_NODE_COUNT = 128
+cdef enum:
+    # this number of nodes will be pre-allocated when the kd-tree is initially created
+    INITIAL_NODE_COUNT = 128
 
-# friendly name for first node
-DEF ROOT_NODE = 0
+    # friendly name for first node
+    ROOT_NODE = 0
 
-# node types
-DEF LEAF = -1    # leaf node
-DEF X_AXIS = 0  # branch, x-axis split
-DEF Y_AXIS = 1  # branch, y-axis split
-DEF Z_AXIS = 2  # branch, z-axis split
+    # node types
+    LEAF = -1    # leaf node
+    X_AXIS = 0  # branch, x-axis split
+    Y_AXIS = 1  # branch, y-axis split
+    Z_AXIS = 2  # branch, z-axis split
 
 
 cdef class Item3D:
@@ -75,7 +76,7 @@ cdef class Item3D:
         self.box = box
 
 
-cdef int _edge_compare(const void *p1, const void *p2) nogil:
+cdef int _edge_compare(const void *p1, const void *p2) noexcept nogil:
 
     cdef edge e1, e2
 

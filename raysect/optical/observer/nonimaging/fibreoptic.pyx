@@ -40,7 +40,7 @@ cimport cython
 
 
 # 1 / (2 * PI)
-DEF RECIP_2_PI = 0.15915494309189535
+cdef const double RECIP_2_PI = 0.15915494309189535
 
 
 # TODO - provide a function for angular fall off for collection, instead of acceptance cone.

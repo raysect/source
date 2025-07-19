@@ -39,7 +39,7 @@ from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 cimport cython
 
 
-DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
+cdef const double R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 
 cdef class TargettedPixel(Observer0D):

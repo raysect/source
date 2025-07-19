@@ -34,9 +34,6 @@ from raysect.core.math cimport Point2D, new_point2d, Point3D, new_point3d, Vecto
 from raysect.core.math.random cimport uniform
 from raysect.core.math.cython cimport barycentric_coords, barycentric_interpolation
 
-DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
-DEF R_4_PI = 0.07957747154594767  # 1 / (4 * pi)
-
 
 cdef class SolidAngleSampler:
 

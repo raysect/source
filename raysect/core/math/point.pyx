@@ -136,73 +136,66 @@ cdef class Point3D:
         yield self.y
         yield self.z
 
-    def __add__(object x, object y):
+    def __add__(self, object y):
         """Addition operator.
 
             >>> Point3D(1, 0, 0) + Vector3D(0, 1, 0)
             Point3D(1.0, 1.0, 0.0)
         """
 
-        cdef Point3D p
         cdef _Vec3 v
 
-        if isinstance(x, Point3D) and isinstance(y, _Vec3):
+        if isinstance(y, _Vec3):
 
-            p = <Point3D>x
             v = <_Vec3>y
 
         else:
 
             return NotImplemented
 
-        return new_point3d(p.x + v.x,
-                           p.y + v.y,
-                           p.z + v.z)
+        return new_point3d(self.x + v.x,
+                           self.y + v.y,
+                           self.z + v.z)
 
-    def __sub__(object x, object y):
+    def __sub__(self, object y):
         """Subtraction operator.
 
             >>> Point3D(1, 0, 0) - Vector3D(0, 1, 0)
             Point3D(1.0, -1.0, 0.0)
         """
 
-        cdef Point3D p
         cdef _Vec3 v
 
-        if isinstance(x, Point3D) and isinstance(y, _Vec3):
+        if isinstance(y, _Vec3):
 
-            p = <Point3D>x
             v = <_Vec3>y
 
-            return new_point3d(p.x - v.x,
-                               p.y - v.y,
-                               p.z - v.z)
+            return new_point3d(self.x - v.x,
+                               self.y - v.y,
+                               self.z - v.z)
 
         else:
 
             return NotImplemented
 
     @cython.cdivision(True)
-    def __mul__(object x, object y):
+    def __rmul__(self, object x):
         """Multiplication operator.
 
         :param AffineMatrix3D x: transformation matrix x
-        :param Point3D y: point to transform
         :return: Matrix multiplication of a 3D transformation matrix with the input point.
         :rtype: Point3D
         """
 
         cdef AffineMatrix3D m
-        cdef Point3D v
         cdef double w
 
-        if isinstance(x, AffineMatrix3D) and isinstance(y, Point3D):
+        if isinstance(x, AffineMatrix3D):
 
             m = <AffineMatrix3D>x
-            v = <Point3D>y
 
             # 4th element of homogeneous coordinate
-            w = m.m[3][0] * v.x + m.m[3][1] * v.y + m.m[3][2] * v.z + m.m[3][3]
+            w = m.m[3][0] * self.x + m.m[3][1] * self.y + m.m[3][2] * self.z + m.m[3][3]
             if w == 0.0:
 
                 raise ZeroDivisionError("Bad matrix transform, 4th element of homogeneous coordinate is zero.")
@@ -210,9 +203,9 @@ cdef class Point3D:
             # pre divide for speed (dividing is much slower than multiplying)
             w = 1.0 / w
 
-            return new_point3d((m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3]) * w,
-                               (m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z + m.m[1][3]) * w,
-                               (m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z + m.m[2][3]) * w)
+            return new_point3d((m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z + m.m[0][3]) * w,
+                               (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
+                               (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
 
         return NotImplemented
 
@@ -472,64 +465,58 @@ cdef class Point2D:
         yield self.x
         yield self.y
 
-    def __add__(object x, object y):
+    def __add__(self, object y):
         """Addition operator.
 
             >>> Point2D(1, 0) + Vector2D(0, 1)
             Point2D(1.0, 1.0)
         """
 
-        cdef Point2D p
         cdef Vector2D v
 
-        if isinstance(x, Point2D) and isinstance(y, Vector2D):
+        if isinstance(y, Vector2D):
 
-            p = <Point2D>x
             v = <Vector2D>y
 
         else:
 
             return NotImplemented
 
-        return new_point2d(p.x + v.x, p.y + v.y)
+        return new_point2d(self.x + v.x, self.y + v.y)
 
-    def __sub__(object x, object y):
+    def __sub__(self, object y):
         """Subtraction operator.
 
             >>> Point2D(1, 0) - Vector2D(0, 1)
             Point2D(1.0, -1.0)
         """
 
-        cdef Point2D p
         cdef Vector2D v
 
-        if isinstance(x, Point2D) and isinstance(y, Vector2D):
+        if isinstance(y, Vector2D):
 
-            p = <Point2D>x
             v = <Vector2D>y
 
-            return new_point2d(p.x - v.x, p.y - v.y)
+            return new_point2d(self.x - v.x, self.y - v.y)
 
         else:
 
             return NotImplemented
 
     @cython.cdivision(True)
-    def __mul__(object x, object y):
+    def __rmul__(self, object x):
         """Multiply operator."""
-        raise NotImplemented
+        return NotImplemented
 
         # cdef AffineMatrix3D m
-        # cdef Point3D v
         # cdef double w
         #
-        # if isinstance(x, AffineMatrix3D) and isinstance(y, Point3D):
+        # if isinstance(x, AffineMatrix3D):
         #
         #     m = <AffineMatrix3D>x
-        #     v = <Point3D>y
         #
         #     # 4th element of homogeneous coordinate
-        #     w = m.m[3][0] * v.x + m.m[3][1] * v.y + m.m[3][2] * v.z + m.m[3][3]
+        #     w = m.m[3][0] * self.x + m.m[3][1] * self.y + m.m[3][2] * self.z + m.m[3][3]
         #     if w == 0.0:
         #
         #         raise ZeroDivisionError("Bad matrix transform, 4th element of homogeneous coordinate is zero.")
@@ -537,9 +524,9 @@ cdef class Point2D:
         #     # pre divide for speed (dividing is much slower than multiplying)
         #     w = 1.0 / w
         #
-        #     return new_point3d((m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3]) * w,
-        #                      (m.m[1][0] * v.x + m.m[1][1] * v.y + m.m[1][2] * v.z + m.m[1][3]) * w,
-        #                      (m.m[2][0] * v.x + m.m[2][1] * v.y + m.m[2][2] * v.z + m.m[2][3]) * w)
+        #     return new_point3d((m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z + m.m[0][3]) * w,
+        #                      (m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z + m.m[1][3]) * w,
+        #                      (m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z + m.m[2][3]) * w)
         #
         # return NotImplemented
 
