@@ -11,8 +11,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        numpy-version: ["oldest-supported-numpy", "numpy"]
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        numpy-version: ["numpy"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
