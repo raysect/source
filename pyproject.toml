@@ -27,5 +27,5 @@ Issues = "https://github.com/raysect/source/issues"
 Changelog = "https://github.com/raysect/source/blob/master/CHANGELOG.txt"
 
 [build-system]
-requires = ["meson-python", "setuptools", "wheel", "numpy", "cython<3.0"]
+requires = ["meson-python", "setuptools", "wheel", "numpy", "cython>=3.1"]
 build-backend = "mesonpy"
