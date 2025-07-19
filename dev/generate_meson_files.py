@@ -170,8 +170,4 @@ def _generate_subdir_meson_file(path, subdirs):
 
 
 if __name__ == '__main__':
-
-    # get user confirmation
-
-
     generate_meson_files(PACKAGES)
