@@ -4,11 +4,12 @@ __pycache__/
 *$py.class
 
 # C extensions
-*.so
+*.son option to enable profiling
 *.c
 # Distribution / packaging
 .Python
 env/
+venv/
 build/
 develop-eggs/
 dist/
