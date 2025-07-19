@@ -3,7 +3,8 @@
 from pathlib import Path
 
 PACKAGES = ['raysect']
-SUBDIR_EXCLUSION_FILENAME = '.meson-exclude'
+EXCLUDE_DIR_FILE = '.meson-exclude'
+EXCLUDED_DIRS = ['__pycache__']
 
 
 def generate_meson_files(packages):
@@ -98,8 +99,7 @@ def _install_subdir_meson_files(path):
         raise ValueError('The supplied path is not a directory.')
 
     # generate a list of subdirectories, filtering excluded
-    # todo: filter pycache files etc..
-    subdirs = [child for child in path.iterdir() if child.is_dir() and not (child / SUBDIR_EXCLUSION_FILENAME).exists()]
+    subdirs = [child for child in path.iterdir() if child.is_dir() and not _excluded_dir(child)]
 
     # write meson file
     meson_file = path / 'meson.build'
@@ -108,6 +108,11 @@ def _install_subdir_meson_files(path):
     # recurse into sub-directories
     for subdir in subdirs:
         _install_subdir_meson_files(subdir)
+
+
+def _excluded_dir(path):
+    foo = (path / EXCLUDE_DIR_FILE).exists() or path.name in EXCLUDED_DIRS
+    return foo
 
 
 def _generate_root_meson_file(subdirs):

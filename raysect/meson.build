@@ -25,6 +25,5 @@ py.install_sources(
 )
 
 subdir('primitive')
-subdir('__pycache__')
 subdir('optical')
 subdir('core')
