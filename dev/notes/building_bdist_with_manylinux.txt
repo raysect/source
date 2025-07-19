@@ -19,8 +19,24 @@ This will drop you into the manylinux container terminal. The /opt/python folder
 
 This will compile the wheel and repair any library references to produce the manylinux wheel files in a folder ./wheelhouse. e.g. raysect-0.8.2-cp37-cp37m-manylinux1_x86_64.whl and raysect-0.8.2-cp37-cp37m-manylinux2010_x86_64.whl.
 
-These can then be uploaded to pypi (just the manylinux2010 packages for now).
+These can then be uploaded to pypi.
 
 For more info see:
  https://realpython.com/python-wheels/#building-a-platform-wheel-macos-and-windows
  https://uwekorn.com/2019/09/15/how-we-build-apache-arrows-manylinux-wheels.html
+
+Scripts to semi-automate the wheel building process
+===================================================
+
+There are two scripts which automate this for different versions of Python:
+- dev/build_wheels_manylinux2010.sh builds manylinux2010 wheels for Python 3.7, 3.8 and 3.9
+- dev/build_wheels_manylinux2014.sh builds manylinux2014 wheels for Python 3.10, 3.11 and 3.12
+
+These can be used to produce wheels in a semi-automated fashion:
+1. Install docker as above
+2. Clone the raysect/source repository
+3. Change into the top level of the raysect/source repository.
+4. Run `sudo docker run -ti -v $(pwd):/io quay.io/pypa/manylinux2010_x86_64 /io/dev/build_wheels_manylinux2010.sh`
+5. Run `sudo docker run -ti -v $(pwd):/io quay.io/pypa/manylinux2014_x86_64 /io/dev/build_wheels_manylinux2014.sh`
+6. Upload the wheels in wheelhouse/, and the sdist in dist/, to PyPI using twine.
+
