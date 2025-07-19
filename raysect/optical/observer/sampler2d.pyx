@@ -847,6 +847,8 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
                     for c in range(3):
                         if frame.mean_mv[x, y, c] > 0:
                             pixel_normalised[c] = error[x, y, c] / frame.mean_mv[x, y, c]
+                        else:
+                            pixel_normalised[c] = 0.0
                     normalised_mv[x, y] = max(pixel_normalised[0], pixel_normalised[1], pixel_normalised[2])
 
         # locate error value corresponding to fraction of frame to process

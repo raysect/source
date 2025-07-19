@@ -554,8 +554,7 @@ cdef class BayerPipeline2D(Pipeline2D):
         for i in range(pixels):
             if lmv[i] > 0:
                 break
-
-        if i == pixels:
+        else:
             return self._display_black_point
 
         # identify luminance at threshold
