@@ -11,10 +11,10 @@ foreach pyx_file: pyx_files
     py.extension_module(
         fs.replace_suffix(pyx_file, ''),
         pyx_file,
-        dependencies: numpy,
+        dependencies: cython_dependencies,
         install: true,
         subdir: target_path,
-        cython_args: ['--annotate']
+        cython_args: cython_args
     )
 endforeach
 
