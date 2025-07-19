@@ -1,25 +1,31 @@
 [project]
-name = 'raysect'
-version = '0.9.0'
-#url='http://www.raysect.org'
-#author='Dr Alex Meakins et al.'
-#author_email='developers@raysect.org'
-#description='A Ray-tracing Framework for Science and Engineering'
-#license='BSD-3-Clause'
-#license-files = ["LICENSE.txt"]
-#classifiers=[
-#    'Development Status :: 5 - Production/Stable',
-#    'Intended Audience :: Science/Research',
-#    'Intended Audience :: Education',
-#    'Intended Audience :: Developers',
-#    'Natural Language :: English',
-#    'Operating System :: POSIX :: Linux',
-#    'Programming Language :: Cython',
-#    'Programming Language :: Python :: 3',
-#    'Topic :: Multimedia :: Graphics :: 3D Rendering',
-#    'Topic :: Scientific/Engineering :: Physics'
-#]
+name = "raysect"
+version = "0.9.0"
+requires-python = ">=3.8"
+authors = [{name = "Dr Alex Meakins et al.", email = "developers@raysect.org"}]
+description = "A Ray-tracing Framework for Science and Engineering"
+readme = "README.txt"
+license = "BSD-3-Clause"
+license-files = ["LICENSE.txt"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: 3D Rendering",
+    "Topic :: Scientific/Engineering :: Physics"
+]
+
+[project.urls]
+Homepage = "https://www.raysect.org"
+Repository = "https://github.com/raysect/source"
+Issues = "https://github.com/raysect/source/issues"
+Changelog = "https://github.com/raysect/source/blob/master/CHANGELOG.txt"
 
 [build-system]
-requires = ['meson-python', 'wheel', 'oldest-supported-numpy', 'cython<3.0']
-build-backend = 'mesonpy'
+requires = ["meson-python", "setuptools", "wheel", "oldest-supported-numpy", "cython<3.0"]
+build-backend = "mesonpy"
