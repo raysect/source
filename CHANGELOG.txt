@@ -12,7 +12,6 @@ Build changes:
   - A dev/install_editable.sh script is provided to simplify the installation of the package in editable mode with verbose build output enabled.
   - Meson-python performs the build out of the project folder, so the project source folders will no longer be polluted with build artefacts.
   - Cython build annotations are now always enabled, the annotation files can be found in the build folder under the build artefacts folder associated with each so file (*.so.a folder).
-* The demos folder is no longer included in the raysect package to reduce its size. Please clone the source repository to obtain the demos. A dedicated raysect-demos package is being investigated for the future.
 
 
 Release 0.8.1 (12 Feb 2023)
