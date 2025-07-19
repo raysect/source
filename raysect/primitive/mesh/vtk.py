@@ -102,7 +102,7 @@ class VTKHandler:
     @classmethod
     def _ascii_read_vertices(cls, f, scaling):
 
-        match = re.match("POINTS\s*([0-9]*)\s*float", f.readline().strip())
+        match = re.match(r"POINTS\s*([0-9]*)\s*float", f.readline().strip())
         if not match:
             raise RuntimeError("Unrecognised dataset encountered in vtk file.")
         num_points = int(match.group(1))
@@ -120,7 +120,7 @@ class VTKHandler:
     @classmethod
     def _ascii_read_triangles(cls, f):
 
-        match = re.match("CELLS\s*([0-9]*)\s*([0-9]*)", f.readline())
+        match = re.match(r"CELLS\s*([0-9]*)\s*([0-9]*)", f.readline())
         if not match:
             raise RuntimeError("Unrecognised dataset encountered in vtk file.")
         num_triangles = int(match.group(1))
