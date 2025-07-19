@@ -11,7 +11,7 @@ Build changes:
   - When installed in editable mode, any modified pyx files will automatically trigger a rebuild when python attempts to import from the package. Please be aware that (as with the previous build system) changes to pxd files will require a clean rebuild of the project.
   - A dev/install_editable.sh script is provided to simplify the installation of the package in editable mode with verbose build output enabled.
   - Meson-python performs the build out of the project folder, so the project source folders will no longer be polluted with build artefacts.
-  - Cython build annotations are now always enabled, the annotation files can be found in the build folder under the build artefacts folder associated with each so file (*.so.a folder).
+  - Cython build annotations are now always enabled, the annotation files can be found in the build folder under the build artefacts folder associated with each so file (*.so.p folder).
 
 
 Release 0.8.1 (12 Feb 2023)
