@@ -84,6 +84,11 @@ Materials
      - .. image:: materials/tetrahedra_mesh_emitter.png
           :height: 150px
           :width: 150px
+   * - :ref:`Regular grid emitters <demo_regular_grid_emitters>`
+     - Define emissivity on a regular 3D grid and speed-up ray-path integration.
+     - .. image:: materials/regular_grid_emitter_demo_3_discrete_spectrum.png
+          :height: 150px
+          :width: 150px
    * - :ref:`Polar BRDF plots <demo_polar_brdf_plots>`
      - Producing polar plots of material BRDFs.
      - .. image:: materials/brdf_polar_plots.png
