@@ -44,19 +44,11 @@ cdef class Primitive(Node):
     cdef Material _material
 
     cdef Material get_material(self)
-
     cpdef Intersection hit(self, Ray ray)
-
     cpdef Intersection next_intersection(self)
-
     cpdef bint contains(self, Point3D p) except -1
-
     cpdef BoundingBox3D bounding_box(self)
-
     cpdef BoundingSphere3D bounding_sphere(self)
-
     cpdef object instance(self, object parent=*, AffineMatrix3D transform=*, Material material=*, str name=*)
-
     cpdef object notify_geometry_change(self)
-
     cpdef object notify_material_change(self)

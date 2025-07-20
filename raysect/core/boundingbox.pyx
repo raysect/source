@@ -35,11 +35,13 @@ cimport cython
 from libc.math cimport INFINITY
 from raysect.core.math cimport new_point3d, new_point2d
 
+
 # axis defines
 cdef enum:
     X_AXIS = 0
     Y_AXIS = 1
     Z_AXIS = 2
+
 
 # defines the padding on the sphere which encloses the BoundingBox3D.
 cdef const double SPHERE_PADDING = 1.000001
@@ -257,6 +259,7 @@ cdef class BoundingBox3D:
             return False
         if (point.z < self.lower.z) or (point.z > self.upper.z):
             return False
+
         return True
 
     cpdef object union(self, BoundingBox3D box):
