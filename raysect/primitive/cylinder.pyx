@@ -41,6 +41,7 @@ cdef const double BOX_PADDING = 1e-9
 cdef const double EPSILON = 1e-9
 
 cdef enum:
+
     # object type enumeration
     NO_TYPE = -1
     CYLINDER = 0

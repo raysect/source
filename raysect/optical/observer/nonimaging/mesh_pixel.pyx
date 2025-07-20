@@ -43,12 +43,16 @@ from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 from raysect.primitive.mesh.mesh cimport Mesh
 cimport cython
 
-# convenience defines
+
+# constants
 cdef enum:
+
+    # axis
     X = 0
     Y = 1
     Z = 2
 
+    # vertex
     V1 = 0
     V2 = 1
     V3 = 2

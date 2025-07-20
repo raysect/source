@@ -51,20 +51,26 @@ cdef const double BOX_PADDING = 1e-6
 # additional ray distance to avoid re-hitting the same surface point
 cdef const double EPSILON = 1e-6
 
-# convenience defines
+# constants
 cdef enum:
+
+    # axis index
     X = 0
     Y = 1
     Z = 2
 
+    # intersection data
     U = 0
     V = 1
     W = 2
     T = 3
 
+    # vertex index
     V1 = 0
     V2 = 1
     V3 = 2
+
+    # normal index
     N1 = 3
     N2 = 4
     N3 = 5

@@ -40,6 +40,7 @@ cdef const double BOX_PADDING = 1e-9
 cdef const double EPSILON = 1e-9
 
 cdef enum:
+
     # slab face enumeration
     NO_FACE = -1
     LOWER_FACE = 0

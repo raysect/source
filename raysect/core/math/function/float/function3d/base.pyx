@@ -65,42 +65,54 @@ cdef class Function3D(FloatFunction):
         return self.evaluate(x, y, z)
 
     def __add__(self, object b):
+
         if is_callable(b):
             # a() + b()
             return AddFunction3D(self, b)
+
         elif isinstance(b, numbers.Real):
             # a() + B -> B + a()
             return AddScalar3D(<double> b, self)
+
         return NotImplemented
 
     def __radd__(self, object a):
         return self.__add__(a)
 
     def __sub__(self, object b):
+
         if is_callable(b):
             # a() - b()
             return SubtractFunction3D(self, b)
+
         elif isinstance(b, numbers.Real):
             # a() - B -> -B + a()
             return AddScalar3D(-(<double> b), self)
+
         return NotImplemented
     
     def __rsub__(self, object a):
+
         if is_callable(a):
             # a() - b()
             return SubtractFunction3D(a, self)
+
         elif isinstance(a, numbers.Real):
             # A - b()
             return SubtractScalar3D(<double> a, self)
+
         return NotImplemented
 
     def __mul__(self, object b):
+
         if is_callable(b):
             # a() * b()
             return MultiplyFunction3D(self, b)
+
         elif isinstance(b, numbers.Real):
             # a() * B -> B * a()
             return MultiplyScalar3D(<double> b, self)
+
         return NotImplemented
     
     def __rmul__(self, object a):
@@ -108,83 +120,106 @@ cdef class Function3D(FloatFunction):
 
     @cython.cdivision(True)
     def __truediv__(self, object b):
+
         cdef double v
+
         if is_callable(b):
             # a() / b()
             return DivideFunction3D(self, b)
+
         elif isinstance(b, numbers.Real):
             # a() / B -> 1/B * a()
             v = <double> b
             if v == 0.0:
                 raise ZeroDivisionError("Scalar used as the denominator of the division is zero valued.")
             return MultiplyScalar3D(1/v, self)
+
         return NotImplemented
 
     @cython.cdivision(True)
     def __rtruediv__(self, object a):
+
         if is_callable(a):
             # a() / b()
             return DivideFunction3D(a, self)
+
         elif isinstance(a, numbers.Real):
             # A / b()
             return DivideScalar3D(<double> a, self)
+
         return NotImplemented
 
     def __mod__(self, object b):
+
         cdef double v
+
         if is_callable(b):
             # a() % b()
             return ModuloFunction3D(self, b)
+
         elif isinstance(b, numbers.Real):
             # a() % B
             v = <double> b
             if v == 0.0:
                 raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
             return ModuloFunctionScalar3D(self, v)
+
         return NotImplemented
     
     def __rmod__(self, object a):
+
         if is_callable(a):
             # a() % b()
             return ModuloFunction3D(a, self)
+
         elif isinstance(a, numbers.Real):
             # A % b()
             return ModuloScalarFunction3D(<double> a, self)
+
         return NotImplemented
 
     def __neg__(self):
         return MultiplyScalar3D(-1, self)
 
     def __pow__(self, object b, object c):
+
         if c is not None:
             # Optimised implementation of pow(a, b, c) not available: fall back
             # to general implementation
             return PowFunction3D(self, b) % c
+
         if is_callable(b):
             # a() ** b()
             return PowFunction3D(self, b)
+
         elif isinstance(b, numbers.Real):
             # a() ** b
             return PowFunctionScalar3D(self, <double> b)
+
         return NotImplemented
     
     def __rpow__(self, object a, object c):
+
         if c is not None:
             # Optimised implementation of pow(a, b, c) not available: fall back
             # to general implementation
             return PowFunction3D(a, self) % c
+
         if is_callable(a):
             # a() ** b()
             return PowFunction3D(a, self)
+
         elif isinstance(a, numbers.Real):
             # A ** b()
             return PowScalarFunction3D(<double> a, self)
+
         return NotImplemented
 
     def __abs__(self):
         return AbsFunction3D(self)
 
     def __richcmp__(self, object other, int op):
+
         if is_callable(other):
             if op == Py_EQ:
                 return EqualsFunction3D(self, other)
@@ -198,6 +233,7 @@ cdef class Function3D(FloatFunction):
                 return LessEqualsFunction3D(self, other)
             if op == Py_GE:
                 return GreaterEqualsFunction3D(self, other)
+
         if isinstance(other, numbers.Real):
             if op == Py_EQ:
                 return EqualsScalar3D(<double> other, self)
@@ -215,6 +251,7 @@ cdef class Function3D(FloatFunction):
             if op == Py_GE:
                 # f() >= K -> K <= f
                 return LessEqualsScalar3D(<double> other, self)
+
         return NotImplemented
 
 

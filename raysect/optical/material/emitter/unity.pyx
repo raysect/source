@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, Normal3D, AffineMatrix3D, Intersection
+
 cimport cython
 
 

@@ -32,6 +32,7 @@
 from raysect.optical cimport SpectralFunction, NumericallyIntegratedSF
 from raysect.optical.material cimport Material
 
+
 cdef class Sellmeier(NumericallyIntegratedSF):
 
     cdef:

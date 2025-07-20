@@ -60,37 +60,21 @@ cdef class MeshData(KDTree3DCore):
         int32_t _i
 
     cpdef Point3D vertex(self, int index)
-
     cpdef ndarray triangle(self, int index)
-
     cpdef Normal3D vertex_normal(self, int index)
-
     cpdef Normal3D face_normal(self, int index)
-
     cdef object _filter_triangles(self)
-
     cdef object _flip_normals(self)
-
     cdef object _generate_face_normals(self)
-
     cdef BoundingBox3D _generate_bounding_box(self, int32_t i)
-
     cdef void _calc_rayspace_transform(self, Ray ray)
-
     cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data)
-
     cpdef Intersection calc_intersection(self, Ray ray)
-
     cdef Normal3D _intersection_normal(self)
-
     cpdef bint contains(self, Point3D p)
-
     cpdef BoundingBox3D bounding_box(self, AffineMatrix3D to_world)
-
     cdef uint8_t _read_uint8(self, object file)
-
     cdef bint _read_bool(self, object file)
-
     cdef double _read_float(self, object file)
 
 
