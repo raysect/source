@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # C extensions
-*.son option to enable profiling
+*.so
 *.c
 # Distribution / packaging
 .Python
