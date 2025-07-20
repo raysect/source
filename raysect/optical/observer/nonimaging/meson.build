@@ -5,8 +5,8 @@ target_path = 'raysect/optical/observer/nonimaging'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['pixel.pyx', 'mesh_camera.pyx', 'fibreoptic.pyx', 'mesh_pixel.pyx', 'sightline.pyx', 'targetted_pixel.pyx']
-pxd_files = ['pixel.pxd', 'mesh_camera.pxd', 'sightline.pxd', 'mesh_pixel.pxd', 'fibreoptic.pxd', '__init__.pxd', 'targetted_pixel.pxd']
+pyx_files = ['pixel.pyx', 'mesh_camera.pyx', 'fibreoptic.pyx', 'mesh_pixel.pyx', 'sightline.pyx', 'targeted_pixel.pyx']
+pxd_files = ['pixel.pxd', 'mesh_camera.pxd', 'sightline.pxd', 'targeted_pixel.pxd', 'mesh_pixel.pxd', 'fibreoptic.pxd', '__init__.pxd']
 data_files = []
 
 # compile cython

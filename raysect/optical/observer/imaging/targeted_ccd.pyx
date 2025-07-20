@@ -33,7 +33,7 @@ from raysect.core.math.random cimport probability
 from raysect.optical.observer.sampler2d import FullFrameSampler2D
 from raysect.optical.observer.pipeline import RGBPipeline2D
 
-from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
+from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargetedHemisphereSampler
 from raysect.optical cimport Primitive, BoundingSphere3D, Ray, AffineMatrix3D, Point3D, Vector3D, translate
 from libc.math cimport M_PI
 from raysect.optical.observer.base cimport Observer2D
@@ -43,24 +43,24 @@ cimport cython
 cdef const double R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 
-cdef class TargettedCCDArray(Observer2D):
+cdef class TargetedCCDArray(Observer2D):
     """
     An ideal CCD-like imaging sensor that preferentially targets a given list of primitives.
 
-    The targetted CCD is a regular array of square pixels. Each pixel samples red, green
+    The targeted CCD is a regular array of square pixels. Each pixel samples red, green
     and blue channels (behaves like a Foveon imaging sensor). The CCD sensor
     width is specified with the width parameter. The CCD height is calculated
     from the width and the number of vertical and horizontal pixels. The
     default width and sensor ratio approximates a 35mm camera sensor.
 
-    The targetted CCD takes a list of target primitives. Each pixel will target the
+    The targeted CCD takes a list of target primitives. Each pixel will target the
     bounding spheres that encompass each target primitive. Therefore, for best performance,
     the target primitives should be split up such that their surfaces are closely wrapped
     by the bounding sphere.
 
     The sampling algorithm fires a proportion of rays at the targets, and a portion sampled
     from the full hemisphere. The proportion that is fired towards the targets is controlled
-    with the targetted_path_prob attribute. By default this attribute is set to 0.9, i.e.
+    with the targeted_path_prob attribute. By default this attribute is set to 0.9, i.e.
     90% of the rays are fired towards the targets.
 
     .. Warning..
@@ -68,7 +68,7 @@ cdef class TargettedCCDArray(Observer2D):
        targets. The user must ensure there are no sources of radiance outside of the
        targeted directions, otherwise they will not be sampled and the result will be biased.
 
-    :param list targets: The list of primitives for targetted sampling.
+    :param list targets: The list of primitives for targeted sampling.
     :param tuple pixels: A tuple of pixel dimensions for the camera (default=(720, 480)).
     :param float width: The CCD sensor x-width in metres (default=35mm).
     :param list pipelines: The list of pipelines that will process the spectrum measured
@@ -76,7 +76,7 @@ cdef class TargettedCCDArray(Observer2D):
     :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
     """
 
-    def __init__(self, targets, pixels=(720, 480), width=0.035, targetted_path_prob=None, parent=None, transform=None, name=None, pipelines=None):
+    def __init__(self, targets, pixels=(720, 480), width=0.035, targeted_path_prob=None, parent=None, transform=None, name=None, pipelines=None):
 
         # initial values to prevent undefined behaviour when setting via self.width
         self._width = 0.035
@@ -88,12 +88,12 @@ cdef class TargettedCCDArray(Observer2D):
                          parent=parent, transform=transform, name=name)
 
         self._cosine_sampler = HemisphereCosineSampler()
-        self._targetted_sampler = None
+        self._targeted_sampler = None
 
         # setting width triggers calculation of image geometry calculations
         self.width = width
         self.targets = targets
-        self.targetted_path_prob = targetted_path_prob or 0.9
+        self.targeted_path_prob = targeted_path_prob or 0.9
 
     @property
     def pixels(self):
@@ -158,7 +158,7 @@ cdef class TargettedCCDArray(Observer2D):
         self._targets = value
 
     @property
-    def targetted_path_prob(self):
+    def targeted_path_prob(self):
         """
         The probability that an individual sample will be fired at a target instead of a sample from the whole hemisphere.
 
@@ -169,14 +169,14 @@ cdef class TargettedCCDArray(Observer2D):
 
         :rtype: float
         """
-        return self._targetted_path_prob
+        return self._targeted_path_prob
 
-    @targetted_path_prob.setter
-    def targetted_path_prob(self, double value):
+    @targeted_path_prob.setter
+    def targeted_path_prob(self, double value):
 
         if value < 0 or value > 1:
             raise ValueError("Targeted path probability must lie in the range [0, 1].")
-        self._targetted_path_prob = value
+        self._targeted_path_prob = value
 
     cdef object _update_image_geometry(self):
 
@@ -212,8 +212,8 @@ cdef class TargettedCCDArray(Observer2D):
             sphere = target.bounding_sphere()
             spheres.append((sphere.centre.transform(self.to_local()), sphere.radius, 1.0))
 
-        # instance targetted pixel sampler
-        self._targetted_sampler = TargettedHemisphereSampler(spheres)
+        # instance targeted pixel sampler
+        self._targeted_sampler = TargetedHemisphereSampler(spheres)
 
         # generate pixel transform
         pixel_x = self._image_start_x - self._image_delta * (ix + 0.5)
@@ -230,17 +230,17 @@ cdef class TargettedCCDArray(Observer2D):
             # transform to local space from pixel space
             origin = origin.transform(pixel_to_local)
 
-            if probability(self._targetted_path_prob):
-                # obtain targetted vector sample
-                direction = self._targetted_sampler.sample(origin)
+            if probability(self._targeted_path_prob):
+                # obtain targeted vector sample
+                direction = self._targeted_sampler.sample(origin)
 
             else:
                 # obtain cosine weighted hemisphere sample
                 direction = self._cosine_sampler.sample()
 
             # calculate combined pdf and ray weight
-            pdf = self._targetted_path_prob * self._targetted_sampler.pdf(origin, direction) + \
-                  (1-self._targetted_path_prob) * self._cosine_sampler.pdf(direction)
+            pdf = self._targeted_path_prob * self._targeted_sampler.pdf(origin, direction) + \
+                  (1-self._targeted_path_prob) * self._cosine_sampler.pdf(direction)
 
             if pdf <= 0:
                 raise ValueError('Ray direction probability is zero. The target object extends beyond the pixel horizon.')

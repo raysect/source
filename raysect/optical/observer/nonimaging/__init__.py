@@ -32,7 +32,7 @@
 from .sightline import SightLine
 from .fibreoptic import FibreOptic
 from .pixel import Pixel
-from .targetted_pixel import TargettedPixel
+from .targeted_pixel import TargetedPixel
 from .mesh_pixel import MeshPixel
 from .mesh_camera import MeshCamera
 

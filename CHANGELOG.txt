@@ -13,6 +13,9 @@ Build changes:
   - Meson-python performs the build out of the project folder, so the project source folders will no longer be polluted with build artefacts.
   - Cython build annotations are now always enabled, the annotation files can be found in the build folder under the build artefacts folder associated with each so file (*.so.p folder).
 
+API changes:
+* Corrected spelling of all classes, methods and functions where "targeted" was incorrectly spelt "targetted".
+
 
 Release 0.8.1 (12 Feb 2023)
 ---------------------------
