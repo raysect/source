@@ -29,22 +29,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI, M_1_PI, sqrt, sin, cos
-from raysect.core.math cimport Point2D, new_point2d, Point3D, new_point3d, Vector3D, new_vector3d
-from raysect.core.math.random cimport uniform
-from raysect.core.math.cython cimport barycentric_coords, barycentric_interpolation
+from raysect.core.math cimport Vector3D
 
 
 cdef class SolidAngleSampler:
 
     cpdef double pdf(self, Vector3D sample)
-
     cdef Vector3D sample(self)
-
     cdef tuple sample_with_pdf(self)
-
     cdef list samples(self, int samples)
-
     cdef list samples_with_pdfs(self, int samples)
 
 

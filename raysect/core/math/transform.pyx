@@ -29,10 +29,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport sin, cos, sqrt, asin, atan2, M_PI as pi
+from libc.math cimport sin, cos, sqrt, asin, atan2
 from raysect.core.math.affinematrix cimport new_affinematrix3d
 from raysect.core.math.point cimport new_point3d
 cimport cython
+
 
 cdef const double RAD2DEG = 57.29577951308232000  # 180 / pi
 cdef const double DEG2RAD = 0.017453292519943295  # pi / 180
@@ -103,7 +104,7 @@ cpdef AffineMatrix3D rotate_x(double angle):
 
     cdef double r
 
-    r = pi * angle / 180.0
+    r = DEG2RAD * angle
     return new_affinematrix3d(1, 0, 0, 0,
                               0, cos(r), -sin(r), 0,
                               0, sin(r), cos(r), 0,
@@ -131,7 +132,7 @@ cpdef AffineMatrix3D rotate_y(double angle):
 
     cdef double r
 
-    r = pi * angle / 180.0
+    r = DEG2RAD * angle
     return new_affinematrix3d(cos(r), 0, sin(r), 0,
                               0, 1, 0, 0,
                               -sin(r), 0, cos(r), 0,
@@ -159,7 +160,7 @@ cpdef AffineMatrix3D rotate_z(double angle):
 
     cdef double r
 
-    r = pi * angle / 180.0
+    r = DEG2RAD * angle
     return new_affinematrix3d(cos(r), -sin(r), 0, 0,
                               sin(r), cos(r), 0, 0,
                               0, 0, 1, 0,
@@ -190,7 +191,7 @@ cpdef AffineMatrix3D rotate_vector(double angle, Vector3D v):
     cdef double r, s, c, ci
 
     vn = v.normalise()
-    r = pi * angle / 180.0
+    r = DEG2RAD * angle
     s = sin(r)
     c = cos(r)
     ci = 1.0 - c

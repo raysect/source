@@ -40,7 +40,10 @@ from libc.stdint cimport int32_t
 from libc.math cimport log, ceil
 cimport cython
 
+
+# constants
 cdef enum:
+
     # this number of nodes will be pre-allocated when the kd-tree is initially created
     INITIAL_NODE_COUNT = 128
 
@@ -70,12 +73,11 @@ cdef class Item2D:
     """
 
     def __init__(self, int32_t id, BoundingBox2D box):
-
         self.id = id
         self.box = box
 
 
-cdef int _edge_compare(const void *p1, const void *p2) noexcept nogil:
+cdef int _edge_compare(const void *p1, const void *p2) nogil:
 
     cdef edge e1, e2
 

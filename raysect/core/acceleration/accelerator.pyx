@@ -32,13 +32,10 @@
 cdef class Accelerator:
 
     cpdef build(self, list primitives):
-
         pass
 
     cpdef Intersection hit(self, Ray ray):
-
         raise NotImplementedError("Accelerator virtual method hit() has not been implemented.")
 
     cpdef list contains(self, Point3D point):
-
         raise NotImplementedError("Accelerator virtual method contains() has not been implemented.")

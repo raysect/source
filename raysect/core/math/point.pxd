@@ -38,19 +38,12 @@ cdef class Point3D:
     cdef public double x, y, z
 
     cpdef Vector3D vector_to(self, Point3D p)
-
     cpdef double distance_to(self, Point3D p)
-
     cpdef Point3D transform(self, AffineMatrix3D m)
-
     cdef Point3D add(self, _Vec3 v)
-
     cdef Point3D sub(self, _Vec3 v)
-
     cpdef Point3D copy(self)
-
     cdef double get_index(self, int index) nogil
-
     cdef void set_index(self, int index, double value) nogil
 
 
@@ -75,19 +68,12 @@ cdef class Point2D:
     cdef public double x, y
 
     cpdef Vector2D vector_to(self, Point2D p)
-
     cpdef double distance_to(self, Point2D p)
-
     # cpdef Point3D transform(self, AffineMatrix3D m)
-
     cdef Point2D add(self, Vector2D v)
-
     cdef Point2D sub(self, Vector2D v)
-
     cpdef Point2D copy(self)
-
     cdef double get_index(self, int index) nogil
-
     cdef void set_index(self, int index, double value) nogil
 
 

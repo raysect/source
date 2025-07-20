@@ -34,7 +34,7 @@ cimport numpy as np
 from raysect.core.math cimport Point3D, Vector3D, AffineMatrix3D
 from raysect.core.math.random cimport uniform, vector_sphere, vector_cone_uniform, vector_hemisphere_cosine
 from raysect.core.math.cython cimport find_index, rotate_basis
-from libc.math cimport M_PI, M_1_PI, asin, acos, sqrt
+from libc.math cimport M_PI, M_1_PI, asin, sqrt
 cimport cython
 
 

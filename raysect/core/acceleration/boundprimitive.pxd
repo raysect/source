@@ -37,12 +37,11 @@ from raysect.core.intersection cimport Intersection
 
 cdef class BoundPrimitive:
 
-    cdef readonly Primitive primitive
-    cdef readonly BoundingBox3D box
-    cdef bint _primitive_tested
+    cdef:
+        readonly Primitive primitive
+        readonly BoundingBox3D box
+        bint _primitive_tested
 
     cdef Intersection hit(self, Ray ray)
-
     cdef Intersection next_intersection(self)
-
     cdef bint contains(self, Point3D point)

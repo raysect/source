@@ -35,5 +35,6 @@ from raysect.core.boundingbox cimport BoundingBox3D
 
 cdef class Unaccelerated(Accelerator):
 
-    cdef list primitives
-    cdef BoundingBox3D world_box
+    cdef:
+        list primitives
+        BoundingBox3D world_box

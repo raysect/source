@@ -33,6 +33,7 @@ import numbers
 cimport cython
 from libc.math cimport sqrt, fabs, NAN, acos, cos, sin
 
+
 cdef const double EPSILON = 1e-12
 
 
@@ -68,12 +69,16 @@ cdef class Vector3D(_Vec3):
         self.z = z
 
     def __repr__(self):
-        """Returns a string representation of the Vector3D object."""
+        """
+        Returns a string representation of the Vector3D object.
+        """
 
         return "Vector3D(" + str(self.x) + ", " + str(self.y) + ", " + str(self.z) + ")"
 
     def __richcmp__(self, object other, int op):
-        """Provides basic vector comparison operations."""
+        """
+        Provides basic vector comparison operations.
+        """
 
         cdef Vector3D v
 
@@ -85,11 +90,12 @@ cdef class Vector3D(_Vec3):
             return self.x == v.x and self.y == v.y and self.z == v.z
         elif op == 3:   # __ne__()
             return self.x != v.x or self.y != v.y or self.z != v.z
-        else:
-            return NotImplemented
+
+        return NotImplemented
 
     def __getitem__(self, int i):
-        """Returns the vector coordinates by index ([0,1,2] -> [x,y,z]).
+        """
+        Returns the vector coordinates by index ([0,1,2] -> [x,y,z]).
 
             >>> a = Vector3D(1, 0, 0)
             >>> a[0]
@@ -102,11 +108,12 @@ cdef class Vector3D(_Vec3):
             return self.y
         elif i == 2:
             return self.z
-        else:
-            raise IndexError("Index out of range [0, 2].")
+
+        raise IndexError("Index out of range [0, 2].")
 
     def __setitem__(self, int i, double value):
-        """Sets the vector coordinates by index ([0,1,2] -> [x,y,z]).
+        """
+        Sets the vector coordinates by index ([0,1,2] -> [x,y,z]).
 
             >>> a = Vector3D(1, 0, 0)
             >>> a[1] = 2
@@ -124,31 +131,33 @@ cdef class Vector3D(_Vec3):
             raise IndexError("Index out of range [0, 2].")
 
     def __iter__(self):
-        """Iterates over the vector coordinates (x, y, z)
+        """
+        Iterates over the vector coordinates (x, y, z)
 
             >>> a = Vector3D(0, 1, 2)
             >>> x, y, z = a
             >>> x, y, z
             (0.0, 1.0, 2.0)
         """
+
         yield self.x
         yield self.y
         yield self.z
 
     def __neg__(self):
-        """Returns a vector with the reverse orientation (negation operator).
+        """
+        Returns a vector with the reverse orientation (negation operator).
 
             >>> a = Vector3D(1, 0, 0)
             >>> -a
             Vector3D(-1.0, -0.0, -0.0)
         """
 
-        return new_vector3d(-self.x,
-                            -self.y,
-                            -self.z)
+        return new_vector3d(-self.x, -self.y, -self.z)
 
     def __add__(self, object y):
-        """Addition operator.
+        """
+        Addition operator.
 
             >>> Vector3D(1, 0, 0) + Vector3D(0, 1, 0)
             Vector3D(1.0, 1.0, 0.0)
@@ -157,19 +166,14 @@ cdef class Vector3D(_Vec3):
         cdef _Vec3 vy
 
         if isinstance(y, _Vec3):
+            vy = <_Vec3> y
+            return new_vector3d(self.x + vy.x, self.y + vy.y, self.z + vy.z)
 
-            vy = <_Vec3>y
-
-            return new_vector3d(self.x + vy.x,
-                                self.y + vy.y,
-                                self.z + vy.z)
-
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     def __radd__(self, object x):
-        """ Reverse addition operator.
+        """
+        Reverse addition operator.
 
             >>> Vector3D(1, 0, 0) + Vector3D(0, 1, 0)
             Vector3D(1.0, 1.0, 0.0)
@@ -178,7 +182,8 @@ cdef class Vector3D(_Vec3):
         return self.__add__(x)
 
     def __sub__(self, object y):
-        """Subtraction operator.
+        """
+        Subtraction operator.
 
             >>> Vector3D(1, 0, 0) - Vector3D(0, 1, 0)
             Vector3D(1.0, -1.0, 0.0)
@@ -187,19 +192,14 @@ cdef class Vector3D(_Vec3):
         cdef _Vec3 vy
 
         if isinstance(y, _Vec3):
+            vy = <_Vec3> y
+            return new_vector3d(self.x - vy.x, self.y - vy.y, self.z - vy.z)
 
-            vy = <_Vec3>y
-
-            return new_vector3d(self.x - vy.x,
-                                self.y - vy.y,
-                                self.z - vy.z)
-
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     def __rsub__(self, object x):
-        """ Reverse subtraction operator.
+        """
+         Reverse subtraction operator.
 
             >>> Vector3D(1, 0, 0) - Vector3D(0, 1, 0)
             Vector3D(1.0, -1.0, 0.0)
@@ -208,19 +208,14 @@ cdef class Vector3D(_Vec3):
         cdef _Vec3 vx
 
         if isinstance(x, _Vec3):
+            vx = <_Vec3> x
+            return new_vector3d(vx.x - self.x, vx.y - self.y, vx.z - self.z)
 
-            vx = <_Vec3>x
-
-            return new_vector3d(vx.x - self.x,
-                                vx.y - self.y,
-                                vx.z - self.z)
-
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     def __mul__(self, object y):
-        """Multiplication operator.
+        """
+        Multiplication operator.
 
         3D vectors can be multiplied with both scalars and transformation matrices.
 
@@ -233,19 +228,14 @@ cdef class Vector3D(_Vec3):
         cdef AffineMatrix3D m
 
         if isinstance(y, numbers.Real):
+            s = <double> y
+            return new_vector3d(s * self.x, s * self.y, s * self.z)
 
-            s = <double>y
-
-            return new_vector3d(s * self.x,
-                                s * self.y,
-                                s * self.z)
-
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     def __rmul__(self, object x):
-        """ Reverse multiplication operator.
+        """
+        Reverse multiplication operator.
 
         3D vectors can be multiplied with both scalars and transformation matrices.
 
@@ -260,25 +250,18 @@ cdef class Vector3D(_Vec3):
         cdef AffineMatrix3D m
 
         if isinstance(x, numbers.Real):
-
-            s = <double>x
-
-            return new_vector3d(s * self.x,
-                                s * self.y,
-                                s * self.z)
+            s = <double> x
+            return new_vector3d(s * self.x, s * self.y, s * self.z)
 
         elif isinstance(x, AffineMatrix3D):
+            m = <AffineMatrix3D> x
+            return new_vector3d(
+                m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,
+                m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z,
+                m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z
+            )
 
-            m = <AffineMatrix3D>x
-
-            return new_vector3d(m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,
-                                m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z,
-                                m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z)
-
-        else:
-
-            return NotImplemented
-
+        return NotImplemented
 
     @cython.cdivision(True)
     def __truediv__(self, object y):
@@ -296,18 +279,12 @@ cdef class Vector3D(_Vec3):
 
             # prevent divide my zero
             if d == 0.0:
-
                 raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
             d = 1.0 / d
+            return new_vector3d(d * self.x, d * self.y, d * self.z)
 
-            return new_vector3d(d * self.x,
-                                d * self.y,
-                                d * self.z)
-
-        else:
-
-            raise TypeError("Unsupported operand type. Expects a real number.")
+        raise TypeError("Unsupported operand type. Expects a real number.")
 
     cpdef Vector3D cross(self, _Vec3 v):
         """
@@ -326,9 +303,11 @@ cdef class Vector3D(_Vec3):
             Vector3D(0.0, 0.0, 1.0)
         """
 
-        return new_vector3d(self.y * v.z - v.y * self.z,
-                            self.z * v.x - v.z * self.x,
-                            self.x * v.y - v.x * self.y)
+        return new_vector3d(
+            self.y * v.z - v.y * self.z,
+            self.z * v.x - v.z * self.x,
+            self.x * v.y - v.x * self.y
+        )
 
     @cython.cdivision(True)
     cpdef Vector3D normalise(self):
@@ -351,15 +330,11 @@ cdef class Vector3D(_Vec3):
         # if current length is zero, problem is ill defined
         t = self.x * self.x + self.y * self.y + self.z * self.z
         if t == 0.0:
-
             raise ZeroDivisionError("A zero length vector can not be normalised as the direction of a zero length vector is undefined.")
 
         # normalise and rescale vector
         t = 1.0 / sqrt(t)
-
-        return new_vector3d(self.x * t,
-                            self.y * t,
-                            self.z * t)
+        return new_vector3d(self.x * t, self.y * t, self.z * t)
 
     cpdef Vector3D transform(self, AffineMatrix3D m):
         """
@@ -387,9 +362,11 @@ cdef class Vector3D(_Vec3):
             Vector3D(0.0, -1.0, 6.123233995736766e-17)
         """
 
-        return new_vector3d(m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,
-                            m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z,
-                            m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z)
+        return new_vector3d(
+            m.m[0][0] * self.x + m.m[0][1] * self.y + m.m[0][2] * self.z,
+            m.m[1][0] * self.x + m.m[1][1] * self.y + m.m[1][2] * self.z,
+            m.m[2][0] * self.x + m.m[2][1] * self.y + m.m[2][2] * self.z
+        )
 
     cdef Vector3D neg(self):
         """
@@ -399,9 +376,7 @@ cdef class Vector3D(_Vec3):
         to the equivalent python operator.
         """
 
-        return new_vector3d(-self.x,
-                            -self.y,
-                            -self.z)
+        return new_vector3d(-self.x, -self.y, -self.z)
 
     cdef Vector3D add(self, _Vec3 v):
         """
@@ -411,9 +386,7 @@ cdef class Vector3D(_Vec3):
         to the equivalent python operator.
         """
 
-        return new_vector3d(self.x + v.x,
-                            self.y + v.y,
-                            self.z + v.z)
+        return new_vector3d(self.x + v.x, self.y + v.y, self.z + v.z)
 
     cdef Vector3D sub(self, _Vec3 v):
         """
@@ -423,9 +396,7 @@ cdef class Vector3D(_Vec3):
         to the equivalent python operator.
         """
 
-        return new_vector3d(self.x - v.x,
-                            self.y - v.y,
-                            self.z - v.z)
+        return new_vector3d(self.x - v.x, self.y - v.y, self.z - v.z)
 
     cdef Vector3D mul(self, double m):
         """
@@ -435,9 +406,7 @@ cdef class Vector3D(_Vec3):
         to the equivalent python operator.
         """
 
-        return new_vector3d(self.x * m,
-                            self.y * m,
-                            self.z * m)
+        return new_vector3d(self.x * m, self.y * m, self.z * m)
 
     @cython.cdivision(True)
     cdef Vector3D div(self, double d):
@@ -449,14 +418,10 @@ cdef class Vector3D(_Vec3):
         """
 
         if d == 0.0:
-
             raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
         d = 1.0 / d
-
-        return new_vector3d(self.x * d,
-                            self.y * d,
-                            self.z * d)
+        return new_vector3d(self.x * d, self.y * d, self.z * d)
 
     cpdef Vector3D copy(self):
         """
@@ -471,9 +436,7 @@ cdef class Vector3D(_Vec3):
             Vector3D(1.0, 1.0, 1.0)
         """
 
-        return new_vector3d(self.x,
-                            self.y,
-                            self.z)
+        return new_vector3d(self.x, self.y, self.z)
 
     # todo: this is common code with normal, move into math.cython and call
     cpdef Vector3D orthogonal(self):
@@ -533,7 +496,6 @@ cdef class Vector3D(_Vec3):
             raise ValueError("Vector lerp parameter t must be in range (0, 1).")
 
         t_minus = 1 - t
-
         return new_vector3d(self.x * t_minus + b.x * t, self.y * t_minus + b.y * t, self.z * t_minus + b.z * t)
 
     cpdef Vector3D slerp(self, Vector3D b, double t):
@@ -671,12 +633,16 @@ cdef class Vector2D:
         self.y = y
 
     def __repr__(self):
-        """Returns a string representation of the Vector2D object."""
+        """
+        Returns a string representation of the Vector2D object.
+        """
 
         return "Vector2D(" + str(self.x) + ", " + str(self.y) + ")"
 
     def __richcmp__(self, object other, int op):
-        """Provides basic vector comparison operations."""
+        """
+        Provides basic vector comparison operations.
+        """
 
         cdef Vector2D v
 
@@ -688,11 +654,12 @@ cdef class Vector2D:
             return self.x == v.x and self.y == v.y
         elif op == 3:   # __ne__()
             return self.x != v.x or self.y != v.y
-        else:
-            return NotImplemented
+
+        return NotImplemented
 
     def __getitem__(self, int i):
-        """Returns the vector coordinates by index ([0,1] -> [x,y]).
+        """
+        Returns the vector coordinates by index ([0,1] -> [x,y]).
 
             >>> a = Vector2D(1, 0)
             >>> a[0]
@@ -703,11 +670,12 @@ cdef class Vector2D:
             return self.x
         elif i == 1:
             return self.y
-        else:
-            raise IndexError("Index out of range [0, 1].")
+
+        raise IndexError("Index out of range [0, 1].")
 
     def __setitem__(self, int i, double value):
-        """Sets the vector coordinates by index ([0,1] -> [x,y]).
+        """
+        Sets the vector coordinates by index ([0,1] -> [x,y]).
 
             >>> a = Vector2D(1, 0)
             >>> a[1] = 2
@@ -723,7 +691,8 @@ cdef class Vector2D:
             raise IndexError("Index out of range [0, 1].")
 
     def __iter__(self):
-        """Iterates over the vector coordinates (x, y)
+        """
+        Iterates over the vector coordinates (x, y)
 
             >>> a = Vector2D(1, 0)
             >>> x, y = a
@@ -731,11 +700,13 @@ cdef class Vector2D:
             (1.0, 0.0)
 
         """
+
         yield self.x
         yield self.y
 
     def __neg__(self):
-        """Returns a vector with the reverse orientation (negation operator).
+        """
+        Returns a vector with the reverse orientation (negation operator).
 
             >>> a = Vector2D(1, 0)
             >>> -a
@@ -746,7 +717,8 @@ cdef class Vector2D:
         return new_vector2d(-self.x, -self.y)
 
     def __add__(self, object y):
-        """Addition operator.
+        """
+        Addition operator.
 
             >>> Vector2D(1, 0) + Vector2D(0, 1)
             Vector2D(1.0, 1.0)
@@ -755,17 +727,14 @@ cdef class Vector2D:
         cdef Vector2D vy
 
         if isinstance(y, Vector2D):
-
             vy = <Vector2D>y
-
             return new_vector2d(self.x + vy.x, self.y + vy.y)
 
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     def __sub__(self, object y):
-        """Subtraction operator.
+        """
+        Subtraction operator.
 
             >>> Vector2D(1, 0) - Vector2D(0, 1)
             Vector2D(1.0, -1.0)
@@ -774,17 +743,14 @@ cdef class Vector2D:
         cdef Vector2D vy
 
         if isinstance(y, Vector2D):
-
             vy = <Vector2D>y
-
             return new_vector2d(self.x - vy.x, self.y - vy.y)
 
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     def __mul__(self, object y):
-        """Multiplication operator.
+        """
+        Multiplication operator.
 
             >>> Vector3D(1, 2) * 2
             Vector2D(2.0, 4.0)
@@ -793,16 +759,14 @@ cdef class Vector2D:
         cdef double s
 
         if isinstance(y, numbers.Real):
-
-            s = <double>y
-
+            s = <double> y
             return new_vector2d(s * self.x, s * self.y)
 
-        else:
-            raise TypeError("Unsupported operand type. Expects a real number.")
+        raise TypeError("Unsupported operand type. Expects a real number.")
 
     def __rmul__(self, object x):
-        """Reverse multiplication operator.
+        """
+        Reverse multiplication operator.
 
             >>> 2 * Vector3D(1, 2)
             Vector2D(2.0, 4.0)
@@ -811,19 +775,15 @@ cdef class Vector2D:
         cdef double s
 
         if isinstance(x, numbers.Real):
-
-            s = <double>x
-
+            s = <double> x
             return new_vector2d(s * self.x, s * self.y)
 
-        else:
-            raise TypeError("Unsupported operand type. Expects a real number.")
-
-
+        raise TypeError("Unsupported operand type. Expects a real number.")
 
     @cython.cdivision(True)
     def __truediv__(self, object y):
-        """Division operator.
+        """
+        Division operator.
 
             >>> Vector2D(1, 1) / 2
             Vector2D(0.5, 0.5)
@@ -837,16 +797,12 @@ cdef class Vector2D:
 
             # prevent divide my zero
             if d == 0.0:
-
                 raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
             d = 1.0 / d
-
             return new_vector2d(d * self.x, d * self.y)
 
-        else:
-
-            raise TypeError("Unsupported operand type. Expects a real number.")
+        raise TypeError("Unsupported operand type. Expects a real number.")
 
     @property
     def length(self):
@@ -862,6 +818,7 @@ cdef class Vector2D:
             1.4142135623730951
 
         """
+
         return self.get_length()
 
     @length.setter
@@ -915,7 +872,6 @@ cdef class Vector2D:
 
         # normalise and rescale vector
         t = v / sqrt(t)
-
         self.x = self.x * t
         self.y = self.y * t
 
@@ -932,8 +888,8 @@ cdef class Vector2D:
             return self.x
         elif index == 1:
             return self.y
-        else:
-            return NAN
+
+        return NAN
 
     cdef void set_index(self, int index, double value) nogil:
         """
@@ -994,7 +950,6 @@ cdef class Vector2D:
         # if current length is zero, problem is ill defined
         t = self.x * self.x + self.y * self.y
         if t == 0.0:
-
             raise ZeroDivisionError("A zero length vector can not be normalised as the direction of a zero length vector is undefined.")
 
         # normalise and rescale vector
@@ -1071,11 +1026,9 @@ cdef class Vector2D:
         """
 
         if d == 0.0:
-
             raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
         d = 1.0 / d
-
         return new_vector2d(self.x * d, self.y * d)
 
     cpdef Vector2D copy(self):
@@ -1108,11 +1061,7 @@ cdef class Vector2D:
 
         """
 
-        cdef:
-            Vector2D n
-
-        n = self.normalise()
-
+        cdef Vector2D n = self.normalise()
         return new_vector2d(-n.y, n.x)
 
 

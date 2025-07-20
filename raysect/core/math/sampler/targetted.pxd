@@ -32,6 +32,7 @@
 cimport numpy as np
 from raysect.core.math cimport Point3D, Vector3D
 
+
 cdef class _TargettedSampler:
 
     cdef:
@@ -41,19 +42,12 @@ cdef class _TargettedSampler:
         double[::1] _cdf_mv
 
     cdef object _validate_targets(self)
-
     cpdef double pdf(self, Point3D point, Vector3D sample)
-
     cdef Vector3D sample(self, Point3D point)
-
     cdef tuple sample_with_pdf(self, Point3D point)
-
     cdef list samples(self, Point3D point, int samples)
-
     cdef list samples_with_pdfs(self, Point3D point, int samples)
-
     cdef object _calculate_cdf(self)
-
     cdef tuple _pick_sphere(self)
 
 

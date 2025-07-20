@@ -34,6 +34,7 @@ cimport cython
 from libc.math cimport sqrt, fabs
 from raysect.core.math.vector cimport new_vector3d
 
+
 cdef class Normal3D(_Vec3):
     """
     Represents a normal vector in 3D affine space.
@@ -83,15 +84,13 @@ cdef class Normal3D(_Vec3):
             return self.x == n.x and self.y == n.y and self.z == n.z
         elif op == 3: # __ne__()
             return self.x != n.x or self.y != n.y or self.z != n.z
-        else:
-            return NotImplemented
+
+        return NotImplemented
 
     def __neg__(self):
         """Returns a normal with the reverse orientation."""
 
-        return new_normal3d(-self.x,
-                            -self.y,
-                            -self.z)
+        return new_normal3d(-self.x, -self.y, -self.z)
 
     def __add__(self, object y):
         """Addition operator."""
@@ -99,16 +98,10 @@ cdef class Normal3D(_Vec3):
         cdef _Vec3 v
 
         if isinstance(y, _Vec3):
-
             v = <_Vec3>y
+            return new_normal3d(self.x + v.x, self.y + v.y, self.z + v.z)
 
-            return new_normal3d(self.x + v.x,
-                                self.y + v.y,
-                                self.z + v.z)
-
-        else:
-
-            return NotImplemented
+        return NotImplemented
     
     def __radd__(self, object x):
         """Reverse addition operator."""
@@ -121,16 +114,10 @@ cdef class Normal3D(_Vec3):
         cdef _Vec3 v
 
         if isinstance(y, _Vec3):
-
             v = <_Vec3>y
+            return new_normal3d(self.x - v.x, self.y - v.y, self.z - v.z)
 
-            return new_normal3d(self.x - v.x,
-                                self.y - v.y,
-                                self.z - v.z)
-
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     def __rsub__(self, object x):
         """Reverse subtract operator."""
@@ -138,16 +125,10 @@ cdef class Normal3D(_Vec3):
         cdef _Vec3 v
 
         if isinstance(x, _Vec3):
-
             v = <_Vec3>x
+            return new_normal3d(v.x - self.x, v.y - self.y, v.z - self.z)
 
-            return new_normal3d(v.x - self.x,
-                                v.y - self.y,
-                                v.z - self.z)
-
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     def __mul__(self, object y):
         """Multiply operator."""
@@ -155,43 +136,32 @@ cdef class Normal3D(_Vec3):
         cdef double s
 
         if isinstance(y, numbers.Real):
-
             s = <double>y
+            return new_normal3d(s * self.x, s * self.y, s * self.z)
 
-            return new_normal3d(s * self.x,
-                                s * self.y,
-                                s * self.z)
-
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     def __rmul__(self, object x):
         """Reverse multiply operator."""
 
-        cdef double s
-        cdef AffineMatrix3D m, minv
+        cdef:
+            double s
+            AffineMatrix3D m, minv
 
         if isinstance(x, numbers.Real):
-
             s = <double>x
-
-            return new_normal3d(s * self.x,
-                                s * self.y,
-                                s * self.z)
+            return new_normal3d(s * self.x, s * self.y, s * self.z)
 
         elif isinstance(x, AffineMatrix3D):
-
             m = <AffineMatrix3D>x
-
             minv = m.inverse()
-            return new_normal3d(minv.m[0][0] * self.x + minv.m[1][0] * self.y + minv.m[2][0] * self.z,
-                                minv.m[0][1] * self.x + minv.m[1][1] * self.y + minv.m[2][1] * self.z,
-                                minv.m[0][2] * self.x + minv.m[1][2] * self.y + minv.m[2][2] * self.z)
+            return new_normal3d(
+                minv.m[0][0] * self.x + minv.m[1][0] * self.y + minv.m[2][0] * self.z,
+                minv.m[0][1] * self.x + minv.m[1][1] * self.y + minv.m[2][1] * self.z,
+                minv.m[0][2] * self.x + minv.m[1][2] * self.y + minv.m[2][2] * self.z
+            )
 
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     @cython.cdivision(True)
     def __truediv__(self, object y):
@@ -201,22 +171,16 @@ cdef class Normal3D(_Vec3):
 
         if isinstance(y, numbers.Real):
 
-            d = <double>y
+            d = <double> y
 
             # prevent divide my zero
             if d == 0.0:
-
                 raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
             d = 1.0 / d
+            return new_normal3d(d * self.x, d * self.y, d * self.z)
 
-            return new_normal3d(d * self.x,
-                                d * self.y,
-                                d * self.z)
-
-        else:
-
-            return NotImplemented
+        return NotImplemented
 
     cpdef Vector3D cross(self, _Vec3 v):
         """
@@ -228,9 +192,11 @@ cdef class Normal3D(_Vec3):
         :rtype: Vector3D
         """
 
-        return new_vector3d(self.y * v.z - v.y * self.z,
-                            self.z * v.x - v.z * self.x,
-                            self.x * v.y - v.x * self.y)
+        return new_vector3d(
+            self.y * v.z - v.y * self.z,
+            self.z * v.x - v.z * self.x,
+            self.x * v.y - v.x * self.y
+        )
 
     @cython.cdivision(True)
     cpdef Normal3D normalise(self):
@@ -247,15 +213,11 @@ cdef class Normal3D(_Vec3):
         # if current length is zero, problem is ill defined
         t = self.x * self.x + self.y * self.y + self.z * self.z
         if t == 0.0:
-
             raise ZeroDivisionError("A zero length vector can not be normalised as the direction of a zero length vector is undefined.")
 
         # normalise and rescale vector
         t = 1.0 / sqrt(t)
-
-        return new_normal3d(self.x * t,
-                            self.y * t,
-                            self.z * t)
+        return new_normal3d(self.x * t, self.y * t, self.z * t)
 
     cpdef Normal3D transform(self, AffineMatrix3D m):
         """
@@ -279,9 +241,11 @@ cdef class Normal3D(_Vec3):
 
         cdef AffineMatrix3D minv
         minv = m.inverse()
-        return new_normal3d(minv.m[0][0] * self.x + minv.m[1][0] * self.y + minv.m[2][0] * self.z,
-                            minv.m[0][1] * self.x + minv.m[1][1] * self.y + minv.m[2][1] * self.z,
-                            minv.m[0][2] * self.x + minv.m[1][2] * self.y + minv.m[2][2] * self.z)
+        return new_normal3d(
+            minv.m[0][0] * self.x + minv.m[1][0] * self.y + minv.m[2][0] * self.z,
+            minv.m[0][1] * self.x + minv.m[1][1] * self.y + minv.m[2][1] * self.z,
+            minv.m[0][2] * self.x + minv.m[1][2] * self.y + minv.m[2][2] * self.z
+        )
 
     cpdef Normal3D transform_with_inverse(self, AffineMatrix3D m):
         """
@@ -300,9 +264,11 @@ cdef class Normal3D(_Vec3):
         :rtype: Normal3D
         """
 
-        return new_normal3d(m.m[0][0] * self.x + m.m[1][0] * self.y + m.m[2][0] * self.z,
-                            m.m[0][1] * self.x + m.m[1][1] * self.y + m.m[2][1] * self.z,
-                            m.m[0][2] * self.x + m.m[1][2] * self.y + m.m[2][2] * self.z)
+        return new_normal3d(
+            m.m[0][0] * self.x + m.m[1][0] * self.y + m.m[2][0] * self.z,
+            m.m[0][1] * self.x + m.m[1][1] * self.y + m.m[2][1] * self.z,
+            m.m[0][2] * self.x + m.m[1][2] * self.y + m.m[2][2] * self.z
+        )
 
     cdef Normal3D neg(self):
         """
@@ -312,9 +278,7 @@ cdef class Normal3D(_Vec3):
         to the equivalent python operator.
         """
 
-        return new_normal3d(-self.x,
-                            -self.y,
-                            -self.z)
+        return new_normal3d(-self.x, -self.y, -self.z)
 
     cdef Normal3D add(self, _Vec3 v):
         """
@@ -324,9 +288,7 @@ cdef class Normal3D(_Vec3):
         to the equivalent python operator.
         """
 
-        return new_normal3d(self.x + v.x,
-                            self.y + v.y,
-                            self.z + v.z)
+        return new_normal3d(self.x + v.x, self.y + v.y, self.z + v.z)
 
     cdef Normal3D sub(self, _Vec3 v):
         """
@@ -336,9 +298,7 @@ cdef class Normal3D(_Vec3):
         to the equivalent python operator.
         """
 
-        return new_normal3d(self.x - v.x,
-                            self.y - v.y,
-                            self.z - v.z)
+        return new_normal3d(self.x - v.x, self.y - v.y, self.z - v.z)
 
     cdef Normal3D mul(self, double m):
         """
@@ -348,9 +308,7 @@ cdef class Normal3D(_Vec3):
         to the equivalent python operator.
         """
 
-        return new_normal3d(self.x * m,
-                            self.y * m,
-                            self.z * m)
+        return new_normal3d(self.x * m, self.y * m, self.z * m)
 
     @cython.cdivision(True)
     cdef Normal3D div(self, double d):
@@ -362,14 +320,10 @@ cdef class Normal3D(_Vec3):
         """
 
         if d == 0.0:
-
             raise ZeroDivisionError("Cannot divide a vector by a zero scalar.")
 
         d = 1.0 / d
-
-        return new_normal3d(self.x * d,
-                            self.y * d,
-                            self.z * d)
+        return new_normal3d(self.x * d, self.y * d, self.z * d)
 
     cpdef Normal3D copy(self):
         """
@@ -378,9 +332,7 @@ cdef class Normal3D(_Vec3):
         :rtype: Normal3D
         """
 
-        return new_normal3d(self.x,
-                            self.y,
-                            self.z)
+        return new_normal3d(self.x, self.y, self.z)
 
     cpdef Vector3D as_vector(self):
         """
@@ -389,9 +341,7 @@ cdef class Normal3D(_Vec3):
         :rtype: Vector3D
         """
 
-        return new_vector3d(self.x,
-                            self.y,
-                            self.z)
+        return new_vector3d(self.x, self.y, self.z)
 
     cpdef Vector3D orthogonal(self):
         """

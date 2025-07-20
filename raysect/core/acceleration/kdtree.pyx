@@ -154,7 +154,6 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
         # dereference the primitives and check if they contain the point
         enclosing_primitives = []
         for item in range(count):
-
             index = self._nodes[id].items[item]
             primitive = <BoundPrimitive> self.primitives[index]
             if primitive.contains(point):

@@ -33,12 +33,15 @@ from raysect.core.acceleration.accelerator cimport Accelerator as _Accelerator
 from raysect.core.math.spatial.kdtree3d cimport KDTree3DCore as _KDTreeCore
 from raysect.core.intersection cimport Intersection
 
+
 cdef class _PrimitiveKDTree(_KDTreeCore):
+
     cdef:
         list primitives
         Intersection hit_intersection
 
 
 cdef class KDTree(_Accelerator):
+
     cdef _PrimitiveKDTree _kdtree
 

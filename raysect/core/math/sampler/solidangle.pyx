@@ -29,9 +29,10 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI, M_1_PI, sqrt, sin, cos, asin
+from libc.math cimport M_PI, M_1_PI, sqrt, sin, cos
 from raysect.core.math cimport Vector3D, new_vector3d
 from raysect.core.math.random cimport uniform
+
 
 # TODO: add tests - idea: solve the lighting equation with a uniform emitting surface with each sampler and check the mean radiance is unity
 cdef const double R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
