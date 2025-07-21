@@ -33,11 +33,14 @@ from raysect.core cimport Primitive, Point3D, Vector3D, Ray, Intersection
 
 cdef class Torus(Primitive):
 
-    cdef double _major_radius, _minor_radius
-    cdef bint _further_intersection
-    cdef double _next_t
-    cdef Point3D _cached_origin
-    cdef Vector3D _cached_direction
-    cdef Ray _cached_ray
+    cdef:
+        double _major_radius, _minor_radius
+        bint _further_intersection
+        int _next_t_index
+        int _num_t
+        double[4] _cached_t
+        Point3D _cached_origin
+        Vector3D _cached_direction
+        Ray _cached_ray
 
     cdef Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance)

@@ -91,7 +91,8 @@ cdef class Torus(Primitive):
 
         # initialise next intersection caching and control attributes
         self._further_intersection = False
-        self._next_t = 0.0
+        self._next_t_index = 0
+        self._num_t = 0
         self._cached_origin = None
         self._cached_direction = None
         self._cached_ray = None
@@ -233,15 +234,19 @@ cdef class Torus(Primitive):
             if t[0] > ray.max_distance or t[3] < 0.0:
                 return None
 
+            # cache the all intersection points
+            self._num_t = num
+            self._cached_t = t
+
             for i in range(num - 1):
                 if t[i] >= 0.0:
                     t_closest = t[i]
                     if t[i + 1] <= ray.max_distance:
                         self._further_intersection = True
+                        self._next_t_index = i + 1
                         self._cached_ray = ray
                         self._cached_origin = origin
                         self._cached_direction = direction
-                        self._next_t = t[i + 1]
 
                     return self._generate_intersection(ray, origin, direction, t_closest)
 
@@ -254,12 +259,33 @@ cdef class Torus(Primitive):
 
     cpdef Intersection next_intersection(self):
 
+        cdef:
+            double next_t
+            Intersection new_intersection
+
         if not self._further_intersection:
             return None
 
-        # this is the 2nd intersection
-        self._further_intersection = False
-        return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t)
+        next_t = self._cached_t[self._next_t_index]
+
+        # generate the next intersection.
+        new_intersection = self._generate_intersection(
+            self._cached_ray,
+            self._cached_origin,
+            self._cached_direction,
+            next_t,
+        )
+
+        # update the next intersection index
+        # if there are no more intersections, disable further intersection state
+        # and reset the next_t_index to 0
+        if self._next_t_index < self._num_t - 1:
+            self._next_t_index += 1
+        else:
+            self._further_intersection = False
+            self._next_t_index = 0
+
+        return new_intersection
 
     cdef Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance):
 
