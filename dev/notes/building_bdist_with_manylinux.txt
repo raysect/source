@@ -13,10 +13,11 @@ Start the manylinux docker container (this will download the container, mount th
 This will drop you into the manylinux container terminal. The /opt/python folder in the container holds the various versions of python. This example targets python 3.7. Adjust the paths as appropriate to build bdists for different python versions.
 
     cd io/source
-    /opt/python/cp37-cp37m/bin/python -m pip build .
-    auditwheel repair dist/raysect-0.8.1-cp37-cp37m-linux_x86_64.whl --plat manylinux2010_x86_64
+    /opt/python/cp37-cp37m/bin/python -m pip install cython numpy==1.14.6
+    /opt/python/cp37-cp37m/bin/python setup.py bdist_wheel
+    auditwheel repair dist/raysect-0.8.2-cp37-cp37m-linux_x86_64.whl --plat manylinux2010_x86_64
 
-This will compile the wheel and repair any library references to produce the manylinux wheel files in a folder ./wheelhouse. e.g. raysect-0.8.1-cp37-cp37m-manylinux1_x86_64.whl and raysect-0.8.1-cp37-cp37m-manylinux2010_x86_64.whl.
+This will compile the wheel and repair any library references to produce the manylinux wheel files in a folder ./wheelhouse. e.g. raysect-0.8.2-cp37-cp37m-manylinux1_x86_64.whl and raysect-0.8.2-cp37-cp37m-manylinux2010_x86_64.whl.
 
 These can then be uploaded to pypi.
 

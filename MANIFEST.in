@@ -1,6 +1,0 @@
-include README.md CHANGELOG.txt LICENSE.txt CONTRIBUTING.txt AUTHORS.txt MANIFEST.in setup.py .gitignore
-include raysect/VERSION
-global-exclude *.c
-recursive-include raysect *.py *.pyx *.pxd *.csv *.json
-recursive-include demos *.py *.pyx *.pxd *.csv *.obj *.rsm
-recursive-include docs *

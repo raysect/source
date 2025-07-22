@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -455,13 +455,14 @@ cdef class RGBPipeline2D(Pipeline2D):
         # sort by luminance
         luminance.sort()
 
+        #
+        i = 0
+
         # if all pixels black, return default sensitivity
         for i in range(pixels):
             if lmv[i] > 0:
                 break
-
-        # return default sensitivity
-        if i == pixels:
+        else:
             return 1.0
 
         # identify luminance at threshold
@@ -471,7 +472,7 @@ cdef class RGBPipeline2D(Pipeline2D):
         if peak_luminance == 0:
             return 1.0
 
-        return 1 / peak_luminance
+        return 1.0 / peak_luminance
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
