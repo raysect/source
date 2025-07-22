@@ -13,8 +13,7 @@ Build changes:
   - Meson-python performs the build out of the project folder, so the project source folders will no longer be polluted with build artefacts.
   - Cython build annotations are now always enabled, the annotation files can be found in the build folder under the build artefacts folder associated with each so file (*.so.p folder).
 * The codebase has been migrated to Cython 3.
-  - Thanks to the contributions of Koyo Munechika (@munechika-koyo) Raysect is now moved to Cython 3.
-  - Raysect can now benefit from the improvements added to cython since 0.29.x.
+  - This migration was made possible due to the contributions of Koyo Munechika (@munechika-koyo).
 
 Python support:
 * Raysect now requires Python v3.9 and above.
