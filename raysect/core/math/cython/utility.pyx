@@ -867,6 +867,7 @@ def _point_inside_polygon(vertices, ptx, pty):
     """Expose cython function for testing."""
     return point_inside_polygon(vertices, ptx, pty)
 
+
 def _solve_cubic(a, b, c, d):
     """Expose cython function for testing."""
     t0 = 0.0
@@ -876,6 +877,7 @@ def _solve_cubic(a, b, c, d):
     num = solve_cubic(a, b, c, d, &t0, &t1, &t2)
 
     return (t0, t1, t2, num)
+
 
 def _solve_quartic(a, b, c, d, e):
     """Expose cython function for testing."""
