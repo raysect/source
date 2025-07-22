@@ -31,9 +31,9 @@
 
 from raysect.optical cimport Spectrum
 
+
 cdef class PixelProcessor:
 
     cpdef object add_sample(self, Spectrum spectrum, double sensitivity)
-
     cpdef tuple pack_results(self)
 

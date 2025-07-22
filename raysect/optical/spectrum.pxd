@@ -32,6 +32,7 @@
 from raysect.optical.spectralfunction cimport SpectralFunction
 from numpy cimport ndarray
 
+
 cdef class Spectrum(SpectralFunction):
 
     cdef:

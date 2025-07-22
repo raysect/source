@@ -31,6 +31,7 @@
 
 cimport cython
 
+
 @cython.freelist(256)
 cdef class Intersection:
     """

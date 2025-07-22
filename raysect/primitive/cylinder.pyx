@@ -31,27 +31,26 @@
 
 from raysect.core cimport AffineMatrix3D, new_normal3d, new_point3d, new_vector3d, Material, new_intersection, BoundingBox3D
 from raysect.core.math.cython cimport solve_quadratic, swap_double
-from libc.math cimport sqrt, fabs
+from libc.math cimport sqrt, fabs, INFINITY
 cimport cython
 
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
-
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-9
+cdef const double BOX_PADDING = 1e-9
 
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-9
+cdef const double EPSILON = 1e-9
 
-# object type enumeration
-DEF NO_TYPE = -1
-DEF CYLINDER = 0
-DEF SLAB = 1
+cdef enum:
 
-# slab face enumeration
-DEF NO_FACE = -1
-DEF LOWER_FACE = 0
-DEF UPPER_FACE = 1
+    # object type enumeration
+    NO_TYPE = -1
+    CYLINDER = 0
+    SLAB = 1
+
+    # slab face enumeration
+    NO_FACE = -1
+    LOWER_FACE = 0
+    UPPER_FACE = 1
 
 
 cdef class Cylinder(Primitive):

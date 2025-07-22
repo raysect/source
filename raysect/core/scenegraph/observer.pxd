@@ -31,6 +31,7 @@
 
 from raysect.core.scenegraph.node cimport Node
 
+
 cdef class Observer(Node):
 
     cpdef observe(self)

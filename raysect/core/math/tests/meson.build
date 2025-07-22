@@ -4,7 +4,7 @@
 target_path = 'raysect/core/math/tests'
 
 # source files
-py_files = ['test_transform.py', 'test_random.py', 'test_normal3d.py', 'test_point3d.py', 'test_interaction3d.py', 'test_vector3d.py', 'test_affinematrix3d.py', 'test_quaternion.py', 'test_point2d.py', '__init__.py', 'test_vector2d.py']
+py_files = ['__init__.py', 'test_affinematrix3d.py', 'test_interaction3d.py', 'test_normal3d.py', 'test_point2d.py', 'test_point3d.py', 'test_quaternion.py', 'test_random.py', 'test_transform.py', 'test_vector2d.py', 'test_vector3d.py']
 pyx_files = []
 pxd_files = []
 data_files = []

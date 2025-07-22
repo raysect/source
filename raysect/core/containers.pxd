@@ -46,22 +46,16 @@ cdef class LinkedList:
         _Item last
 
     cpdef bint is_empty(self)
-
     cpdef add(self, object value)
-
     cpdef add_items(self, object iterable)
-
     cpdef object get_index(self, int index)
-
     cpdef insert(self, object value, int index)
-
     cpdef object remove(self, int index)
 
 
 cdef class Stack(LinkedList):
 
     cpdef push(self, object value)
-
     cpdef object pop(self)
 
 

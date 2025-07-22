@@ -5,8 +5,8 @@ target_path = 'raysect/primitive'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['sphere.pyx', 'csg.pyx', 'box.pyx', 'cylinder.pyx', 'cone.pyx', 'utility.pyx', 'parabola.pyx']
-pxd_files = ['parabola.pxd', 'cone.pxd', 'csg.pxd', 'box.pxd', 'utility.pxd', 'sphere.pxd', '__init__.pxd', 'cylinder.pxd']
+pyx_files = ['box.pyx', 'cone.pyx', 'csg.pyx', 'cylinder.pyx', 'parabola.pyx', 'sphere.pyx', 'utility.pyx']
+pxd_files = ['__init__.pxd', 'box.pxd', 'cone.pxd', 'csg.pxd', 'cylinder.pxd', 'parabola.pxd', 'sphere.pxd', 'utility.pxd']
 data_files = []
 
 # compile cython

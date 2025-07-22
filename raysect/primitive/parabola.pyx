@@ -31,23 +31,21 @@
 
 from raysect.core cimport new_point3d, Point3D, new_normal3d, AffineMatrix3D, Material, new_intersection, BoundingBox3D
 from raysect.core.math.cython cimport solve_quadratic, swap_double, swap_int
-from libc.math cimport sqrt
+from libc.math cimport sqrt, INFINITY
 cimport cython
 
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
-
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-9
+cdef const double BOX_PADDING = 1e-9
 
 # TODO - Perhaps should be calculated based on primitive scale
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-9
+cdef const double EPSILON = 1e-9
 
 # object type enumeration
-DEF NO_TYPE = -1
-DEF PARABOLA = 0
-DEF BASE = 1
+cdef enum:
+    NO_TYPE = -1
+    PARABOLA = 0
+    BASE = 1
 
 
 cdef class Parabola(Primitive):

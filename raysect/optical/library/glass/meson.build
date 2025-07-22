@@ -4,7 +4,7 @@
 target_path = 'raysect/optical/library/glass'
 
 # source files
-py_files = ['schott.py', '__init__.py']
+py_files = ['__init__.py', 'schott.py']
 pyx_files = []
 pxd_files = []
 data_files = []

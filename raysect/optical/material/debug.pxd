@@ -42,5 +42,4 @@ cdef class Light(NullVolume):
 
 
 cdef class PerfectReflectingSurface(Material):
-
     pass

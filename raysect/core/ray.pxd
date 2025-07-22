@@ -39,7 +39,6 @@ cdef class Ray:
     cdef public double max_distance
 
     cpdef Point3D point_on(self, double t)
-
     cpdef Ray copy(self, Point3D origin=*, Vector3D direction=*)
 
 

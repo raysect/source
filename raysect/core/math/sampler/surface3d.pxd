@@ -35,11 +35,8 @@ from raysect.core.math cimport Point3D
 cdef class SurfaceSampler3D:
 
     cdef Point3D sample(self)
-
     cdef tuple sample_with_pdf(self)
-
     cdef list samples(self, int samples)
-
     cdef list samples_with_pdfs(self, int samples)
 
 

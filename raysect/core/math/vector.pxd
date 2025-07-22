@@ -32,30 +32,20 @@
 from raysect.core.math._vec3 cimport _Vec3
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 
+
 cdef class Vector3D(_Vec3):
 
     cpdef Vector3D cross(self, _Vec3 v)
-
     cpdef Vector3D normalise(self)
-
     cpdef Vector3D transform(self, AffineMatrix3D m)
-
     cdef Vector3D neg(self)
-
     cdef Vector3D add(self, _Vec3 v)
-
     cdef Vector3D sub(self, _Vec3 v)
-
     cdef Vector3D mul(self, double m)
-
     cdef Vector3D div(self, double m)
-
     cpdef Vector3D copy(self)
-
     cpdef Vector3D orthogonal(self)
-
     cpdef Vector3D lerp(self, Vector3D b, double t)
-
     cpdef Vector3D slerp(self, Vector3D b, double t)
 
 
@@ -80,33 +70,19 @@ cdef class Vector2D:
     cdef public double x, y
 
     cpdef double dot(self, Vector2D v)
-
     cdef double get_length(self) nogil
-
     cdef object set_length(self, double v)
-
     cdef double get_index(self, int index) nogil
-
     cdef void set_index(self, int index, double value) nogil
-
     cpdef double cross(self, Vector2D v)
-
     cpdef Vector2D normalise(self)
-
     # cpdef Vector2D transform(self, AffineMatrix2D m):
-
     cdef Vector2D neg(self)
-
     cdef Vector2D add(self, Vector2D v)
-
     cdef Vector2D sub(self, Vector2D v)
-
     cdef Vector2D mul(self, double m)
-
     cdef Vector3D div(self, double d)
-
     cpdef Vector2D copy(self)
-
     cpdef Vector2D orthogonal(self)
 
 

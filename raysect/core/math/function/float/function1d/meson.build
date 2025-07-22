@@ -5,8 +5,8 @@ target_path = 'raysect/core/math/function/float/function1d'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['arg.pyx', 'autowrap.pyx', 'samplers.pyx', 'base.pyx', 'blend.pyx', 'constant.pyx', 'cmath.pyx', 'interpolate.pyx']
-pxd_files = ['cmath.pxd', 'constant.pxd', 'autowrap.pxd', 'blend.pxd', 'samplers.pxd', 'base.pxd', 'interpolate.pxd', '__init__.pxd', 'arg.pxd']
+pyx_files = ['arg.pyx', 'autowrap.pyx', 'base.pyx', 'blend.pyx', 'cmath.pyx', 'constant.pyx', 'interpolate.pyx', 'samplers.pyx']
+pxd_files = ['__init__.pxd', 'arg.pxd', 'autowrap.pxd', 'base.pxd', 'blend.pxd', 'cmath.pxd', 'constant.pxd', 'interpolate.pxd', 'samplers.pxd']
 data_files = []
 
 # compile cython

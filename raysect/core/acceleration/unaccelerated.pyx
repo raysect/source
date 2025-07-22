@@ -37,6 +37,7 @@ from raysect.core.math cimport Point3D
 from raysect.core.intersection cimport Intersection
 from raysect.core.acceleration.boundprimitive cimport BoundPrimitive
 
+
 cdef class Unaccelerated(Accelerator):
 
     def __init__(self):
@@ -54,7 +55,6 @@ cdef class Unaccelerated(Accelerator):
         self.world_box = BoundingBox3D()
 
         for primitive in primitives:
-
             accel_primitive = BoundPrimitive(primitive)
             self.primitives.append(accel_primitive)
             self.world_box.union(accel_primitive.box)
@@ -70,23 +70,17 @@ cdef class Unaccelerated(Accelerator):
 
         # does the ray intersect the space containing the primitives
         if not self.world_box.hit(ray):
-
             return None
 
         # find the closest primitive-ray intersection
         closest_intersection = None
 
-        # intial search distance is maximum possible ray extent
+        # initial search distance is maximum possible ray extent
         distance = ray.max_distance
-
         for primitive in self.primitives:
-
             intersection = primitive.hit(ray)
-
             if intersection is not None:
-
                 if intersection.ray_distance < distance:
-
                     distance = intersection.ray_distance
                     closest_intersection = intersection
 
@@ -101,15 +95,12 @@ cdef class Unaccelerated(Accelerator):
             BoundPrimitive primitive
 
         if not self.world_box.contains(point):
-
             return []
 
         enclosing_primitives = []
 
         for primitive in self.primitives:
-
             if primitive.contains(point):
-
                 enclosing_primitives.append(primitive.primitive)
 
         return enclosing_primitives

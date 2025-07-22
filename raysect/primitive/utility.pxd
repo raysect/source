@@ -38,9 +38,6 @@ cdef class EncapsulatedPrimitive(Primitive):
         Primitive _primitive
 
     cpdef Intersection hit(self, Ray ray)
-
     cpdef Intersection next_intersection(self)
-
     cpdef bint contains(self, Point3D p) except -1
-
     cpdef BoundingBox3D bounding_box(self)

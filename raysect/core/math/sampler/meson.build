@@ -5,8 +5,8 @@ target_path = 'raysect/core/math/sampler'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['solidangle.pyx', 'targetted.pyx', 'surface3d.pyx']
-pxd_files = ['targetted.pxd', 'surface3d.pxd', 'solidangle.pxd', '__init__.pxd']
+pyx_files = ['solidangle.pyx', 'surface3d.pyx', 'targeted.pyx']
+pxd_files = ['__init__.pxd', 'solidangle.pxd', 'surface3d.pxd', 'targeted.pxd']
 data_files = []
 
 # compile cython

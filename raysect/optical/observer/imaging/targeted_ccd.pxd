@@ -29,15 +29,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
-from raysect.optical.observer.base cimport Observer0D
+from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargetedHemisphereSampler
+from raysect.optical.observer.base cimport Observer2D
 
 
-cdef class TargettedPixel(Observer0D):
+cdef class TargetedCCDArray(Observer2D):
 
     cdef:
-        double _x_width, _y_width, _solid_angle, _collection_area, _targetted_path_prob
+        double _width, _pixel_area, _image_delta, _image_start_x, _image_start_y, _targeted_path_prob
         tuple _targets
         RectangleSampler3D _point_sampler
         HemisphereCosineSampler _cosine_sampler
-        TargettedHemisphereSampler _targetted_sampler
+        TargetedHemisphereSampler _targeted_sampler
+
+    cdef object _update_image_geometry(self)

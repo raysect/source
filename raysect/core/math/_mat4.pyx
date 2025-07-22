@@ -54,7 +54,6 @@ cdef class _Mat4:
 
         # special handling for _Mat4
         if isinstance(v, _Mat4):
-
             m = <_Mat4>v
             for i in range(0, 4):
                 for j in range(0, 4):
@@ -95,7 +94,6 @@ cdef class _Mat4:
         Expects a tuple (row, column) as the index.
 
         e.g. v = matrix[1, 2]
-
         """
 
         cdef int row, column

@@ -4,7 +4,7 @@
 target_path = 'raysect/core/math/cython/tests'
 
 # source files
-py_files = ['test_utility.py', '__init__.py', 'test_tetrahedra.py', 'test_triangle.py']
+py_files = ['__init__.py', 'test_tetrahedra.py', 'test_triangle.py', 'test_utility.py']
 pyx_files = []
 pxd_files = []
 data_files = []

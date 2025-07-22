@@ -4,7 +4,7 @@
 target_path = 'raysect/primitive/lens/tests'
 
 # source files
-py_files = ['test_spherical.py', '__init__.py']
+py_files = ['__init__.py', 'test_spherical.py']
 pyx_files = []
 pxd_files = []
 data_files = []

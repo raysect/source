@@ -5,8 +5,8 @@ target_path = 'raysect/optical/observer/pipeline/mono'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['radiance.pyx', 'power.pyx']
-pxd_files = ['power.pxd', 'radiance.pxd', '__init__.pxd']
+pyx_files = ['power.pyx', 'radiance.pyx']
+pxd_files = ['__init__.pxd', 'power.pxd', 'radiance.pxd']
 data_files = []
 
 # compile cython

@@ -6,7 +6,7 @@ target_path = 'raysect/core/math/cython/interpolation'
 # source files
 py_files = []
 pyx_files = ['cubic.pyx', 'linear.pyx']
-pxd_files = ['cubic.pxd', 'linear.pxd', '__init__.pxd']
+pxd_files = ['__init__.pxd', 'cubic.pxd', 'linear.pxd']
 data_files = []
 
 # compile cython

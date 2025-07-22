@@ -33,7 +33,7 @@ cimport cython
 
 
 cdef bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
-                                 double v3x, double v3y, double px, double py) nogil:
+                          double v3x, double v3y, double px, double py) nogil:
     """
     Cython utility for testing if point is inside a triangle.
 
@@ -52,8 +52,7 @@ cdef bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
     :rtype: bool
     """
 
-    cdef:
-        double ux, uy, vx, vy
+    cdef double ux, uy, vx, vy
 
     # calculate vectors
     ux = v2x - v1x
@@ -158,7 +157,7 @@ cdef bint barycentric_inside_triangle(double alpha, double beta, double gamma) n
 
 
 cdef double barycentric_interpolation(double alpha, double beta, double gamma,
-                                             double va, double vb, double vc) nogil:
+                                      double va, double vb, double vc) nogil:
     """
     Cython utility for interpolation of data at triangle vertices.
 

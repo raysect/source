@@ -31,6 +31,7 @@
 
 cimport cython
 
+
 @cython.freelist(64)
 cdef class PixelProcessor:
     """

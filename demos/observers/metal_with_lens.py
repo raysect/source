@@ -7,7 +7,7 @@ from raysect.primitive.lens.spherical import BiConvex
 from raysect.optical.library.metal import Gold, Silver, Copper, Titanium, Aluminium, Beryllium
 from raysect.optical.material import Lambert, UniformSurfaceEmitter, AbsorbingSurface, NullMaterial
 from raysect.optical.library import schott
-from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, TargettedCCDArray, CCDArray, RGBAdaptiveSampler2D
+from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, TargetedCCDArray, CCDArray, RGBAdaptiveSampler2D
 from raysect.optical.colour import ciexyz_x, ciexyz_y, ciexyz_z
 
 
@@ -49,7 +49,7 @@ sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=500, cut
 pipelines = [rgb, bayer]
 
 # ccd = CCDArray(parent=camera, pipelines=pipelines)
-ccd = TargettedCCDArray(targets=[aperture], parent=camera, pipelines=pipelines)
+ccd = TargetedCCDArray(targets=[aperture], parent=camera, pipelines=pipelines)
 ccd.frame_sampler = sampler
 ccd.pixels = (180*2, 120*2)  # (360, 240)
 ccd.pixel_samples = 250

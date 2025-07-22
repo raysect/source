@@ -35,6 +35,7 @@ from raysect.core.scenegraph._nodebase cimport _NodeBase
 from raysect.core.scenegraph.node cimport Node
 from raysect.core.scenegraph.signal cimport ChangeSignal
 
+
 cdef class BridgeNode(Node):
     """
     Specialised scene-graph root node that propagates geometry notifications.
