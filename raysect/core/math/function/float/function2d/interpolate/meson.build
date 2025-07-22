@@ -5,8 +5,8 @@ target_path = 'raysect/core/math/function/float/function2d/interpolate'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['interpolator2darray.pyx', 'common.pyx', 'interpolator2dmesh.pyx', 'discrete2dmesh.pyx']
-pxd_files = ['interpolator2darray.pxd', 'interpolator2dmesh.pxd', 'common.pxd', 'discrete2dmesh.pxd', '__init__.pxd']
+pyx_files = ['common.pyx', 'discrete2dmesh.pyx', 'interpolator2darray.pyx', 'interpolator2dmesh.pyx']
+pxd_files = ['__init__.pxd', 'common.pxd', 'discrete2dmesh.pxd', 'interpolator2darray.pxd', 'interpolator2dmesh.pxd']
 data_files = []
 
 # compile cython

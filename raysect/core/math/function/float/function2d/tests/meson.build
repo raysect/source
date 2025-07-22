@@ -4,7 +4,7 @@
 target_path = 'raysect/core/math/function/float/function2d/tests'
 
 # source files
-py_files = ['test_autowrap.py', 'test_cmath.py', 'test_arg.py', 'test_constant.py', 'test_base.py', '__init__.py']
+py_files = ['__init__.py', 'test_arg.py', 'test_autowrap.py', 'test_base.py', 'test_cmath.py', 'test_constant.py']
 pyx_files = []
 pxd_files = []
 data_files = []

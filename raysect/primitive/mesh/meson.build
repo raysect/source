@@ -4,9 +4,9 @@
 target_path = 'raysect/primitive/mesh'
 
 # source files
-py_files = ['vtk.py', 'ply.py', 'obj.py', '__init__.py', 'stl.py']
+py_files = ['__init__.py', 'obj.py', 'ply.py', 'stl.py', 'vtk.py']
 pyx_files = ['mesh.pyx']
-pxd_files = ['mesh.pxd', '__init__.pxd']
+pxd_files = ['__init__.pxd', 'mesh.pxd']
 data_files = []
 
 # compile cython

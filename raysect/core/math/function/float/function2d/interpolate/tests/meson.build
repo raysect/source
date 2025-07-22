@@ -4,7 +4,7 @@
 target_path = 'raysect/core/math/function/float/function2d/interpolate/tests'
 
 # source files
-py_files = ['test_interpolator_2d.py', '__init__.py']
+py_files = ['__init__.py', 'test_interpolator_2d.py']
 pyx_files = []
 pxd_files = []
 data_files = []

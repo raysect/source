@@ -4,7 +4,7 @@
 target_path = 'raysect/core/math/function/vector3d/function1d/tests'
 
 # source files
-py_files = ['test_autowrap.py', 'test_float_to_vector3d.py', 'test_constant.py', 'test_base.py', '__init__.py']
+py_files = ['__init__.py', 'test_autowrap.py', 'test_base.py', 'test_constant.py', 'test_float_to_vector3d.py']
 pyx_files = []
 pxd_files = []
 data_files = []

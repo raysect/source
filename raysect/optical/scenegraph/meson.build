@@ -6,7 +6,7 @@ target_path = 'raysect/optical/scenegraph'
 # source files
 py_files = ['__init__.py']
 pyx_files = ['world.pyx']
-pxd_files = ['world.pxd', '__init__.pxd']
+pxd_files = ['__init__.pxd', 'world.pxd']
 data_files = []
 
 # compile cython

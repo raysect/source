@@ -7,7 +7,7 @@ target_path = 'raysect/optical/library/metal/data'
 py_files = ['convert_data.py']
 pyx_files = []
 pxd_files = []
-data_files = ['cobolt.json', 'tungsten.json', 'magnesium.json', 'sodium.json', 'silver.json', 'silicon.json', 'iron.json', 'palladium.json', 'gold.json', 'beryllium.json', 'lithium.json', 'copper.json', 'platinum.json', 'mercury.json', 'manganese.json', 'aluminium.json', 'titanium.json', 'nickel.json']
+data_files = ['aluminium.json', 'beryllium.json', 'cobolt.json', 'copper.json', 'gold.json', 'iron.json', 'lithium.json', 'magnesium.json', 'manganese.json', 'mercury.json', 'nickel.json', 'palladium.json', 'platinum.json', 'silicon.json', 'silver.json', 'sodium.json', 'titanium.json', 'tungsten.json']
 
 # compile cython
 foreach pyx_file: pyx_files

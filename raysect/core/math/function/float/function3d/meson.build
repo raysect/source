@@ -5,8 +5,8 @@ target_path = 'raysect/core/math/function/float/function3d'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['arg.pyx', 'autowrap.pyx', 'base.pyx', 'blend.pyx', 'constant.pyx', 'cmath.pyx']
-pxd_files = ['cmath.pxd', 'constant.pxd', 'autowrap.pxd', 'blend.pxd', 'base.pxd', '__init__.pxd', 'arg.pxd']
+pyx_files = ['arg.pyx', 'autowrap.pyx', 'base.pyx', 'blend.pyx', 'cmath.pyx', 'constant.pyx']
+pxd_files = ['__init__.pxd', 'arg.pxd', 'autowrap.pxd', 'base.pxd', 'blend.pxd', 'cmath.pxd', 'constant.pxd']
 data_files = []
 
 # compile cython
@@ -27,5 +27,5 @@ py.install_sources(
     subdir: target_path
 )
 
-subdir('tests')
 subdir('interpolate')
+subdir('tests')

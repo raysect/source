@@ -5,8 +5,8 @@ target_path = 'raysect/optical/material/emitter'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['checkerboard.pyx', 'uniform.pyx', 'anisotropic.pyx', 'unity.pyx', 'inhomogeneous.pyx', 'homogeneous.pyx']
-pxd_files = ['uniform.pxd', 'checkerboard.pxd', 'inhomogeneous.pxd', 'anisotropic.pxd', 'homogeneous.pxd', 'unity.pxd', '__init__.pxd']
+pyx_files = ['anisotropic.pyx', 'checkerboard.pyx', 'homogeneous.pyx', 'inhomogeneous.pyx', 'uniform.pyx', 'unity.pyx']
+pxd_files = ['__init__.pxd', 'anisotropic.pxd', 'checkerboard.pxd', 'homogeneous.pxd', 'inhomogeneous.pxd', 'uniform.pxd', 'unity.pxd']
 data_files = []
 
 # compile cython

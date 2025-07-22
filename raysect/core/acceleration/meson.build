@@ -5,8 +5,8 @@ target_path = 'raysect/core/acceleration'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['boundprimitive.pyx', 'unaccelerated.pyx', 'kdtree.pyx', 'accelerator.pyx']
-pxd_files = ['accelerator.pxd', 'unaccelerated.pxd', 'kdtree.pxd', 'boundprimitive.pxd', '__init__.pxd']
+pyx_files = ['accelerator.pyx', 'boundprimitive.pyx', 'kdtree.pyx', 'unaccelerated.pyx']
+pxd_files = ['__init__.pxd', 'accelerator.pxd', 'boundprimitive.pxd', 'kdtree.pxd', 'unaccelerated.pxd']
 data_files = []
 
 # compile cython

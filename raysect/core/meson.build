@@ -4,9 +4,9 @@
 target_path = 'raysect/core'
 
 # source files
-py_files = ['workflow.py', '__init__.py', 'constants.py']
-pyx_files = ['boundingsphere.pyx', 'material.pyx', 'containers.pyx', 'intersection.pyx', 'boundingbox.pyx', 'ray.pyx']
-pxd_files = ['material.pxd', 'containers.pxd', 'intersection.pxd', 'ray.pxd', 'boundingsphere.pxd', 'boundingbox.pxd', '__init__.pxd']
+py_files = ['__init__.py', 'constants.py', 'workflow.py']
+pyx_files = ['boundingbox.pyx', 'boundingsphere.pyx', 'containers.pyx', 'intersection.pyx', 'material.pyx', 'ray.pyx']
+pxd_files = ['__init__.pxd', 'boundingbox.pxd', 'boundingsphere.pxd', 'containers.pxd', 'intersection.pxd', 'material.pxd', 'ray.pxd']
 data_files = []
 
 # compile cython
@@ -27,7 +27,7 @@ py.install_sources(
     subdir: target_path
 )
 
-subdir('tests')
-subdir('scenegraph')
-subdir('math')
 subdir('acceleration')
+subdir('math')
+subdir('scenegraph')
+subdir('tests')

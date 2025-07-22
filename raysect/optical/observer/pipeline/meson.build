@@ -4,9 +4,9 @@
 target_path = 'raysect/optical/observer/pipeline'
 
 # source files
-py_files = ['colormaps.py', '__init__.py']
-pyx_files = ['rgb.pyx', 'bayer.pyx']
-pxd_files = ['bayer.pxd', 'rgb.pxd', '__init__.pxd']
+py_files = ['__init__.py', 'colormaps.py']
+pyx_files = ['bayer.pyx', 'rgb.pyx']
+pxd_files = ['__init__.pxd', 'bayer.pxd', 'rgb.pxd']
 data_files = []
 
 # compile cython

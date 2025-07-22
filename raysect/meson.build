@@ -27,6 +27,6 @@ py.install_sources(
     subdir: target_path
 )
 
-subdir('primitive')
-subdir('optical')
 subdir('core')
+subdir('optical')
+subdir('primitive')

@@ -5,8 +5,8 @@ target_path = 'raysect/core/scenegraph'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['_nodebase.pyx', 'world.pyx', 'node.pyx', 'primitive.pyx', 'observer.pyx', 'utility.pyx', 'signal.pyx']
-pxd_files = ['_nodebase.pxd', 'observer.pxd', 'utility.pxd', 'world.pxd', 'primitive.pxd', 'signal.pxd', 'node.pxd', '__init__.pxd']
+pyx_files = ['_nodebase.pyx', 'node.pyx', 'observer.pyx', 'primitive.pyx', 'signal.pyx', 'utility.pyx', 'world.pyx']
+pxd_files = ['__init__.pxd', '_nodebase.pxd', 'node.pxd', 'observer.pxd', 'primitive.pxd', 'signal.pxd', 'utility.pxd', 'world.pxd']
 data_files = []
 
 # compile cython

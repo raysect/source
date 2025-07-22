@@ -6,7 +6,7 @@ target_path = 'raysect/core/math/function/float/function3d/interpolate'
 # source files
 py_files = ['__init__.py']
 pyx_files = ['common.pyx', 'discrete3dmesh.pyx', 'interpolator3darray.pyx']
-pxd_files = ['interpolator3darray.pxd', 'discrete3dmesh.pxd', 'common.pxd', '__init__.pxd']
+pxd_files = ['__init__.pxd', 'common.pxd', 'discrete3dmesh.pxd', 'interpolator3darray.pxd']
 data_files = []
 
 # compile cython

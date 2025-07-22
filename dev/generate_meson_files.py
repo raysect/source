@@ -124,6 +124,9 @@ def _install_root_meson_file(path, subdirs):
     if any([not subdir.is_dir() for subdir in subdirs]):
         raise ValueError('The list of sub-directories must only contain paths to valid directories.')
 
+    # guarantee ordering
+    subdirs.sort()
+
     # write meson file
     _write_meson_file(path, _generate_root_meson_file(subdirs))
 
@@ -136,6 +139,9 @@ def _install_subdir_meson_files(path):
 
     # generate a list of subdirectories, filtering excluded
     subdirs = [child for child in path.iterdir() if child.is_dir() and not _excluded_dir(child)]
+
+    # guarantee ordering
+    subdirs.sort()
 
     # write meson file
     _write_meson_file(path, _generate_subdir_meson_file(path, subdirs))
@@ -210,6 +216,12 @@ def _generate_subdir_meson_file(path, subdirs):
 
         else:
             data.append(child.name)
+
+    # guarantee ordering
+    pyx.sort()
+    pxd.sort()
+    py.sort()
+    data.sort()
 
     # start contents with a warning
     contents = (

@@ -4,7 +4,7 @@
 target_path = 'raysect/core/scenegraph/tests'
 
 # source files
-py_files = ['test_node.py', 'test_world.py', 'test_observer.py', '__init__.py', 'test_primitive.py']
+py_files = ['__init__.py', 'test_node.py', 'test_observer.py', 'test_primitive.py', 'test_world.py']
 pyx_files = []
 pxd_files = []
 data_files = []

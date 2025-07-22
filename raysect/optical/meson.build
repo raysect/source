@@ -5,8 +5,8 @@ target_path = 'raysect/optical'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['loggingray.pyx', 'spectralfunction.pyx', 'colour.pyx', 'spectrum.pyx', 'ray.pyx']
-pxd_files = ['colour.pxd', 'ray.pxd', 'spectralfunction.pxd', 'spectrum.pxd', '__init__.pxd']
+pyx_files = ['colour.pyx', 'loggingray.pyx', 'ray.pyx', 'spectralfunction.pyx', 'spectrum.pyx']
+pxd_files = ['__init__.pxd', 'colour.pxd', 'ray.pxd', 'spectralfunction.pxd', 'spectrum.pxd']
 data_files = []
 
 # compile cython
@@ -27,7 +27,7 @@ py.install_sources(
     subdir: target_path
 )
 
-subdir('material')
-subdir('scenegraph')
-subdir('observer')
 subdir('library')
+subdir('material')
+subdir('observer')
+subdir('scenegraph')

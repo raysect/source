@@ -5,8 +5,8 @@ target_path = 'raysect/optical/observer/base'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['processor.pyx', 'slice.pyx', 'observer.pyx', 'sampler.pyx', 'pipeline.pyx']
-pxd_files = ['pipeline.pxd', 'observer.pxd', 'slice.pxd', 'processor.pxd', '__init__.pxd', 'sampler.pxd']
+pyx_files = ['observer.pyx', 'pipeline.pyx', 'processor.pyx', 'sampler.pyx', 'slice.pyx']
+pxd_files = ['__init__.pxd', 'observer.pxd', 'pipeline.pxd', 'processor.pxd', 'sampler.pxd', 'slice.pxd']
 data_files = []
 
 # compile cython
