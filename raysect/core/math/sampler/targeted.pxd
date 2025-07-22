@@ -29,17 +29,30 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
-from raysect.optical.observer.base cimport Observer2D
+cimport numpy as np
+from raysect.core.math cimport Point3D, Vector3D
 
 
-cdef class TargettedCCDArray(Observer2D):
+cdef class _TargetedSampler:
 
     cdef:
-        double _width, _pixel_area, _image_delta, _image_start_x, _image_start_y, _targetted_path_prob
+        double _total_weight
         tuple _targets
-        RectangleSampler3D _point_sampler
-        HemisphereCosineSampler _cosine_sampler
-        TargettedHemisphereSampler _targetted_sampler
+        np.ndarray _cdf
+        double[::1] _cdf_mv
 
-    cdef object _update_image_geometry(self)
+    cdef object _validate_targets(self)
+    cpdef double pdf(self, Point3D point, Vector3D sample)
+    cdef Vector3D sample(self, Point3D point)
+    cdef tuple sample_with_pdf(self, Point3D point)
+    cdef list samples(self, Point3D point, int samples)
+    cdef list samples_with_pdfs(self, Point3D point, int samples)
+    cdef object _calculate_cdf(self)
+    cdef tuple _pick_sphere(self)
+
+
+cdef class TargetedHemisphereSampler(_TargetedSampler):
+    pass
+
+cdef class TargetedSphereSampler(_TargetedSampler):
+    pass

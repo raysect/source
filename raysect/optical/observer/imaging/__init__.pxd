@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.observer.imaging.ccd cimport CCDArray
-from raysect.optical.observer.imaging.targetted_ccd cimport TargettedCCDArray
+from raysect.optical.observer.imaging.targeted_ccd cimport TargetedCCDArray
 from raysect.optical.observer.imaging.orthographic cimport OrthographicCamera
 from raysect.optical.observer.imaging.pinhole cimport PinholeCamera
 from raysect.optical.observer.imaging.vector cimport VectorCamera

@@ -114,8 +114,7 @@ cdef double interpolate(double[::1] x, double[::1] y, double p) nogil:
     :rtype: double
     """
 
-    cdef:
-        int index, top_index
+    cdef int index, top_index
 
     index = find_index(x, p)
 
@@ -202,7 +201,6 @@ cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil:
     else:
 
         integral_sum = 0.0
-
         if lower_index == 0:
 
             # add contribution from point below array

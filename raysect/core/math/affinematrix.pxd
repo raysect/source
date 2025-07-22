@@ -35,7 +35,6 @@ from raysect.core.math._mat4 cimport _Mat4
 cdef class AffineMatrix3D(_Mat4):
 
     cpdef AffineMatrix3D inverse(self)
-
     cdef AffineMatrix3D mul(self, AffineMatrix3D m)
 
 

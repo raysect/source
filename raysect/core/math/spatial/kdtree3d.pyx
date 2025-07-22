@@ -40,17 +40,21 @@ from libc.stdint cimport int32_t
 from libc.math cimport log, ceil
 cimport cython
 
-# this number of nodes will be pre-allocated when the kd-tree is initially created
-DEF INITIAL_NODE_COUNT = 128
 
-# friendly name for first node
-DEF ROOT_NODE = 0
+# constants
+cdef enum:
 
-# node types
-DEF LEAF = -1    # leaf node
-DEF X_AXIS = 0  # branch, x-axis split
-DEF Y_AXIS = 1  # branch, y-axis split
-DEF Z_AXIS = 2  # branch, z-axis split
+    # this number of nodes will be pre-allocated when the kd-tree is initially created
+    INITIAL_NODE_COUNT = 128
+
+    # friendly name for first node
+    ROOT_NODE = 0
+
+    # node types
+    LEAF = -1    # leaf node
+    X_AXIS = 0  # branch, x-axis split
+    Y_AXIS = 1  # branch, y-axis split
+    Z_AXIS = 2  # branch, z-axis split
 
 
 cdef class Item3D:

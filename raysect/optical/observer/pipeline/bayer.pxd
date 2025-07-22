@@ -32,6 +32,7 @@ from raysect.optical.spectralfunction cimport SpectralFunction
 from raysect.optical.observer.base cimport PixelProcessor, Pipeline2D
 from raysect.core.math cimport StatsArray2D
 
+
 cdef class BayerPipeline2D(Pipeline2D):
 
     cdef:
@@ -56,17 +57,10 @@ cdef class BayerPipeline2D(Pipeline2D):
         bint _quiet
 
     cpdef object _start_display(self)
-
     cpdef object _update_display(self, int x, int y)
-
     cpdef object _refresh_display(self)
-
     cpdef object _render_display(self, StatsArray2D frame, str status=*)
-
     cpdef np.ndarray _generate_display_image(self, StatsArray2D frame)
-
     cpdef double _calculate_white_point(self, np.ndarray image)
-
     cpdef object display(self)
-
     cpdef object save(self, str filename)

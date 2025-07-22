@@ -55,31 +55,18 @@ cdef class _ObserverBase(Observer):
         public bint quiet
 
     cpdef list _slice_spectrum(self)
-
     cpdef list _generate_templates(self, list slices)
-
     cpdef object _render_pixel(self, tuple task, int slice_id, Ray template)
-
     cpdef object _update_state(self, tuple packed_result, int slice_id)
-
     cpdef list _generate_tasks(self)
-
     cpdef list _obtain_pixel_processors(self, tuple task, int slice_id)
-
     cpdef object _initialise_pipelines(self, double min_wavelength, double max_wavelength, int spectral_bins, list slices, bint quiet)
-
     cpdef object _update_pipelines(self, tuple task, list results, int slice_id)
-
     cpdef object _finalise_pipelines(self)
-
     cpdef object _initialise_statistics(self, list tasks)
-
     cpdef object _update_statistics(self, uint64_t sample_ray_count)
-
     cpdef object _finalise_statistics(self)
-
     cpdef list _obtain_rays(self, tuple task, Ray template)
-
     cpdef double _obtain_sensitivity(self, tuple task)
 
 
@@ -91,7 +78,6 @@ cdef class Observer0D(_ObserverBase):
         int _samples_per_task
 
     cpdef list _generate_rays(self, Ray template, int ray_count)
-
     cpdef double _pixel_sensitivity(self)
 
 
@@ -104,7 +90,6 @@ cdef class Observer1D(_ObserverBase):
         int _pixel_samples
 
     cpdef list _generate_rays(self, int pixel, Ray template, int ray_count)
-
     cpdef double _pixel_sensitivity(self, int pixel)
 
 
@@ -117,7 +102,6 @@ cdef class Observer2D(_ObserverBase):
         int _pixel_samples
 
     cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count)
-
     cpdef double _pixel_sensitivity(self, int x, int y)
 
 

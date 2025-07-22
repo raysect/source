@@ -32,7 +32,7 @@
 from raysect.optical.observer.nonimaging.sightline import SightLine
 from raysect.optical.observer.nonimaging.fibreoptic import FibreOptic
 from raysect.optical.observer.nonimaging.pixel import Pixel
-from raysect.optical.observer.nonimaging.targetted_pixel import TargettedPixel
+from raysect.optical.observer.nonimaging.targeted_pixel import TargetedPixel
 from raysect.optical.observer.nonimaging.mesh_pixel import MeshPixel
 from raysect.optical.observer.nonimaging.mesh_camera import MeshCamera
 

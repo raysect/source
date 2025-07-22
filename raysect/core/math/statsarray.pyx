@@ -52,13 +52,19 @@ cdef class StatsBin:
         self.samples = 0
 
     cpdef object clear(self):
-        """ Erase the current statistics stored in this StatsBin. """
+        """
+        Erase the current statistics stored in this StatsBin.
+        """
+
         self.mean = 0.0
         self.variance = 0.0
         self.samples = 0
 
     cpdef StatsBin copy(self):
-        """ Instantiate a new StatsBin object with the same statistical results. """
+        """
+        Instantiate a new StatsBin object with the same statistical results.
+        """
+
         obj = StatsBin()
         obj.mean = self.mean
         obj.variance = self.variance
@@ -71,6 +77,7 @@ cdef class StatsBin:
 
         :param float sample: The sample value to be added.
         """
+
         _add_sample(sample, &self.mean, &self.variance, &self.samples)
 
     cpdef object combine_samples(self, double mean, double variance, int sample_count):
@@ -115,7 +122,10 @@ cdef class StatsBin:
         self.samples = nt
 
     cpdef double error(self):
-        """ Compute the standard error of this sample distribution. """
+        """
+        Compute the standard error of this sample distribution.
+        """
+
         return _std_error(self.variance, self.samples)
 
 
@@ -154,17 +164,25 @@ cdef class StatsArray1D:
 
     @property
     def shape(self):
-        """ The numpy style array shape of the underlying StatsArray. """
+        """
+        The numpy style array shape of the underlying StatsArray.
+        """
 
         return (self.length, )
 
     cpdef object clear(self):
-        """ Erase the current statistics stored in this StatsArray. """
+        """
+        Erase the current statistics stored in this StatsArray.
+        """
+
         self._new_buffers()
 
     @cython.initializedcheck(False)
     cpdef StatsArray1D copy(self):
-        """ Instantiate a new StatsArray1D object with the same statistical results. """
+        """
+        Instantiate a new StatsArray1D object with the same statistical results.
+        """
+
         obj = StatsArray1D(self.length)
         obj.mean_mv[:] = self.mean_mv[:]
         obj.variance_mv[:] = self.variance_mv[:]
@@ -335,16 +353,25 @@ cdef class StatsArray2D:
 
     @property
     def shape(self):
-        """ The numpy style array shape of the underlying StatsArray. """
+        """
+        The numpy style array shape of the underlying StatsArray.
+        """
+
         return self.nx, self.ny
 
     cpdef object clear(self):
-        """ Erase the current statistics stored in this StatsArray. """
+        """
+        Erase the current statistics stored in this StatsArray.
+        """
+
         self._new_buffers()
 
     @cython.initializedcheck(False)
     cpdef StatsArray2D copy(self):
-        """ Instantiate a new StatsArray2D object with the same statistical results. """
+        """
+        Instantiate a new StatsArray2D object with the same statistical results.
+        """
+
         obj = StatsArray2D(self.nx, self.ny)
         obj.mean_mv[:] = self.mean_mv[:]
         obj.variance_mv[:] = self.variance_mv[:]
@@ -531,18 +558,27 @@ cdef class StatsArray3D:
 
     @property
     def shape(self):
-        """ The numpy style array shape of the underlying StatsArray. """
+        """
+        The numpy style array shape of the underlying StatsArray.
+        """
+
         return self.nx, self.ny, self.nz
 
     cpdef object clear(self):
-        """ Erase the current statistics stored in this StatsArray. """
+        """
+        Erase the current statistics stored in this StatsArray.
+        """
+
         self._new_buffers()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef StatsArray3D copy(self):
-        """ Instantiate a new StatsArray3D object with the same statistical results. """
+        """
+        Instantiate a new StatsArray3D object with the same statistical results.
+        """
+
         obj = StatsArray3D(self.nx, self.ny, self.nz)
         obj.mean_mv[:] = self.mean_mv[:]
         obj.variance_mv[:] = self.variance_mv[:]

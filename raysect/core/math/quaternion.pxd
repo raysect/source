@@ -38,41 +38,23 @@ cdef class Quaternion:
     cdef public double x, y, z, s
 
     cpdef Quaternion copy(self)
-
     cpdef Quaternion conjugate(self)
-
     cpdef Quaternion inverse(self)
-
     cpdef Quaternion normalise(self)
-
     cpdef bint is_unit(self, double tolerance=*)
-
     cpdef Quaternion transform(self, AffineMatrix3D m)
-
     cpdef AffineMatrix3D as_matrix(self)
-
     cpdef Quaternion quaternion_to(self, Quaternion q)
-
     cdef Quaternion neg(self)
-
     cdef Quaternion add(self, Quaternion q)
-
     cdef Quaternion sub(self, Quaternion q)
-
     cdef Quaternion mul_quaternion(self, Quaternion q)
-
     cdef Quaternion mul_scalar(self, double d)
-
     cdef Quaternion div_quaternion(self, Quaternion q)
-
     cdef Quaternion div_scalar(self, double d)
-
     cdef Vector3D get_axis(self)
-
     cdef double get_angle(self)
-
     cdef double get_length(self) nogil
-
     cdef object set_length(self, double v)
 
 

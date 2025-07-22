@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 from math import atan2, sqrt, degrees
 
-from raysect.core.math import Point3D, TargettedHemisphereSampler, TargettedSphereSampler
+from raysect.core.math import Point3D, TargetedHemisphereSampler, TargetedSphereSampler
 
 
 def display_samples(samples, title):
@@ -34,8 +34,8 @@ targets = [
 observation_point = Point3D(0, 0, 0)
 
 # generate samplers
-hemisphere = TargettedHemisphereSampler(targets)
-sphere = TargettedSphereSampler(targets)
+hemisphere = TargetedHemisphereSampler(targets)
+sphere = TargetedSphereSampler(targets)
 
 # sample for origin point and point at (0, 0, -10)
 h_samples = hemisphere(observation_point, samples=samples)

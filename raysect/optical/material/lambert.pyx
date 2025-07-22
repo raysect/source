@@ -32,7 +32,6 @@
 from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF, Intersection
 from raysect.optical.material cimport ContinuousBSDF
-from numpy cimport ndarray
 
 
 cdef HemisphereCosineSampler hemisphere_sampler = HemisphereCosineSampler()
