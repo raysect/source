@@ -58,7 +58,7 @@ Primitives
 Scenes in Raysect consist of primitives, which are the basic objects making up the scene. These are objects that rays
 can interact with, e.g light sources, lenses, mirrors, diffuse surfaces. Types of primitives:
 
-* Mathematically defined surfaces and solids (i.e. sphere, box, cylinder, cone).
+* Mathematically defined surfaces and solids (i.e. sphere, box, cylinder, cone, parabola, torus).
 * Constructive Solid Geometry Operators (union, intersect, subtract).
 * Tri-poly meshes optimised for millions of polygons, support instancing. Importers for STL and OBJ.
 

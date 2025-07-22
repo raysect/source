@@ -1,4 +1,6 @@
-# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
+# cython: language_level=3
+
+# Copyright (c) 2014-2021, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,12 +29,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.primitive.box cimport Box
-from raysect.primitive.sphere cimport Sphere
-from raysect.primitive.torus cimport Torus
-from raysect.primitive.cylinder cimport Cylinder
-from raysect.primitive.csg cimport Union, Intersect, Subtract
-from raysect.primitive.mesh cimport Mesh
-from raysect.primitive.cone cimport Cone
-from raysect.primitive.parabola cimport Parabola
-from raysect.primitive.utility cimport EncapsulatedPrimitive
+from raysect.core cimport Primitive, Point3D, Vector3D, Ray, Intersection
+
+cdef class Torus(Primitive):
+
+    cdef:
+        double _major_radius, _minor_radius
+        bint _further_intersection
+        int _next_t_index
+        int _num_t
+        double[4] _cached_t
+        Point3D _cached_origin
+        Vector3D _cached_direction
+        Ray _cached_ray
+
+    cdef Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance)
