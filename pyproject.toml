@@ -1,6 +1,5 @@
 [project]
 name = "raysect"
-version = "0.9.0"
 requires-python = ">=3.9"
 authors = [{name = "Dr Alex Meakins et al.", email = "developers@raysect.org"}]
 description = "A Ray-tracing Framework for Science and Engineering"
@@ -19,6 +18,7 @@ classifiers = [
     "Topic :: Multimedia :: Graphics :: 3D Rendering",
     "Topic :: Scientific/Engineering :: Physics"
 ]
+dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://www.raysect.org"
@@ -27,5 +27,8 @@ Issues = "https://github.com/raysect/source/issues"
 Changelog = "https://github.com/raysect/source/blob/master/CHANGELOG.txt"
 
 [build-system]
-requires = ["meson-python", "setuptools", "wheel", "numpy", "cython>=3.1"]
+requires = ["meson-python", "setuptools", "wheel", "numpy", "cython>=3.1", "setuptools-scm"]
 build-backend = "mesonpy"
+
+[tool.setuptools_scm]
+version_file = "raysect/_version.py"

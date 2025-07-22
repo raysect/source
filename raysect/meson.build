@@ -4,10 +4,10 @@
 target_path = 'raysect'
 
 # source files
-py_files = ['__init__.py']
+py_files = ['__init__.py', '_version.py']
 pyx_files = []
 pxd_files = []
-data_files = ['VERSION']
+data_files = []
 
 # compile cython
 foreach pyx_file: pyx_files
