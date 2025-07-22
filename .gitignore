@@ -6,6 +6,7 @@ __pycache__/
 # C extensions
 *.so
 *.c
+
 # Distribution / packaging
 .Python
 env/
@@ -59,4 +60,5 @@ docs/build/
 # PyBuilder
 target/
 
-
+# setuptools-scm
+raysect/_version.py
