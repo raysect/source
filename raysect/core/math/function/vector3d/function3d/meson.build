@@ -5,8 +5,8 @@ target_path = 'raysect/core/math/function/vector3d/function3d'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['autowrap.pyx', 'base.pyx', 'utility.pyx', 'blend.pyx', 'constant.pyx']
-pxd_files = ['constant.pxd', 'autowrap.pxd', 'utility.pxd', 'blend.pxd', 'base.pxd', '__init__.pxd']
+pyx_files = ['autowrap.pyx', 'base.pyx', 'blend.pyx', 'constant.pyx', 'utility.pyx']
+pxd_files = ['__init__.pxd', 'autowrap.pxd', 'base.pxd', 'blend.pxd', 'constant.pxd', 'utility.pxd']
 data_files = []
 
 # compile cython

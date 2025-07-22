@@ -27,7 +27,7 @@ py.install_sources(
     subdir: target_path
 )
 
-subdir('spectra')
 subdir('components')
 subdir('glass')
 subdir('metal')
+subdir('spectra')

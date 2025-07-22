@@ -5,7 +5,7 @@ target_path = 'raysect/optical/material/modifiers'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['roughen.pyx', 'add.pyx', 'blend.pyx', 'transform.pyx']
+pyx_files = ['add.pyx', 'blend.pyx', 'roughen.pyx', 'transform.pyx']
 pxd_files = []
 data_files = []
 

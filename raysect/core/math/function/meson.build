@@ -6,7 +6,7 @@ target_path = 'raysect/core/math/function'
 # source files
 py_files = ['__init__.py']
 pyx_files = ['base.pyx']
-pxd_files = ['base.pxd', '__init__.pxd']
+pxd_files = ['__init__.pxd', 'base.pxd']
 data_files = []
 
 # compile cython

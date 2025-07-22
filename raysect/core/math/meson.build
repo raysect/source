@@ -5,8 +5,8 @@ target_path = 'raysect/core/math'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['units.pyx', 'normal.pyx', 'point.pyx', 'polygon.pyx', 'quaternion.pyx', 'vector.pyx', '_mat4.pyx', 'random.pyx', '_vec3.pyx', 'transform.pyx', 'statsarray.pyx', 'affinematrix.pyx']
-pxd_files = ['units.pxd', 'random.pxd', 'point.pxd', '_vec3.pxd', 'normal.pxd', 'polygon.pxd', 'vector.pxd', 'statsarray.pxd', 'quaternion.pxd', 'affinematrix.pxd', '_mat4.pxd', '__init__.pxd', 'transform.pxd']
+pyx_files = ['_mat4.pyx', '_vec3.pyx', 'affinematrix.pyx', 'normal.pyx', 'point.pyx', 'polygon.pyx', 'quaternion.pyx', 'random.pyx', 'statsarray.pyx', 'transform.pyx', 'units.pyx', 'vector.pyx']
+pxd_files = ['__init__.pxd', '_mat4.pxd', '_vec3.pxd', 'affinematrix.pxd', 'normal.pxd', 'point.pxd', 'polygon.pxd', 'quaternion.pxd', 'random.pxd', 'statsarray.pxd', 'transform.pxd', 'units.pxd', 'vector.pxd']
 data_files = []
 
 # compile cython
@@ -27,8 +27,8 @@ py.install_sources(
     subdir: target_path
 )
 
-subdir('function')
-subdir('tests')
 subdir('cython')
-subdir('spatial')
+subdir('function')
 subdir('sampler')
+subdir('spatial')
+subdir('tests')

@@ -5,8 +5,8 @@ target_path = 'raysect/optical/material'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['material.pyx', 'conductor.pyx', 'absorber.pyx', 'lambert.pyx', 'dielectric.pyx', 'debug.pyx']
-pxd_files = ['material.pxd', 'absorber.pxd', 'conductor.pxd', 'dielectric.pxd', 'debug.pxd', '__init__.pxd']
+pyx_files = ['absorber.pyx', 'conductor.pyx', 'debug.pyx', 'dielectric.pyx', 'lambert.pyx', 'material.pyx']
+pxd_files = ['__init__.pxd', 'absorber.pxd', 'conductor.pxd', 'debug.pxd', 'dielectric.pxd', 'material.pxd']
 data_files = []
 
 # compile cython

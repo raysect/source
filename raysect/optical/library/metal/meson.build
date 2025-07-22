@@ -4,7 +4,7 @@
 target_path = 'raysect/optical/library/metal'
 
 # source files
-py_files = ['metal.py', '__init__.py', 'roughmetal.py']
+py_files = ['__init__.py', 'metal.py', 'roughmetal.py']
 pyx_files = []
 pxd_files = []
 data_files = []

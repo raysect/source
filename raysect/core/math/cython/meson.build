@@ -5,8 +5,8 @@ target_path = 'raysect/core/math/cython'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['triangle.pyx', 'utility.pyx', 'transform.pyx', 'tetrahedra.pyx']
-pxd_files = ['tetrahedra.pxd', 'triangle.pxd', 'utility.pxd', '__init__.pxd', 'transform.pxd']
+pyx_files = ['tetrahedra.pyx', 'transform.pyx', 'triangle.pyx', 'utility.pyx']
+pxd_files = ['__init__.pxd', 'tetrahedra.pxd', 'transform.pxd', 'triangle.pxd', 'utility.pxd']
 data_files = []
 
 # compile cython
@@ -27,5 +27,5 @@ py.install_sources(
     subdir: target_path
 )
 
-subdir('tests')
 subdir('interpolation')
+subdir('tests')

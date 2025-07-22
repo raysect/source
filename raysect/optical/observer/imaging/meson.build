@@ -5,8 +5,8 @@ target_path = 'raysect/optical/observer/imaging'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['targetted_ccd.pyx', 'ccd.pyx', 'vector.pyx', 'pinhole.pyx', 'opencv.pyx', 'orthographic.pyx']
-pxd_files = ['targetted_ccd.pxd', 'ccd.pxd', 'orthographic.pxd', 'vector.pxd', 'pinhole.pxd', 'opencv.pxd', '__init__.pxd']
+pyx_files = ['ccd.pyx', 'opencv.pyx', 'orthographic.pyx', 'pinhole.pyx', 'targetted_ccd.pyx', 'vector.pyx']
+pxd_files = ['__init__.pxd', 'ccd.pxd', 'opencv.pxd', 'orthographic.pxd', 'pinhole.pxd', 'targetted_ccd.pxd', 'vector.pxd']
 data_files = []
 
 # compile cython

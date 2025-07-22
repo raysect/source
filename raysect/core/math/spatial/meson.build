@@ -6,7 +6,7 @@ target_path = 'raysect/core/math/spatial'
 # source files
 py_files = ['__init__.py']
 pyx_files = ['kdtree2d.pyx', 'kdtree3d.pyx']
-pxd_files = ['kdtree3d.pxd', 'kdtree2d.pxd', '__init__.pxd']
+pxd_files = ['__init__.pxd', 'kdtree2d.pxd', 'kdtree3d.pxd']
 data_files = []
 
 # compile cython
