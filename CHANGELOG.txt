@@ -12,6 +12,14 @@ Build changes:
   - A dev/install_editable.sh script is provided to simplify the installation of the package in editable mode with verbose build output enabled.
   - Meson-python performs the build out of the project folder, so the project source folders will no longer be polluted with build artefacts.
   - Cython build annotations are now always enabled, the annotation files can be found in the build folder under the build artefacts folder associated with each so file (*.so.p folder).
+* The codebase has been migrated to Cython 3.
+  - Thanks to the contributions of @munechika-koyo Raysect is now moved to Cython 3.
+  - Raysect can now benefit from the improvements added to cython since 0.29.x.
+
+Python support:
+* Raysect now requires Python v3.9 and above.
+  - From version v0.9.0 Raysect is dropping support for Python versions older than v3.9
+  - Users of older versions of Python should remain using Raysect v0.8.1 and plan for a migration to v0.9.0+.
 
 API changes:
 * Corrected spelling of all classes, methods and functions where "targeted" was incorrectly spelt "targetted".
