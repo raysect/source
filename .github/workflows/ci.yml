@@ -11,7 +11,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        numpy-version: ["numpy"]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
     - name: Checkout code
@@ -21,7 +20,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Python dependencies
-      run: python -m pip install --prefer-binary meson-python meson ninja setuptools setuptools-scm "cython>=3.1" "matplotlib>=3,<4" ${{ matrix.numpy-version }}
+      run: python -m pip install --prefer-binary meson-python meson ninja setuptools setuptools-scm "cython>=3.1" "matplotlib>=3,<4" numpy
     - name: Build and install Raysect
       run: dev/install_editable.sh
     - name: Run tests
