@@ -3,8 +3,11 @@
 
 project('raysect', 'cython',
     default_options: ['python.install-env=auto'],
-    version: run_command(['dev/update_version.sh'], check: true).stdout().strip()
+    version: run_command(['dev/build/update_version.sh'], check: true).stdout().strip()
 )
+
+# when building a distribution, copy the dynamically generated _version.py to the distribution folder
+meson.add_dist_script('dev/build/add_version_file_to_dist.sh')
 
 py = import('python').find_installation(pure: false)
 numpy = dependency('numpy', method: 'config-tool')
