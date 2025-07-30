@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,18 +32,19 @@
 # TODO: add docstrings
 
 cimport cython
+from libc.math cimport INFINITY
 from raysect.core.math cimport new_point3d, new_point2d
 
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
 
 # axis defines
-DEF X_AXIS = 0
-DEF Y_AXIS = 1
-DEF Z_AXIS = 2
+cdef enum:
+    X_AXIS = 0
+    Y_AXIS = 1
+    Z_AXIS = 2
+
 
 # defines the padding on the sphere which encloses the BoundingBox3D.
-DEF SPHERE_PADDING = 1.000001
+cdef const double SPHERE_PADDING = 1.000001
 
 
 @cython.freelist(256)
@@ -258,6 +259,7 @@ cdef class BoundingBox3D:
             return False
         if (point.z < self.lower.z) or (point.z > self.upper.z):
             return False
+
         return True
 
     cpdef object union(self, BoundingBox3D box):

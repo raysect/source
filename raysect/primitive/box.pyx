@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,28 +30,27 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.core cimport new_point3d, Normal3D, new_normal3d, AffineMatrix3D, Material, new_intersection, BoundingBox3D
-from libc.math cimport fabs
+from libc.math cimport fabs, INFINITY
 cimport cython
 
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
-
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-9
+cdef const double BOX_PADDING = 1e-9
 
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-9
+cdef const double EPSILON = 1e-9
 
-# slab face enumeration
-DEF NO_FACE = -1
-DEF LOWER_FACE = 0
-DEF UPPER_FACE = 1
+cdef enum:
 
-# axis enumeration
-DEF NO_AXIS = -1
-DEF X_AXIS = 0
-DEF Y_AXIS = 1
-DEF Z_AXIS = 2
+    # slab face enumeration
+    NO_FACE = -1
+    LOWER_FACE = 0
+    UPPER_FACE = 1
+
+    # axis enumeration
+    NO_AXIS = -1
+    X_AXIS = 0
+    Y_AXIS = 1
+    Z_AXIS = 2
 
 
 cdef class Box(Primitive):

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,8 @@ from raysect.optical.material cimport Material
 # sets the maximum number of attempts to find a valid perturbed normal
 # it is highly unlikely (REALLY!) this number will ever be reached, it is just there for my paranoia
 # in the worst case 50% of the random hemisphere will always generate a valid solution... so P(fail) < 0.5^50!
-DEF SAMPLE_ATTEMPTS = 50
+cdef enum:
+    SAMPLE_ATTEMPTS = 50
 
 
 cdef HemisphereCosineSampler hemisphere_sampler = HemisphereCosineSampler()

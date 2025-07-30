@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,18 +35,17 @@ from raysect.core.acceleration.accelerator cimport Accelerator
 from raysect.core.math cimport Point3D, AffineMatrix3D
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 
+
 cdef class World(_NodeBase):
 
-    cdef bint _rebuild_accelerator
-    cdef Accelerator _accelerator
-    cdef list _primitives
-    cdef list _observers
+    cdef:
+        bint _rebuild_accelerator
+        Accelerator _accelerator
+        list _primitives
+        list _observers
 
     cpdef AffineMatrix3D to(self, _NodeBase node)
-
     cpdef Intersection hit(self, Ray ray)
-
     cpdef list contains(self, Point3D point)
-
     cpdef build_accelerator(self, bint force=*)
 

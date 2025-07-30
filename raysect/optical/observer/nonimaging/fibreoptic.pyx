@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@ cimport cython
 
 
 # 1 / (2 * PI)
-DEF RECIP_2_PI = 0.15915494309189535
+cdef const double RECIP_2_PI = 0.15915494309189535
 
 
 # TODO - provide a function for angular fall off for collection, instead of acceptance cone.

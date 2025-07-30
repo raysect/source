@@ -1,3 +1,34 @@
+[project]
+name = "raysect"
+requires-python = ">=3.9"
+authors = [{name = "Dr Alex Meakins et al.", email = "developers@raysect.org"}]
+description = "A Ray-tracing Framework for Science and Engineering"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE.txt"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: 3D Rendering",
+    "Topic :: Scientific/Engineering :: Physics"
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://www.raysect.org"
+Repository = "https://github.com/raysect/source"
+Issues = "https://github.com/raysect/source/issues"
+Changelog = "https://github.com/raysect/source/blob/master/CHANGELOG.txt"
+
 [build-system]
-requires = ["setuptools>=42.0", "wheel", "oldest-supported-numpy", "cython>=0.28,<3.0"]
-build-backend = "setuptools.build_meta"
+requires = ["meson-python", "setuptools", "wheel", "numpy", "cython>=3.1", "setuptools-scm"]
+build-backend = "mesonpy"
+
+[tool.setuptools_scm]
+version_file = "raysect/_version.py"

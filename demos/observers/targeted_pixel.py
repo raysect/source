@@ -3,7 +3,7 @@ from matplotlib.pyplot import ion, ioff, show
 
 from raysect.primitive import Box
 from raysect.optical import World, translate, Point3D, Node
-from raysect.optical.observer import Pixel, TargettedPixel, PowerPipeline0D
+from raysect.optical.observer import Pixel, TargetedPixel, PowerPipeline0D
 from raysect.optical.material import UnitySurfaceEmitter
 
 
@@ -28,16 +28,16 @@ for i in range(10):
 basic_pipeline = PowerPipeline0D(name="Basic Pixel Observer")
 basic_pixel = Pixel(parent=world, pixel_samples=SAMPLES, pipelines=[basic_pipeline])
 
-# setup targetted pixel
-targetted_pipeline = PowerPipeline0D(name="Targeted Pixel Observer")
-targetted_pixel = TargettedPixel(parent=world, targets=targets, pixel_samples=SAMPLES, pipelines=[targetted_pipeline])
-targetted_pixel.targetted_path_prob = 1
+# setup targeted pixel
+targeted_pipeline = PowerPipeline0D(name="Targeted Pixel Observer")
+targeted_pixel = TargetedPixel(parent=world, targets=targets, pixel_samples=SAMPLES, pipelines=[targeted_pipeline])
+targeted_pixel.targeted_path_prob = 1
 
 # render
 ion()
 basic_pixel.observe()
 print()
-targetted_pixel.observe()
+targeted_pixel.observe()
 
 ioff()
 show()

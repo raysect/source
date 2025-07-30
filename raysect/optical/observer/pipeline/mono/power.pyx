@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -716,8 +716,7 @@ cdef class PowerPipeline2D(Pipeline2D):
         for i in range(pixels):
             if lmv[i] > 0:
                 break
-
-        if i == pixels:
+        else:
             return self._display_black_point
 
         # identify luminance at threshold

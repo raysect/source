@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,28 +32,28 @@
 from libc.math cimport M_PI as PI
 
 from raysect.core.math.random cimport probability
-from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
+from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargetedHemisphereSampler
 from raysect.optical cimport Ray, Primitive, Point3D, Vector3D, BoundingSphere3D
 from raysect.optical.observer.base cimport Observer0D
 from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 cimport cython
 
 
-DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
+cdef const double R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
 
 
-cdef class TargettedPixel(Observer0D):
+cdef class TargetedPixel(Observer0D):
     """
     A pixel observer that preferentially targets rays towards a given list of primitives.
 
-    The targetted pixel takes a list of target primitives. The observer targets the
+    The targeted pixel takes a list of target primitives. The observer targets the
     bounding sphere that encompasses a target primitive. Therefore, for best performance,
     the target primitives should be split up such that their surfaces are closely wrapped
     by the bounding sphere.
 
     The sampling algorithm fires a proportion of rays at the targets, and a portion sampled
     from the full hemisphere. The proportion that is fired towards the targets is controlled
-    with the targetted_path_prob attribute. By default this attribute is set to 0.9, i.e.
+    with the targeted_path_prob attribute. By default this attribute is set to 0.9, i.e.
     90% of the rays are fired towards the targets.
 
     .. Warning..
@@ -62,7 +62,7 @@ cdef class TargettedPixel(Observer0D):
        targeted directions, otherwise they will not be sampled and the result will be biased.
 
     :param list targets: The list of primitives for targeted sampling.
-    :param float targetted_path_prob: The probability of sampling a targeted primitive VS sampling over the whole hemisphere.
+    :param float targeted_path_prob: The probability of sampling a targeted primitive VS sampling over the whole hemisphere.
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this pixel (default=SpectralPipeline0D()).
     :param float x_width: The rectangular collection area's width along the
@@ -73,21 +73,21 @@ cdef class TargettedPixel(Observer0D):
 
     .. code-block:: pycon
 
-        >>> from raysect.optical.observer import TargettedPixel, PowerPipeline0D
+        >>> from raysect.optical.observer import TargetedPixel, PowerPipeline0D
         >>>
         >>> # set-up scenegraph
         >>> world = World()
         >>> emitter = Sphere(radius=sphere_radius, parent=world)
         >>> emitter.material = UnityVolumeEmitter()
         >>>
-        >>> # setup targetted pixel observer
-        >>> targetted_pipeline = PowerPipeline0D(name="Targeted Pixel Observer")
-        >>> targetted_pixel = TargettedPixel(parent=world, targets=[emitter],
-        >>>                                  pixel_samples=250, pipelines=[targetted_pipeline])
-        >>> targetted_pixel.observe()
+        >>> # setup targeted pixel observer
+        >>> targeted_pipeline = PowerPipeline0D(name="Targeted Pixel Observer")
+        >>> targeted_pixel = TargetedPixel(parent=world, targets=[emitter],
+        >>>                                  pixel_samples=250, pipelines=[targeted_pipeline])
+        >>> targeted_pixel.observe()
     """
 
-    def __init__(self, targets, targetted_path_prob=None,
+    def __init__(self, targets, targeted_path_prob=None,
                  pipelines=None, x_width=None, y_width=None, parent=None, transform=None, name=None,
                  render_engine=None, pixel_samples=None, samples_per_task=None, spectral_rays=None, spectral_bins=None,
                  min_wavelength=None, max_wavelength=None, ray_extinction_prob=None, ray_extinction_min_depth=None,
@@ -105,14 +105,14 @@ cdef class TargettedPixel(Observer0D):
         self._x_width = 0.01
         self._y_width = 0.01
         self._cosine_sampler = HemisphereCosineSampler()
-        self._targetted_sampler = None
+        self._targeted_sampler = None
         self._solid_angle = 2 * PI
 
         self.x_width = x_width or 0.01
         self.y_width = y_width or 0.01
 
         self.targets = targets
-        self.targetted_path_prob = targetted_path_prob or 0.9
+        self.targeted_path_prob = targeted_path_prob or 0.9
 
     @property
     def x_width(self):
@@ -205,7 +205,7 @@ cdef class TargettedPixel(Observer0D):
         self._targets = value
 
     @property
-    def targetted_path_prob(self):
+    def targeted_path_prob(self):
         """
         The probability that an individual sample will be fired at a target instead of a sample from the whole hemisphere.
 
@@ -216,14 +216,14 @@ cdef class TargettedPixel(Observer0D):
 
         :rtype: float
         """
-        return self._targetted_path_prob
+        return self._targeted_path_prob
 
-    @targetted_path_prob.setter
-    def targetted_path_prob(self, double value):
+    @targeted_path_prob.setter
+    def targeted_path_prob(self, double value):
 
         if value < 0 or value > 1:
             raise ValueError("Targeted path probability must lie in the range [0, 1].")
-        self._targetted_path_prob = value
+        self._targeted_path_prob = value
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -249,8 +249,8 @@ cdef class TargettedPixel(Observer0D):
             sphere = target.bounding_sphere()
             spheres.append((sphere.centre.transform(self.to_local()), sphere.radius, 1.0))
 
-        # instance targetted pixel sampler
-        self._targetted_sampler = TargettedHemisphereSampler(spheres)
+        # instance targeted pixel sampler
+        self._targeted_sampler = TargetedHemisphereSampler(spheres)
 
         # sample pixel origins
         origins = self._point_sampler.samples(ray_count)
@@ -258,17 +258,17 @@ cdef class TargettedPixel(Observer0D):
         rays = []
         for origin in origins:
 
-            if probability(self._targetted_path_prob):
-                # obtain targetted vector sample
-                direction = self._targetted_sampler.sample(origin)
+            if probability(self._targeted_path_prob):
+                # obtain targeted vector sample
+                direction = self._targeted_sampler.sample(origin)
 
             else:
                 # obtain cosine weighted hemisphere sample
                 direction = self._cosine_sampler.sample()
 
             # calculate combined pdf and ray weight
-            pdf = self._targetted_path_prob * self._targetted_sampler.pdf(origin, direction) + \
-                  (1-self._targetted_path_prob) * self._cosine_sampler.pdf(direction)
+            pdf = self._targeted_path_prob * self._targeted_sampler.pdf(origin, direction) + \
+                  (1-self._targeted_path_prob) * self._cosine_sampler.pdf(direction)
 
             if pdf <= 0:
                 raise ValueError('Ray direction probability is zero. The target object extends beyond the pixel horizon.')

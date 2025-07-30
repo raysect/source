@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,5 +35,6 @@ from raysect.core.boundingbox cimport BoundingBox3D
 
 cdef class Unaccelerated(Accelerator):
 
-    cdef list primitives
-    cdef BoundingBox3D world_box
+    cdef:
+        list primitives
+        BoundingBox3D world_box

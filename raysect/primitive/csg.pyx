@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,12 @@
 
 # TODO: add more advanced material handling
 
+from libc.math cimport INFINITY
+
 from raysect.core cimport _NodeBase, ChangeSignal, Material, new_ray, new_intersection, Point3D, AffineMatrix3D, BoundingBox3D
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-9
-
-# cython doesn't have a built in infinity definition
-DEF INFINITY = 1e999
+cdef const double BOX_PADDING = 1e-9
 
 
 cdef class CSGPrimitive(Primitive):
@@ -112,7 +111,7 @@ cdef class CSGPrimitive(Primitive):
     def primitive_b(self):
         """
         Component primitive B of the compound CSG primitive.
-    
+
         :rtype: Primitive
         """
         return self._primitive_b.primitive

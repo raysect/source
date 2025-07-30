@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,14 @@
 
 import numbers
 cimport cython
-from libc.math cimport sqrt, sin, cos, asin, acos, atan2, fabs, M_PI, copysign
+from libc.math cimport sqrt, sin, cos, acos, fabs
 
 from raysect.core.math.vector cimport new_vector3d
 from raysect.core.math.affinematrix cimport new_affinematrix3d, AffineMatrix3D
 
-DEF RAD2DEG = 57.29577951308232000  # 180 / pi
-DEF DEG2RAD = 0.017453292519943295  # pi / 180
+
+cdef const double RAD2DEG = 57.29577951308232000  # 180 / pi
+cdef const double DEG2RAD = 0.017453292519943295  # pi / 180
 
 
 cdef class Quaternion:
@@ -72,8 +73,8 @@ cdef class Quaternion:
             return self.z
         elif i == 3:
             return self.s
-        else:
-            raise IndexError("Index out of range [0, 3].")
+
+        raise IndexError("Index out of range [0, 3].")
 
     def __setitem__(self, int i, double value):
         """Sets the quaternion coordinates by index ([0,1,2,3] -> [x,y,z,s]).
@@ -105,6 +106,7 @@ cdef class Quaternion:
             >>> x, y, z, s
             (0.0, 1.0, 2.0, 3.0)
         """
+
         yield self.x
         yield self.y
         yield self.z
@@ -127,7 +129,7 @@ cdef class Quaternion:
 
         return new_quaternion(-self.x, -self.y, -self.z, -self.s)
 
-    def __eq__(object x, object y):
+    def __eq__(self, object y):
         """
         Equality operator.
 
@@ -137,18 +139,15 @@ cdef class Quaternion:
             True
         """
 
-        cdef Quaternion q1, q2
+        cdef Quaternion q
 
-        if isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        if isinstance(y, Quaternion):
+            q = <Quaternion> y
+            return self.x == q.x and self.y == q.y and self.z == q.z and self.s == q.s
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return q1.x == q2.x and q1.y == q2.y and q1.z == q2.z and q1.s == q2.s
+        raise TypeError('A quaternion can only be equality tested against another quaternion.')
 
-        else:
-            raise TypeError('A quaternion can only be equality tested against another quaternion.')
-
-    def __add__(object x, object y):
+    def __add__(self, object y):
         """
         Addition operator.
 
@@ -158,18 +157,15 @@ cdef class Quaternion:
             Quaternion(0.0, 1.0, 0.0, 1.0)
         """
 
-        cdef Quaternion q1, q2
+        cdef Quaternion q
 
-        if isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        if isinstance(y, Quaternion):
+            q = <Quaternion> y
+            return new_quaternion(self.x + q.x, self.y + q.y, self.z + q.z, self.s + q.s)
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return new_quaternion(q1.x + q2.x, q1.y + q2.y, q1.z + q2.z, q1.s + q2.s)
+        return NotImplemented
 
-        else:
-            return NotImplemented
-
-    def __sub__(object x, object y):
+    def __sub__(self, object y):
         """Subtraction operator.
 
         .. code-block:: pycon
@@ -178,18 +174,15 @@ cdef class Quaternion:
             Quaternion(0.0, -1.0, 0, 1.0)
         """
 
-        cdef Quaternion q1, q2
+        cdef Quaternion q
 
-        if isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        if isinstance(y, Quaternion):
+            q = <Quaternion> y
+            return new_quaternion(self.x - q.x, self.y - q.y, self.z - q.z, self.s - q.s)
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return new_quaternion(q1.x - q2.x, q1.y - q2.y, q1.z - q2.z, q1.s - q2.s)
+        return NotImplemented
 
-        else:
-            return NotImplemented
-
-    def __mul__(object x, object y):
+    def __mul__(self, object y):
         """Multiplication operator.
 
         .. code-block:: pycon
@@ -201,31 +194,37 @@ cdef class Quaternion:
         """
 
         cdef double s
-        cdef Quaternion q1, q2
+        cdef Quaternion q
 
-        if isinstance(x, numbers.Real) and isinstance(y, Quaternion):
-
-            s = <double> x
-            q1 = <Quaternion> y
-            return q1.mul_scalar(s)
-
-        elif isinstance(x, Quaternion) and isinstance(y, numbers.Real):
-
-            q1 = <Quaternion> x
+        if isinstance(y, numbers.Real):
             s = <double> y
-            return q1.mul_scalar(s)
+            return self.mul_scalar(s)
 
-        elif isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        elif isinstance(y, Quaternion):
+            q = <Quaternion> y
+            return self.mul_quaternion(q)
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return q1.mul_quaternion(q2)
+        return NotImplemented
 
-        else:
-            return NotImplemented()
+    def __rmul__(self, object x):
+        """Reverse multiplication operator.
+
+        .. code-block:: pycon
+
+            >>> 2 * Quaternion(0, 0, 1, 1)
+            Quaternion(0.0, 0.0, 2.0, 2.0)
+        """
+
+        cdef double s
+
+        if isinstance(x, numbers.Real):
+            s = <double> x
+            return self.mul_scalar(s)
+
+        return NotImplemented
 
     @cython.cdivision(True)
-    def __truediv__(object x, object y):
+    def __truediv__(self, object y):
         """Division operator.
 
         .. code-block:: pycon
@@ -237,22 +236,17 @@ cdef class Quaternion:
         """
 
         cdef double d
-        cdef Quaternion q1, q2, q2_inv
+        cdef Quaternion q
 
-        if isinstance(x, Quaternion) and isinstance(y, numbers.Real):
-
+        if isinstance(y, numbers.Real):
             d = <double> y
-            q1 = <Quaternion> x
-            return q1.div_scalar(d)
+            return self.div_scalar(d)
 
-        elif isinstance(x, Quaternion) and isinstance(y, Quaternion):
+        elif isinstance(y, Quaternion):
+            q = <Quaternion> y
+            return self.div_quaternion(q)
 
-            q1 = <Quaternion> x
-            q2 = <Quaternion> y
-            return q1.div_quaternion(q2)
-
-        else:
-            raise TypeError('Unsupported operand type. Expects a real number.')
+        raise TypeError('Unsupported operand type. Expects a real number.')
 
     @property
     def length(self):
@@ -264,34 +258,40 @@ cdef class Quaternion:
             >>> Quaternion(1, 2, 3, 0).length
             3.7416573867739413
         """
+
         return self.get_length()
 
     @length.setter
     def length(self, value):
         self.set_length(value)
 
-
     @property
     def axis(self):
         """
         The axis around which this quaternion rotates.
         """
+
         return self.get_axis()
 
     @property
     def angle(self):
-        """The magnitude of rotation around this quaternion's rotation axis in degrees."""
+        """
+        The magnitude of rotation around this quaternion's rotation axis in degrees.
+        """
+
         return self.get_angle()
 
     cpdef Quaternion copy(self):
-        """Returns a copy of this quaternion."""
+        """
+        Returns a copy of this quaternion.
+        """
 
         return new_quaternion(self.x, self.y, self.z, self.s)
 
     cpdef Quaternion conjugate(self):
         """
-        Complex conjugate operator. 
-        
+        Complex conjugate operator.
+
         .. code-block:: pycon
 
             >>> Quaternion(1, 2, 3, 0).conjugate()
@@ -322,7 +322,7 @@ cdef class Quaternion:
         The returned quaternion is normalised to have norm length 1.0 - a unit quaternion.
 
         .. code-block:: pycon
-        
+
             >>> a = Quaternion(1, 2, 3, 0)
             >>> a.normalise()
             Quaternion(0.26726, 0.53452, 0.80178, 0.0)
@@ -345,6 +345,7 @@ cdef class Quaternion:
 
         :param float tolerance: The numerical tolerance by which the quaternion norm can differ by 1.0.
         """
+
         return fabs(1.0 - self.get_length()) <= tolerance
 
     cpdef Quaternion transform(self, AffineMatrix3D m):
@@ -409,10 +410,12 @@ cdef class Quaternion:
         m21 = 2*qy*qz + 2*qx*qs
         m22 = 1 - 2*qx2 - 2*qy2
 
-        return new_affinematrix3d(m00, m01, m02, 0,
-                                  m10, m11, m12, 0,
-                                  m20, m21, m22, 0,
-                                  0, 0, 0, 1)
+        return new_affinematrix3d(
+            m00, m01, m02, 0,
+            m10, m11, m12, 0,
+            m20, m21, m22, 0,
+            0, 0, 0, 1
+        )
 
     cpdef Quaternion quaternion_to(self, Quaternion q):
         """
@@ -421,12 +424,12 @@ cdef class Quaternion:
         This method calculates the quaternion required to map this quaternion
         onto the supplied quaternion. Both quaternions will be normalised and
         a normalised quaternion will be returned.
-        
+
         .. code-block:: pycon
-        
+
           >>> from raysect.core.math import Quaternion
           >>>
-          >>> q1 = Quaternion.from_axis_angle(Vector3D(1,0,0), 10) 
+          >>> q1 = Quaternion.from_axis_angle(Vector3D(1,0,0), 10)
           >>> q2 = Quaternion.from_axis_angle(Vector3D(1,0,0), 25)
           >>> d = q1.quaternion_to(q2)
           >>> d
@@ -435,9 +438,9 @@ cdef class Quaternion:
           15.000000000000027
           >>> d.axis
           Vector3D(1.0, 0.0, 0.0)
-        
+
         :param Quaternion q: The target quaternion.
-        :return: A new Quaternion object representing the specified rotation.        
+        :return: A new Quaternion object representing the specified rotation.
         """
 
         return q.normalise().mul_quaternion(self.normalise().conjugate()).normalise()
@@ -565,7 +568,9 @@ cdef class Quaternion:
 
     @cython.cdivision(True)
     cdef double get_angle(self):
-        """The magnitude of rotation around this quaternion's rotation axis in degrees."""
+        """
+        The magnitude of rotation around this quaternion's rotation axis in degrees.
+        """
 
         cdef Quaternion q = self.normalise()
         return 2 * acos(q.s) * RAD2DEG
@@ -578,6 +583,7 @@ cdef class Quaternion:
 
         Use instead of Python attribute access in cython code.
         """
+
         return sqrt(self.x * self.x + self.y * self.y + self.z * self.z + self.s * self.s)
 
     @cython.cdivision(True)

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,12 +33,15 @@ from raysect.core.acceleration.accelerator cimport Accelerator as _Accelerator
 from raysect.core.math.spatial.kdtree3d cimport KDTree3DCore as _KDTreeCore
 from raysect.core.intersection cimport Intersection
 
+
 cdef class _PrimitiveKDTree(_KDTreeCore):
+
     cdef:
         list primitives
         Intersection hit_intersection
 
 
 cdef class KDTree(_Accelerator):
+
     cdef _PrimitiveKDTree _kdtree
 

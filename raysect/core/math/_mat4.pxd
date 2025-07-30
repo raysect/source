@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,10 +34,7 @@ cdef class _Mat4:
     cdef double m[4][4]
 
     cdef double get_element(self, int row, int column)
-
     cdef void set_element(self, int row, int column, double v)
-
     cpdef bint is_identity(self, double tolerance=*)
-
     cpdef bint is_close(self, _Mat4 other, double tolerance=*)
 

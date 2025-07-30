@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,36 +29,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cimport numpy as np
-from raysect.core.math cimport Point3D, Vector3D
+from raysect.core cimport Primitive, Point3D, Vector3D, Ray, Intersection
 
-cdef class _TargettedSampler:
+cdef class Torus(Primitive):
 
     cdef:
-        double _total_weight
-        tuple _targets
-        np.ndarray _cdf
-        double[::1] _cdf_mv
+        double _major_radius, _minor_radius
+        bint _further_intersection
+        int _next_t_index
+        int _num_t
+        double[4] _cached_t
+        Point3D _cached_origin
+        Vector3D _cached_direction
+        Ray _cached_ray
 
-    cdef object _validate_targets(self)
-
-    cpdef double pdf(self, Point3D point, Vector3D sample)
-
-    cdef Vector3D sample(self, Point3D point)
-
-    cdef tuple sample_with_pdf(self, Point3D point)
-
-    cdef list samples(self, Point3D point, int samples)
-
-    cdef list samples_with_pdfs(self, Point3D point, int samples)
-
-    cdef object _calculate_cdf(self)
-
-    cdef tuple _pick_sphere(self)
-
-
-cdef class TargettedHemisphereSampler(_TargettedSampler):
-    pass
-
-cdef class TargettedSphereSampler(_TargettedSampler):
-    pass
+    cdef Intersection _generate_intersection(self, Ray ray, Point3D origin, Vector3D direction, double ray_distance)

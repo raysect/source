@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,18 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport sin, cos, sqrt, asin, atan2, M_PI as pi
+from libc.math cimport sin, cos, sqrt, asin, atan2
 from raysect.core.math.affinematrix cimport new_affinematrix3d
 from raysect.core.math.point cimport new_point3d
 cimport cython
 
 
-DEF RAD2DEG = 57.29577951308232000  # 180 / pi
-DEF DEG2RAD = 0.017453292519943295  # pi / 180
-
-
-FORWARD = 'forward'
-UP = 'up'
+cdef const double RAD2DEG = 57.29577951308232000  # 180 / pi
+cdef const double DEG2RAD = 0.017453292519943295  # pi / 180
 
 
 cpdef AffineMatrix3D translate(double x, double y, double z):
@@ -108,7 +104,7 @@ cpdef AffineMatrix3D rotate_x(double angle):
 
     cdef double r
 
-    r = pi * angle / 180.0
+    r = DEG2RAD * angle
     return new_affinematrix3d(1, 0, 0, 0,
                               0, cos(r), -sin(r), 0,
                               0, sin(r), cos(r), 0,
@@ -136,7 +132,7 @@ cpdef AffineMatrix3D rotate_y(double angle):
 
     cdef double r
 
-    r = pi * angle / 180.0
+    r = DEG2RAD * angle
     return new_affinematrix3d(cos(r), 0, sin(r), 0,
                               0, 1, 0, 0,
                               -sin(r), 0, cos(r), 0,
@@ -164,7 +160,7 @@ cpdef AffineMatrix3D rotate_z(double angle):
 
     cdef double r
 
-    r = pi * angle / 180.0
+    r = DEG2RAD * angle
     return new_affinematrix3d(cos(r), -sin(r), 0, 0,
                               sin(r), cos(r), 0, 0,
                               0, 0, 1, 0,
@@ -195,7 +191,7 @@ cpdef AffineMatrix3D rotate_vector(double angle, Vector3D v):
     cdef double r, s, c, ci
 
     vn = v.normalise()
-    r = pi * angle / 180.0
+    r = DEG2RAD * angle
     s = sin(r)
     c = cos(r)
     ci = 1.0 - c
@@ -292,16 +288,16 @@ cpdef AffineMatrix3D rotate_basis(Vector3D forward, Vector3D up):
 
 cpdef tuple to_cylindrical(Point3D point):
     """
-    Convert the given 3D point in cartesian space to cylindrical coordinates. 
-    
+    Convert the given 3D point in cartesian space to cylindrical coordinates.
+
     :param Point3D point: The 3D point to be transformed into cylindrical coordinates.
     :rtype: tuple
     :return: A tuple of r, z, phi coordinates.
-    
+
     .. code-block:: pycon
-    
+
         >>> from raysect.core.math import to_cylindrical, Point3D
-        
+
         >>> point = Point3D(1, 1, 1)
         >>> to_cylindrical(point)
         (1.4142135623730951, 1.0, 45.0)
@@ -318,15 +314,15 @@ cpdef tuple to_cylindrical(Point3D point):
 cpdef Point3D from_cylindrical(double r, double z, double phi):
     """
     Convert a 3D point in cylindrical coordinates to a point in cartesian coordinates.
-    
+
     :param float r: The radial coordinate.
     :param float z: The z-axis height coordinate.
     :param float phi: The azimuthal coordinate in degrees.
     :rtype: Point3D
     :return: A Point3D in cartesian space.
-    
+
     .. code-block:: pycon
-    
+
         >>> from raysect.core.math import from_cylindrical
 
         >>> from_cylindrical(1, 0, 45)
@@ -348,21 +344,21 @@ cpdef Point3D from_cylindrical(double r, double z, double phi):
 cpdef (double, double, double) extract_rotation(AffineMatrix3D m, bint z_up=False):
     """
     Extracts the rotation component of the affine matrix.
-    
+
     The yaw, pitch and roll can be extracted for two common coordinate
     conventions by specifying the z_axis orientation:
-    
-        forward: +ve z is forward, +ve y is up, +ve x is left  
+
+        forward: +ve z is forward, +ve y is up, +ve x is left
         up:      +ve z is up, +ve y is left, +ve x is forward
 
     The Raysect default is z axis forward. This function can be switched
-    to z axis up by setting the z_up parameter to True. 
-    
+    to z axis up by setting the z_up parameter to True.
+
     The matrix must consist of only rotation and translation operations.
-    
+
     :param AffineMatrix3D m: An affine matrix.
-    :param bint z_up: Is the z-axis pointed upwards (default=False). 
-    :return: A tuple containing (yaw, pitch, roll). 
+    :param bint z_up: Is the z-axis pointed upwards (default=False).
+    :return: A tuple containing (yaw, pitch, roll).
     """
 
     cdef double yaw, pitch, roll
@@ -385,11 +381,11 @@ cpdef (double, double, double) extract_rotation(AffineMatrix3D m, bint z_up=Fals
 cpdef (double, double, double) extract_translation(AffineMatrix3D m):
     """
     Extracts the translation component of the affine matrix.
-    
+
     The matrix must consist of only rotation and translation operations.
 
-    :param AffineMatrix3D m: An affine matrix.    
-    :return: tuple containing the x, y and z components of the translation. 
+    :param AffineMatrix3D m: An affine matrix.
+    :return: tuple containing the x, y and z components of the translation.
     """
 
     return m.get_element(0, 3), m.get_element(1, 3), m.get_element(2, 3)

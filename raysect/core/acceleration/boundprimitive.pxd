@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,12 +37,11 @@ from raysect.core.intersection cimport Intersection
 
 cdef class BoundPrimitive:
 
-    cdef readonly Primitive primitive
-    cdef readonly BoundingBox3D box
-    cdef bint _primitive_tested
+    cdef:
+        readonly Primitive primitive
+        readonly BoundingBox3D box
+        bint _primitive_tested
 
     cdef Intersection hit(self, Ray ray)
-
     cdef Intersection next_intersection(self)
-
     cdef bint contains(self, Point3D point)

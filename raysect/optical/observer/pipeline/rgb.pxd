@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -54,21 +54,13 @@ cdef class RGBPipeline2D(Pipeline2D):
         bint _quiet
 
     cpdef object _start_display(self)
-
     cpdef object _update_display(self, int x, int y)
-
     cpdef object _refresh_display(self)
-
     cpdef object _render_display(self, StatsArray3D frame, str status=*)
-
     cpdef np.ndarray _generate_display_image(self, StatsArray3D frame)
-
     cpdef double _calculate_sensitivity(self, np.ndarray image)
-
     cpdef np.ndarray _generate_srgb_image(self, double[:,:,::1] xyz_image_mv)
-
     cpdef object display(self)
-
     cpdef object save(self, str filename)
 
 

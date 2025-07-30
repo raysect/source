@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.optical cimport World, Primitive, Ray, Spectrum, Point3D, Vector3D, Normal3D, AffineMatrix3D, Intersection
 from raysect.optical.material.emitter.homogeneous cimport HomogeneousVolumeEmitter
 from raysect.optical.material.material cimport NullVolume
 

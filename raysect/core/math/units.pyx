@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,6 +31,7 @@
 
 from libc.math cimport M_1_PI
 
+
 cpdef double km(double v):
     """
     Converts kilometers to meters.
@@ -39,6 +40,7 @@ cpdef double km(double v):
     :return: Length in meters.
     """
     return v * 1e3
+
 
 cpdef double cm(double v):
     """
@@ -49,6 +51,7 @@ cpdef double cm(double v):
     """
     return v * 1e-2
 
+
 cpdef double mm(double v):
     """
     Converts millimeters to meters.
@@ -57,6 +60,7 @@ cpdef double mm(double v):
     :return: Length in meters.
     """
     return v * 1e-3
+
 
 cpdef double um(double v):
     """
@@ -67,6 +71,7 @@ cpdef double um(double v):
     """
     return v * 1e-6
 
+
 cpdef double nm(double v):
     """
     Converts nanometers to meters.
@@ -75,6 +80,7 @@ cpdef double nm(double v):
     :return: Length in meters.
     """
     return v * 1e-9
+
 
 cpdef double mile(double v):
     """
@@ -85,6 +91,7 @@ cpdef double mile(double v):
     """
     return v * 1609.34
 
+
 cpdef double yard(double v):
     """
     Converts yards to meters.
@@ -93,6 +100,7 @@ cpdef double yard(double v):
     :return: Length in meters.
     """
     return v * 0.9144
+
 
 cpdef double foot(double v):
     """
@@ -103,6 +111,7 @@ cpdef double foot(double v):
     """
     return v * 0.3048
 
+
 cpdef double inch(double v):
     """
     Converts inches to meters.
@@ -112,6 +121,7 @@ cpdef double inch(double v):
     """
     return v * 0.0254
 
+
 cpdef double mil(double v):
     """
     Converts mils (thousandths of an inch) to meters.
@@ -120,6 +130,7 @@ cpdef double mil(double v):
     :return: Length in meters.
     """
     return v * 2.54e-5
+
 
 cpdef radian(double v):
     """

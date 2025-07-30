@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,15 +29,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargettedHemisphereSampler
+from raysect.core.math.sampler cimport RectangleSampler3D, HemisphereCosineSampler, TargetedHemisphereSampler
 from raysect.optical.observer.base cimport Observer0D
 
 
-cdef class TargettedPixel(Observer0D):
+cdef class TargetedPixel(Observer0D):
 
     cdef:
-        double _x_width, _y_width, _solid_angle, _collection_area, _targetted_path_prob
+        double _x_width, _y_width, _solid_angle, _collection_area, _targeted_path_prob
         tuple _targets
         RectangleSampler3D _point_sampler
         HemisphereCosineSampler _cosine_sampler
-        TargettedHemisphereSampler _targetted_sampler
+        TargetedHemisphereSampler _targeted_sampler

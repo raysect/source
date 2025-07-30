@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@
 from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF, Intersection
 from raysect.optical.material cimport ContinuousBSDF
-from numpy cimport ndarray
 
 
 cdef HemisphereCosineSampler hemisphere_sampler = HemisphereCosineSampler()

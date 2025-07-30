@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -58,8 +58,8 @@ cdef class _Vec3:
             return self.y
         elif i == 2:
             return self.z
-        else:
-            raise IndexError("Index out of range [0, 2].")
+
+        raise IndexError("Index out of range [0, 2].")
 
     def __setitem__(self, int i, double value):
         """Sets the vector coordinates by index ([0,1,2] -> [x,y,z])."""
@@ -74,6 +74,7 @@ cdef class _Vec3:
             raise IndexError("Index out of range [0, 2].")
 
     def __iter__(self):
+
         yield self.x
         yield self.y
         yield self.z
@@ -189,8 +190,8 @@ cdef class _Vec3:
             return self.y
         elif index == 2:
             return self.z
-        else:
-            return NAN
+
+        return NAN
 
     cdef void set_index(self, int index, double value) nogil:
         """

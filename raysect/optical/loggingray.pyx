@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,8 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from libc.math cimport INFINITY
+
 from raysect.core cimport Intersection, Point3D, Vector3D
 from raysect.core.math.random cimport probability
 
@@ -38,9 +40,6 @@ from raysect.optical.spectrum cimport Spectrum
 from raysect.optical.material.material cimport Material
 
 cimport cython
-
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
 
 
 cdef class LoggingRay(Ray):

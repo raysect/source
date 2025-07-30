@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@
 
 from raysect.primitive.box cimport Box
 from raysect.primitive.sphere cimport Sphere
+from raysect.primitive.torus cimport Torus
 from raysect.primitive.cylinder cimport Cylinder
 from raysect.primitive.csg cimport Union, Intersect, Subtract
 from raysect.primitive.mesh cimport Mesh

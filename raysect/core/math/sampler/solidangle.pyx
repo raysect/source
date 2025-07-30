@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,14 +29,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI, M_1_PI, sqrt, sin, cos, asin
+from libc.math cimport M_PI, M_1_PI, sqrt, sin, cos
 from raysect.core.math cimport Vector3D, new_vector3d
 from raysect.core.math.random cimport uniform
 
-# TODO: add tests - idea: solve the lighting equation with a uniform emitting surface with each sampler and check the mean radiance is unity
 
-DEF R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
-DEF R_4_PI = 0.07957747154594767  # 1 / (4 * pi)
+# TODO: add tests - idea: solve the lighting equation with a uniform emitting surface with each sampler and check the mean radiance is unity
+cdef const double R_2_PI = 0.15915494309189535  # 1 / (2 * pi)
+cdef const double R_4_PI = 0.07957747154594767  # 1 / (4 * pi)
 
 
 cdef class SolidAngleSampler:
@@ -73,7 +73,7 @@ cdef class SolidAngleSampler:
     cpdef double pdf(self, Vector3D sample):
         """
         Generates a pdf for a given sample value.
-        
+
         Vectors *must* be normalised.
 
         :param Vector3D sample: The sample point at which to get the pdf.
@@ -242,7 +242,7 @@ cdef class ConeUniformSampler(SolidAngleSampler):
     Generates a uniform weighted random vector from a cone.
 
     The cone is aligned along the z-axis.
-    
+
     :param angle: Angle of the cone in degrees (default=45).
 
     .. code-block:: pycon

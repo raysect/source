@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,11 +34,11 @@ cimport numpy as np
 from raysect.core.math cimport Point3D, Vector3D, AffineMatrix3D
 from raysect.core.math.random cimport uniform, vector_sphere, vector_cone_uniform, vector_hemisphere_cosine
 from raysect.core.math.cython cimport find_index, rotate_basis
-from libc.math cimport M_PI, M_1_PI, asin, acos, sqrt
+from libc.math cimport M_PI, M_1_PI, asin, sqrt
 cimport cython
 
 
-cdef class _TargettedSampler:
+cdef class _TargetedSampler:
 
     def __init__(self, object targets):
         """
@@ -46,7 +46,7 @@ cdef class _TargettedSampler:
 
         Each target tuple consists of (Point3D sphere_centre, double sphere_radius, double weight).
 
-        :param list targets: A list of tuples describing spheres for targetted sampling.
+        :param list targets: A list of tuples describing spheres for targeted sampling.
         """
 
         self._targets = tuple(targets)
@@ -248,16 +248,16 @@ cdef class _TargettedSampler:
         return self._targets[index]
 
 
-cdef class TargettedHemisphereSampler(_TargettedSampler):
+cdef class TargetedHemisphereSampler(_TargetedSampler):
     """
-    Generates vectors on a hemisphere targetting a set of target spheres.
+    Generates vectors on a hemisphere targeting a set of target spheres.
 
     This sampler takes a list of spheres and corresponding weighting factors.
     To generate a sample a sphere is randomly selected according the
     distribution of the sphere weights and launches a ray at the solid angle
     subtended by the target sphere.
 
-    If the targetted sphere intersects with the hemisphere's base plane, lies
+    If the targeted sphere intersects with the hemisphere's base plane, lies
     behind the plane, or the origin point from which samples are generated lies
     inside the target sphere, a sample is randomly selected from the full hemisphere
     using a cosine weighted distribution.
@@ -389,9 +389,9 @@ cdef class TargettedHemisphereSampler(_TargettedSampler):
         return sample.transform(rotation)
 
 
-cdef class TargettedSphereSampler(_TargettedSampler):
+cdef class TargetedSphereSampler(_TargetedSampler):
     """
-    Generates vectors targetting a set of target spheres.
+    Generates vectors targeting a set of target spheres.
 
     This sampler takes a list of spheres and corresponding weighting factors.
     To generate a sample a sphere is randomly selected according the

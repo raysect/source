@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -96,8 +96,9 @@ from libc.math cimport cos, sin, asin, log, fabs, sqrt, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
 cimport cython
 
-DEF NN = 312
-DEF MM = 156
+cdef enum:
+    NN = 312
+    MM = 156
 
 # The array for the state vector
 cdef uint64_t mt[NN]

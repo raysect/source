@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport sqrt
+from libc.math cimport sqrt, fabs, cbrt, acos, cos, M_PI
 cimport cython
 
 #TODO: Write unit tests!
@@ -114,8 +114,7 @@ cdef double interpolate(double[::1] x, double[::1] y, double p) nogil:
     :rtype: double
     """
 
-    cdef:
-        int index, top_index
+    cdef int index, top_index
 
     index = find_index(x, p)
 
@@ -202,7 +201,6 @@ cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil:
     else:
 
         integral_sum = 0.0
-
         if lower_index == 0:
 
             # add contribution from point below array
@@ -382,16 +380,16 @@ cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) 
     The a, b and c arguments are the three constants of the quadratic equation:
 
         f = a.x^2 + b.x^2 + c
-        
+
     If the quadratic equation has 1 or 2 real roots, this function will return
     True. If there are no real roots this method will return False.
-    
+
     The values of the real roots, are returned by setting the values of the
     memory locations pointed to by t0 and t1. In the case of a single root,
     both t0 and t1 will have the same value. If there are not roots, the values
-    of t0 and t1 will be undefined. 
+    of t0 and t1 will be undefined.
 
-    :param double a: Quadratic constant. 
+    :param double a: Quadratic constant.
     :param double b: Quadratic constant.
     :param double c: Quadratic constant.
     :param double t0: 1st root of the quadratic.
@@ -419,6 +417,334 @@ cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) 
     t0[0] = q / a
     t1[0] = c / q
     return True
+
+
+@cython.cdivision(True)
+cdef int solve_cubic(double a, double b, double c, double d, double *t0, double *t1, double *t2) nogil:
+    """
+    Calculates the roots of a cubic equation.
+
+    The a, b, c and d arguments are the four constants of the cubic equation:
+
+        f = a.x^3 + b.x^2 + c.x + d
+
+    The cubic equation has 1, 2 or 3 real roots, and this function returns either 1 or 3, but in a special case,
+    2 of the 3 roots found by this function will be equal to each other up to machine epsilon.
+
+
+    The values of the roots, are returned by setting the values of the memory locations pointed to by t0, t1, and t2.
+
+    In the case of three real roots, the roots themselves back in t0, t1 and t2.
+    In the case of two real roots, a pair in t0, t1, and t2 will have the same value, and the other is a different one.
+    In the case of one real root, t0 will be the real root, and t1 +- i * t2 will a pair of complex-conjugated roots.
+
+    The practical algorithm is followed by https://quarticequations.com
+
+    :param double a: Cubic constant.
+    :param double b: Cubic constant.
+    :param double c: Cubic constant.
+    :param double d: Cubic constant.
+    :param double t0: 1st real root.
+    :param double t1: either 2nd real root or real part of coplex-conjugated roots.
+    :param double t2: either 3rd real root or imaginary part of coplex-conjugated roots.
+    :return: Number of real roots.
+    :rtype: int
+    """
+    cdef:
+        double q, r, sq_b, cb_q, D, A, z0, phi, u
+
+    # normal form: x^3 + bx^2 + cx + d = 0
+    b /= a
+    c /= a
+    d /= a
+
+    # convert depressed cubic: y^3 + 3qy - 2r = 0
+    sq_b = b * b
+    q = (3.0 * c - sq_b) / 9.0
+    r = (c * b - 3.0 * d) / 6.0 - b * sq_b / 27.0
+
+    # calculate discriminant
+    cb_q = q * q * q
+    D = cb_q + r * r
+
+    # one real root and a pair of complex-conjugate roots
+    if D > 0:
+        A = cbrt(fabs(r) + sqrt(D))
+        if r < 0:
+            z0 = q / A - A
+        else:
+            z0 = A - q / A
+
+        t0[0] = z0 - b / 3.0
+        t1[0] = -0.5 * z0 - b / 3.0
+        t2[0] = 0.5 * sqrt(3.0) * (A + q / A)
+
+        return 1
+
+    # Trigonometric solution for three real roots
+    else:
+        if is_zero(q):
+            phi = 0.0
+
+        # otherwise q < 0 because of D = q^3 + r^2 < 0
+        else:
+            phi = acos(r / sqrt(-cb_q)) / 3.0
+
+        u = 2.0 * sqrt(-q)
+
+        t0[0] = u * cos(phi) - b / 3.0
+        t1[0] = -u * cos(phi + M_PI / 3.0) - b / 3.0
+        t2[0] = -u * cos(phi - M_PI / 3.0) - b / 3.0
+
+        return 3
+
+
+cdef int solve_biquadratic(double a, double c, double e, double *t0, double *t1, double *t2, double *t3) nogil:
+    """
+    Calculate the real roots of a bi quadratic equation.
+
+    The a, c, and e arguments are the 3 constants of the biquadratic equation:
+
+        f = a.x^4 + c.x^2 + e
+
+    The biquadratic equation has 0, 2, or 4 real roots, and this function will return the number of real roots.
+
+    The values of the real roots, are returned by setting the values of the
+    memory locations pointed to by t0, t1, t2, and t3. If there are two or four real roots,
+    the values of t2 and t3 will be undefined. If there is no real root,
+    all values will be undefined.
+
+    :param double a: Biquadratic constant.
+    :param double c: Biquadratic constant.
+    :param double e: Biquadratic constant.
+    :param double t0: 1st root of the biquadratic.
+    :param double t1: 2nd root of the biquadratic.
+    :param double t2: 3rd root of the biquadratic.
+    :param double t3: 4th root of the biquadratic.
+    :return: Number of real roots.
+    :rtype: int
+    """
+    cdef double s0, s1, sx0, sx1
+
+    # solve quadratic for x^2
+    if not solve_quadratic(a, c, e, &s0, &s1):
+        return 0
+
+    # ensure s0 < s1
+    if s0 > s1:
+        swap_double(&s0, &s1)
+
+    # 0 <= s0 <= s1, 4 real roots
+    if s0 >= 0:
+        sx0 = sqrt(s0)
+        sx1 = sqrt(s1)
+        t0[0] = -sx1
+        t1[0] = -sx0
+        t2[0] = sx0
+        t3[0] = sx1
+        return 4
+
+    # s0 < 0 <= s1, 2 real roots
+    elif s1 >= 0:
+        sx1 = sqrt(s1)
+        t0[0] = -sx1
+        t1[0] = sx1
+        return 2
+
+    # s0 < s1 <= 0, no real root
+    else:
+        return 0
+
+
+cdef int _solve_depressed_quartic(double p, double q, double r, double *t0, double *t1, double *t2, double *t3) nogil:
+    """
+    Solve depressed quartic: x^4 + p.x^2 + q.x + r
+    """
+    cdef:
+        int num
+        double s0, sigma, A, B, sq_A, sq_B
+
+    if q > 0:
+        sigma = 1.0
+    else:
+        sigma = -1.0
+
+    # q = 0 => x^4 + p.x^2 + r = 0
+    if is_zero(q):
+        return solve_biquadratic(1.0, p, r, t0, t1, t2, t3)
+
+    # solve resolvent cubic: t^3 - 2pt^2 + (p^2-4r)t + q^2 = 0
+    # using Van der Waerden's method
+    num = solve_cubic(1.0, -2.0 * p, p * p - 4.0 * r, q * q, t0, t1, t2)
+
+    if num > 1:
+        # sort roots to t0 < t1 < t2
+        sort_three_doubles(t0, t1, t2)
+
+        # t0 <= 0 => t1*t2 >= 0 because vieta's therem: -t0*t1*t2 = q^2
+        if t0[0] <= 0:
+            s0 = sqrt(-t0[0])
+            A = -t1[0] - t2[0] - 2.0 * sigma * sqrt(t1[0] * t2[0])
+            B = -t1[0] - t2[0] + 2.0 * sigma * sqrt(t1[0] * t2[0])
+
+            # four real roots
+            if A >= 0 and B >= 0:
+                sq_A = sqrt(A)
+                sq_B = sqrt(B)
+                t0[0] = 0.5 * (s0 + sq_A)
+                t1[0] = 0.5 * (s0 - sq_A)
+                t2[0] = 0.5 * (-s0 + sq_B)
+                t3[0] = 0.5 * (-s0 - sq_B)
+                return 4
+
+            # two real roots
+            elif A < 0 and B >= 0:
+                sq_B = sqrt(B)
+                t0[0] = 0.5 * (-s0 + sq_B)
+                t1[0] = 0.5 * (-s0 - sq_B)
+                return 2
+
+            # two real roots
+            elif A >= 0 and B < 0:
+                sq_A = sqrt(A)
+                t0[0] = 0.5 * (s0 + sq_A)
+                t1[0] = 0.5 * (s0 - sq_A)
+                return 2
+
+            # no real root
+            else:
+                return 0
+
+    # if resolvent cubic solutions have only one real root t0
+    else:
+        if t0[0] <= 0:
+            s0 = sqrt(-t0[0])
+            A = -2.0 * t1[0] - 2.0 * sigma * sqrt(t1[0] * t1[0] + t2[0] * t2[0])
+            B = -2.0 * t1[0] + 2.0 * sigma * sqrt(t1[0] * t1[0] + t2[0] * t2[0])
+
+            # four real roots
+            if A >= 0 and B >= 0:
+                sq_A = sqrt(A)
+                sq_B = sqrt(B)
+                t0[0] = 0.5 * (s0 + sq_A)
+                t1[0] = 0.5 * (s0 - sq_A)
+                t2[0] = 0.5 * (-s0 + sq_B)
+                t3[0] = 0.5 * (-s0 - sq_B)
+                return 4
+
+            # two real roots
+            elif A < 0 and B >= 0:
+                sq_B = sqrt(B)
+                t0[0] = 0.5 * (-s0 + sq_B)
+                t1[0] = 0.5 * (-s0 - sq_B)
+                return 2
+
+            # two real roots
+            elif A >= 0 and B < 0:
+                sq_A = sqrt(A)
+                t0[0] = 0.5 * (s0 + sq_A)
+                t1[0] = 0.5 * (s0 - sq_A)
+                return 2
+
+            # no real root
+            else:
+                return 0
+
+    # no real root if -t0 < 0
+    return 0
+
+
+@cython.cdivision(True)
+cdef void one_newton_step(double b, double c, double d, double e, double *x) nogil:
+    """
+    One step Newton's method for monic quartic polinomial: x^4 + b.x^3 + c.x^2 * d.x + e = 0
+
+    :param double b: Qurtic constant.
+    :param double c: Qurtic constant.
+    :param double d: Qurtic constant.
+    :param double e: Qurtic constant.
+    :param double x: one root of the quartic.
+    """
+    cdef double fx, dfx
+    dfx = ((4.0 * x[0] + 3 * b) * x[0] + 2.0 * d) * x[0] + e
+    if not is_zero(dfx):
+        fx = (((x[0] + b) * x[0] + c) * x[0] + d) * x[0] + e
+        x[0] = x[0] - fx / dfx
+
+
+@cython.cdivision(True)
+cdef int solve_quartic(double a, double b, double c, double d, double e,
+                       double *t0, double *t1, double *t2, double *t3) nogil:
+    """
+    Calculates the real roots of a quartic equation with Van der Waerden method.
+
+    The a, b, c, d and e arguments are the five constants of the quartic equation:
+
+        f = a.x^4 + b.x^3 + c.x^2 + d.x + e
+
+    The quartic equation has 0, 1, 2, 3 or 4 real roots, and this function will return the number of real roots.
+
+    The values of the real roots, are returned by setting the values of the
+    memory locations pointed to by t0, t1, t2, and t3. If there are one or two real roots,
+    the values of t2 and t3 will be undefined. If there is no real root,
+    all values will be undefined.
+
+    The practical algorithm of Van der Waerden method is followed by https://quarticequations.com
+
+    :param double a: Qurtic constant.
+    :param double b: Qurtic constant.
+    :param double c: Qurtic constant.
+    :param double d: Qurtic constant.
+    :param double e: Qurtic constant.
+    :param double t0: 1st root of the quartic.
+    :param double t1: 2nd root of the quartic.
+    :param double t2: 3rd root of the quartic.
+    :param double t3: 4th root of the quartic.
+    :return: Number of real roots.
+    :rtype: int
+    """
+    cdef:
+        double p, q, r, sq_b
+        int cubic_num, num = 0
+
+    # normal form: x^4 + bx^3 + cx^2 + dx + e = 0
+    b /= a
+    c /= a
+    d /= a
+    e /= a
+
+    # substitute x = y - b / 4 to eliminate quadric term: y^4 + py^2 + qy + r = 0
+    sq_b = b * b
+    p = c - 3 * sq_b / 8.0
+    q = sq_b * b / 8.0 - 0.5 * b * c + d
+    r = -3.0 * sq_b * sq_b / 256.0 + sq_b * c / 16.0 - b * d / 4.0 + e
+
+    if is_zero(r):
+        # no absolute term: y(y^3 + py + q) = 0
+        t0[0] = 0
+        cubic_num = solve_cubic(1.0, 0.0, p, q, t1, t2, t3)
+        num = 1 + cubic_num
+
+    else:
+        # solve depressed quartic
+        num = _solve_depressed_quartic(p, q, r, t0, t1, t2, t3)
+
+    # resubstitute
+    t0[0] -= b / 4.0
+    t1[0] -= b / 4.0
+    t2[0] -= b / 4.0
+    t3[0] -= b / 4.0
+
+    # One newton step for each real root
+    if num > 0:
+        one_newton_step(b, c, d, e, t0)
+        one_newton_step(b, c, d, e, t1)
+    if num > 2:
+        one_newton_step(b, c, d, e, t2)
+    if num > 3:
+        one_newton_step(b, c, d, e, t3)
+
+    return num
 
 
 @cython.boundscheck(False)
@@ -540,3 +866,26 @@ def _test_winding2d(p):
 def _point_inside_polygon(vertices, ptx, pty):
     """Expose cython function for testing."""
     return point_inside_polygon(vertices, ptx, pty)
+
+
+def _solve_cubic(a, b, c, d):
+    """Expose cython function for testing."""
+    t0 = 0.0
+    t1 = 0.0
+    t2 = 0.0
+    num = 0.0
+    num = solve_cubic(a, b, c, d, &t0, &t1, &t2)
+
+    return (t0, t1, t2, num)
+
+
+def _solve_quartic(a, b, c, d, e):
+    """Expose cython function for testing."""
+    t0 = 0.0
+    t1 = 0.0
+    t2 = 0.0
+    t3 = 0.0
+    num = 0.0
+    num = solve_quartic(a, b, c, d, e, &t0, &t1, &t2, &t3)
+
+    return (t0, t1, t2, t3, num)

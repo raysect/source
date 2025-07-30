@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -42,27 +42,18 @@ cdef class ImportanceManager:
         list _spheres
 
     cdef object _process_primitives(self, list primitives)
-
     cdef object _calculate_cdf(self)
-
     cdef tuple _pick_sphere(self)
-
     cpdef Vector3D sample(self, Point3D origin)
-
     cpdef double pdf(self, Point3D origin, Vector3D direction)
-
     cpdef bint has_primitives(self)
 
 
 cdef class World(CoreWorld):
 
-    cdef:
-        ImportanceManager _importance
+    cdef ImportanceManager _importance
 
     cpdef build_importance(self, bint force=*)
-
     cpdef Vector3D important_direction_sample(self, Point3D origin)
-
     cpdef double important_direction_pdf(self, Point3D origin, Vector3D direction)
-
     cpdef bint has_important_primitives(self)
