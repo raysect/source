@@ -1,8 +1,8 @@
 Raysect Changelog
 =================
 
-Release 0.9.0 (TBD)
--------------------
+Release 0.9.0 (30 Jul 2025)
+---------------------------
 
 Build changes:
 * The legacy setuptools build system has been replaced with meson-python.
@@ -25,6 +25,9 @@ API changes:
 
 New:
 * Added a torus primitive (contribute by Koyo Munechika).
+
+Known issues:
+* Compiling raysect current produces a large number of Cython deprecation warnings. These will be resolved in a future release.
 
 
 Release 0.8.1 (12 Feb 2023)
