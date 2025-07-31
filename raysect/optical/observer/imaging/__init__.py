@@ -34,6 +34,7 @@ from .targeted_ccd import TargetedCCDArray
 from .orthographic import OrthographicCamera
 from .pinhole import PinholeCamera
 from .vector import VectorCamera
+from .fieldofview import FovCamera
 
 try:
     from .opencv import OpenCVCamera
