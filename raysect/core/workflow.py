@@ -27,9 +27,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from collections import defaultdict
 from multiprocessing import get_context, cpu_count
+import platform
+import os
+import subprocess
 from raysect.core.math import random
 import time
+
+try:
+    from mpi4py import MPI
+    HAVE_MPI = True
+except ImportError:
+    HAVE_MPI = False
 
 
 class RenderEngine:
@@ -324,6 +334,383 @@ class MulticoreEngine(RenderEngine):
 
             # hand back results
             result_queue.put(results)
+
+
+class MPIEngine(RenderEngine):
+    """
+    Render engine for running in an MPI context.
+
+    This engine is useful for distributed memory systems, and for shared
+    memory systems where the overhead of inter-process communication of
+    the scenegraph is large compared with the time taken for a single
+    process to produce the scenegraph (e.g. on Windows).
+
+    This render engine requires mpi4py to be installed, and the program
+    to be run using ``mpirun -n <nproc> python <script.py>``.
+
+        >>> from raysect.core import MPIEngine
+        >>> from raysect.optical.observer import PinholeCamera
+        >>>
+        >>> camera = PinholeCamera((512, 512))
+        >>> camera.render_engine = MPIEngine()
+
+    The render engine uses the single process, multiple data (SPMD) paradigm.
+    Each process is treated as a separate serial renderer. It is assumed that
+    the scene graph is created in every process, and each process processes a
+    subset of the total rendering tasks sequentially. The results are then
+    gathered back to the root (rank 0) process.
+
+    The SPMD paradigm means there are many copies of the program running and
+    each copy runs the same instructions, so programs must be written with
+    this in mind. While all copies build the scene to render, only one copy
+    (the process with rank 0) actually receives all the render results
+    and calls the update function. This means that after an observe,
+    only the rank 0 process contains the results of the call to the render
+    function for all tasks, and so any post processing (including plotting
+    or saving images) should only be done on the rank 0 process.
+
+    Also, any further renders which depend on the results of a previous render
+    (for example, using adapive samplers) will require communication of the
+    results from rank 0 to all the other processes:
+
+        >>> pipeline = RGBPipeline2d()
+        >>> camera.pipelines = [pipeline]
+        >>> camera.sampler = RGBAdaptivesampler2d(pipeline)
+        >>> camera.observe()
+        >>> # Update the sampler in each worker process with the results
+        >>> # of the previous render for the next pass.
+        >>> root_pipeline = camera.render_engine.comm.bcast(pipeline, root=0)
+        >>> camera.sampler.pipeline = root_pipeline
+        >>> # Now subsequent observes will have the correct statistics.
+        >>> camera.observe()
+
+    The class contains some attributes relevant to the MPI environment:
+
+    :ivar comm: the MPI communicator (``MPI_COMM_WORLD``).
+    :ivar rank: the process rank in the communicator. Only rank 0 contains the
+                full results after a call ``to RenderEngine.run()``.
+    :ivar size: the number of processes in the communicator.
+    """
+    def __init__(self):
+        if not HAVE_MPI:
+            raise RuntimeError("The mpi4py package is required to use this engine.")
+        comm = MPI.COMM_WORLD
+        self.comm = comm
+        self.rank = comm.Get_rank()
+        self.size = comm.Get_size()
+        if self.size < 2:
+            raise RuntimeError("At least 2 separate processes are required to use this engine.")
+
+    def run(self, tasks, render, update, render_args=(), render_kwargs=None, update_args=(), update_kwargs=None):
+        # Avoid mutable default arguments.
+        if render_kwargs is None:
+            render_kwargs = {}
+        if update_kwargs is None:
+            update_kwargs = {}
+        # All processes must have the same tasks, in the same order, so that
+        # all processes agree on which subset of tasks each is to work on.
+        tasks = self.comm.bcast(tasks, root=0)
+        ntasks = len(tasks)
+        nworkers = self.size - 1
+        worker_tasks = defaultdict(list)
+        for i, task in enumerate(tasks):
+            worker_tasks[i % nworkers].append(task)
+        if self.rank == 0:  # The root node processes the results.
+            remaining = ntasks
+            while remaining:
+                result = self.comm.recv()
+                if isinstance(result, Exception):
+                    raise result
+                update(result, *update_args, **update_kwargs)
+                remaining -= 1
+        else:  # Each worker renders the subset of tasks assigned to them.
+            # Unlike MulticoreEngine, there is no need to re-seed the random
+            # number generator to prevent all workers inheriting the same sequence
+            # since all processes are independent.
+            for task in worker_tasks[self.rank - 1]:
+                try:
+                    result = render(task, *render_args, **render_kwargs)
+                except Exception as e:
+                    result = e
+                self.comm.send(result, 0)
+        self.comm.Barrier()
+
+    def worker_count(self):
+        return self.size
+
+
+class HybridEngine(RenderEngine):
+    """
+    Render engine for combined shared and distributed memory systems.
+
+    This render engine requires mpi4py to be installed, and the program
+    to be run using ``mpirun -n <ntasks> python <script.py>``.
+
+        >>> from raysect.core import HybridEngine, MulticoreEngine
+        >>> from raysect.optical.observer import PinholeCamera
+        >>>
+        >>> nworkers = 4
+        >>> camera = PinholeCamera((512, 512))
+        >>> camera.render_engine = HybridEngine(MulticoreEngine(nworkers))
+
+    The render engine uses a variation of the single process, multiple
+    data (SPMD) paradigm.  In this paradigm, "tasks" are independent
+    processes potentially running on separate computers. Each task will
+    have one or more "workers" which it spawns in order to do its share
+    of the rendering. Each worker will be on the same computer as its
+    parent task and should share the parent task's memory.
+
+    When the program is started with `mpirun`, there will be `ntasks`
+    separate processes, all of which run concurrently and build their
+    own copies of the scenegraph. Then when this render engine's `run`
+    method is called in each process, the sub-engine will create
+    `nworkers` worker subprograms to perform a subset of the render: how
+    this is done depends entirely on which sub-engine is used. For
+    example, if the `MulticoreEngine` is used then `nworkers`
+    subprocesses will be forked from the parent task to perform the
+    render subset. If the `SerialEngine` is used then the render subset
+    will be computed in serial in the task's own process. The rendering
+    results for all workers in all tasks are gathered back to the root
+    (rank 0) task.
+
+    The SPMD paradigm means there are many copies of the program running
+    and each copy runs the same instructions, so programs must be
+    written with this in mind. While all copies build the scene to
+    render, only one copy (the MPI process with rank 0) actually
+    receives all the render results and calls the update function. This
+    means that after an observe, only the rank 0 process contains the
+    results of the call to the render function for all tasks, and so any
+    post processing (including plotting or saving images) should only be
+    done on the rank 0 process.
+
+    Also, any further renders which depend on the results of a previous
+    render (for example, using adapive samplers) will require
+    communication of the results from rank 0 to all the other processes:
+
+        >>> pipeline = RGBPipeline2d()
+        >>> camera.pipelines = [pipeline]
+        >>> camera.sampler = RGBAdaptivesampler2d(pipeline)
+        >>> camera.observe()
+        >>> # Update the sampler in each worker process with the results
+        >>> # of the previous render for the next pass.
+        >>> root_pipeline = camera.render_engine.comm.bcast(pipeline, root=0)
+        >>> camera.sampler.pipeline = root_pipeline
+        >>> # Now subsequent observes will have the correct statistics.
+        >>> camera.observe()
+
+    It is the end user's responsibility to ensure that the number of
+    workers is configured appropriately, and this will strongly depend
+    on the environment in which the program is launched. Examples of
+    running the hybrid engine for 3 popular schedulers are given here.
+
+    Slurm:
+
+        $ sbatch -n <NMPI> -c <NSUB> <script.sh>
+        $ # Within script.sh:
+        $ mpirun -n <NMPI> --bind-to none <application.py>
+
+        >>> # Within application.py:
+        >>> camera.render_engine = HybridEngine(MulticoreEngine(<NSUB>)
+
+    PSB/Torque:
+
+        $ qsub -l nodes=<NMPI>:ppn=<NSUB> <script.sh>
+        $ # Within script.sh:
+        $ mpirun -n <NMPI> --map-by node --bind-to none <application.py>
+
+        >>> # Within application.py:
+        >>> camera.render_engine = HybridEngine(MulticoreEngine(<NSUB>)
+
+    Grid engine is more complicated as there is no portable way to
+    specify the number of slots per node, though there is an environment
+    variable for the number of separate nodes the job is being run on:
+
+        $ qsub -pe <mpi parallel environment name> <NSLOTS> <script.sh>
+        $ # Within script.sh:
+        $ mpirun -n $NHOSTS --map-by node --bind-to none <application.py>
+
+        >>> # Within application.py:
+        >>> # Find out how many slots are allocated this MPI process's node.
+        >>> import os, platform, subprocess
+        >>> host = platform.node()
+        >>> qstat = subprocess.run(['qstat', '-g', 't'], capture_output=True,
+                                   encoding='UTF-8')
+        >>> job_id = os.getenv("JOB_ID")
+        >>> # Loop through qstat output until we find our job id on this node.
+        >>> current_job = ""
+        >>> NSUB = 0
+        >>> for line in qstat.stdout.splitlines():
+        >>>     fields = line.strip().split()
+        >>>     if len(fields) >= 9:  # Start of a node's entry
+        >>>         current_job = fields[0]
+        >>>         current_queue = fields[7]
+        >>>         slot_type = fields[8]
+        >>>     elif len(fields) >= 2:  # Additional lines of a node's entry
+        >>>         current_queue = fields[0]
+        >>>         slot_type = fields[1]
+        >>>     else:  # Other decorative lines in the output are irrelevant.
+        >>>         continue
+        >>>     if current_job == job_id and host in current_queue and slot_type == "SLAVE":
+        >>>         NSUB += 1
+        >>>
+        >>> camera.render_engine = HybridEngine(MulticoreEngine(NSUB))
+
+    This class contains some attributes relevant to the MPI environment.
+    The sub-engine attributes are accessible through the sub-engine
+    directly.
+
+    :ivar comm: the MPI communicator (``MPI_COMM_WORLD``).
+    :ivar rank: the mpi rank in the communicator. Only rank 0 contains the
+                full results after a call ``to RenderEngine.run()``.
+    :ivar nmpi: the number of MPI processes.
+    :ivar name: the MPI processor name.
+    :ivar totalsize: Total number of workers summed over all MPI processes.
+    """
+    def __init__(self, subengine=None):
+        if not HAVE_MPI:
+            raise RuntimeError("The mpi4py package is required to use this engine.")
+        if subengine is None:
+            subengine = SerialEngine()
+        self.subengine = subengine
+        comm = MPI.COMM_WORLD
+        self.comm = comm
+        self.rank = comm.Get_rank()
+        self.nmpi = comm.Get_size()
+        self.name = MPI.Get_processor_name()
+        _local_size = subengine.worker_count()
+        self._all_sizes = comm.allgather(_local_size)
+        self.total_size = sum(self._all_sizes)
+
+    def run(self, tasks, render, update,
+            render_args=(), render_kwargs=None,
+            update_args=(), update_kwargs=None):
+        # Avoid mutable default arguments.
+        if render_kwargs is None:
+            render_kwargs = {}
+        if update_kwargs is None:
+            update_kwargs = {}
+        # All processes must have the same tasks, in the same order, so that
+        # all processes agree on which subset of tasks each is to work on.
+        tasks = self.comm.bcast(tasks, root=0)
+        ntasks = len(tasks)
+        # Split tasks evenly per individual worker, as different MPI processes
+        # may have different numbers of workers. Then re-group the tasks into
+        # batches for each MPI worker.
+        nworkers = self.total_size
+        worker_tasks = [[] for _ in range(nworkers)]
+        for i, task in enumerate(tasks):
+            worker_tasks[i % nworkers].append(task)
+        rank_tasks = []
+        idx = 0
+        for rank in range(self.nmpi):
+            size = self._all_sizes[rank]
+            rank_tasks.append(sum(worker_tasks[idx:idx+size], []))
+            idx += size
+        # On rank 0, spawn a separate process to do the rendering while gathering
+        # results in the main thread. We can't use mpi4py to send results from rank
+        # 0 to rank 0: here be segfaults. So use a multiprocessing queue instead.
+        # This does mean we have to gather data differently on rank 0.
+        # We use the 'fork' context here for memory efficiency, which makes this
+        # implementation unix-only (and even then, dodgy on MacOS).
+        if self.rank == 0:
+            ctx = get_context('fork')
+            queue = ctx.SimpleQueue()
+            worker = ctx.Process(
+                target=self.subengine.run,
+                kwargs=dict(
+                    tasks=rank_tasks[self.rank],
+                    render=render, render_args=render_args, render_kwargs=render_kwargs,
+                    update=queue.put, update_args=(), update_kwargs={},
+                )
+            )
+            worker.start()
+            remaining = ntasks
+            local_remaining = len(rank_tasks[self.rank])
+            remote_remaining = remaining - local_remaining
+            while remaining:
+                # Data may come in either from the local queue or from remote MPI.
+                if local_remaining and not queue.empty():
+                    result = queue.get()
+                    local_remaining -= 1
+                elif remote_remaining:
+                    result = self.comm.recv()
+                    remote_remaining -= 1
+                else:  # Nothing local or remote yet. Try again.
+                    continue
+                if isinstance(result, Exception):
+                    raise result
+                update(result, *update_args, **update_kwargs)
+                remaining = local_remaining + remote_remaining
+            worker.join()
+        else:
+            # All other ranks render the subset of tasks assigned to them and
+            # send the results through MPI to rank 0 for collating.
+            self.subengine.run(
+                tasks=rank_tasks[self.rank],
+                render=render, render_args=render_args, render_kwargs=render_kwargs,
+                update=self.comm.send, update_args=(0,), update_kwargs={},
+            )
+        self.comm.Barrier()
+
+    def worker_count(self):
+        return self.totalsize
+
+    @staticmethod
+    def estimate_subworker_count(scheduler=None):
+        """
+        Estimate the number of processes the sub-worker should use.
+
+        This routine should be called in processes launched from
+        job schedulers. It will use environment variables exported
+        by the job scheduler to work out the degree of parallelism
+        available to the sub-worker.
+
+        Currently, Slurm and Grid Engine are supported. For other
+        schedulers it is the user's responsibility to work out (or hard
+        code) the sub-worker count.
+
+        :param scheduler: the name of the scheduler in use.
+            One of ("slurm", "gridengine")
+        :return: The number of sub-workers available in this MPI task.
+        """
+        if scheduler is None:
+            # Try to work out which scheduler is in use.
+            if "SLURM_JOB_ID" in os.environ:
+                scheduler = "slurm"
+            elif "SGE_ROOT" in os.environ:
+                scheduler = "gridengine"
+            else:
+                raise RuntimeError("Can't find a supported scheduler.")
+        scheduler = scheduler.lower()
+        if scheduler == "slurm":
+            nsub = os.getenv("SLURM_CPUS_PER_TASK", 1)
+        elif scheduler == "gridengine":
+            # Parse qstat output to get the number of SLAVE slots
+            # allocated to this node.
+            node = platform.node()
+            qstat = subprocess.run(['qstat', '-g', 't'], capture_output=True,
+                                   encoding='UTF-8')
+            job_id = os.environ["JOB_ID"]
+            # Loop through qstat output until we find our job id on this node.
+            current_job = ""
+            nsub = 0
+            for line in qstat.stdout.splitlines():
+                fields = line.strip().split()
+                if len(fields) >= 9:  # Start of a node's entry
+                    current_job = fields[0]
+                    current_queue = fields[7]
+                    slot_type = fields[8]
+                elif len(fields) >= 2:  # Additional lines of a node's entry
+                    current_queue = fields[0]
+                    slot_type = fields[1]
+                else:  # Other decorative lines in the output are irrelevant.
+                    continue
+                if current_job == job_id and node in current_queue and slot_type == "SLAVE":
+                    nsub += 1
+        else:
+            raise RuntimeError(f"{scheduler} is not supported by this function.")
+        return nsub
+
 
 
 if __name__ == '__main__':
