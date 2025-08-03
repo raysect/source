@@ -18,6 +18,7 @@ classifiers = [
     "Topic :: Multimedia :: Graphics :: 3D Rendering",
     "Topic :: Scientific/Engineering :: Physics"
 ]
+dependencies = ["numpy>=2", "matplotlib"]
 dynamic = ["version"]
 
 [project.urls]
@@ -27,7 +28,7 @@ Issues = "https://github.com/raysect/source/issues"
 Changelog = "https://github.com/raysect/source/blob/master/CHANGELOG.txt"
 
 [build-system]
-requires = ["meson-python", "setuptools", "wheel", "numpy", "cython>=3.1", "setuptools-scm"]
+requires = ["meson-python", "setuptools", "setuptools-scm", "wheel", "numpy>=2", "cython>=3.1"]
 build-backend = "mesonpy"
 
 [tool.setuptools_scm]
