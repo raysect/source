@@ -36,7 +36,7 @@ properties of all observers and the overall observing workflow.
    :members:
    :show-inheritance:
 
-.. autoclass:: raysect.optical.observer.nonimaging.targetted_pixel.TargettedPixel
+.. autoclass:: raysect.optical.observer.nonimaging.targeted_pixel.TargetedPixel
    :members:
    :show-inheritance:
 
@@ -76,8 +76,14 @@ properties of all observers and the overall observing workflow.
    :members:
    :show-inheritance:
 
+.. autoclass:: raysect.optical.observer.imaging.targeted_ccd.TargetedCCDArray
+   :members:
+   :show-inheritance:
+
 .. autoclass:: raysect.optical.observer.imaging.vector.VectorCamera
    :members:
    :show-inheritance:
 
-
+.. autoclass:: raysect.optical.observer.imaging.opencv.OpenCVCamera
+   :members:
+   :show-inheritance:
