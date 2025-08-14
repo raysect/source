@@ -1,0 +1,12 @@
+/* Custom CSS for Raysect Documentation */
+
+/* Responsive Table Styling - Allow text wrapping in table cells */
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    white-space: normal !important;
+}
+
+/* Image aspect ratio preservation in table cells */
+.wy-table-responsive table td img {
+    height: auto !important;
+}
