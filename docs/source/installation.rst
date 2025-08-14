@@ -16,7 +16,7 @@ Raysect is available from the python package repository `pypi <https://pypi.pyth
 
     python -m pip install raysect
 
-If you prefer to install Raysect from source, the source files can be downloaded from `pypi <https://pypi.python.org/pypi/raysect>`_ or from our `development repository <https://github.com/raysect/source>`_. Once you have the source files, locate the folder containing the pyproject.toml file and run::
+If you prefer to install Raysect from source, the source files can be downloaded from `pypi <https://pypi.python.org/pypi/raysect>`_ or from our `development repository <https://github.com/raysect/source>`_. Once you have the source files, locate the folder containing the ``pyproject.toml`` file and run::
 
     python -m pip install .
 
@@ -29,7 +29,7 @@ If you would like to play with the bleeding-edge code or contribute to developme
 Testing
 ~~~~~~~
 
-A selection of test scripts can be run using Python's built-in `unittest` framework.
+A selection of test scripts can be run using Python's built-in `unittest <https://docs.python.org/3/library/unittest.html>`_ framework.
 These tests are included in the source code and can be executed by running the following command in the source directory::
 
     python -m unittest -v
