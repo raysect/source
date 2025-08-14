@@ -3,9 +3,6 @@
 Downloading and Installation
 ============================
 
-.. _raysect github repository:   https://github.com/raysect
-.. _Python Setup Tools:        http://pypi.python.org/pypi/setuptools
-
 Prerequisites
 ~~~~~~~~~~~~~
 
