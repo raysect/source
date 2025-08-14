@@ -9,9 +9,8 @@ Downloading and Installation
 Prerequisites
 ~~~~~~~~~~~~~
 
-The Raysect package requires Python 3.3+, numpy, scipy and matplotlib. Scipy version 0.13 or
-higher is recommended. Raysect has not been tested on Python 2, currently support for Python
-2 is not planned. IPython is recommended for interactive use.
+The Raysect package requires Python 3.9+, numpy and matplotlib.
+IPython is recommended for interactive use.
 
 Installation
 ~~~~~~~~~~~~
