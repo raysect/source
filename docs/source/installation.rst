@@ -37,4 +37,4 @@ run on the development version.  Running ``nosetests`` at the terminal in the so
 should run all of these tests to completion without errors or failures.
 
 Many of the demos used throughout the Raysect documentation are distributed with the source code in
-the ``demo`` folder.
+the ``demos`` folder.
