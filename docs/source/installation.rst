@@ -17,13 +17,14 @@ Installation
 
 Raysect is available from the python package repository `pypi <https://pypi.python.org/pypi/raysect>`_. The easiest way to install Raysect is using `pip <https://pip.pypa.io/en/stable/>`_::
 
-    pip install raysect
+    python -m pip install raysect
 
-If pip is not available, the source files can be downloaded from `pypi <https://pypi.python.org/pypi/raysect>`_ or from our `development repository <https://github.com/raysect/source>`_. Once you have the source files, locate the folder containing setup.py and run::
+If you prefer to install Raysect from source, the source files can be downloaded from `pypi <https://pypi.python.org/pypi/raysect>`_ or from our `development repository <https://github.com/raysect/source>`_. Once you have the source files, locate the folder containing the pyproject.toml file and run::
 
-    python setup.py install
+    python -m pip install .
 
-If all the required dependencies are present (cython, numpy, scipy and matplotlib), this should start the Raysect compilation and installation process.
+This should start the Raysect compilation and installation process.
+All required dependencies are automatically installed.
 
 If you would like to play with the bleeding-edge code or contribute to development, please see the Raysect development repository on `github <https://github.com/raysect/source>`_.
 
