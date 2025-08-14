@@ -29,9 +29,12 @@ If you would like to play with the bleeding-edge code or contribute to developme
 Testing
 ~~~~~~~
 
-A selection of test scripts can be run with the `nose` testing framework. These are routinely
-run on the development version.  Running ``nosetests`` at the terminal in the source directory
-should run all of these tests to completion without errors or failures.
+A selection of test scripts can be run using Python's built-in `unittest` framework.
+These tests are included in the source code and can be executed by running the following command in the source directory::
+
+    python -m unittest -v
+
+This will automatically discover and run all tests without errors or failures.
 
 Many of the demos used throughout the Raysect documentation are distributed with the source code in
 the ``demos`` folder.
