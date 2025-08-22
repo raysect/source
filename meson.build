@@ -2,7 +2,7 @@
 # The template file used to generate this file is dev/root-meson.build.
 
 project('raysect', 'cython',
-    default_options: ['python.install-env=auto'],
+    default_options: ['python.install_env=auto'],
     version: run_command(['dev/build/update_version.sh'], check: true).stdout().strip()
 )
 
