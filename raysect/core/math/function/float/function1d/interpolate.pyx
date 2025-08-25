@@ -148,6 +148,24 @@ cdef class Interpolator1DArray(Function1D):
         self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._f_mv)
         self._extrapolator = id_to_extrapolator[extrapolation_type](self._x_mv, self._f_mv)
 
+    def __getstate__(self):
+        return self.x, self.f, self._interpolator.ID, self._extrapolator.ID, self._last_index, self._extrapolation_range
+
+    def __setstate__(self, state):
+
+        # Unpack.
+        self.x, self.f, interpolation_type, extrapolation_type, self._last_index, self._extrapolation_range = state
+
+        # Rebuild memory views.
+        self._x_mv, self._f_mv = self.x, self.f
+
+        # Recreate the interpolator and extrapolator objects.
+        self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._f_mv)
+        self._extrapolator = id_to_extrapolator[extrapolation_type](self._x_mv, self._f_mv)
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)

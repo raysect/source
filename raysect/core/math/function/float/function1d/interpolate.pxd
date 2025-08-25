@@ -75,6 +75,7 @@ cdef class _Extrapolator1D:
     cdef double evaluate(self, double px, int index) except? -1e999
     # cdef double _analytic_gradient(self, double px, int index, int order)
 
+
 cdef class _Extrapolator1DNone(_Extrapolator1D):
     pass
 

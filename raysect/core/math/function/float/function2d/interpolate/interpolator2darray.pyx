@@ -195,6 +195,7 @@ cdef class Interpolator2DArray(Function2D):
 
         self.x = x
         self.y = y
+        self.f = f
 
         # obtain memory views for fast data access
         self._x_mv = x
@@ -230,6 +231,37 @@ cdef class Interpolator2DArray(Function2D):
         self._extrapolator = id_to_extrapolator[extrapolation_type](
             self._x_mv, self._y_mv, self._f_mv, self._interpolator, extrapolation_range_x, extrapolation_range_y
         )
+
+    def __getstate__(self):
+        return (
+            self.x, self.y, self.f,
+            self._interpolator.ID, self._extrapolator.ID,
+            self._last_index_x, self._last_index_y,
+            self._extrapolation_range_x, self._extrapolation_range_y
+        )
+
+    def __setstate__(self, state):
+
+        # Unpack.
+        (
+            self.x, self.y, self.f,
+            interpolation_type, extrapolation_type,
+            self._last_index_x, self._last_index_y,
+            self._extrapolation_range_x, self._extrapolation_range_y
+        ) = state
+
+        # Rebuild memory views.
+        self._x_mv, self._y_mv, self._f_mv = self.x, self.y, self.f
+
+        # Recreate the interpolator and extrapolator objects.
+        self._interpolator = id_to_interpolator[interpolation_type](self._x_mv, self._y_mv, self._f_mv)
+        self._extrapolator = id_to_extrapolator[extrapolation_type](
+            self._x_mv, self._y_mv, self._f_mv, self._interpolator,
+            self._extrapolation_range_x, self._extrapolation_range_y
+        )
+
+    def __reduce__(self):
+        return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)

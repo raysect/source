@@ -1,6 +1,18 @@
 Raysect Changelog
 =================
 
+Release 0.9.1 (25 Aug 2025)
+---------------------------
+
+Bug fixes:
+* Fixed a typo in the meson.build files that was not caught by meson, due to a bug in meson's option handling.
+  - Versions of meson < 1.8.4 suffered regressions in option handling that were fixed in v1.8.4.
+  - Attempting to build Raysect with meson v1.8.4 resulted in an error.
+
+New:
+* Added pickle support to Interpolate1DArray, Interpolate2DArray and Interpolate3DArray.
+
+
 Release 0.9.0 (30 Jul 2025)
 ---------------------------
 
