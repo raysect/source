@@ -154,7 +154,7 @@ cdef class CSGPrimitive(Primitive):
         # identify first valid intersection
         return self._identify_intersection(ray, intersection_a, intersection_b, closest_intersection)
 
-    cdef bint terminate_early(self, Intersection intersection):
+    cdef bint terminate_early(self, Intersection intersection) noexcept:
         return False
 
     cpdef Intersection next_intersection(self):
@@ -233,14 +233,14 @@ cdef class CSGPrimitive(Primitive):
             else:
                 return b
 
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest) noexcept:
         raise NotImplementedError("Warning: CSG operator not implemented")
 
     cdef Intersection _modify_intersection(self, Intersection closest, Intersection a, Intersection b):
          # by default, do nothing
         return closest
 
-    cdef void rebuild(self):
+    cdef void rebuild(self) noexcept:
         """
         Triggers a rebuild of the CSG primitive's acceleration structures.
         """
@@ -323,7 +323,7 @@ cdef class Union(CSGPrimitive):
 
     """
 
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest) noexcept:
 
         cdef bint inside_a, inside_b
 
@@ -418,10 +418,10 @@ cdef class Intersect(CSGPrimitive):
 
     """
 
-    cdef bint terminate_early(self, Intersection intersection):
+    cdef bint terminate_early(self, Intersection intersection) noexcept:
         return intersection is None
 
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest) noexcept:
 
         cdef bint inside_a, inside_b
 
@@ -520,10 +520,10 @@ cdef class Subtract(CSGPrimitive):
 
     """
 
-    cdef bint terminate_early(self, Intersection intersection):
+    cdef bint terminate_early(self, Intersection intersection) noexcept:
         return intersection is None
 
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest) noexcept:
 
         cdef bint inside_a, inside_b
 

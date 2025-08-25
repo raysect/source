@@ -503,7 +503,7 @@ cdef class MeshData(KDTree3DCore):
 
         return bbox
 
-    cpdef bint trace(self, Ray ray):
+    cpdef bint trace(self, Ray ray) noexcept:
 
         # reset hit data
         self._u = -1.0
@@ -517,7 +517,7 @@ cdef class MeshData(KDTree3DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range) noexcept:
 
         cdef:
             float hit_data[4]
@@ -563,7 +563,7 @@ cdef class MeshData(KDTree3DCore):
         return True
 
     @cython.cdivision(True)
-    cdef void _calc_rayspace_transform(self, Ray ray):
+    cdef void _calc_rayspace_transform(self, Ray ray) noexcept:
 
         # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
@@ -613,7 +613,7 @@ cdef class MeshData(KDTree3DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data):
+    cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data) noexcept:
 
         # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
@@ -802,7 +802,7 @@ cdef class MeshData(KDTree3DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef bint contains(self, Point3D p):
+    cpdef bint contains(self, Point3D p) noexcept:
         """
         Tests if a point is contained by the mesh.
 
@@ -1035,13 +1035,13 @@ cdef class MeshData(KDTree3DCore):
         m.load(file)
         return m
 
-    cdef uint8_t _read_uint8(self, object file):
+    cdef uint8_t _read_uint8(self, object file) noexcept:
         return (<uint8_t *> PyBytes_AsString(file.read(sizeof(uint8_t))))[0]
 
-    cdef bint _read_bool(self, object file):
+    cdef bint _read_bool(self, object file) noexcept:
         return self._read_uint8(file) != 0
 
-    cdef double _read_float(self, object file):
+    cdef double _read_float(self, object file) noexcept:
         return (<float *> PyBytes_AsString(file.read(sizeof(float))))[0]
 
 

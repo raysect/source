@@ -67,15 +67,15 @@ cdef class MeshData(KDTree3DCore):
     cdef object _flip_normals(self)
     cdef object _generate_face_normals(self)
     cdef BoundingBox3D _generate_bounding_box(self, int32_t i)
-    cdef void _calc_rayspace_transform(self, Ray ray)
-    cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data)
+    cdef void _calc_rayspace_transform(self, Ray ray) noexcept
+    cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data) noexcept
     cpdef Intersection calc_intersection(self, Ray ray)
     cdef Normal3D _intersection_normal(self)
-    cpdef bint contains(self, Point3D p)
+    cpdef bint contains(self, Point3D p) noexcept
     cpdef BoundingBox3D bounding_box(self, AffineMatrix3D to_world)
-    cdef uint8_t _read_uint8(self, object file)
-    cdef bint _read_bool(self, object file)
-    cdef double _read_float(self, object file)
+    cdef uint8_t _read_uint8(self, object file) noexcept
+    cdef bint _read_bool(self, object file) noexcept
+    cdef double _read_float(self, object file) noexcept
 
 
 cdef class Mesh(Primitive):

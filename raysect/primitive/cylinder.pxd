@@ -47,6 +47,6 @@ cdef class Cylinder(Primitive):
 
     cdef Vector3D _interior_offset(self, Point3D hit_point, Normal3D normal, int type)
 
-    cdef bint _inside_cylinder(self, Point3D point)
+    cdef bint _inside_cylinder(self, Point3D point) noexcept
 
-    cdef bint _inside_slab(self, Point3D point)
+    cdef bint _inside_slab(self, Point3D point) noexcept

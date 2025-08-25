@@ -231,7 +231,7 @@ cdef class Box(Primitive):
 
         return self._generate_intersection(self._cached_ray, self._cached_origin, self._cached_direction, self._next_t, self._cached_face, self._cached_axis)
 
-    cdef void _slab(self, int axis, double origin, double direction, double lower, double upper, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_axis, int *far_axis) nogil:
+    cdef void _slab(self, int axis, double origin, double direction, double lower, double upper, double *near_intersection, double *far_intersection, int *near_face, int *far_face, int *near_axis, int *far_axis) noexcept nogil:
 
         cdef:
             double reciprocal, tmin, tmax
@@ -327,7 +327,7 @@ cdef class Box(Primitive):
         return new_intersection(ray, ray_distance, self, hit_point, inside_point, outside_point,
                                 normal, exiting, self.to_local(), self.to_root())
 
-    cdef double _interior_offset(self, double hit_point, double lower, double upper) nogil:
+    cdef double _interior_offset(self, double hit_point, double lower, double upper) noexcept nogil:
         """
         Calculates an interior offset that ensures the inside_point is away from the primitive surface.
 

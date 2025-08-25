@@ -44,17 +44,17 @@ cdef class CSGPrimitive(Primitive):
     cdef Intersection _cache_last_intersection
     cdef bint _cache_invalid
 
-    cdef bint terminate_early(self, Intersection intersection)
+    cdef bint terminate_early(self, Intersection intersection) noexcept
 
     cdef Intersection _identify_intersection(self, Ray ray, Intersection intersection_a, Intersection intersection_b, Intersection closest_intersection)
 
     cdef Intersection _closest_intersection(self, Intersection a, Intersection b)
 
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest)
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest) noexcept
 
     cdef Intersection _modify_intersection(self, Intersection closest, Intersection a, Intersection b)
 
-    cdef void rebuild(self)
+    cdef void rebuild(self) noexcept
 
 
 cdef class CSGRoot(Node):
