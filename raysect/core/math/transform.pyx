@@ -341,7 +341,7 @@ cpdef Point3D from_cylindrical(double r, double z, double phi):
     return new_point3d(x, y, z)
 
 
-cpdef (double, double, double) extract_rotation(AffineMatrix3D m, bint z_up=False):
+cpdef (double, double, double) extract_rotation(AffineMatrix3D m, bint z_up=False) noexcept:
     """
     Extracts the rotation component of the affine matrix.
 
@@ -378,7 +378,7 @@ cpdef (double, double, double) extract_rotation(AffineMatrix3D m, bint z_up=Fals
     return yaw, pitch, roll
 
 
-cpdef (double, double, double) extract_translation(AffineMatrix3D m):
+cpdef (double, double, double) extract_translation(AffineMatrix3D m) noexcept:
     """
     Extracts the translation component of the affine matrix.
 

@@ -43,7 +43,7 @@ cdef class StatsBin:
     cpdef StatsBin copy(self)
     cpdef object add_sample(self, double sample)
     cpdef object combine_samples(self, double mean, double variance, int sample_count)
-    cpdef double error(self)
+    cpdef double error(self) noexcept
 
 
 cdef class StatsArray1D:
@@ -61,9 +61,9 @@ cdef class StatsArray1D:
     cpdef StatsArray1D copy(self)
     cpdef object add_sample(self, int x, double sample)
     cpdef object combine_samples(self, int x, double mean, double variance, int sample_count)
-    cpdef double error(self, int x)
+    cpdef double error(self, int x) noexcept
     cpdef ndarray errors(self)
-    cdef void _new_buffers(self)
+    cdef void _new_buffers(self) noexcept
     cdef object _bounds_check(self, int x)
 
 
@@ -82,9 +82,9 @@ cdef class StatsArray2D:
     cpdef StatsArray2D copy(self)
     cpdef object add_sample(self, int x, int y, double sample)
     cpdef object combine_samples(self, int x, int y, double mean, double variance, int sample_count)
-    cpdef double error(self, int x, int y)
+    cpdef double error(self, int x, int y) noexcept
     cpdef ndarray errors(self)
-    cdef void _new_buffers(self)
+    cdef void _new_buffers(self) noexcept
     cdef object _bounds_check(self, int x, int y)
 
 
@@ -103,7 +103,7 @@ cdef class StatsArray3D:
     cpdef StatsArray3D copy(self)
     cpdef object add_sample(self, int x, int y, int z, double sample)
     cpdef object combine_samples(self, int x, int y, int z, double mean, double variance, int sample_count)
-    cpdef double error(self, int x, int y, int z)
+    cpdef double error(self, int x, int y, int z) noexcept
     cpdef ndarray errors(self)
-    cdef void _new_buffers(self)
+    cdef void _new_buffers(self) noexcept
     cdef object _bounds_check(self, int x, int y, int z)

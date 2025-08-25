@@ -33,40 +33,40 @@ cimport cython
 
 DEF EQN_EPS = 1.0e-9
 
-cdef int find_index(double[::1] x, double v) nogil
+cdef int find_index(double[::1] x, double v) noexcept nogil
 
-cdef double interpolate(double[::1] x, double[::1] y, double p) nogil
+cdef double interpolate(double[::1] x, double[::1] y, double p) noexcept nogil
 
-cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil
+cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) noexcept nogil
 
-cdef double average(double[::1] x, double[::1] y, double x0, double x1) nogil
+cdef double average(double[::1] x, double[::1] y, double x0, double x1) noexcept nogil
 
-cdef double maximum(double[:] data) nogil
+cdef double maximum(double[:] data) noexcept nogil
 
-cdef double minimum(double[:] data) nogil
+cdef double minimum(double[:] data) noexcept nogil
 
-cdef double peak_to_peak(double[:] data) nogil
+cdef double peak_to_peak(double[:] data) noexcept nogil
 
-cdef inline double clamp(double v, double minimum, double maximum) nogil:
+cdef inline double clamp(double v, double minimum, double maximum) noexcept nogil:
     if v < minimum:
         return minimum
     if v > maximum:
         return maximum
     return v
 
-cdef inline void swap_double(double *a, double *b) nogil:
+cdef inline void swap_double(double *a, double *b) noexcept nogil:
     cdef double temp
     temp = a[0]
     a[0] = b[0]
     b[0] = temp
 
-cdef inline void swap_int(int *a, int *b) nogil:
+cdef inline void swap_int(int *a, int *b) noexcept nogil:
     cdef int temp
     temp = a[0]
     a[0] = b[0]
     b[0] = temp
 
-cdef inline void sort_three_doubles(double *a, double *b, double *c) nogil:
+cdef inline void sort_three_doubles(double *a, double *b, double *c) noexcept nogil:
     if a[0] > b[0]:
         swap_double(a, b)
     if b[0] > c[0]:
@@ -74,7 +74,7 @@ cdef inline void sort_three_doubles(double *a, double *b, double *c) nogil:
         if a[0] > c[0]:
             swap_double(a, c)
 
-cdef inline void sort_four_doubles(double *a, double *b, double *c, double *d) nogil:
+cdef inline void sort_four_doubles(double *a, double *b, double *c, double *d) noexcept nogil:
     if a[0] > b[0]:
         swap_double(a, b)
     if b[0] > c[0]:
@@ -88,22 +88,22 @@ cdef inline void sort_four_doubles(double *a, double *b, double *c, double *d) n
     if a[0] > b[0]:
         swap_double(a, b)
 
-cdef inline bint is_zero(double v) nogil:
+cdef inline bint is_zero(double v) noexcept nogil:
     return v < EQN_EPS and v > -EQN_EPS
 
 @cython.cdivision(True)
-cdef inline double lerp(double x0, double x1, double y0, double y1, double x) nogil:
+cdef inline double lerp(double x0, double x1, double y0, double y1, double x) noexcept nogil:
     return ((y1 - y0) / (x1 - x0)) * (x - x0) + y0
 
-cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil
+cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) noexcept nogil
 
-cdef int solve_cubic(double a, double b, double c, double d, double *t0, double *t1, double *t2) nogil
+cdef int solve_cubic(double a, double b, double c, double d, double *t0, double *t1, double *t2) noexcept nogil
 
 cdef int solve_quartic(double a, double b, double c, double d, double e,
-                       double *t0, double *t1, double *t2, double *t3) nogil
+                       double *t0, double *t1, double *t2, double *t3) noexcept nogil
 
-cdef bint winding2d(double[:,::1] vertices) nogil
+cdef bint winding2d(double[:,::1] vertices) noexcept nogil
 
-cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty)
+cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty) noexcept
 
-cdef int factorial(int n)
+cdef int factorial(int n) noexcept

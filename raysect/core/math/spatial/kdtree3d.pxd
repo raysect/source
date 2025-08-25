@@ -68,38 +68,38 @@ cdef class KDTree3DCore:
         double _hit_cost
         double _empty_bonus
 
-    cdef int32_t _build(self, list items, BoundingBox3D bounds, int32_t depth=*)
+    cdef int32_t _build(self, list items, BoundingBox3D bounds, int32_t depth=*) noexcept
     cdef tuple _split(self, list items, BoundingBox3D bounds)
-    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr)
-    cdef void _free_edges(self, edge **edges_ptr)
+    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr) noexcept
+    cdef void _free_edges(self, edge **edges_ptr) noexcept
     cdef BoundingBox3D _get_lower_bounds(self, BoundingBox3D bounds, double split, int32_t axis)
     cdef BoundingBox3D _get_upper_bounds(self, BoundingBox3D bounds, double split, int32_t axis)
-    cdef int32_t _new_leaf(self, list ids)
-    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth)
-    cdef int32_t _new_node(self)
-    cpdef bint is_contained(self, Point3D point)
-    cdef bint _is_contained(self, Point3D point)
-    cdef bint _is_contained_node(self, int32_t id, Point3D point)
-    cdef bint _is_contained_branch(self, int32_t id, Point3D point)
-    cdef bint _is_contained_leaf(self, int32_t id, Point3D point)
-    cpdef bint trace(self, Ray ray)
-    cdef bint _trace(self, Ray ray)
-    cdef bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range)
-    cdef bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range)
-    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range)
+    cdef int32_t _new_leaf(self, list ids) noexcept
+    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth) noexcept
+    cdef int32_t _new_node(self) noexcept
+    cpdef bint is_contained(self, Point3D point) noexcept
+    cdef bint _is_contained(self, Point3D point) noexcept
+    cdef bint _is_contained_node(self, int32_t id, Point3D point) noexcept
+    cdef bint _is_contained_branch(self, int32_t id, Point3D point) noexcept
+    cdef bint _is_contained_leaf(self, int32_t id, Point3D point) noexcept
+    cpdef bint trace(self, Ray ray) noexcept
+    cdef bint _trace(self, Ray ray) noexcept
+    cdef bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range) noexcept
+    cdef bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range) noexcept
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range) noexcept
     cpdef list items_containing(self, Point3D point)
     cdef list _items_containing(self, Point3D point)
     cdef list _items_containing_node(self, int32_t id, Point3D point)
     cdef list _items_containing_branch(self, int32_t id, Point3D point)
     cdef list _items_containing_leaf(self, int32_t id, Point3D point)
-    cdef void _reset(self)
-    cdef double _read_double(self, object file)
-    cdef int32_t _read_int32(self, object file)
+    cdef void _reset(self) noexcept
+    cdef double _read_double(self, object file) noexcept
+    cdef int32_t _read_int32(self, object file) noexcept
 
 
 cdef class KDTree3D(KDTree3DCore):
 
-    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range)
-    cpdef bint _trace_items(self, list items, Ray ray, double max_range)
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range) noexcept
+    cpdef bint _trace_items(self, list items, Ray ray, double max_range) noexcept
     cdef list _items_containing_leaf(self, int32_t id, Point3D point)
     cpdef list _items_containing_items(self, list items, Point3D point)

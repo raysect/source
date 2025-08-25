@@ -34,9 +34,9 @@ from raysect.core.math.function.float.function2d cimport Function2D
 from numpy cimport ndarray
 
 
-cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper)
-cdef int to_cell_index(int index, int last_index)
-cdef int to_knot_index(int index, int last_index)
+cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper) noexcept
+cdef int to_cell_index(int index, int last_index) noexcept
+cdef int to_knot_index(int index, int last_index) noexcept
 
 
 cdef class Interpolator2DArray(Function2D):
@@ -61,15 +61,15 @@ cdef class _Interpolator2D:
         int _last_index_x, _last_index_y
 
     cdef double evaluate(self, double px, double py, int index_x, int index_y) except? -1e999
-    cdef double analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y)
+    cdef double analytic_gradient(self, double px, double py, int index_x, int index_y, int order_x, int order_y) noexcept
 
 
 cdef class _Interpolator2DLinear(_Interpolator2D):
 
-    cdef double _calculate_a0(self, int ix, int iy)
-    cdef double _calculate_a1(self, int ix, int iy)
-    cdef double _calculate_a2(self, int ix, int iy)
-    cdef double _calculate_a3(self, int ix, int iy)
+    cdef double _calculate_a0(self, int ix, int iy) noexcept
+    cdef double _calculate_a1(self, int ix, int iy) noexcept
+    cdef double _calculate_a2(self, int ix, int iy) noexcept
+    cdef double _calculate_a3(self, int ix, int iy) noexcept
 
 
 cdef class _Interpolator2DCubic(_Interpolator2D):
@@ -79,7 +79,7 @@ cdef class _Interpolator2DCubic(_Interpolator2D):
         np.uint8_t[:, ::1] _calculated
         _ArrayDerivative2D _array_derivative
 
-    cdef _calc_coefficients(self, int index_x, int index_y, double[4][4] a)
+    cdef object _calc_coefficients(self, int index_x, int index_y, double[4][4] a)
 
 
 cdef class _Extrapolator2D:

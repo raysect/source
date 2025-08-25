@@ -167,7 +167,7 @@ cdef class World(_NodeBase):
         self.build_accelerator()
         return self._accelerator.contains(point)
 
-    cpdef build_accelerator(self, bint force=False):
+    cpdef object build_accelerator(self, bint force=False):
         """
         This method manually triggers a rebuild of the Acceleration object.
 

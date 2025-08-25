@@ -90,7 +90,7 @@ cdef class BoundingSphere3D:
             raise ValueError("The radius of the bounding sphere must be greater than zero.")
         self.radius = value
 
-    cpdef bint hit(self, Ray ray):
+    cpdef bint hit(self, Ray ray) noexcept:
         """
         Returns true if the ray hits the bounding box.
 
@@ -121,7 +121,7 @@ cdef class BoundingSphere3D:
         hit = self.intersect(ray, &front_intersection, &back_intersection)
         return hit, front_intersection, back_intersection
 
-    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection):
+    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection) noexcept:
 
         cdef Point3D origin
         cdef Vector3D direction
@@ -153,7 +153,7 @@ cdef class BoundingSphere3D:
         # is the intersection behind the ray origin, i.e. ray does not hit sphere
         return t1 >= 0.0
 
-    cpdef bint contains(self, Point3D point):
+    cpdef bint contains(self, Point3D point) noexcept:
         """
         Returns true if the given 3D point lies inside the bounding sphere.
 
@@ -243,7 +243,7 @@ cdef class BoundingSphere3D:
         self.radius = radius
         self.centre = centre
 
-    cpdef double surface_area(self):
+    cpdef double surface_area(self) noexcept:
         """
         Returns the surface area of the bounding sphere.
 
@@ -252,7 +252,7 @@ cdef class BoundingSphere3D:
         return 4.0 * M_PI * self.radius * self.radius
 
     @cython.cdivision(True)
-    cpdef double volume(self):
+    cpdef double volume(self) noexcept:
         """
         Returns the volume of the bounding sphere.
 

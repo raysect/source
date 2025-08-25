@@ -36,7 +36,7 @@ cdef bint inside_tetrahedra(double v1x, double v1y, double v1z,
                             double v2x, double v2y, double v2z,
                             double v3x, double v3y, double v3z,
                             double v4x, double v4y, double v4z,
-                            double px, double py, double pz) nogil:
+                            double px, double py, double pz) noexcept nogil:
     """
     Cython utility for testing if point is inside a tetrahedra.
 
@@ -72,7 +72,7 @@ cdef bint inside_tetrahedra(double v1x, double v1y, double v1z,
 cdef bint _side(double v1x, double v1y, double v1z,
                 double v2x, double v2y, double v2z,
                 double v3x, double v3y, double v3z,
-                double px, double py, double pz) nogil:
+                double px, double py, double pz) noexcept nogil:
     """
     calculate inner product of vectors between,
     cross vector of (v2 - v1 & v3 - v1) and vector p - v1.
@@ -131,7 +131,7 @@ cdef void barycentric_coords_tetra(double v1x, double v1y, double v1z,
                                    double v3x, double v3y, double v3z,
                                    double v4x, double v4y, double v4z,
                                    double px, double py, double pz,
-                                   double *alpha, double *beta, double *gamma, double *delta) nogil:
+                                   double *alpha, double *beta, double *gamma, double *delta) noexcept nogil:
     """
     Cython utility for calculating the barycentric coordinates of a test point.
 
@@ -194,7 +194,7 @@ cdef void barycentric_coords_tetra(double v1x, double v1y, double v1z,
     delta[0] = 1.0 - (alpha[0] + beta[0] + gamma[0])
 
 
-cdef bint barycentric_inside_tetrahedra(double alpha, double beta, double gamma, double delta) nogil:
+cdef bint barycentric_inside_tetrahedra(double alpha, double beta, double gamma, double delta) noexcept nogil:
     """
     Cython utility for testing if a barycentric point lies inside a tetrahedra.
 
@@ -211,7 +211,7 @@ cdef bint barycentric_inside_tetrahedra(double alpha, double beta, double gamma,
 
 
 cdef double barycentric_interpolation_tetra(double alpha, double beta, double gamma, double delta,
-                                            double va, double vb, double vc, double vd) nogil:
+                                            double va, double vb, double vc, double vd) noexcept nogil:
     """
     Cython utility for interpolation of data at tetrahedra vertices.
 

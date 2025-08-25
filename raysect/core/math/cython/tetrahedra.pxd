@@ -34,7 +34,7 @@ cdef bint inside_tetrahedra(double v1x, double v1y, double v1z,
                             double v2x, double v2y, double v2z,
                             double v3x, double v3y, double v3z,
                             double v4x, double v4y, double v4z,
-                            double px, double py, double pz) nogil
+                            double px, double py, double pz) noexcept nogil
 
 
 cdef void barycentric_coords_tetra(double v1x, double v1y, double v1z,
@@ -42,11 +42,11 @@ cdef void barycentric_coords_tetra(double v1x, double v1y, double v1z,
                                    double v3x, double v3y, double v3z,
                                    double v4x, double v4y, double v4z,
                                    double px, double py, double pz,
-                                   double *alpha, double *beta, double *gamma, double *delta) nogil
+                                   double *alpha, double *beta, double *gamma, double *delta) noexcept nogil
 
 
-cdef bint barycentric_inside_tetrahedra(double alpha, double beta, double gamma, double delta) nogil
+cdef bint barycentric_inside_tetrahedra(double alpha, double beta, double gamma, double delta) noexcept nogil
 
 
 cdef double barycentric_interpolation_tetra(double alpha, double beta, double gamma, double delta,
-                                            double va, double vb, double vc, double vd) nogil
+                                            double va, double vb, double vc, double vd) noexcept nogil

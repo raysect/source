@@ -32,10 +32,11 @@
 cdef class _Vec3:
 
     cdef public double x, y, z
-    cpdef double dot(self, _Vec3 v)
-    cpdef double angle(self, _Vec3 v)
-    cdef double get_length(self) nogil
+
+    cpdef double dot(self, _Vec3 v) noexcept
+    cpdef double angle(self, _Vec3 v) noexcept
+    cdef double get_length(self) noexcept nogil
     cdef object set_length(self, double v)
-    cdef double get_index(self, int index) nogil
-    cdef void set_index(self, int index, double value) nogil
+    cdef double get_index(self, int index) noexcept nogil
+    cdef void set_index(self, int index, double value) noexcept nogil
 

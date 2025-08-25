@@ -121,7 +121,7 @@ cdef class StatsBin:
         self.variance = vt
         self.samples = nt
 
-    cpdef double error(self):
+    cpdef double error(self) noexcept:
         """
         Compute the standard error of this sample distribution.
         """
@@ -269,7 +269,7 @@ cdef class StatsArray1D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double error(self, int x):
+    cpdef double error(self, int x) noexcept:
         """
         Compute the standard error of the results at index position x.
 
@@ -299,7 +299,7 @@ cdef class StatsArray1D:
             errors_mv[x] = _std_error(self.variance_mv[x], self.samples_mv[x])
         return errors
 
-    cdef void _new_buffers(self):
+    cdef void _new_buffers(self) noexcept:
         self.mean = zeros((self.length,), dtype=float64)
         self.variance = zeros((self.length, ), dtype=float64)
         self.samples = zeros((self.length, ), dtype=int32)
@@ -461,7 +461,7 @@ cdef class StatsArray2D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double error(self, int x, int y):
+    cpdef double error(self, int x, int y) noexcept:
         """
         Compute the standard error of the results at index position x, y.
 
@@ -493,7 +493,7 @@ cdef class StatsArray2D:
                 errors_mv[x, y] = _std_error(self.variance_mv[x, y], self.samples_mv[x, y])
         return errors
 
-    cdef void _new_buffers(self):
+    cdef void _new_buffers(self) noexcept:
         self.mean = zeros((self.nx, self.ny), dtype=float64)
         self.variance = zeros((self.nx, self.ny), dtype=float64)
         self.samples = zeros((self.nx, self.ny), dtype=int32)
@@ -670,7 +670,7 @@ cdef class StatsArray3D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double error(self, int x, int y, int z):
+    cpdef double error(self, int x, int y, int z) noexcept:
         """
         Compute the standard error of the results at index position x, y, z.
 
@@ -704,7 +704,7 @@ cdef class StatsArray3D:
                     errors_mv[x, y, z] = _std_error(self.variance_mv[x, y, z], self.samples_mv[x, y, z])
         return errors
 
-    cdef void _new_buffers(self):
+    cdef void _new_buffers(self) noexcept:
         self.mean = zeros((self.nx, self.ny, self.nz), dtype=float64)
         self.variance = zeros((self.nx, self.ny, self.nz), dtype=float64)
         self.samples = zeros((self.nx, self.ny, self.nz), dtype=int32)
@@ -725,7 +725,7 @@ cdef class StatsArray3D:
 
 
 @cython.cdivision(True)
-cdef double _std_error(double v, int n) nogil:
+cdef double _std_error(double v, int n) noexcept nogil:
     """
     Calculates the standard error from the variance.
 
@@ -740,7 +740,7 @@ cdef double _std_error(double v, int n) nogil:
 
 
 @cython.cdivision(True)
-cdef void _add_sample(double sample, double *m, double *v, int *n) nogil:
+cdef void _add_sample(double sample, double *m, double *v, int *n) noexcept nogil:
     """
     Updates the mean, variance and sample count with the supplied sample value.
 
@@ -777,7 +777,7 @@ cdef void _add_sample(double sample, double *m, double *v, int *n) nogil:
 
 
 @cython.cdivision(True)
-cdef void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt) nogil:
+cdef void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt) noexcept nogil:
     """
     Computes the combined statistics of two sets of samples specified by mean, variance and sample count.
 

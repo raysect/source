@@ -59,7 +59,7 @@ cdef class BoundPrimitive:
             return self.primitive.next_intersection()
         return None
 
-    cdef bint contains(self, Point3D point):
+    cdef bint contains(self, Point3D point) noexcept:
 
         if self.box.contains(point):
             return self.primitive.contains(point)

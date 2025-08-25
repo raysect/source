@@ -35,7 +35,7 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.initializedcheck(False)
-cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) nogil:
+cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) noexcept nogil:
     """
     Calculates the cubic coefficients for a unit interval.
 
@@ -57,7 +57,7 @@ cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.initializedcheck(False)
-cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2][2], double d2fdxdy[2][2], double a[4][4]) nogil:
+cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2][2], double d2fdxdy[2][2], double a[4][4]) noexcept nogil:
     """
     Calculates the cubic coefficients for a unit square.
     
@@ -108,7 +108,7 @@ cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2]
 @cython.initializedcheck(False)
 cdef void calc_coefficients_3d(double f[2][2][2], double dfdx[2][2][2], double dfdy[2][2][2], double dfdz[2][2][2],
                               double d2fdxdy[2][2][2], double d2fdxdz[2][2][2], double d2fdydz[2][2][2],
-                              double d3fdxdydz[2][2][2], double a[4][4][4]) nogil:
+                              double d3fdxdydz[2][2][2], double a[4][4][4]) noexcept nogil:
     """
     Calculates the cubic coefficients for a unit cubic.
     
@@ -385,7 +385,7 @@ cdef void calc_coefficients_3d(double f[2][2][2], double dfdx[2][2][2], double d
                  + d3fdxdydz[0][0][0] + d3fdxdydz[0][0][1] + d3fdxdydz[0][1][0] + d3fdxdydz[0][1][1] \
                  + d3fdxdydz[1][0][0] + d3fdxdydz[1][0][1] + d3fdxdydz[1][1][0] + d3fdxdydz[1][1][1]
 
-cdef double evaluate_cubic_1d(double a[4], double x) nogil:
+cdef double evaluate_cubic_1d(double a[4], double x) noexcept nogil:
 
     cdef double x2 = x*x
     cdef double x3 = x2*x
@@ -394,7 +394,7 @@ cdef double evaluate_cubic_1d(double a[4], double x) nogil:
     return a[0]*x3 + a[1]*x2 + a[2]*x + a[3]
 
 
-cdef double evaluate_cubic_2d(double a[4][4], double x, double y) nogil:
+cdef double evaluate_cubic_2d(double a[4][4], double x, double y) noexcept nogil:
 
     cdef double x2 = x*x
     cdef double x3 = x2*x
@@ -409,7 +409,7 @@ cdef double evaluate_cubic_2d(double a[4][4], double x, double y) nogil:
            + a[3][0]*x3 + a[3][1]*x3*y + a[3][2]*x3*y2 + a[3][3]*x3*y3
 
 
-cdef double evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) nogil:
+cdef double evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) noexcept nogil:
 
     cdef double x2 = x*x
     cdef double x3 = x2*x

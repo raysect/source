@@ -79,7 +79,7 @@ cdef class Item3D:
         self.box = box
 
 
-cdef int _edge_compare(const void *p1, const void *p2) nogil:
+cdef int _edge_compare(const void *p1, const void *p2) noexcept nogil:
 
     cdef edge e1, e2
 
@@ -163,7 +163,7 @@ cdef class KDTree3DCore:
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
-    cdef int32_t _build(self, list items, BoundingBox3D bounds, int32_t depth=0):
+    cdef int32_t _build(self, list items, BoundingBox3D bounds, int32_t depth=0) noexcept:
         """
         Extends the kd-Tree by creating a new node.
 
@@ -309,7 +309,7 @@ cdef class KDTree3DCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr):
+    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr) noexcept:
         """
         Generates a sorted list of edges along the specified axis.
 
@@ -351,7 +351,7 @@ cdef class KDTree3DCore:
         num_edges[0] = count
         edges_ptr[0] = edges
 
-    cdef void _free_edges(self, edge **edges_ptr):
+    cdef void _free_edges(self, edge **edges_ptr) noexcept:
         """
         Free allocated edge array.
 
@@ -392,7 +392,7 @@ cdef class KDTree3DCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int32_t _new_leaf(self, list items):
+    cdef int32_t _new_leaf(self, list items) noexcept:
         """
         Adds a new leaf node to the kd-Tree and populates it.
 
@@ -419,7 +419,7 @@ cdef class KDTree3DCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth):
+    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth) noexcept:
         """
         Adds a new branch node to the kd-Tree and populates it.
 
@@ -458,7 +458,7 @@ cdef class KDTree3DCore:
 
         return id
 
-    cdef int32_t _new_node(self):
+    cdef int32_t _new_node(self) noexcept:
         """
         Adds a new, empty node to the kd-Tree.
 
@@ -485,7 +485,7 @@ cdef class KDTree3DCore:
         self._next_node += 1
         return id
 
-    cpdef bint is_contained(self, Point3D point):
+    cpdef bint is_contained(self, Point3D point) noexcept:
         """
         Traverses the kd-Tree to identify if the point is contained by an any item.
 
@@ -495,7 +495,7 @@ cdef class KDTree3DCore:
 
         return self._is_contained(point)
 
-    cdef bint _is_contained(self, Point3D point):
+    cdef bint _is_contained(self, Point3D point) noexcept:
         """
         Starts contains traversal of the kd-Tree.
 
@@ -510,7 +510,7 @@ cdef class KDTree3DCore:
         # start search
         return self._is_contained_node(ROOT_NODE, point)
 
-    cdef bint _is_contained_node(self, int32_t id, Point3D point):
+    cdef bint _is_contained_node(self, int32_t id, Point3D point) noexcept:
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -524,7 +524,7 @@ cdef class KDTree3DCore:
         else:
             return self._is_contained_branch(id, point)
 
-    cdef bint _is_contained_branch(self, int32_t id, Point3D point):
+    cdef bint _is_contained_branch(self, int32_t id, Point3D point) noexcept:
         """
         Locates the kd-Tree node containing the point.
 
@@ -553,7 +553,7 @@ cdef class KDTree3DCore:
         else:
             return self._is_contained_node(upper_id, point)
 
-    cdef bint _is_contained_leaf(self, int32_t id, Point3D point):
+    cdef bint _is_contained_leaf(self, int32_t id, Point3D point) noexcept:
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -574,7 +574,7 @@ cdef class KDTree3DCore:
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTree3DCore _is_contained_leaf() method not implemented.")
 
-    cpdef bint trace(self, Ray ray):
+    cpdef bint trace(self, Ray ray) noexcept:
         """
         Traverses the kd-Tree to find the first intersection with an item stored in the tree.
 
@@ -586,7 +586,7 @@ cdef class KDTree3DCore:
 
         return self._trace(ray)
 
-    cdef bint _trace(self, Ray ray):
+    cdef bint _trace(self, Ray ray) noexcept:
         """
         Starts the ray traversal of the kd tree.
 
@@ -606,7 +606,7 @@ cdef class KDTree3DCore:
         # start exploration of kd-Tree
         return self._trace_node(ROOT_NODE, ray, min_range, max_range)
 
-    cdef bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range):
+    cdef bint _trace_node(self, int32_t id, Ray ray, double min_range, double max_range) noexcept:
         """
         Dispatches trace calculation to the relevant node handler.
 
@@ -623,7 +623,7 @@ cdef class KDTree3DCore:
             return self._trace_branch(id, ray, min_range, max_range)
 
     @cython.cdivision(True)
-    cdef bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range):
+    cdef bint _trace_branch(self, int32_t id, Ray ray, double min_range, double max_range) noexcept:
         """
         Traverses a kd-Tree branch node along the ray path.
 
@@ -699,7 +699,7 @@ cdef class KDTree3DCore:
             else:
                 return self._trace_node(far_id, ray, plane_distance, max_range)
 
-    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range) noexcept:
         """
         Tests each item in the kd-Tree leaf node to identify if an intersection occurs.
 
@@ -814,7 +814,7 @@ cdef class KDTree3DCore:
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTree3DCore _items_containing_leaf() method not implemented.")
 
-    cdef void _reset(self):
+    cdef void _reset(self) noexcept:
         """
         Resets the kd-tree state, de-allocating all memory.
         """
@@ -983,10 +983,10 @@ cdef class KDTree3DCore:
         if close:
             file.close()
 
-    cdef int32_t _read_int32(self, object file):
+    cdef int32_t _read_int32(self, object file) noexcept:
         return (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
 
-    cdef double _read_double(self, object file):
+    cdef double _read_double(self, object file) noexcept:
         return (<double *> PyBytes_AsString(file.read(sizeof(double))))[0]
 
 
@@ -1004,7 +1004,7 @@ cdef class KDTree3D(KDTree3DCore):
     :param empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
     """
 
-    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range) noexcept:
         """
         Wraps the C-level API so users can derive a class from KDTree3D using Python.
 
@@ -1028,7 +1028,7 @@ cdef class KDTree3D(KDTree3DCore):
 
         return self._trace_items(items, ray, max_range)
 
-    cpdef bint _trace_items(self, list item_ids, Ray ray, double max_range):
+    cpdef bint _trace_items(self, list item_ids, Ray ray, double max_range) noexcept:
         """
         Tests each item to identify if an intersection occurs.
 

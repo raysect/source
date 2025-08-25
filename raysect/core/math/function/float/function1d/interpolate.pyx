@@ -529,7 +529,7 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef void _calculate_quadratic_coefficients_start(self, double f1, double df1_dx, double df2_dx, double[3] a):
+    cdef void _calculate_quadratic_coefficients_start(self, double f1, double df1_dx, double df2_dx, double[3] a) noexcept:
         """
         Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1. 
         """
@@ -541,7 +541,7 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef void _calculate_quadratic_coefficients_end(self, double f2, double df1_dx, double df2_dx, double[3] a):
+    cdef void _calculate_quadratic_coefficients_end(self, double f2, double df1_dx, double df2_dx, double[3] a) noexcept:
         """
         Calculate the coefficients for a quadratic spline where 2 spline knots are normalised to between 0 and 1. 
         """
@@ -668,7 +668,7 @@ cdef class _ArrayDerivative1D:
         return dfdn
 
     @cython.cdivision(True)
-    cdef double _rescale_lower_normalisation(self, double dfdn, double x_lower, double x, double x_upper):
+    cdef double _rescale_lower_normalisation(self, double dfdn, double x_lower, double x, double x_upper) noexcept:
         """
         Derivatives that are normalised to the unit square (x_upper - x) = 1 are un-normalised, then re-normalised to
         (x - x_lower)
@@ -678,7 +678,7 @@ cdef class _ArrayDerivative1D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _evaluate_edge_x(self, int index):
+    cdef double _evaluate_edge_x(self, int index) noexcept:
         """
         Calculate the 1st derivative on an unevenly spaced array as a 1st order approximation.
         
@@ -696,7 +696,7 @@ cdef class _ArrayDerivative1D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _evaluate_x(self, int index):
+    cdef double _evaluate_x(self, int index) noexcept:
         """
         Calculate the 1st derivative on an unevenly spaced array as a 2nd order approximation.
 

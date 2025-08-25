@@ -234,7 +234,7 @@ cdef class TriangleSampler3D(SurfaceSampler3D):
         self._area_inv = 1 / self.area
 
     # TODO - please test me
-    cdef double _calculate_area(self, Point3D v1, Point3D v2, Point3D v3):
+    cdef double _calculate_area(self, Point3D v1, Point3D v2, Point3D v3) noexcept:
         cdef Vector3D e1 = v1.vector_to(v2)
         cdef Vector3D e2 = v1.vector_to(v3)
         return 0.5 * e1.cross(e2).get_length()

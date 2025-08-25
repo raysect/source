@@ -339,7 +339,7 @@ cdef class Quaternion:
         n = 1.0 / n
         return self.mul_scalar(n)
 
-    cpdef bint is_unit(self, double tolerance=1e-10):
+    cpdef bint is_unit(self, double tolerance=1e-10) noexcept:
         """
         Returns True if this is a unit quaternion (versor) to within specified tolerance.
 
@@ -567,7 +567,7 @@ cdef class Quaternion:
         return v.normalise()
 
     @cython.cdivision(True)
-    cdef double get_angle(self):
+    cdef double get_angle(self) noexcept:
         """
         The magnitude of rotation around this quaternion's rotation axis in degrees.
         """
@@ -575,7 +575,7 @@ cdef class Quaternion:
         cdef Quaternion q = self.normalise()
         return 2 * acos(q.s) * RAD2DEG
 
-    cdef double get_length(self) nogil:
+    cdef double get_length(self) noexcept nogil:
         """
         Fast function to obtain the quaternion length (norm).
 

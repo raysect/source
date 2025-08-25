@@ -34,7 +34,7 @@ from raysect.core.math cimport Vector3D
 
 cdef class SolidAngleSampler:
 
-    cpdef double pdf(self, Vector3D sample)
+    cpdef double pdf(self, Vector3D sample) noexcept
     cdef Vector3D sample(self)
     cdef tuple sample_with_pdf(self)
     cdef list samples(self, int samples)

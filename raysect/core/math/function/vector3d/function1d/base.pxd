@@ -69,7 +69,7 @@ cdef class NotEqualsFunction1D(FloatFunction1D):
     cdef Function1D _function1, _function2
 
 
-cdef inline bint is_callable(object f):
+cdef inline bint is_callable(object f) noexcept:
     """
     Tests if an object is a python callable or a vector3d.Function1D object.
 

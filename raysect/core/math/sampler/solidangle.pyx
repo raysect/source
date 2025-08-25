@@ -70,7 +70,7 @@ cdef class SolidAngleSampler:
                 return self.sample_with_pdf()
             return self.sample()
 
-    cpdef double pdf(self, Vector3D sample):
+    cpdef double pdf(self, Vector3D sample) noexcept:
         """
         Generates a pdf for a given sample value.
 
@@ -158,7 +158,7 @@ cdef class SphereSampler(SolidAngleSampler):
          Vector3D(-0.6983609515217772, -0.6547708308112921, -0.28907981684698814)]
     """
 
-    cpdef double pdf(self, Vector3D sample):
+    cpdef double pdf(self, Vector3D sample) noexcept:
         return R_4_PI
 
     cdef Vector3D sample(self):
@@ -188,7 +188,7 @@ cdef class HemisphereUniformSampler(SolidAngleSampler):
          Vector3D(0.03447410534618117, 0.33544044138689, 0.9414304256517041)]
     """
 
-    cpdef double pdf(self, Vector3D sample):
+    cpdef double pdf(self, Vector3D sample) noexcept:
         if sample.z >= 0.0:
             return R_2_PI
         return 0.0
@@ -220,7 +220,7 @@ cdef class HemisphereCosineSampler(SolidAngleSampler):
          Vector3D(0.21900782218503353, 0.918767789013818, 0.32848336897387853)]
     """
 
-    cpdef double pdf(self, Vector3D sample):
+    cpdef double pdf(self, Vector3D sample) noexcept:
         if sample.z >= 0.0:
             return  M_1_PI * sample.z
         return 0.0
@@ -265,7 +265,7 @@ cdef class ConeUniformSampler(SolidAngleSampler):
         self._solid_angle = 2 * M_PI * (1 - self._angle_cosine)
         self._solid_angle_inv = 1 / self._solid_angle
 
-    cpdef double pdf(self, Vector3D sample):
+    cpdef double pdf(self, Vector3D sample) noexcept:
         if sample.z >= self._angle_cosine:
             return self._solid_angle_inv
         return 0.0

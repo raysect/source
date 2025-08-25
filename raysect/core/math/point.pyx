@@ -228,7 +228,7 @@ cdef class Point3D:
 
         return new_vector3d(p.x - self.x, p.y - self.y, p.z - self.z)
 
-    cpdef double distance_to(self, Point3D p):
+    cpdef double distance_to(self, Point3D p) noexcept:
         """
         Returns the distance between this point and the passed point.
 
@@ -318,7 +318,7 @@ cdef class Point3D:
 
         return new_point3d(self.x, self.y, self.z)
 
-    cdef double get_index(self, int index) nogil:
+    cdef double get_index(self, int index) noexcept nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -336,7 +336,7 @@ cdef class Point3D:
         else:
             return NAN
 
-    cdef void set_index(self, int index, double value) nogil:
+    cdef void set_index(self, int index, double value) noexcept nogil:
         """
         Fast setting of coordinates via indexing.
 
@@ -532,7 +532,7 @@ cdef class Point2D:
 
         return new_vector2d(p.x - self.x, p.y - self.y)
 
-    cpdef double distance_to(self, Point2D p):
+    cpdef double distance_to(self, Point2D p) noexcept:
         """
         Returns the distance between this point and the passed point.
 
@@ -618,7 +618,7 @@ cdef class Point2D:
         """
         return new_point2d(self.x, self.y)
 
-    cdef double get_index(self, int index) nogil:
+    cdef double get_index(self, int index) noexcept nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -633,7 +633,7 @@ cdef class Point2D:
         else:
             return NAN
 
-    cdef void set_index(self, int index, double value) nogil:
+    cdef void set_index(self, int index, double value) noexcept nogil:
         """
         Fast setting of coordinates via indexing.
 

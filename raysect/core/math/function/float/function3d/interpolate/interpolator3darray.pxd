@@ -33,9 +33,9 @@ from raysect.core.math.function.float.function3d cimport Function3D
 cimport numpy as np
 
 
-cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper)
-cdef int to_cell_index(int index, int last_index)
-cdef int to_knot_index(int index, int last_index)
+cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper) noexcept
+cdef int to_cell_index(int index, int last_index) noexcept
+cdef int to_knot_index(int index, int last_index) noexcept
 
 
 cdef class Interpolator3DArray(Function3D):
@@ -61,19 +61,19 @@ cdef class _Interpolator3D:
 
     cdef double evaluate(self, double px, double py, double pz, int index_x, int index_y, int index_z) except? -1e999
 
-    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z)
+    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z) noexcept
 
 
 cdef class _Interpolator3DLinear(_Interpolator3D):
 
-    cdef double _calculate_a0(self, int ix, int iy, int iz)
-    cdef double _calculate_a1(self, int ix, int iy, int iz)
-    cdef double _calculate_a2(self, int ix, int iy, int iz)
-    cdef double _calculate_a3(self, int ix, int iy, int iz)
-    cdef double _calculate_a4(self, int ix, int iy, int iz)
-    cdef double _calculate_a5(self, int ix, int iy, int iz)
-    cdef double _calculate_a6(self, int ix, int iy, int iz)
-    cdef double _calculate_a7(self, int ix, int iy, int iz)
+    cdef double _calculate_a0(self, int ix, int iy, int iz) noexcept
+    cdef double _calculate_a1(self, int ix, int iy, int iz) noexcept
+    cdef double _calculate_a2(self, int ix, int iy, int iz) noexcept
+    cdef double _calculate_a3(self, int ix, int iy, int iz) noexcept
+    cdef double _calculate_a4(self, int ix, int iy, int iz) noexcept
+    cdef double _calculate_a5(self, int ix, int iy, int iz) noexcept
+    cdef double _calculate_a6(self, int ix, int iy, int iz) noexcept
+    cdef double _calculate_a7(self, int ix, int iy, int iz) noexcept
 
 
 cdef class _Interpolator3DCubic(_Interpolator3D):
@@ -83,7 +83,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
         double[:, :, :, :, :, ::1] _a
         _ArrayDerivative3D _array_derivative
 
-    cdef _cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a)
+    cdef object _cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a)
 
 
 cdef class _Extrapolator3D:
