@@ -1,0 +1,32 @@
+Building a Release
+==================
+
+We have switched to building with cibuildwheel and build. You'll need docker installed and working.
+In a venv, install the required packages:
+
+    > pip install twine build cibuildwheel
+
+Build the source distribution:
+
+    > python -m build
+
+Build the wheels:
+
+    > cibuildwheel
+
+The cibuildwheel process is long. First the required docker images are obtained/updated,
+then a matrix of builds is performed.
+
+Move the sdist and wheels to a common folder and upload to pypi with twine. Twine needs an API key.
+Upload to the test repository first and confirm everything works as expected:
+
+    twine upload --repository testpypi wheelhouse/
+
+If happy, upload to the main pypi repository:
+
+    twine upload wheelhouse/
+
+
+
+
+
