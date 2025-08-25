@@ -67,7 +67,7 @@ cdef class _ObserverBase(Observer):
     cpdef object _update_statistics(self, uint64_t sample_ray_count)
     cpdef object _finalise_statistics(self)
     cpdef list _obtain_rays(self, tuple task, Ray template)
-    cpdef double _obtain_sensitivity(self, tuple task)
+    cpdef double _obtain_sensitivity(self, tuple task) noexcept
 
 
 cdef class Observer0D(_ObserverBase):
@@ -78,7 +78,7 @@ cdef class Observer0D(_ObserverBase):
         int _samples_per_task
 
     cpdef list _generate_rays(self, Ray template, int ray_count)
-    cpdef double _pixel_sensitivity(self)
+    cpdef double _pixel_sensitivity(self) noexcept
 
 
 cdef class Observer1D(_ObserverBase):
@@ -90,7 +90,7 @@ cdef class Observer1D(_ObserverBase):
         int _pixel_samples
 
     cpdef list _generate_rays(self, int pixel, Ray template, int ray_count)
-    cpdef double _pixel_sensitivity(self, int pixel)
+    cpdef double _pixel_sensitivity(self, int pixel) noexcept
 
 
 cdef class Observer2D(_ObserverBase):
@@ -102,6 +102,6 @@ cdef class Observer2D(_ObserverBase):
         int _pixel_samples
 
     cpdef list _generate_rays(self, int x, int y, Ray template, int ray_count)
-    cpdef double _pixel_sensitivity(self, int x, int y)
+    cpdef double _pixel_sensitivity(self, int x, int y) noexcept
 
 

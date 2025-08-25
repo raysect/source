@@ -128,7 +128,7 @@ cdef class Checkerboard(NullVolume):
         return spectrum
 
     @cython.cdivision(True)
-    cdef bint _flip(self, bint v, double p) nogil:
+    cdef bint _flip(self, bint v, double p) noexcept nogil:
 
         # round to avoid numerical precision issues (rounds to nearest nanometer)
         p = round(p * 1e9) / 1e9

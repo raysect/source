@@ -43,4 +43,4 @@ cdef class Checkerboard(NullVolume):
         public double scale1
         public double scale2
 
-    cdef bint _flip(self, bint v, double p) nogil
+    cdef bint _flip(self, bint v, double p) noexcept nogil

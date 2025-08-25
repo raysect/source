@@ -45,15 +45,15 @@ cdef class ImportanceManager:
     cdef object _calculate_cdf(self)
     cdef tuple _pick_sphere(self)
     cpdef Vector3D sample(self, Point3D origin)
-    cpdef double pdf(self, Point3D origin, Vector3D direction)
-    cpdef bint has_primitives(self)
+    cpdef double pdf(self, Point3D origin, Vector3D direction) noexcept
+    cpdef bint has_primitives(self) noexcept
 
 
 cdef class World(CoreWorld):
 
     cdef ImportanceManager _importance
 
-    cpdef build_importance(self, bint force=*)
+    cpdef object build_importance(self, bint force=*)
     cpdef Vector3D important_direction_sample(self, Point3D origin)
-    cpdef double important_direction_pdf(self, Point3D origin, Vector3D direction)
-    cpdef bint has_important_primitives(self)
+    cpdef double important_direction_pdf(self, Point3D origin, Vector3D direction) noexcept
+    cpdef bint has_important_primitives(self) noexcept

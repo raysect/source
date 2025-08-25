@@ -360,7 +360,7 @@ cdef class ContinuousBSDF(Material):
             spectrum.div_scalar(pdf)
             return spectrum
 
-    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
+    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face) noexcept:
 
         raise NotImplementedError("Virtual method pdf() has not been implemented.")
 
@@ -375,7 +375,7 @@ cdef class ContinuousBSDF(Material):
 
         raise NotImplementedError("Virtual method evaluate_shading() has not been implemented.")
 
-    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength):
+    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength) noexcept:
         """
         Returns the surface bi-directional scattering distribution function (BSDF).
          

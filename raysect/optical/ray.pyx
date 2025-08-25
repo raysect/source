@@ -177,7 +177,7 @@ cdef class Ray(CoreRay):
             raise ValueError("Number of bins cannot be less than 1.")
         self._bins = bins
 
-    cdef int get_bins(self) nogil:
+    cdef int get_bins(self) noexcept nogil:
         return self._bins
 
     @property
@@ -200,7 +200,7 @@ cdef class Ray(CoreRay):
 
         self._min_wavelength = min_wavelength
 
-    cdef double get_min_wavelength(self) nogil:
+    cdef double get_min_wavelength(self) noexcept nogil:
         return self._min_wavelength
 
     @property
@@ -223,7 +223,7 @@ cdef class Ray(CoreRay):
 
         self._max_wavelength = max_wavelength
 
-    cdef double get_max_wavelength(self) nogil:
+    cdef double get_max_wavelength(self) noexcept nogil:
         return self._max_wavelength
 
     @property
@@ -308,7 +308,7 @@ cdef class Ray(CoreRay):
 
         self._important_path_weight = important_path_weight
 
-    cdef double get_important_path_weight(self) nogil:
+    cdef double get_important_path_weight(self) noexcept nogil:
         return self._important_path_weight
 
     cpdef Spectrum new_spectrum(self):

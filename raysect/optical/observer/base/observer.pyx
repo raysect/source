@@ -262,7 +262,7 @@ cdef class _ObserverBase(Observer):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef observe(self):
+    cpdef object observe(self):
         """ Ask this Camera to Observe its world. """
 
         cdef:
@@ -534,7 +534,7 @@ cdef class _ObserverBase(Observer):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _obtain_sensitivity(self, tuple task):
+    cpdef double _obtain_sensitivity(self, tuple task) noexcept:
         """
 
         :param pixel_id:
@@ -672,7 +672,7 @@ cdef class Observer0D(_ObserverBase):
         samples, = task
         return self._generate_rays(template, samples)
 
-    cpdef double _obtain_sensitivity(self, tuple task):
+    cpdef double _obtain_sensitivity(self, tuple task) noexcept:
         return self._pixel_sensitivity()
 
     cpdef list _generate_rays(self, Ray template, int ray_count):
@@ -705,7 +705,7 @@ cdef class Observer0D(_ObserverBase):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _pixel_sensitivity(self):
+    cpdef double _pixel_sensitivity(self) noexcept:
         """
 
         :return:
@@ -847,7 +847,7 @@ cdef class Observer1D(_ObserverBase):
         pixel, = task
         return self._generate_rays(pixel, template, self._pixel_samples)
 
-    cpdef double _obtain_sensitivity(self, tuple task):
+    cpdef double _obtain_sensitivity(self, tuple task) noexcept:
         cdef int pixel
         pixel, = task
         return self._pixel_sensitivity(pixel)
@@ -883,7 +883,7 @@ cdef class Observer1D(_ObserverBase):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _pixel_sensitivity(self, int pixel):
+    cpdef double _pixel_sensitivity(self, int pixel) noexcept:
         """
 
         :param int pixel: Pixel index.
@@ -1032,7 +1032,7 @@ cdef class Observer2D(_ObserverBase):
         x, y = task
         return self._generate_rays(x, y, template, self._pixel_samples)
 
-    cpdef double _obtain_sensitivity(self, tuple task):
+    cpdef double _obtain_sensitivity(self, tuple task) noexcept:
         cdef int x, y
         x, y = task
         return self._pixel_sensitivity(x, y)
@@ -1069,7 +1069,7 @@ cdef class Observer2D(_ObserverBase):
 
         raise NotImplementedError("To be defined in subclass.")
 
-    cpdef double _pixel_sensitivity(self, int x, int y):
+    cpdef double _pixel_sensitivity(self, int x, int y) noexcept:
         """
 
         :param int x: Pixel x index.

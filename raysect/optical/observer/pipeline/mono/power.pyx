@@ -687,7 +687,7 @@ cdef class PowerPipeline2D(Pipeline2D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double _calculate_white_point(self, np.ndarray image):
+    cpdef double _calculate_white_point(self, np.ndarray image) noexcept:
 
         cdef:
             int nx, ny, pixels, x, y, i

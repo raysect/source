@@ -44,30 +44,30 @@ cdef class SpectralFunction:
         double _sample_cache_max_wvl
         int _sample_cache_num_samp
 
-    cpdef double evaluate(self, double wavelength)
-    cpdef double integrate(self, double min_wavelength, double max_wavelength)
-    cpdef double average(self, double min_wavelength, double max_wavelength)
+    cpdef double evaluate(self, double wavelength) noexcept
+    cpdef double integrate(self, double min_wavelength, double max_wavelength) noexcept
+    cpdef double average(self, double min_wavelength, double max_wavelength) noexcept
     cpdef ndarray sample(self, double min_wavelength, double max_wavelength, int bins)
-    cdef double[::1] sample_mv(self, double min_wavelength, double max_wavelength, int bins)
+    cdef double[::1] sample_mv(self, double min_wavelength, double max_wavelength, int bins) noexcept
 
-    cdef void _average_cache_init(self)
-    cdef bint _average_cache_valid(self, double min_wavelength, double max_wavelength)
-    cdef double _average_cache_get(self)
-    cdef void _average_cache_set(self, double min_wavelength, double max_wavelength, double average)
+    cdef void _average_cache_init(self) noexcept
+    cdef bint _average_cache_valid(self, double min_wavelength, double max_wavelength) noexcept
+    cdef double _average_cache_get(self) noexcept
+    cdef void _average_cache_set(self, double min_wavelength, double max_wavelength, double average) noexcept
 
-    cdef void _sample_cache_init(self)
-    cdef bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int bins)
+    cdef void _sample_cache_init(self) noexcept
+    cdef bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int bins) noexcept
     cdef ndarray _sample_cache_get_array(self)
-    cdef double[::1] _sample_cache_get_mv(self)
-    cdef void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples, double[::1] samples_mv)
+    cdef double[::1] _sample_cache_get_mv(self) noexcept
+    cdef void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples, double[::1] samples_mv) noexcept
 
 
 cdef class NumericallyIntegratedSF(SpectralFunction):
 
     cdef readonly double sample_resolution
 
-    cpdef double integrate(self, double min_wavelength, double max_wavelength)
-    cpdef double function(self, double wavelength)
+    cpdef double integrate(self, double min_wavelength, double max_wavelength) noexcept
+    cpdef double function(self, double wavelength) noexcept
 
 
 cdef class InterpolatedSF(SpectralFunction):

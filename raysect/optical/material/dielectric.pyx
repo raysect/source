@@ -100,7 +100,7 @@ cdef class Sellmeier(NumericallyIntegratedSF):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.cdivision(True)
-    cpdef double function(self, double wavelength):
+    cpdef double function(self, double wavelength) noexcept:
         """
         Returns a sample of the three term Sellmeier equation at the specified
         wavelength.
@@ -302,7 +302,7 @@ cdef class Dielectric(Material):
             return spectrum
 
     @cython.cdivision(True)
-    cdef void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) nogil:
+    cdef void _fresnel(self, double ci, double ct, double n1, double n2, double *reflectivity, double *transmission) noexcept nogil:
 
         reflectivity[0] = 0.5 * (((n1*ci - n2*ct) / (n1*ci + n2*ct))**2 + ((n1*ct - n2*ci) / (n1*ct + n2*ci))**2)
         transmission[0] = 1 - reflectivity[0]
