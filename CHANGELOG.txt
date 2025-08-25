@@ -6,7 +6,7 @@ Release 0.9.1 (25 Aug 2025)
 
 Bug fixes:
 * Fixed a typo in the meson.build files that was not caught by meson, due to a bug in meson's option handling.
-  - Versions of meson < 1.8.4 suffered regressions in option handling that were fixed in v1.8.4.
+  - Meson versions v1.8.0 to v1.8.3 suffered regressions in option handling that were fixed in v1.8.4.
   - Attempting to build Raysect with meson v1.8.4 resulted in an error.
 
 New:
