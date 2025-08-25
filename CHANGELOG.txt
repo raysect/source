@@ -10,7 +10,7 @@ Bug fixes:
   - Attempting to build Raysect with meson v1.8.4 resulted in an error.
 
 New:
-* Added pickle support to Interpolate1DArray, Interpolate2DArray and Interpolate3DArray.
+* Added pickle support to Interpolator1DArray, Interpolator2DArray and Interpolator3DArray.
 
 
 Release 0.9.0 (30 Jul 2025)
