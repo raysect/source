@@ -13,8 +13,7 @@ py = import('python').find_installation(pure: false)
 numpy = dependency('numpy', method: 'config-tool')
 fs = import('fs')
 
-# disabling explicit noexcept until pycharm fixes their cython 3 support (causes a large number of build warnings)
-cython_args = ['--annotate', '-X legacy_implicit_noexcept=True']
+cython_args = ['--annotate']
 cython_dependencies = [numpy]
 
 subdir('raysect')
