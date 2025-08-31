@@ -3,6 +3,8 @@ Optical Module
 ==============
 
 .. toctree::
+   :titlesonly:
+
    main_optical_classes
    observers
    pipelines
