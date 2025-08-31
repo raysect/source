@@ -9,6 +9,10 @@ Optical Rays
    :members:
    :show-inheritance:
 
+.. autoclass:: raysect.optical.loggingray.LoggingRay
+   :members:
+   :show-inheritance:
+
 Spectral Functions
 ------------------
 
