@@ -1,8 +1,20 @@
 Raysect Changelog
 =================
 
-Release 0.9.0 (TBD)
--------------------
+Release 0.9.1 (25 Aug 2025)
+---------------------------
+
+Bug fixes:
+* Fixed a typo in the meson.build files that was not caught by meson, due to a bug in meson's option handling.
+  - Versions of meson < 1.8.4 suffered regressions in option handling that were fixed in v1.8.4.
+  - Attempting to build Raysect with meson v1.8.4 resulted in an error.
+
+New:
+* Added pickle support to Interpolate1DArray, Interpolate2DArray and Interpolate3DArray.
+
+
+Release 0.9.0 (30 Jul 2025)
+---------------------------
 
 Build changes:
 * The legacy setuptools build system has been replaced with meson-python.
@@ -25,6 +37,9 @@ API changes:
 
 New:
 * Added a torus primitive (contribute by Koyo Munechika).
+
+Known issues:
+* Compiling raysect current produces a large number of Cython deprecation warnings. These will be resolved in a future release.
 
 
 Release 0.8.1 (12 Feb 2023)
