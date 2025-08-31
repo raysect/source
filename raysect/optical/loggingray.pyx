@@ -43,6 +43,52 @@ cimport cython
 
 
 cdef class LoggingRay(Ray):
+    """
+    LoggingRay is a subclass of Ray that provides additional logging functionality.
+
+    A LoggingRay records all intersections it encounters during its path through the scene.
+
+    :param Point3D origin: Point defining ray’s origin (default=Point3D(0, 0, 0))
+    :param Vector3D direction: Vector defining ray’s direction (default=Vector3D(0, 0, 1))
+    :param float min_wavelength: Lower wavelength bound for observed spectrum
+    :param float max_wavelength: Upper wavelength bound for observed spectrum
+    :param int bins: Number of samples to use over the spectral range
+    :param float max_distance: The terminating distance of the ray
+    :param float extinction_prob: Probability of path extinction at every
+      material surface interaction (default=0.1)
+    :param int extinction_min_depth: Minimum number of paths before triggering
+      extinction probability (default=3)
+    :param int max_depth: Maximum number of material interactions before
+      terminating ray trajectory.
+    :param bool importance_sampling: Toggles use of importance sampling for
+      important primitives. See help documentation on importance sampling,
+      (default=True).
+    :param float important_path_weight: Weight to use for important paths when
+      using importance sampling.
+
+    :ivar list[Intersection] log: List of intersections encountered by the ray.
+    :ivar list[Point3D] path_vertices: List of vertices defining the ray's path.
+
+    >>> from raysect.core import Point3D, Vector3D
+    >>> from raysect.primitive import Box
+    >>> from raysect.optical import World
+    >>> from raysect.optical.material import NullMaterial
+    >>> from raysect.optical.loggingray import LoggingRay
+    >>>
+    >>> world = World()
+    >>> box = Box(Point3D(-1, -1, 0), Point3D(1, 1, 1),
+    >>>           material=NullMaterial(), parent=world)
+    >>>
+    >>> ray = LoggingRay(origin=Point3D(0, 0, -5),
+    >>>                  direction=Vector3D(0, 0, 1))
+    >>>
+    >>> ray.trace(world)
+    >>> ray.log
+    [Intersection(...), Intersection(...)]
+    >>>
+    >>> ray.path_vertices
+    [Point3D(0.0, 0.0, -5.0), Point3D(0.0, 0.0, 0.0), Point3D(0.0, 0.0, 1.0)]
+    """
 
     cdef public list log
 
@@ -85,9 +131,18 @@ cdef class LoggingRay(Ray):
         """
         Traces a single ray path through the world.
 
-        :param world: World object defining the scene.
-        :param keep_alive: If true, disables Russian roulette termination of the ray.
+        This method is responsible for tracing the ray through the scene, handling
+        all interactions with the environment.
+
+        :param World world: World object defining the scene.
+        :param bool keep_alive: If true, disables Russian roulette termination of the ray.
         :return: A Spectrum object.
+        :rtype: Spectrum
+
+        >>> world = World()
+        >>> ray = LoggingRay(origin=Point3D(0, 0, -5),
+        >>>                  direction=Vector3D(0, 0, 1))
+        >>> spectrum = ray.trace(world)
         """
 
         cdef:
@@ -130,16 +185,13 @@ cdef class LoggingRay(Ray):
         spectrum.mul_scalar(normalisation)
         return spectrum
 
-    cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction):
+    cpdef LoggingRay spawn_daughter(self, Point3D origin, Vector3D direction):
         """
-        Spawns a new daughter of the ray.
+        Obtain a new LoggingRay object with the same configuration settings.
 
-        A daughter ray has the same spectral configuration as the source ray,
-        however the ray depth is increased by 1.
-
-        :param origin: A Point3D defining the ray origin.
-        :param direction: A vector defining the ray direction.
-        :return: A Ray object.
+        :param Point3D origin: New Ray's origin position.
+        :param Vector3D direction: New Ray's direction.
+        :rtype: LoggingRay
         """
 
         cdef LoggingRay ray
@@ -176,7 +228,13 @@ cdef class LoggingRay(Ray):
         return ray
 
     cpdef LoggingRay copy(self, Point3D origin=None, Vector3D direction=None):
+        """
+        Obtain a new LoggingRay object with the same configuration settings.
 
+        :param Point3D origin: New Ray's origin position.
+        :param Vector3D direction: New Ray's direction.
+        :rtype: LoggingRay
+        """
         if origin is None:
             origin = self.origin.copy()
 
@@ -189,6 +247,17 @@ cdef class LoggingRay(Ray):
 
     @property
     def path_vertices(self):
+        """
+        List of vertices defining the ray's path.
+
+        The list includes the ray's origin and all intersection points along its path.
+
+        :rtype: list[Point3D]
+
+        >>> ray = LoggingRay(Point3D(0, 0, 0), Vector3D(0, 0, 1))
+        >>> ray.path_vertices
+        [Point3D(0, 0, 0), Point3D(...), ... ]
+        """
 
         cdef:
             list vertices
