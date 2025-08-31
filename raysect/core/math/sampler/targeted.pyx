@@ -112,7 +112,7 @@ cdef class _TargetedSampler:
                 return self.sample_with_pdf(point)
             return self.sample(point)
 
-    cpdef double pdf(self, Point3D point, Vector3D sample):
+    cpdef double pdf(self, Point3D point, Vector3D sample) noexcept:
         """
         Calculates the value of the PDF for the specified sample point and direction.
 
@@ -267,7 +267,7 @@ cdef class TargetedHemisphereSampler(_TargetedSampler):
     """
 
     @cython.cdivision(True)
-    cpdef double pdf(self, Point3D point, Vector3D sample):
+    cpdef double pdf(self, Point3D point, Vector3D sample) noexcept:
         """
         Calculates the value of the PDF for the specified sample point and direction.
 
@@ -404,7 +404,7 @@ cdef class TargetedSphereSampler(_TargetedSampler):
     """
 
     @cython.cdivision(True)
-    cpdef double pdf(self, Point3D point, Vector3D sample):
+    cpdef double pdf(self, Point3D point, Vector3D sample) noexcept:
         """
         Calculates the value of the PDF for the specified sample point and direction.
 

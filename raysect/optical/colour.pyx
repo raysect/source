@@ -120,7 +120,7 @@ d65_white = InterpolatedSF(d65_wavelength_samples, d65_white_samples)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef double[:,::1] resample_ciexyz(double min_wavelength, double max_wavelength, int bins):
+cpdef double[:,::1] resample_ciexyz(double min_wavelength, double max_wavelength, int bins) noexcept:
     """
     Pre-calculates samples of XYZ sensitivity curves over desired spectral range.
 
@@ -155,7 +155,7 @@ cpdef double[:,::1] resample_ciexyz(double min_wavelength, double max_wavelength
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.initializedcheck(False)
-cpdef (double, double, double) spectrum_to_ciexyz(Spectrum spectrum, double[:,::1] resampled_xyz=None):
+cpdef (double, double, double) spectrum_to_ciexyz(Spectrum spectrum, double[:,::1] resampled_xyz=None) noexcept:
     """
     Calculates a tuple of CIE X, Y, Z values from an input spectrum
 
@@ -187,7 +187,7 @@ cpdef (double, double, double) spectrum_to_ciexyz(Spectrum spectrum, double[:,::
 
 
 @cython.cdivision(True)
-cpdef (double, double, double) ciexyy_to_ciexyz(double cx, double cy, double y):
+cpdef (double, double, double) ciexyy_to_ciexyz(double cx, double cy, double y) noexcept:
     """
     Performs conversion from CIE xyY to CIE XYZ colour space
 
@@ -202,7 +202,7 @@ cpdef (double, double, double) ciexyy_to_ciexyz(double cx, double cy, double y):
 
 
 @cython.cdivision(True)
-cpdef (double, double, double) ciexyz_to_ciexyy(double x, double y, double z):
+cpdef (double, double, double) ciexyz_to_ciexyy(double x, double y, double z) noexcept:
     """
     Performs conversion from CIE XYZ to CIE xyY colour space
 
@@ -220,7 +220,7 @@ cpdef (double, double, double) ciexyz_to_ciexyy(double x, double y, double z):
     return x / n, y / n, y
 
 
-cdef double srgb_transfer_function(double v):
+cdef double srgb_transfer_function(double v) noexcept:
 
     if v <= 0.0031308:
 
@@ -232,7 +232,7 @@ cdef double srgb_transfer_function(double v):
         return 1.055 * v**0.4166666666666667 - 0.055
 
 
-cpdef (double, double, double) ciexyz_to_srgb(double x, double y, double z):
+cpdef (double, double, double) ciexyz_to_srgb(double x, double y, double z) noexcept:
     """
     Convert CIE XYZ values to sRGB colour space.
 
@@ -266,7 +266,7 @@ cpdef (double, double, double) ciexyz_to_srgb(double x, double y, double z):
     return r, g, b
 
 
-cdef double srgb_transfer_function_inverse(double v):
+cdef double srgb_transfer_function_inverse(double v) noexcept:
 
     if v <= 0.04045:
 
@@ -279,7 +279,7 @@ cdef double srgb_transfer_function_inverse(double v):
         return (0.9478672985781991 * (v + 0.055))**2.4
 
 
-cpdef (double, double, double) srgb_to_ciexyz(double r, double g, double b):
+cpdef (double, double, double) srgb_to_ciexyz(double r, double g, double b) noexcept:
     """
     Convert sRGB values to CIE XYZ colour space.
 

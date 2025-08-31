@@ -31,7 +31,7 @@
 
 cdef class Accelerator:
 
-    cpdef build(self, list primitives):
+    cpdef object build(self, list primitives):
         pass
 
     cpdef Intersection hit(self, Ray ray):

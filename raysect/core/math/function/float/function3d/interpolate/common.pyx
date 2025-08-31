@@ -185,7 +185,7 @@ cdef class MeshKDTree3D(KDTree3DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef bint _is_contained_leaf(self, np.int32_t id, Point3D point):
+    cdef bint _is_contained_leaf(self, np.int32_t id, Point3D point) noexcept:
 
         cdef:
             np.int32_t index, tetrahedra, i1, i2, i3, i4
@@ -226,7 +226,7 @@ cdef class MeshKDTree3D(KDTree3DCore):
 
         return False
 
-    cpdef bint is_contained(self, Point3D point):
+    cpdef bint is_contained(self, Point3D point) noexcept:
         """
         Traverses the kd-Tree to identify if the point is contained by an item.
         :param Point3D point: A Point3D object.

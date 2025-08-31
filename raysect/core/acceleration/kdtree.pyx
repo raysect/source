@@ -70,7 +70,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range) noexcept:
         """
         Tests each item in the kd-Tree leaf node to identify if an intersection occurs.
 
@@ -164,7 +164,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
 cdef class KDTree(_Accelerator):
 
-    cpdef build(self, list primitives):
+    cpdef object build(self, list primitives):
         self._kdtree = _PrimitiveKDTree(primitives)
 
     cpdef Intersection hit(self, Ray ray):

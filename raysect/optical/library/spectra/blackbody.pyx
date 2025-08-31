@@ -88,7 +88,7 @@ cdef class BlackBody(NumericallyIntegratedSF):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.cdivision(True)
-    cpdef double function(self, double wavelength):
+    cpdef double function(self, double wavelength) noexcept:
         """
         Planck's Law.
          

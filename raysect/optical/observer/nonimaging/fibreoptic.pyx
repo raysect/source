@@ -39,10 +39,6 @@ from raysect.optical.observer.pipeline.spectral import SpectralPowerPipeline0D
 cimport cython
 
 
-# 1 / (2 * PI)
-cdef const double RECIP_2_PI = 0.15915494309189535
-
-
 # TODO - provide a function for angular fall off for collection, instead of acceptance cone.
 # TODO - current samples the cone with uniform sampling, need a cosine weighted cone sampler.
 cdef class FibreOptic(Observer0D):
@@ -182,5 +178,5 @@ cdef class FibreOptic(Observer0D):
         """
         return self._pixel_sensitivity()
 
-    cpdef double _pixel_sensitivity(self):
+    cpdef double _pixel_sensitivity(self) noexcept:
         return self._solid_angle * self._collection_area

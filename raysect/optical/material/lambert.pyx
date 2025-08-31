@@ -68,7 +68,7 @@ cdef class Lambert(ContinuousBSDF):
             reflectivity = ConstantSF(0.5)
         self.reflectivity = reflectivity
 
-    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
+    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face) noexcept:
         return hemisphere_sampler.pdf(s_outgoing)
 
     cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):

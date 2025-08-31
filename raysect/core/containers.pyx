@@ -87,7 +87,7 @@ cdef class LinkedList:
             current_item = current_item.next
             i += 1
 
-    cpdef bint is_empty(self):
+    cpdef bint is_empty(self) noexcept:
         """ Returns True if the container is empty. """
 
         if self.length:
@@ -95,7 +95,7 @@ cdef class LinkedList:
         else:
             return True
 
-    cpdef add(self, object value):
+    cpdef object add(self, object value):
         """ Add an item to the end of the container.
 
         :param object value: The item to add to the end of the container.
@@ -113,7 +113,7 @@ cdef class LinkedList:
             self.last = new_item
         self.length += 1
 
-    cpdef add_items(self, object iterable):
+    cpdef object add_items(self, object iterable):
         """ Extend this container with another iterable container.
 
         :param object iterable: Iterable object such as a list or ndarray with
@@ -147,7 +147,7 @@ cdef class LinkedList:
 
         return current_item.value
 
-    cpdef insert(self, object value, int index):
+    cpdef object insert(self, object value, int index):
         """
         Insert an item at the specified index.
 
@@ -230,7 +230,7 @@ cdef class Stack(LinkedList):
     Inherits attributes and methods from LinkedList.
     """
 
-    cpdef push(self, object value):
+    cpdef object push(self, object value):
         """ Adds an item to the top of the stack
 
         :param object value: Object that will be pushed to top of the stack

@@ -92,7 +92,7 @@ cdef class Intersection:
     cdef void _construct(self, Ray ray, double ray_distance, Primitive primitive,
                                 Point3D hit_point, Point3D inside_point, Point3D outside_point,
                                 Normal3D normal, bint exiting, AffineMatrix3D world_to_primitive,
-                                AffineMatrix3D primitive_to_world):
+                                AffineMatrix3D primitive_to_world) noexcept:
 
         self.ray = ray
         self.ray_distance = ray_distance

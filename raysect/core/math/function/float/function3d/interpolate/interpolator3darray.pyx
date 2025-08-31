@@ -45,7 +45,7 @@ FACTORIAL[3] = 6.
 
 
 @cython.cdivision(True)
-cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper):
+cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, double x_upper) noexcept:
     """
     Derivatives that are normalised to the unit square (x_upper - x) = 1 are un-normalised, then re-normalised to
     (x - x_lower)
@@ -54,7 +54,7 @@ cdef double rescale_lower_normalisation(double dfdn, double x_lower, double x, d
     return dfdn * (x - x_lower) / (x_upper - x)
 
 
-cdef int to_cell_index(int index, int last_index):
+cdef int to_cell_index(int index, int last_index) noexcept:
     """
     Transforming the output of find_index to find the index lower index of a cell required for an extrapolator.
 
@@ -74,7 +74,7 @@ cdef int to_cell_index(int index, int last_index):
     return index
 
 
-cdef int to_knot_index(int index, int last_index):
+cdef int to_knot_index(int index, int last_index) noexcept:
     """
     Transforming the output of find_index to find the index of the array border required for an extrapolator.
 
@@ -369,7 +369,7 @@ cdef class _Interpolator3D:
         """
         raise NotImplementedError('_Interpolator is an abstract base class.')
 
-    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
+    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z) noexcept:
         """
         Calculates the interpolator's derivative of a valid order at a requested point.
 
@@ -413,7 +413,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
+    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z) noexcept:
         """
         Calculate the normalised derivative of specified order in a unit cube.
 
@@ -481,7 +481,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_a0(self, int ix, int iy, int iz):
+    cdef double _calculate_a0(self, int ix, int iy, int iz) noexcept:
         """
         Calculate the trilinear coefficients in a unit cube. This function returns coefficient 0 (of the range 0-7).
 
@@ -520,7 +520,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_a1(self, int ix, int iy, int iz):
+    cdef double _calculate_a1(self, int ix, int iy, int iz) noexcept:
         """
         Calculate the trilinear coefficients in a unit cube. This function returns coefficient 1 (of the range 0-7).
         
@@ -532,7 +532,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_a2(self, int ix, int iy, int iz):
+    cdef double _calculate_a2(self, int ix, int iy, int iz) noexcept:
         """
         Calculate the trilinear coefficients in a unit cube. This function returns coefficient 2 (of the range 0-7).
 
@@ -544,7 +544,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_a3(self, int ix, int iy, int iz):
+    cdef double _calculate_a3(self, int ix, int iy, int iz) noexcept:
         """
         Calculate the trilinear coefficients in a unit cube. This function returns coefficient 3 (of the range 0-7).
 
@@ -556,7 +556,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_a4(self, int ix, int iy, int iz):
+    cdef double _calculate_a4(self, int ix, int iy, int iz) noexcept:
         """
         Calculate the trilinear coefficients in a unit cube. This function returns coefficient 4 (of the range 0-7).
 
@@ -569,7 +569,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_a5(self, int ix, int iy, int iz):
+    cdef double _calculate_a5(self, int ix, int iy, int iz) noexcept:
         """
         Calculate the trilinear coefficients in a unit cube. This function returns coefficient 5 (of the range 0-7).
 
@@ -581,7 +581,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_a6(self, int ix, int iy, int iz):
+    cdef double _calculate_a6(self, int ix, int iy, int iz) noexcept:
         """
         Calculate the trilinear coefficients in a unit cube. This function returns coefficient 6 (of the range 0-7).
 
@@ -593,7 +593,7 @@ cdef class _Interpolator3DLinear(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double _calculate_a7(self, int ix, int iy, int iz):
+    cdef double _calculate_a7(self, int ix, int iy, int iz) noexcept:
         """
         Calculate the trilinear coefficients in a unit cube. This function returns coefficient 7 (of the range 0-7).
 
@@ -655,7 +655,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef _cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a):
+    cdef object _cache_coefficients(self, int index_x, int index_y, int index_z, double[4][4][4] a):
         """
         Calculates and stores, or loads previously stored cubic coefficients.
 
@@ -760,7 +760,7 @@ cdef class _Interpolator3DCubic(_Interpolator3D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z):
+    cdef double analytic_gradient(self, double px, double py, double pz, int index_x, int index_y, int index_z, int order_x, int order_y, int order_z) noexcept:
         """
         Calculate the normalised gradient of specified order in a unit cube.
 

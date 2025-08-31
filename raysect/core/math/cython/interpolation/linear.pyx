@@ -34,7 +34,7 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.initializedcheck(False)
-cdef double linear2d(double x0, double x1, double y0, double y1, double [:,::1] f, double x, double y) nogil:
+cdef double linear2d(double x0, double x1, double y0, double y1, double [:,::1] f, double x, double y) noexcept nogil:
     """
     :param x0: 
     :param x1: 
@@ -57,7 +57,7 @@ cdef double linear2d(double x0, double x1, double y0, double y1, double [:,::1] 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.initializedcheck(False)
-cdef double linear3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f, double x, double y, double z) nogil:
+cdef double linear3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f, double x, double y, double z) noexcept nogil:
     """
     :param x0: 
     :param x1: 

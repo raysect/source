@@ -825,7 +825,7 @@ cdef class Vector2D:
     def length(self, double v):
         self.set_length(v)
 
-    cpdef double dot(self, Vector2D v):
+    cpdef double dot(self, Vector2D v) noexcept:
         """
         Calculates the dot product between this vector and the supplied vector.
 
@@ -842,7 +842,7 @@ cdef class Vector2D:
 
         return self.x * v.x + self.y * v.y
 
-    cdef double get_length(self) nogil:
+    cdef double get_length(self) noexcept nogil:
         """
         Fast function to obtain the vectors length.
 
@@ -875,7 +875,7 @@ cdef class Vector2D:
         self.x = self.x * t
         self.y = self.y * t
 
-    cdef double get_index(self, int index) nogil:
+    cdef double get_index(self, int index) noexcept nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -891,7 +891,7 @@ cdef class Vector2D:
 
         return NAN
 
-    cdef void set_index(self, int index, double value) nogil:
+    cdef void set_index(self, int index, double value) noexcept nogil:
         """
         Fast setting of coordinates via indexing.
 
@@ -905,7 +905,7 @@ cdef class Vector2D:
         elif index == 1:
             self.y = value
 
-    cpdef double cross(self, Vector2D v):
+    cpdef double cross(self, Vector2D v) noexcept:
         """
         Calculates the 2D cross product analogue between this vector and the supplied vector
 

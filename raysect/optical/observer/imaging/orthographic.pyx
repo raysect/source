@@ -165,7 +165,7 @@ cdef class OrthographicCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_sensitivity(self, int ix, int iy):
+    cpdef double _pixel_sensitivity(self, int ix, int iy) noexcept:
         return self._sensitivity
 
 

@@ -169,5 +169,5 @@ cdef class Pixel(Observer0D):
 
         return rays
 
-    cpdef double _pixel_sensitivity(self):
+    cpdef double _pixel_sensitivity(self) noexcept:
         return self._solid_angle * self._collection_area

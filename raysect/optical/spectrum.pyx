@@ -102,7 +102,7 @@ cdef class Spectrum(SpectralFunction):
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
-    cdef void _wavelength_check(self, double min_wavelength, double max_wavelength):
+    cdef void _wavelength_check(self, double min_wavelength, double max_wavelength) noexcept:
 
         if min_wavelength <= 0.0 or max_wavelength <= 0.0:
             raise ValueError("Wavelength cannot be less than or equal to zero.")
@@ -110,7 +110,7 @@ cdef class Spectrum(SpectralFunction):
         if min_wavelength >= max_wavelength:
             raise ValueError("Minimum wavelength cannot be greater or equal to the maximum wavelength.")
 
-    cdef void _attribute_check(self):
+    cdef void _attribute_check(self) noexcept:
 
         # users can modify the sample array, need to prevent segfaults in cython code
         if self.samples is None:
@@ -122,7 +122,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cdef void _construct(self, double min_wavelength, double max_wavelength, int bins):
+    cdef void _construct(self, double min_wavelength, double max_wavelength, int bins) noexcept:
 
         cdef npy_intp size, index
 
@@ -164,7 +164,7 @@ cdef class Spectrum(SpectralFunction):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _populate_wavelengths(self):
+    cdef void _populate_wavelengths(self) noexcept:
 
         cdef:
             npy_intp size
@@ -180,7 +180,7 @@ cdef class Spectrum(SpectralFunction):
             for index in range(self.bins):
                 wavelengths_mv[index] = self.min_wavelength + (0.5 + index) * self.delta_wavelength
 
-    cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int bins):
+    cpdef bint is_compatible(self, double min_wavelength, double max_wavelength, int bins) noexcept:
         """
         Returns True if the stored samples are consistent with the specified
         wavelength range and sample size.
@@ -199,7 +199,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.cdivision(True)
-    cpdef double average(self, double min_wavelength, double max_wavelength):
+    cpdef double average(self, double min_wavelength, double max_wavelength) noexcept:
         """
         Finds the average number of spectral samples over the specified wavelength range.
 
@@ -224,7 +224,7 @@ cdef class Spectrum(SpectralFunction):
         # average value obtained by integrating linearly interpolated data and normalising
         return integrate(self._wavelengths, self.samples, min_wavelength, max_wavelength) / (max_wavelength - min_wavelength)
 
-    cpdef double integrate(self, double min_wavelength, double max_wavelength):
+    cpdef double integrate(self, double min_wavelength, double max_wavelength) noexcept:
         """
         Calculates the integrated radiance over the specified spectral range.
 
@@ -303,7 +303,7 @@ cdef class Spectrum(SpectralFunction):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef bint is_zero(self):
+    cpdef bint is_zero(self) noexcept:
         """
         Can be used to determine if all the samples are zero.
 
@@ -325,7 +325,7 @@ cdef class Spectrum(SpectralFunction):
                 return False
         return True
 
-    cpdef double total(self):
+    cpdef double total(self) noexcept:
         """
         Calculates the total radiance integrated over the whole spectral range.
 
@@ -387,7 +387,7 @@ cdef class Spectrum(SpectralFunction):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef void clear(self):
+    cpdef void clear(self) noexcept:
         """
         Resets the sample values in the spectrum to zero.
         """
@@ -428,7 +428,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef void add_scalar(self, double value) nogil:
+    cdef void add_scalar(self, double value) noexcept nogil:
 
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):
@@ -437,7 +437,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef void sub_scalar(self, double value) nogil:
+    cdef void sub_scalar(self, double value) noexcept nogil:
 
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):
@@ -446,7 +446,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef void mul_scalar(self, double value) nogil:
+    cdef void mul_scalar(self, double value) noexcept nogil:
 
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):
@@ -456,7 +456,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cdef void div_scalar(self, double value) nogil:
+    cdef void div_scalar(self, double value) noexcept nogil:
 
         cdef:
             double reciprocal
@@ -470,7 +470,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef void add_array(self, double[::1] array) nogil:
+    cdef void add_array(self, double[::1] array) noexcept nogil:
 
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):
@@ -479,7 +479,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef void sub_array(self, double[::1] array) nogil:
+    cdef void sub_array(self, double[::1] array) noexcept nogil:
 
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):
@@ -488,7 +488,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef void mul_array(self, double[::1] array) nogil:
+    cdef void mul_array(self, double[::1] array) noexcept nogil:
 
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):
@@ -498,23 +498,23 @@ cdef class Spectrum(SpectralFunction):
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cdef void div_array(self, double[::1] array) nogil:
+    cdef void div_array(self, double[::1] array) noexcept nogil:
 
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):
             self.samples_mv[index] /= array[index]
 
     # low level spectrum maths functions
-    cdef void add_spectrum(self, Spectrum spectrum) nogil:
+    cdef void add_spectrum(self, Spectrum spectrum) noexcept nogil:
         self.add_array(spectrum.samples_mv)
 
-    cdef void sub_spectrum(self, Spectrum spectrum) nogil:
+    cdef void sub_spectrum(self, Spectrum spectrum) noexcept nogil:
         self.sub_array(spectrum.samples_mv)
 
-    cdef void mul_spectrum(self, Spectrum spectrum) nogil:
+    cdef void mul_spectrum(self, Spectrum spectrum) noexcept nogil:
         self.mul_array(spectrum.samples_mv)
 
-    cdef void div_spectrum(self, Spectrum spectrum) nogil:
+    cdef void div_spectrum(self, Spectrum spectrum) noexcept nogil:
         self.div_array(spectrum.samples_mv)
 
     # multiply and add
@@ -522,7 +522,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cdef void mad_array(self, double[::1] a, double[::1] b) nogil:
+    cdef void mad_array(self, double[::1] a, double[::1] b) noexcept nogil:
 
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):
@@ -532,7 +532,7 @@ cdef class Spectrum(SpectralFunction):
     @cython.wraparound(False)
     @cython.cdivision(True)
     @cython.initializedcheck(False)
-    cdef void mad_scalar(self, double scalar, double[::1] array) nogil:
+    cdef void mad_scalar(self, double scalar, double[::1] array) noexcept nogil:
 
         cdef npy_intp index
         for index in range(self.samples_mv.shape[0]):

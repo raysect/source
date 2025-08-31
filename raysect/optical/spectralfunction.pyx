@@ -99,7 +99,7 @@ cdef class SpectralFunction:
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
-    cpdef double evaluate(self, double wavelength):
+    cpdef double evaluate(self, double wavelength) noexcept:
         """
         Evaluate the spectral function f(wavelength)
 
@@ -117,7 +117,7 @@ cdef class SpectralFunction:
         """
         return self.evaluate(wavelength)
 
-    cpdef double integrate(self, double min_wavelength, double max_wavelength):
+    cpdef double integrate(self, double min_wavelength, double max_wavelength) noexcept:
         """
         Calculates the integrated radiance over the specified spectral range.
 
@@ -137,7 +137,7 @@ cdef class SpectralFunction:
         raise NotImplementedError("Virtual method integrate() not implemented.")
 
     @cython.cdivision(True)
-    cpdef double average(self, double min_wavelength, double max_wavelength):
+    cpdef double average(self, double min_wavelength, double max_wavelength) noexcept:
         """
         Average radiance over the requested spectral range (W/m^2/sr/nm).
 
@@ -216,7 +216,7 @@ cdef class SpectralFunction:
 
         return samples
 
-    cdef double[::1] sample_mv(self, double min_wavelength, double max_wavelength, int bins):
+    cdef double[::1] sample_mv(self, double min_wavelength, double max_wavelength, int bins) noexcept:
         """
         Re-sample the spectral function with a new wavelength range and resolution.
         
@@ -236,7 +236,7 @@ cdef class SpectralFunction:
         self.sample(min_wavelength, max_wavelength, bins)
         return self._sample_cache_get_mv()
 
-    cdef void _average_cache_init(self):
+    cdef void _average_cache_init(self) noexcept:
         """
         Initialises the average cache.
         """
@@ -246,7 +246,7 @@ cdef class SpectralFunction:
         self._average_cache_min_wvl = -1
         self._average_cache_max_wvl = -1
 
-    cdef bint _average_cache_valid(self, double min_wavelength, double max_wavelength):
+    cdef bint _average_cache_valid(self, double min_wavelength, double max_wavelength) noexcept:
         """
         Returns true if a suitable cached average is available.
         """
@@ -256,7 +256,7 @@ cdef class SpectralFunction:
             self._average_cache_max_wvl == max_wavelength
         )
 
-    cdef double _average_cache_get(self):
+    cdef double _average_cache_get(self) noexcept:
         """
         Returns the cached value.
         
@@ -265,7 +265,7 @@ cdef class SpectralFunction:
 
         return self._average_cache
 
-    cdef void _average_cache_set(self, double min_wavelength, double max_wavelength, double average):
+    cdef void _average_cache_set(self, double min_wavelength, double max_wavelength, double average) noexcept:
         """
         Updates the cached average.
         """
@@ -274,7 +274,7 @@ cdef class SpectralFunction:
         self._average_cache_min_wvl = min_wavelength
         self._average_cache_max_wvl = max_wavelength
 
-    cdef void _sample_cache_init(self):
+    cdef void _sample_cache_init(self) noexcept:
         """
         Initialises the sample cache.
         """
@@ -286,7 +286,7 @@ cdef class SpectralFunction:
         self._sample_cache_max_wvl = -1
         self._sample_cache_num_samp = -1
 
-    cdef bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int bins):
+    cdef bint _sample_cache_valid(self, double min_wavelength, double max_wavelength, int bins) noexcept:
         """
         Returns true if a suitable cached samples are available.
         """
@@ -306,7 +306,7 @@ cdef class SpectralFunction:
 
         return self._sample_cache
 
-    cdef double[::1] _sample_cache_get_mv(self):
+    cdef double[::1] _sample_cache_get_mv(self) noexcept:
         """
         Returns the cached sample array memoryview.
         
@@ -315,7 +315,7 @@ cdef class SpectralFunction:
 
         return self._sample_cache_mv
 
-    cdef void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples, double[::1] samples_mv):
+    cdef void _sample_cache_set(self, double min_wavelength, double max_wavelength, int bins, ndarray samples, double[::1] samples_mv) noexcept:
         """
         Updates the cached sample array and memoryview.
         """
@@ -361,7 +361,7 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
-    cpdef double evaluate(self, double wavelength):
+    cpdef double evaluate(self, double wavelength) noexcept:
         """
         Evaluate the spectral function f(wavelength)
 
@@ -371,7 +371,7 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
 
         return self.function(wavelength)
 
-    cpdef double integrate(self, double min_wavelength, double max_wavelength):
+    cpdef double integrate(self, double min_wavelength, double max_wavelength) noexcept:
         """
         Calculates the integrated radiance over the specified spectral range.
 
@@ -400,7 +400,7 @@ cdef class NumericallyIntegratedSF(SpectralFunction):
 
         return sum
 
-    cpdef double function(self, double wavelength):
+    cpdef double function(self, double wavelength) noexcept:
         """
         Function to numerically integrate.
 
@@ -483,7 +483,7 @@ cdef class InterpolatedSF(SpectralFunction):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
     @cython.initializedcheck(False)
-    cpdef double evaluate(self, double wavelength):
+    cpdef double evaluate(self, double wavelength) noexcept:
         """
         Evaluate the spectral function f(wavelength)
 
@@ -494,7 +494,7 @@ cdef class InterpolatedSF(SpectralFunction):
         return interpolate(self.wavelengths_mv, self.samples_mv, wavelength)
 
     @cython.initializedcheck(False)
-    cpdef double integrate(self, double min_wavelength, double max_wavelength):
+    cpdef double integrate(self, double min_wavelength, double max_wavelength) noexcept:
         """
         Calculates the integrated radiance over the specified spectral range.
 
@@ -534,7 +534,7 @@ cdef class ConstantSF(SpectralFunction):
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
-    cpdef double evaluate(self, double wavelength):
+    cpdef double evaluate(self, double wavelength) noexcept:
         """
         Evaluate the spectral function f(wavelength)
 
@@ -543,7 +543,7 @@ cdef class ConstantSF(SpectralFunction):
         """
         return self.value
 
-    cpdef double integrate(self, double min_wavelength, double max_wavelength):
+    cpdef double integrate(self, double min_wavelength, double max_wavelength) noexcept:
         """
         Calculates the integrated radiance over the specified spectral range.
 
@@ -554,7 +554,7 @@ cdef class ConstantSF(SpectralFunction):
         """
         return self.value * (max_wavelength - min_wavelength)
 
-    cpdef double average(self, double min_wavelength, double max_wavelength):
+    cpdef double average(self, double min_wavelength, double max_wavelength) noexcept:
         """
         Average radiance over the requested spectral range (W/m^2/sr/nm).
 

@@ -69,12 +69,12 @@ cdef class Vector2D:
 
     cdef public double x, y
 
-    cpdef double dot(self, Vector2D v)
-    cdef double get_length(self) nogil
+    cpdef double dot(self, Vector2D v) noexcept
+    cdef double get_length(self) noexcept nogil
     cdef object set_length(self, double v)
-    cdef double get_index(self, int index) nogil
-    cdef void set_index(self, int index, double value) nogil
-    cpdef double cross(self, Vector2D v)
+    cdef double get_index(self, int index) noexcept nogil
+    cdef void set_index(self, int index, double value) noexcept nogil
+    cpdef double cross(self, Vector2D v) noexcept
     cpdef Vector2D normalise(self)
     # cpdef Vector2D transform(self, AffineMatrix2D m):
     cdef Vector2D neg(self)

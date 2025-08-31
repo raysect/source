@@ -168,7 +168,7 @@ cdef int _locate_ear(list active_vertices, double[:,::1] vertices) except -1:
                        "Please check the polygon data describes a simple polygon.")
 
 
-cdef bint _is_convex(double v1x, double v1y, double v2x, double v2y, double v3x, double v3y) nogil:
+cdef bint _is_convex(double v1x, double v1y, double v2x, double v2y, double v3x, double v3y) noexcept nogil:
     """
     Returns True if vertex is convex.
     """

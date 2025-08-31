@@ -37,7 +37,7 @@ cimport cython
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef int find_index(double[::1] x, double v) nogil:
+cdef int find_index(double[::1] x, double v) noexcept nogil:
     """
     Locates the lower index or the range that contains the specified value.
 
@@ -94,7 +94,7 @@ cdef int find_index(double[::1] x, double v) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double interpolate(double[::1] x, double[::1] y, double p) nogil:
+cdef double interpolate(double[::1] x, double[::1] y, double p) noexcept nogil:
     """
     Linearly interpolates sampled data onto the specified point.
 
@@ -134,7 +134,7 @@ cdef double interpolate(double[::1] x, double[::1] y, double p) nogil:
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil:
+cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) noexcept nogil:
     """
     Integrates a linearly interpolated function between two points.
 
@@ -243,7 +243,7 @@ cdef double integrate(double[::1] x, double[::1] y, double x0, double x1) nogil:
 @cython.cdivision(True)
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double average(double[::1] x, double[::1] y, double x0, double x1) nogil:
+cdef double average(double[::1] x, double[::1] y, double x0, double x1) noexcept nogil:
     """
     Returns the average value of a linearly interpolated function between two
     points.
@@ -301,7 +301,7 @@ cdef double average(double[::1] x, double[::1] y, double x0, double x1) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double maximum(double[:] data) nogil:
+cdef double maximum(double[:] data) noexcept nogil:
     """
     Return the maximum value in the buffer data.
 
@@ -325,7 +325,7 @@ cdef double maximum(double[:] data) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double minimum(double[:] data) nogil:
+cdef double minimum(double[:] data) noexcept nogil:
     """
     Return the minimum value in the buffer data.
 
@@ -347,7 +347,7 @@ cdef double minimum(double[:] data) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double peak_to_peak(double[:] data) nogil:
+cdef double peak_to_peak(double[:] data) noexcept nogil:
     """
     Return the peak-to-peak value in the buffer data.
 
@@ -373,7 +373,7 @@ cdef double peak_to_peak(double[:] data) nogil:
 
 
 @cython.cdivision(True)
-cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) nogil:
+cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) noexcept nogil:
     """
     Calculates the real roots of a quadratic equation.
 
@@ -420,7 +420,7 @@ cdef bint solve_quadratic(double a, double b, double c, double *t0, double *t1) 
 
 
 @cython.cdivision(True)
-cdef int solve_cubic(double a, double b, double c, double d, double *t0, double *t1, double *t2) nogil:
+cdef int solve_cubic(double a, double b, double c, double d, double *t0, double *t1, double *t2) noexcept nogil:
     """
     Calculates the roots of a cubic equation.
 
@@ -499,7 +499,7 @@ cdef int solve_cubic(double a, double b, double c, double d, double *t0, double 
         return 3
 
 
-cdef int solve_biquadratic(double a, double c, double e, double *t0, double *t1, double *t2, double *t3) nogil:
+cdef int solve_biquadratic(double a, double c, double e, double *t0, double *t1, double *t2, double *t3) noexcept nogil:
     """
     Calculate the real roots of a bi quadratic equation.
 
@@ -556,7 +556,7 @@ cdef int solve_biquadratic(double a, double c, double e, double *t0, double *t1,
         return 0
 
 
-cdef int _solve_depressed_quartic(double p, double q, double r, double *t0, double *t1, double *t2, double *t3) nogil:
+cdef int _solve_depressed_quartic(double p, double q, double r, double *t0, double *t1, double *t2, double *t3) noexcept nogil:
     """
     Solve depressed quartic: x^4 + p.x^2 + q.x + r
     """
@@ -655,7 +655,7 @@ cdef int _solve_depressed_quartic(double p, double q, double r, double *t0, doub
 
 
 @cython.cdivision(True)
-cdef void one_newton_step(double b, double c, double d, double e, double *x) nogil:
+cdef void one_newton_step(double b, double c, double d, double e, double *x) noexcept nogil:
     """
     One step Newton's method for monic quartic polinomial: x^4 + b.x^3 + c.x^2 * d.x + e = 0
 
@@ -674,7 +674,7 @@ cdef void one_newton_step(double b, double c, double d, double e, double *x) nog
 
 @cython.cdivision(True)
 cdef int solve_quartic(double a, double b, double c, double d, double e,
-                       double *t0, double *t1, double *t2, double *t3) nogil:
+                       double *t0, double *t1, double *t2, double *t3) noexcept nogil:
     """
     Calculates the real roots of a quartic equation with Van der Waerden method.
 
@@ -749,7 +749,7 @@ cdef int solve_quartic(double a, double b, double c, double d, double e,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint winding2d(double[:,::1] vertices) nogil:
+cdef bint winding2d(double[:,::1] vertices) noexcept nogil:
     """
     Identifies the winding direction of a simple 2D polygon.
 
@@ -783,7 +783,7 @@ cdef bint winding2d(double[:,::1] vertices) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty):
+cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty) noexcept:
     """
     Cython utility for testing if a 2D point (ptx, pty) is inside a 2D polygon defined by
     the two memory views px_mv[:] and py_mv[:].
@@ -835,7 +835,7 @@ cdef bint point_inside_polygon(double[:,::1] vertices, double ptx, double pty):
         return True
 
 
-cdef int factorial(int n):
+cdef int factorial(int n) noexcept:
     """Calculate the factorial of an interger n (n!) through recursive calculation."""
     if n <= 0:
         return 1

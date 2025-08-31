@@ -359,12 +359,12 @@ cdef class Cylinder(Primitive):
         point = point.transform(self.to_local())
         return self._inside_slab(point) and self._inside_cylinder(point)
 
-    cdef bint _inside_cylinder(self, Point3D point):
+    cdef bint _inside_cylinder(self, Point3D point) noexcept:
 
         # is the point inside the cylinder radius
         return (point.x * point.x + point.y * point.y) <= (self._radius * self._radius)
 
-    cdef bint _inside_slab(self, Point3D point):
+    cdef bint _inside_slab(self, Point3D point) noexcept:
 
         # first check point is within the cylinder upper and lower bounds
         return 0.0 <= point.z <= self._height

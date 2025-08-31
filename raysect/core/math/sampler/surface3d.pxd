@@ -61,4 +61,4 @@ cdef class TriangleSampler3D(SurfaceSampler3D):
         readonly double area
         double _area_inv
 
-    cdef double _calculate_area(self, Point3D v1, Point3D v2, Point3D v3)
+    cdef double _calculate_area(self, Point3D v1, Point3D v2, Point3D v3) noexcept

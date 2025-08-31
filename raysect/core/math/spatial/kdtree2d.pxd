@@ -68,33 +68,33 @@ cdef class KDTree2DCore:
         double _hit_cost
         double _empty_bonus
 
-    cdef int32_t _build(self, list items, BoundingBox2D bounds, int32_t depth=*)
+    cdef int32_t _build(self, list items, BoundingBox2D bounds, int32_t depth=*) noexcept
     cdef tuple _split(self, list items, BoundingBox2D bounds)
-    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr)
-    cdef void _free_edges(self, edge **edges_ptr)
+    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr) noexcept
+    cdef void _free_edges(self, edge **edges_ptr) noexcept
     cdef BoundingBox2D _get_lower_bounds(self, BoundingBox2D bounds, double split, int32_t axis)
     cdef BoundingBox2D _get_upper_bounds(self, BoundingBox2D bounds, double split, int32_t axis)
-    cdef int32_t _new_leaf(self, list ids)
-    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth)
-    cdef int32_t _new_node(self)
-    cpdef bint is_contained(self, Point2D point)
-    cdef bint _is_contained(self, Point2D point)
-    cdef bint _is_contained_node(self, int32_t id, Point2D point)
-    cdef bint _is_contained_branch(self, int32_t id, Point2D point)
-    cdef bint _is_contained_leaf(self, int32_t id, Point2D point)
+    cdef int32_t _new_leaf(self, list ids) noexcept
+    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth) noexcept
+    cdef int32_t _new_node(self) noexcept
+    cpdef bint is_contained(self, Point2D point) noexcept
+    cdef bint _is_contained(self, Point2D point) noexcept
+    cdef bint _is_contained_node(self, int32_t id, Point2D point) noexcept
+    cdef bint _is_contained_branch(self, int32_t id, Point2D point) noexcept
+    cdef bint _is_contained_leaf(self, int32_t id, Point2D point) noexcept
     cpdef list items_containing(self, Point2D point)
     cdef list _items_containing(self, Point2D point)
     cdef list _items_containing_node(self, int32_t id, Point2D point)
     cdef list _items_containing_branch(self, int32_t id, Point2D point)
     cdef list _items_containing_leaf(self, int32_t id, Point2D point)
-    cdef void _reset(self)
-    cdef double _read_double(self, object file)
-    cdef int32_t _read_int32(self, object file)
+    cdef void _reset(self) noexcept
+    cdef double _read_double(self, object file) noexcept
+    cdef int32_t _read_int32(self, object file) noexcept
 
 
 cdef class KDTree2D(KDTree2DCore):
 
-    cdef bint _is_contained_leaf(self, int32_t id, Point2D point)
-    cpdef bint _is_contained_items(self, list items, Point2D point)
+    cdef bint _is_contained_leaf(self, int32_t id, Point2D point) noexcept
+    cpdef bint _is_contained_items(self, list items, Point2D point) noexcept
     cdef list _items_containing_leaf(self, int32_t id, Point2D point)
     cpdef list _items_containing_items(self, list items, Point2D point)

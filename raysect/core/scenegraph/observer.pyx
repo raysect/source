@@ -38,7 +38,7 @@ cdef class Observer(Node):
     fibre optics and other sampling objects.
     """
 
-    cpdef observe(self):
+    cpdef object observe(self):
         """
         Virtual method - to be implemented by derived classes.
 

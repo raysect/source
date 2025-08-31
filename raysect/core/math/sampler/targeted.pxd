@@ -42,7 +42,7 @@ cdef class _TargetedSampler:
         double[::1] _cdf_mv
 
     cdef object _validate_targets(self)
-    cpdef double pdf(self, Point3D point, Vector3D sample)
+    cpdef double pdf(self, Point3D point, Vector3D sample) noexcept
     cdef Vector3D sample(self, Point3D point)
     cdef tuple sample_with_pdf(self, Point3D point)
     cdef list samples(self, Point3D point, int samples)

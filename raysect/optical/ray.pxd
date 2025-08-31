@@ -53,10 +53,10 @@ cdef class Ray(CoreRay):
     cpdef Spectrum trace(self, World world, bint keep_alive=*)
     cpdef Spectrum sample(self, World world, int samples)
     cpdef Ray spawn_daughter(self, Point3D origin, Vector3D direction)
-    cdef int get_bins(self) nogil
-    cdef double get_min_wavelength(self) nogil
-    cdef double get_max_wavelength(self) nogil
-    cdef double get_important_path_weight(self) nogil
+    cdef int get_bins(self) noexcept nogil
+    cdef double get_min_wavelength(self) noexcept nogil
+    cdef double get_max_wavelength(self) noexcept nogil
+    cdef double get_important_path_weight(self) noexcept nogil
     cdef Spectrum _sample_surface(self, Intersection intersection, World world)
     cdef Spectrum _sample_volumes(self, Spectrum spectrum, Intersection intersection, World world)
 

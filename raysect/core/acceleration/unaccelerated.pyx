@@ -45,7 +45,7 @@ cdef class Unaccelerated(Accelerator):
         self.primitives = []
         self.world_box = BoundingBox3D()
 
-    cpdef build(self, list primitives):
+    cpdef object build(self, list primitives):
 
         cdef:
             Primitive primitive

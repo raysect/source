@@ -52,8 +52,8 @@ cdef class MeshCamera(Observer1D):
         HemisphereCosineSampler _vector_sampler
 
     cdef object _calculate_areas(self)
-    cdef double _triangle_area(self, Point3D v1, Point3D v2, Point3D v3)
-    cpdef double collection_area(self, int pixel)
-    cpdef double solid_angle(self, int pixel)
-    cpdef double sensitivity(self, int pixel)
+    cdef double _triangle_area(self, Point3D v1, Point3D v2, Point3D v3) noexcept
+    cpdef double collection_area(self, int pixel) noexcept
+    cpdef double solid_angle(self, int pixel) noexcept
+    cpdef double sensitivity(self, int pixel) noexcept
     cdef AffineMatrix3D _surface_to_local(self, Vector3D normal)

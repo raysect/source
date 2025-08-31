@@ -65,7 +65,7 @@ cdef class DiscreteBSDF(Material):
 
 cdef class ContinuousBSDF(Material):
 
-    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face)
+    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face) noexcept
 
     cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face)
 
@@ -74,4 +74,4 @@ cdef class ContinuousBSDF(Material):
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
                                     Intersection intersection)
 
-    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength)
+    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength) noexcept

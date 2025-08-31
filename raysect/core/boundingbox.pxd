@@ -40,19 +40,19 @@ cdef class BoundingBox3D:
     cdef Point3D upper
 
     cdef Point3D get_centre(self)
-    cpdef bint hit(self, Ray ray)
+    cpdef bint hit(self, Ray ray) noexcept
     cpdef tuple full_intersection(self, Ray ray)
-    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection)
-    cdef void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) nogil
-    cpdef bint contains(self, Point3D point)
+    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection) noexcept
+    cdef void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) noexcept nogil
+    cpdef bint contains(self, Point3D point) noexcept
     cpdef object union(self, BoundingBox3D box)
     cpdef object extend(self, Point3D point, double padding=*)
-    cpdef double surface_area(self)
-    cpdef double volume(self)
+    cpdef double surface_area(self) noexcept
+    cpdef double volume(self) noexcept
     cpdef list vertices(self)
     cpdef double extent(self, int axis) except -1
-    cpdef int largest_axis(self)
-    cpdef double largest_extent(self)
+    cpdef int largest_axis(self) noexcept
+    cpdef double largest_extent(self) noexcept
     cpdef object pad(self, double padding)
     cpdef object pad_axis(self, int axis, double padding)
     cpdef BoundingSphere3D enclosing_sphere(self)
@@ -78,14 +78,14 @@ cdef class BoundingBox2D:
     cdef Point2D lower
     cdef Point2D upper
 
-    cpdef bint contains(self, Point2D point)
+    cpdef bint contains(self, Point2D point) noexcept
     cpdef object union(self, BoundingBox2D box)
     cpdef object extend(self, Point2D point, double padding=*)
-    cpdef double surface_area(self)
+    cpdef double surface_area(self) noexcept
     cpdef list vertices(self)
     cpdef double extent(self, int axis) except -1
-    cpdef int largest_axis(self)
-    cpdef double largest_extent(self)
+    cpdef int largest_axis(self) noexcept
+    cpdef double largest_extent(self) noexcept
     cpdef object pad(self, double padding)
     cpdef object pad_axis(self, int axis, double padding)
 

@@ -36,4 +36,4 @@ cpdef np.ndarray triangulate2d(np.ndarray vertices)
 
 cdef int _locate_ear(list active_vertices, double[:,::1] vertices) except -1
 
-cdef bint _is_convex(double v1x, double v1y, double v2x, double v2y, double v3x, double v3y) nogil
+cdef bint _is_convex(double v1x, double v1y, double v2x, double v2y, double v3x, double v3y) noexcept nogil

@@ -193,7 +193,7 @@ cdef class MeshPixel(Observer0D):
         # normalise cumulative area to make cdf
         self._cdf /= self._collection_area
 
-    cdef double _triangle_area(self, Point3D v1, Point3D v2, Point3D v3):
+    cdef double _triangle_area(self, Point3D v1, Point3D v2, Point3D v3) noexcept:
         cdef Vector3D e1 = v1.vector_to(v2)
         cdef Vector3D e2 = v1.vector_to(v3)
         return 0.5 * e1.cross(e2).get_length()
@@ -283,7 +283,7 @@ cdef class MeshPixel(Observer0D):
         return rays
 
     @cython.initializedcheck(False)
-    cdef int32_t _pick_triangle(self):
+    cdef int32_t _pick_triangle(self) noexcept:
         """
         Pick a triangle such that sample points are uniform across the surface area.
         """
@@ -315,5 +315,5 @@ cdef class MeshPixel(Observer0D):
 
         return surface_to_primitive
 
-    cpdef double _pixel_sensitivity(self):
+    cpdef double _pixel_sensitivity(self) noexcept:
         return self._solid_angle * self._collection_area

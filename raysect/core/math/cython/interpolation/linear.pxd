@@ -32,9 +32,9 @@
 cimport cython
 
 @cython.cdivision(True)
-cdef inline double linear1d(double x0, double x1, double f0, double f1, double x) nogil:
+cdef inline double linear1d(double x0, double x1, double f0, double f1, double x) noexcept nogil:
     return ((f1 - f0) / (x1 - x0)) * (x - x0) + f0
 
-cdef double linear2d(double x0, double x1, double y0, double y1, double [:,::1] f, double x, double y) nogil
+cdef double linear2d(double x0, double x1, double y0, double y1, double [:,::1] f, double x, double y) noexcept nogil
 
-cdef double linear3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f, double x, double y, double z) nogil
+cdef double linear3d(double x0, double x1, double y0, double y1, double z0, double z1, double[:,:,::1] f, double x, double y, double z) noexcept nogil

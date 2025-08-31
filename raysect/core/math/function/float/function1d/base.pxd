@@ -159,7 +159,7 @@ cdef class GreaterEqualsScalar1D(Function1D):
     cdef Function1D _function
 
 
-cdef inline bint is_callable(object f):
+cdef inline bint is_callable(object f) noexcept:
     """
     Tests if an object is a python callable or a Function1D object.
 

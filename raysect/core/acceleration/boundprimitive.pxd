@@ -44,4 +44,4 @@ cdef class BoundPrimitive:
 
     cdef Intersection hit(self, Ray ray)
     cdef Intersection next_intersection(self)
-    cdef bint contains(self, Point3D point)
+    cdef bint contains(self, Point3D point) noexcept

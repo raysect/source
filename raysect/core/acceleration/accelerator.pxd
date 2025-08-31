@@ -36,6 +36,6 @@ from raysect.core.intersection cimport Intersection
 
 cdef class Accelerator:
 
-    cpdef build(self, list primitives)
+    cpdef object build(self, list primitives)
     cpdef Intersection hit(self, Ray ray)
     cpdef list contains(self, Point3D point)

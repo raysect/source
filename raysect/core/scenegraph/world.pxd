@@ -47,5 +47,5 @@ cdef class World(_NodeBase):
     cpdef AffineMatrix3D to(self, _NodeBase node)
     cpdef Intersection hit(self, Ray ray)
     cpdef list contains(self, Point3D point)
-    cpdef build_accelerator(self, bint force=*)
+    cpdef object build_accelerator(self, bint force=*)
 

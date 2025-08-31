@@ -32,7 +32,7 @@
 from libc.math cimport M_1_PI
 
 
-cpdef double km(double v):
+cpdef double km(double v) noexcept:
     """
     Converts kilometers to meters.
 
@@ -42,7 +42,7 @@ cpdef double km(double v):
     return v * 1e3
 
 
-cpdef double cm(double v):
+cpdef double cm(double v) noexcept:
     """
     Converts centimeters to meters.
 
@@ -52,7 +52,7 @@ cpdef double cm(double v):
     return v * 1e-2
 
 
-cpdef double mm(double v):
+cpdef double mm(double v) noexcept:
     """
     Converts millimeters to meters.
 
@@ -62,7 +62,7 @@ cpdef double mm(double v):
     return v * 1e-3
 
 
-cpdef double um(double v):
+cpdef double um(double v) noexcept:
     """
     Converts micrometers to meters.
 
@@ -72,7 +72,7 @@ cpdef double um(double v):
     return v * 1e-6
 
 
-cpdef double nm(double v):
+cpdef double nm(double v) noexcept:
     """
     Converts nanometers to meters.
 
@@ -82,7 +82,7 @@ cpdef double nm(double v):
     return v * 1e-9
 
 
-cpdef double mile(double v):
+cpdef double mile(double v) noexcept:
     """
     Converts miles to meters.
 
@@ -92,7 +92,7 @@ cpdef double mile(double v):
     return v * 1609.34
 
 
-cpdef double yard(double v):
+cpdef double yard(double v) noexcept:
     """
     Converts yards to meters.
 
@@ -102,7 +102,7 @@ cpdef double yard(double v):
     return v * 0.9144
 
 
-cpdef double foot(double v):
+cpdef double foot(double v) noexcept:
     """
     Converts feet to meters.
 
@@ -112,7 +112,7 @@ cpdef double foot(double v):
     return v * 0.3048
 
 
-cpdef double inch(double v):
+cpdef double inch(double v) noexcept:
     """
     Converts inches to meters.
 
@@ -122,7 +122,7 @@ cpdef double inch(double v):
     return v * 0.0254
 
 
-cpdef double mil(double v):
+cpdef double mil(double v) noexcept:
     """
     Converts mils (thousandths of an inch) to meters.
 
@@ -132,7 +132,7 @@ cpdef double mil(double v):
     return v * 2.54e-5
 
 
-cpdef radian(double v):
+cpdef double radian(double v) noexcept:
     """
     Converts radians to degrees.
 

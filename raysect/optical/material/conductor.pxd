@@ -40,7 +40,7 @@ cdef class Conductor(Material):
         public SpectralFunction index
         public SpectralFunction extinction
 
-    cdef double _fresnel(self, double ci, double n, double k) nogil
+    cdef double _fresnel(self, double ci, double n, double k) noexcept nogil
 
 
 cdef class RoughConductor(ContinuousBSDF):
@@ -50,8 +50,8 @@ cdef class RoughConductor(ContinuousBSDF):
         public SpectralFunction extinction
         double _roughness
 
-    cdef double _d(self, Vector3D s_half)
-    cdef double _g(self, Vector3D s_incoming, Vector3D s_outgoing)
-    cdef double _g1(self, Vector3D v)
+    cdef double _d(self, Vector3D s_half) noexcept
+    cdef double _g(self, Vector3D s_incoming, Vector3D s_outgoing) noexcept
+    cdef double _g1(self, Vector3D v) noexcept
     cdef Spectrum _f(self, Spectrum spectrum, Vector3D s_outgoing, Vector3D s_normal)
-    cdef double _fresnel_conductor(self, double ci, double n, double k) nogil
+    cdef double _fresnel_conductor(self, double ci, double n, double k) noexcept nogil
