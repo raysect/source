@@ -13,5 +13,3 @@ The core module of raysect is made up of math, acceleration, and scenegraph clas
    spatial_acceleration
    render_engines
    utilities
-
-

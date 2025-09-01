@@ -11,6 +11,3 @@ Primitives Module
    meshes
    csg_operations
    optical_elements
-
-
-
