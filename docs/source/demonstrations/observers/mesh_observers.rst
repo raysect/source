@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_mesh_observers:
 
 Mesh Observers

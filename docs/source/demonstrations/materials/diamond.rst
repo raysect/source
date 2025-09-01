@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_diamond_material:
 
 A Diamond Material

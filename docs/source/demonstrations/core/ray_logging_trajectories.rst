@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_ray_logging_trajectories:
 

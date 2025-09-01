@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_surface3d_brdf_plots:
 

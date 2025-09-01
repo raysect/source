@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_polar_brdf_plots:
 

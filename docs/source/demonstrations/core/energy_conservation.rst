@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_energy_conservation:
 

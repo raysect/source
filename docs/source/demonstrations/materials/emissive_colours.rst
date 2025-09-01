@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_emissive_colours:
 
 Emissive Colours

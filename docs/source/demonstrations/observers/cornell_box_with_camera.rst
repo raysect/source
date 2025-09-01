@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_cornell_box_with_camera:
 
 Making a camera
