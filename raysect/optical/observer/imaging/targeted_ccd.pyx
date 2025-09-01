@@ -73,7 +73,7 @@ cdef class TargetedCCDArray(Observer2D):
     :param float width: The CCD sensor x-width in metres (default=35mm).
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
-    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
+    :param \\**kwargs: kwargs and properties from Observer2D and _ObserverBase.
     """
 
     def __init__(self, targets, pixels=(720, 480), width=0.035, targeted_path_prob=None, parent=None, transform=None, name=None, pipelines=None):

@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_point_inside_material:
 

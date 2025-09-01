@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_ray_intersection_points:
 

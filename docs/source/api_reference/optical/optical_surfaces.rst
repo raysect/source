@@ -17,10 +17,10 @@ Emitters
 .. autoclass:: raysect.optical.material.emitter.UniformSurfaceEmitter
    :show-inheritance:
 
-.. autoclass:: raysect.optical.material.AnisotropicSurfaceEmitter
+.. autoclass:: raysect.optical.material.emitter.AnisotropicSurfaceEmitter
    :show-inheritance:
 
-.. autoclass:: raysect.optical.material.Checkerboard
+.. autoclass:: raysect.optical.material.emitter.Checkerboard
    :show-inheritance:
 
 Lambertian
@@ -70,9 +70,6 @@ Debugging
 ---------
 
 This module contains materials to aid with debugging and creating test scenes.
-
-.. autoclass:: raysect.optical.material.emitter.Checkerboard
-   :show-inheritance:
 
 .. autoclass:: raysect.optical.material.debug.Light
    :show-inheritance:

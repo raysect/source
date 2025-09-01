@@ -43,7 +43,7 @@ cdef class FullFrameSampler2D(FrameSampler2D):
     """
     Evenly samples the full 2D frame or its masked fragment.
 
-    :param np.ndarray mask: The image mask array (default=None). A 2D boolean array with
+    :param ndarray mask: The image mask array (default=None). A 2D boolean array with
       the same shape as the frame. The tasks are generated only for those pixels for which
       the mask is True.
     """
@@ -122,7 +122,7 @@ cdef class MonoAdaptiveSampler2D(FrameSampler2D):
     :param double cutoff: Normalised noise threshold at which extra sampling will be aborted and
       rendering will complete (default=0.0). The standard error is normalised to 1 so that a
       cutoff of 0.01 corresponds to 1% standard error.
-    :param np.ndarray mask: The image mask array (default=None). A 2D boolean array with
+    :param ndarray mask: The image mask array (default=None). A 2D boolean array with
       the same shape as the frame. The tasks are generated only for those pixels for which
       the mask is True. If not provided, the all-true mask will be created during the first call
       of generate_tasks().
@@ -305,7 +305,7 @@ cdef class MaskedMonoAdaptiveSampler2D(MonoAdaptiveSampler2D):
     noise threshold is achieve across the masked image.
 
     :param PowerPipeline2D pipeline: The specific power pipeline to use for feedback control.
-    :param np.ndarray mask: The image mask array. A 2D boolean array with
+    :param ndarray mask: The image mask array. A 2D boolean array with
       the same shape as the frame. The tasks are generated only for those pixels for which
       the mask is True.
     :param int min_samples: Minimum number of pixel samples across the image before
@@ -344,6 +344,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
       cutoff of 0.01 corresponds to 1% standard error.
     :param str reduction_method: A method for obtaining spectral-average value of normalised
       error of a pixel from spectral array of errors (default='percentile').
+
        - `reduction_method='weighted'`: the error of a pixel is calculated as power-weighted
          average of the spectral errors,
        - `reduction_method='mean'`: the error of a pixel is calculated as a mean
@@ -354,6 +355,7 @@ cdef class SpectralAdaptiveSampler2D(FrameSampler2D):
          spectral error among a given percentage of spectral bins with the highest spectral power.
     :param double percentile: Used only if `reduction_method='percentile'` or
       `reduction_method='power_percentile'` (default=100).
+
        - `reduction_method='percentile'`: If `percentile=x`, extra sampling will be aborted
          if x% of spectral bins of each pixel have normalised errors lower than `cutoff`.
        - `reduction_method='power_percentile'`: If `percentile=x`, extra sampling will be aborted
@@ -713,7 +715,7 @@ cdef class RGBAdaptiveSampler2D(FrameSampler2D):
       (or its masked fragment) before turning on adaptive sampling (default=1000).
     :param double cutoff: Noise threshold at which extra sampling will be aborted and
       rendering will complete (default=0.0).
-    :param np.ndarray mask: The image mask array (default=None). A 2D boolean array with
+    :param ndarray mask: The image mask array (default=None). A 2D boolean array with
       the same shape as the frame. The tasks are generated only for those pixels for which
       the mask is True. If not provided, the all-true mask will be created during the first call
       of generate_tasks().
@@ -904,7 +906,7 @@ cdef class MaskedRGBAdaptiveSampler2D(RGBAdaptiveSampler2D):
     noise threshold is achieve across the whole image.
 
     :param RGBPipeline2D pipeline: The specific RGB pipeline to use for feedback control.
-    :param np.ndarray mask: The image mask array.
+    :param ndarray mask: The image mask array.
     :param int min_samples: Minimum number of pixel samples across the image before
       turning on adaptive sampling (default=1000).
     :param double cutoff: Noise threshold at which extra sampling will be aborted and

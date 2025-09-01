@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_orthographic_camera:
 
 Orthographic Camera

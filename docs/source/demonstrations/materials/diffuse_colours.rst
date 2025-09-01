@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_diffuse_colours:
 
 Diffuse Colours

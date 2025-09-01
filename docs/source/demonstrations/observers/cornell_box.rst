@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_cornell_box:
 
