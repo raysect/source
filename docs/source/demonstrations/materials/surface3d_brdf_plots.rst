@@ -7,7 +7,7 @@
 
 This example demonstrates how to make 3D surface plots of sampled material BRDF functions.
 
-.. literalinclude:: ../../../../demos/reflectivity/plotting_brdfs_3d.py
+.. literalinclude:: ../../../../demos/materials/plotting_brdfs_3d.py
 
 .. image:: brdf_surface3d_plots.png
    :align: center
