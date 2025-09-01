@@ -7,8 +7,6 @@ from raysect.optical.library.metal import RoughAluminium
 from raysect.optical.material import UnitySurfaceEmitter
 from raysect.primitive import Sphere
 
-plt.ion()
-
 # Create scene graph
 world = World()
 ray = Ray(min_wavelength=499, max_wavelength=501, bins=1)
@@ -58,64 +56,17 @@ def calculate_brdf_surface(light_vector):
     return X, Y, Z
 
 
-light_angle = 0
-light_position = Point3D(
-    np.sin(np.deg2rad(light_angle)), 0, np.cos(np.deg2rad(light_angle))
-)
-light_direction = origin.vector_to(light_position).normalise()
-X, Y, Z = calculate_brdf_surface(light_direction)
+fig, axes = plt.subplots(2, 2, subplot_kw={"projection": "3d"}, layout="constrained")
 
-plt.figure()
-ax = plt.axes(projection="3d")
-ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap="viridis", edgecolor="none")
-ax.set_xlim(-1, 1)
-ax.set_ylim(-1, 1)
-plt.title("Light angle {} degrees".format(light_angle))
+for ax, light_angle in zip(axes.flatten(), [0, -10, -25, -45], strict=True):
+    light_position = Point3D(
+        np.sin(np.deg2rad(light_angle)), 0, np.cos(np.deg2rad(light_angle))
+    )
+    light_direction = origin.vector_to(light_position).normalise()
+    X, Y, Z = calculate_brdf_surface(light_direction)
+    ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap="viridis", edgecolor="none")
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(-1, 1)
+    ax.set_title(f"Light angle {light_angle} degrees")
 
-
-light_angle = -10
-light_position = Point3D(
-    np.sin(np.deg2rad(light_angle)), 0, np.cos(np.deg2rad(light_angle))
-)
-light_direction = origin.vector_to(light_position).normalise()
-X, Y, Z = calculate_brdf_surface(light_direction)
-
-plt.figure()
-ax = plt.axes(projection="3d")
-ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap="viridis", edgecolor="none")
-ax.set_xlim(-1, 1)
-ax.set_ylim(-1, 1)
-plt.title("Light angle {} degrees".format(light_angle))
-
-
-light_angle = -25
-light_position = Point3D(
-    np.sin(np.deg2rad(light_angle)), 0, np.cos(np.deg2rad(light_angle))
-)
-light_direction = origin.vector_to(light_position).normalise()
-X, Y, Z = calculate_brdf_surface(light_direction)
-
-plt.figure()
-ax = plt.axes(projection="3d")
-ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap="viridis", edgecolor="none")
-ax.set_xlim(-1, 1)
-ax.set_ylim(-1, 1)
-plt.title("Light angle {} degrees".format(light_angle))
-
-
-light_angle = -60
-light_position = Point3D(
-    np.sin(np.deg2rad(light_angle)), 0, np.cos(np.deg2rad(light_angle))
-)
-light_direction = origin.vector_to(light_position).normalise()
-X, Y, Z = calculate_brdf_surface(light_direction)
-
-plt.figure()
-ax = plt.axes(projection="3d")
-ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap="viridis", edgecolor="none")
-ax.set_xlim(-1, 1)
-ax.set_ylim(-1, 1)
-plt.title("Light angle {} degrees".format(light_angle))
-
-plt.ioff()
 plt.show()
