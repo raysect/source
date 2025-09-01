@@ -57,20 +57,22 @@ cdef class Add(Material):
     surface. For example, A hot metal surface can be approximated by adding a
     black body emitter to a metal material:
 
+    .. code-block:: python
+
         material = Add(
             Iron(),
             UniformSurfaceEmitter(BlackBody(800)),
-            surface_only=True
+            surface_only=True,
         )
 
     Combining volumes is more complex and must only be used with materials that
     are mathematically commutative, for example two volume emitters or two
     absorbing volumes.
 
-    :param m1: The first material.
-    :param m2: The second material.
-    :param surface_only: Only blend the surface response (default=False).
-    :param volume_only: Only blend the volume response (default=False).
+    :param Material m1: The first material.
+    :param Material m2: The second material.
+    :param bool surface_only: Only blend the surface response (default=False).
+    :param bool volume_only: Only blend the volume response (default=False).
     """
 
     cdef:

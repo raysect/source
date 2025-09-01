@@ -77,7 +77,7 @@ cdef class MeshPixel(Observer0D):
     :param float surface_offset: The offset from the mesh surface (default=0).
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this pixel (default=SpectralPowerPipeline0D()).
-    :param kwargs: **kwargs from Observer0D and _ObserverBase
+    :param \\**kwargs: kwargs from Observer0D and _ObserverBase
 
     .. code-block:: pycon
 

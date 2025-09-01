@@ -46,7 +46,7 @@ cdef class SightLine(Observer0D):
       in which case the returned units will always be in radiance (W/m^2/str/nm)
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this line of sight (default=SpectralPipeline0D()).
-    :param kwargs: **kwargs and instance properties from Observer0D and _ObserverBase
+    :param \\**kwargs: kwargs and instance properties from Observer0D and _ObserverBase
 
     .. code-block:: pycon
 

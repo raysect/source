@@ -134,7 +134,7 @@ cdef class LoggingRay(Ray):
         This method is responsible for tracing the ray through the scene, handling
         all interactions with the environment.
 
-        :param World world: World object defining the scene.
+        :param ~raysect.optical.scenegraph.world.World world: World object defining the scene.
         :param bool keep_alive: If true, disables Russian roulette termination of the ray.
         :return: A Spectrum object.
         :rtype: Spectrum

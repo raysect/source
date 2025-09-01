@@ -229,6 +229,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
       cutoff of 0.01 corresponds to 1% standard error.
     :param str reduction_method: A method for obtaining spectral-average value of normalised
       error of a pixel from spectral array of errors (default='percentile').
+
        - `reduction_method='weighted'`: the error of a pixel is calculated as power-weighted
          average of the spectral errors,
        - `reduction_method='mean'`: the error of a pixel is calculated as a mean
@@ -239,6 +240,7 @@ cdef class SpectralAdaptiveSampler1D(FrameSampler1D):
          spectral error among a given percentage of spectral bins with the highest spectral power.
     :param double percentile: Used only if `reduction_method='percentile'` or
       `reduction_method='power_percentile'` (default=100).
+
        - `reduction_method='percentile'`: If `percentile=x`, extra sampling will be aborted
          if x% of spectral bins of each pixel have normalised errors lower than `cutoff`.
        - `reduction_method='power_percentile'`: If `percentile=x`, extra sampling will be aborted
