@@ -43,7 +43,7 @@ The CIE 1931 colour spaces define quantitatively the link between pure physical 
 relationships between the spectrum and perceivable colours are based on the sensitivity
 curves for the three different cone cells in the human eye. Raysect implements three X,
 Y, Z normalised spectral functions from the CIE 1931 Standard Colorimetric Observer. For
-more information see `Wikipedia <https://en.wikipedia.org/wiki/CIE_1931_color_space>`_.
+more information see `Wikipedia <https://en.wikipedia.org/wiki/CIE_1931_color_space>`__.
 
 .. data:: raysect.optical.colour.ciexyz_x
 
@@ -72,7 +72,7 @@ more information see `Wikipedia <https://en.wikipedia.org/wiki/CIE_1931_color_sp
 
 Raysect also supports conversion of CIE colour space values to standard sRGB colour space
 as defined by HP and Microsoft in 1996 as per IEC 61966-2-1:1999. For more information
-see `Wikipedia <https://en.wikipedia.org/wiki/SRGB>`_.
+see `Wikipedia <https://en.wikipedia.org/wiki/SRGB>`__.
 
 .. autofunction:: raysect.optical.colour.ciexyz_to_srgb
 
