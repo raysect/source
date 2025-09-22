@@ -77,10 +77,10 @@ cdef class LoggingRay(Ray):
     >>>
     >>> world = World()
     >>> box = Box(Point3D(-1, -1, 0), Point3D(1, 1, 1),
-    >>>           material=NullMaterial(), parent=world)
+    ...           material=NullMaterial(), parent=world)
     >>>
     >>> ray = LoggingRay(origin=Point3D(0, 0, -5),
-    >>>                  direction=Vector3D(0, 0, 1))
+    ...                  direction=Vector3D(0, 0, 1))
     >>>
     >>> ray.trace(world)
     >>> ray.log
@@ -141,7 +141,7 @@ cdef class LoggingRay(Ray):
 
         >>> world = World()
         >>> ray = LoggingRay(origin=Point3D(0, 0, -5),
-        >>>                  direction=Vector3D(0, 0, 1))
+        ...                  direction=Vector3D(0, 0, 1))
         >>> spectrum = ray.trace(world)
         """
 
