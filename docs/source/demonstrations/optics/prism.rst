@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_prism_dispersion:
 

@@ -79,7 +79,7 @@ cdef class MeshCamera(Observer1D):
     :param float surface_offset: The offset from the mesh surface (default=0).
     :param list pipelines: The list of pipelines that will process the spectrum measured
       by this observer (default=PowerPipeline1D()).
-    :param kwargs: **kwargs from Observer1D and _ObserverBase
+    :param \\**kwargs: kwargs from Observer1D and _ObserverBase
 
     .. code-block:: pycon
 

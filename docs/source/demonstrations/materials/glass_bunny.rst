@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_glass_bunny:
 
 Glass Materials

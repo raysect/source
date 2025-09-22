@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_etendue_of_pinhole:
 
 Etendue

@@ -74,6 +74,7 @@ Please post a question on the `github issue queue <https://github.com/raysect/so
 .. toctree::
    :maxdepth: 3
    :numbered:
+   :titlesonly:
    :caption: API Reference
    :name: apireferenceto
 

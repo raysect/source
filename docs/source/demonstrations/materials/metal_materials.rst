@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_metal_materials:
 
 Metal Materials

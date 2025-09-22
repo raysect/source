@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_anisotropic_emitters:
 
 Anisotropic Emitters

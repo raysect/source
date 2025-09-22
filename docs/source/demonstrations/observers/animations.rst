@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_making_animations:
 
@@ -16,5 +17,3 @@ You can use `ImageMagic's <https://www.imagemagick.org/>`_ convert command to ma
 ::
 
    $> convert -delay 20 -loop 0 *.png myimage.gif
-::
-

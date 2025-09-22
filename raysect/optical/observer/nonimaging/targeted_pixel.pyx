@@ -69,7 +69,7 @@ cdef class TargetedPixel(Observer0D):
       x-axis in local coordinates (default=1cm).
     :param float y_width: The rectangular collection area's width along the
       y-axis in local coordinates (default=1cm).
-    :param kwargs: **kwargs from Observer0D and _ObserverBase
+    :param \\**kwargs: kwargs from Observer0D and _ObserverBase
 
     .. code-block:: pycon
 

@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_optical_fibre:
 
 Optical Fibre Observer

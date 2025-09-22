@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_multiple_importance_sampling:
 
 Multiple Importance Sampling

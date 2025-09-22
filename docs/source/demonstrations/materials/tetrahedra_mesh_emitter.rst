@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_tetrahedra_mesh_emitters:
 
 A Tetrahedral Mesh Emitter

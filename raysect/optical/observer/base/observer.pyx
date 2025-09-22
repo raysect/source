@@ -555,7 +555,7 @@ cdef class Observer0D(_ObserverBase):
     :param int pixel_samples: Number of samples to generate per pixel with one call to
       observe() (default=1000).
     :param int samples_per_task: Minimum number of samples to request per task (default=250).
-    :param kwargs: **kwargs from _ObserverBase.
+    :param \\**kwargs: kwargs from _ObserverBase.
 
     .. automethod:: raysect.optical.observer.base.observer.Observer0D._generate_rays
     """
@@ -726,7 +726,7 @@ cdef class Observer1D(_ObserverBase):
       from this observer.
     :param int pixel_samples: Number of samples to generate per pixel with one call to
       observe() (default=1000).
-    :param kwargs: **kwargs from _ObserverBase.
+    :param \\**kwargs: kwargs from _ObserverBase.
     """
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,
@@ -905,7 +905,7 @@ cdef class Observer2D(_ObserverBase):
       from this observer.
     :param int pixel_samples: Number of samples to generate per pixel with one call to
       observe() (default=1000).
-    :param kwargs: **kwargs from _ObserverBase.
+    :param \\**kwargs: kwargs from _ObserverBase.
     """
 
     def __init__(self, pixels, frame_sampler, pipelines, parent=None, transform=None, name=None,

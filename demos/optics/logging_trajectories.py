@@ -1,18 +1,14 @@
-
 # External imports
-import matplotlib as mpl
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
 
 # Raysect imports
-from raysect.optical import World, translate, rotate, Point3D, d65_white, Ray, Vector3D
-from raysect.optical.material.absorber import AbsorbingSurface
+from raysect.optical import Point3D, Vector3D, World, translate
 from raysect.optical.library import schott
-from raysect.primitive import Sphere, Box
 from raysect.optical.loggingray import LoggingRay
-from raysect.primitive.lens.spherical import *
-
+from raysect.optical.material.absorber import AbsorbingSurface
+from raysect.primitive import Box
+from raysect.primitive.lens.spherical import BiConvex
 
 world = World()
 
@@ -46,5 +42,10 @@ for u in np.linspace(-0.006, 0.006, 5):
         ax.plot(p[:, 0], p[:, 1], p[:, 2], 'k-')
         ax.plot(p[:, 0], p[:, 1], p[:, 2], 'r.')
 
+ax.set(
+    xlabel="$X$",
+    ylabel="$Y$",
+    zlabel="$Z$",
+)
 plt.ioff()
 plt.show()

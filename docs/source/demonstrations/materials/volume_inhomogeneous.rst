@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_custom_volume_emitters:
 
 A Custom Volume Emitter

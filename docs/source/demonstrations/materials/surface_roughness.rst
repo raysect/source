@@ -1,3 +1,4 @@
+:orphan:
 
 .. _demo_surface_roughness_scan:
 

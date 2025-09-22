@@ -54,8 +54,8 @@ cdef class OpenCVCamera(Observer2D):
     * pixel dimensions of the camera.
 
     See the OpenCV documentation `here
-    <https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html>`_ and `here
-    <https://docs.opencv.org/3.4.0/d9/d0c/group__calib3d.html>`_ for more details.
+    <https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html>`__ and `here
+    <https://docs.opencv.org/3.4.0/d9/d0c/group__calib3d.html>`__ for more details.
 
     Arguments and attributes are inherited from the base Observer2D sensor class.
 
@@ -69,7 +69,7 @@ cdef class OpenCVCamera(Observer2D):
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
     :param float etendue: The constant etendue factor applied to each pixel (default=1).
-    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
+    :param \\**kwargs: kwargs and properties from Observer2D and _ObserverBase.
     """
 
     def __init__(self, camera_matrix, distortion, r_vector, t_vector, pixels,

@@ -1,3 +1,5 @@
+:orphan:
+
 .. _demo_metal_ball_with_lens:
 
 Making a camera 2

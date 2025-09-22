@@ -56,7 +56,7 @@ cdef class BayerPipeline2D(Pipeline2D):
     responsive to one of the colour filters simulating the response of the human eye.
     The final image is represented by a 2D grid of only red, green and blue values. The
     eye interpolates these values to create other colours. See
-    `Wikipedia <https://en.wikipedia.org/wiki/Bayer_filter>`_ for more information.
+    `Wikipedia <https://en.wikipedia.org/wiki/Bayer_filter>`__ for more information.
 
     :param SpectralFunction red_filter: The spectral function representing the red pixel filter.
     :param SpectralFunction green_filter: The spectral function representing the green pixel filter.
@@ -245,7 +245,7 @@ cdef class BayerPipeline2D(Pipeline2D):
 
             V_{out} = V_{in}^{\\gamma}
 
-        For more information see `Wikipedia <https://en.wikipedia.org/wiki/Gamma_correction>`_.
+        For more information see `Wikipedia <https://en.wikipedia.org/wiki/Gamma_correction>`__.
 
         :rtype: float
         """

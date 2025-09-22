@@ -53,7 +53,7 @@ cdef class PinholeCamera(Observer2D):
       sampling (i.e. extra samples for noisier pixels).
     :param list pipelines: The list of pipelines that will process the spectrum measured
       at each pixel by the camera (default=RGBPipeline2D()).
-    :param kwargs: **kwargs and properties from Observer2D and _ObserverBase.
+    :param \\**kwargs: kwargs and properties from Observer2D and _ObserverBase.
 
     .. code-block:: pycon
 

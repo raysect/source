@@ -19,6 +19,11 @@ Core Functionality
      - .. image:: core/test_point_inside_material.png
           :height: 150px
           :width: 150px
+   * - :ref:`Ray Logging Trajectories <demo_ray_logging_trajectories>`
+     - Visualising full ray trajectories through a simple optical system.
+     - .. image:: core/ray_logging_trajectories.png
+          :height: 150px
+          :width: 150px
    * - :ref:`Energy conservation <demo_energy_conservation>`
      - Checking all emitted light is collected correctly on a 3D enclosing surface.
      -
