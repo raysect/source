@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -203,5 +203,5 @@ cdef class PinholeCamera(Observer2D):
 
         return rays
 
-    cpdef double _pixel_sensitivity(self, int x, int y):
+    cpdef double _pixel_sensitivity(self, int x, int y) noexcept:
         return self._sensitivity

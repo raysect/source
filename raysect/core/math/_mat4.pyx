@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,6 @@ cdef class _Mat4:
 
         # special handling for _Mat4
         if isinstance(v, _Mat4):
-
             m = <_Mat4>v
             for i in range(0, 4):
                 for j in range(0, 4):
@@ -95,7 +94,6 @@ cdef class _Mat4:
         Expects a tuple (row, column) as the index.
 
         e.g. v = matrix[1, 2]
-
         """
 
         cdef int row, column
@@ -155,7 +153,7 @@ cdef class _Mat4:
          self.m[2][0], self.m[2][1], self.m[2][2], self.m[2][3],
          self.m[3][0], self.m[3][1], self.m[3][2], self.m[3][3]) = state
 
-    cdef double get_element(self, int row, int column):
+    cdef double get_element(self, int row, int column) noexcept:
         """
         Fast getting of matrix elements via indexing.
 
@@ -167,7 +165,7 @@ cdef class _Mat4:
 
         return self.m[row][column]
 
-    cdef void set_element(self, int row, int column, double v):
+    cdef void set_element(self, int row, int column, double v) noexcept:
         """
         Fast setting of matrix elements via indexing.
 
@@ -179,7 +177,7 @@ cdef class _Mat4:
 
         self.m[row][column] = v
 
-    cpdef bint is_identity(self, double tolerance=1e-8):
+    cpdef bint is_identity(self, double tolerance=1e-8) noexcept:
         """
         Identifies if the matrix is an identity matrix.
         
@@ -195,7 +193,7 @@ cdef class _Mat4:
 
         return self.is_close(_Mat4(), tolerance)
 
-    cpdef bint is_close(self, _Mat4 other, double tolerance=1e-8):
+    cpdef bint is_close(self, _Mat4 other, double tolerance=1e-8) noexcept:
         """
         Is this matrix equal to another matrix within a numerical tolerance.
         

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -96,8 +96,9 @@ from libc.math cimport cos, sin, asin, log, fabs, sqrt, M_PI as PI
 from libc.stdint cimport uint64_t, int64_t
 cimport cython
 
-DEF NN = 312
-DEF MM = 156
+cdef enum:
+    NN = 312
+    MM = 156
 
 # The array for the state vector
 cdef uint64_t mt[NN]
@@ -106,7 +107,7 @@ cdef uint64_t mt[NN]
 cdef int mti = NN + 1
 
 
-cdef void init_genrand64(uint64_t seed) nogil:
+cdef void init_genrand64(uint64_t seed) noexcept nogil:
     """
     Initializes mt[NN] with a seed.
     """
@@ -121,7 +122,7 @@ cdef void init_genrand64(uint64_t seed) nogil:
     mti = NN
 
 
-cdef void init_by_array64(uint64_t init_key[], uint64_t key_length) nogil:
+cdef void init_by_array64(uint64_t init_key[], uint64_t key_length) noexcept nogil:
     """
     Initialize with an array.
     :param init_key: The array containing the initializing key.
@@ -163,7 +164,7 @@ cdef void init_by_array64(uint64_t init_key[], uint64_t key_length) nogil:
     mt[0] = 9223372036854775808UL  # 1 << 63, MSB is 1 assuring non-zero initial array
 
 
-cdef uint64_t _rand_uint64() nogil:
+cdef uint64_t _rand_uint64() noexcept nogil:
     """
     Generates a random number on [0, 2^64-1] - interval.
     """
@@ -211,7 +212,7 @@ cdef uint64_t _rand_uint64() nogil:
     return x
 
 
-cpdef seed(object d=None):
+cpdef object seed(object d=None):
     """
     Seeds the random number generator with the specified integer.
 
@@ -243,7 +244,7 @@ cpdef seed(object d=None):
 
 
 @cython.cdivision(True)
-cpdef double uniform():
+cpdef double uniform() noexcept:
     """
     Generate random doubles in range [0, 1).
 
@@ -269,7 +270,7 @@ cdef bint _normal_generate = True
 cdef double _normal_c1, _normal_c2
 
 
-cpdef double normal(double mean, double stddev):
+cpdef double normal(double mean, double stddev) noexcept:
     """
     Generates a normally distributed random number.
 
@@ -304,7 +305,7 @@ cpdef double normal(double mean, double stddev):
     return _normal_c1 * cos(_normal_c2) * stddev + mean
 
 
-cpdef bint probability(double prob):
+cpdef bint probability(double prob) noexcept:
     """
     Samples from the Bernoulli distribution where P(True) = prob.
 

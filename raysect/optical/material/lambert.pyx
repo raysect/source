@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,6 @@
 from raysect.core.math.sampler cimport HemisphereCosineSampler
 from raysect.optical cimport Point3D, Vector3D, AffineMatrix3D, Primitive, World, Ray, Spectrum, SpectralFunction, ConstantSF, Intersection
 from raysect.optical.material cimport ContinuousBSDF
-from numpy cimport ndarray
 
 
 cdef HemisphereCosineSampler hemisphere_sampler = HemisphereCosineSampler()
@@ -69,7 +68,7 @@ cdef class Lambert(ContinuousBSDF):
             reflectivity = ConstantSF(0.5)
         self.reflectivity = reflectivity
 
-    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face):
+    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face) noexcept:
         return hemisphere_sampler.pdf(s_outgoing)
 
     cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face):

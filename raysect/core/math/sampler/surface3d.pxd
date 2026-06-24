@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,11 +35,8 @@ from raysect.core.math cimport Point3D
 cdef class SurfaceSampler3D:
 
     cdef Point3D sample(self)
-
     cdef tuple sample_with_pdf(self)
-
     cdef list samples(self, int samples)
-
     cdef list samples_with_pdfs(self, int samples)
 
 
@@ -64,4 +61,4 @@ cdef class TriangleSampler3D(SurfaceSampler3D):
         readonly double area
         double _area_inv
 
-    cdef double _calculate_area(self, Point3D v1, Point3D v2, Point3D v3)
+    cdef double _calculate_area(self, Point3D v1, Point3D v2, Point3D v3) noexcept

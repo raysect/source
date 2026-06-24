@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -103,5 +103,5 @@ cdef class SightLine(Observer0D):
             rays.append((template.copy(new_point3d(0, 0, 0), new_vector3d(0, 0, 1)), 1.0))
         return rays
 
-    cpdef double _pixel_sensitivity(self):
+    cpdef double _pixel_sensitivity(self) noexcept:
         return self._sensitivity

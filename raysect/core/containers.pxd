@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -45,23 +45,17 @@ cdef class LinkedList:
         _Item first
         _Item last
 
-    cpdef bint is_empty(self)
-
-    cpdef add(self, object value)
-
-    cpdef add_items(self, object iterable)
-
+    cpdef bint is_empty(self) noexcept
+    cpdef object add(self, object value)
+    cpdef object add_items(self, object iterable)
     cpdef object get_index(self, int index)
-
-    cpdef insert(self, object value, int index)
-
+    cpdef object insert(self, object value, int index)
     cpdef object remove(self, int index)
 
 
 cdef class Stack(LinkedList):
 
-    cpdef push(self, object value)
-
+    cpdef object push(self, object value)
     cpdef object pop(self)
 
 

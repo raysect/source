@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,16 +29,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cdef double evaluate_cubic_1d(double a[4], double x) nogil
+cdef double evaluate_cubic_1d(double a[4], double x) noexcept nogil
 
-cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) nogil
+cdef void calc_coefficients_1d(double f[2], double dfdx[2], double a[4]) noexcept nogil
 
-cdef double evaluate_cubic_2d(double a[4][4], double x, double y) nogil
+cdef double evaluate_cubic_2d(double a[4][4], double x, double y) noexcept nogil
 
-cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2][2], double d2fdxdy[2][2], double a[4][4]) nogil
+cdef void calc_coefficients_2d(double f[2][2], double dfdx[2][2], double dfdy[2][2], double d2fdxdy[2][2], double a[4][4]) noexcept nogil
 
-cdef double evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) nogil
+cdef double evaluate_cubic_3d(double a[4][4][4], double x, double y, double z) noexcept nogil
 
 cdef void calc_coefficients_3d(double f[2][2][2], double dfdx[2][2][2], double dfdy[2][2][2], double dfdz[2][2][2],
                               double d2fdxdy[2][2][2], double d2fdxdz[2][2][2], double d2fdydz[2][2][2],
-                              double d3fdxdydz[2][2][2], double a[4][4][4]) nogil
+                              double d3fdxdydz[2][2][2], double a[4][4][4]) noexcept nogil

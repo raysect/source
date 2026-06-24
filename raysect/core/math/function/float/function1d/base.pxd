@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -159,7 +159,7 @@ cdef class GreaterEqualsScalar1D(Function1D):
     cdef Function1D _function
 
 
-cdef inline bint is_callable(object f):
+cdef inline bint is_callable(object f) noexcept:
     """
     Tests if an object is a python callable or a Function1D object.
 

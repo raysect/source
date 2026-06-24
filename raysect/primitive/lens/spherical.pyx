@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@ from libc.math cimport sqrt
 Basic spherical lens primitives.
 """
 
-DEF PADDING = 0.000001
+cdef const double PADDING = 0.000001
 
 
 cdef class BiConvex(EncapsulatedPrimitive):
@@ -111,7 +111,7 @@ cdef class BiConvex(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef void _calc_geometry(self):
+    cdef void _calc_geometry(self) noexcept:
 
         cdef double radius, radius_sqr
 
@@ -126,9 +126,9 @@ cdef class BiConvex(EncapsulatedPrimitive):
         # edge thickness is the length of the barrel without the curved surfaces
         self.edge_thickness = self.center_thickness - (self.front_thickness + self.back_thickness)
 
-    cdef bint _is_short(self):
+    cdef bint _is_short(self) noexcept:
         """
-        Do the facing spheres overlap sufficiently to build a lens using just their intersection?        
+        Do the facing spheres overlap sufficiently to build a lens using just their intersection?
         """
 
         cdef double available_thickness = min(
@@ -245,7 +245,7 @@ cdef class BiConcave(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef void _calc_geometry(self):
+    cdef void _calc_geometry(self) noexcept:
 
         cdef double radius, radius_sqr
 
@@ -326,8 +326,8 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
 
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
-    
-    cdef void _calc_geometry(self):
+
+    cdef void _calc_geometry(self) noexcept:
 
         cdef double radius, radius_sqr
 
@@ -341,9 +341,9 @@ cdef class PlanoConvex(EncapsulatedPrimitive):
         # edge thickness is the length of the barrel without the curved surfaces
         self.edge_thickness = self.center_thickness - self.curve_thickness
 
-    cdef bint _is_short(self):
+    cdef bint _is_short(self) noexcept:
         """
-        Does the front sphere have sufficient radius to build the lens with just an intersection?        
+        Does the front sphere have sufficient radius to build the lens with just an intersection?
         """
 
         cdef double available_thickness = 2 * (self.curvature - self.curve_thickness)
@@ -445,7 +445,7 @@ cdef class PlanoConcave(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef void _calc_geometry(self):
+    cdef void _calc_geometry(self) noexcept:
 
         cdef double radius, radius_sqr
 
@@ -531,7 +531,7 @@ cdef class Meniscus(EncapsulatedPrimitive):
         # attach to local root (performed in EncapsulatedPrimitive init)
         super().__init__(lens, parent, transform, material, name)
 
-    cdef void _calc_geometry(self):
+    cdef void _calc_geometry(self) noexcept:
 
         cdef double radius, radius_sqr
 
@@ -546,9 +546,9 @@ cdef class Meniscus(EncapsulatedPrimitive):
         # edge thickness is the length of the barrel without the front surface
         self.edge_thickness = self.center_thickness - self.front_thickness + self.back_thickness
 
-    cdef bint _is_short(self):
+    cdef bint _is_short(self) noexcept:
         """
-        Does the front sphere have sufficient radius to build the lens with just an intersection?        
+        Does the front sphere have sufficient radius to build the lens with just an intersection?
         """
 
         cdef double available_thickness = 2 * self.front_curvature - self.front_thickness

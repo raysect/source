@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,11 +35,11 @@ from raysect.core.math.cython cimport solve_quadratic, swap_double
 
 
 # bounding box and sphere are padded by small amounts to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-9
-DEF SPHERE_PADDING = 1.000000001
+cdef const double BOX_PADDING = 1e-9
+cdef const double SPHERE_PADDING = 1.000000001
 
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-9
+cdef const double EPSILON = 1e-9
 
 
 cdef class Sphere(Primitive):

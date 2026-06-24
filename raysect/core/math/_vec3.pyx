@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -58,8 +58,8 @@ cdef class _Vec3:
             return self.y
         elif i == 2:
             return self.z
-        else:
-            raise IndexError("Index out of range [0, 2].")
+
+        raise IndexError("Index out of range [0, 2].")
 
     def __setitem__(self, int i, double value):
         """Sets the vector coordinates by index ([0,1,2] -> [x,y,z])."""
@@ -74,6 +74,7 @@ cdef class _Vec3:
             raise IndexError("Index out of range [0, 2].")
 
     def __iter__(self):
+
         yield self.x
         yield self.y
         yield self.z
@@ -109,7 +110,7 @@ cdef class _Vec3:
     def length(self, double v):
         self.set_length(v)
 
-    cpdef double dot(self, _Vec3 v):
+    cpdef double dot(self, _Vec3 v) noexcept:
         """
         Calculates the dot product between this vector and the supplied vector.
 
@@ -125,7 +126,7 @@ cdef class _Vec3:
 
         return self.x * v.x + self.y * v.y + self.z * v.z
 
-    cpdef double angle(self, _Vec3 v):
+    cpdef double angle(self, _Vec3 v) noexcept:
         """
         Calculates the angle between this vector and the supplied vector.
 
@@ -139,7 +140,7 @@ cdef class _Vec3:
 
         return acos(min(1, self.dot(v) / (self.get_length() * v.get_length()))) * 180 / M_PI
 
-    cdef double get_length(self) nogil:
+    cdef double get_length(self) noexcept nogil:
         """
         Fast function to obtain the vectors length.
 
@@ -174,7 +175,7 @@ cdef class _Vec3:
         self.y = self.y * t
         self.z = self.z * t
 
-    cdef double get_index(self, int index) nogil:
+    cdef double get_index(self, int index) noexcept nogil:
         """
         Fast getting of coordinates via indexing.
 
@@ -189,10 +190,10 @@ cdef class _Vec3:
             return self.y
         elif index == 2:
             return self.z
-        else:
-            return NAN
 
-    cdef void set_index(self, int index, double value) nogil:
+        return NAN
+
+    cdef void set_index(self, int index, double value) noexcept nogil:
         """
         Fast setting of coordinates via indexing.
 

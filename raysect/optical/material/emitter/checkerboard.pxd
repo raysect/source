@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,4 +43,4 @@ cdef class Checkerboard(NullVolume):
         public double scale1
         public double scale2
 
-    cdef bint _flip(self, bint v, double p) nogil
+    cdef bint _flip(self, bint v, double p) noexcept nogil

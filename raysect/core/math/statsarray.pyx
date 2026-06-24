@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -52,13 +52,19 @@ cdef class StatsBin:
         self.samples = 0
 
     cpdef object clear(self):
-        """ Erase the current statistics stored in this StatsBin. """
+        """
+        Erase the current statistics stored in this StatsBin.
+        """
+
         self.mean = 0.0
         self.variance = 0.0
         self.samples = 0
 
     cpdef StatsBin copy(self):
-        """ Instantiate a new StatsBin object with the same statistical results. """
+        """
+        Instantiate a new StatsBin object with the same statistical results.
+        """
+
         obj = StatsBin()
         obj.mean = self.mean
         obj.variance = self.variance
@@ -71,6 +77,7 @@ cdef class StatsBin:
 
         :param float sample: The sample value to be added.
         """
+
         _add_sample(sample, &self.mean, &self.variance, &self.samples)
 
     cpdef object combine_samples(self, double mean, double variance, int sample_count):
@@ -114,8 +121,11 @@ cdef class StatsBin:
         self.variance = vt
         self.samples = nt
 
-    cpdef double error(self):
-        """ Compute the standard error of this sample distribution. """
+    cpdef double error(self) noexcept:
+        """
+        Compute the standard error of this sample distribution.
+        """
+
         return _std_error(self.variance, self.samples)
 
 
@@ -154,17 +164,25 @@ cdef class StatsArray1D:
 
     @property
     def shape(self):
-        """ The numpy style array shape of the underlying StatsArray. """
+        """
+        The numpy style array shape of the underlying StatsArray.
+        """
 
         return (self.length, )
 
     cpdef object clear(self):
-        """ Erase the current statistics stored in this StatsArray. """
+        """
+        Erase the current statistics stored in this StatsArray.
+        """
+
         self._new_buffers()
 
     @cython.initializedcheck(False)
     cpdef StatsArray1D copy(self):
-        """ Instantiate a new StatsArray1D object with the same statistical results. """
+        """
+        Instantiate a new StatsArray1D object with the same statistical results.
+        """
+
         obj = StatsArray1D(self.length)
         obj.mean_mv[:] = self.mean_mv[:]
         obj.variance_mv[:] = self.variance_mv[:]
@@ -251,7 +269,7 @@ cdef class StatsArray1D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double error(self, int x):
+    cpdef double error(self, int x) noexcept:
         """
         Compute the standard error of the results at index position x.
 
@@ -281,7 +299,7 @@ cdef class StatsArray1D:
             errors_mv[x] = _std_error(self.variance_mv[x], self.samples_mv[x])
         return errors
 
-    cdef void _new_buffers(self):
+    cdef void _new_buffers(self) noexcept:
         self.mean = zeros((self.length,), dtype=float64)
         self.variance = zeros((self.length, ), dtype=float64)
         self.samples = zeros((self.length, ), dtype=int32)
@@ -335,16 +353,25 @@ cdef class StatsArray2D:
 
     @property
     def shape(self):
-        """ The numpy style array shape of the underlying StatsArray. """
+        """
+        The numpy style array shape of the underlying StatsArray.
+        """
+
         return self.nx, self.ny
 
     cpdef object clear(self):
-        """ Erase the current statistics stored in this StatsArray. """
+        """
+        Erase the current statistics stored in this StatsArray.
+        """
+
         self._new_buffers()
 
     @cython.initializedcheck(False)
     cpdef StatsArray2D copy(self):
-        """ Instantiate a new StatsArray2D object with the same statistical results. """
+        """
+        Instantiate a new StatsArray2D object with the same statistical results.
+        """
+
         obj = StatsArray2D(self.nx, self.ny)
         obj.mean_mv[:] = self.mean_mv[:]
         obj.variance_mv[:] = self.variance_mv[:]
@@ -434,7 +461,7 @@ cdef class StatsArray2D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double error(self, int x, int y):
+    cpdef double error(self, int x, int y) noexcept:
         """
         Compute the standard error of the results at index position x, y.
 
@@ -466,7 +493,7 @@ cdef class StatsArray2D:
                 errors_mv[x, y] = _std_error(self.variance_mv[x, y], self.samples_mv[x, y])
         return errors
 
-    cdef void _new_buffers(self):
+    cdef void _new_buffers(self) noexcept:
         self.mean = zeros((self.nx, self.ny), dtype=float64)
         self.variance = zeros((self.nx, self.ny), dtype=float64)
         self.samples = zeros((self.nx, self.ny), dtype=int32)
@@ -531,18 +558,27 @@ cdef class StatsArray3D:
 
     @property
     def shape(self):
-        """ The numpy style array shape of the underlying StatsArray. """
+        """
+        The numpy style array shape of the underlying StatsArray.
+        """
+
         return self.nx, self.ny, self.nz
 
     cpdef object clear(self):
-        """ Erase the current statistics stored in this StatsArray. """
+        """
+        Erase the current statistics stored in this StatsArray.
+        """
+
         self._new_buffers()
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     cpdef StatsArray3D copy(self):
-        """ Instantiate a new StatsArray3D object with the same statistical results. """
+        """
+        Instantiate a new StatsArray3D object with the same statistical results.
+        """
+
         obj = StatsArray3D(self.nx, self.ny, self.nz)
         obj.mean_mv[:] = self.mean_mv[:]
         obj.variance_mv[:] = self.variance_mv[:]
@@ -634,7 +670,7 @@ cdef class StatsArray3D:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double error(self, int x, int y, int z):
+    cpdef double error(self, int x, int y, int z) noexcept:
         """
         Compute the standard error of the results at index position x, y, z.
 
@@ -668,7 +704,7 @@ cdef class StatsArray3D:
                     errors_mv[x, y, z] = _std_error(self.variance_mv[x, y, z], self.samples_mv[x, y, z])
         return errors
 
-    cdef void _new_buffers(self):
+    cdef void _new_buffers(self) noexcept:
         self.mean = zeros((self.nx, self.ny, self.nz), dtype=float64)
         self.variance = zeros((self.nx, self.ny, self.nz), dtype=float64)
         self.samples = zeros((self.nx, self.ny, self.nz), dtype=int32)
@@ -689,7 +725,7 @@ cdef class StatsArray3D:
 
 
 @cython.cdivision(True)
-cdef double _std_error(double v, int n) nogil:
+cdef double _std_error(double v, int n) noexcept nogil:
     """
     Calculates the standard error from the variance.
 
@@ -704,7 +740,7 @@ cdef double _std_error(double v, int n) nogil:
 
 
 @cython.cdivision(True)
-cdef void _add_sample(double sample, double *m, double *v, int *n) nogil:
+cdef void _add_sample(double sample, double *m, double *v, int *n) noexcept nogil:
     """
     Updates the mean, variance and sample count with the supplied sample value.
 
@@ -741,7 +777,7 @@ cdef void _add_sample(double sample, double *m, double *v, int *n) nogil:
 
 
 @cython.cdivision(True)
-cdef void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt) nogil:
+cdef void _combine_samples(double mx, double vx, int nx, double my, double vy, int ny, double *mt, double *vt, int *nt) noexcept nogil:
     """
     Computes the combined statistics of two sets of samples specified by mean, variance and sample count.
 

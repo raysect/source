@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -52,6 +52,6 @@ cpdef tuple to_cylindrical(Point3D point)
 
 cpdef Point3D from_cylindrical(double r, double z, double phi)
 
-cpdef (double, double, double) extract_rotation(AffineMatrix3D m, bint z_up=*)
+cpdef (double, double, double) extract_rotation(AffineMatrix3D m, bint z_up=*) noexcept
 
-cpdef (double, double, double) extract_translation(AffineMatrix3D m)
+cpdef (double, double, double) extract_translation(AffineMatrix3D m) noexcept

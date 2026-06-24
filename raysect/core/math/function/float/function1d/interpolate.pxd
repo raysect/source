@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -75,6 +75,7 @@ cdef class _Extrapolator1D:
     cdef double evaluate(self, double px, int index) except? -1e999
     # cdef double _analytic_gradient(self, double px, int index, int order)
 
+
 cdef class _Extrapolator1DNone(_Extrapolator1D):
     pass
 
@@ -91,8 +92,8 @@ cdef class _Extrapolator1DQuadratic(_Extrapolator1D):
 
     cdef double[3] _a_first, _a_last
 
-    cdef void _calculate_quadratic_coefficients_start(self, double f1, double df1_dx, double df2_dx, double[3] a)
-    cdef void _calculate_quadratic_coefficients_end(self, double f2, double df1_dx, double df2_dx, double[3] a)
+    cdef void _calculate_quadratic_coefficients_start(self, double f1, double df1_dx, double df2_dx, double[3] a) noexcept
+    cdef void _calculate_quadratic_coefficients_end(self, double f2, double df1_dx, double df2_dx, double[3] a) noexcept
 
 
 cdef class _ArrayDerivative1D:
@@ -102,7 +103,7 @@ cdef class _ArrayDerivative1D:
         int _last_index
 
     cdef double evaluate(self, int index, bint rescale_norm) except? -1e999
-    cdef double _rescale_lower_normalisation(self, double dfdn, double x_lower, double x, double x_upper)
-    cdef double _evaluate_edge_x(self, int index)
-    cdef double _evaluate_x(self, int index)
+    cdef double _rescale_lower_normalisation(self, double dfdn, double x_lower, double x, double x_upper) noexcept
+    cdef double _evaluate_edge_x(self, int index) noexcept
+    cdef double _evaluate_x(self, int index) noexcept
 

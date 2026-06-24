@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,13 +32,13 @@
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.point cimport Point2D, Point3D
 
-cpdef seed(object d=*)
+cpdef object seed(object d=*)
 
-cpdef double uniform()
+cpdef double uniform() noexcept
 
-cpdef double normal(double mean, double sigma)
+cpdef double normal(double mean, double sigma) noexcept
 
-cpdef bint probability(double prob)
+cpdef bint probability(double prob) noexcept
 
 cdef Point2D point_disk()
 

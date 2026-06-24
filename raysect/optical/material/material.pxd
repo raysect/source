@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,7 @@ cdef class DiscreteBSDF(Material):
 
 cdef class ContinuousBSDF(Material):
 
-    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face)
+    cpdef double pdf(self, Vector3D s_incoming, Vector3D s_outgoing, bint back_face) noexcept
 
     cpdef Vector3D sample(self, Vector3D s_incoming, bint back_face)
 
@@ -74,4 +74,4 @@ cdef class ContinuousBSDF(Material):
                                     AffineMatrix3D world_to_surface, AffineMatrix3D surface_to_world,
                                     Intersection intersection)
 
-    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength)
+    cpdef double bsdf(self, Vector3D s_incident, Vector3D s_reflected, double wavelength) noexcept

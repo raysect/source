@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,14 +31,11 @@
 
 cdef class Accelerator:
 
-    cpdef build(self, list primitives):
-
+    cpdef object build(self, list primitives):
         pass
 
     cpdef Intersection hit(self, Ray ray):
-
         raise NotImplementedError("Accelerator virtual method hit() has not been implemented.")
 
     cpdef list contains(self, Point3D point):
-
         raise NotImplementedError("Accelerator virtual method contains() has not been implemented.")

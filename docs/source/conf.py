@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Raysect'
-copyright = '2014-2023, Dr Alex Meakins'
+copyright = '2014-2025, Dr Alex Meakins'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

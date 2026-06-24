@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from libc.math cimport M_PI as PI, asin, cos
+from libc.math cimport M_PI as PI, asin, cos, INFINITY
 
 from raysect.core cimport Intersection
 from raysect.core.math.random cimport probability
@@ -38,9 +38,6 @@ from raysect.optical.material.material cimport Material
 from raysect.optical.spectrum cimport new_spectrum
 from raysect.optical.scenegraph cimport Primitive
 cimport cython
-
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
 
 
 cdef class Ray(CoreRay):
@@ -180,7 +177,7 @@ cdef class Ray(CoreRay):
             raise ValueError("Number of bins cannot be less than 1.")
         self._bins = bins
 
-    cdef int get_bins(self) nogil:
+    cdef int get_bins(self) noexcept nogil:
         return self._bins
 
     @property
@@ -203,7 +200,7 @@ cdef class Ray(CoreRay):
 
         self._min_wavelength = min_wavelength
 
-    cdef double get_min_wavelength(self) nogil:
+    cdef double get_min_wavelength(self) noexcept nogil:
         return self._min_wavelength
 
     @property
@@ -226,7 +223,7 @@ cdef class Ray(CoreRay):
 
         self._max_wavelength = max_wavelength
 
-    cdef double get_max_wavelength(self) nogil:
+    cdef double get_max_wavelength(self) noexcept nogil:
         return self._max_wavelength
 
     @property
@@ -311,7 +308,7 @@ cdef class Ray(CoreRay):
 
         self._important_path_weight = important_path_weight
 
-    cdef double get_important_path_weight(self) nogil:
+    cdef double get_important_path_weight(self) noexcept nogil:
         return self._important_path_weight
 
     cpdef Spectrum new_spectrum(self):

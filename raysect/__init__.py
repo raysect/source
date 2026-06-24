@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,8 +27,4 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from os import path as _path
-
-# parse the package version number
-with open(_path.join(_path.dirname(__file__), 'VERSION')) as _f:
-    __version__ = _f.read().strip()
+from ._version import *

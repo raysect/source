@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,9 +38,6 @@ cdef class EncapsulatedPrimitive(Primitive):
         Primitive _primitive
 
     cpdef Intersection hit(self, Ray ray)
-
     cpdef Intersection next_intersection(self)
-
     cpdef bint contains(self, Point3D p) except -1
-
     cpdef BoundingBox3D bounding_box(self)

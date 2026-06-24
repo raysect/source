@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@ cimport cython
 
 
 cdef bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
-                                 double v3x, double v3y, double px, double py) nogil:
+                          double v3x, double v3y, double px, double py)  noexcept nogil:
     """
     Cython utility for testing if point is inside a triangle.
 
@@ -52,8 +52,7 @@ cdef bint inside_triangle(double v1x, double v1y, double v2x, double v2y,
     :rtype: bool
     """
 
-    cdef:
-        double ux, uy, vx, vy
+    cdef double ux, uy, vx, vy
 
     # calculate vectors
     ux = v2x - v1x
@@ -104,7 +103,7 @@ def _test_inside_triangle(v1x, v1y, v2x, v2y, v3x, v3y, px, py):
 @cython.cdivision(True)
 cdef void barycentric_coords(double v1x, double v1y, double v2x, double v2y,
                                     double v3x, double v3y, double px, double py,
-                                    double *alpha, double *beta, double *gamma) nogil:
+                                    double *alpha, double *beta, double *gamma)  noexcept nogil:
     """
     Cython utility for calculating the barycentric coordinates of a test point.
 
@@ -142,7 +141,7 @@ cdef void barycentric_coords(double v1x, double v1y, double v2x, double v2y,
     gamma[0] = 1.0 - alpha[0] - beta[0]
 
 
-cdef bint barycentric_inside_triangle(double alpha, double beta, double gamma) nogil:
+cdef bint barycentric_inside_triangle(double alpha, double beta, double gamma)  noexcept nogil:
     """
     Cython utility for testing if a barycentric point lies inside a triangle.
 
@@ -158,7 +157,7 @@ cdef bint barycentric_inside_triangle(double alpha, double beta, double gamma) n
 
 
 cdef double barycentric_interpolation(double alpha, double beta, double gamma,
-                                             double va, double vb, double vc) nogil:
+                                      double va, double vb, double vc)  noexcept nogil:
     """
     Cython utility for interpolation of data at triangle vertices.
 

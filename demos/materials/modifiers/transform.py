@@ -18,7 +18,7 @@ class CosGlow(InhomogeneousVolumeEmitter):
         wvl_range = spectrum.min_wavelength - spectrum.max_wavelength
         shift = 2 * (spectrum.wavelengths - wvl_centre) / wvl_range
         radius = sqrt(point.x**2 + point.y**2)
-        spectrum.samples += cos((shift + 5) * radius)**4
+        spectrum.samples[:] += cos((shift + 5) * radius)**4
         return spectrum
 
 

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -59,7 +59,7 @@ cdef class BoundPrimitive:
             return self.primitive.next_intersection()
         return None
 
-    cdef bint contains(self, Point3D point):
+    cdef bint contains(self, Point3D point) noexcept:
 
         if self.box.contains(point):
             return self.primitive.contains(point)

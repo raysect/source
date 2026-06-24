@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from raysect.core import Point3D, Vector3D, rotate_basis, translate, Ray as CoreRay
-from raysect.core.math.sampler import DiskSampler3D, RectangleSampler3D, TargettedHemisphereSampler
+from raysect.core.math.sampler import DiskSampler3D, RectangleSampler3D, TargetedHemisphereSampler
 from raysect.optical import World
 from raysect.primitive import Box, Cylinder, Subtract
 from raysect.optical.material import AbsorbingSurface, NullMaterial
@@ -35,8 +35,8 @@ def raytraced_etendue(distance, detector_radius=0.001, ray_count=100000, batches
     sphere = target.bounding_sphere()
     spheres = [(sphere.centre.transform(detector_transform), sphere.radius, 1.0)]
 
-    # instance targetted pixel sampler
-    targetted_sampler = TargettedHemisphereSampler(spheres)
+    # instance targeted pixel sampler
+    targeted_sampler = TargetedHemisphereSampler(spheres)
 
     point_sampler = DiskSampler3D(detector_radius)
 
@@ -53,8 +53,8 @@ def raytraced_etendue(distance, detector_radius=0.001, ray_count=100000, batches
         passed = 0.0
         for origin in origins:
 
-            # obtain targetted vector sample
-            direction, pdf = targetted_sampler(origin, pdf=True)
+            # obtain targeted vector sample
+            direction, pdf = targeted_sampler(origin, pdf=True)
             path_weight = R_2_PI * direction.z/pdf
 
             origin = origin.transform(detector_transform)
@@ -110,12 +110,10 @@ analytic_values = np.array(analytic_values)
 raytraced_values = np.array(raytraced_values)
 raytraced_errors = np.array(raytraced_errors)
 
-plt.ion()
-
 plt.figure()
 ax = plt.gca()
-ax.set_xscale("log", nonposx='clip')
-ax.set_yscale("log", nonposy='clip')
+ax.set_xscale("log", nonpositive='clip')
+ax.set_yscale("log", nonpositive='clip')
 plt.axhline(y=detector_etendue, linestyle='--', color='k', label='detector etendue')
 plt.plot(distance_samples, analytic_values, label='analytic etendue')
 plt.errorbar(distance_samples, raytraced_values, raytraced_errors, label='ray-traced etendue')
@@ -126,12 +124,11 @@ plt.legend()
 
 # plt.figure()
 # ax = plt.gca()
-# ax.set_xscale("log", nonposx='clip')
+# ax.set_xscale("log", nonpositive='clip')
 # plt.errorbar(distance_samples, np.abs(raytraced_values-analytic_values)/raytraced_values, raytraced_errors/raytraced_values)
 # plt.xlim(0.001, 0.1)
 # plt.ylim(0, 0.5)
 # plt.xlabel('Distance between slit and detector (m)')
 # plt.ylabel('Fractional error')
-# plt.show()
 
-
+plt.show()

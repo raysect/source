@@ -1,8 +1,8 @@
 #!/bin/bash
+set -e  # exit if an error occurs
 
-echo Removing all .c, .so and .html files...
+BUILD_PATH="build/`dev/build/abi.py`"
 
-find raysect -type f -name '*.c' -exec rm {} +
-find raysect -type f -name '*.so' -exec rm {} +
-find raysect -type f -name '*.html' -exec rm {} +
-rm build -rf
+echo Cleaning $BUILD_PATH...
+meson compile -C $BUILD_PATH --clean
+

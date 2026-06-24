@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,30 +33,20 @@ from raysect.core.math._vec3 cimport _Vec3
 from raysect.core.math.vector cimport Vector3D
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 
+
 cdef class Normal3D(_Vec3):
 
     cpdef Vector3D cross(self, _Vec3 v)
-
     cpdef Normal3D normalise(self)
-
     cpdef Normal3D transform(self, AffineMatrix3D m)
-
     cpdef Normal3D transform_with_inverse(self, AffineMatrix3D m)
-
     cdef Normal3D neg(self)
-
     cdef Normal3D add(self, _Vec3 v)
-
     cdef Normal3D sub(self, _Vec3 v)
-
     cdef Normal3D mul(self, double m)
-
     cdef Normal3D div(self, double m)
-
     cpdef Normal3D copy(self)
-
     cpdef Vector3D as_vector(self)
-
     cpdef Vector3D orthogonal(self)
 
 

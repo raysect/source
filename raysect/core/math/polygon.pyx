@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -168,7 +168,7 @@ cdef int _locate_ear(list active_vertices, double[:,::1] vertices) except -1:
                        "Please check the polygon data describes a simple polygon.")
 
 
-cdef bint _is_convex(double v1x, double v1y, double v2x, double v2y, double v3x, double v3y) nogil:
+cdef bint _is_convex(double v1x, double v1y, double v2x, double v2y, double v3x, double v3y) noexcept nogil:
     """
     Returns True if vertex is convex.
     """

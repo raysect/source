@@ -3,7 +3,7 @@
 Primitives
 **********
 
-The raysect primitives: sphere; box; cylinder; and cone.
+The raysect primitives: sphere; box; cylinder; cone; parabola; and torus.
 
 .. image:: images/raysect_primitives.png
    :align: center
@@ -30,6 +30,15 @@ Cone
 
 .. autoclass:: raysect.primitive.Cone
 
+Parabola
+~~~~~~~~
+
+.. autoclass:: raysect.primitive.Parabola
+
+Torus
+~~~~~
+
+.. autoclass:: raysect.primitive.Torus
 
 ==============
 CSG Operations

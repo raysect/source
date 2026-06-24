@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,10 +32,9 @@
 from raysect.core.scenegraph._nodebase cimport _NodeBase
 from raysect.core.math.affinematrix cimport AffineMatrix3D
 
+
 cdef class Node(_NodeBase):
 
     cpdef AffineMatrix3D to(self, _NodeBase node)
-
     cpdef AffineMatrix3D to_local(self)
-
     cpdef AffineMatrix3D to_root(self)

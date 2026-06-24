@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,32 +35,23 @@ from raysect.optical.observer.base.processor cimport PixelProcessor
 cdef class Pipeline0D:
 
     cpdef object initialise(self, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet)
-
     cpdef PixelProcessor pixel_processor(self, int slice_id)
-
     cpdef object update(self, int slice_id, tuple packed_result, int samples)
-
     cpdef object finalise(self)
 
 
 cdef class Pipeline1D:
 
     cpdef object initialise(self, int pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet)
-
     cpdef PixelProcessor pixel_processor(self, int pixel, int slice_id)
-
     cpdef object update(self, int pixel, int slice_id, tuple packed_result)
-
     cpdef object finalise(self)
 
 
 cdef class Pipeline2D:
 
     cpdef object initialise(self, tuple pixels, int pixel_samples, double min_wavelength, double max_wavelength, int spectral_bins, list spectral_slices, bint quiet)
-
     cpdef PixelProcessor pixel_processor(self, int x, int y, int slice_id)
-
     cpdef object update(self, int x, int y, int slice_id, tuple packed_result)
-
     cpdef object finalise(self)
 

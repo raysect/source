@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,15 +38,16 @@ from raysect.core.math.cython cimport barycentric_inside_triangle, barycentric_c
 cimport cython
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-6
+cdef const double BOX_PADDING = 1e-6
 
 # convenience defines
-DEF V1 = 0
-DEF V2 = 1
-DEF V3 = 2
+cdef enum:
+    V1 = 0
+    V2 = 1
+    V3 = 2
 
-DEF X = 0
-DEF Y = 1
+    X = 0
+    Y = 1
 
 
 cdef class MeshKDTree2D(KDTree2DCore):
@@ -173,7 +174,7 @@ cdef class MeshKDTree2D(KDTree2DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef bint _is_contained_leaf(self, np.int32_t id, Point2D point):
+    cdef bint _is_contained_leaf(self, np.int32_t id, Point2D point) noexcept:
 
         cdef:
             np.int32_t index, triangle, i1, i2, i3
@@ -210,7 +211,7 @@ cdef class MeshKDTree2D(KDTree2DCore):
 
         return False
 
-    cpdef bint is_contained(self, Point2D point):
+    cpdef bint is_contained(self, Point2D point) noexcept:
         """
         Traverses the kd-Tree to identify if the point is contained by an item.
         :param Point2D point: A Point2D object.

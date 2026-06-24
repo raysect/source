@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -43,14 +43,19 @@ from raysect.optical.observer.sampler1d import FullFrameSampler1D
 from raysect.primitive.mesh.mesh cimport Mesh
 cimport cython
 
-# convenience defines
-DEF X = 0
-DEF Y = 1
-DEF Z = 2
 
-DEF V1 = 0
-DEF V2 = 1
-DEF V3 = 2
+# constants
+cdef enum:
+
+    # axis
+    X = 0
+    Y = 1
+    Z = 2
+
+    # vertex
+    V1 = 0
+    V2 = 1
+    V3 = 2
 
 
 cdef class MeshCamera(Observer1D):
@@ -195,7 +200,7 @@ cdef class MeshCamera(Observer1D):
                 new_point3d(self._vertices_mv[v3i, X], self._vertices_mv[v3i, Y], self._vertices_mv[v3i, Z])
             )
 
-    cdef double _triangle_area(self, Point3D v1, Point3D v2, Point3D v3):
+    cdef double _triangle_area(self, Point3D v1, Point3D v2, Point3D v3) noexcept:
         cdef Vector3D e1 = v1.vector_to(v2)
         cdef Vector3D e2 = v1.vector_to(v3)
         return 0.5 * e1.cross(e2).get_length()
@@ -207,7 +212,7 @@ cdef class MeshCamera(Observer1D):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef double collection_area(self, int pixel):
+    cpdef double collection_area(self, int pixel) noexcept:
         """
         The mesh camera's collection area in m^2.
 
@@ -221,7 +226,7 @@ cdef class MeshCamera(Observer1D):
     def solid_angles(self):
         return np.ones(self._areas.shape[0]) * self._solid_angle
 
-    cpdef double solid_angle(self, int pixel):
+    cpdef double solid_angle(self, int pixel) noexcept:
         """
         The solid angle observed at each mesh triangle in steradians str.
 
@@ -235,7 +240,7 @@ cdef class MeshCamera(Observer1D):
     def sensitivitys(self):
         return self._areas.copy() * self._solid_angle
 
-    cpdef double sensitivity(self, int pixel):
+    cpdef double sensitivity(self, int pixel) noexcept:
         """
         The mesh camera's sensitivity measured in units of per area per solid angle (m^-2 str^-1).
 
@@ -324,5 +329,5 @@ cdef class MeshCamera(Observer1D):
 
         return surface_to_primitive
 
-    cpdef double _pixel_sensitivity(self, int pixel):
+    cpdef double _pixel_sensitivity(self, int pixel) noexcept:
         return self._solid_angle * self._areas_mv[pixel]

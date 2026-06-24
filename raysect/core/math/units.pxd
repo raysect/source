@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,19 +29,19 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-cpdef double km(double v)
-cpdef double cm(double v)
-cpdef double mm(double v)
-cpdef double um(double v)
-cpdef double nm(double v)
+cpdef double km(double v) noexcept
+cpdef double cm(double v) noexcept
+cpdef double mm(double v) noexcept
+cpdef double um(double v) noexcept
+cpdef double nm(double v) noexcept
 
-cpdef double mile(double v)
-cpdef double yard(double v)
-cpdef double foot(double v)
-cpdef double inch(double v)
-cpdef double mil(double v)
+cpdef double mile(double v) noexcept
+cpdef double yard(double v) noexcept
+cpdef double foot(double v) noexcept
+cpdef double inch(double v) noexcept
+cpdef double mil(double v) noexcept
 
-cpdef radian(double v)
+cpdef double radian(double v) noexcept
 
 
 

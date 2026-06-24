@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,12 @@
 
 # TODO: add more advanced material handling
 
+from libc.math cimport INFINITY
+
 from raysect.core cimport _NodeBase, ChangeSignal, Material, new_ray, new_intersection, Point3D, AffineMatrix3D, BoundingBox3D
 
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-9
-
-# cython doesn't have a built in infinity definition
-DEF INFINITY = 1e999
+cdef const double BOX_PADDING = 1e-9
 
 
 cdef class CSGPrimitive(Primitive):
@@ -112,7 +111,7 @@ cdef class CSGPrimitive(Primitive):
     def primitive_b(self):
         """
         Component primitive B of the compound CSG primitive.
-    
+
         :rtype: Primitive
         """
         return self._primitive_b.primitive
@@ -155,7 +154,7 @@ cdef class CSGPrimitive(Primitive):
         # identify first valid intersection
         return self._identify_intersection(ray, intersection_a, intersection_b, closest_intersection)
 
-    cdef bint terminate_early(self, Intersection intersection):
+    cdef bint terminate_early(self, Intersection intersection) noexcept:
         return False
 
     cpdef Intersection next_intersection(self):
@@ -234,14 +233,14 @@ cdef class CSGPrimitive(Primitive):
             else:
                 return b
 
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest) noexcept:
         raise NotImplementedError("Warning: CSG operator not implemented")
 
     cdef Intersection _modify_intersection(self, Intersection closest, Intersection a, Intersection b):
          # by default, do nothing
         return closest
 
-    cdef void rebuild(self):
+    cdef void rebuild(self) noexcept:
         """
         Triggers a rebuild of the CSG primitive's acceleration structures.
         """
@@ -324,7 +323,7 @@ cdef class Union(CSGPrimitive):
 
     """
 
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest) noexcept:
 
         cdef bint inside_a, inside_b
 
@@ -419,10 +418,10 @@ cdef class Intersect(CSGPrimitive):
 
     """
 
-    cdef bint terminate_early(self, Intersection intersection):
+    cdef bint terminate_early(self, Intersection intersection) noexcept:
         return intersection is None
 
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest) noexcept:
 
         cdef bint inside_a, inside_b
 
@@ -521,10 +520,10 @@ cdef class Subtract(CSGPrimitive):
 
     """
 
-    cdef bint terminate_early(self, Intersection intersection):
+    cdef bint terminate_early(self, Intersection intersection) noexcept:
         return intersection is None
 
-    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest):
+    cdef bint _valid_intersection(self, Intersection a, Intersection b, Intersection closest) noexcept:
 
         cdef bint inside_a, inside_b
 

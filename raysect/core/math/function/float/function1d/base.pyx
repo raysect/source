@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -65,110 +65,161 @@ cdef class Function1D(FloatFunction):
     def __repr__(self):
         return 'Function1D(x)'
 
-    def __add__(object a, object b):
+    def __add__(self, object b):
+
+        if is_callable(b):
+            # a() + b()
+            return AddFunction1D(self, b)
+
+        elif isinstance(b, numbers.Real):
+            # a() + B -> B + a()
+            return AddScalar1D(<double> b, self)
+
+        return NotImplemented
+    
+    def __radd__(self, object a):
+        return self.__add__(a)
+
+    def __sub__(self, object b):
+
+        if is_callable(b):
+            # a() - b()
+            return SubtractFunction1D(self, b)
+
+        elif isinstance(b, numbers.Real):
+            # a() - B -> -B + a()
+            return AddScalar1D(-(<double> b), self)
+
+        return NotImplemented
+    
+    def __rsub__(self, object a):
+
         if is_callable(a):
-            if is_callable(b):
-                # a() + b()
-                return AddFunction1D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() + B -> B + a()
-                return AddScalar1D(<double> b, a)
+            # a() - b()
+            return SubtractFunction1D(a, self)
+
         elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A + b()
-                return AddScalar1D(<double> a, b)
+            # A - b()
+            return SubtractScalar1D(<double> a, self)
+
         return NotImplemented
 
-    def __sub__(object a, object b):
-        if is_callable(a):
-            if is_callable(b):
-                # a() - b()
-                return SubtractFunction1D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() - B -> -B + a()
-                return AddScalar1D(-(<double> b), a)
-        elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A - b()
-                return SubtractScalar1D(<double> a, b)
-        return NotImplemented
+    def __mul__(self, object b):
 
-    def __mul__(object a, object b):
-        if is_callable(a):
-            if is_callable(b):
-                # a() * b()
-                return MultiplyFunction1D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() * B -> B * a()
-                return MultiplyScalar1D(<double> b, a)
-        elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A * b()
-                return MultiplyScalar1D(<double> a, b)
+        if is_callable(b):
+            # a() * b()
+            return MultiplyFunction1D(self, b)
+
+        elif isinstance(b, numbers.Real):
+            # a() * B -> B * a()
+            return MultiplyScalar1D(<double> b, self)
+
         return NotImplemented
+    
+    def __rmul__(self, object a):
+        return self.__mul__(a)
 
     @cython.cdivision(True)
-    def __truediv__(object a, object b):
+    def __truediv__(self, object b):
+
         cdef double v
-        if is_callable(a):
-            if is_callable(b):
-                # a() / b()
-                return DivideFunction1D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() / B -> 1/B * a()
-                v = <double> b
-                if v == 0.0:
-                    raise ZeroDivisionError("Scalar used as the denominator of the division is zero valued.")
-                return MultiplyScalar1D(1/v, a)
-        elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A * b()
-                return DivideScalar1D(<double> a, b)
+
+        if is_callable(b):
+            # a() / b()
+            return DivideFunction1D(self, b)
+
+        elif isinstance(b, numbers.Real):
+            # a() / B -> 1/B * a()
+            v = <double> b
+            if v == 0.0:
+                raise ZeroDivisionError("Scalar used as the denominator of the division is zero valued.")
+            return MultiplyScalar1D(1 / v, self)
+
         return NotImplemented
 
-    def __mod__(object a, object b):
-        cdef double v
+    def __rtruediv__(self, object a):
+
         if is_callable(a):
-            if is_callable(b):
-                # a() % b()
-                return ModuloFunction1D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() % B
-                v = <double> b
-                if v == 0.0:
-                    raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
-                return ModuloFunctionScalar1D(a, v)
+            # a() / b()
+            return DivideFunction1D(a, self)
+
         elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # A % b()
-                return ModuloScalarFunction1D(<double> a, b)
+            # A / b()
+            return DivideScalar1D(<double> a, self)
+
+        return NotImplemented
+
+    def __mod__(self, object b):
+
+        cdef double v
+
+        if is_callable(b):
+            # a() % b()
+            return ModuloFunction1D(self, b)
+
+        elif isinstance(b, numbers.Real):
+            # a() % B
+            v = <double> b
+            if v == 0.0:
+                raise ZeroDivisionError("Scalar used as the divisor of the division is zero valued.")
+            return ModuloFunctionScalar1D(self, v)
+
+        return NotImplemented
+    
+    def __rmod__(self, object a):
+
+        if is_callable(a):
+            # a() % b()
+            return ModuloFunction1D(a, self)
+
+        elif isinstance(a, numbers.Real):
+            # A % b()
+            return ModuloScalarFunction1D(<double> a, self)
+
         return NotImplemented
 
     def __neg__(self):
         return MultiplyScalar1D(-1, self)
 
-    def __pow__(object a, object b, object c):
+    def __pow__(self, object b, object c):
+
         if c is not None:
             # Optimised implementation of pow(a, b, c) not available: fall back
             # to general implementation
-            return (a ** b) % c
+            return PowFunction1D(self, b) % c
+
+        if is_callable(b):
+            # a() ** b()
+            return PowFunction1D(self, b)
+
+        elif isinstance(b, numbers.Real):
+            # a() ** b
+            return PowFunctionScalar1D(self, <double> b)
+
+        return NotImplemented
+
+    def __rpow__(self, object a, object c):
+
+        if c is not None:
+            # Optimised implementation of pow(a, b, c) not available: fall back
+            # to general implementation
+            return PowFunction1D(a, self) % c
+
         if is_callable(a):
-            if is_callable(b):
-                # a() ** b()
-                return PowFunction1D(a, b)
-            elif isinstance(b, numbers.Real):
-                # a() ** b
-                return PowFunctionScalar1D(a, <double> b)
+            # a() ** b()
+            return PowFunction1D(a, self)
+
         elif isinstance(a, numbers.Real):
-            if is_callable(b):
-                # a ** b()
-                return PowScalarFunction1D(<double> a, b)
+            # A ** b()
+            return PowScalarFunction1D(<double> a, self)
+
         return NotImplemented
 
     def __abs__(self):
         return AbsFunction1D(self)
 
     def __richcmp__(self, object other, int op):
+
         if is_callable(other):
             if op == Py_EQ:
                 return EqualsFunction1D(self, other)
@@ -182,6 +233,7 @@ cdef class Function1D(FloatFunction):
                 return LessEqualsFunction1D(self, other)
             if op == Py_GE:
                 return GreaterEqualsFunction1D(self, other)
+
         if isinstance(other, numbers.Real):
             if op == Py_EQ:
                 return EqualsScalar1D(<double> other, self)
@@ -199,6 +251,7 @@ cdef class Function1D(FloatFunction):
             if op == Py_GE:
                 # f() >= K -> K <= f
                 return LessEqualsScalar1D(<double> other, self)
+
         return NotImplemented
 
 

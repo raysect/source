@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range) noexcept:
         """
         Tests each item in the kd-Tree leaf node to identify if an intersection occurs.
 
@@ -154,7 +154,6 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
         # dereference the primitives and check if they contain the point
         enclosing_primitives = []
         for item in range(count):
-
             index = self._nodes[id].items[item]
             primitive = <BoundPrimitive> self.primitives[index]
             if primitive.contains(point):
@@ -165,7 +164,7 @@ cdef class _PrimitiveKDTree(_KDTreeCore):
 
 cdef class KDTree(_Accelerator):
 
-    cpdef build(self, list primitives):
+    cpdef object build(self, list primitives):
         self._kdtree = _PrimitiveKDTree(primitives)
 
     cpdef Intersection hit(self, Ray ray):

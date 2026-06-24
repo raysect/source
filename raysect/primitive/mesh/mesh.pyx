@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ import struct
 from numpy import array, float32, int32, zeros
 from raysect.core cimport Primitive, AffineMatrix3D, Normal3D, new_normal3d, Point3D, new_point3d, Vector3D, new_vector3d, Material, Ray, new_ray, Intersection, new_intersection, BoundingBox3D, new_boundingbox3d
 from raysect.core.math.spatial cimport KDTree3DCore, Item3D
-from libc.math cimport fabs
+from libc.math cimport fabs, INFINITY
 from numpy cimport float32_t, int32_t, uint8_t
 from cpython.bytes cimport PyBytes_AsString
 cimport cython
@@ -45,37 +45,41 @@ The ray-triangle intersection used for the Mesh primitive is an implementation o
     "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald, Journal of Computer Graphics Techniques (2013), Vol.2, No. 1
 """
 
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
-
 # bounding box is padded by a small amount to avoid numerical accuracy issues
-DEF BOX_PADDING = 1e-6
+cdef const double BOX_PADDING = 1e-6
 
 # additional ray distance to avoid re-hitting the same surface point
-DEF EPSILON = 1e-6
+cdef const double EPSILON = 1e-6
 
-# convenience defines
-DEF X = 0
-DEF Y = 1
-DEF Z = 2
+# constants
+cdef enum:
 
-DEF U = 0
-DEF V = 1
-DEF W = 2
-DEF T = 3
+    # axis index
+    X = 0
+    Y = 1
+    Z = 2
 
-DEF V1 = 0
-DEF V2 = 1
-DEF V3 = 2
-DEF N1 = 3
-DEF N2 = 4
-DEF N3 = 5
+    # intersection data
+    U = 0
+    V = 1
+    W = 2
+    T = 3
 
-DEF NO_INTERSECTION = -1
+    # vertex index
+    V1 = 0
+    V2 = 1
+    V3 = 2
 
-# raysect mesh format constants
-DEF RSM_VERSION_MAJOR = 1
-DEF RSM_VERSION_MINOR = 0
+    # normal index
+    N1 = 3
+    N2 = 4
+    N3 = 5
+
+    NO_INTERSECTION = -1
+
+    # raysect mesh format constants
+    RSM_VERSION_MAJOR = 1
+    RSM_VERSION_MINOR = 0
 
 
 cdef class MeshIntersection(Intersection):
@@ -279,9 +283,9 @@ cdef class MeshData(KDTree3DCore):
     cpdef Point3D vertex(self, int index):
         """
         Returns the specified vertex.
-        
+
         :param index: The vertex index.
-        :return: A Point3D object. 
+        :return: A Point3D object.
         """
 
         if index < 0 or index >= self.vertices_mv.shape[0]:
@@ -296,13 +300,13 @@ cdef class MeshData(KDTree3DCore):
     cpdef ndarray triangle(self, int index):
         """
         Returns the specified triangle.
-        
-        The returned data will either be a 3 or 6 element numpy array. The 
+
+        The returned data will either be a 3 or 6 element numpy array. The
         first three element are the triangle's vertex indices. If present, the
         last three elements are the triangle's vertex normal indices.
-        
+
         :param index: The triangle index.
-        :return: A numpy array. 
+        :return: A numpy array.
         """
 
         if index < 0 or index >= self.vertices_mv.shape[0]:
@@ -316,9 +320,9 @@ cdef class MeshData(KDTree3DCore):
     cpdef Normal3D vertex_normal(self, int index):
         """
         Returns the specified vertex normal.
-        
+
         :param index: The vertex normal's index.
-        :return: A Normal3D object. 
+        :return: A Normal3D object.
         """
 
         if self._vertex_normals is None:
@@ -339,9 +343,9 @@ cdef class MeshData(KDTree3DCore):
     cpdef Normal3D face_normal(self, int index):
         """
         Returns the specified face normal.
-        
+
         :param index: The face normal's index.
-        :return: A Normal3D object. 
+        :return: A Normal3D object.
         """
 
         if index < 0 or index >= self.face_normals_mv.shape[0]:
@@ -499,7 +503,7 @@ cdef class MeshData(KDTree3DCore):
 
         return bbox
 
-    cpdef bint trace(self, Ray ray):
+    cpdef bint trace(self, Ray ray) noexcept:
 
         # reset hit data
         self._u = -1.0
@@ -513,7 +517,7 @@ cdef class MeshData(KDTree3DCore):
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range):
+    cdef bint _trace_leaf(self, int32_t id, Ray ray, double max_range) noexcept:
 
         cdef:
             float hit_data[4]
@@ -559,7 +563,7 @@ cdef class MeshData(KDTree3DCore):
         return True
 
     @cython.cdivision(True)
-    cdef void _calc_rayspace_transform(self, Ray ray):
+    cdef void _calc_rayspace_transform(self, Ray ray) noexcept:
 
         # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
@@ -609,7 +613,7 @@ cdef class MeshData(KDTree3DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data):
+    cdef bint _hit_triangle(self, int32_t i, Ray ray, float[4] hit_data) noexcept:
 
         # This code is a Python port of the code listed in appendix A of
         #  "Watertight Ray/Triangle Intersection", S.Woop, C.Benthin, I.Wald,
@@ -798,7 +802,7 @@ cdef class MeshData(KDTree3DCore):
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.initializedcheck(False)
-    cpdef bint contains(self, Point3D p):
+    cpdef bint contains(self, Point3D p) noexcept:
         """
         Tests if a point is contained by the mesh.
 
@@ -1031,13 +1035,13 @@ cdef class MeshData(KDTree3DCore):
         m.load(file)
         return m
 
-    cdef uint8_t _read_uint8(self, object file):
+    cdef uint8_t _read_uint8(self, object file) noexcept:
         return (<uint8_t *> PyBytes_AsString(file.read(sizeof(uint8_t))))[0]
 
-    cdef bint _read_bool(self, object file):
+    cdef bint _read_bool(self, object file) noexcept:
         return self._read_uint8(file) != 0
 
-    cdef double _read_float(self, object file):
+    cdef double _read_float(self, object file) noexcept:
         return (<float *> PyBytes_AsString(file.read(sizeof(float))))[0]
 
 

@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -200,7 +200,7 @@ cdef class ImportanceManager:
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef double pdf(self, Point3D origin, Vector3D direction):
+    cpdef double pdf(self, Point3D origin, Vector3D direction) noexcept:
         """
         Calculates the value of the PDF for the specified sample point and direction.
 
@@ -252,7 +252,7 @@ cdef class ImportanceManager:
 
         return pdf_all
 
-    cpdef bint has_primitives(self):
+    cpdef bint has_primitives(self) noexcept:
         """
         Returns true if any primitives in this scene-graph have an importance weighting.
 
@@ -278,7 +278,7 @@ cdef class World(CoreWorld):
         super().__init__(name)
         self._importance = None
 
-    cpdef build_importance(self, bint force=False):
+    cpdef object build_importance(self, bint force=False):
         """
         This method manually triggers a rebuild of the importance manager object.
 
@@ -324,7 +324,7 @@ cdef class World(CoreWorld):
         self.build_importance()
         return self._importance.sample(origin)
 
-    cpdef double important_direction_pdf(self, Point3D origin, Vector3D direction):
+    cpdef double important_direction_pdf(self, Point3D origin, Vector3D direction) noexcept:
         """
         Calculates the value of the PDF for the specified sample point and direction.
 
@@ -336,7 +336,7 @@ cdef class World(CoreWorld):
         self.build_importance()
         return self._importance.pdf(origin, direction)
 
-    cpdef bint has_important_primitives(self):
+    cpdef bint has_important_primitives(self) noexcept:
         """
         Returns true if any primitives in this scene-graph have an importance weighting.
 

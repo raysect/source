@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@ from .autowrap cimport autowrap_function1d
 cimport cython
 cimport numpy as np
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef tuple sample1d(object function, double x_min, double x_max, int x_samples):
@@ -57,7 +58,6 @@ cpdef tuple sample1d(object function, double x_min, double x_max, int x_samples)
 
     if x_samples < 1:
         raise ValueError("The argument x_samples must be >= 1")
-
 
     # ensures that func is of type Function1D. I.e. if 'function' argument was Python function, it'll get autowrapped
     # into Function1D object

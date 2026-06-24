@@ -4,7 +4,7 @@ from raysect.primitive.lens import Meniscus, BiConcave, BiConvex
 from raysect.optical import World, Node, translate, rotate, Point3D
 from raysect.optical.material import Lambert, UniformSurfaceEmitter, AbsorbingSurface, Checkerboard
 from raysect.optical.library import *
-from raysect.optical.observer import TargettedCCDArray
+from raysect.optical.observer import TargetedCCDArray
 from raysect.optical.observer import RGBPipeline2D, BayerPipeline2D, PowerPipeline2D
 from raysect.optical.observer import RGBAdaptiveSampler2D
 from raysect.core.math import mm
@@ -184,9 +184,9 @@ l3_mount = Subtract(
 rgb = RGBPipeline2D(display_unsaturated_fraction=0.96, name="sRGB")
 sampler = RGBAdaptiveSampler2D(rgb, ratio=10, fraction=0.2, min_samples=1000, cutoff=0.01)
 
-# CCD targetting all rays at last lens element for speed
-ccd = TargettedCCDArray(
-    targetted_path_prob=1.0, targets=[l3],
+# CCD targeting all rays at last lens element for speed
+ccd = TargetedCCDArray(
+    targeted_path_prob=1.0, targets=[l3],
     width=mm(35), pixels=(512, 512),
     parent=image_plane, transform=translate(0, 0, 0)*rotate(0, 0, 180),
     pipelines=[rgb]

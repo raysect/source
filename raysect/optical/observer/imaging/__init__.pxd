@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from raysect.optical.observer.imaging.ccd cimport CCDArray
-from raysect.optical.observer.imaging.targetted_ccd cimport TargettedCCDArray
+from raysect.optical.observer.imaging.targeted_ccd cimport TargetedCCDArray
 from raysect.optical.observer.imaging.orthographic cimport OrthographicCamera
 from raysect.optical.observer.imaging.pinhole cimport PinholeCamera
 from raysect.optical.observer.imaging.vector cimport VectorCamera

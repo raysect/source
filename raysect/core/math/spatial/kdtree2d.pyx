@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,16 +40,20 @@ from libc.stdint cimport int32_t
 from libc.math cimport log, ceil
 cimport cython
 
-# this number of nodes will be pre-allocated when the kd-tree is initially created
-DEF INITIAL_NODE_COUNT = 128
 
-# friendly name for first node
-DEF ROOT_NODE = 0
+# constants
+cdef enum:
 
-# node types
-DEF LEAF = -1    # leaf node
-DEF X_AXIS = 0  # branch, x-axis split
-DEF Y_AXIS = 1  # branch, y-axis split
+    # this number of nodes will be pre-allocated when the kd-tree is initially created
+    INITIAL_NODE_COUNT = 128
+
+    # friendly name for first node
+    ROOT_NODE = 0
+
+    # node types
+    LEAF = -1    # leaf node
+    X_AXIS = 0  # branch, x-axis split
+    Y_AXIS = 1  # branch, y-axis split
 
 
 cdef class Item2D:
@@ -69,12 +73,11 @@ cdef class Item2D:
     """
 
     def __init__(self, int32_t id, BoundingBox2D box):
-
         self.id = id
         self.box = box
 
 
-cdef int _edge_compare(const void *p1, const void *p2) nogil:
+cdef int _edge_compare(const void *p1, const void *p2) noexcept nogil:
 
     cdef edge e1, e2
 
@@ -158,7 +161,7 @@ cdef class KDTree2DCore:
     def __reduce__(self):
         return self.__new__, (self.__class__, ), self.__getstate__()
 
-    cdef int32_t _build(self, list items, BoundingBox2D bounds, int32_t depth=0):
+    cdef int32_t _build(self, list items, BoundingBox2D bounds, int32_t depth=0) noexcept:
         """
         Extends the kd-Tree by creating a new node.
 
@@ -304,7 +307,7 @@ cdef class KDTree2DCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr):
+    cdef void _get_edges(self, list items, int32_t axis, int32_t *num_edges, edge **edges_ptr) noexcept:
         """
         Generates a sorted list of edges along the specified axis.
 
@@ -346,7 +349,7 @@ cdef class KDTree2DCore:
         num_edges[0] = count
         edges_ptr[0] = edges
 
-    cdef void _free_edges(self, edge **edges_ptr):
+    cdef void _free_edges(self, edge **edges_ptr) noexcept:
         """
         Free allocated edge array.
 
@@ -387,7 +390,7 @@ cdef class KDTree2DCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int32_t _new_leaf(self, list items):
+    cdef int32_t _new_leaf(self, list items) noexcept:
         """
         Adds a new leaf node to the kd-Tree and populates it.
 
@@ -414,7 +417,7 @@ cdef class KDTree2DCore:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth):
+    cdef int32_t _new_branch(self, tuple split_solution, int32_t depth) noexcept:
         """
         Adds a new branch node to the kd-Tree and populates it.
 
@@ -453,7 +456,7 @@ cdef class KDTree2DCore:
 
         return id
 
-    cdef int32_t _new_node(self):
+    cdef int32_t _new_node(self) noexcept:
         """
         Adds a new, empty node to the kd-Tree.
 
@@ -480,7 +483,7 @@ cdef class KDTree2DCore:
         self._next_node += 1
         return id
 
-    cpdef bint is_contained(self, Point2D point):
+    cpdef bint is_contained(self, Point2D point) noexcept:
         """
         Traverses the kd-Tree to identify if the point is contained by an any item.
 
@@ -490,7 +493,7 @@ cdef class KDTree2DCore:
 
         return self._is_contained(point)
 
-    cdef bint _is_contained(self, Point2D point):
+    cdef bint _is_contained(self, Point2D point) noexcept:
         """
         Starts contains traversal of the kd-Tree.
 
@@ -505,7 +508,7 @@ cdef class KDTree2DCore:
         # start search
         return self._is_contained_node(ROOT_NODE, point)
 
-    cdef bint _is_contained_node(self, int32_t id, Point2D point):
+    cdef bint _is_contained_node(self, int32_t id, Point2D point) noexcept:
         """
         Dispatches contains point look-ups to the relevant node handler.
 
@@ -519,7 +522,7 @@ cdef class KDTree2DCore:
         else:
             return self._is_contained_branch(id, point)
 
-    cdef bint _is_contained_branch(self, int32_t id, Point2D point):
+    cdef bint _is_contained_branch(self, int32_t id, Point2D point) noexcept:
         """
         Locates the kd-Tree node containing the point.
 
@@ -548,7 +551,7 @@ cdef class KDTree2DCore:
         else:
             return self._is_contained_node(upper_id, point)
 
-    cdef bint _is_contained_leaf(self, int32_t id, Point2D point):
+    cdef bint _is_contained_leaf(self, int32_t id, Point2D point) noexcept:
         """
         Tests each item in the node to identify if they enclose the point.
 
@@ -660,7 +663,7 @@ cdef class KDTree2DCore:
         # virtual function that must be implemented by derived classes
         raise NotImplementedError("KDTree2DCore _items_containing_leaf() method not implemented.")
 
-    cdef void _reset(self):
+    cdef void _reset(self) noexcept:
         """
         Resets the kd-tree state, de-allocating all memory.
         """
@@ -825,10 +828,10 @@ cdef class KDTree2DCore:
         if close:
             file.close()
 
-    cdef int32_t _read_int32(self, object file):
+    cdef int32_t _read_int32(self, object file) noexcept:
         return (<int32_t *> PyBytes_AsString(file.read(sizeof(int32_t))))[0]
 
-    cdef double _read_double(self, object file):
+    cdef double _read_double(self, object file) noexcept:
         return (<double *> PyBytes_AsString(file.read(sizeof(double))))[0]
 
 
@@ -846,7 +849,7 @@ cdef class KDTree2D(KDTree2DCore):
     :param double empty_bonus: The bonus applied to node splits that generate empty leaves (default 0.2).
     """
 
-    cdef bint _is_contained_leaf(self, int32_t id, Point2D point):
+    cdef bint _is_contained_leaf(self, int32_t id, Point2D point) noexcept:
         """
         Wraps the C-level API so users can derive a class from KDTree2D using Python.
 
@@ -869,7 +872,7 @@ cdef class KDTree2D(KDTree2DCore):
 
         return self._hit_items(items, point)
 
-    cpdef bint _is_contained_items(self, list item_ids, Point2D point):
+    cpdef bint _is_contained_items(self, list item_ids, Point2D point) noexcept:
         """
         Tests each item in the list to identify if any enclose the point.
 

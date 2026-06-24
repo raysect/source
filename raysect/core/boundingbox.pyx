@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,21 +29,20 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# TODO: add docstrings
-
 cimport cython
+from libc.math cimport INFINITY
 from raysect.core.math cimport new_point3d, new_point2d
 
-# cython doesn't have a built-in infinity constant, this compiles to +infinity
-DEF INFINITY = 1e999
 
 # axis defines
-DEF X_AXIS = 0
-DEF Y_AXIS = 1
-DEF Z_AXIS = 2
+cdef enum:
+    X_AXIS = 0
+    Y_AXIS = 1
+    Z_AXIS = 2
+
 
 # defines the padding on the sphere which encloses the BoundingBox3D.
-DEF SPHERE_PADDING = 1.000001
+cdef const double SPHERE_PADDING = 1.000001
 
 
 @cython.freelist(256)
@@ -142,7 +141,7 @@ cdef class BoundingBox3D:
             0.5 * (self.lower.z + self.upper.z)
         )
 
-    cpdef bint hit(self, Ray ray):
+    cpdef bint hit(self, Ray ray) noexcept:
         """
         Returns true if the ray hits the bounding box.
 
@@ -176,7 +175,7 @@ cdef class BoundingBox3D:
 
         return hit, front_intersection, back_intersection
 
-    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection):
+    cdef bint intersect(self, Ray ray, double *front_intersection, double *back_intersection) noexcept:
 
         # set initial ray-slab intersection search range
         front_intersection[0] = -INFINITY
@@ -197,7 +196,7 @@ cdef class BoundingBox3D:
         return True
 
     @cython.cdivision(True)
-    cdef void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) nogil:
+    cdef void _slab(self, double origin, double direction, double lower, double upper, double *front_intersection, double *back_intersection) noexcept nogil:
 
         cdef double reciprocal, tmin, tmax
 
@@ -243,7 +242,7 @@ cdef class BoundingBox3D:
         if tmax < back_intersection[0]:
             back_intersection[0] = tmax
 
-    cpdef bint contains(self, Point3D point):
+    cpdef bint contains(self, Point3D point) noexcept:
         """
         Returns true if the given 3D point lies inside the bounding box.
 
@@ -258,6 +257,7 @@ cdef class BoundingBox3D:
             return False
         if (point.z < self.lower.z) or (point.z > self.upper.z):
             return False
+
         return True
 
     cpdef object union(self, BoundingBox3D box):
@@ -297,7 +297,7 @@ cdef class BoundingBox3D:
         self.upper.y = max(self.upper.y, point.y + padding)
         self.upper.z = max(self.upper.z, point.z + padding)
 
-    cpdef double surface_area(self):
+    cpdef double surface_area(self) noexcept:
         """
         Returns the surface area of the bounding box.
 
@@ -312,7 +312,7 @@ cdef class BoundingBox3D:
 
         return 2 * (dx * dy + dx * dz + dy * dz)
 
-    cpdef double volume(self):
+    cpdef double volume(self) noexcept:
         """
         Returns the volume of the bounding box.
 
@@ -357,7 +357,7 @@ cdef class BoundingBox3D:
         else:
             raise ValueError("Axis must be in the range [0, 2].")
 
-    cpdef int largest_axis(self):
+    cpdef int largest_axis(self) noexcept:
         """
         Find the largest axis of this bounding box.
 
@@ -384,7 +384,7 @@ cdef class BoundingBox3D:
 
         return largest_axis
 
-    cpdef double largest_extent(self):
+    cpdef double largest_extent(self) noexcept:
         """
         Find the largest spatial extent across all axes.
 
@@ -476,7 +476,6 @@ cdef class BoundingBox2D:
             self.upper = upper
 
     def __repr__(self):
-
         return "BoundingBox2D({}, {})".format(self.lower, self.upper)
 
     def __getstate__(self):
@@ -515,7 +514,7 @@ cdef class BoundingBox2D:
     def upper(self, Point2D value not None):
         self.upper = value
 
-    cpdef bint contains(self, Point2D point):
+    cpdef bint contains(self, Point2D point) noexcept:
         """
         Returns true if the given 2D point lies inside the bounding box.
 
@@ -560,7 +559,7 @@ cdef class BoundingBox2D:
         self.upper.x = max(self.upper.x, point.x + padding)
         self.upper.y = max(self.upper.y, point.y + padding)
 
-    cpdef double surface_area(self):
+    cpdef double surface_area(self) noexcept:
         """
         Returns the surface area of the bounding box.
 
@@ -596,7 +595,7 @@ cdef class BoundingBox2D:
         else:
             raise ValueError("Axis must be in the range [0, 1].")
 
-    cpdef int largest_axis(self):
+    cpdef int largest_axis(self) noexcept:
         """
         Find the largest axis of this bounding box.
 
@@ -617,7 +616,7 @@ cdef class BoundingBox2D:
 
         return largest_axis
 
-    cpdef double largest_extent(self):
+    cpdef double largest_extent(self) noexcept:
         """
         Find the largest spatial extent across all axes.
 

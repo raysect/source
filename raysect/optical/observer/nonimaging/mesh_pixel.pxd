@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-# Copyright (c) 2014-2023, Dr Alex Meakins, Raysect Project
+# Copyright (c) 2014-2025, Dr Alex Meakins, Raysect Project
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -52,6 +52,6 @@ cdef class MeshPixel(Observer0D):
         HemisphereCosineSampler _vector_sampler
 
     cdef object _calculate_areas(self)
-    cdef double _triangle_area(self, Point3D v1, Point3D v2, Point3D v3)
-    cdef int32_t _pick_triangle(self)
+    cdef double _triangle_area(self, Point3D v1, Point3D v2, Point3D v3) noexcept
+    cdef int32_t _pick_triangle(self) noexcept
     cdef AffineMatrix3D _surface_to_local(self, Vector3D normal)

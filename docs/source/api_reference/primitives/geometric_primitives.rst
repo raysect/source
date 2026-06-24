@@ -21,3 +21,7 @@ Geometric Primitives
 .. autoclass:: raysect.primitive.Parabola
    :members: radius, height
    :show-inheritance:
+
+.. autoclass:: raysect.primitive.Torus
+   :members: major_radius, minor_radius
+   :show-inheritance:
