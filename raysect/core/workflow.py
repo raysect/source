@@ -31,7 +31,6 @@ from collections import defaultdict
 from multiprocessing import get_context, cpu_count
 import platform
 import os
-import subprocess
 from raysect.core.math import random
 import time
 
@@ -531,27 +530,15 @@ class HybridEngine(RenderEngine):
 
         >>> # Within application.py:
         >>> # Find out how many slots are allocated this MPI process's node.
-        >>> import os, platform, subprocess
+        >>> import os, platform
         >>> host = platform.node()
-        >>> qstat = subprocess.run(['qstat', '-g', 't'], capture_output=True,
-                                   encoding='UTF-8')
-        >>> job_id = os.getenv("JOB_ID")
-        >>> # Loop through qstat output until we find our job id on this node.
-        >>> current_job = ""
-        >>> NSUB = 0
-        >>> for line in qstat.stdout.splitlines():
-        >>>     fields = line.strip().split()
-        >>>     if len(fields) >= 9:  # Start of a node's entry
-        >>>         current_job = fields[0]
-        >>>         current_queue = fields[7]
-        >>>         slot_type = fields[8]
-        >>>     elif len(fields) >= 2:  # Additional lines of a node's entry
-        >>>         current_queue = fields[0]
-        >>>         slot_type = fields[1]
-        >>>     else:  # Other decorative lines in the output are irrelevant.
-        >>>         continue
-        >>>     if current_job == job_id and host in current_queue and slot_type == "SLAVE":
-        >>>         NSUB += 1
+        >>> pe_hostfile = os.environ["PE_HOSTFILE"]
+        >>> with open(pe_hostfile, "r", encoding="UTF-8") as f:
+        >>>     for line in f:
+        >>>         hostname, slots, *_ = line.strip().split()
+        >>>         if host in hostname:
+        >>>             NSUB = int(slots)
+        >>>             break
         >>>
         >>> camera.render_engine = HybridEngine(MulticoreEngine(NSUB))
 
@@ -683,30 +670,18 @@ class HybridEngine(RenderEngine):
                 raise RuntimeError("Can't find a supported scheduler.")
         scheduler = scheduler.lower()
         if scheduler == "slurm":
-            nsub = os.getenv("SLURM_CPUS_PER_TASK", 1)
+            nsub = int(os.getenv("SLURM_CPUS_PER_TASK", "1"))
         elif scheduler == "gridengine":
-            # Parse qstat output to get the number of SLAVE slots
+            # Parse the parallel environment file to get the number of slots
             # allocated to this node.
             node = platform.node()
-            qstat = subprocess.run(['qstat', '-g', 't'], capture_output=True,
-                                   encoding='UTF-8')
-            job_id = os.environ["JOB_ID"]
-            # Loop through qstat output until we find our job id on this node.
-            current_job = ""
-            nsub = 0
-            for line in qstat.stdout.splitlines():
-                fields = line.strip().split()
-                if len(fields) >= 9:  # Start of a node's entry
-                    current_job = fields[0]
-                    current_queue = fields[7]
-                    slot_type = fields[8]
-                elif len(fields) >= 2:  # Additional lines of a node's entry
-                    current_queue = fields[0]
-                    slot_type = fields[1]
-                else:  # Other decorative lines in the output are irrelevant.
-                    continue
-                if current_job == job_id and node in current_queue and slot_type == "SLAVE":
-                    nsub += 1
+            pe_hostfile = os.environ["PE_HOSTFILE"]
+            with open(pe_hostfile, "r", encoding="utf-8") as f:
+                for line in f:
+                    hostname, slots, *_ = line.strip().split()
+                    if node in hostname:
+                        nsub = int(slots)
+                        break
         else:
             raise RuntimeError(f"{scheduler} is not supported by this function.")
         return nsub
