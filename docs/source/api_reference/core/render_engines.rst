@@ -11,5 +11,8 @@ Render Engines
 .. autoclass:: raysect.core.workflow.MulticoreEngine
    :show-inheritance:
 
+.. autoclass:: raysect.core.workflow.MPIEngine
+   :show-inheritance:
 
-
+.. autoclass:: raysect.core.workflow.HybridEngine
+   :show-inheritance:
