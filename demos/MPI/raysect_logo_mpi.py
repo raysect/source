@@ -78,4 +78,4 @@ if camera.render_engine.rank == 0:
     # Comment out if you don't want to save the result to a file:
     camera.pipelines[0].save("raysect_logo.png")
     # Uncomment if running interactively for a plot of the result:
-    camera.pipelines[0].display()
+    # camera.pipelines[0].display()
