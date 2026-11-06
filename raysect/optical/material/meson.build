@@ -5,7 +5,7 @@ target_path = 'raysect/optical/material'
 
 # source files
 py_files = ['__init__.py']
-pyx_files = ['absorber.pyx', 'conductor.pyx', 'debug.pyx', 'dielectric.pyx', 'lambert.pyx', 'material.pyx']
+pyx_files = ['absorber.pyx', 'conductor.pyx', 'custom.pyx', 'debug.pyx', 'dielectric.pyx', 'lambert.pyx', 'material.pyx']
 pxd_files = ['__init__.pxd', 'absorber.pxd', 'conductor.pxd', 'debug.pxd', 'dielectric.pxd', 'material.pxd']
 data_files = []
 
@@ -29,3 +29,4 @@ py.install_sources(
 
 subdir('emitter')
 subdir('modifiers')
+subdir('tests')

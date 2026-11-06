@@ -31,6 +31,7 @@ from .material import *
 from .emitter import *
 from .absorber import *
 from .lambert import *
+from .custom import *
 from .dielectric import *
 from .conductor import *
 from .modifiers import *
